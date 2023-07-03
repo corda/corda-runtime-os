@@ -1,8 +1,6 @@
 package net.corda.flow.application.serialization
 
 import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
-import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE
 import net.corda.sandboxgroupcontext.getObjectByKey
@@ -13,23 +11,18 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
 
-@Component(
-    service = [SerializationService::class, SerializationServiceInternal::class, UsedByFlow::class],
-    property = [CORDA_SYSTEM_SERVICE],
-    scope = PROTOTYPE
-)
-class SerializationServiceImpl @Activate constructor(
+/**
+ * This is a platform singleton service that uses the current sandbox's [SerializationService].
+ */
+@Component(service = [SerializationServiceInternal::class, SingletonSerializeAsToken::class])
+class SerializationServiceInternalImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class)
     private val currentSandboxGroupContext: CurrentSandboxGroupContext
-) : SerializationServiceInternal, UsedByFlow, SingletonSerializeAsToken {
-
-    private companion object {
-        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
+) : SerializationServiceInternal, SingletonSerializeAsToken {
+    private val log = LoggerFactory.getLogger(this::class.java)
 
     private val serializationService
         get(): SerializationService {

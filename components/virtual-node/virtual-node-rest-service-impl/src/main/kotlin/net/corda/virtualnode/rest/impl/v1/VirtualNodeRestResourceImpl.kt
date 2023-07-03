@@ -406,7 +406,7 @@ internal class VirtualNodeRestResourceImpl(
         val instant = clock.instant()
         // Lookup actor to keep track of which REST user triggered an update
         val actor = restContextProvider.principal
-        logger.info("Received request to update state for $virtualNodeShortId to $newState by $actor at $instant")
+        logger.debug { "Received request to update state for $virtualNodeShortId to $newState by $actor at $instant" }
 
         val virtualNodeState = when (validateStateChange(virtualNodeShortId, newState)
         ) {
@@ -426,14 +426,10 @@ internal class VirtualNodeRestResourceImpl(
         val resp = tryWithExceptionHandling(logger, "Update vNode state") {
             sendAndReceive(rpcRequest)
         }
-        logger.info("Received response to update for $virtualNodeShortId to $newState by $actor")
+        logger.debug { "Received response to update for $virtualNodeShortId to $newState by $actor" }
 
         return when (val resolvedResponse = resp.responseType) {
             is VirtualNodeStateChangeResponse -> {
-                logger.info("Updated states in response for $virtualNodeShortId: ${resolvedResponse.flowOperationalStatus}, " +
-                        "${resolvedResponse.flowP2pOperationalStatus}, ${resolvedResponse.flowStartOperationalStatus}, " +
-                        "${resolvedResponse.vaultDbOperationalStatus}")
-
                 resolvedResponse.run {
                     ChangeVirtualNodeStateResponse(holdingIdentityShortHash, newState)
                 }

@@ -38,8 +38,16 @@ class CheckKafka : Callable<Int>, PluginContext() {
         private val admin: AdminClient?
 
         init {
-            admin = AdminClient.create(props)
-            report.addEntry(ReportEntry("Created admin client successfully", true))
+            // Switch ClassLoader so LoginModules can be found
+            val contextCL = Thread.currentThread().contextClassLoader
+            try {
+                Thread.currentThread().contextClassLoader = this::class.java.classLoader
+
+                admin = AdminClient.create(props)
+                report.addEntry(ReportEntry("Created admin client successfully", true))
+            } finally {
+                Thread.currentThread().contextClassLoader = contextCL
+            }
         }
 
         open fun getNodes(): Collection<Node> {
@@ -151,8 +159,6 @@ class CheckKafka : Callable<Int>, PluginContext() {
             report.addEntry(ReportEntry("Create $component Kafka client properties", false, e))
             return
         }
-
-        logger.info(props.entries.joinToString(separator = ",\n"))
 
         try {
             checkConnectionAndBrokers(component, KafkaAdmin(props, report), replicas)

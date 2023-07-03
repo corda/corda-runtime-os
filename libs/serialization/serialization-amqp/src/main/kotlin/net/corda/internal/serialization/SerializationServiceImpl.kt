@@ -6,7 +6,6 @@ import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.serialization.SerializationContext
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.serialization.SerializedBytes
-import net.corda.v5.serialization.SingletonSerializeAsToken
 import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
@@ -47,17 +46,3 @@ class SerializationServiceImpl(
         }
     }
 }
-
-/**
- * P2P implementation of [SerializationService] and [P2pSerializationService].
- *
- * Extends [SingletonSerializeAsToken] so that it can be used within flows.
- */
-internal class P2pSerializationServiceImpl(delegate: SerializationService) : SingletonSerializeAsToken,
-    SerializationService by delegate, P2pSerializationService
-
-/**
- * Storage implementation of [SerializationService] and [StorageSerializationService].
- */
-internal class StorageSerializationServiceImpl(delegate: SerializationService) : SerializationService by delegate,
-    StorageSerializationService
