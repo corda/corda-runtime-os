@@ -220,7 +220,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
      */
     private fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>): Boolean {
         val outputRecords = mutableListOf<Record<*, *>>()
-        val newEventsToProcess = mutableListOf<Record<K, E>>()
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
         // Pre-populate the updated states with the current in-memory state.
         events.forEach {
@@ -237,12 +236,11 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 while (eventsToProcess.isNotEmpty()) {
                     val event = eventsToProcess.removeFirst()
                     stateAndEventConsumer.resetPollInterval()
-                    processEvent(event, outputRecords, newEventsToProcess, updatedStates)
+                    val newEventsToProcess = processEvent(event, outputRecords, updatedStates)
                     eventsToProcess.addAll(newEventsToProcess.map {
-                        val ret = toCordaConsumerRecord(event, it)
+                        val ret = CordaConsumerRecord(it.topic, event.partition, event.offset, it.key, it.value, event.timestamp, event.headers)
                         ret
                     })
-                    newEventsToProcess.clear()
                 }
             }
         } catch (ex: StateAndEventConsumer.RebalanceInProgressException) {
@@ -273,24 +271,13 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         return false
     }
 
-    private fun toCordaConsumerRecord(sourceRecord: CordaConsumerRecord<K, E>, newEvent : Record<K, E>) =
-        CordaConsumerRecord(
-            newEvent.topic,
-            sourceRecord.partition,
-            sourceRecord.offset,
-            newEvent.key,
-            newEvent.value,
-            sourceRecord.timestamp,
-            sourceRecord.headers
-        )
 
     @Suppress("UNCHECKED_CAST")
     private fun processEvent(
         event: CordaConsumerRecord<K, E>,
         outputRecords: MutableList<Record<*, *>>,
-        recordsToProcess: MutableList<Record<K, E>>,
         updatedStates: MutableMap<Int, MutableMap<K, S?>>,
-    ) {
+    ): MutableList<Record<K,E>> {
         log.debug { "Processing event: $event" }
         val key = event.key
         val state = updatedStates[event.partition]?.get(event.key)
@@ -326,7 +313,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 // In this case the processor may ask us to publish some output records regardless, so make sure these
                 // are outputted.
                 outputRecords.addAll(outputEvents)
-                recordsToProcess.addAll(eventsToProcess as List<Record<K, E>>)
+                return (eventsToProcess as MutableList<Record<K, E>>)
             }
 
             else -> {
@@ -334,10 +321,11 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 outputRecords.addAll(outputEvents)
                 outputRecords.add(Record(stateTopic, key, updatedState))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = updatedState
-                recordsToProcess.addAll(eventsToProcess as List<Record<K, E>>)
                 log.debug { "Completed event: $event" }
+                return (eventsToProcess as MutableList<Record<K, E>>)
             }
         }
+        return mutableListOf()
     }
 
     /**
