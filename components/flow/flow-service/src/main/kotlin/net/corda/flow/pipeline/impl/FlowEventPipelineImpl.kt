@@ -1,7 +1,9 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.cache.FlowFiberCache
@@ -162,7 +164,24 @@ class FlowEventPipelineImpl(
 
     override fun globalPostProcessing(): FlowEventPipelineImpl {
         context = flowGlobalPostProcessor.postProcess(context)
+        log.info("Global postproc outRecords: [${context.outputRecords.map { eventToString(it.value) }}]")
         return this
+    }
+
+    private fun eventToString(eventPayload: Any?): String {
+        val eventType = eventPayload?.javaClass?.simpleName
+        val payload = when (eventPayload) {
+            is FlowEvent -> eventPayload.payload
+            is FlowMapperEvent -> eventPayload.payload
+            else -> null
+        }
+        var eventSubtype = if (payload != null) {
+            "." + payload.javaClass.simpleName
+        } else ""
+        if (payload is SessionEvent) {
+            eventSubtype += "." + payload.payload.javaClass.simpleName
+        }
+        return "$eventType$eventSubtype"
     }
 
     private fun getFlowEventHandler(event: FlowEvent): FlowEventHandler<Any> {

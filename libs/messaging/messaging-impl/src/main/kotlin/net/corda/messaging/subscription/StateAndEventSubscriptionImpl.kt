@@ -3,6 +3,7 @@ package net.corda.messaging.subscription
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -281,10 +282,16 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
         fun eventToString(eventPayload: Any?): String {
             val eventType = eventPayload?.javaClass?.simpleName
-            val eventSubtype = when (eventPayload) {
-                is FlowEvent -> "." + eventPayload.payload?.javaClass?.simpleName
-                is FlowMapperEvent -> "." + eventPayload.payload?.javaClass?.simpleName
-                else -> ""
+            val payload = when (eventPayload) {
+                is FlowEvent -> eventPayload.payload
+                is FlowMapperEvent -> eventPayload.payload
+                else -> null
+            }
+            var eventSubtype = if (payload != null) {
+                "." + payload.javaClass.simpleName
+            } else ""
+            if (payload is SessionEvent) {
+                eventSubtype += "." + payload.payload.javaClass.simpleName
             }
             return "$eventType$eventSubtype"
         }
