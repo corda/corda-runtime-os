@@ -1,5 +1,7 @@
 package net.corda.membership.impl.synchronisation
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
@@ -8,14 +10,10 @@ import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.toAvro
 import net.corda.crypto.core.toCorda
-import net.corda.avro.serialization.CordaAvroDeserializer
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.CryptoSignatureParameterSpec
 import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.SignedData
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.MembershipPackage
@@ -24,21 +22,16 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
-import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
-import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
-import net.corda.lifecycle.TimerEvent
-import net.corda.membership.lib.*
+import net.corda.lifecycle.*
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
+import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.toSortedMap
+import net.corda.membership.lib.toWire
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.Verifier
@@ -52,9 +45,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
-import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
-import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.*
 import net.corda.schema.configuration.MembershipConfig.MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES
 import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
@@ -70,9 +61,9 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.security.PublicKey
-import java.util.Random
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.TimeUnit
+
 
 @Component(service = [SynchronisationService::class])
 @Suppress("LongParameterList")
@@ -90,7 +81,6 @@ class MemberSynchronisationServiceImpl internal constructor(
     private val clock: Clock,
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val groupParametersFactory: GroupParametersFactory,
-    private val keyEncodingService: KeyEncodingService,
 ) : MemberSynchronisationService {
     @Suppress("LongParameterList")
     @Activate
@@ -145,7 +135,6 @@ class MemberSynchronisationServiceImpl internal constructor(
         UTCClock(),
         membershipPersistenceClient,
         groupParametersFactory,
-        keyEncodingService,
     )
 
     /**
@@ -259,16 +248,14 @@ class MemberSynchronisationServiceImpl internal constructor(
         private fun parseGroupParameters(
             mgm: MemberInfo,
             membershipPackage: MembershipPackage
-        ): InternalGroupParameters {
-            val mgmPublicKey = mgm.ledgerKeys.firstOrNull()
-                ?: throw IllegalArgumentException("MGM does not have a ledger key.")
-            val mgmSignature = membershipPackage.groupParameters.mgmSignature.bytes.array()
-            val mgmSignatureSpec = membershipPackage.groupParameters.mgmSignatureSpec
-            val groupParametersData = membershipPackage.groupParameters.groupParameters.array()
-
-            verifier.verify(mgmPublicKey, mgmSignature, mgmSignatureSpec, groupParametersData)
-
-            return groupParametersFactory.create(membershipPackage.groupParameters)
+        ) = with(membershipPackage.groupParameters) {
+            verifier.verify(
+                mgm.sessionInitiationKeys,
+                mgmSignature,
+                mgmSignatureSpec,
+                groupParameters.array()
+            )
+            groupParametersFactory.create(this)
         }
 
         override fun cancelCurrentRequestAndScheduleNewOne(
@@ -284,55 +271,76 @@ class MemberSynchronisationServiceImpl internal constructor(
             return true
         }
 
-        private fun getMemberKeyFromMemberInfo(memberInfo: SignedData): PublicKey {
-            val memberSignature = memberInfo.signature
-            val publicKeyBytes = memberSignature.publicKey.array().sha256Bytes()
-            return keyEncodingService.decodePublicKey(publicKeyBytes)
+        private fun verifyMemberSignature(
+            memberSignature: CryptoSignatureWithKey?,
+            memberSignatureSpec: CryptoSignatureSpec,
+            memberInfo: MemberInfo,
+            vararg leaves: ByteArray,
+        ) {
+            if (memberSignature != null) {
+                val sessionInitiationKey = memberInfo.sessionInitiationKeys.find { key ->
+                    key == memberSignature.publicKey
+                } ?: throw CordaRuntimeException("Invalid session initiation key")
+
+                val data = merkleTreeGenerator.createTree(leaves.toList())
+                    .root.bytes
+                verifier.verify(sessionInitiationKey, memberSignature.bytes.array(), memberSignatureSpec, data)
+            } else {
+                throw CordaRuntimeException("Member signature is null")
+            }
         }
 
-        private fun getMGMKeyFromMemberInfo(mgmContext: SignedData): PublicKey {
-            val mgmSignature = mgmContext.signature
-            val publicKeyBytes = mgmSignature.publicKey.array().sha256Bytes()
-            return keyEncodingService.decodePublicKey(publicKeyBytes)
+        private fun verifyMgmSignature(
+            mgmSignature: CryptoSignatureWithKey?,
+            mgmSignatureSpec: CryptoSignatureSpec,
+            mgmMemberInfo: MemberInfo,
+            vararg leaves: ByteArray,
+        ) {
+            if (mgmSignature != null) {
+                val sessionInitiationKey = mgmMemberInfo.sessionInitiationKeys.find { key ->
+                    key == mgmSignature.publicKey
+                } ?: throw CordaRuntimeException("Invalid session initiation key")
+
+                val data = merkleTreeGenerator.createTree(leaves.toList())
+                    .root.bytes
+                verifier.verify(sessionInitiationKey, mgmSignature.bytes.array(), mgmSignatureSpec, data)
+            } else {
+                throw CordaRuntimeException("MGM signature is null")
+            }
         }
 
         override fun processMembershipUpdates(updates: ProcessMembershipUpdates): List<Record<*, *>> {
             val viewOwningMember = updates.synchronisationMetaData.member.toCorda()
             val mgm = updates.synchronisationMetaData.mgm.toCorda()
-            logger.debug { "Member $viewOwningMember received membership updates from $mgm." }
+            logger.info("Member $viewOwningMember received membership updates from $mgm.")
 
             return try {
                 cancelCurrentRequestAndScheduleNewOne(viewOwningMember, mgm)
-
                 val updateMembersInfo = updates.membershipPackage.memberships.memberships.map { update ->
-
-                    val memberKey = getMemberKeyFromMemberInfo(update.memberContext)
-
-                    verifier.verify(
-                        memberKey,
-                        update.memberContext.signature.bytes.array(),
-                        update.memberContext.signatureSpec,
-                        update.memberContext.data.array(),
-                    )
-
-                    val mgmKey = getMGMKeyFromMemberInfo(update.mgmContext)
-
-                    verifyMgmSignature(
-                        mgmKey,
-                        update.mgmContext.signature.bytes.array(),
-                        update.mgmContext.signatureSpec.signatureName,
-                        update.memberContext.data.array(),
-                        update.mgmContext.data.array()
-                    )
-
                     val memberContext = deserializer.deserialize(update.memberContext.data.array())
                         ?: throw CordaRuntimeException("Invalid member context")
                     val mgmContext = deserializer.deserialize(update.mgmContext.data.array())
                         ?: throw CordaRuntimeException("Invalid MGM context")
-                    memberInfoFactory.create(
+
+                    val memberInfo = memberInfoFactory.create(
                         memberContext.toSortedMap(),
                         mgmContext.toSortedMap()
                     )
+
+                    verifyMemberSignature(
+                        update.memberContext.signature,
+                        update.memberContext.signatureSpec,
+                        memberInfo,
+                        update.memberContext.data.array(),
+                    )
+                    verifyMgmSignature(
+                        update.mgmContext.signature,
+                        update.mgmContext.signatureSpec,
+                        memberInfo,
+                        update.mgmContext.data.array(),
+                    )
+
+                    memberInfo
                 }.associateBy { it.id }
 
                 val persistentMemberInfoRecords = updateMembersInfo.entries.map { (id, memberInfo) ->
@@ -384,9 +392,9 @@ class MemberSynchronisationServiceImpl internal constructor(
                         it,
                         updates.membershipPackage
                     )
-                        membershipPersistenceClient
-                            .persistGroupParameters(viewOwningMember, groupParameters)
-                            .createAsyncCommands()
+                    membershipPersistenceClient
+                        .persistGroupParameters(viewOwningMember, groupParameters)
+                        .createAsyncCommands()
                 } ?: throw CordaRuntimeException(
                     "Could not find MGM info in the member list for member ${viewOwningMember.x500Name}"
                 )
@@ -394,7 +402,7 @@ class MemberSynchronisationServiceImpl internal constructor(
             } catch (e: Exception) {
                 logger.warn(
                     "Failed to process membership updates received by ${viewOwningMember.x500Name}. " +
-                        "Will trigger a fresh sync with MGM.",
+                            "Will trigger a fresh sync with MGM.",
                     e,
                 )
                 createSynchroniseNowRequest(
@@ -407,31 +415,6 @@ class MemberSynchronisationServiceImpl internal constructor(
         override fun close() {
             publisher.close()
         }
-    }
-
-    private fun verifyMgmSignature(
-        publicKey: PublicKey?,
-        signature: ByteArray?,
-        signatureName: String?,
-        vararg leaves: ByteArray,
-    ) {
-        val data = merkleTreeGenerator.createTree(leaves.toList()).root.bytes
-
-        val customDigestName: String? = null // Set the custom digest name if applicable, otherwise use null
-        val params: CryptoSignatureParameterSpec? = null // Set the signature parameters if applicable, otherwise use null
-
-        val signatureSpec = CryptoSignatureSpec(signatureName, customDigestName, params)
-
-        publicKey?.let { key ->
-            signature?.let { sig ->
-                verifier.verify(
-                    key,
-                    sig,
-                    signatureSpec,
-                    data
-                )
-            } ?: throw IllegalArgumentException("Member does not have a valid signature for verification.")
-        } ?: throw IllegalArgumentException("Member does not have a valid public key for verification.")
     }
 
     private fun createSynchronisationRequestMessage(
