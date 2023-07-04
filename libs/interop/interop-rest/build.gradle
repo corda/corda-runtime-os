@@ -1,0 +1,21 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.common-publishing'
+}
+
+description 'Endpoint API for management of interop.'
+
+dependencies {
+    implementation project(path: ':libs:lifecycle:lifecycle')
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    api project(':libs:rest:rest')
+
+    implementation project(":libs:external-messaging")
+    implementation project(":libs:rest:rest")
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'net.corda:corda-avro-schema'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+}
