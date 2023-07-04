@@ -24,7 +24,7 @@ import net.corda.messaging.subscription.*
 import net.corda.messaging.subscription.consumer.builder.RedisStateAndEventBuilder
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
-import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
+import net.corda.schema.configuration.MessagingConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -47,13 +47,13 @@ class CordaSubscriptionFactory @Activate constructor(
     private val cordaProducerBuilder: CordaProducerBuilder,
     @Reference(service = CordaConsumerBuilder::class)
     private val cordaConsumerBuilder: CordaConsumerBuilder,
-//    @Reference(service = StateAndEventBuilder::class)
-//    private val stateAndEventBuilder: StateAndEventBuilder,
+    @Reference(service = StateAndEventBuilder::class)
+    private val stateAndEventBuilder: StateAndEventBuilder,
     @Reference(service = MessagingChunkFactory::class)
     private val messagingChunkFactory: MessagingChunkFactory,
 ) : SubscriptionFactory {
 
-    private val stateAndEventBuilder: StateAndEventBuilder = RedisStateAndEventBuilder(cordaConsumerBuilder, cordaProducerBuilder)
+    private val redisStateAndEventBuilder: StateAndEventBuilder = RedisStateAndEventBuilder(cordaConsumerBuilder, cordaProducerBuilder)
 
     override fun <K : Any, V : Any> createPubSubSubscription(
         subscriptionConfig: SubscriptionConfig,
@@ -113,6 +113,27 @@ class CordaSubscriptionFactory @Activate constructor(
         )
     }
 
+//    override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
+//        subscriptionConfig: SubscriptionConfig,
+//        processor: StateAndEventProcessor<K, S, E>,
+//        messagingConfig: SmartConfig,
+//        stateAndEventListener: StateAndEventListener<K, S>?
+//    ): StateAndEventSubscription<K, S, E> {
+//        val config = getConfig(SubscriptionType.STATE_AND_EVENT, subscriptionConfig, messagingConfig)
+//        val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
+//        val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
+//        return StateAndEventSubscriptionImpl(
+//            config,
+//            stateAndEventBuilder,
+//            processor,
+//            serializer,
+//            deserializer,
+//            lifecycleCoordinatorFactory,
+//            messagingChunkFactory.createChunkSerializerService(messagingConfig.getLong(MessagingConfig.MAX_ALLOWED_MSG_SIZE)),
+//            stateAndEventListener,
+//        )
+//    }
+
     override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
@@ -122,7 +143,7 @@ class CordaSubscriptionFactory @Activate constructor(
         val config = getConfig(SubscriptionType.STATE_AND_EVENT, subscriptionConfig, messagingConfig)
         val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
         val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
-        return StreamingStateAndEventSubscription(
+        return StreamingEventSubscription(
             config,
             stateAndEventBuilder,
             processor,

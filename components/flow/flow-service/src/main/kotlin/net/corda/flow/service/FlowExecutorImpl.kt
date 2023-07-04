@@ -59,32 +59,42 @@ class FlowExecutorImpl constructor(
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
+            if (System.getenv("ENABLE_FLOW_PROCESS").equals("TRUE", true)) {
 //            val topic = config.getConfig(BOOT_CONFIG).getInputTopic(CONSUMER_GROUP, FLOW_EVENT_TOPIC)
-            //HARDCODED: Point the process to a custom flow processor deployment
-            val flowProcessorTopic = System.getenv("FLOW_PROCESSOR_TOPIC")
-            val consumerGroup = "$CONSUMER_GROUP-$flowProcessorTopic"
-            val messagingConfig = toMessagingConfig(config)
-            val flowConfig = config.getConfig(FLOW_CONFIG)
-                .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(PROCESSOR_TIMEOUT)))
-                .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)))
+                //HARDCODED: Point the process to a custom flow processor deployment
+                val flowProcessorTopic = System.getenv("FLOW_PROCESSOR_TOPIC")
+                val consumerGroup = "$CONSUMER_GROUP-$flowProcessorTopic"
+                val messagingConfig = toMessagingConfig(config)
+                val flowConfig = config.getConfig(FLOW_CONFIG)
+                    .withValue(
+                        PROCESSOR_TIMEOUT,
+                        ConfigValueFactory.fromAnyRef(messagingConfig.getLong(PROCESSOR_TIMEOUT))
+                    )
+                    .withValue(
+                        MAX_ALLOWED_MSG_SIZE,
+                        ConfigValueFactory.fromAnyRef(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE))
+                    )
 
-            // close the lifecycle registration first to prevent down being signaled
-            subscriptionRegistrationHandle?.close()
-            subscription?.close()
+                // close the lifecycle registration first to prevent down being signaled
+                subscriptionRegistrationHandle?.close()
+                subscription?.close()
 
-            subscription = subscriptionFactory.createStateAndEventSubscription(
-                //NOTE: To consume from flow event topic
-                SubscriptionConfig(consumerGroup, flowProcessorTopic),
-                flowEventProcessorFactory.create(flowConfig),
-                messagingConfig,
-                flowExecutorRebalanceListener
-            )
+                subscription = subscriptionFactory.createStateAndEventSubscription(
+                    //NOTE: To consume from flow event topic
+                    SubscriptionConfig(consumerGroup, flowProcessorTopic),
+                    flowEventProcessorFactory.create(flowConfig),
+                    messagingConfig,
+                    flowExecutorRebalanceListener
+                )
 
-            subscriptionRegistrationHandle = coordinator.followStatusChangesByName(
-                setOf(subscription!!.subscriptionName)
-            )
+                subscriptionRegistrationHandle = coordinator.followStatusChangesByName(
+                    setOf(subscription!!.subscriptionName)
+                )
 
-            subscription?.start()
+                subscription?.start()
+            } else {
+                coordinator.updateStatus(LifecycleStatus.UP)
+            }
         } catch (ex: Exception) {
             val reason = "Failed to configure the flow executor using '${config}'"
             log.error(reason, ex)

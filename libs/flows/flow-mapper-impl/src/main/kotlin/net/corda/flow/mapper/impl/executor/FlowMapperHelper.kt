@@ -11,13 +11,14 @@ import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_IN_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_SESSION_TOPIC
 import net.corda.schema.configuration.FlowConfig.SESSION_P2P_TTL
-import net.corda.session.manager.Constants
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_SUBSYSTEM
 import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 
 /**
  * Generate and return random ID for flowId
@@ -33,13 +34,11 @@ fun generateFlowId(): String {
  * @return the output topic based on [messageDirection].
  */
 fun getSessionEventOutputTopic(messageDirection: MessageDirection): String {
-    //        flowConfig.getOutputTopic(BootConfig.SESSION_OUTPUT, FLOW_EVENT_TOPIC)
-    //HARDCODED: Point the process to a custom flow processor deployment
-    val flowSessionTopic = System.getenv("FLOW_PROCESSOR_TOPIC")
     return if (messageDirection == MessageDirection.INBOUND) {
-        flowSessionTopic
+        FLOW_SESSION_TOPIC
     } else {
-        "flow.mapper.session.event"
+        // Bypass the P2P OUT and publish directly into the return session inbound flow mapper topic
+        FLOW_MAPPER_SESSION_IN_EVENT_TOPIC
     }
 }
 

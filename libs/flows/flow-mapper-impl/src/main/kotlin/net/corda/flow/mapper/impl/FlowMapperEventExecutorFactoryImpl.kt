@@ -11,8 +11,15 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
-import net.corda.flow.mapper.impl.executor.*
+import net.corda.flow.mapper.impl.executor.ExecuteCleanupEventExecutor
+import net.corda.flow.mapper.impl.executor.ScheduleCleanupEventExecutor
+import net.corda.flow.mapper.impl.executor.SessionErrorExecutor
+import net.corda.flow.mapper.impl.executor.SessionEventExecutor
+import net.corda.flow.mapper.impl.executor.SessionInitExecutor
+import net.corda.flow.mapper.impl.executor.StartFlowExecutor
+import net.corda.flow.mapper.impl.executor.generateAppMessage
 import net.corda.libs.configuration.SmartConfig
+import net.corda.schema.Schemas.Flow.*
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -33,9 +40,6 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
         flowConfig: SmartConfig,
         instant: Instant
     ): FlowMapperEventExecutor {
-//        val startTopic = flowConfig.getOutputTopic(BootConfig.START_OUTPUT, FLOW_EVENT_TOPIC)
-        //HARDCODED: Point the process to a custom flow processor deployment
-        val flowProcessorTopic = System.getenv("FLOW_PROCESSOR_TOPIC")
         return when (val flowMapperEventPayload = flowMapperEvent.payload) {
             is SessionEvent -> {
                 when (val sessionPayload = flowMapperEventPayload.payload) {
@@ -73,8 +77,7 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                     }
                 }
             }
-
-            is StartFlow -> StartFlowExecutor(eventKey, flowProcessorTopic, flowMapperEventPayload, state)
+            is StartFlow -> StartFlowExecutor(eventKey, FLOW_START_TOPIC, flowMapperEventPayload, state)
             is ExecuteCleanup -> ExecuteCleanupEventExecutor(eventKey)
             is ScheduleCleanup -> ScheduleCleanupEventExecutor(eventKey, flowMapperEventPayload, state)
 

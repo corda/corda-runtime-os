@@ -37,7 +37,7 @@ import java.nio.ByteBuffer
 import java.time.Clock
 
 @Suppress("LongParameterList")
-internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
+internal class StreamingEventSubscription<K : Any, S : Any, E : Any>(
     private val config: ResolvedSubscriptionConfig,
     private val builder: StateAndEventBuilder,
     private val processor: StateAndEventProcessor<K, S, E>,
@@ -308,19 +308,12 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
                     })
                     recordsAvoidedCount.increment(eventsToProcess.size.toDouble())
 
+                    producer.beginTransaction()
                     when {
                         currentEventUpdates == null -> {
                             log.warn(
                                 "Sending state and event on key ${currentEvent.key} for topic ${currentEvent.topic} to dead letter queue. " +
                                         "Processor failed to complete."
-                            )
-                            producer.sendRecords(
-                                listOf(
-                                    generateDeadLetterRecord(
-                                        currentEvent,
-                                        state
-                                    )
-                                ).toCordaProducerRecords()
                             )
                             stateAndEventConsumer.updateInMemoryStatePostCommit(currentEvent.key, null, clock)
                         }
@@ -329,14 +322,6 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
                             log.warn(
                                 "Sending state and event on key ${currentEvent.key} for topic ${currentEvent.topic} to dead letter queue. " +
                                         "Processor marked event for the dead letter queue"
-                            )
-                            producer.sendRecords(
-                                listOf(
-                                    generateDeadLetterRecord(
-                                        currentEvent,
-                                        state
-                                    )
-                                ).toCordaProducerRecords()
                             )
                             stateAndEventConsumer.updateInMemoryStatePostCommit(currentEvent.key, null, clock)
 
@@ -351,6 +336,8 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
                             log.debug { "Completed event: $currentEvent" }
                         }
                     }
+                    producer.sendRecordOffsetsToTransaction(eventConsumer, listOf(event))
+                    producer.commitTransaction()
                 } finally {
                     stateAndEventConsumer.releaseStateKey(currentEvent.key)
                 }
