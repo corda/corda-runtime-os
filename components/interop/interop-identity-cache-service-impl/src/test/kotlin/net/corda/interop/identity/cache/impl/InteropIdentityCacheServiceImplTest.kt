@@ -62,7 +62,6 @@ class InteropIdentityCacheServiceImplTest {
         val interopIdentity = InteropIdentity().apply {
             groupId = UUID.randomUUID().toString()
             x500Name = "X500 name #1"
-            hostingVnode = "Hosting VNode"
         }
 
         cache.putInteropIdentity(shortHash, interopIdentity)
@@ -102,13 +101,11 @@ class InteropIdentityCacheServiceImplTest {
         val interopIdentity1 = InteropIdentity().apply {
             groupId = UUID.randomUUID().toString()
             x500Name = "X500 name #1"
-            hostingVnode = "Hosting VNode"
         }
 
         val interopIdentity2 = InteropIdentity().apply {
             groupId = UUID.randomUUID().toString()
             x500Name = "X500 name #2"
-            hostingVnode = "Hosting VNode"
         }
 
         cache.putInteropIdentity(shortHash, interopIdentity1)
