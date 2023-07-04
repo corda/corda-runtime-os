@@ -318,4 +318,16 @@ interface MembershipPersistenceClient : Lifecycle {
     fun updateStaticNetworkInfo(
         info: StaticNetworkInfo
     ): MembershipPersistenceOperation<StaticNetworkInfo>
+
+    /**
+     * TODO
+     * Updates the group parameters, and triggers their distribution to group members.
+     *
+     * @param viewOwningIdentity The holding identity of the owner of the view of data.
+     * @param newGroupParameters Updated version of the group parameters.
+     */
+    fun updateGroupParameters(
+        viewOwningIdentity: HoldingIdentity,
+        newGroupParameters: Map<String, String>
+    ): MembershipPersistenceOperation<InternalGroupParameters>
 }

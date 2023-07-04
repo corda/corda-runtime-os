@@ -154,6 +154,8 @@ class MGMRestResourceImpl internal constructor(
         fun suspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters)
 
         fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters)
+
+        fun updateGroupParameters(holdingIdentityShortHash: String, newGroupParameters: Map<String, String>): Map<String, String>
     }
 
     override val protocolVersion = 1
@@ -248,6 +250,9 @@ class MGMRestResourceImpl internal constructor(
 
     override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) =
         impl.activateMember(holdingIdentityShortHash, activationParams)
+
+    override fun updateGroupParameters(holdingIdentityShortHash: String, newGroupParameters: Map<String, String>) =
+        impl.updateGroupParameters(holdingIdentityShortHash, newGroupParameters)
 
     fun activate(reason: String) {
         impl = ActiveImpl()
@@ -350,6 +355,11 @@ class MGMRestResourceImpl internal constructor(
             holdingIdentityShortHash: String,
             activationParams: SuspensionActivationParameters
         ): Unit = throwNotRunningException()
+
+        override fun updateGroupParameters(
+            holdingIdentityShortHash: String,
+            newGroupParameters: Map<String, String>,
+        ): Map<String, String> = throwNotRunningException()
 
         private fun <T> throwNotRunningException(): T {
             throw ServiceUnavailableException(NOT_RUNNING_ERROR)
@@ -600,6 +610,14 @@ class MGMRestResourceImpl internal constructor(
             } catch (e: InvalidEntityUpdateException) {
                 throw InvalidStateChangeException("${e.message}")
             }
+        }
+
+        override fun updateGroupParameters(
+            holdingIdentityShortHash: String,
+            newGroupParameters: Map<String, String>,
+        ): Map<String, String> = handleCommonErrors(holdingIdentityShortHash) {
+            // TODO sanitize and validate input map
+            mgmResourceClient.updateGroupParameters(it, newGroupParameters).toMap()
         }
 
         private fun RegistrationRequestDetails.toRest() =

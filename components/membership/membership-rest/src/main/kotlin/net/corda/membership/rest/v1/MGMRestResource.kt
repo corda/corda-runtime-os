@@ -475,4 +475,29 @@ interface MGMRestResource : RestResource {
         )
         activationParams: SuspensionActivationParameters
     )
+
+    /**
+     * TODO
+     * The [updateGroupParameters] method allows you to make changes to the group parameters by submitting an updated
+     * version of the group parameters.
+     *
+     * @see MemberLookupRestResource.viewGroupParameters for how to view the current group parameters for the group.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param newGroupParameters Group parameters as a [Map] containing the desired changes.
+     *
+     * @return The newly updated group parameters.
+     */
+    @HttpPOST(
+        path = "{holdingIdentityShortHash}/group-parameters",
+        description = "This API allows you to make changes to the group parameters by submitting an updated version " +
+                "of the group parameters.",
+        responseDescription = "The newly updated group parameters"
+    )
+    fun updateGroupParameters(
+        @RestPathParameter(description = "The holding identity ID of the MGM")
+        holdingIdentityShortHash: String,
+        @ClientRequestBodyParameter(description = "Updated version of the group parameters")
+        newGroupParameters: Map<String, String>,
+    ): Map<String, String>
 }

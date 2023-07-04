@@ -87,6 +87,7 @@ import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.service.MembershipPersistenceService
@@ -376,6 +377,12 @@ class MembershipPersistenceTest {
                 info: StaticNetworkInfo
             ) = safeCall {
                 membershipPersistenceClient.updateStaticNetworkInfo(info)
+            }
+
+            override fun updateGroupParameters(
+                viewOwningIdentity: HoldingIdentity, newGroupParameters: Map<String, String>
+            ) = safeCall {
+                membershipPersistenceClient.updateGroupParameters(viewOwningIdentity, newGroupParameters)
             }
 
             fun <T> safeCall(func: () -> T): T {

@@ -155,6 +155,11 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         return Operation(MembershipPersistenceResult.Success(info))
     }
 
+    override fun updateGroupParameters(
+        viewOwningIdentity: HoldingIdentity, newGroupParameters: Map<String, String>
+    ): MembershipPersistenceOperation<InternalGroupParameters> =
+        throw NotImplementedError("Not implemented for test service")
+
     private val persistenceCoordinator =
         coordinatorFactory.createCoordinator(
             LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>()

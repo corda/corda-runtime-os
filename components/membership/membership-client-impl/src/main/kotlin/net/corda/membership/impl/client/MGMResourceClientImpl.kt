@@ -169,6 +169,11 @@ class MGMResourceClientImpl @Activate constructor(
         fun activateMember(
             holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
         )
+
+        fun updateGroupParameters(
+            holdingIdentityShortHash: ShortHash,
+            newGroupParameters: Map<String, String>
+        ): InternalGroupParameters
     }
 
     private var impl: InnerMGMResourceClient = InactiveImpl
@@ -253,6 +258,10 @@ class MGMResourceClientImpl @Activate constructor(
     override fun activateMember(
         holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
     ) = impl.activateMember(holdingIdentityShortHash, memberX500Name, serialNumber, reason)
+
+    override fun updateGroupParameters(
+        holdingIdentityShortHash: ShortHash, newGroupParameters: Map<String, String>
+    ) = impl.updateGroupParameters(holdingIdentityShortHash, newGroupParameters)
 
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -363,6 +372,10 @@ class MGMResourceClientImpl @Activate constructor(
 
         override fun activateMember(
             holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+        ) = throw IllegalStateException(ERROR_MSG)
+
+        override fun updateGroupParameters(
+            holdingIdentityShortHash: ShortHash, newGroupParameters: Map<String, String>
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun mutualTlsAllowClientCertificate(
@@ -575,6 +588,14 @@ class MGMResourceClientImpl @Activate constructor(
                 updatedMemberInfo, updatedGroupParameters, memberX500Name, memberShortHash, mgm, holdingIdentityShortHash.value
             )
         }
+
+        override fun updateGroupParameters(
+            holdingIdentityShortHash: ShortHash, newGroupParameters: Map<String, String>
+        ): InternalGroupParameters =
+            membershipPersistenceClient.updateGroupParameters(
+                mgmHoldingIdentity(holdingIdentityShortHash),
+                newGroupParameters
+            ).getOrThrow()
 
         private fun validateSuspensionActivationRequest(
             holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name
