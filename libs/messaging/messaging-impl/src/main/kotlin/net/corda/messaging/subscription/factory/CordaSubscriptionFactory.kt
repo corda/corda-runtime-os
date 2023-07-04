@@ -175,12 +175,12 @@ class CordaSubscriptionFactory @Activate constructor(
         )
     }
 
-    override fun <K : Any, V : Any> createRestSubscription(
+    override fun <V : Any> createRestSubscription(
         subscriptionConfig: SubscriptionConfig,
-        processor: DurableProcessor<K, V>,
+        processor: DurableProcessor<String, V>,
         messagingConfig: SmartConfig,
         partitionAssignmentListener: PartitionAssignmentListener?
-    ): Subscription<K, V> {
+    ): Subscription<String, V> {
         val config = getConfig(SubscriptionType.DURABLE, subscriptionConfig, messagingConfig)
         val cordaAvroSerializer = cordaAvroSerializationFactory.createAvroSerializer<Any>()
         val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)

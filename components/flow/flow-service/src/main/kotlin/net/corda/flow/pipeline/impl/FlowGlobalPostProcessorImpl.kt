@@ -55,7 +55,9 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
 
         context.flowMetrics.flowEventCompleted(context.inputEvent.payload::class.java.name)
 
-        return context.copy(outputRecords = context.outputRecords + outputRecords)
+        return context.copy(
+            outputRecords = context.outputRecords + outputRecords
+        )
     }
 
     private fun getSessionEvents(context: FlowEventContext<Any>, now: Instant): List<Record<*, FlowMapperEvent>> {

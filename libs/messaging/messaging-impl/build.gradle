@@ -33,8 +33,10 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "redis.clients:jedis:$jedisVersion"
-    implementation "io.ktor:ktor-client-core"
-    implementation "io.ktor:ktor-client-cio"
+    implementation "io.ktor:ktor-client-core:$ktorVersion"
+    implementation "io.ktor:ktor-client-cio:$ktorVersion"
+    implementation "io.ktor:ktor-client-logging:$ktorVersion"
+    implementation "io.ktor:ktor-client-logging-jvm:$ktorVersion"
     implementation "io.javalin:javalin-osgi:$javalinVersion"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion"
@@ -52,7 +54,7 @@ dependencies {
 tasks.named('jar', Jar) {
     bundle {
         bnd '''\
--conditionalpackage: io.ktor*, kotlinx.coroutines*, io.ktor.client*, io.ktor.client.call*, io.ktor.client.engine.cio*, io.ktor.client.request*, _COROUTINE, kotlinx.coroutines.slf4j*
+-conditionalpackage: io.ktor*, kotlinx.coroutines*, io.ktor.client*, io.ktor.client.call*, io.ktor.client.engine.cio*, io.ktor.client.request*, _COROUTINE, kotlinx.coroutines.slf4j*, io.ktor.client.plugins.logging*
 Import-Package: !android*, *
 '''
     }

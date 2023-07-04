@@ -23,13 +23,13 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import org.slf4j.LoggerFactory
 
-class RestSubscriptionImpl<K: Any, V: Any>(
-    private val processor: DurableProcessor<K, V>,
+class RestSubscriptionImpl<V: Any>(
+    private val processor: DurableProcessor<String, V>,
     private val cordaAvroSerializer: CordaAvroSerializer<Any>,
     private val cordaAvroDeserializer: CordaAvroDeserializer<Any>,
     private val config: ResolvedSubscriptionConfig,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
-) : Subscription<K, V> {
+) : Subscription<String, V> {
 
     companion object {
         private val javalin = Javalin.create().also {
@@ -61,13 +61,15 @@ class RestSubscriptionImpl<K: Any, V: Any>(
     private fun process(context: Context) {
         context.header(Header.CACHE_CONTROL, "no-cache")
         try {
-            val record = cordaAvroDeserializer.deserialize(context.bodyAsBytes()) as? Record<K, V>
+            val value = cordaAvroDeserializer.deserialize(context.bodyAsBytes()) as? V
                 ?: throw IllegalArgumentException("Could not process record as body did not deserialize correctly.")
+            val record = Record(config.topic, "foo", value)
             val outputEvents = processor.onNext(listOf(record))
             // Assume for now that one input event == one output event, and therefore can just take the first one in the
             // list as the return type.
-            val returnBody = cordaAvroSerializer.serialize(outputEvents.first())
-                ?: throw IllegalArgumentException("Could not serialize output event to return")
+            val returnBody = outputEvents.first().value?.let {
+                cordaAvroSerializer.serialize(it)
+            } ?: throw IllegalArgumentException("Failed to serialize output type")
             context.result(returnBody)
             context.status(200)
         } catch (e: Exception) {

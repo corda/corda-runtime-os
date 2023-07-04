@@ -2,6 +2,7 @@ package net.corda.messaging.subscription
 
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
@@ -97,11 +98,11 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
         .build()
 
     private val topicToRestClient = mapOf(
-        Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC to RestClient("crypto.process", cordaAvroSerializer, cordaAvroDeserializer),
-        Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC to RestClient("ledger.process", cordaAvroSerializer, cordaAvroDeserializer),
-        Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC to RestClient("db.process", cordaAvroSerializer, cordaAvroDeserializer),
-        Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC to RestClient("uniqueness.process", cordaAvroSerializer, cordaAvroDeserializer),
-        Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC to RestClient("verification.process", cordaAvroSerializer, cordaAvroDeserializer)
+        Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC to RestClient<FlowEvent>(/*"crypto.process"*/"http://localhost:8080/${Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC}", cordaAvroSerializer, cordaAvroDeserializer),
+        Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC to RestClient(/*"ledger.process"*/"http://localhost:8080/${Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC}", cordaAvroSerializer, cordaAvroDeserializer),
+        Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC to RestClient(/*"db.process"*/"http://localhost:8080/${Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC}", cordaAvroSerializer, cordaAvroDeserializer),
+        Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC to RestClient(/*"uniqueness.process"*/"localhost:8080", cordaAvroSerializer, cordaAvroDeserializer),
+        Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC to RestClient(/*"verification.process"*/"localhost:8080", cordaAvroSerializer, cordaAvroDeserializer)
     )
 
     /**
@@ -257,12 +258,15 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
 
                         stateAndEventConsumer.resetPollInterval()
                         processEvent(event, outputRecords, newEventsToProcess, updatedStates)
+                        producer.beginTransaction()
                         producer.sendRecords(outputRecords.toCordaProducerRecords())
                         eventsToProcess.addAll(newEventsToProcess.map {
                             val ret = toCordaConsumerRecord(event, it)
                             ret
                         })
                         newEventsToProcess.clear()
+                        producer.sendRecordOffsetsToTransaction(stateAndEventConsumer.eventConsumer, listOf(event))
+                        producer.commitTransaction()
                         stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
                         log.debug { "Processed event of key '${event.key}' successfully." }
                     } finally {
@@ -283,7 +287,7 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
             newEvent.topic,
             sourceRecord.partition,
             sourceRecord.offset,
-            newEvent.key,
+            sourceRecord.key,
             newEvent.value,
             sourceRecord.timestamp,
             sourceRecord.headers
@@ -315,8 +319,12 @@ internal class StreamingStateAndEventSubscription<K : Any, S : Any, E : Any>(
 //            it.topic == event.topic && processor.eventValueClass.isInstance(it.value) && it.key == key
             isWakeup(it)
         } ?: Pair(emptyList(), emptyList())
-        val restResponses: List<Record<*, *>> = thisEventUpdates?.restRequests?.mapNotNull {
-            topicToRestClient[it.topic]?.publish(listOf(it))
+        log.info("Got back records for topics: [${thisEventUpdates?.responseEvents?.map { it.topic }?.joinToString()}]")
+        val restResponses = thisEventUpdates?.responseEvents?.filter {
+            it.topic in topicToRestClient.keys
+        }?.mapNotNull {
+            val recordToSend = it as Record<String, *>
+            topicToRestClient[it.topic]?.publish(listOf(recordToSend))
         }?.flatten() ?: listOf()
         val eventsToProcess = wakeups + restResponses
         recordsAvoidedCount.increment(eventsToProcess.size.toDouble())

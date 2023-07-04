@@ -56,8 +56,8 @@ internal class RedisStateAndEventConsumer<K : Any, S : Any, E : Any>(
     private val hostAndPort = HostAndPort("orr-memory-db.8b332u.clustercfg.memorydb.eu-west-2.amazonaws.com", 6379).also {
         log.warn("Connecting to host ${it.host}, port ${it.port}")
     }
-    private val jedisCluster = JedisCluster(Collections.singleton(hostAndPort), 5000, 5000, 2, null, null, GenericObjectPoolConfig(), false)
-//    private val jedisCluster = Jedis(hostAndPort.host, hostAndPort.port)
+//    private val jedisCluster = JedisCluster(Collections.singleton(hostAndPort), 5000, 5000, 2, null, null, GenericObjectPoolConfig(), false)
+    private val jedisCluster = Jedis("localhost", hostAndPort.port, false)
     private val maxPollInterval = config.processorTimeout.toMillis()
     private val initialProcessorTimeout = maxPollInterval / 4
     private var pollIntervalCutoff = 0L
