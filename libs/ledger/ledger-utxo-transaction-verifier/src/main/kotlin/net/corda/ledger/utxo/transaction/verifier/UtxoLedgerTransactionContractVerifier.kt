@@ -7,7 +7,7 @@ import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 import net.corda.v5.ledger.utxo.ContractVerificationException
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
-import net.corda.sandboxgroupcontext.service.SandboxDependencyInjectorKey.DEPENDENCY_INJECTOR
+import net.corda.sandboxgroupcontext.service.SANDBOX_DEPENDENCY_INJECTOR_KEY
 
 /**
  * Verifies contracts of ledger transaction. For security reasons, some verifications need to be run with a new instance
@@ -51,8 +51,11 @@ fun verifyContracts(
 
                         try {
                             val contract = contractClass.getConstructor().newInstance()
-                            sandboxGroupContext.getObjectByKey<SandboxDependencyInjector>(DEPENDENCY_INJECTOR)
-                                ?.injectServices(contract)
+                            val injector = sandboxGroupContext.getObjectByKey<SandboxDependencyInjector>(SANDBOX_DEPENDENCY_INJECTOR_KEY)
+                            requireNotNull(injector) {
+                                "The verification injector called is null"
+                            }
+                            injector.injectServices(contract)
                             contract.verify(transactionFactory.invoke())
                         } catch (ex: Exception) {
                             failureReasons.add(
@@ -60,8 +63,7 @@ fun verifyContracts(
                                     contractClassName = contractClass.canonicalName,
                                     contractStateClassNames = contractStates.map { it.state.contractState.javaClass.canonicalName },
                                     exceptionClassName = ex.javaClass.canonicalName,
-                                    exceptionMessage = ex.message
-                                        ?: "The thrown exception did not provide a failure message."
+                                    exceptionMessage = ex.message ?: "The thrown exception did not provide a failure message."
                                 )
                             )
                         }

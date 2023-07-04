@@ -31,15 +31,15 @@ class SandboxDependencyInjectorFactoryImpl : SandboxDependencyInjectorFactory {
     }
 
     override fun create(sandboxGroupContext: SandboxGroupContext): SandboxDependencyInjector {
-        val serviceType = sandboxGroupContext.virtualNodeContext.sandboxGroupType
+        val sandboxGroupType = sandboxGroupContext.virtualNodeContext.sandboxGroupType
 
-        require(serviceType.hasInjection) {
-            "Expected serviceGroupType=${serviceType} doesn't support service injection"
+        require(sandboxGroupType.hasInjection) {
+            "Expected serviceGroupType=${sandboxGroupType} doesn't support service injection"
         }
         val references = LinkedList<ServiceReference<*>>()
         val sandboxGroup = sandboxGroupContext.sandboxGroup
         val sandboxId = sandboxGroup.id
-        val serviceMarkerType = serviceType.serviceMarkerType
+        val serviceMarkerType = sandboxGroupType.serviceMarkerType
         return sandboxGroup.metadata.keys.firstOrNull()
             ?.let(Bundle::getBundleContext)
             ?.let { bundleContext ->

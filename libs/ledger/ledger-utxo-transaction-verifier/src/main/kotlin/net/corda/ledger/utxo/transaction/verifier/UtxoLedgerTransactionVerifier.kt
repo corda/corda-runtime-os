@@ -2,7 +2,6 @@ package net.corda.ledger.utxo.transaction.verifier
 
 import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.sandboxgroupcontext.service.SandboxDependencyInjectorKey
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
 /**
@@ -12,7 +11,6 @@ import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
  * @param transactionFactory factory used for checks that require a new instance of [UtxoLedgerTransaction]
  * @param transaction transaction used for checks that can reuse the same instance of [UtxoLedgerTransaction]
  */
-@SandboxDependencyInjectorKey
 class UtxoLedgerTransactionVerifier(
     private val transactionFactory: () -> UtxoLedgerTransaction,
     private val transaction: UtxoLedgerTransaction = transactionFactory.invoke(),

@@ -19,7 +19,7 @@ import net.corda.sandboxgroupcontext.service.registerCordappCustomSerializers
 import net.corda.sandboxgroupcontext.service.registerCustomCryptography
 import net.corda.sandboxgroupcontext.service.registerCustomJsonDeserializers
 import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
-import net.corda.sandboxgroupcontext.service.SandboxDependencyInjectorKey
+import net.corda.sandboxgroupcontext.service.SANDBOX_DEPENDENCY_INJECTOR_KEY
 import net.corda.sandboxgroupcontext.service.factory.SandboxDependencyInjectorFactory
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -35,7 +35,6 @@ import org.slf4j.LoggerFactory
  * It gets/creates a Verification sandbox with a per-sandbox serializers.
  *
  */
-@SandboxDependencyInjectorKey
 @RequireSandboxAMQP
 @RequireSandboxJSON
 @Component(service = [VerificationSandboxService::class])
@@ -82,7 +81,7 @@ class VerificationSandboxServiceImpl @Activate constructor(
         val jsonSerializers = sandboxService.registerCustomJsonSerializers(ctx)
 
         val injectorService = dependencyInjectionFactory.create(ctx)
-        ctx.putObjectByKey(SandboxDependencyInjectorKey.DEPENDENCY_INJECTOR, injectorService)
+        ctx.putObjectByKey(SANDBOX_DEPENDENCY_INJECTOR_KEY, injectorService)
 
         // Instruct all CustomMetadataConsumers to accept their metadata.
         sandboxService.acceptCustomMetadata(ctx)
