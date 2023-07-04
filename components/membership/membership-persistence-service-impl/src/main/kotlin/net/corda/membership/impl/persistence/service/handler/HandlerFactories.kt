@@ -35,6 +35,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.Ticker
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.metrics.TimerMetricTypes
 import net.corda.membership.lib.metrics.getTimerMetric
@@ -116,12 +117,18 @@ internal class HandlerFactories(
 
     fun handle(request: MembershipPersistenceRequest): Any? {
         val rqClass = request.request::class.java
+        Ticker.tick("handle 1 ${rqClass.simpleName}")
         return getTimerMetric(
             TimerMetricTypes.PERSISTENCE_HANDLER,
             request.context.holdingIdentity,
             rqClass.simpleName
         ).recordCallable {
-            getHandler(rqClass).invoke(request.context, request.request)
+            Ticker.tick("handle 2 ${rqClass.simpleName}")
+            getHandler(rqClass).invoke(request.context, request.request).also {
+                Ticker.tick("handle 3 ${rqClass.simpleName}")
+            }
+        }.also {
+            Ticker.tick("handle 4 ${rqClass.simpleName}")
         }
     }
 }

@@ -4,6 +4,7 @@ import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequest
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
+import net.corda.membership.lib.Ticker
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.publisher.RPCSender
@@ -42,11 +43,20 @@ internal class MembershipPersistenceOperationImpl<T>(
             return Either.Right(MembershipPersistenceResult.Failure(failureReason))
         }
         val requestId = request.context.requestId
-        logger.info("Sending membership persistence RPC request ID: $requestId.")
+        val start = System.currentTimeMillis()
+        logger.info("Sending membership persistence RPC request ID: $requestId type: ${request.request?.javaClass?.simpleName}.")
+        Ticker.start("$requestId: ${request.request?.javaClass?.simpleName}")
         return try {
             val response = sender
                 .sendRequest(request)
                 .getOrThrow(Duration.ofMillis(RPC_TIMEOUT_MS))
+            val done = System.currentTimeMillis()
+            logger.info("QQQ $requestId: " +
+                    "${request.request?.javaClass?.simpleName} -> " +
+                    "${response.payload?.javaClass?.simpleName} - " +
+                    "${(done - start).toDouble()/1000.0}."
+            )
+            Ticker.end(requestId)
             val payload = response.payload
             val context = response.context
             if (context.holdingIdentity != request.context.holdingIdentity) {
@@ -89,6 +99,7 @@ internal class MembershipPersistenceOperationImpl<T>(
                 ),
             )
         } catch (e: TimeoutException) {
+            Ticker.end("$requestId - Timeout!!!")
             Either.Right(
                 MembershipPersistenceResult.Failure(
                     "Timeout waiting for response from membership persistence RPC request ID: $requestId.",

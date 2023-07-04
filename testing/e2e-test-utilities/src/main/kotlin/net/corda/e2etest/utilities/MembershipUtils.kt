@@ -220,6 +220,7 @@ fun ClusterInfo.registerStaticMember(
         assertWithRetry {
             interval(1.seconds)
             command { registerStaticMember(holdingIdentityShortHash, isNotary) }
+            timeout(60.seconds)
             condition {
                 it.code == ResponseCode.OK.statusCode
                         && it.toJson()["registrationStatus"].textValue() == REGISTRATION_SUBMITTED
