@@ -37,6 +37,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
@@ -75,7 +76,7 @@ class  RegistrationProcessorTest {
         const val testTopicKey = "key"
         const val SERIAL = 0L
 
-        val memberContext = KeyValuePairList(listOf(KeyValuePair("key", "value")))
+        val memberContext = KeyValuePairList(listOf(KeyValuePair("key", "value"), KeyValuePair(PLATFORM_VERSION, "50100")))
         val registrationContext = KeyValuePairList(listOf(KeyValuePair("key-2", "value-2")))
         val signature = CryptoSignatureWithKey(
             ByteBuffer.wrap("456".toByteArray()),
@@ -271,8 +272,8 @@ class  RegistrationProcessorTest {
     fun `queue registration command - onNext can be called`() {
         val result = processor.onNext(null, Record(testTopic, testTopicKey, queueRegistrationCommand))
         assertThat(result.updatedState).isNull()
-        assertThat(result.responseEvents).isNotEmpty.hasSize(1)
-        assertThat((result.responseEvents.first().value as? RegistrationCommand)?.command)
+        assertThat(result.responseEvents).isNotEmpty.hasSize(2)
+        assertThat(result.responseEvents.firstNotNullOf { it.value as? RegistrationCommand }.command)
             .isNotNull
             .isInstanceOf(CheckForPendingRegistration::class.java)
     }
@@ -295,7 +296,7 @@ class  RegistrationProcessorTest {
         )
         assertThat(result.updatedState).isNotNull
         val events = result.responseEvents
-        assertThat(events).isNotEmpty.hasSize(3)
+        assertThat(events).isNotEmpty.hasSize(2)
         assertThat(events.firstNotNullOf { it.value as? RegistrationCommand }.command)
             .isNotNull
             .isInstanceOf(VerifyMember::class.java)

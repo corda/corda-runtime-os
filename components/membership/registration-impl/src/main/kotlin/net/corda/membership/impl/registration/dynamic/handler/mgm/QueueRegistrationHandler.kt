@@ -90,24 +90,23 @@ internal class QueueRegistrationHandler(
     private fun queueRequest(
         key: String, command: QueueRegistration, registrationId: String
     ): List<Record<*, *>> {
-        val outputRecords = mutableListOf<Record<*, *>>()
-
         val context = deserialize(command.memberRegistrationRequest.memberContext.data.array())
         val platformVersion = context.items.first { it.key == PLATFORM_VERSION }.value.toInt()
+        // we need to create the status message based on which platform the member is on
         val statusUpdateMessage = VersionedMessageBuilder.retrieveRegistrationStatusMessage(
             platformVersion,
             command.memberRegistrationRequest.registrationId,
             RegistrationStatus.RECEIVED_BY_MGM.name,
         )
-        if (statusUpdateMessage != null) {
-            val record = p2pRecordsFactory.createAuthenticatedMessageRecord(
+        // if we are unable to create the status message, then we won't send anything
+        val statusUpdateRecord = statusUpdateMessage?.let {
+            p2pRecordsFactory.createAuthenticatedMessageRecord(
                 source = command.mgm,
                 destination = command.member,
                 content = statusUpdateMessage,
                 minutesToWait = 5,
                 filter = MembershipStatusFilter.PENDING
             )
-            outputRecords.add(record)
         }
 
         logger.info(
@@ -122,15 +121,15 @@ internal class QueueRegistrationHandler(
             "MGM put registration request for ${command.member.x500Name} from group `${command.member.groupId}` " +
                     "with request ID `$registrationId` into the queue."
         )
-        outputRecords.add(
+
+        return listOfNotNull(
+            statusUpdateRecord,
             Record(
                 REGISTRATION_COMMAND_TOPIC,
                 key,
                 RegistrationCommand(CheckForPendingRegistration(command.mgm, command.member, 0))
             )
         )
-
-        return outputRecords
     }
 
     private fun increaseNumberOfRetries(key: String, command: QueueRegistration) = listOf(
