@@ -9,7 +9,7 @@ class TestServiceInjectionUtxoState(
     val identifier: Int,
     val testField: String,
     private val participants: List<PublicKey>,
-    private val participantNames: List<String>
+    val participantNames: List<String>
 ) : ContractState {
     constructor(
         testField: String,
