@@ -6,6 +6,7 @@ import net.corda.cpi.upload.endpoints.common.CpiUploadRestResourceHandler
 import net.corda.cpi.upload.endpoints.service.CpiUploadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.chunking.UploadStatus
+import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.BadRequestException
@@ -98,6 +99,7 @@ class CpiUploadRestResourceImpl @Activate constructor(
         // i.e. "name version (groupId)"
         when (ex.errorType) {
             ValidationException::class.java.name -> throw BadRequestException(ex.errorMessage, details)
+            ConfigurationValidationException::class.java.name -> throw BadRequestException(ex.errorMessage, details)
             DuplicateCpiUploadException::class.java.name -> throw ResourceAlreadyExistsException(ex.errorMessage)
             else -> throw InternalServerException(ex.toString(), details)
         }

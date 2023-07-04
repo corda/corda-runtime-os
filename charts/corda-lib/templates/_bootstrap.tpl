@@ -515,7 +515,14 @@ a second init container to execute the output SQL to the relevant database
          {{- if and (not (eq .name "rest")) (not (eq .subCommand "create-crypto-config")) -}}
              {{- " '--name'" -}}, 'corda-{{ .longName | default .name }}', 
              {{- " '--jdbc-url'" -}}, 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}{{- if .schema }}?currentSchema={{.schema }}{{- end -}}', 
-             {{- " '--jdbc-pool-max-size'" -}}, {{ (index .Values.bootstrap.db (.dbName | default .name)).dbConnectionPool.maxSize | quote }}, {{- " " -}}
+             {{- " '--jdbc-pool-max-size'" -}}, {{ (index .Values.bootstrap.db (.dbName | default .name)).dbConnectionPool.maxSize | quote }},
+             {{- with (index .Values.bootstrap.db (.dbName | default .name)).dbConnectionPool.minSize -}}
+                {{- " '--jdbc-pool-min-size'" -}}, {{ . | quote }},
+             {{- end -}}
+             {{- " '--idle-timeout'" -}}, {{ (index .Values.bootstrap.db (.dbName | default .name)).dbConnectionPool.idleTimeoutSeconds | quote }},
+             {{- " '--max-lifetime'" -}}, {{ (index .Values.bootstrap.db (.dbName | default .name)).dbConnectionPool.maxLifetimeSeconds | quote }},
+             {{- " '--keepalive-time'" -}}, {{ (index .Values.bootstrap.db (.dbName | default .name)).dbConnectionPool.keepaliveTimeSeconds | quote }},
+             {{- " '--validation-timeout'" -}}, {{ (index .Values.bootstrap.db (.dbName | default .name)).dbConnectionPool.validationTimeoutSeconds | quote }}, {{- " " -}}
          {{- end -}}         
          
          {{- if not (eq .name "rest") -}}

@@ -60,6 +60,9 @@ import java.util.SortedMap
 import java.util.TreeMap
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
 typealias SatisfiedServiceReferences = Map<String, SortedMap<ServiceReference<*>, Any>>
 
@@ -265,6 +268,9 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                     .filterNot(MARKER_INTERFACES::contains)
                     .onEach { serviceType ->
                         serviceIndex.computeIfAbsent(serviceType) { HashSet() }.add(serviceRef)
+                    }.takeIfElse(emptyList()) {
+                        // Services are only "injectable" if this sandbox type supports injection.
+                        sandboxGroupType.hasInjection
                     }.mapNotNullTo(ArrayList()) { serviceType ->
                         if (systemFilter.match(serviceRef)) {
                             // We always load interfaces for system services.
@@ -795,6 +801,14 @@ private fun Bundle.loadMetadataService(serviceClassName: String, isMetadataServi
     } catch (_: ClassNotFoundException) {
     }
     return null
+}
+
+@OptIn(ExperimentalContracts::class)
+private inline fun <T> T.takeIfElse(otherwise: T, predicate: (T) -> Boolean): T {
+    contract {
+        callsInPlace(predicate, InvocationKind.EXACTLY_ONCE)
+    }
+    return if (predicate(this)) this else otherwise
 }
 
 private val ServiceReference<*>.serviceClassNames: Array<String>
