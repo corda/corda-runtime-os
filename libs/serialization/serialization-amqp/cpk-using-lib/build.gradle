@@ -3,7 +3,7 @@ plugins {
 }
 
 ext {
-    platformVersion = 999
+    platformVersion = 50000
 }
 
 cordapp {
