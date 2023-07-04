@@ -32,7 +32,9 @@ class PostgresDbSetup(
     private val dbAdmin: String,
     private val dbAdminPassword: String,
     private val dbName: String,
+    private val createTopics: Boolean,
     smartConfigFactory: SmartConfigFactory
+
 ) : DbSetup {
 
     companion object {
@@ -79,7 +81,9 @@ class PostgresDbSetup(
             populateConfigDb()
             createUserConfig("admin", "admin")
             createDbUsersAndGrants()
-            createTopics()
+            if (createTopics) {
+                createTopics()
+            }
         } else {
             log.info("Table config.config exists in $dbSuperUserUrl, skipping DB initialisation.")
         }

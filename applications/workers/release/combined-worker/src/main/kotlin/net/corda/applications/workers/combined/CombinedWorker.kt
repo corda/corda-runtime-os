@@ -2,6 +2,7 @@ package net.corda.applications.workers.combined
 
 import net.corda.application.dbsetup.PostgresDbSetup
 import net.corda.applications.workers.workercommon.ApplicationBanner
+import net.corda.applications.workers.workercommon.BusType
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.applications.workers.workercommon.PathAndConfig
@@ -29,6 +30,7 @@ import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.processors.verification.VerificationProcessor
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.DatabaseConfig
+import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
 import org.osgi.service.component.annotations.Activate
@@ -137,6 +139,8 @@ class CombinedWorker @Activate constructor(
         // In the future, perhaps we can simply rely on the schema for crypto defaults, and not supply a
         // default passphrase and salt but instead require them to be specified.
 
+        val createTopics = params.defaultParams.messaging[BUS_TYPE] == BusType.DB.name
+
         PostgresDbSetup(
             dbUrl,
             superUser,
@@ -144,7 +148,8 @@ class CombinedWorker @Activate constructor(
             dbAdmin,
             dbAdminPassword,
             dbName,
-            config.factory
+            createTopics,
+            config.factory,
         ).run()
 
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
