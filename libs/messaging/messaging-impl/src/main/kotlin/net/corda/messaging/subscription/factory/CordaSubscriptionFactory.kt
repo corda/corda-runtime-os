@@ -53,8 +53,6 @@ class CordaSubscriptionFactory @Activate constructor(
     private val messagingChunkFactory: MessagingChunkFactory,
 ) : SubscriptionFactory {
 
-    private val redisStateAndEventBuilder: StateAndEventBuilder = RedisStateAndEventBuilder(cordaConsumerBuilder, cordaProducerBuilder)
-
     override fun <K : Any, V : Any> createPubSubSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: PubSubProcessor<K, V>,
@@ -113,27 +111,6 @@ class CordaSubscriptionFactory @Activate constructor(
         )
     }
 
-//    override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
-//        subscriptionConfig: SubscriptionConfig,
-//        processor: StateAndEventProcessor<K, S, E>,
-//        messagingConfig: SmartConfig,
-//        stateAndEventListener: StateAndEventListener<K, S>?
-//    ): StateAndEventSubscription<K, S, E> {
-//        val config = getConfig(SubscriptionType.STATE_AND_EVENT, subscriptionConfig, messagingConfig)
-//        val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
-//        val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
-//        return StateAndEventSubscriptionImpl(
-//            config,
-//            stateAndEventBuilder,
-//            processor,
-//            serializer,
-//            deserializer,
-//            lifecycleCoordinatorFactory,
-//            messagingChunkFactory.createChunkSerializerService(messagingConfig.getLong(MessagingConfig.MAX_ALLOWED_MSG_SIZE)),
-//            stateAndEventListener,
-//        )
-//    }
-
     override fun <K : Any, S : Any, E : Any> createStateAndEventSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
@@ -143,14 +120,36 @@ class CordaSubscriptionFactory @Activate constructor(
         val config = getConfig(SubscriptionType.STATE_AND_EVENT, subscriptionConfig, messagingConfig)
         val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
         val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
-        return StreamingEventSubscription(
+        return StateAndEventSubscriptionImpl(
             config,
-            redisStateAndEventBuilder,
+            stateAndEventBuilder,
             processor,
             serializer,
             deserializer,
             lifecycleCoordinatorFactory,
+            messagingChunkFactory.createChunkSerializerService(messagingConfig.getLong(MessagingConfig.MAX_ALLOWED_MSG_SIZE)),
             stateAndEventListener,
+        )
+    }
+
+    override fun <K : Any, S : Any, E : Any> createPriorityStreamSubscription(
+        subscriptionConfig: SubscriptionConfig,
+        topics: Map<Int, String>,
+        processor: StateAndEventProcessor<K, S, E>,
+        messagingConfig: SmartConfig,
+    ): StateAndEventSubscription<K, S, E> {
+        val config = getConfig(SubscriptionType.STATE_AND_EVENT, subscriptionConfig, messagingConfig)
+        val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
+        val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
+        return PriorityStreamEventSubscription(
+            config,
+            topics,
+            cordaConsumerBuilder,
+            cordaProducerBuilder,
+            processor,
+            serializer,
+            deserializer,
+            lifecycleCoordinatorFactory,
         )
     }
 

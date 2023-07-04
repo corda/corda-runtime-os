@@ -4,23 +4,15 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.helper.getConfig
-import net.corda.lifecycle.Lifecycle
-import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.createCoordinator
+import net.corda.lifecycle.*
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.Schemas.Flow.*
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.session.mapper.service.executor.FlowMapperListener
 import net.corda.session.mapper.service.executor.FlowMapperMessageProcessor
 import net.corda.session.mapper.service.executor.ScheduledTaskState
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -109,16 +101,17 @@ class FlowMapperService @Activate constructor(
                         mutableMapOf()
                     )
                 }
-                val newScheduledTaskState = coordinator.getManagedResource<ScheduledTaskState>(CLEANUP_TASK)!!
-
-                //HARDCODED: Point the process to a custom flow mapper processor deployment
-                val flowMapperTopic = System.getenv("FLOW_MAPPER_TOPIC")
                 coordinator.createManagedResource(SUBSCRIPTION) {
-                    subscriptionFactory.createStateAndEventSubscription(
-                        SubscriptionConfig("$CONSUMER_GROUP-$flowMapperTopic", flowMapperTopic),
+                    subscriptionFactory.createPriorityStreamSubscription(
+                        SubscriptionConfig("$CONSUMER_GROUP-$FLOW_MAPPER_EVENT_TOPIC", FLOW_MAPPER_EVENT_TOPIC),
+                        mapOf(
+                            Pair(1, FLOW_MAPPER_SESSION_IN_EVENT_TOPIC),
+                            Pair(2, FLOW_MAPPER_EVENT_TOPIC),
+                            Pair(3, FLOW_MAPPER_SESSION_OUT_EVENT_TOPIC),
+                            Pair(4, FLOW_MAPPER_START_EVENT_TOPIC),
+                        ),
                         FlowMapperMessageProcessor(flowMapperEventExecutorFactory, flowConfig),
-                        messagingConfig,
-                        FlowMapperListener(newScheduledTaskState)
+                        messagingConfig
                     )
                 }
                 coordinator.getManagedResource<StateAndEventSubscription<*, *, *>>(SUBSCRIPTION)!!.start()

@@ -518,13 +518,18 @@ workers:
     profiling:
       # -- run DB worker with profiling enabled
       enabled: false
-
     # resource limits and requests configuration for the DB worker containers.
     resources:
       # -- the CPU/memory resource requests for the DB worker containers
       requests: {}
       # -- the CPU/memory resource limits for the DB worker containers
       limits: {}
+    service:
+      type: ClusterIP
+      port: 8080
+      externalTrafficPolicy: ""
+      loadBalancerSourceRanges: [ ]
+      annotations: { }
     # DB worker JDBC connection pool configuration for cluster DB
     clusterDbConnectionPool:
       # -- DB worker maximum JDBC connection pool size for cluster DB
@@ -596,13 +601,18 @@ workers:
     profiling:
       # -- run DB worker with profiling enabled
       enabled: false
-
     # resource limits and requests configuration for the DB worker containers.
     resources:
       # -- the CPU/memory resource requests for the DB worker containers
       requests: {}
       # -- the CPU/memory resource limits for the DB worker containers
       limits: {}
+    service:
+      type: ClusterIP
+      port: 8080
+      externalTrafficPolicy: ""
+      loadBalancerSourceRanges: [ ]
+      annotations: { }
     # DB worker JDBC connection pool configuration for cluster DB
     clusterDbConnectionPool:
       # -- DB worker maximum JDBC connection pool size for cluster DB
@@ -674,13 +684,18 @@ workers:
     profiling:
       # -- run DB worker with profiling enabled
       enabled: false
-
     # resource limits and requests configuration for the DB worker containers.
     resources:
       # -- the CPU/memory resource requests for the DB worker containers
       requests: {}
       # -- the CPU/memory resource limits for the DB worker containers
       limits: {}
+    service:
+      type: ClusterIP
+      port: 8080
+      externalTrafficPolicy: ""
+      loadBalancerSourceRanges: [ ]
+      annotations: { }
     # DB worker JDBC connection pool configuration for cluster DB
     clusterDbConnectionPool:
       # -- DB worker maximum JDBC connection pool size for cluster DB
@@ -725,16 +740,12 @@ workers:
       # -- flow worker image tag, defaults to image.tag
       tag: ""
     envs:
-      - name: "FLOW_MAPPER_TOPIC"
-        value: "flow.mapper.event"
-      - name: "FLOW_PROCESSOR_TOPIC"
-        value: "flow.event"
       - name: "ENABLE_FLOW_PROCESS"
         value: "TRUE"
       - name: "ENABLE_VERIFICATION_PROCESS"
         value: "FALSE"
       - name: "ENABLE_MAPPER_PROCESS"
-        value: "TRUE"
+        value: "FALSE"
     # -- flow worker replica count
     replicaCount: 1
     # -- flow worker extra annotations
@@ -793,87 +804,8 @@ workers:
               # -- the flow worker SASL password secret key for client connection to Kafka
               key: ""
 
-  # flow start worker configuration
-  flow_start:
-    # flow worker image configuration
-    image:
-      # -- flow worker image registry, defaults to image.registry
-      registry: ""
-      # -- flow worker image repository
-      repository: "corda-os-flow-worker"
-      # -- flow worker image tag, defaults to image.tag
-      tag: ""
-    envs:
-      - name: "FLOW_MAPPER_TOPIC"
-        value: "flow.mapper.start.event"
-      - name: "FLOW_PROCESSOR_TOPIC"
-        value: "flow.start"
-      - name: "ENABLE_FLOW_PROCESS"
-        value: "TRUE"
-      - name: "ENABLE_VERIFICATION_PROCESS"
-        value: "FALSE"
-      - name: "ENABLE_MAPPER_PROCESS"
-        value: "TRUE"
-    # -- flow worker replica count
-    replicaCount: 1
-    # -- flow worker extra annotations
-    annotations: {}
-    # -- additional Java options for the flow worker
-    javaOptions: "-XX:MaxRAMPercentage=75"
-    # flow worker debug configuration
-    debug:
-      # -- run flow worker with debug enabled
-      enabled: false
-      # -- if debug is enabled, suspend the flow worker until the debugger is attached
-      suspend: false
-    # logging configuration
-    logging:
-      # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: null
-      # -- additional Log4j 2 XML configuration
-      override: ""
-    profiling:
-      # -- run flow worker with profiling enabled
-      enabled: false
-    # resource limits and requests configuration for the flow worker containers.
-    resources:
-      # -- the CPU/memory resource requests for the flow worker containers
-      requests: {}
-      # -- the CPU/memory resource limits for the flow worker containers
-      limits: {}
-    # -- run flow worker with Quasar's verifyInstrumentation enabled
-    verifyInstrumentation: false
-    # flow worker Kafka configuration
-    kafka:
-      # if kafka.sasl.enabled, the credentials to connect to Kafka with for the flow worker
-      sasl:
-        # flow worker SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
-        username:
-          # -- the flow worker SASL username for client connection to Kafka
-          value: ""
-          # the boostrap SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
-          valueFrom:
-            # the flow worker SASL username secret key reference for client connection to Kafka
-            secretKeyRef:
-              # -- the flow worker SASL username secret name for client connection to Kafka
-              name: ""
-              # -- the flow worker SASL username secret key for client connection to Kafka
-              key: ""
-        # flow worker SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
-        password:
-          # -- the flow worker SASL password for client connection to Kafka
-          value: ""
-          # the flow worker SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
-          valueFrom:
-            # the flow worker SASL password secret key reference for client connection to Kafka
-            secretKeyRef:
-              # -- the flow worker SASL password secret name for client connection to Kafka
-              name: ""
-              # -- the flow worker SASL password secret key for client connection to Kafka
-              key: ""
-
   # flow session worker configuration
-  flow_session_in:
+  flow_mapper:
     # flow worker image configuration
     image:
       # -- flow worker image registry, defaults to image.registry
@@ -883,89 +815,6 @@ workers:
       # -- flow worker image tag, defaults to image.tag
       tag: ""
     envs:
-      - name: "FLOW_MAPPER_TOPIC"
-        value: "flow.mapper.session.in.event"
-      - name: "FLOW_PROCESSOR_TOPIC"
-        value: "flow.session"
-      - name: "ENABLE_FLOW_PROCESS"
-        value: "TRUE"
-      - name: "ENABLE_VERIFICATION_PROCESS"
-        value: "FALSE"
-      - name: "ENABLE_MAPPER_PROCESS"
-        value: "TRUE"
-    # -- flow worker replica count
-    replicaCount: 1
-    # -- flow worker extra annotations
-    annotations: {}
-    # -- additional Java options for the flow worker
-    javaOptions: "-XX:MaxRAMPercentage=75"
-    # flow worker debug configuration
-    debug:
-      # -- run flow worker with debug enabled
-      enabled: false
-      # -- if debug is enabled, suspend the flow worker until the debugger is attached
-      suspend: false
-    # logging configuration
-    logging:
-      # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: null
-      # -- additional Log4j 2 XML configuration
-      override: ""
-    profiling:
-      # -- run flow worker with profiling enabled
-      enabled: false
-    # resource limits and requests configuration for the flow worker containers.
-    resources:
-      # -- the CPU/memory resource requests for the flow worker containers
-      requests: {}
-      # -- the CPU/memory resource limits for the flow worker containers
-      limits: {}
-    # -- run flow worker with Quasar's verifyInstrumentation enabled
-    verifyInstrumentation: false
-    # flow worker Kafka configuration
-    kafka:
-      # if kafka.sasl.enabled, the credentials to connect to Kafka with for the flow worker
-      sasl:
-        # flow worker SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
-        username:
-          # -- the flow worker SASL username for client connection to Kafka
-          value: ""
-          # the boostrap SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
-          valueFrom:
-            # the flow worker SASL username secret key reference for client connection to Kafka
-            secretKeyRef:
-              # -- the flow worker SASL username secret name for client connection to Kafka
-              name: ""
-              # -- the flow worker SASL username secret key for client connection to Kafka
-              key: ""
-        # flow worker SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
-        password:
-          # -- the flow worker SASL password for client connection to Kafka
-          value: ""
-          # the flow worker SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
-          valueFrom:
-            # the flow worker SASL password secret key reference for client connection to Kafka
-            secretKeyRef:
-              # -- the flow worker SASL password secret name for client connection to Kafka
-              name: ""
-              # -- the flow worker SASL password secret key for client connection to Kafka
-              key: ""
-
-  # flow session worker configuration
-  flow_session_out:
-    # flow worker image configuration
-    image:
-      # -- flow worker image registry, defaults to image.registry
-      registry: ""
-      # -- flow worker image repository
-      repository: "corda-os-flow-worker"
-      # -- flow worker image tag, defaults to image.tag
-      tag: ""
-    envs:
-      - name: "FLOW_MAPPER_TOPIC"
-        value: "flow.mapper.session.out.event"
-      - name: "FLOW_PROCESSOR_TOPIC"
-        value: "flow.event"
       - name: "ENABLE_FLOW_PROCESS"
         value: "FALSE"
       - name: "ENABLE_VERIFICATION_PROCESS"
@@ -1041,10 +890,6 @@ workers:
       # -- flow worker image tag, defaults to image.tag
       tag: ""
     envs:
-      - name: "FLOW_MAPPER_TOPIC"
-        value: "flow.mapper.event"
-      - name: "FLOW_PROCESSOR_TOPIC"
-        value: "flow.event"
       - name: "ENABLE_FLOW_PROCESS"
         value: "FALSE"
       - name: "ENABLE_VERIFICATION_PROCESS"
@@ -1078,6 +923,12 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the flow worker containers
       limits: {}
+    service:
+      type: ClusterIP
+      port: 8080
+      externalTrafficPolicy: ""
+      loadBalancerSourceRanges: [ ]
+      annotations: { }
     # -- run flow worker with Quasar's verifyInstrumentation enabled
     verifyInstrumentation: false
     # flow worker Kafka configuration
@@ -1119,11 +970,6 @@ workers:
       repository: "corda-os-member-worker"
       # -- membership worker image tag, defaults to image.tag
       tag: ""
-    envs:
-      - name: "FLOW_MAPPER_TOPIC"
-        value: "flow.mapper.event"
-      - name: "FLOW_PROCESSOR_TOPIC"
-        value: "flow.event"
     # -- membership worker replica count
     replicaCount: 1
     # -- membership worker extra annotations
@@ -1190,11 +1036,6 @@ workers:
       repository: "corda-os-rest-worker"
       # -- REST worker image tag, defaults to image.tag
       tag: ""
-    envs:
-      - name: "FLOW_MAPPER_TOPIC"
-        value: "flow.mapper.start.event"
-      - name: "FLOW_PROCESSOR_TOPIC"
-        value: "flow.start"
     # -- REST worker replica count
     replicaCount: 1
     # -- REST worker extra annotations
@@ -1301,11 +1142,6 @@ workers:
       repository: "corda-os-p2p-link-manager-worker"
       # -- P2P link manager worker image tag, defaults to image.tag
       tag: ""
-    envs:
-      - name: "FLOW_MAPPER_TOPIC"
-        value: "flow.mapper.session.in.event"
-      - name: "FLOW_PROCESSOR_TOPIC"
-        value: "flow.session"
     # -- P2P link manager worker replica count
     replicaCount: 1
     # -- P2P link manager worker extra annotations
@@ -1372,11 +1208,6 @@ workers:
       repository: "corda-os-p2p-gateway-worker"
       # -- p2p-gateway worker image tag, defaults to image.tag
       tag: ""
-    envs:
-      - name: "FLOW_MAPPER_TOPIC"
-        value: "flow.mapper.session.in.event"
-      - name: "FLOW_PROCESSOR_TOPIC"
-        value: "flow.session"
     # -- P2P gateway worker replica count
     replicaCount: 1
     # -- P2P gateway worker extra annotations

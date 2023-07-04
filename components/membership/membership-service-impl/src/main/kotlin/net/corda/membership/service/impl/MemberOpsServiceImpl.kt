@@ -229,14 +229,16 @@ class MemberOpsServiceImpl @Activate constructor(
             ).also {
                 it.start()
             }
-            val retrySubscription = subscriptionFactory.createStateAndEventSubscription(
+            val retrySubscription = subscriptionFactory.createPriorityStreamSubscription(
                 SubscriptionConfig(
                     ASYNC_RETRIES_GROUP_NAME,
                     MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC,
                 ),
+                mapOf(
+                    Pair(1, MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC)
+                ),
                 retryManager,
-                messagingConfig,
-                retryManager,
+                messagingConfig
             ).also {
                 it.start()
             }

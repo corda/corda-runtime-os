@@ -16,6 +16,7 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
@@ -45,8 +46,11 @@ class TokenCacheSubscriptionHandlerImpl constructor(
             subscriptionRegistrationHandle?.close()
             subscription?.close()
 
-            subscription = subscriptionFactory.createStateAndEventSubscription(
-                SubscriptionConfig(CONSUMER_GROUP, Schemas.Services.TOKEN_CACHE_EVENT),
+            subscription = subscriptionFactory.createPriorityStreamSubscription(
+                SubscriptionConfig(CONSUMER_GROUP, TOKEN_CACHE_EVENT),
+                mapOf(
+                    Pair(1, TOKEN_CACHE_EVENT)
+                ),
                 tokenCacheEventProcessorFactory.create(),
                 messagingConfig
             )

@@ -217,16 +217,18 @@ class MembershipPersistenceServiceImpl @Activate constructor(
                 messagingConfig = messagingConfig,
                 clock = clock,
             )
-        val secondSubscription = subscriptionFactory.createStateAndEventSubscription(
+        val secondSubscription = subscriptionFactory.createPriorityStreamSubscription(
             subscriptionConfig = SubscriptionConfig(
                 groupName = ASYNC_GROUP_NAME,
                 eventTopic = MEMBERSHIP_DB_ASYNC_TOPIC,
             ),
+            mapOf(
+                Pair(1, MEMBERSHIP_DB_ASYNC_TOPIC)
+            ),
             processor = MembershipPersistenceAsyncProcessor(
                 handlers
             ),
-            messagingConfig = messagingConfig,
-            stateAndEventListener = retryManager
+            messagingConfig = messagingConfig
         ).also {
             it.start()
         }

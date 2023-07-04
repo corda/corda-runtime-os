@@ -10,6 +10,7 @@ import net.corda.lifecycle.*
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.Schemas.Flow.*
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
@@ -60,10 +61,7 @@ class FlowExecutorImpl constructor(
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
             if (System.getenv("ENABLE_FLOW_PROCESS").equals("TRUE", true)) {
-//            val topic = config.getConfig(BOOT_CONFIG).getInputTopic(CONSUMER_GROUP, FLOW_EVENT_TOPIC)
-                //HARDCODED: Point the process to a custom flow processor deployment
-                val flowProcessorTopic = System.getenv("FLOW_PROCESSOR_TOPIC")
-                val consumerGroup = "$CONSUMER_GROUP-$flowProcessorTopic"
+                val consumerGroup = "$CONSUMER_GROUP-$FLOW_EVENT_TOPIC"
                 val messagingConfig = toMessagingConfig(config)
                 val flowConfig = config.getConfig(FLOW_CONFIG)
                     .withValue(
@@ -79,12 +77,15 @@ class FlowExecutorImpl constructor(
                 subscriptionRegistrationHandle?.close()
                 subscription?.close()
 
-                subscription = subscriptionFactory.createStateAndEventSubscription(
-                    //NOTE: To consume from flow event topic
-                    SubscriptionConfig(consumerGroup, flowProcessorTopic),
+                subscription = subscriptionFactory.createPriorityStreamSubscription(
+                    SubscriptionConfig(consumerGroup, FLOW_EVENT_TOPIC),
+                    mapOf(
+                        Pair(1, FLOW_SESSION_TOPIC),
+                        Pair(2, FLOW_EVENT_TOPIC),
+                        Pair(3, FLOW_START_TOPIC),
+                    ),
                     flowEventProcessorFactory.create(flowConfig),
-                    messagingConfig,
-                    flowExecutorRebalanceListener
+                    messagingConfig
                 )
 
                 subscriptionRegistrationHandle = coordinator.followStatusChangesByName(

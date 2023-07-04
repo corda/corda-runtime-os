@@ -82,7 +82,7 @@ class RestSubscriptionImpl<V: Any>(
     private fun lifecycleHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
-                javalin.get(config.topic, ::process)
+                javalin.get("/", ::process)
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {

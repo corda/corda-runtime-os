@@ -104,6 +104,15 @@ class InMemSubscriptionFactory @Activate constructor(
         )
     }
 
+    override fun <K : Any, S : Any, E : Any> createPriorityStreamSubscription(
+        subscriptionConfig: SubscriptionConfig,
+        topics: Map<Int, String>,
+        processor: StateAndEventProcessor<K, S, E>,
+        messagingConfig: SmartConfig
+    ): StateAndEventSubscription<K, S, E> {
+        TODO("Not yet implemented")
+    }
+
     override fun <K : Any, V : Any> createEventLogSubscription(
         subscriptionConfig: SubscriptionConfig,
         processor: EventLogProcessor<K, V>,
@@ -132,5 +141,14 @@ class InMemSubscriptionFactory @Activate constructor(
             lifecycleCoordinatorFactory,
             UUID.randomUUID().toString()
         )
+    }
+
+    override fun <V : Any> createRestSubscription(
+        subscriptionConfig: SubscriptionConfig,
+        processor: DurableProcessor<String, V>,
+        messagingConfig: SmartConfig,
+        partitionAssignmentListener: PartitionAssignmentListener?
+    ): Subscription<String, V> {
+        TODO("Not yet implemented")
     }
 }

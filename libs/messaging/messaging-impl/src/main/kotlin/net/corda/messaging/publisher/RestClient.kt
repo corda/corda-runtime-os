@@ -9,7 +9,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
-import net.corda.data.flow.event.FlowEvent
 import net.corda.messaging.api.records.Record
 import org.slf4j.LoggerFactory
 
@@ -31,7 +30,7 @@ class RestClient<R : Any>(
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun publish(records: List<Record<String, *>>): List<Record<String, R>> {
+    fun publish(records: List<Record<*, *>>): List<Record<*, R>> {
         logger.info("Making a REST request to $endpoint, record topic ${records.first().topic}")
         return runBlocking {
             records.map { record ->

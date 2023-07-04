@@ -114,6 +114,13 @@ interface SubscriptionFactory {
         stateAndEventListener: StateAndEventListener<K, S>? = null
     ): StateAndEventSubscription<K, S, E>
 
+    fun <K : Any, S : Any, E : Any> createPriorityStreamSubscription(
+        subscriptionConfig: SubscriptionConfig,
+        topics: Map<Int, String>,
+        processor: StateAndEventProcessor<K, S, E>,
+        messagingConfig: SmartConfig,
+    ): StateAndEventSubscription<K, S, E>
+
     /**
      * Creates an event log subscription.
      * @param processor the processor that will be wired up with the created subscription.

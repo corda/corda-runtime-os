@@ -2,18 +2,19 @@
   ( dict "clusterDbAccess" true "additionalWorkerArgs" ( list "--hsm-id=SOFT" ) "httpPort" 8080 )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.db "db"
-  ( dict "clusterDbAccess" true )
+  ( dict "clusterDbAccess" true "httpPort" 8080 )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.db_persistence "db_persistence"
-  ( dict "clusterDbAccess" true )
+  ( dict "clusterDbAccess" true "httpPort" 8080 )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.db_uniqueness "db_uniqueness"
-  ( dict "clusterDbAccess" true )
+  ( dict "clusterDbAccess" true "httpPort" 8080 )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.flow "flow" ) }}
-{{- include "corda.worker" ( list $ .Values.workers.flow_start "flow_start" ) }}
-{{- include "corda.worker" ( list $ .Values.workers.flow_session "flow_session" ) }}
-{{- include "corda.worker" ( list $ .Values.workers.flow_verification "flow_verification" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.flow_mapper "flow_mapper" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.flow_verification "flow_verification"
+  ( dict "httpPort" 8080 )
+) }}
 {{- include "corda.worker" ( list $ .Values.workers.membership "membership" ) }}
 {{- include "corda.worker" ( list $ .Values.workers.p2pGateway "p2pGateway"
   ( dict "httpPort" 8080 )

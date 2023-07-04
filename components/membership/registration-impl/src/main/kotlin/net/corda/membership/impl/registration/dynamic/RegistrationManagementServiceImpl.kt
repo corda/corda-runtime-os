@@ -149,10 +149,13 @@ class RegistrationManagementServiceImpl @Activate constructor(
                 subRegistration?.close()
                 subRegistration = null
                 subscription?.close()
-                subscription = subscriptionFactory.createStateAndEventSubscription(
+                subscription = subscriptionFactory.createPriorityStreamSubscription(
                     SubscriptionConfig(
                         CONSUMER_GROUP,
                         REGISTRATION_COMMAND_TOPIC
+                    ),
+                    mapOf(
+                        Pair(1, REGISTRATION_COMMAND_TOPIC)
                     ),
                     RegistrationProcessor(
                         clock,
