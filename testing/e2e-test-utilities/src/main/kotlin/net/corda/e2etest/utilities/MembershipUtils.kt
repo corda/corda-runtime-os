@@ -87,6 +87,28 @@ fun ClusterInfo.onboardMember(
 }
 
 /**
+ * Register a member who has registered previously using the [NetworkOnboardingMetadata] from the previous registration
+ * for the cluster connection details and for the member identifier.
+ */
+fun NetworkOnboardingMetadata.reregisterMember(
+    contextToMerge: Map<String, String?> = emptyMap(),
+    waitForApproval: Boolean = true
+): NetworkOnboardingMetadata {
+    val newContext = registrationContext.toMutableMap()
+    contextToMerge.forEach {
+        if (it.value == null) {
+            newContext.remove(it.key)
+        } else {
+            newContext[it.key] = it.value!!
+        }
+    }
+    return copy(
+        registrationContext = newContext,
+        registrationId = clusterInfo.register(holdingId, newContext, waitForApproval)
+    )
+}
+
+/**
  * Onboard a member to be a notary. This performs the same logic as when onboarding a standard member, but also creates
  * the additional notary specific context.
  */
