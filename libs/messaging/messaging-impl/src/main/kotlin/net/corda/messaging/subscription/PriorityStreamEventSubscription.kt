@@ -29,7 +29,11 @@ import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toRecord
 import net.corda.metrics.CordaMetrics
-import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC
+import net.corda.schema.Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC
+import net.corda.schema.Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC
+import net.corda.schema.Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC
+import net.corda.schema.Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC
 import net.corda.utilities.debug
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig
 import org.slf4j.LoggerFactory
@@ -116,11 +120,11 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
         .build()
 
     private val topicToRestClient = mapOf(
-        Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC to RestClient<FlowEvent>("http://corda-crypto-worker:8080/${Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC}", cordaAvroSerializer, cordaAvroDeserializer),
-        Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC to RestClient("http://corda_db_persistence_worker:8080/${Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC}", cordaAvroSerializer, cordaAvroDeserializer),
-        Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC to RestClient("http://corda_db_worker:8080/${Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC}", cordaAvroSerializer, cordaAvroDeserializer),
-        Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC to RestClient("http://corda_db_uniqueness_worker:8080/${Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC}", cordaAvroSerializer, cordaAvroDeserializer),
-        Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC to RestClient("http://corda_flow_verification_worker:8080/${Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC}", cordaAvroSerializer, cordaAvroDeserializer)
+        FLOW_OPS_MESSAGE_TOPIC to RestClient<FlowEvent>("http://corda-crypto-worker:8080", cordaAvroSerializer, cordaAvroDeserializer),
+        PERSISTENCE_LEDGER_PROCESSOR_TOPIC to RestClient("http://corda-db-persistence-worker:8080", cordaAvroSerializer, cordaAvroDeserializer),
+        PERSISTENCE_ENTITY_PROCESSOR_TOPIC to RestClient("http://corda-db-worker:8080", cordaAvroSerializer, cordaAvroDeserializer),
+        UNIQUENESS_CHECK_TOPIC to RestClient("http://corda-db-uniqueness-worker:8080", cordaAvroSerializer, cordaAvroDeserializer),
+        VERIFICATION_LEDGER_PROCESSOR_TOPIC to RestClient("http://corda-flow-verification-worker:8080", cordaAvroSerializer, cordaAvroDeserializer)
     )
 
     override val subscriptionName: LifecycleCoordinatorName
