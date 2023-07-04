@@ -61,20 +61,20 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                             eventKey,
                             flowMapperEventPayload,
                             state,
-                            instant,
                             flowConfig,
-                            recordFactory
-                        )
+                            recordFactory,
+                            instant
+                            )
                     }
                     else -> {
                         SessionEventExecutor(
                             eventKey,
                             flowMapperEventPayload,
                             state,
-                            instant,
                             flowConfig,
-                            recordFactory
-                        )
+                            recordFactory,
+                            instant
+                            )
                     }
                 }
             }

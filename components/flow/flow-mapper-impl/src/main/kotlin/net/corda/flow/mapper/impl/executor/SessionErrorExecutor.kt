@@ -20,9 +20,9 @@ class SessionErrorExecutor(
     private val eventKey: String,
     private val sessionEvent: SessionEvent,
     private val flowMapperState: FlowMapperState?,
-    private val instant: Instant,
     private val flowConfig: SmartConfig,
-    private val recordFactory: RecordFactory
+    private val recordFactory: RecordFactory,
+    private val instant: Instant
 ) : FlowMapperEventExecutor {
 
     private companion object {
