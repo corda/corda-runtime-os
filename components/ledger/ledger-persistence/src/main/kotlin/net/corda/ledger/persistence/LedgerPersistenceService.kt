@@ -66,6 +66,7 @@ class LedgerPersistenceService @Activate constructor(
             is StartEvent -> {
                 logger.debug { "Starting ledger persistence component." }
             }
+
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
                     configHandle?.close()
@@ -77,16 +78,20 @@ class LedgerPersistenceService @Activate constructor(
                     coordinator.updateStatus(event.status)
                 }
             }
+
             is ConfigChangedEvent -> {
-                ledgerProcessorSubscription?.close()
-                val newLedgerProcessorSubscription = persistenceRequestSubscriptionFactory.create(
-                    event.config.getConfig(MESSAGING_CONFIG)
-                )
-                logger.debug("Starting LedgerPersistenceService.")
-                newLedgerProcessorSubscription.start()
-                ledgerProcessorSubscription = newLedgerProcessorSubscription
+                if (System.getenv("ENABLE_LEDGER_PERSISTENCE_PROCESS")!!.equals("TRUE", true)) {
+                    ledgerProcessorSubscription?.close()
+                    val newLedgerProcessorSubscription = persistenceRequestSubscriptionFactory.create(
+                        event.config.getConfig(MESSAGING_CONFIG)
+                    )
+                    logger.debug("Starting LedgerPersistenceService.")
+                    newLedgerProcessorSubscription.start()
+                    ledgerProcessorSubscription = newLedgerProcessorSubscription
+                }
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
+
             is StopEvent -> {
                 ledgerProcessorSubscription?.close()
                 logger.debug { "Stopping LedgerPersistenceService." }

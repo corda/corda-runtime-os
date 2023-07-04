@@ -66,9 +66,6 @@ class EntityMessageProcessor(
     override fun onNext(events: List<Record<String, EntityRequest>>): List<Record<*, *>> {
         logger.debug { "onNext processing messages ${events.joinToString(",") { it.key }}" }
 
-        //        val topic = config.getOutputTopic(BootConfig.DB_OUTPUT, FLOW_EVENT_TOPIC)
-        //HARDCODED: Point the process to a custom flow processor deployment
-        val flowProcessorTopic = System.getenv("FLOW_PROCESSOR_TOPIC")
         return events.mapNotNull { event ->
             val request = event.value
             if (request == null) {
@@ -86,8 +83,6 @@ class EntityMessageProcessor(
                     processEvent(request)
                 }
             }
-        }.map {
-            Record(flowProcessorTopic, it.key, it.value, it.timestamp, it.headers)
         }
     }
 

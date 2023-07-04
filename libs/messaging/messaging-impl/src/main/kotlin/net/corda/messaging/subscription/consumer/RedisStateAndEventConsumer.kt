@@ -56,8 +56,8 @@ internal class RedisStateAndEventConsumer<K : Any, S : Any, E : Any>(
     private val hostAndPort = HostAndPort("orr-memory-db.8b332u.clustercfg.memorydb.eu-west-2.amazonaws.com", 6379).also {
         log.warn("Connecting to host ${it.host}, port ${it.port}")
     }
-//    private val jedisCluster = JedisCluster(Collections.singleton(hostAndPort), 5000, 5000, 2, null, null, GenericObjectPoolConfig(), false)
-    private val jedisCluster = Jedis("localhost", hostAndPort.port, false)
+    private val jedisCluster = JedisCluster(Collections.singleton(hostAndPort), 5000, 5000, 2, null, null, GenericObjectPoolConfig(), false)
+//    private val jedisCluster = Jedis("localhost", hostAndPort.port, false)
     private val maxPollInterval = config.processorTimeout.toMillis()
     private val initialProcessorTimeout = maxPollInterval / 4
     private var pollIntervalCutoff = 0L
@@ -142,21 +142,25 @@ internal class RedisStateAndEventConsumer<K : Any, S : Any, E : Any>(
         return future
     }
 
+    override fun updateInMemoryStatePostCommit(key: K, state: S?, clock: Clock) {
+        val keyBytes = avroSerializer.serialize(key)
+        if (state != null) {
+            val stateBytes = avroSerializer.serialize(state)
+            jedisCluster.set(keyBytes, stateBytes)
+            releaseLock(keyBytes!!)
+        }
+        else {
+            jedisCluster.del(keyBytes)
+            deleteLock(keyBytes!!)
+        }
+    }
+
     override fun updateInMemoryStatePostCommit(updatedStates: MutableMap<Int, MutableMap<K, S?>>, clock: Clock) {
         updatedStates.forEach { (_, states) ->
             for (entry in states) {
                 val key = entry.key
                 val value = entry.value
-                val keyBytes = avroSerializer.serialize(key)
-                if (value != null) {
-                    val stateBytes = avroSerializer.serialize(value)
-                    jedisCluster.set(keyBytes, stateBytes)
-                    releaseLock(keyBytes!!)
-                }
-                else {
-                    jedisCluster.del(keyBytes)
-                    deleteLock(keyBytes!!)
-                }
+                updateInMemoryStatePostCommit(key, value, clock)
             }
         }
     }

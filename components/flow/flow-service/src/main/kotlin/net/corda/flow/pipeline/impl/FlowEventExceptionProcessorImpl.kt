@@ -246,7 +246,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         return sessionsToCleanup
             .onEach { it.hasScheduledCleanup = true }
             .map {
-                flowRecordFactory.createFlowMapperEventRecord(
+                flowRecordFactory.createFlowMapperCleanupRecord(
                     it.sessionId,
                     ScheduleCleanup(expiryTime)
                 )

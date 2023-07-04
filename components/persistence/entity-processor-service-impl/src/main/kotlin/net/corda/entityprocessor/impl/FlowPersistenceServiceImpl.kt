@@ -64,6 +64,7 @@ class FlowPersistenceServiceImpl  @Activate constructor(
             is StartEvent -> {
                 logger.debug { "Starting flow persistence component." }
             }
+
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
                     configHandle = configurationReadService.registerComponentForUpdates(
@@ -74,16 +75,20 @@ class FlowPersistenceServiceImpl  @Activate constructor(
                     configHandle?.close()
                 }
             }
+
             is ConfigChangedEvent -> {
-                entityProcessor?.stop()
-                val newEntityProcessor = entityProcessorFactory.create(
-                    event.config.getConfig(MESSAGING_CONFIG)
-                )
-                logger.debug("Starting EntityProcessor.")
-                newEntityProcessor.start()
-                entityProcessor = newEntityProcessor
+                if (System.getenv("ENABLE_DB_PROCESS")!!.equals("TRUE", true)) {
+                    entityProcessor?.stop()
+                    val newEntityProcessor = entityProcessorFactory.create(
+                        event.config.getConfig(MESSAGING_CONFIG)
+                    )
+                    logger.debug("Starting EntityProcessor.")
+                    newEntityProcessor.start()
+                    entityProcessor = newEntityProcessor
+                }
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
+
             is StopEvent -> {
                 entityProcessor?.stop()
                 logger.debug { "Stopping EntityProcessor." }

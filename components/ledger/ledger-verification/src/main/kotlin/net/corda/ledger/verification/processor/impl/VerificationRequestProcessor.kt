@@ -45,9 +45,6 @@ class VerificationRequestProcessor(
     override fun onNext(events: List<Record<String, TransactionVerificationRequest>>): List<Record<*, *>> {
         log.trace { "onNext processing messages ${events.joinToString(",") { it.key }}" }
 
-        //        val topic = config.getOutputTopic(BootConfig.VERIFICATION_OUTPUT, FLOW_EVENT_TOPIC)
-        //HARDCODED: Point the process to a custom flow processor deployment
-        val flowProcessorTopic = System.getenv("FLOW_PROCESSOR_TOPIC")
         return events
             .filterNot { it.value == null }
             .map { event ->
@@ -82,8 +79,6 @@ class VerificationRequestProcessor(
                         }
                     }
                 }
-            }.map {
-                Record(flowProcessorTopic, it.key, it.value, it.timestamp, it.headers)
             }
     }
 

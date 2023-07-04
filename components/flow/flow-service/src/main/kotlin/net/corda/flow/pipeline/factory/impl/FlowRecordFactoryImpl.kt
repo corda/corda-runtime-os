@@ -6,8 +6,7 @@ import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
-import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
+import net.corda.schema.Schemas.Flow.*
 import org.osgi.service.component.annotations.Component
 
 @Component(service = [FlowRecordFactory::class])
@@ -30,19 +29,16 @@ class FlowRecordFactoryImpl : FlowRecordFactory {
     }
 
     override fun createFlowMapperEventRecord(key: String, payload: Any): Record<*, FlowMapperEvent> {
-        //HARDCODED: Point the process to a custom flow mapper processor deployment
-        val flowMapperTopic = "flow.mapper.event"
         return Record(
-            topic = flowMapperTopic,
+            topic = FLOW_MAPPER_SESSION_OUT_EVENT_TOPIC,
             key = key,
             value = FlowMapperEvent(payload)
         )
     }
 
     override fun createFlowMapperCleanupRecord(key: String, payload: Any): Record<*, FlowMapperEvent> {
-        val flowMapperTopic = System.getenv("FLOW_MAPPER_CLEANUP_TOPIC")
         return Record(
-            topic = flowMapperTopic,
+            topic = FLOW_MAPPER_EVENT_TOPIC,
             key = key,
             value = FlowMapperEvent(payload)
         )

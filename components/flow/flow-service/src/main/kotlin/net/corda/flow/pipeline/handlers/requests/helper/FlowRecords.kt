@@ -24,7 +24,7 @@ fun getRecords(
         val flowCleanupTime = context.config.getLong(FlowConfig.PROCESSING_FLOW_CLEANUP_TIME)
         val expiryTime = Instant.now().plusMillis(flowCleanupTime).toEpochMilli()
         listOf(
-            flowRecordFactory.createFlowStatusRecord(status), flowRecordFactory.createFlowMapperEventRecord(
+            flowRecordFactory.createFlowStatusRecord(status), flowRecordFactory.createFlowMapperCleanupRecord(
                 checkpoint.flowKey.toString(), ScheduleCleanup(expiryTime)
             )
         )

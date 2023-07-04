@@ -10,6 +10,7 @@ import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_IN_EVENT_TOPIC
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_SUBSYSTEM
 import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
 import net.corda.tracing.traceEventProcessingNullableSingle
@@ -67,13 +68,11 @@ class FlowP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializati
         val sessionEvent = cordaAvroDeserializer.deserialize(payload.array())
         logger.debug { "Processing message from p2p.in with subsystem $FLOW_SESSION_SUBSYSTEM. Key: $key, Event: $sessionEvent" }
 
-        //HARDCODED: Point the process to a custom flow mapper processor deployment
-        val flowMapperTopic = System.getenv("FLOW_MAPPER_TOPIC")
         return if (sessionEvent != null) {
             sessionEvent.messageDirection = MessageDirection.INBOUND
             val sessionId = toggleSessionId(key)
             sessionEvent.sessionId = sessionId
-            Record(flowMapperTopic, sessionId, FlowMapperEvent(sessionEvent))
+            Record(FLOW_MAPPER_SESSION_IN_EVENT_TOPIC, sessionId, FlowMapperEvent(sessionEvent))
         } else {
             null
         }

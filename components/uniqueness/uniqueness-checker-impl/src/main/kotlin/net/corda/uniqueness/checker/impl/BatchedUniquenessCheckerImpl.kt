@@ -502,9 +502,11 @@ class BatchedUniquenessCheckerImpl(
                 configurationReadService.start()
                 dependentComponents.registerAndStartAll(coordinator)
             }
+
             is StopEvent -> {
                 dependentComponents.stopAll()
             }
+
             is RegistrationStatusChangeEvent -> {
                 log.info("Uniqueness checker is ${event.status}")
 
@@ -521,10 +523,16 @@ class BatchedUniquenessCheckerImpl(
 
                 coordinator.updateStatus(event.status)
             }
+
             is ConfigChangedEvent -> {
-                log.info("Received configuration change event, (re)initialising subscription")
-                initialiseSubscription(event.config.getConfig(MESSAGING_CONFIG))
+                if (System.getenv("ENABLE_UNIQUENESS_PROCESS")!!.equals("TRUE", true)) {
+                    log.info("Received configuration change event, (re)initialising subscription")
+                    initialiseSubscription(event.config.getConfig(MESSAGING_CONFIG))
+                } else {
+                    coordinator.updateStatus(LifecycleStatus.UP)
+                }
             }
+
             else -> {
                 log.warn("Unexpected event ${event}, ignoring")
             }
