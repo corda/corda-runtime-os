@@ -237,7 +237,9 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     val event = eventsToProcess.removeFirst()
                     stateAndEventConsumer.resetPollInterval()
                     val newEventsToProcess = processEvent(event, outputRecords, updatedStates)
-                    eventsToProcess.addAll(newEventsToProcess.map {CordaConsumerRecord(it.topic, event.partition, event.offset, it.key, it.value, event.timestamp, event.headers)})
+                    eventsToProcess.addAll(newEventsToProcess.map {CordaConsumerRecord(
+                        it.topic, event.partition, event.offset, it.key, it.value, event.timestamp, event.headers)
+                    })
                 }
             }
         } catch (ex: StateAndEventConsumer.RebalanceInProgressException) {
