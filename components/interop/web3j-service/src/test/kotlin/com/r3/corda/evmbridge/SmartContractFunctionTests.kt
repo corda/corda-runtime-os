@@ -6,6 +6,8 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.r3.corda.evmbridge.web3j.ContractFunction
+import com.r3.corda.evmbridge.web3j.ContractFunctionInput
+import com.r3.corda.evmbridge.web3j.ContractFunctionOutput
 import com.r3.corda.evmbridge.web3j.GenericContract
 import com.r3.corda.evmbridge.web3j.SmartContract
 import java.math.BigInteger
@@ -112,7 +114,7 @@ class SmartContractFunctionTests {
     }
 
     @Test
-    fun `do shit`() {
+    fun `do simple mapping`() {
         val abi = """
             [
               {
@@ -280,8 +282,13 @@ class SmartContractFunctionTests {
         println("contracts: \n${contractFunctions.keys}.")
         println("contractFunctions: \n$contractFunctions.")
 
+        val web3j = initWeb3jConnection(initWeb3jService("http://127.0.0.1:8545"))
+        val other = GenericContract(byteCode, contractAddress, web3j, Credentials.create(alicePrivateKey))
         val contract: SmartContract = EVMContract(contractFunctions["Storage"]!!)
+
         contract.execute("retrieve")
+        val res = other.callFunction(outputFunction!!.toContractFunction()).send()
+        println("res: $res")
 
         contract.execute(
             "store",
@@ -313,9 +320,27 @@ class SmartContractFunctionTests {
     }
 }
 
+private fun AbiContractFunction.toContractFunction(): ContractFunction {
+    return ContractFunction(
+        name ?: "",
+        this.stateMutability != "view",
+        this.inputs.map { it.toContractInput() },
+        this.outputs?.map { it.toContractOutput() } ?: emptyList()
+    )
+}
+
+private fun AbiContractFunctionInput.toContractInput(): ContractFunctionInput {
+    return ContractFunctionInput(this.name, this.type, this.value.toString())
+}
+
+private fun AbiContractFunctionInput.toContractOutput(): ContractFunctionOutput {
+    return ContractFunctionOutput(this.type)
+}
+
 //interface SmartContract {
 //    fun execute(functionName: String, parameters: List<AbiContractFunctionInput> = emptyList())
 //}
+var outputFunction: AbiContractFunction? = null
 
 class EVMContract(
     private val contractFunctions: List<AbiContractFunction>
@@ -331,9 +356,9 @@ class EVMContract(
                 it
             }
         }
-        val output = function.copy(inputs = inputs)
+        outputFunction = function.copy(inputs = inputs)
 
-        println("output function: $output")
+        println("output function: $outputFunction")
     }
 
 }
