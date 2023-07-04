@@ -7,6 +7,8 @@ import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.getObjectByKey
+import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.Contract
@@ -41,11 +43,13 @@ class UtxoLedgerTransactionContractVerifierTest {
             SandboxGroupType.VERIFICATION,
             null
         )
+        const val SANDBOX_DEPENDENCY_INJECTOR_KEY = "DEPENDENCY_INJECTOR"
     }
 
     private val sandboxGroupContext = mock<SandboxGroupContext>()
     private val transaction = mock<UtxoLedgerTransaction>()
     private val transactionFactory = mock<() -> UtxoLedgerTransaction>()
+    private val injector = mock<SandboxDependencyInjector>()
 
     @BeforeEach
     fun beforeEach() {
@@ -55,6 +59,7 @@ class UtxoLedgerTransactionContractVerifierTest {
         whenever(transactionFactory.invoke()).thenReturn(transaction)
         whenever(transaction.id).thenReturn(TX_ID_1)
         whenever(sandboxGroupContext.virtualNodeContext).thenReturn(virtualNodeContext)
+        whenever(sandboxGroupContext.getObjectByKey<SandboxDependencyInjector>(SANDBOX_DEPENDENCY_INJECTOR_KEY)).thenReturn(injector)
     }
 
     @Test

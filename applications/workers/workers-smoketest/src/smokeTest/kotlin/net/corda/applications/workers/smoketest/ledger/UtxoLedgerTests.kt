@@ -203,19 +203,6 @@ class UtxoLedgerTests {
     }
 
     @Test
-    fun `Utxo Ledger - start a flow with contract injecting services`() {
-        val input = "test input"
-        val utxoFlowRequestId = startRpcFlow(
-            aliceHoldingId,
-            mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to notaryX500),
-            "com.r3.corda.demo.utxo.UtxoVerificationServiceInjectionDemoFlow"
-        )
-        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
-        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(utxoFlowResult.flowError).isNull()
-    }
-
-    @Test
     fun `Utxo Ledger - creating a transaction that fails custom validation causes finality to fail`() {
         val utxoFlowRequestId = startRpcFlow(
             aliceHoldingId,
