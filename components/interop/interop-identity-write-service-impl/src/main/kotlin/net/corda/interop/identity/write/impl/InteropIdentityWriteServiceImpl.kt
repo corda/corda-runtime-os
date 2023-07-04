@@ -62,8 +62,6 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
         val interopIdentity = InteropIdentity().apply {
             x500Name = newIdentityName
             groupId = interopGroupId
-            // TODO: Figure out what value goes here!
-            hostingVnode = "?"
         }
 
         interopIdentityProducer.publishInteropIdentity(holdingIdentityShortHash, interopIdentity)
