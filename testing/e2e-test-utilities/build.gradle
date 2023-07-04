@@ -12,6 +12,7 @@ dependencies {
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     implementation project(':testing:test-utilities')
+    api project(':libs:rest:rest-client')
 
     implementation "org.apache.commons:commons-text:$commonsTextVersion"
     implementation "org.assertj:assertj-core:$assertjVersion"
