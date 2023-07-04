@@ -17,8 +17,8 @@ tasks.named('jar', Jar) {
 }
 
 cordapp {
-    targetPlatformVersion 50000
-    minimumPlatformVersion 50000 as Integer
+    targetPlatformVersion platformVersion.toInteger()
+    minimumPlatformVersion platformVersion.toInteger()
 
     contract {
         name = 'Contract cpk to be used for unit tests for the packaging module'

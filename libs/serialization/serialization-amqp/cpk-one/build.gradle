@@ -2,13 +2,9 @@ plugins {
     id 'net.corda.plugins.cordapp-cpk2'
 }
 
-ext {
-    platformVersion = 50000
-}
-
 cordapp {
-    targetPlatformVersion platformVersion as Integer
-    minimumPlatformVersion platformVersion as Integer
+    targetPlatformVersion platformVersion.toInteger()
+    minimumPlatformVersion platformVersion.toInteger()
     workflow {
         name "Test Serializable Test"
         versionId 1

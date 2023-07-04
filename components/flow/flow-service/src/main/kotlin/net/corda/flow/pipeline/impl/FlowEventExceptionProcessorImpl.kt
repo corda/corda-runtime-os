@@ -1,8 +1,10 @@
 package net.corda.flow.pipeline.impl
 
+import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
+import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.session.SessionState
@@ -189,11 +191,15 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             val checkpoint = context.checkpoint
 
             if (!checkpoint.doesExist) {
+                val statusRecord = createFlowKilledStatusRecordWithoutCheckpoint(
+                    checkpoint.flowId,
+                    context,
+                    exception.message ?: "No exception message provided."
+                )
+
                 return@withEscalation flowEventContextConverter.convert(
                     context.copy(
-                        outputRecords = createFlowKilledStatusRecord(
-                            checkpoint, exception.message ?: "No exception message provided."
-                        ),
+                        outputRecords = statusRecord,
                         sendToDlq = false
                     )
                 )
@@ -256,6 +262,29 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     private fun createFlowKilledStatusRecord(checkpoint: FlowCheckpoint, message: String?): List<Record<*, *>> {
         return createStatusRecord(checkpoint.flowId) {
             flowMessageFactory.createFlowKilledStatusMessage(checkpoint, message)
+        }
+    }
+
+    private fun createFlowKilledStatusRecordWithoutCheckpoint(
+        flowId: String,
+        context: FlowEventContext<*>,
+        message: String?,
+    ): List<Record<*, *>> {
+        val inputPayload = context.inputEvent.payload
+
+        return when (inputPayload) {
+            is StartFlow -> {
+                val status = FlowStatus().apply{
+                    key = inputPayload.startContext.statusKey
+                    flowStatus = FlowStates.KILLED
+                    this.flowId = flowId
+                    processingTerminatedReason = message
+                }
+                listOf(flowRecordFactory.createFlowStatusRecord(status))
+            }
+            else -> createFlowKilledStatusRecord(
+                context.checkpoint, message ?: "No exception message provided."
+            )
         }
     }
 
