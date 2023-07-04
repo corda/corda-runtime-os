@@ -1,7 +1,5 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.avro.serialization.CordaAvroDeserializer
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -14,7 +12,6 @@ import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus
-import net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.AppMessage
@@ -99,7 +96,6 @@ class StartRegistrationHandlerTest {
         const val testTopic = "topic"
         const val testTopicKey = "key"
 
-        val serialisedMemberContext = byteArrayOf(0)
         val memberContext = KeyValuePairList(
             listOf(
                 KeyValuePair("key", "value"),
@@ -107,7 +103,6 @@ class StartRegistrationHandlerTest {
                 KeyValuePair("apple", "pear"),
             )
         )
-        val serialisedRegistrationContext = byteArrayOf(1)
         val registrationContext = mock<KeyValuePairList> {
             on { items } doReturn emptyList()
             on { toByteBuffer() } doReturn ByteBuffer.wrap(byteArrayOf(1))
@@ -194,10 +189,6 @@ class StartRegistrationHandlerTest {
     private val registrationContextCustomFieldsVerifier = mock<RegistrationContextCustomFieldsVerifier> {
         on { verify(any()) } doReturn RegistrationContextCustomFieldsVerifier.Result.Success
     }
-    private val deserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
-        on { deserialize(eq(serialisedMemberContext)) } doReturn memberContext
-        on { deserialize(eq(serialisedRegistrationContext)) } doReturn registrationContext
-    }
 
     private val registrationRequest = createRegistrationRequest()
 
@@ -230,9 +221,6 @@ class StartRegistrationHandlerTest {
 
     @BeforeEach
     fun setUp() {
-        val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
-            on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
-        }
         memberInfoFactory = mock {
             on { create(any<SortedMap<String, String?>>(), any()) } doReturn pendingMemberInfo
         }
@@ -262,8 +250,6 @@ class StartRegistrationHandlerTest {
             membershipPersistenceClient,
             membershipQueryClient,
             membershipGroupReaderProvider,
-            cordaAvroSerializationFactory,
-            p2pRecordsFactory,
             registrationContextCustomFieldsVerifier,
         )
     }
@@ -274,7 +260,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).hasSize(3)
+            assertThat(outputStates).hasSize(2)
 
             assertRegistrationStarted()
 
@@ -292,33 +278,6 @@ class StartRegistrationHandlerTest {
             queryMemberInfo = true,
             persistMemberInfo = true,
             queryRegistrationRequest = true,
-        )
-    }
-
-    @Test
-    fun `invoke send the pending member a set status request`() {
-        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
-
-        assertThat(result.outputStates)
-            .contains(authenticatedMessageRecord)
-    }
-
-    @Test
-    fun `invoke creates the correct command to the pending member`() {
-        handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
-
-        verify(p2pRecordsFactory).createAuthenticatedMessageRecord(
-            eq(mgmHoldingIdentity),
-            eq(aliceHoldingIdentity),
-            eq(
-                SetOwnRegistrationStatus(
-                    registrationId,
-                    RegistrationStatus.RECEIVED_BY_MGM,
-                )
-            ),
-            eq(5),
-            any(),
-            any(),
         )
     }
 

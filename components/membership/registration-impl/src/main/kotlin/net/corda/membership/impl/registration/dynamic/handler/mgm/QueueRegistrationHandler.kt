@@ -1,26 +1,56 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
 import net.corda.data.membership.command.registration.mgm.QueueRegistration
 import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
+import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.VersionedMessageBuilder
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
+import net.corda.utilities.time.Clock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 internal class QueueRegistrationHandler(
+    private val clock: Clock,
     private val membershipPersistenceClient: MembershipPersistenceClient,
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
+        cordaAvroSerializationFactory,
+        clock,
+    ),
 ) : RegistrationHandler<QueueRegistration> {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val MAX_RETRIES = 10
+    }
+
+    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
+        cordaAvroSerializationFactory.createAvroDeserializer(
+            {
+                logger.error("Failed to deserialize key value pair list.")
+            },
+            KeyValuePairList::class.java
+        )
+    }
+
+    private fun deserialize(data: ByteArray): KeyValuePairList {
+        return keyValuePairListDeserializer.deserialize(data) ?: throw CordaRuntimeException(
+            "Failed to serialize key value pair list."
+        )
     }
 
     override val commandType = QueueRegistration::class.java
@@ -43,7 +73,6 @@ internal class QueueRegistrationHandler(
             logger.warn("Exception happened while queueing the request with ID `$registrationId`. Will re-try again.")
             increaseNumberOfRetries(key, command)
         }
-
         return RegistrationHandlerResult(state, outputCommand)
     }
 
@@ -60,7 +89,27 @@ internal class QueueRegistrationHandler(
 
     private fun queueRequest(
         key: String, command: QueueRegistration, registrationId: String
-    ): List<Record<String, RegistrationCommand>> {
+    ): List<Record<*, *>> {
+        val outputRecords = mutableListOf<Record<*, *>>()
+
+        val context = deserialize(command.memberRegistrationRequest.memberContext.data.array())
+        val platformVersion = context.items.first { it.key == PLATFORM_VERSION }.value.toInt()
+        val statusUpdateMessage = VersionedMessageBuilder.retrieveRegistrationStatusMessage(
+            platformVersion,
+            command.memberRegistrationRequest.registrationId,
+            RegistrationStatus.RECEIVED_BY_MGM.name,
+        )
+        if (statusUpdateMessage != null) {
+            val record = p2pRecordsFactory.createAuthenticatedMessageRecord(
+                source = command.mgm,
+                destination = command.member,
+                content = statusUpdateMessage,
+                minutesToWait = 5,
+                filter = MembershipStatusFilter.PENDING
+            )
+            outputRecords.add(record)
+        }
+
         logger.info(
             "MGM queueing registration request for ${command.member.x500Name} from group `${command.member.groupId}` " +
                     "with request ID `$registrationId`."
@@ -73,13 +122,15 @@ internal class QueueRegistrationHandler(
             "MGM put registration request for ${command.member.x500Name} from group `${command.member.groupId}` " +
                     "with request ID `$registrationId` into the queue."
         )
-        return listOf(
+        outputRecords.add(
             Record(
                 REGISTRATION_COMMAND_TOPIC,
                 key,
                 RegistrationCommand(CheckForPendingRegistration(command.mgm, command.member, 0))
             )
         )
+
+        return outputRecords
     }
 
     private fun increaseNumberOfRetries(key: String, command: QueueRegistration) = listOf(

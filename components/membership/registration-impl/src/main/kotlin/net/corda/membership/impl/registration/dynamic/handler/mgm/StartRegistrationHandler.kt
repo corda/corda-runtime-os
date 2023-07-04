@@ -1,6 +1,5 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
@@ -9,7 +8,6 @@ import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
-import net.corda.data.p2p.app.MembershipStatusFilter.PENDING
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
@@ -35,9 +33,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequestHelpers.getPreAuthToken
-import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
 import net.corda.membership.lib.toMap
-import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -65,11 +61,6 @@ internal class StartRegistrationHandler(
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val membershipQueryClient: MembershipQueryClient,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
-        cordaAvroSerializationFactory,
-        clock,
-    ),
     private val registrationContextCustomFieldsVerifier: RegistrationContextCustomFieldsVerifier = RegistrationContextCustomFieldsVerifier()
 ) : RegistrationHandler<StartRegistration> {
 
@@ -199,22 +190,6 @@ internal class StartRegistrationHandler(
                     "Failed to persist pending member info. Reason: " +
                             (it as MembershipPersistenceResult.Failure).errorMsg
                 }
-            }
-
-            val statusUpdateMessage = retrieveRegistrationStatusMessage(
-                pendingMemberInfo.platformVersion,
-                registrationRequest.registrationId,
-                RegistrationStatus.RECEIVED_BY_MGM.name,
-            )
-            if (statusUpdateMessage != null) {
-                val record = p2pRecordsFactory.createAuthenticatedMessageRecord(
-                    source = mgmHoldingId.toAvro(),
-                    destination = pendingMemberHoldingId.toAvro(),
-                    content = statusUpdateMessage,
-                    minutesToWait = 5,
-                    filter = PENDING
-                )
-                outputRecords.add(record)
             }
 
             logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
