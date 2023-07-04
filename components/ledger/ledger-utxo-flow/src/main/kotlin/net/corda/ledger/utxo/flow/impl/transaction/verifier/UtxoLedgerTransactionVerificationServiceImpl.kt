@@ -76,21 +76,6 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun initialVerify(transaction: UtxoLedgerTransaction) {
-        verifyCurrenGroupParametersUsed(transaction)
-        verify(transaction)
-    }
-
-    private fun verifyCurrenGroupParametersUsed(transaction: UtxoLedgerTransaction){
-        check(
-            transaction.getMembershipGroupParametersHash() ==
-                    currentGroupParametersService.get().hash.toString()
-        ) {
-            "Transactions can be created only with the latest membership group parameters."
-        }
-    }
-
-    @Suspendable
     private fun fetchAndVerifySignedGroupParameters(transaction: UtxoLedgerTransaction): SignedGroupParameters {
         val membershipGroupParametersHashString = transaction.getMembershipGroupParametersHash()
 

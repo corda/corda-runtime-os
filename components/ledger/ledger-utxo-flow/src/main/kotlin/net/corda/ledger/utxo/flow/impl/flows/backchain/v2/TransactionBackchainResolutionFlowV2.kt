@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
+package net.corda.ledger.utxo.flow.impl.flows.backchain.v2
 
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainVerifier
@@ -17,13 +17,13 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
-class TransactionBackchainResolutionFlowV1(
+class TransactionBackchainResolutionFlowV2(
     private val initialTransactionIds: Set<SecureHash>,
     private val session: FlowSession,
 ) : SubFlow<Unit> {
 
     private companion object {
-        val log: Logger = LoggerFactory.getLogger(TransactionBackchainResolutionFlowV1::class.java)
+        val log: Logger = LoggerFactory.getLogger(TransactionBackchainResolutionFlowV2::class.java)
     }
 
     @CordaInject
@@ -46,7 +46,7 @@ class TransactionBackchainResolutionFlowV1(
                         "$originalTransactionsToRetrieve in its backchain, starting transaction backchain resolution"
             }
             val topologicalSort = flowEngine.subFlow(
-                TransactionBackchainReceiverFlowV1(
+                TransactionBackchainReceiverFlowV2(
                     initialTransactionIds = initialTransactionIds,
                     originalTransactionsToRetrieve,
                     session
@@ -86,7 +86,7 @@ class TransactionBackchainResolutionFlowV1(
                             "been verified locally, skipping transaction backchain resolution"
                 }
             }
-            session.send(TransactionBackchainRequestV1.Stop)
+            session.send(TransactionBackchainRequestV2.Stop)
         }
     }
 
@@ -94,7 +94,7 @@ class TransactionBackchainResolutionFlowV1(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as TransactionBackchainResolutionFlowV1
+        other as TransactionBackchainResolutionFlowV2
 
         if (initialTransactionIds != other.initialTransactionIds) return false
         if (session != other.session) return false

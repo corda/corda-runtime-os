@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
+package net.corda.ledger.utxo.flow.impl.flows.backchain.v2
 
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus
@@ -22,7 +22,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 
-class TransactionBackchainResolutionFlowV1Test {
+class TransactionBackchainResolutionFlowV2Test {
 
     private companion object {
         val TX_ID_1 = SecureHashImpl("SHA", byteArrayOf(2, 2, 2, 2))
@@ -104,11 +104,11 @@ class TransactionBackchainResolutionFlowV1Test {
         whenever(utxoLedgerPersistenceService.find(TX_ID_2, TransactionStatus.VERIFIED)).thenReturn(mock())
         whenever(utxoLedgerPersistenceService.find(TX_ID_3, TransactionStatus.VERIFIED)).thenReturn(null)
 
-        whenever(flowEngine.subFlow(any<TransactionBackchainReceiverFlowV1>())).thenReturn(TopologicalSort())
+        whenever(flowEngine.subFlow(any<TransactionBackchainReceiverFlowV2>())).thenReturn(TopologicalSort())
 
         callTransactionBackchainResolutionFlow()
 
-        verify(flowEngine).subFlow(TransactionBackchainReceiverFlowV1(setOf(TX_ID_3), setOf(TX_ID_3), session))
+        verify(flowEngine).subFlow(TransactionBackchainReceiverFlowV2(setOf(TX_ID_3), setOf(TX_ID_3), session))
         verifyNoMoreInteractions(flowEngine)
 
         verify(transactionBackchainVerifier).verify(eq(setOf(TX_ID_3)), any())
@@ -134,19 +134,19 @@ class TransactionBackchainResolutionFlowV1Test {
         whenever(utxoLedgerPersistenceService.find(TX_ID_3, TransactionStatus.VERIFIED)).thenReturn(null)
         whenever(transactionBackchainVerifier.verify(eq(setOf(TX_ID_3)), any())).thenReturn(false)
 
-        whenever(flowEngine.subFlow(any<TransactionBackchainReceiverFlowV1>())).thenReturn(TopologicalSort())
+        whenever(flowEngine.subFlow(any<TransactionBackchainReceiverFlowV2>())).thenReturn(TopologicalSort())
 
         assertThatThrownBy { callTransactionBackchainResolutionFlow() }.isExactlyInstanceOf(CordaRuntimeException::class.java)
 
-        verify(flowEngine).subFlow(TransactionBackchainReceiverFlowV1(setOf(TX_ID_3), setOf(TX_ID_3), session))
+        verify(flowEngine).subFlow(TransactionBackchainReceiverFlowV2(setOf(TX_ID_3), setOf(TX_ID_3), session))
         verifyNoMoreInteractions(flowEngine)
     }
 
     private fun callTransactionBackchainResolutionFlow() {
-        TransactionBackchainResolutionFlowV1(transaction.dependencies, session).apply {
-            flowEngine = this@TransactionBackchainResolutionFlowV1Test.flowEngine
-            transactionBackchainVerifier = this@TransactionBackchainResolutionFlowV1Test.transactionBackchainVerifier
-            utxoLedgerPersistenceService = this@TransactionBackchainResolutionFlowV1Test.utxoLedgerPersistenceService
+        TransactionBackchainResolutionFlowV2(transaction.dependencies, session).apply {
+            flowEngine = this@TransactionBackchainResolutionFlowV2Test.flowEngine
+            transactionBackchainVerifier = this@TransactionBackchainResolutionFlowV2Test.transactionBackchainVerifier
+            utxoLedgerPersistenceService = this@TransactionBackchainResolutionFlowV2Test.utxoLedgerPersistenceService
         }.call()
     }
 }

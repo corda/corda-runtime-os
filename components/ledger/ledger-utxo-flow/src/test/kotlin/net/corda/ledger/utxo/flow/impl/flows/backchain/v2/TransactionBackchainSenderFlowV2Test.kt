@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
+package net.corda.ledger.utxo.flow.impl.flows.backchain.v2
 
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
@@ -12,7 +12,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 
-class TransactionBackchainSenderFlowV1Test {
+class TransactionBackchainSenderFlowV2Test {
 
     private companion object {
         val TX_ID_0 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
@@ -33,7 +33,7 @@ class TransactionBackchainSenderFlowV1Test {
     private val ledgerTransaction2 = mock<UtxoLedgerTransaction>()
     private val ledgerTransaction3 = mock<UtxoLedgerTransaction>()
 
-    private val flow = TransactionBackchainSenderFlowV1(TX_ID_0, session)
+    private val flow = TransactionBackchainSenderFlowV2(TX_ID_0, session)
 
     @BeforeEach
     fun beforeEach() {
@@ -52,18 +52,18 @@ class TransactionBackchainSenderFlowV1Test {
 
     @Test
     fun `does nothing when receiving an initial stop request`() {
-        whenever(session.receive(TransactionBackchainRequestV1::class.java)).thenReturn(TransactionBackchainRequestV1.Stop)
+        whenever(session.receive(TransactionBackchainRequestV2::class.java)).thenReturn(TransactionBackchainRequestV2.Stop)
 
         flow.call()
 
-        verify(session).receive(TransactionBackchainRequestV1::class.java)
+        verify(session).receive(TransactionBackchainRequestV2::class.java)
         verifyNoInteractions(utxoLedgerPersistenceService)
     }
 
     @Test
     fun `sends the requested transactions to the requesting session`() {
-        whenever(session.receive(TransactionBackchainRequestV1::class.java))
-            .thenReturn(TransactionBackchainRequestV1.Get(setOf(TX_ID_1, TX_ID_2, TX_ID_3)), TransactionBackchainRequestV1.Stop)
+        whenever(session.receive(TransactionBackchainRequestV2::class.java))
+            .thenReturn(TransactionBackchainRequestV2.Get(setOf(TX_ID_1, TX_ID_2, TX_ID_3)), TransactionBackchainRequestV2.Stop)
 
         whenever(ledgerTransaction1.inputStateRefs).thenReturn(emptyList())
         whenever(ledgerTransaction1.referenceStateRefs).thenReturn(emptyList())
