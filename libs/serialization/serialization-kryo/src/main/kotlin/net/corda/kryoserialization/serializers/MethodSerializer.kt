@@ -18,6 +18,7 @@ class MethodSerializer : Serializer<Method>() {
         kryo.writeObject(output, parameterTypes)
     }
 
+    @Suppress("SpreadOperator", "TooGenericExceptionThrown")
     override fun read(kryo: Kryo, input: Input, type: Class<out Method>): Method {
         val declaringClassName = input.readString()
         val methodName = input.readString()
