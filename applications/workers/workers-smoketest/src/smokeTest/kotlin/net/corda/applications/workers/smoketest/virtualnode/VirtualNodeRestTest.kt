@@ -23,7 +23,6 @@ import net.corda.test.util.eventually
 import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -35,7 +34,6 @@ import java.util.UUID
  */
 @Order(10)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-@Disabled
 class VirtualNodeRestTest {
     companion object {
         // Some simple test failure messages

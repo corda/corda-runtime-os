@@ -12,7 +12,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.SoftAssertions
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -21,7 +20,6 @@ import org.slf4j.LoggerFactory
 
 @Order(2)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-@Disabled
 class ClusterBootstrapTest {
 
     private companion object {

@@ -2,8 +2,6 @@ package net.corda.applications.workers.smoketest.stam
 
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
-import net.corda.applications.workers.smoketest.ledger.ConsensualLedgerTests
-import net.corda.applications.workers.smoketest.virtualnode.VirtualNodeRestTest
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT_ALIAS
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT_USAGE
@@ -14,10 +12,8 @@ import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.utilities.seconds
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.RepetitionInfo
 import java.util.UUID
@@ -39,7 +35,7 @@ class StamTests {
         }
     }
 
-    @RepeatedTest(130)
+    @RepeatedTest(8)
     fun createGroup(info: RepetitionInfo) {
         val testRunUniqueId = UUID.randomUUID()
         val name = "Application-${info.currentRepetition}"
