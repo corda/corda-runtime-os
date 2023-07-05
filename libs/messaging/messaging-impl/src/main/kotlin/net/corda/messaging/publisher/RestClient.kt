@@ -3,8 +3,12 @@ package net.corda.messaging.publisher
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import io.ktor.util.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import net.corda.avro.serialization.CordaAvroDeserializer
@@ -25,7 +29,11 @@ class RestClient<R : Any>(
     private val client = HttpClient(CIO) {
         install(Logging) {
             logger = Logger.DEFAULT
-            level = LogLevel.HEADERS
+            level = LogLevel.INFO
+        }
+        install(HttpRequestRetry) {
+            retryOnServerErrors(maxRetries = 5)
+            exponentialDelay()
         }
     }
 
@@ -33,18 +41,18 @@ class RestClient<R : Any>(
     fun publish(records: List<Record<*, *>>): List<Record<*, R>> {
         logger.info("Making a REST request to $endpoint, record topic ${records.first().topic}")
         return runBlocking {
-            records.map { record ->
+            records.flatMap<Record<*, *>, Record<*, R>> { record ->
                 async {
                     val body = record.value?.run { avroSerializer.serialize(this) }
-                    val response = client.get(endpoint) {
+                    val response = client.post(endpoint) {
+                        contentType(ContentType.Application.OctetStream)
                         setBody(body)
                     }
-                    val deserializedResponse = avroDeserializer.deserialize(response.body<ByteArray>()) as? R
-                    logger.info("Got a response: $deserializedResponse")
-                    Record(record.topic, record.key, deserializedResponse)
-                }
-            }.map {
-                it.await()
+                    val responseBody: ByteArray = response.body()
+                    val responseEvents = avroDeserializer.deserialize(responseBody) as? List<R>
+                    logger.info("Got a response: ${responseEvents?.size}")
+                    responseEvents?.map { Record(record.topic, record.key, it) }!!
+                }.await()
             }
         }
     }

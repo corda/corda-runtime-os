@@ -64,10 +64,9 @@ class RestSubscriptionImpl<V: Any>(
             val value = cordaAvroDeserializer.deserialize(context.bodyAsBytes()) as? V
                 ?: throw IllegalArgumentException("Could not process record as body did not deserialize correctly.")
             val record = Record(config.topic, "foo", value)
-            val outputEvents = processor.onNext(listOf(record))
-            // Assume for now that one input event == one output event, and therefore can just take the first one in the
-            // list as the return type.
-            val returnBody = outputEvents.first().value?.let {
+            val outputRecords = processor.onNext(listOf(record))
+            val outputEvents = outputRecords.map { it.value }
+            val returnBody = outputEvents.let {
                 cordaAvroSerializer.serialize(it)
             } ?: throw IllegalArgumentException("Failed to serialize output type")
             context.result(returnBody)
@@ -82,7 +81,7 @@ class RestSubscriptionImpl<V: Any>(
     private fun lifecycleHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
-                javalin.get("/", ::process)
+                javalin.post("/", ::process)
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
@@ -93,6 +92,7 @@ class RestSubscriptionImpl<V: Any>(
 
     override fun close() {
         lifecycleCoordinator.close()
+        javalin.close()
     }
 
     override val subscriptionName: LifecycleCoordinatorName
