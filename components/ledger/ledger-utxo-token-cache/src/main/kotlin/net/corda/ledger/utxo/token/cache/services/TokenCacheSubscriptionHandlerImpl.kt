@@ -49,7 +49,7 @@ class TokenCacheSubscriptionHandlerImpl constructor(
             subscription = subscriptionFactory.createPriorityStreamSubscription(
                 SubscriptionConfig(CONSUMER_GROUP, TOKEN_CACHE_EVENT),
                 mapOf(
-                    Pair(1, TOKEN_CACHE_EVENT)
+                    Pair(1, listOf(TOKEN_CACHE_EVENT))
                 ),
                 tokenCacheEventProcessorFactory.create(),
                 messagingConfig

@@ -55,7 +55,7 @@ import kotlin.random.Random
 internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
     private val subscriptionConfig: SubscriptionConfig,
     private val messagingConfig: SmartConfig,
-    private val topics: Map<Int, String>,
+    private val topics: Map<Int, List<String>>,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     private val cordaProducerBuilder: CordaProducerBuilder,
     private val processor: StateAndEventProcessor<K, S, E>,
@@ -74,7 +74,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
     private var threadLooper =
         ThreadLooper(log, config, lifecycleCoordinatorFactory, "state/event processing thread", ::runConsumeLoop)
     private var producer: CordaProducer? = null
-    private var consumers: MutableMap<Int, CordaConsumer<K, E>?> = topics.map { it.key to null }.toMap().toMutableMap()
+    private var consumers: MutableMap<Int, MutableList<CordaConsumer<K, E>>> = topics.map { it.key to mutableListOf<CordaConsumer<K, E>>() }.toMap().toMutableMap()
     private val priorities: List<Int> = consumers.keys.sorted()
     private val hostAndPort = HostAndPort("orr-memory-db.8b332u.clustercfg.memorydb.eu-west-2.amazonaws.com", 6379).also {
         log.warn("Connecting to host ${it.host}, port ${it.port}")
@@ -151,9 +151,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
      * This method is for closing the loop/thread externally. From inside the loop use the private [stopConsumeLoop].
      */
     override fun close() {
-        consumers.forEach {
-            it.value?.close()
-        }
+        shutdownResources()
         threadLooper.close()
         executor.shutdown()
         jedisCluster.close()
@@ -168,22 +166,24 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
             log.warn("Failed to serialize record!")
         }
         consumers.forEach {
-            val topic = topics[it.key]!!
-            val consumerConfig =
-                getConfig(SubscriptionConfig("${config.group}-${topic}", topic), messagingConfig)
-            val eventConsumerConfig =
-                ConsumerConfig(consumerConfig.group, "${config.clientId}-eventConsumer", ConsumerRoles.SAE_EVENT)
-            consumers[it.key] = cordaConsumerBuilder.createConsumer(
-                eventConsumerConfig,
-                consumerConfig.messageBusConfig,
-                processor.keyClass,
-                processor.eventValueClass,
-                { _ ->
-                    log.error("Failed to deserialize event record!")
-                }
-            )
-            consumers[it.key]?.subscribe(topic)
-            log.info("Assigned partitions for topic ${topics[it.key]} with: ${consumers[it.key]?.assignment()}")
+            topics[it.key]?.forEach { topic ->
+                val consumerConfig =
+                    getConfig(SubscriptionConfig("${config.group}-${topic}", topic), messagingConfig)
+                val eventConsumerConfig =
+                    ConsumerConfig(consumerConfig.group, "${config.clientId}-eventConsumer", ConsumerRoles.SAE_EVENT)
+                val consumer = cordaConsumerBuilder.createConsumer(
+                    eventConsumerConfig,
+                    consumerConfig.messageBusConfig,
+                    processor.keyClass,
+                    processor.eventValueClass,
+                    { _ ->
+                        log.error("Failed to deserialize event record!")
+                    }
+                )
+                consumer.subscribe(topic)
+                log.info("Assigned partitions for topic ${topics[it.key]} with: ${consumer.assignment()}")
+                consumers[it.key]?.add(consumer)
+            }
         }
     }
 
@@ -225,7 +225,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
             try {
                 log.debug { "Polling and processing events" }
                 val records = getHighestPriorityEvents()
-                for ((priority, events) in records!!) {
+                for ((consumer, events) in records!!) {
                     batchSizeHistogram.record(events.size.toDouble())
                     log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${records.size})" }
                     val recordsQueue = ArrayDeque(events)
@@ -234,7 +234,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                         val event = recordsQueue.removeFirst()
                         processEvent(event)
                     }
-                    producer?.sendRecordOffsetsToTransaction(consumers[priority]!!, events)
+                    producer?.sendRecordOffsetsToTransaction(consumer, events)
                     producer?.commitTransaction()
                 }
             } catch (ex: Exception) {
@@ -258,28 +258,35 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun getHighestPriorityEvents() : MutableMap<Int, List<CordaConsumerRecord<K, E>>>? {
+    private fun getHighestPriorityEvents() : MutableMap<CordaConsumer<K, E>, List<CordaConsumerRecord<K, E>>>? {
         return eventPollTimer.recordCallable {
             var recordsCount = 0
-            val events = mutableMapOf<Int, List<CordaConsumerRecord<K, E>>>()
+            val events = mutableMapOf<CordaConsumer<K, E>, List<CordaConsumerRecord<K, E>>>()
             for (priority in priorities) {
-                try {
-                    if (recordsCount == 0) {
-                        var partitions = consumers[priority]?.assignment()
-                        consumers[priority]?.resume(partitions!!)
-                        val records = consumers[priority]?.poll(EVENT_POLL_TIMEOUT)!!
-                        events[priority] = records
-                        recordsCount += records.size
-                        partitions = consumers[priority]?.assignment()
-                        consumers[priority]?.pause(partitions!!)
-                    } else {
-                        val records = consumers[priority]?.poll(PAUSED_POLL_TIMEOUT)!!
-                        events[priority] = records
-                        recordsCount += records.size
+                if (recordsCount == 0) {
+                    for (consumer in consumers[priority]!!) {
+                        try {
+                            var partitions = consumer.assignment()
+                            consumer.resume(partitions)
+                            val records = consumer.poll(EVENT_POLL_TIMEOUT)
+                            events[consumer] = records
+                            recordsCount += records.size
+                            partitions = consumer.assignment()
+                            consumer.pause(partitions)
+                        } catch (ex: Exception) {
+                            consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
+                        }
                     }
-                }
-                catch (ex: Exception) {
-                    consumers[priority]?.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
+                } else {
+                    for (consumer in consumers[priority]!!) {
+                        try {
+                            val records = consumer.poll(PAUSED_POLL_TIMEOUT)
+                            events[consumer] = records
+                            recordsCount += records.size
+                        } catch (ex: Exception) {
+                            consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
+                        }
+                    }
                 }
             }
             events
@@ -371,7 +378,9 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                         "Retrying poll and process. Attempts: $attempts."
             )
             consumers.forEach {
-                it.value?.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
+                it.value.forEach { consumer ->
+                    consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
+                }
             }
         } else {
             val message = "Failed to process records from group ${config.group}, " +
@@ -404,11 +413,13 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
 
     private fun shutdownResources() {
         producer?.close()
-        consumers.forEach {
-            it.value?.close()
+        consumers.forEach { consumers ->
+            consumers.value.forEach {
+                it.close()
+            }
         }
         consumers.clear()
-        consumers = topics.map { it.key to null }.toMap().toMutableMap()
+        consumers = topics.map { it.key to mutableListOf<CordaConsumer<K, E>>() }.toMap().toMutableMap()
         producer = null
     }
 

@@ -155,7 +155,7 @@ class RegistrationManagementServiceImpl @Activate constructor(
                         REGISTRATION_COMMAND_TOPIC
                     ),
                     mapOf(
-                        Pair(1, REGISTRATION_COMMAND_TOPIC)
+                        Pair(1, listOf(REGISTRATION_COMMAND_TOPIC))
                     ),
                     RegistrationProcessor(
                         clock,

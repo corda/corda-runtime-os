@@ -69,7 +69,7 @@ internal class DeliveryTracker(
         subscriptionFactory.createPriorityStreamSubscription(
             subscriptionConfig,
             mapOf(
-                Pair(1, P2P_OUT_MARKERS)
+                Pair(1, listOf(P2P_OUT_MARKERS))
             ),
             messageTracker.processor,
             messagingConfiguration

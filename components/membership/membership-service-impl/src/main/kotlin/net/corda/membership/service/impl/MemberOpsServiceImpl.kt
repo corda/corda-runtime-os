@@ -235,7 +235,7 @@ class MemberOpsServiceImpl @Activate constructor(
                     MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC,
                 ),
                 mapOf(
-                    Pair(1, MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC)
+                    Pair(1, listOf(MEMBERSHIP_ASYNC_REQUEST_RETRIES_TOPIC))
                 ),
                 retryManager,
                 messagingConfig

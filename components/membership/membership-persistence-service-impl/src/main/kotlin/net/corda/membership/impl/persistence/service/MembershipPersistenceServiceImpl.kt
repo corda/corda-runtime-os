@@ -223,7 +223,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
                 eventTopic = MEMBERSHIP_DB_ASYNC_TOPIC,
             ),
             mapOf(
-                Pair(1, MEMBERSHIP_DB_ASYNC_TOPIC)
+                Pair(1, listOf(MEMBERSHIP_DB_ASYNC_TOPIC))
             ),
             processor = MembershipPersistenceAsyncProcessor(
                 handlers
