@@ -2,7 +2,9 @@
 
 package net.corda.tracing
 
-import io.javalin.core.JavalinConfig
+import io.javalin.config.JavalinConfig
+import jakarta.servlet.DispatcherType
+import jakarta.servlet.Filter
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.EventLogRecord
@@ -14,9 +16,10 @@ import net.corda.tracing.impl.TracingState
 import net.corda.tracing.impl.Unlimited
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.eclipse.jetty.servlet.FilterHolder
+import org.eclipse.jetty.servlet.ServletContextHandler
 import java.util.EnumSet
 import java.util.concurrent.ExecutorService
-import javax.servlet.DispatcherType
+import java.util.function.Consumer
 
 private fun parseUnsignedIntWithErrorHandling(string: String) = try {
     Integer.parseUnsignedInt(string)
@@ -145,11 +148,12 @@ fun shutdownTracing() {
  * Configure Javalin to read trace IDs from requests or generate new ones if missing.
  */
 fun configureJavalinForTracing(config: JavalinConfig) {
-    config.configureServletContextHandler { sch ->
+    val contextHandlerConsumer = Consumer<ServletContextHandler>{ sch ->
         sch.addFilter(
-            FilterHolder(TracingState.currentTraceService.getTracedServletFilter()),
+            FilterHolder(TracingState.currentTraceService.getTracedServletFilter() as Filter),
             "/*",
             EnumSet.of(DispatcherType.INCLUDE, DispatcherType.REQUEST)
         )
     }
+    config.jetty.contextHandlerConfig(contextHandlerConsumer)
 }
