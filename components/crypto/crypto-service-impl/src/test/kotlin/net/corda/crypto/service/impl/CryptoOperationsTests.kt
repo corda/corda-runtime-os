@@ -90,8 +90,8 @@ class CryptoOperationsTests {
             factory = TestServicesFactory()
             schemeMetadata = factory.schemeMetadata
             verifier = factory.verifier
-            tenantId = UUID.randomUUID().toString()
-            category = CryptoConsts.Categories.LEDGER
+            tenantId = "test"
+            category = LEDGER
             CryptoConsts.Categories.all.forEach {
                 factory.hsmService.assignSoftHSM(tenantId, it)
             }
@@ -101,7 +101,7 @@ class CryptoOperationsTests {
                     alias = alias,
                     publicKey = factory.cryptoService.generateKeyPair(
                         tenantId = tenantId,
-                        category = CryptoConsts.Categories.LEDGER,
+                        category = LEDGER,
                         alias = alias,
                         scheme = it
                     ).publicKey
@@ -395,7 +395,7 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("keySchemes")
-    fun `Should lookup by id for fresh key in all supported schemes`(
+    fun `Should lookup by short has for fresh key in all supported schemes`(
         scheme: KeyScheme
     ) {
         val info = signingFreshKeys.getValue(scheme)

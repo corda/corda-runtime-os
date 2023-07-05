@@ -37,7 +37,6 @@ class CryptoServiceRefUtilsTests {
             tenantId = UUID.randomUUID().toString(),
             category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
-            hsmId = UUID.randomUUID().toString(),
             instance = mock()
         )
         val generatedKey = GeneratedPublicKey(
@@ -52,7 +51,6 @@ class CryptoServiceRefUtilsTests {
         assertEquals(alias, result.alias)
         assertEquals(scheme, result.keyScheme)
         assertEquals(ref.category, result.category)
-        assertEquals(ref.hsmId, result.hsmId)
     }
 
     @Test
@@ -62,7 +60,6 @@ class CryptoServiceRefUtilsTests {
             tenantId = UUID.randomUUID().toString(),
             category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
-            hsmId = UUID.randomUUID().toString(),
             instance = mock()
         )
         val generatedKey = GeneratedWrappedKey(
@@ -80,7 +77,6 @@ class CryptoServiceRefUtilsTests {
         assertEquals(scheme, result.keyScheme)
         assertEquals(ref.category, result.category)
         assertEquals(ref.masterKeyAlias, result.masterKeyAlias)
-        assertEquals(ref.hsmId, result.hsmId)
         assertEquals(externalId, result.externalId)
     }
 
@@ -91,7 +87,6 @@ class CryptoServiceRefUtilsTests {
             tenantId = UUID.randomUUID().toString(),
             category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
-            hsmId = UUID.randomUUID().toString(),
             instance = mock()
         )
         val generatedKey = mock<GeneratedKey>()

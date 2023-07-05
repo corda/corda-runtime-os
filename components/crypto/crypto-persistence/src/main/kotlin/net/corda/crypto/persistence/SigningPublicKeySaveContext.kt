@@ -9,6 +9,5 @@ class SigningPublicKeySaveContext(
     override val alias: String?,
     override val category: String,
     override val keyScheme: KeyScheme,
-    override val externalId: String?,
-    override val hsmId: String
+    override val externalId: String?
 ) : SigningKeySaveContext

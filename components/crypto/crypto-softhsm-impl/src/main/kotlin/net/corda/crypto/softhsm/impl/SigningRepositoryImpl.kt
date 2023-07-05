@@ -72,7 +72,7 @@ class SigningRepositoryImpl(
             alias = context.alias,
             hsmAlias = context.key.hsmAlias,
             externalId = context.externalId,
-            hsmId = context.hsmId,
+            hsmId = "SOFT",
             status = SigningKeyEntityStatus.NORMAL
         )
 
@@ -143,7 +143,7 @@ class SigningRepositoryImpl(
             alias = context.alias,
             hsmAlias = null,
             externalId = context.externalId,
-            hsmId = context.hsmId,
+            hsmId = "SOFT",
             status = SigningKeyEntityStatus.NORMAL
         )
         entityManagerFactory.createEntityManager().use {

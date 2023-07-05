@@ -168,7 +168,7 @@ class TestServicesFactory {
     val signingKeyInfoCache: Cache<PublicKey, SigningKeyInfo> = CacheFactoryImpl().build(
         "test private key cache", Caffeine.newBuilder()
             .expireAfterAccess(3600, TimeUnit.MINUTES)
-            .maximumSize(3)
+            .maximumSize(20)
     )
     val cryptoService: CryptoService by lazy {
         SoftCryptoService(
