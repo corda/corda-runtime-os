@@ -223,7 +223,6 @@ private fun createDbConfig(
         config = config.withValue(DatabaseConfig.JDBC_DRIVER, ConfigValueFactory.fromAnyRef(jdbcDriver))
     config = config.withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
 
-    require(virtualNodePoolConfig.hasPath(DatabaseConfig.DB_POOL_MAX_SIZE))
     if (virtualNodePoolConfig.hasPath(DatabaseConfig.DB_POOL_MAX_SIZE)) {
         val maxPoolSize = virtualNodePoolConfig.getInt(DatabaseConfig.DB_POOL_MAX_SIZE)
         config = config.withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(maxPoolSize))
