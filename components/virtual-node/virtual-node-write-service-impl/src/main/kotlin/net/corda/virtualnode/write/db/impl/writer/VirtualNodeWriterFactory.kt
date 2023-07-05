@@ -7,6 +7,7 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
@@ -55,6 +56,9 @@ internal class VirtualNodeWriterFactory(
 
     private companion object {
         const val ASYNC_OPERATION_GROUP = "virtual.node.async.operation.group"
+
+        const val VIRTUAL_NODES_DDL_POOL_CONFIG = "corda-virtual-nodes-ddl-pool-config"
+        const val VIRTUAL_NODES_DML_POOL_CONFIG = "corda-virtual-nodes-dml-pool-config"
     }
 
     /**
@@ -101,7 +105,27 @@ internal class VirtualNodeWriterFactory(
             publisher
         )
 
-        val virtualNodeDbFactory = VirtualNodeDbFactoryImpl(dbConnectionManager, virtualNodeDbAdmin, schemaMigrator)
+        // TODO The following configs and `virtualNodeDbFactory` do not depend on dynamic config so they could be extracted out to not be
+        //  re-created on dynamic config update.
+        val virtualNodesDdlPoolConfig =
+            requireNotNull(dbConnectionManager.getDataSourceConfig(VIRTUAL_NODES_DDL_POOL_CONFIG, DbPrivilege.DDL)) {
+                "\"$VIRTUAL_NODES_DDL_POOL_CONFIG\" not found in DB table: \"config.db_connection\""
+            }
+
+        val virtualNodesDmlPoolConfig =
+            requireNotNull(dbConnectionManager.getDataSourceConfig(VIRTUAL_NODES_DML_POOL_CONFIG, DbPrivilege.DML)) {
+                "\"$VIRTUAL_NODES_DML_POOL_CONFIG\" not found in DB table: \"config.db_connection\""
+            }
+
+        val virtualNodeDbFactory =
+            VirtualNodeDbFactoryImpl(
+                dbConnectionManager,
+                virtualNodeDbAdmin,
+                schemaMigrator,
+                virtualNodesDdlPoolConfig,
+                virtualNodesDmlPoolConfig
+            )
+
         val recordFactory = RecordFactoryImpl(UTCClock())
 
         val handlerMap = mutableMapOf<Class<*>, VirtualNodeAsyncOperationHandler<*>>(
