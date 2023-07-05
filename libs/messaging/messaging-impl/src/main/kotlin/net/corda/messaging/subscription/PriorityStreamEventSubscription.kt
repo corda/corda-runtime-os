@@ -62,8 +62,8 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 ) : StateAndEventSubscription<K, S, E> {
 
-    private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(50)
-    private val EVENT_POLL_TIMEOUT = Duration.ofMillis(100)
+    private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(30)
+    private val EVENT_POLL_TIMEOUT = Duration.ofMillis(30)
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}")
     private var threadLooper =
@@ -183,6 +183,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                 }
             )
             consumers[it.key]?.subscribe(topic)
+            log.info("Assigned partitions for topic ${topics[it.key]} with: ${consumers[it.key]?.assignment()}")
 //            val partitions = consumers[it.key]?.assignment()
 //            consumers[it.key]?.pause(partitions!!)
         }
@@ -226,7 +227,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
             try {
                 log.debug { "Polling and processing events" }
                 val records = getHighestPriorityEvents()
-                for ((priority, events) in records) {
+                for ((priority, events) in records!!) {
                     batchSizeHistogram.record(events.size.toDouble())
                     log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${records.size})" }
                     val recordsQueue = ArrayDeque(events)
@@ -259,31 +260,31 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun getHighestPriorityEvents() : Map<Int, List<CordaConsumerRecord<K, E>>> {
-//        var recordsCount = 0
-        val events = mutableMapOf<Int, MutableList<CordaConsumerRecord<K, E>>>()
-        for (priority in priorities) {
-            val consumerRecords = mutableListOf<CordaConsumerRecord<K, E>>()
-            events[priority] = consumerRecords
-            eventPollTimer.recordCallable {
-                log.info("Assigned partitions for topic ${topics[priority]} with: ${consumers[priority]?.assignment()}")
+    private fun getHighestPriorityEvents() : MutableMap<Int, MutableList<CordaConsumerRecord<K, E>>>? {
+        return eventPollTimer.recordCallable {
+            var recordsCount = 0
+            val events = mutableMapOf<Int, MutableList<CordaConsumerRecord<K, E>>>()
+            for (priority in priorities) {
+
+//                // Check assignments and rebalance if needed
+//                val partitions = consumers[priority]?.assignment()
+//                if (partitions.isNullOrEmpty()) {
+//                    consumers[priority]?.subscribe(topics[priority]!!)
+//                    log.info("Assigned partitions for topic ${topics[priority]} with: ${consumers[priority]?.assignment()}")
+//                }
+
+                // Try to pull from current priority consumer
+                val consumerRecords = mutableListOf<CordaConsumerRecord<K, E>>()
+                events[priority] = consumerRecords
                 val records = consumers[priority]?.poll(EVENT_POLL_TIMEOUT)!!
                 consumerRecords.addAll(records)
-//                if (recordsCount == 0) {
-//                    val partitions = consumers[priority]?.assignment()?.toSet()
-//                    consumers[priority]?.resume(partitions!!)
-//                    val records = consumers[priority]?.poll(EVENT_POLL_TIMEOUT)!!
-//                    consumerRecords.addAll(records)
-//                    recordsCount += records.size
-//                    consumers[priority]?.pause(partitions!!)
-//                } else {
-//                    val records = consumers[priority]?.poll(PAUSED_POLL_TIMEOUT)!!
-//                    consumerRecords.addAll(records)
-//                    recordsCount += records.size
-//                }
+                recordsCount += records.size
+                if (recordsCount > 0) {
+                    break
+                }
             }
+            events
         }
-        return events
     }
 
     @Suppress("UNCHECKED_CAST")

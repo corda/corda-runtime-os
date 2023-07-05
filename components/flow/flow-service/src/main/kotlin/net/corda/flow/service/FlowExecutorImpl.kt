@@ -80,8 +80,8 @@ class FlowExecutorImpl constructor(
                     SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC),
                     mapOf(
                         Pair(1, FLOW_SESSION_TOPIC),
-                        Pair(2, FLOW_START_TOPIC),
-                        Pair(3, FLOW_EVENT_TOPIC),
+                        Pair(2, FLOW_EVENT_TOPIC),
+                        Pair(3, FLOW_START_TOPIC),
                     ),
                     flowEventProcessorFactory.create(flowConfig),
                     messagingConfig
