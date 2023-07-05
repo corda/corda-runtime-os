@@ -19,7 +19,6 @@ dependencies {
     implementation project(':libs:utilities')
     implementation project(':libs:membership:membership-common')
     implementation project(':libs:sandbox-types')
-    implementation project(':libs:virtual-node:sandbox-group-context')
 
     testImplementation project(':testing:ledger:ledger-utxo-testkit')
 

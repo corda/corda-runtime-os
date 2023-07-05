@@ -80,23 +80,23 @@ class SandboxDependencyInjectorImpl<T : Any>(
         val serviceClass = serviceObj::class.java
         val serviceClassLoader = serviceClass.classLoader
         serviceTypeNames.mapNotNull { serviceTypeName ->
-            try {
-                FrameworkUtil.getBundle(serviceClass)?.loadClass(serviceTypeName)
-                    ?: Class.forName(serviceTypeName, false, serviceClassLoader)
-            } catch (_: ClassNotFoundException) {
-                null
+                try {
+                    FrameworkUtil.getBundle(serviceClass)?.loadClass(serviceTypeName)
+                        ?: Class.forName(serviceTypeName, false, serviceClassLoader)
+                } catch (_: ClassNotFoundException) {
+                    null
+                }
+            }.filter { serviceType ->
+                // Check that serviceObj is assignable to serviceType.
+                // Technically speaking, the OSGi framework should
+                // already guarantee this for an OSGi service.
+                serviceType.isInstance(serviceObj)
+            }.ifEmpty {
+                // Fall back to using the object's own class.
+                listOf(serviceClass)
+            }.forEach { implementedServiceType ->
+                registerServiceImplementation(serviceObj, implementedServiceType, serviceTypes)
             }
-        }.filter { serviceType ->
-            // Check that serviceObj is assignable to serviceType.
-            // Technically speaking, the OSGi framework should
-            // already guarantee this for an OSGi service.
-            serviceType.isInstance(serviceObj)
-        }.ifEmpty {
-            // Fall back to using the object's own class.
-            listOf(serviceClass)
-        }.forEach { implementedServiceType ->
-            registerServiceImplementation(serviceObj, implementedServiceType, serviceTypes)
-        }
     }
 
     private fun registerServiceImplementation(

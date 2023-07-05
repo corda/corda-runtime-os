@@ -35,9 +35,8 @@ class VerificationRequestHandlerImpl(private val responseFactory: ExternalEventR
         val transaction = transactionFactory.invoke()
         val injector = sandbox
             .getObjectByKey<SandboxDependencyInjector<Contract>>(SANDBOX_DEPENDENCY_INJECTOR_KEY)
-        val injectorService = {
-            contract: Contract ->
-            requireNotNull(injector){"The verification injector called is null"}.injectServices(contract)
+        val injectorService = { contract: Contract ->
+            requireNotNull(injector) { "The verification injector called is null" }.injectServices(contract)
         }
 
         return try {

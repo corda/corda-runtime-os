@@ -4,11 +4,6 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
 import net.corda.ledger.utxo.testkit.notaryX500Name
-import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.sandboxgroupcontext.SandboxGroupType
-import net.corda.sandboxgroupcontext.VirtualNodeContext
-import net.corda.sandboxgroupcontext.getObjectByKey
-import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.Contract
@@ -37,19 +32,10 @@ class UtxoLedgerTransactionContractVerifierTest {
         val TX_ID_2 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
         val TX_ID_3 = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
         val holdingIdentity = HoldingIdentity(MemberX500Name("ALICE", "LDN", "GB"), "group")
-        val virtualNodeContext = VirtualNodeContext(
-            holdingIdentity,
-            mock(),
-            SandboxGroupType.VERIFICATION,
-            null
-        )
-        const val SANDBOX_DEPENDENCY_INJECTOR_KEY = "DEPENDENCY_INJECTOR"
     }
 
-    private val sandboxGroupContext = mock<SandboxGroupContext>()
     private val transaction = mock<UtxoLedgerTransaction>()
     private val transactionFactory = mock<() -> UtxoLedgerTransaction>()
-    private val injector = mock<SandboxDependencyInjector<Contract>>()
     private val injectService = mock<(Contract) -> Unit>()
 
     @BeforeEach
@@ -59,10 +45,6 @@ class UtxoLedgerTransactionContractVerifierTest {
         MyValidContractC.EXECUTION_COUNT = 0
         whenever(transactionFactory.invoke()).thenReturn(transaction)
         whenever(transaction.id).thenReturn(TX_ID_1)
-        whenever(sandboxGroupContext.virtualNodeContext).thenReturn(virtualNodeContext)
-        whenever(sandboxGroupContext
-            .getObjectByKey<SandboxDependencyInjector<Contract>>(SANDBOX_DEPENDENCY_INJECTOR_KEY))
-            .thenReturn(injector)
     }
 
     @Test
