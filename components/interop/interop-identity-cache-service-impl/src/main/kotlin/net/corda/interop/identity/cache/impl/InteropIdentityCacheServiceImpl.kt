@@ -3,6 +3,7 @@ package net.corda.interop.identity.cache.impl
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.interop.identity.cache.InteropIdentityCacheEntry
 import net.corda.interop.identity.cache.InteropIdentityCacheService
+import net.corda.interop.identity.cache.InteropIdentityCacheView
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -34,33 +35,32 @@ class InteropIdentityCacheServiceImpl @Activate constructor(
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, lifecycleEventHandler)
 
     /**
-     * Outer key is the holding identity short hash.
-     * Inner key is the interop group UUID.
+     * Map of holding identity short hashes to [InteropIdentityCacheView] objects
      */
-    private val cacheData = HashMap<String, MutableSet<InteropIdentityCacheEntry>>()
+    private val cacheData = HashMap<String, InteropIdentityCacheView>()
 
-    private fun getInteropIdentitiesFor(holdingIdentityShortHash: String): MutableSet<InteropIdentityCacheEntry> {
+    private fun getCacheView(holdingIdentityShortHash: String): InteropIdentityCacheView {
         if (!cacheData.containsKey(holdingIdentityShortHash)) {
-            cacheData[holdingIdentityShortHash] = HashSet()
+            cacheData[holdingIdentityShortHash] = InteropIdentityCacheView(holdingIdentityShortHash)
         }
 
         return cacheData[holdingIdentityShortHash]!!
     }
 
     override fun getInteropIdentities(shortHash: String): Set<InteropIdentityCacheEntry> {
-        return getInteropIdentitiesFor(shortHash)
+        return getCacheView(shortHash).getIdentities()
     }
 
     override fun putInteropIdentity(shortHash: String, identity: InteropIdentityCacheEntry) {
         log.info("Adding interop identity, shortHash: $shortHash, identity=$identity")
-        val identities = getInteropIdentitiesFor(shortHash)
-        identities.add(identity)
+        val view = getCacheView(shortHash)
+        view.addIdentity(identity)
     }
 
     override fun removeInteropIdentity(shortHash: String, identity: InteropIdentityCacheEntry) {
         log.info("Removing interop identity, shortHash: $shortHash, identity=$identity")
-        val identities = getInteropIdentitiesFor(shortHash)
-        identities.remove(identity)
+        val view = getCacheView(shortHash)
+        view.addIdentity(identity)
     }
 
     override val isRunning: Boolean
