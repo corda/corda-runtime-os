@@ -6,7 +6,6 @@ import io.javalin.http.ContentType
 import io.javalin.http.HandlerType
 import io.javalin.http.Header
 import io.javalin.http.HttpResponseException
-import io.javalin.http.servlet.JavalinServletContext
 import io.javalin.http.staticfiles.Location
 import io.javalin.http.util.JsonEscapeUtil
 import io.javalin.http.util.MultipartUtil
