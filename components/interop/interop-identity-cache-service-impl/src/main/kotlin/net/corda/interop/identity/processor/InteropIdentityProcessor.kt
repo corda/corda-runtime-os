@@ -1,12 +1,13 @@
 package net.corda.interop.identity.processor
 
 import net.corda.data.interop.InteropIdentity
+import net.corda.interop.core.Utils.Companion.computeShortHash
+import net.corda.interop.identity.cache.InteropIdentityCacheEntry
 import net.corda.interop.identity.cache.InteropIdentityCacheService
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
-import java.util.UUID
 
 class InteropIdentityProcessor(
     private val cacheService: InteropIdentityCacheService
@@ -19,12 +20,20 @@ class InteropIdentityProcessor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    private fun verifyShortHash(identity: InteropIdentityCacheEntry, expectedShortHash: String) {
+        val shortHash = computeShortHash(identity.x500Name, identity.groupId)
+        if (shortHash != expectedShortHash) {
+            throw CordaRuntimeException(
+                "Interop identity $identity short hash does not match record key! " +
+                "Expected: $expectedShortHash, got: $shortHash.")
+        }
+    }
 
     private data class RecordKey(
         val keyText: String
     ) {
-        val shortHash: String
-        val groupId: UUID
+        val holdingIdentityShortHash: String
+        val interopIdentityShortHash: String
 
         init {
             val tokens = keyText.split(":")
@@ -33,69 +42,61 @@ class InteropIdentityProcessor(
                 throw CordaRuntimeException("Invalid record key '$keyText'. Expected key of the format <short hash>:<group UUID>")
             }
 
-            shortHash = if (tokens[0].length == 12) {
+            holdingIdentityShortHash = if (tokens[0].length == 12) {
                 tokens[0]
             } else {
                 throw CordaRuntimeException("Invalid record key '$keyText', expected string of length 12, got ${tokens[0].length}.")
             }
 
-            groupId = try {
-                UUID.fromString(tokens[1])
+            interopIdentityShortHash = try {
+                tokens[1]
             } catch (e: Exception) {
                 throw CordaRuntimeException("Invalid record key '$keyText', failed to parse UUID.", e)
             }
         }
     }
 
-    private fun updateCacheEntry(key: RecordKey, oldValue: InteropIdentity, newValue: InteropIdentity) {
-        val interopIdentities = cacheService.getInteropIdentities(key.shortHash)
+    private fun updateCacheEntry(key: RecordKey, oldEntry: InteropIdentityCacheEntry, newEntry: InteropIdentityCacheEntry) {
+        val interopIdentities = cacheService.getInteropIdentities(key.holdingIdentityShortHash)
 
-        // Both the record key and values contain the interop group ID. Might as well perform a sanity check.
-        if (key.groupId.toString() != oldValue.groupId || key.groupId.toString() != newValue.groupId) {
-            throw CordaRuntimeException("Failed to update cache entry, group ID in key does not match record values.")
-        }
+        // Short hash can be derived from x500 name and group ID. Might as well perform a quick sanity check!
+        verifyShortHash(oldEntry, key.interopIdentityShortHash)
+        verifyShortHash(newEntry, key.interopIdentityShortHash)
 
-        val groupId = key.groupId.toString()
-
-        // If the old record isn't in the cache or doesn't match the cache content, log the error and the over-write.
-        if (groupId !in interopIdentities.keys) {
+        // Remove the old entry from the cache or print a warning if not present
+        if (interopIdentities.contains(oldEntry)) {
+            cacheService.removeInteropIdentity(key.holdingIdentityShortHash, oldEntry)
+        } else {
             logger.warn("Update: Old record is not present in the cache. Ignoring old entry.")
-        } else if (interopIdentities[groupId] != oldValue) {
-            logger.warn("Update: Old record value does not match current cache content. Overwriting.")
         }
 
-        cacheService.putInteropIdentity(key.shortHash, newValue)
+        cacheService.putInteropIdentity(key.holdingIdentityShortHash, newEntry)
     }
 
-    private fun insertCacheEntry(key: RecordKey, newValue: InteropIdentity) {
-        val interopIdentities = cacheService.getInteropIdentities(key.shortHash)
+    private fun insertCacheEntry(key: RecordKey, newEntry: InteropIdentityCacheEntry) {
+        val interopIdentities = cacheService.getInteropIdentities(key.holdingIdentityShortHash)
 
-        // Sanity check.
-        if (key.groupId.toString() != newValue.groupId) {
-            throw CordaRuntimeException("Failed to insert cache entry, group ID in key does not match record value.")
+        // Short hash can be derived from x500 name and group ID. Might as well perform a quick sanity check!
+        verifyShortHash(newEntry, key.interopIdentityShortHash)
+
+        // If the new value is already in the cache, log a warning.
+        if (!interopIdentities.contains(newEntry)) {
+            cacheService.putInteropIdentity(key.holdingIdentityShortHash, newEntry)
+        } else {
+            logger.warn("Insert: Cache entry already exists. Ignoring.")
+            return
         }
-
-        val groupId = key.groupId.toString()
-
-        if (groupId in interopIdentities.keys) {
-            logger.warn("Insert: Cache entry already exists. Overwriting.")
-        }
-
-        cacheService.putInteropIdentity(key.shortHash, newValue)
     }
 
-    private fun removeCacheEntry(key: RecordKey, oldValue: InteropIdentity) {
-        val interopIdentities = cacheService.getInteropIdentities(key.shortHash)
+    private fun removeCacheEntry(key: RecordKey, oldEntry: InteropIdentityCacheEntry) {
+        val interopIdentities = cacheService.getInteropIdentities(key.holdingIdentityShortHash)
 
-        // Sanity check.
-        if (key.groupId.toString() != oldValue.groupId) {
-            throw CordaRuntimeException("Failed to remove cache entry, group ID in key does not match record value.")
-        }
+        // Short hash can be derived from x500 name and group ID. Might as well perform a quick sanity check!
+        verifyShortHash(oldEntry, key.interopIdentityShortHash)
 
-        val groupId = key.groupId.toString()
-
-        if (groupId in interopIdentities.keys) {
-            cacheService.removeInteropIdentity(key.shortHash, oldValue)
+        // Remove the entry if present, log if not present when expected.
+        if (interopIdentities.contains(oldEntry)) {
+            cacheService.removeInteropIdentity(key.holdingIdentityShortHash, oldEntry)
         } else {
             logger.warn("Remove: No cache entry exists for the provided group ID. Ignoring.")
         }
@@ -106,24 +107,27 @@ class InteropIdentityProcessor(
         oldValue: InteropIdentity?,
         currentData: Map<String, InteropIdentity>
     ) {
-        logger.info("Message Received onNext; key: ${newRecord.key}, newValue: ${newRecord.value}, oldValue: $oldValue")
-
         val key = RecordKey(newRecord.key)
         val newValue = newRecord.value
 
-        if ((newValue != null) && (oldValue != null)) {
-            updateCacheEntry(key, oldValue, newValue)
+        logger.info("Message Received onNext; key: $key, newValue: $newValue, oldValue: $oldValue")
+
+        val oldEntry = oldValue?.let { InteropIdentityCacheEntry.of(it) }
+        val newEntry = newValue?.let { InteropIdentityCacheEntry.of(it) }
+
+        if ((newEntry != null) && (oldEntry != null)) {
+            updateCacheEntry(key, oldEntry, newEntry)
         }
 
-        if (newValue != null && oldValue == null) {
-            insertCacheEntry(key, newValue)
+        if (newEntry != null && oldEntry == null) {
+            insertCacheEntry(key, newEntry)
         }
 
-        if (newValue == null && oldValue != null) {
-            removeCacheEntry(key, oldValue)
+        if (newEntry == null && oldEntry != null) {
+            removeCacheEntry(key, oldEntry)
         }
 
-        if (newValue == null && oldValue == null) {
+        if (newEntry == null && oldEntry == null) {
             logger.warn("Old and new record values are both null. Nothing to be done.")
         }
     }
@@ -133,7 +137,8 @@ class InteropIdentityProcessor(
 
         currentData.entries.forEach { topicEntry ->
             val keyInfo = RecordKey(topicEntry.key)
-            cacheService.putInteropIdentity(keyInfo.shortHash, topicEntry.value)
+            val cacheEntry = InteropIdentityCacheEntry.of(topicEntry.value)
+            cacheService.putInteropIdentity(keyInfo.holdingIdentityShortHash, cacheEntry)
         }
     }
 }

@@ -2,7 +2,7 @@ package net.corda.interop.identity.cache.impl
 
 import net.corda.data.chunking.UploadStatus
 import net.corda.data.chunking.UploadStatusKey
-import net.corda.data.interop.InteropIdentity
+import net.corda.interop.identity.cache.InteropIdentityCacheEntry
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.subscription.CompactedSubscription
@@ -15,7 +15,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.util.UUID
-import kotlin.collections.HashMap
 
 
 class InteropIdentityCacheServiceImplTest {
@@ -38,7 +37,7 @@ class InteropIdentityCacheServiceImplTest {
         val shortHash = "1234567890"
         val response = cache.getInteropIdentities(shortHash)
 
-        assertThat(response).isInstanceOf(HashMap::class.java)
+        assertThat(response).isInstanceOf(Set::class.java)
         assertThat(response.isEmpty()).isTrue
     }
 
@@ -59,23 +58,20 @@ class InteropIdentityCacheServiceImplTest {
         val cache = InteropIdentityCacheServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
 
         val shortHash = "1234567890"
-        val interopIdentity = InteropIdentity().apply {
-            groupId = UUID.randomUUID().toString()
-            x500Name = "X500 name #1"
-        }
+        val interopIdentity = InteropIdentityCacheEntry(
+            groupId = UUID.randomUUID().toString(),
+            x500Name = "X500 name #1",
+            holdingIdentityShortHash = shortHash
+        )
 
         cache.putInteropIdentity(shortHash, interopIdentity)
 
         val interopIdentities = cache.getInteropIdentities(shortHash)
 
-        assertThat(interopIdentities).isInstanceOf(HashMap::class.java)
+        assertThat(interopIdentities).isInstanceOf(Set::class.java)
         assertThat(interopIdentities.size).isEqualTo(1)
 
-        val key = interopIdentities.keys.single()
-
-        assertThat(key).isEqualTo(interopIdentity.groupId)
-
-        val value = interopIdentities[key]
+        val value = interopIdentities.single()
 
         assertThat(value).isEqualTo(interopIdentity)
     }
@@ -98,32 +94,26 @@ class InteropIdentityCacheServiceImplTest {
 
         val shortHash = "1234567890"
 
-        val interopIdentity1 = InteropIdentity().apply {
-            groupId = UUID.randomUUID().toString()
-            x500Name = "X500 name #1"
-        }
+        val interopIdentity1 = InteropIdentityCacheEntry(
+            groupId = UUID.randomUUID().toString(),
+            x500Name = "X500 name #1",
+            holdingIdentityShortHash = shortHash
+        )
 
-        val interopIdentity2 = InteropIdentity().apply {
-            groupId = UUID.randomUUID().toString()
-            x500Name = "X500 name #2"
-        }
+        val interopIdentity2 = InteropIdentityCacheEntry(
+            groupId = UUID.randomUUID().toString(),
+            x500Name = "X500 name #2",
+            holdingIdentityShortHash = shortHash
+        )
 
         cache.putInteropIdentity(shortHash, interopIdentity1)
         cache.putInteropIdentity(shortHash, interopIdentity2)
 
         val interopIdentities = cache.getInteropIdentities(shortHash)
 
-        assertThat(interopIdentities).isInstanceOf(HashMap::class.java)
+        assertThat(interopIdentities).isInstanceOf(Set::class.java)
         assertThat(interopIdentities.size).isEqualTo(2)
 
-        val keys = interopIdentities.keys
-
-        assertThat(keys).contains(interopIdentity1.groupId, interopIdentity2.groupId)
-
-        val value1 = interopIdentities[interopIdentity1.groupId]
-        val value2 = interopIdentities[interopIdentity2.groupId]
-
-        assertThat(value1).isEqualTo(interopIdentity1)
-        assertThat(value2).isEqualTo(interopIdentity2)
+        assertThat(interopIdentities).contains(interopIdentity1, interopIdentity2)
     }
 }
