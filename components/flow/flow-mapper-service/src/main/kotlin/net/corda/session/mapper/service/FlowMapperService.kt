@@ -103,7 +103,7 @@ class FlowMapperService @Activate constructor(
                 }
                 coordinator.createManagedResource(SUBSCRIPTION) {
                     subscriptionFactory.createPriorityStreamSubscription(
-                        SubscriptionConfig("$CONSUMER_GROUP-$FLOW_MAPPER_EVENT_TOPIC", FLOW_MAPPER_EVENT_TOPIC),
+                        SubscriptionConfig(CONSUMER_GROUP, FLOW_MAPPER_EVENT_TOPIC),
                         mapOf(
                             Pair(1, FLOW_MAPPER_SESSION_IN_EVENT_TOPIC),
                             Pair(2, FLOW_MAPPER_EVENT_TOPIC),

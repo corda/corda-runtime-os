@@ -23,8 +23,11 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.config.MessagingConfigResolver
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.constants.MetricsConstants
+import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.publisher.RestClient
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.utils.toCordaProducerRecords
@@ -156,19 +159,27 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
         ) { _ ->
             log.warn("Failed to serialize record!")
         }
-        val eventConsumerConfig =
-            ConsumerConfig(config.group, "${config.clientId}-eventConsumer", ConsumerRoles.SAE_EVENT)
         consumers.forEach {
+            val topic = topics[it.key]!!
+            val configBuilder = MessagingConfigResolver(config.messageBusConfig.factory)
+            val consumerConfig = configBuilder.buildSubscriptionConfig(
+                SubscriptionType.STATE_AND_EVENT,
+                SubscriptionConfig("${config.group}-${topic}", topic),
+                config.messageBusConfig,
+                UUID.randomUUID().toString()
+            )
+            val eventConsumerConfig =
+                ConsumerConfig(consumerConfig.group, "${config.clientId}-eventConsumer", ConsumerRoles.SAE_EVENT)
             consumers[it.key] = cordaConsumerBuilder.createConsumer(
                 eventConsumerConfig,
-                config.messageBusConfig,
+                consumerConfig.messageBusConfig,
                 processor.keyClass,
                 processor.eventValueClass,
                 { _ ->
                     log.error("Failed to deserialize event record!")
                 }
             )
-            consumers[it.key]?.subscribe(topics[it.key]!!)
+            consumers[it.key]?.subscribe(topic)
             val partitions = consumers[it.key]?.assignment()
             consumers[it.key]?.pause(partitions!!)
         }

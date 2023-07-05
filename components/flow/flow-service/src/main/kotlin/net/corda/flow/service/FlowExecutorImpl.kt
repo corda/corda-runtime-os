@@ -61,7 +61,6 @@ class FlowExecutorImpl constructor(
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
             if (System.getenv("ENABLE_FLOW_PROCESS").equals("TRUE", true)) {
-                val consumerGroup = "$CONSUMER_GROUP-$FLOW_EVENT_TOPIC"
                 val messagingConfig = toMessagingConfig(config)
                 val flowConfig = config.getConfig(FLOW_CONFIG)
                     .withValue(
@@ -78,7 +77,7 @@ class FlowExecutorImpl constructor(
                 subscription?.close()
 
                 subscription = subscriptionFactory.createPriorityStreamSubscription(
-                    SubscriptionConfig(consumerGroup, FLOW_EVENT_TOPIC),
+                    SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC),
                     mapOf(
                         Pair(1, FLOW_SESSION_TOPIC),
                         Pair(2, FLOW_EVENT_TOPIC),
