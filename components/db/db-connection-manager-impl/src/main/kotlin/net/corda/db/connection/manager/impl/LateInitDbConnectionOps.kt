@@ -50,9 +50,8 @@ class LateInitDbConnectionOps: DbConnectionOps {
     override fun getDataSource(config: SmartConfig): CloseableDataSource =
         delegate.getDataSource(config)
 
-    override fun getDataSourceConfig(name: String, privilege: DbPrivilege): Config? {
-        TODO("Not yet implemented")
-    }
+    override fun getDataSourceConfig(name: String, privilege: DbPrivilege): Config? =
+        delegate.getDataSourceConfig(name, privilege)
 
     override fun getClusterEntityManagerFactory(): EntityManagerFactory =
         delegate.getClusterEntityManagerFactory()
