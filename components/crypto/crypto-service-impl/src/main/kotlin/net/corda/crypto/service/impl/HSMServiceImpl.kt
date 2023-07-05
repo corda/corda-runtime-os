@@ -14,7 +14,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 
-// There's no actual reason this couldn't all move into CryptoService, but the extra modularity may be good
+// TODO CORE-15265 there's no actual reason this couldn't all move into CryptoService
 class HSMServiceImpl(
     private val store: HSMStore,
     private val cryptoService: CryptoService,

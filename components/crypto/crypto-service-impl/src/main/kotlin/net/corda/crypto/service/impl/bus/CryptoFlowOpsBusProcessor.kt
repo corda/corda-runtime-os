@@ -94,7 +94,8 @@ class CryptoFlowOpsBusProcessor(
                             ExceptionEnvelope("Expired", "Expired at $expireAt")
                         )
                     } else {
-                        // TODO - remove the retry here, Corda 5 architecture is that the flow should do the retries
+                        // TODO CORE-15264 - remove the retry here, Corda 5 architecture is that the flow should do the retries.
+                        // We'd rather make that change under careful consideration, 
                         val response = executor.executeWithRetry {
                             handleRequest(requestPayload, request.context)
                         }
