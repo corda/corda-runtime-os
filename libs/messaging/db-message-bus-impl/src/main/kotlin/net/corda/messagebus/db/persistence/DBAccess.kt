@@ -114,9 +114,6 @@ class DBAccess(
         }
     }
 
-    /**
-     * If auto topic creation is enabled then will create the topic
-     */
     fun getTopicPartitionMapFor(topic: String): Set<CordaTopicPartition> {
         val topicEntry = executeWithErrorHandling(
             "get topic partition map",
