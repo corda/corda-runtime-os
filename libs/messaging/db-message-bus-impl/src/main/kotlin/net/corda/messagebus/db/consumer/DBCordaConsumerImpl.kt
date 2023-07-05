@@ -222,7 +222,7 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
 
     @Synchronized
     override fun close() {
-        log.info("Closing consumer $clientId")
+        log.info("Closing consumer $clientId", Exception("YYY"))
         consumerGroup.unsubscribe(this)
         updateTopicPartitions() // Will trigger the callback for removed topic partitions
         dbAccess.close()

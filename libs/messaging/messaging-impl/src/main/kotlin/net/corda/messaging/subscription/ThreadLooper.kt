@@ -117,6 +117,7 @@ class ThreadLooper(
          * Must be called from within the lock
          */
         private fun doStopLoopAndClearThread(): Thread = thread.let {
+            log.info("YYY doStopLoopAndClearThread", Exception("YYY"))
             _loopStopped = true
             thread = null
             it// return original Thread
