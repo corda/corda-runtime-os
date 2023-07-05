@@ -91,8 +91,8 @@ class RestSubscriptionImpl<V: Any>(
     }
 
     override fun close() {
-        lifecycleCoordinator.close()
         javalin.close()
+        lifecycleCoordinator.close()
     }
 
     override val subscriptionName: LifecycleCoordinatorName

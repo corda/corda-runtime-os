@@ -183,8 +183,8 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                 }
             )
             consumers[it.key]?.subscribe(topic)
-            val partitions = consumers[it.key]?.assignment()
-            consumers[it.key]?.pause(partitions!!)
+//            val partitions = consumers[it.key]?.assignment()
+//            consumers[it.key]?.pause(partitions!!)
         }
     }
 
@@ -257,25 +257,27 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
     }
 
     private fun getHighestPriorityEvents() : Map<Int, List<CordaConsumerRecord<K, E>>> {
-        var recordsCount = 0
+//        var recordsCount = 0
         val events = mutableMapOf<Int, MutableList<CordaConsumerRecord<K, E>>>()
-        for (position in 0 until priorities.size step 1) {
-            val priority = priorities[position]
+        for (priority in priorities) {
             val consumerRecords = mutableListOf<CordaConsumerRecord<K, E>>()
             events[priority] = consumerRecords
             eventPollTimer.recordCallable {
-                if (recordsCount == 0) {
-                    val partitions = consumers[priority]?.assignment()?.toSet()
-                    consumers[priority]?.resume(partitions!!)
-                    val records = consumers[priority]?.poll(EVENT_POLL_TIMEOUT)!!
-                    consumerRecords.addAll(records)
-                    recordsCount += records.size
-                    consumers[priority]?.pause(partitions!!)
-                } else {
-                    val records = consumers[priority]?.poll(PAUSED_POLL_TIMEOUT)!!
-                    consumerRecords.addAll(records)
-                    recordsCount += records.size
-                }
+                log.info("Assigned partitions for topic ${topics[priority]} with: ${consumers[priority]?.assignment()}")
+                val records = consumers[priority]?.poll(EVENT_POLL_TIMEOUT)!!
+                consumerRecords.addAll(records)
+//                if (recordsCount == 0) {
+//                    val partitions = consumers[priority]?.assignment()?.toSet()
+//                    consumers[priority]?.resume(partitions!!)
+//                    val records = consumers[priority]?.poll(EVENT_POLL_TIMEOUT)!!
+//                    consumerRecords.addAll(records)
+//                    recordsCount += records.size
+//                    consumers[priority]?.pause(partitions!!)
+//                } else {
+//                    val records = consumers[priority]?.poll(PAUSED_POLL_TIMEOUT)!!
+//                    consumerRecords.addAll(records)
+//                    recordsCount += records.size
+//                }
             }
         }
         return events
@@ -406,7 +408,6 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
         producer?.close()
         consumers.forEach {
             it.value?.close()
-            consumers.compute(it.key) { _, _ -> null }
         }
         producer = null
     }

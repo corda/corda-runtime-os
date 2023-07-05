@@ -29,7 +29,7 @@ class RestClient<R : Any>(
     private val client = HttpClient(CIO) {
         install(Logging) {
             logger = Logger.DEFAULT
-            level = LogLevel.INFO
+            level = LogLevel.ALL
         }
         install(HttpRequestRetry) {
             retryOnServerErrors(maxRetries = 3)
