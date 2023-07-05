@@ -60,7 +60,9 @@ class RegistrationProcessor(
 
     private val handlers = mapOf<Class<*>, RegistrationHandler<*>>(
         QueueRegistration::class.java to QueueRegistrationHandler(
+            clock,
             membershipPersistenceClient,
+            cordaAvroSerializationFactory,
         ),
         CheckForPendingRegistration::class.java to CheckForPendingRegistrationHandler(
             membershipQueryClient,
@@ -72,7 +74,6 @@ class RegistrationProcessor(
             membershipPersistenceClient,
             membershipQueryClient,
             membershipGroupReaderProvider,
-            cordaAvroSerializationFactory,
         ),
         ApproveRegistration::class.java to ApproveRegistrationHandler(
             membershipPersistenceClient,
