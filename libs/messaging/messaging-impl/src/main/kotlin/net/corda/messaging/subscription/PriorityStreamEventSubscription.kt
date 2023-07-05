@@ -230,10 +230,13 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                     batchSizeHistogram.record(events.size.toDouble())
                     log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${records.size})" }
                     val recordsQueue = ArrayDeque(events)
+                    producer?.beginTransaction()
                     while (recordsQueue.isNotEmpty()) {
                         val event = recordsQueue.removeFirst()
-                        processEvent(event, priority)
+                        processEvent(event)
                     }
+                    producer?.sendRecordOffsetsToTransaction(consumers[priority]!!, events)
+                    producer?.commitTransaction()
                 }
             } catch (ex: Exception) {
                 when (ex) {
@@ -285,13 +288,11 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
 
     @Suppress("UNCHECKED_CAST")
     private fun processEvent(
-        event: CordaConsumerRecord<K, E>,
-        priority: Int,
+        event: CordaConsumerRecord<K, E>
     ) {
         processorMeter.recordCallable {
             val subsequentEvents = ArrayDeque(listOf(event))
             val states = mutableMapOf<K, S?>()
-            producer?.beginTransaction()
             try {
                 while (subsequentEvents.isNotEmpty()) {
 
@@ -340,9 +341,6 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                     log.debug { "Processed event of key '${event.key}' successfully." }
 
                 }
-                val consumer = consumers[priority]!!
-                producer?.sendRecordOffsetsToTransaction(consumer, listOf(event))
-                producer?.commitTransaction()
                 states.forEach {
                     updateState(it.key, it.value)
                 }

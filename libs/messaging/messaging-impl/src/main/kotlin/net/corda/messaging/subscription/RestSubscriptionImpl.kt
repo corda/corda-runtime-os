@@ -31,31 +31,28 @@ class RestSubscriptionImpl<V: Any>(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<String, V> {
 
-    companion object {
-        private val javalin = Javalin.create().also {
-            startServer(it, 8080)
-        }
-        private fun startServer(server: Javalin, port: Int) {
-            val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
+    private val logger = LoggerFactory.getLogger(config.clientId)
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(config.lifecycleCoordinatorName, ::lifecycleHandler)
+    private val javalin = Javalin.create().also {
+        startServer(it, 8080)
+    }
+    private fun startServer(server: Javalin, port: Int) {
+        val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
 
-            if (bundle == null) {
-                server.start(port)
-            } else {
-                // We temporarily switch the context class loader to allow Javalin to find `WebSocketServletFactory`.
-                executeWithThreadContextClassLoader(bundle.adapt(BundleWiring::class.java).classLoader) {
-                    // Required because Javalin prints an error directly to stderr if it cannot find a logging
-                    // implementation via standard class loading mechanism. This mechanism is not appropriate for OSGi.
-                    // The logging implementation is found correctly in practice.
-                    executeWithStdErrSuppressed {
-                        server.start(port)
-                    }
+        if (bundle == null) {
+            server.start(port)
+        } else {
+            // We temporarily switch the context class loader to allow Javalin to find `WebSocketServletFactory`.
+            executeWithThreadContextClassLoader(bundle.adapt(BundleWiring::class.java).classLoader) {
+                // Required because Javalin prints an error directly to stderr if it cannot find a logging
+                // implementation via standard class loading mechanism. This mechanism is not appropriate for OSGi.
+                // The logging implementation is found correctly in practice.
+                executeWithStdErrSuppressed {
+                    server.start(port)
                 }
             }
         }
     }
-
-    private val logger = LoggerFactory.getLogger(config.clientId)
-    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(config.lifecycleCoordinatorName, ::lifecycleHandler)
 
     @Suppress("UNCHECKED_CAST")
     private fun process(context: Context) {
