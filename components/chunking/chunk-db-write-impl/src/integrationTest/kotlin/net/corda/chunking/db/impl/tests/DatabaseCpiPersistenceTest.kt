@@ -29,12 +29,6 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.CpkFile
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
-import net.corda.libs.cpi.datamodel.repository.impl.CpiCpkRepositoryImpl
-import net.corda.libs.cpi.datamodel.repository.impl.CpiMetadataRepositoryImpl
-import net.corda.libs.cpi.datamodel.repository.impl.CpkDbChangeLogAuditRepositoryImpl
-import net.corda.libs.cpi.datamodel.repository.impl.CpkDbChangeLogRepositoryImpl
-import net.corda.libs.cpi.datamodel.repository.impl.CpkFileRepositoryImpl
-import net.corda.libs.cpi.datamodel.repository.impl.CpkRepositoryImpl
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CordappManifest
