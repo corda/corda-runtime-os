@@ -69,7 +69,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
     private var threadLooper =
         ThreadLooper(log, config, lifecycleCoordinatorFactory, "state/event processing thread", ::runConsumeLoop)
     private var producer: CordaProducer? = null
-    private val consumers: MutableMap<Int, CordaConsumer<K, E>?> = topics.map { it.key to null }.toMap().toMutableMap()
+    private var consumers: MutableMap<Int, CordaConsumer<K, E>?> = topics.map { it.key to null }.toMap().toMutableMap()
     private val priorities: List<Int> = consumers.keys.sorted()
     private val hostAndPort = HostAndPort("orr-memory-db.8b332u.clustercfg.memorydb.eu-west-2.amazonaws.com", 6379).also {
         log.warn("Connecting to host ${it.host}, port ${it.port}")
@@ -407,6 +407,8 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
         consumers.forEach {
             it.value?.close()
         }
+        consumers.clear()
+        consumers = topics.map { it.key to null }.toMap().toMutableMap()
         producer = null
     }
 
