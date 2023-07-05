@@ -373,7 +373,7 @@ class FlowTests {
         val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
 
         assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(flowResult.json.result).isEqualTo("found dog id='$id' name='$name")
+        assertThat(flowResult.json.result).isEqualTo("found dog id='$id' name='$name'")
     }
 
     @Test
@@ -396,8 +396,8 @@ class FlowTests {
         val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
 
         assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(flowResult.json.result).contains("id='$id' name='$name")
-        assertThat(flowResult.json.result).contains("id='$id2' name='$name")
+        assertThat(flowResult.json.result).contains("id='$id' name='$name'")
+        assertThat(flowResult.json.result).contains("id='$id2' name='$name'")
     }
 
     @Test
