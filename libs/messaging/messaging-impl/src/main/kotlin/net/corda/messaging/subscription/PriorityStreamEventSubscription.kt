@@ -21,6 +21,7 @@ import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.publisher.waitOnPublisherFutures
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -32,12 +33,14 @@ import net.corda.messaging.publisher.RestClient
 import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toRecord
+import net.corda.messaging.utils.tryGetResult
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC
 import net.corda.schema.Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC
 import net.corda.schema.Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC
 import net.corda.schema.Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC
 import net.corda.schema.Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC
+import net.corda.tracing.wrapWithTracingExecutor
 import net.corda.utilities.debug
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig
 import org.slf4j.LoggerFactory
@@ -47,6 +50,7 @@ import java.security.SecureRandom
 import java.time.Duration
 import java.time.Instant
 import java.util.*
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import kotlin.collections.ArrayDeque
 import kotlin.random.Random
@@ -306,7 +310,10 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                     val currentEvent = subsequentEvents.removeFirst()
                     log.debug { "Processing event: $currentEvent" }
                     val state = states.computeIfAbsent(currentEvent.key) { getState(currentEvent.key) }
-                    val currentEventUpdates = processor.onNext(state, currentEvent.toRecord())
+                    val future = waitForFunctionToFinish({ processor.onNext(state, currentEvent.toRecord()) },
+                        config.processorTimeout.toMillis(),
+                        "Processing event $currentEvent timed-out!")
+                    val currentEventUpdates = future.tryGetResult() as StateAndEventProcessor.Response<S>
                     states[currentEvent.key] = currentEventUpdates.updatedState
                     // Get wake-up calls
                     val (wakeups, outputEvents) = currentEventUpdates.responseEvents.partition {
@@ -389,6 +396,21 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
             log.warn(message, ex)
             throw CordaMessageAPIIntermittentException(message, ex)
         }
+    }
+
+    fun waitForFunctionToFinish(function: () -> Any, maxTimeout: Long, timeoutErrorMessage: String): CompletableFuture<Any> {
+        val future: CompletableFuture<Any> = CompletableFuture.supplyAsync(
+            function,
+            executor
+        )
+        future.tryGetResult(maxTimeout)
+
+        if (!future.isDone) {
+            future.cancel(true)
+            log.error(timeoutErrorMessage)
+        }
+
+        return future
     }
 
     private fun toCordaConsumerRecord(sourceRecord: CordaConsumerRecord<K, E>, newEvent : Record<K, E>) =

@@ -144,7 +144,7 @@ class CreateConnect : Runnable {
     fun getTopics(topicConfigs: List<Create.TopicConfig>) =
         topicConfigs.map { topicConfig: Create.TopicConfig ->
             topicConfig.name to NewTopic(topicConfig.name,
-                if (topicPartitions.containsKey(topicConfig.name)) topicPartitions[topicConfig.name]!! else create!!.partitionOverride,
+                topicPartitions.getOrDefault(topicConfig.name, create!!.partitionOverride),
                 create!!.replicaOverride)
                 .configs(topicConfig.config)
         }.toMap()
