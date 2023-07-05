@@ -4,6 +4,7 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -52,7 +53,8 @@ import kotlin.random.Random
 
 @Suppress("LongParameterList")
 internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
-    private val config: ResolvedSubscriptionConfig,
+    private val subscriptionConfig: SubscriptionConfig,
+    private val messagingConfig: SmartConfig,
     private val topics: Map<Int, String>,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     private val cordaProducerBuilder: CordaProducerBuilder,
@@ -65,6 +67,9 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
     private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(30)
     private val EVENT_POLL_TIMEOUT = Duration.ofMillis(30)
 
+    private val config: ResolvedSubscriptionConfig = getConfig(
+        SubscriptionConfig("${subscriptionConfig.groupName}-default", "default"),
+        messagingConfig)
     private val log = LoggerFactory.getLogger("${this.javaClass.name}")
     private var threadLooper =
         ThreadLooper(log, config, lifecycleCoordinatorFactory, "state/event processing thread", ::runConsumeLoop)
@@ -164,13 +169,8 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
         }
         consumers.forEach {
             val topic = topics[it.key]!!
-            val configBuilder = MessagingConfigResolver(config.messageBusConfig.factory)
-            val consumerConfig = configBuilder.buildSubscriptionConfig(
-                SubscriptionType.STATE_AND_EVENT,
-                SubscriptionConfig("${config.group}-${topic}", topic),
-                config.messageBusConfig,
-                UUID.randomUUID().toString()
-            )
+            val consumerConfig =
+                getConfig(SubscriptionConfig("${config.group}-${topic}", topic), messagingConfig)
             val eventConsumerConfig =
                 ConsumerConfig(consumerConfig.group, "${config.clientId}-eventConsumer", ConsumerRoles.SAE_EVENT)
             consumers[it.key] = cordaConsumerBuilder.createConsumer(
@@ -463,5 +463,18 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
     private fun deleteLock(key: ByteArray) {
         val lockKey = key + 0.toByte()
         jedisCluster.del(lockKey)
+    }
+
+    private fun getConfig(
+        subscriptionConfig: SubscriptionConfig,
+        messagingConfig: SmartConfig
+    ): ResolvedSubscriptionConfig {
+        val configBuilder = MessagingConfigResolver(messagingConfig.factory)
+        return configBuilder.buildSubscriptionConfig(
+            SubscriptionType.STATE_AND_EVENT,
+            subscriptionConfig,
+            messagingConfig,
+            UUID.randomUUID().toString()
+        )
     }
 }

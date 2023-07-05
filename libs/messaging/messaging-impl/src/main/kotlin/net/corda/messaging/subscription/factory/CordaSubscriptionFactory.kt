@@ -138,11 +138,11 @@ class CordaSubscriptionFactory @Activate constructor(
         processor: StateAndEventProcessor<K, S, E>,
         messagingConfig: SmartConfig,
     ): StateAndEventSubscription<K, S, E> {
-        val config = getConfig(SubscriptionType.STATE_AND_EVENT, subscriptionConfig, messagingConfig)
         val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
         val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
         return PriorityStreamEventSubscription(
-            config,
+            subscriptionConfig,
+            messagingConfig,
             topics,
             cordaConsumerBuilder,
             cordaProducerBuilder,
