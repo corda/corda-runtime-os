@@ -263,8 +263,7 @@ open class SoftCryptoService(
                     externalId = externalId,
                     alias = alias,
                     keyScheme = scheme,
-                    category = category,
-                    hsmId = "SOFT" // TODO remove field
+                    category = category
                 )
                 val signingKeyInfo = repo.savePrivateKey(saveContext)
                 signingKeyInfoCache.put(signingKeyInfo.publicKey, signingKeyInfo)
