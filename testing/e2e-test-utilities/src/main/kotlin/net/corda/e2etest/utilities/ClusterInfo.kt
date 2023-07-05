@@ -46,7 +46,7 @@ abstract class ClusterInfo {
         userName: String = AdminPasswordUtil.adminUser,
         restPassword: String = System.getenv(restPasswordPropertyName) ?: AdminPasswordUtil.adminPassword
     ): RestClient<I> = RestClient(
-        rest.uri.toString(), restResourceClass, RestClientConfig()
+        rest.uri.toString()+"/api/v1/", restResourceClass, RestClientConfig()
             .enableSSL(true)
             .secureSSL(false)
             .minimumServerProtocolVersion(1)
