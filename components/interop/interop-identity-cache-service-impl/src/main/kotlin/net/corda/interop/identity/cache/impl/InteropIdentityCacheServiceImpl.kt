@@ -60,7 +60,7 @@ class InteropIdentityCacheServiceImpl @Activate constructor(
     override fun removeInteropIdentity(shortHash: String, identity: InteropIdentityCacheEntry) {
         log.info("Removing interop identity, shortHash: $shortHash, identity=$identity")
         val view = getCacheView(shortHash)
-        view.addIdentity(identity)
+        view.removeIdentity(identity)
     }
 
     override val isRunning: Boolean
