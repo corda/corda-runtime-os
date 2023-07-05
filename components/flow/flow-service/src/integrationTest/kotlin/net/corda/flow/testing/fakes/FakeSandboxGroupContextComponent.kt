@@ -20,6 +20,7 @@ import net.corda.sandboxgroupcontext.service.EvictionListener
 import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.serialization.checkpoint.CheckpointSerializer
+import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SerializedBytes
@@ -146,8 +147,8 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         }
     }
 
-    class FakeSandboxDependencyInjector : SandboxDependencyInjector {
-        override fun injectServices(obj: Any) {
+    class FakeSandboxDependencyInjector : SandboxDependencyInjector<Flow> {
+        override fun injectServices(obj: Flow) {
         }
 
         override fun getRegisteredServices(): Set<SingletonSerializeAsToken> {

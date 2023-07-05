@@ -2,12 +2,10 @@ package net.corda.ledger.utxo.transaction.verifier
 
 import net.corda.ledger.utxo.data.transaction.ContractVerificationFailureImpl
 import net.corda.metrics.CordaMetrics
-import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.sandboxgroupcontext.getObjectByKey
-import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 import net.corda.v5.ledger.utxo.ContractVerificationException
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
-import net.corda.sandboxgroupcontext.service.SANDBOX_DEPENDENCY_INJECTOR_KEY
+import net.corda.v5.ledger.utxo.Contract
+import net.corda.virtualnode.HoldingIdentity
 
 /**
  * Verifies contracts of ledger transaction. For security reasons, some verifications need to be run with a new instance
@@ -19,9 +17,9 @@ import net.corda.sandboxgroupcontext.service.SANDBOX_DEPENDENCY_INJECTOR_KEY
 fun verifyContracts(
     transactionFactory: () -> UtxoLedgerTransaction,
     transaction: UtxoLedgerTransaction = transactionFactory.invoke(),
-    sandboxGroupContext: SandboxGroupContext
+    holdingIdentity: HoldingIdentity,
+    injectService: (Contract) -> Unit
 ) {
-    val holdingIdentity = sandboxGroupContext.virtualNodeContext.holdingIdentity
 
     CordaMetrics.Metric.Ledger.ContractVerificationTime
         .builder()
@@ -51,11 +49,7 @@ fun verifyContracts(
 
                         try {
                             val contract = contractClass.getConstructor().newInstance()
-                            val injector = sandboxGroupContext.getObjectByKey<SandboxDependencyInjector>(SANDBOX_DEPENDENCY_INJECTOR_KEY)
-                            requireNotNull(injector) {
-                                "The verification injector called is null"
-                            }
-                            injector.injectServices(contract)
+                            injectService(contract)
                             contract.verify(transactionFactory.invoke())
                         } catch (ex: Exception) {
                             failureReasons.add(

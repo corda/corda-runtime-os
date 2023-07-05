@@ -23,6 +23,7 @@ import net.corda.sandboxgroupcontext.service.SANDBOX_DEPENDENCY_INJECTOR_KEY
 import net.corda.sandboxgroupcontext.service.factory.SandboxDependencyInjectorFactory
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.ledger.utxo.Contract
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -80,7 +81,7 @@ class VerificationSandboxServiceImpl @Activate constructor(
         val jsonDeserializers = sandboxService.registerCustomJsonDeserializers(ctx)
         val jsonSerializers = sandboxService.registerCustomJsonSerializers(ctx)
 
-        val injectorService = dependencyInjectionFactory.create(ctx)
+        val injectorService = dependencyInjectionFactory.create<Contract>(ctx)
         ctx.putObjectByKey(SANDBOX_DEPENDENCY_INJECTOR_KEY, injectorService)
 
         // Instruct all CustomMetadataConsumers to accept their metadata.

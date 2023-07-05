@@ -11,8 +11,12 @@ import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.impl.getSerializationService
 import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.getObjectByKey
+import net.corda.sandboxgroupcontext.service.SANDBOX_DEPENDENCY_INJECTOR_KEY
+import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.ledger.utxo.Contract
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import net.corda.data.ExceptionEnvelope as ExceptionEnvelopeAvro
@@ -29,11 +33,19 @@ class VerificationRequestHandlerImpl(private val responseFactory: ExternalEventR
         val serializationService = sandbox.getSerializationService()
         val transactionFactory = { request.getLedgerTransaction(serializationService) }
         val transaction = transactionFactory.invoke()
+        val injector = sandbox
+            .getObjectByKey<SandboxDependencyInjector<Contract>>(SANDBOX_DEPENDENCY_INJECTOR_KEY)
+        val injectorService = {
+            contract: Contract ->
+            requireNotNull(injector){"The verification injector called is null"}.injectServices(contract)
+        }
+
         return try {
             UtxoLedgerTransactionVerifier(
                 transactionFactory,
                 transaction,
-                sandbox,
+                sandbox.virtualNodeContext.holdingIdentity,
+                injectorService
             ).verify()
 
             responseFactory.success(

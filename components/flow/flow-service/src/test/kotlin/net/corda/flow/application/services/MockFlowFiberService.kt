@@ -13,13 +13,14 @@ import net.corda.membership.read.MembershipGroupReader
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 import net.corda.serialization.checkpoint.CheckpointSerializer
+import net.corda.v5.application.flows.Flow
 import net.corda.virtualnode.HoldingIdentity
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
 class MockFlowFiberService : FlowFiberService {
     val flowFiber = mock<FlowFiber>()
-    private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
+    private val sandboxDependencyInjector = mock<SandboxDependencyInjector<Flow>>()
     val flowCheckpoint = mock<FlowCheckpoint>()
     val flowStack = mock<FlowStack>()
     private val checkpointSerializer = mock<CheckpointSerializer>()

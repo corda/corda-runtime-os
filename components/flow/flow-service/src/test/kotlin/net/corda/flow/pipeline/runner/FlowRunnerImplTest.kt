@@ -39,6 +39,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
+import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.OperationalStatus
@@ -66,7 +67,7 @@ class FlowRunnerImplTest {
     private val flowFiberExecutionContextFactory = mock<FlowFiberExecutionContextFactory>()
     private val cpiInfoReadService = mock<CpiInfoReadService>()
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
-    private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
+    private val sandboxDependencyInjector = mock<SandboxDependencyInjector<Flow>>()
     private val fiberFuture = mock<FiberFuture>()
     private val platformInfoProvider = mock<PlatformInfoProvider> { on { localWorkerPlatformVersion} doReturn 50000 }
     private var flowFiberExecutionContext: FlowFiberExecutionContext

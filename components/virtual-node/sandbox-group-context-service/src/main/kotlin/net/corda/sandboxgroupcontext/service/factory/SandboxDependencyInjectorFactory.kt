@@ -13,5 +13,5 @@ interface SandboxDependencyInjectorFactory {
      *
      * @param sandboxGroupContext The instance of the sandbox to associate the injector with.
      */
-    fun create(sandboxGroupContext: SandboxGroupContext): SandboxDependencyInjector
+    fun <T: Any> create(sandboxGroupContext: SandboxGroupContext): SandboxDependencyInjector<T>
 }

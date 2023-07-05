@@ -21,8 +21,6 @@ dependencies {
     implementation project(':libs:sandbox-types')
     implementation project(':libs:virtual-node:sandbox-group-context')
 
-    implementation project(':components:virtual-node:sandbox-group-context-service')
-
     testImplementation project(':testing:ledger:ledger-utxo-testkit')
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"

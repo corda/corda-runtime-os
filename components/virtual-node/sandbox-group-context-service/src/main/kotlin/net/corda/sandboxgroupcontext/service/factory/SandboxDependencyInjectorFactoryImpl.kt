@@ -30,7 +30,7 @@ class SandboxDependencyInjectorFactoryImpl : SandboxDependencyInjectorFactory {
         ))
     }
 
-    override fun create(sandboxGroupContext: SandboxGroupContext): SandboxDependencyInjector {
+    override fun <T: Any> create(sandboxGroupContext: SandboxGroupContext): SandboxDependencyInjector<T> {
         val sandboxGroupType = sandboxGroupContext.virtualNodeContext.sandboxGroupType
 
         require(sandboxGroupType.hasInjection) {

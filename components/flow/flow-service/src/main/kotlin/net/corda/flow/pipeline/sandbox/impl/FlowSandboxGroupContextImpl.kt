@@ -7,9 +7,10 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 import net.corda.serialization.checkpoint.CheckpointSerializer
+import net.corda.v5.application.flows.Flow
 
 class FlowSandboxGroupContextImpl(
-    override val dependencyInjector: SandboxDependencyInjector,
+    override val dependencyInjector: SandboxDependencyInjector<Flow>,
     override val checkpointSerializer: CheckpointSerializer,
     override val protocolStore: FlowProtocolStore,
     private val sandboxGroupContext: SandboxGroupContext
@@ -23,7 +24,7 @@ class FlowSandboxGroupContextImpl(
 
         @Suppress("ThrowsCount")
         fun fromContext(sandboxGroupContext: SandboxGroupContext): FlowSandboxGroupContext {
-            val dependencyInjector = sandboxGroupContext.getObjectByKey<SandboxDependencyInjector>(DEPENDENCY_INJECTOR)
+            val dependencyInjector = sandboxGroupContext.getObjectByKey<SandboxDependencyInjector<Flow>>(DEPENDENCY_INJECTOR)
                 ?: throw FlowFatalException(
                     "The flow sandbox has not been initialized with a dependency injector for " +
                             "identity ${sandboxGroupContext.virtualNodeContext.holdingIdentity}"

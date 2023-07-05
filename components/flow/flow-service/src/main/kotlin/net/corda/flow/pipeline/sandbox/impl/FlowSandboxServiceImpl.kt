@@ -72,7 +72,7 @@ class FlowSandboxServiceImpl @Activate constructor(
         val sandboxGroup = sandboxGroupContext.sandboxGroup
         val customCrypto = sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext)
 
-        val injectorService = dependencyInjectionFactory.create(sandboxGroupContext)
+        val injectorService = FlowSandboxDependencyInjectorImpl(dependencyInjectionFactory.create(sandboxGroupContext))
         sandboxGroupContext.putObjectByKey(DEPENDENCY_INJECTOR, injectorService)
 
         val cleanupCordaSingletons = mutableListOf<AutoCloseable>()

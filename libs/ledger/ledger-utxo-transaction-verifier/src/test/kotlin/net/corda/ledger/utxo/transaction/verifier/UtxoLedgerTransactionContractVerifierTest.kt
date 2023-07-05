@@ -49,7 +49,8 @@ class UtxoLedgerTransactionContractVerifierTest {
     private val sandboxGroupContext = mock<SandboxGroupContext>()
     private val transaction = mock<UtxoLedgerTransaction>()
     private val transactionFactory = mock<() -> UtxoLedgerTransaction>()
-    private val injector = mock<SandboxDependencyInjector>()
+    private val injector = mock<SandboxDependencyInjector<Contract>>()
+    private val injectService = mock<(Contract) -> Unit>()
 
     @BeforeEach
     fun beforeEach() {
@@ -59,7 +60,9 @@ class UtxoLedgerTransactionContractVerifierTest {
         whenever(transactionFactory.invoke()).thenReturn(transaction)
         whenever(transaction.id).thenReturn(TX_ID_1)
         whenever(sandboxGroupContext.virtualNodeContext).thenReturn(virtualNodeContext)
-        whenever(sandboxGroupContext.getObjectByKey<SandboxDependencyInjector>(SANDBOX_DEPENDENCY_INJECTOR_KEY)).thenReturn(injector)
+        whenever(sandboxGroupContext
+            .getObjectByKey<SandboxDependencyInjector<Contract>>(SANDBOX_DEPENDENCY_INJECTOR_KEY))
+            .thenReturn(injector)
     }
 
     @Test
@@ -76,7 +79,7 @@ class UtxoLedgerTransactionContractVerifierTest {
             )
         )
         whenever(transaction.outputStateAndRefs).thenReturn(listOf(validContractCState2))
-        verifyContracts(transactionFactory, transaction, sandboxGroupContext)
+        verifyContracts(transactionFactory, transaction, holdingIdentity, injectService)
         // Called once for each of 3 contracts
         verify(transactionFactory, times(3)).invoke()
         assertThat(MyValidContractA.EXECUTION_COUNT).isEqualTo(1)
@@ -98,7 +101,7 @@ class UtxoLedgerTransactionContractVerifierTest {
             )
         )
         whenever(transaction.outputStateAndRefs).thenReturn(listOf(invalidContractBState))
-        assertThatThrownBy { verifyContracts(transactionFactory, transaction, sandboxGroupContext) }
+        assertThatThrownBy { verifyContracts(transactionFactory, transaction, holdingIdentity, injectService) }
             .isExactlyInstanceOf(ContractVerificationException::class.java)
             .hasMessageContainingAll("I have failed", "Something is wrong here")
         // Called once for each of 4 contracts
