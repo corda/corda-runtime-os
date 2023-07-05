@@ -59,14 +59,13 @@ class FlowSandboxServiceImpl @Activate constructor(
         }
 
         val sandboxGroupContext = sandboxGroupContextComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
-            initialiseSandbox(dependencyInjectionFactory, sandboxGroupContext)
+            initialiseSandbox(sandboxGroupContext)
         }
 
         return FlowSandboxGroupContextImpl.fromContext(sandboxGroupContext)
     }
 
     private fun initialiseSandbox(
-        dependencyInjectionFactory: SandboxDependencyInjectorFactory,
         sandboxGroupContext: MutableSandboxGroupContext,
     ): AutoCloseable {
         val sandboxGroup = sandboxGroupContext.sandboxGroup

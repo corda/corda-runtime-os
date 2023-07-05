@@ -45,7 +45,7 @@ class VerificationSandboxServiceImpl @Activate constructor(
     @Reference
     private val cpkReadService: CpkReadService,
     @Reference(service = SandboxDependencyInjectorFactory::class)
-    private val dependencyInjectionFactory: SandboxDependencyInjectorFactory,
+    private val dependencyInjectionFactory: SandboxDependencyInjectorFactory
 ) : VerificationSandboxService {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -54,7 +54,7 @@ class VerificationSandboxServiceImpl @Activate constructor(
     override fun get(holdingIdentity: HoldingIdentity, cpks: List<CordaPackageSummary>): SandboxGroupContext {
         checkCpks(holdingIdentity, cpks)
         return sandboxService.getOrCreate(getVirtualNodeContext(holdingIdentity, cpks)) { _, ctx ->
-            initializeSandbox(dependencyInjectionFactory, holdingIdentity, ctx)
+            initializeSandbox(holdingIdentity, ctx)
         }
     }
 
@@ -72,7 +72,6 @@ class VerificationSandboxServiceImpl @Activate constructor(
     }
 
     private fun initializeSandbox(
-        dependencyInjectionFactory: SandboxDependencyInjectorFactory,
         holdingIdentity: HoldingIdentity,
         ctx: MutableSandboxGroupContext
     ): AutoCloseable {

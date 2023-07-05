@@ -9,5 +9,5 @@ import net.corda.v5.application.flows.Flow
  * This is due to [NonSerializable] in sandbox injector
  * and to avoid to amend this dependency in any other modules.
  */
-class FlowSandboxDependencyInjectorImpl(val delegate: SandboxDependencyInjector<Flow>) :
+class FlowSandboxDependencyInjectorImpl(private val delegate: SandboxDependencyInjector<Flow>) :
     SandboxDependencyInjector<Flow> by delegate, NonSerializable
