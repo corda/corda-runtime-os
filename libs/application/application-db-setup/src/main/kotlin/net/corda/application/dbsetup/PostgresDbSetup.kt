@@ -37,6 +37,9 @@ class PostgresDbSetup(
             "net/corda/db/schema/crypto/db.changelog-master.xml" to "CRYPTO"
         )
 
+        const val VIRTUAL_NODES_DDL_POOL_CONFIG = "corda-virtual-nodes-ddl-pool-config"
+        const val VIRTUAL_NODES_DML_POOL_CONFIG = "corda-virtual-nodes-dml-pool-config"
+
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
@@ -90,6 +93,24 @@ class PostgresDbSetup(
                     dbAdminPassword,
                     dbUrl,
                     DbPrivilege.DDL
+                ).toInsertStatement()
+            )
+            connection.createStatement().execute(
+                configEntityFactory.createConfiguration(
+                    VIRTUAL_NODES_DDL_POOL_CONFIG,
+                    dbAdmin,
+                    dbAdminPassword,
+                    dbUrl,
+                    DbPrivilege.DDL
+                ).toInsertStatement()
+            )
+            connection.createStatement().execute(
+                configEntityFactory.createConfiguration(
+                    VIRTUAL_NODES_DML_POOL_CONFIG,
+                    dbAdmin,
+                    dbAdminPassword,
+                    dbUrl,
+                    DbPrivilege.DML
                 ).toInsertStatement()
             )
             connection.createStatement().execute(
