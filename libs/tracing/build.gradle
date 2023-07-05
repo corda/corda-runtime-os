@@ -26,7 +26,7 @@ dependencies {
 
     implementation("io.zipkin.reporter2:zipkin-sender-urlconnection:$zipkinVersion")
     implementation("io.zipkin.brave:brave-context-slf4j:$braveVersion")
-    implementation("io.zipkin.brave:brave-instrumentation-servlet:$braveVersion")
+    implementation("io.zipkin.brave:brave-instrumentation-servlet-jakarta:$braveVersion")
 
     implementation "io.javalin:javalin-osgi:$javalinVersion" //test
     constraints {
