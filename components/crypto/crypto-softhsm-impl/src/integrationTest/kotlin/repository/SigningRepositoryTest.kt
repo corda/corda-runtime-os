@@ -5,14 +5,8 @@ import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.GeneratedWrappedKey
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
-import net.corda.crypto.core.KEY_LOOKUP_INPUT_ITEMS_LIMIT
-import net.corda.crypto.core.ShortHash
-import net.corda.crypto.core.fullPublicKeyIdFromBytes
-import net.corda.crypto.core.parseSecureHash
-import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.core.SigningKeyInfo
+import net.corda.crypto.core.*
 import net.corda.crypto.persistence.SigningKeyOrderBy
-import net.corda.crypto.core.SigningKeyStatus
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
@@ -34,11 +28,8 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import java.lang.IllegalArgumentException
 import java.security.KeyPairGenerator
-import java.security.PublicKey
 import java.security.spec.AlgorithmParameterSpec
 import java.time.Instant
 import java.time.LocalDate
@@ -73,7 +64,6 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             schemeCodeName = "FOO",
             externalId = "e-$unique",
             timestamp = Instant.now().toSafeWindowsPrecision(),
-            hsmId = "hi-$unique".take(36),
             status = SigningKeyStatus.NORMAL,
             keyMaterial = keyPair.private.encoded,
             encodingVersion = 1,
@@ -159,8 +149,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             externalId = info.externalId,
             alias = info.alias,
             category = info.category,
-            keyScheme = createKeyScheme(info),
-            hsmId = info.hsmId,
+            keyScheme = createKeyScheme(info)
         )
     }
 
