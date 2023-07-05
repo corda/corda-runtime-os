@@ -32,7 +32,7 @@ class RestClient<R : Any>(
             level = LogLevel.INFO
         }
         install(HttpRequestRetry) {
-            retryOnServerErrors(maxRetries = 5)
+            retryOnServerErrors(maxRetries = 3)
             exponentialDelay()
         }
     }
@@ -41,7 +41,7 @@ class RestClient<R : Any>(
     fun publish(records: List<Record<*, *>>): List<Record<*, R>> {
         logger.info("Making a REST request to $endpoint, record topic ${records.first().topic}")
         return runBlocking {
-            records.flatMap<Record<*, *>, Record<*, R>> { record ->
+            records.map { record ->
                 async {
                     val body = record.value?.run { avroSerializer.serialize(this) }
                     val response = client.post(endpoint) {
@@ -49,9 +49,10 @@ class RestClient<R : Any>(
                         setBody(body)
                     }
                     val responseBody: ByteArray = response.body()
-                    val responseEvents = avroDeserializer.deserialize(responseBody) as? List<R>
-                    logger.info("Got a response: ${responseEvents?.size}")
-                    responseEvents?.map { Record(record.topic, record.key, it) }!!
+                    val responseEvents = avroDeserializer.deserialize(responseBody) as? R
+                    logger.info("Got a response: ${responseEvents}")
+//                    responseEvents?.map { Record(record.topic, record.key, it) }!!
+                    Record(record.topic, record.key, responseEvents)
                 }.await()
             }
         }

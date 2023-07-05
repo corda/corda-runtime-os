@@ -106,8 +106,8 @@ class FlowMapperService @Activate constructor(
                         SubscriptionConfig(CONSUMER_GROUP, FLOW_MAPPER_EVENT_TOPIC),
                         mapOf(
                             Pair(1, FLOW_MAPPER_SESSION_IN_EVENT_TOPIC),
-                            Pair(2, FLOW_MAPPER_EVENT_TOPIC),
-                            Pair(3, FLOW_MAPPER_SESSION_OUT_EVENT_TOPIC),
+                            Pair(2, FLOW_MAPPER_SESSION_OUT_EVENT_TOPIC),
+                            Pair(3, FLOW_MAPPER_EVENT_TOPIC),
                             Pair(4, FLOW_MAPPER_START_EVENT_TOPIC),
                         ),
                         FlowMapperMessageProcessor(flowMapperEventExecutorFactory, flowConfig),

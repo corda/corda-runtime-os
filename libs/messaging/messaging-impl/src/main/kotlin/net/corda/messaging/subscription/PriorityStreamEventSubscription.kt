@@ -4,7 +4,6 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
-import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -43,10 +42,13 @@ import org.apache.commons.pool2.impl.GenericObjectPoolConfig
 import org.slf4j.LoggerFactory
 import redis.clients.jedis.HostAndPort
 import redis.clients.jedis.JedisCluster
+import java.security.SecureRandom
 import java.time.Duration
+import java.time.Instant
 import java.util.*
 import java.util.concurrent.Executors
 import kotlin.collections.ArrayDeque
+import kotlin.random.Random
 
 @Suppress("LongParameterList")
 internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
@@ -78,6 +80,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
         thread.isDaemon = true
         thread
     }
+    private val random = SecureRandom()
 
     private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
@@ -152,7 +155,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
     }
 
     private fun setupResources() {
-        val producerConfig = ProducerConfig(config.clientId, config.instanceId, true, ProducerRoles.SAE_PRODUCER, false)
+        val producerConfig = ProducerConfig(config.clientId, random.nextInt(), true, ProducerRoles.SAE_PRODUCER, false)
         producer = cordaProducerBuilder.createProducer(
             producerConfig,
             config.messageBusConfig
@@ -254,19 +257,24 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
     }
 
     private fun getHighestPriorityEvents() : Map<Int, List<CordaConsumerRecord<K, E>>> {
+        var recordsCount = 0
         val events = mutableMapOf<Int, MutableList<CordaConsumerRecord<K, E>>>()
         for (position in 0 until priorities.size step 1) {
             val priority = priorities[position]
-            val consumerEvents = mutableListOf<CordaConsumerRecord<K, E>>()
-            events[priority] = consumerEvents
+            val consumerRecords = mutableListOf<CordaConsumerRecord<K, E>>()
+            events[priority] = consumerRecords
             eventPollTimer.recordCallable {
-                if (events.isEmpty()) {
+                if (recordsCount == 0) {
                     val partitions = consumers[priority]?.assignment()?.toSet()
                     consumers[priority]?.resume(partitions!!)
-                    consumerEvents.addAll(consumers[priority]?.poll(EVENT_POLL_TIMEOUT)!!)
+                    val records = consumers[priority]?.poll(EVENT_POLL_TIMEOUT)!!
+                    consumerRecords.addAll(records)
+                    recordsCount += records.size
                     consumers[priority]?.pause(partitions!!)
                 } else {
-                    consumerEvents.addAll(consumers[priority]?.poll(PAUSED_POLL_TIMEOUT)!!)
+                    val records = consumers[priority]?.poll(PAUSED_POLL_TIMEOUT)!!
+                    consumerRecords.addAll(records)
+                    recordsCount += records.size
                 }
             }
         }
@@ -336,7 +344,8 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                 states.forEach {
                     updateState(it.key, it.value)
                 }
-            } finally {
+            }
+            catch (ex: Exception) {
                 producer?.abortTransaction()
                 states.forEach {
                     releaseStateKey(it.key)

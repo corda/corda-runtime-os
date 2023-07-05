@@ -65,8 +65,8 @@ class RestSubscriptionImpl<V: Any>(
                 ?: throw IllegalArgumentException("Could not process record as body did not deserialize correctly.")
             val record = Record(config.topic, "foo", value)
             val outputRecords = processor.onNext(listOf(record))
-            val outputEvents = outputRecords.map { it.value }
-            val returnBody = outputEvents.let {
+//            val outputEvents = outputRecords.map { it.value }
+            val returnBody = outputRecords.first().value?.let {
                 cordaAvroSerializer.serialize(it)
             } ?: throw IllegalArgumentException("Failed to serialize output type")
             context.result(returnBody)
