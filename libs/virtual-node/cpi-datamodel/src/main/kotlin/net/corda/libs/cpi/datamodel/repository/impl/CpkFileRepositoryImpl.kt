@@ -8,7 +8,7 @@ import net.corda.libs.cpi.datamodel.entities.internal.CpkFileEntity
 import net.corda.libs.cpi.datamodel.repository.CpkFileRepository
 import net.corda.v5.crypto.SecureHash
 
-class CpkFileRepositoryImpl: CpkFileRepository {
+internal class CpkFileRepositoryImpl: CpkFileRepository {
     override fun exists(em: EntityManager, cpkChecksum: SecureHash): Boolean {
         val query = "SELECT count(c) FROM ${CpkFileEntity::class.simpleName} c WHERE c.fileChecksum = :cpkFileChecksum"
 

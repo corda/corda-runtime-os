@@ -18,7 +18,6 @@ import net.corda.db.core.CloseableDataSource
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
-import net.corda.libs.cpi.datamodel.repository.impl.CpkDbChangeLogRepositoryImpl
 import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationBadRequestException
@@ -42,6 +41,7 @@ import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.sql.DataSource
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -67,7 +67,7 @@ internal class VirtualNodeWriterProcessor(
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val systemTerminatorTag = "${VAULT.name}-system-final"
-        val cpkDbChangeLogRepository = CpkDbChangeLogRepositoryImpl()
+        val cpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository()
     }
 
     /**

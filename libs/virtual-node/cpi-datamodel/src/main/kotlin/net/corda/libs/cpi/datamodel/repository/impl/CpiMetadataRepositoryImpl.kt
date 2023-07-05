@@ -17,7 +17,7 @@ import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.v5.crypto.SecureHash
 
-class CpiMetadataRepositoryImpl: CpiMetadataRepository {
+internal class CpiMetadataRepositoryImpl: CpiMetadataRepository {
     /**
      * @return null if not found
      */

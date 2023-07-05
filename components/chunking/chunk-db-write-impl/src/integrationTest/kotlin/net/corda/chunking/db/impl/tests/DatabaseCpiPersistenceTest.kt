@@ -28,6 +28,7 @@ import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.CpkFile
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.libs.cpi.datamodel.repository.impl.CpiCpkRepositoryImpl
 import net.corda.libs.cpi.datamodel.repository.impl.CpiMetadataRepositoryImpl
 import net.corda.libs.cpi.datamodel.repository.impl.CpkDbChangeLogAuditRepositoryImpl
@@ -114,12 +115,13 @@ internal class DatabaseCpiPersistenceTest {
         cordaAvroSerializationFactory
     )
 
-    private val cpkDbChangeLogRepository = CpkDbChangeLogRepositoryImpl()
-    private val cpkDbChangeLogAuditRepository = CpkDbChangeLogAuditRepositoryImpl()
-    private val cpkFileRepository = CpkFileRepositoryImpl()
-    private val cpiMetadataRepository = CpiMetadataRepositoryImpl()
-    private val cpiCpkRepository = CpiCpkRepositoryImpl()
-    private val cpkRepository = CpkRepositoryImpl()
+    private val cpiCpkRepositoryFactory = CpiCpkRepositoryFactory()
+    private val cpkDbChangeLogRepository = cpiCpkRepositoryFactory.createCpkDbChangeLogRepository()
+    private val cpkDbChangeLogAuditRepository = cpiCpkRepositoryFactory.createCpkDbChangeLogAuditRepository()
+    private val cpkFileRepository = cpiCpkRepositoryFactory.createCpkFileRepository()
+    private val cpiMetadataRepository = cpiCpkRepositoryFactory.createCpiMetadataRepository()
+    private val cpiCpkRepository = cpiCpkRepositoryFactory.createCpiCpkRepository()
+    private val cpkRepository = cpiCpkRepositoryFactory.createCpkRepository()
 
     private val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory, networkInfoWriter, cpiMetadataRepository, mock())
     private val mockCpkContent = """

@@ -8,7 +8,7 @@ import net.corda.libs.cpi.datamodel.entities.internal.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.entities.internal.CpiCpkKey
 import net.corda.libs.cpi.datamodel.repository.CpiCpkRepository
 
-class CpiCpkRepositoryImpl: CpiCpkRepository {
+internal class CpiCpkRepositoryImpl: CpiCpkRepository {
     override fun exist(em: EntityManager, cpiCpkId: CpiCpkIdentifier): Boolean {
         return em.find(
             CpiCpkEntity::class.java,

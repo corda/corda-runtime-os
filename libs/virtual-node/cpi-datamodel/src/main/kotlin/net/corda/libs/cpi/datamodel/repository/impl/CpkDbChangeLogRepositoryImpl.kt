@@ -10,7 +10,7 @@ import net.corda.libs.cpi.datamodel.entities.internal.CpkDbChangeLogKey
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.packaging.core.CpiIdentifier
 
-class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
+internal class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
     override fun put(em: EntityManager, cpkDbChangeLog: CpkDbChangeLog) {
         em.persist(cpkDbChangeLog.toEntity())
     }

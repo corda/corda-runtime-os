@@ -96,7 +96,7 @@ class VirtualNodeEntitiesIntegrationTest {
         val version = "1.0-${Instant.now().toEpochMilli()}"
         val cpiSignerSummaryHash = TestRandom.secureHash()
 
-        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash, externalMessagingRouteConfig = null, cpiMetadataRepository = CpiMetadataRepositoryImpl())
+        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash, externalMessagingRouteConfig = null, cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository())
 
         assertThat(entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, vnodeEntity.holdingIdentityId))
             .isEqualTo(vnodeEntity)
@@ -115,7 +115,7 @@ class VirtualNodeEntitiesIntegrationTest {
             em.persist(holdingIdentityEntity)
         }
 
-        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash, holdingIdentityEntity = holdingIdentityEntity, externalMessagingRouteConfig = null, cpiMetadataRepository = CpiMetadataRepositoryImpl())
+        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash, holdingIdentityEntity = holdingIdentityEntity, externalMessagingRouteConfig = null, cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository())
 
         assertThat(entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, vnodeEntity.holdingIdentityId))
             .isEqualTo(vnodeEntity)
@@ -136,7 +136,7 @@ class VirtualNodeEntitiesIntegrationTest {
             OperationType.UPGRADE,
             Instant.now()
         )
-        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash, virtualNodeOperationEntity, externalMessagingRouteConfig = null, cpiMetadataRepository = CpiMetadataRepositoryImpl())
+        val vnodeEntity = VNodeTestUtils.newVNode(entityManagerFactory, name, version, cpiSignerSummaryHash, virtualNodeOperationEntity, externalMessagingRouteConfig = null, cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository())
 
         val foundEntity = entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, vnodeEntity.holdingIdentityId)
         val operationEntity =

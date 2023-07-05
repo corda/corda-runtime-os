@@ -14,7 +14,7 @@ import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.data.chunking.Chunk
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
-import net.corda.libs.cpi.datamodel.repository.impl.CpiMetadataRepositoryImpl
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.membership.certificate.service.CertificatesService
 import net.corda.membership.group.policy.validation.MembershipGroupPolicyValidator
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
@@ -44,6 +44,7 @@ class ChunkDbWriterFactoryImpl(
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
     private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
+    private val cpiCpkRepositoryFactory: CpiCpkRepositoryFactory,
     private val networkInfoWriter: NetworkInfoWriter,
 ) : ChunkDbWriterFactory {
 
@@ -71,6 +72,7 @@ class ChunkDbWriterFactoryImpl(
         membershipSchemaValidatorFactory,
         membershipGroupPolicyValidator,
         configurationValidatorFactory,
+        CpiCpkRepositoryFactory(),
         networkInfoWriter,
     )
 
@@ -132,7 +134,7 @@ class ChunkDbWriterFactoryImpl(
         val cpiPersistence = DatabaseCpiPersistence(
             entityManagerFactory,
             networkInfoWriter,
-            CpiMetadataRepositoryImpl(),
+            cpiCpkRepositoryFactory.createCpiMetadataRepository(),
             GroupPolicyParser.Companion
         )
         val publisher = createPublisher(messagingConfig)

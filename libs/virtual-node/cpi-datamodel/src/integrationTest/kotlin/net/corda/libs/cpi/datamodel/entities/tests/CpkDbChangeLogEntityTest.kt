@@ -12,7 +12,7 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLogAudit
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.entities.tests.utils.cpi
 import net.corda.libs.cpi.datamodel.entities.tests.utils.cpk
-import net.corda.libs.cpi.datamodel.repository.impl.CpkDbChangeLogAuditRepositoryImpl
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.libs.cpi.datamodel.repository.impl.CpkDbChangeLogRepositoryImpl
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.EntityManagerConfiguration
@@ -36,8 +36,8 @@ class CpkDbChangeLogEntityTest {
         dbConfig
     )
 
-    private val cpkDbChangeLogRepository = CpkDbChangeLogRepositoryImpl()
-    private val cpkDbChangeLogAuditRepository = CpkDbChangeLogAuditRepositoryImpl()
+    private val cpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository()
+    private val cpkDbChangeLogAuditRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogAuditRepository()
 
     init {
         val dbChange = ClassloaderChangeLog(

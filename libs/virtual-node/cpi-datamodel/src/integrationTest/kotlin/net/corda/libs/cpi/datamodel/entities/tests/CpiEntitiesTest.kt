@@ -16,8 +16,7 @@ import net.corda.libs.cpi.datamodel.entities.internal.CpiCpkKey
 import net.corda.libs.cpi.datamodel.entities.internal.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.entities.internal.CpiMetadataEntityKey
 import net.corda.libs.cpi.datamodel.entities.internal.CpkFileEntity
-import net.corda.libs.cpi.datamodel.repository.impl.CpiMetadataRepositoryImpl
-import net.corda.libs.cpi.datamodel.repository.impl.CpkFileRepositoryImpl
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
@@ -37,7 +36,7 @@ class CpiEntitiesIntegrationTest {
         dbConfig
     )
 
-    private val cpkFileRepository = CpkFileRepositoryImpl()
+    private val cpkFileRepository = CpiCpkRepositoryFactory().createCpkFileRepository()
 
     init {
         val dbChange = ClassloaderChangeLog(
@@ -315,7 +314,7 @@ class CpiEntitiesIntegrationTest {
         println("**** [START] findAllCpiMetadata query as list ****")
         val cpis =
             emf.createEntityManager().use { em ->
-                CpiMetadataRepositoryImpl().findAll(em).map { it.third }.toList()
+                CpiCpkRepositoryFactory().createCpiMetadataRepository().findAll(em).map { it.third }.toList()
             }
 
         cpis.filter {
@@ -328,7 +327,7 @@ class CpiEntitiesIntegrationTest {
         // Repeat the above, but consume from stream
         println("**** [START] findAllCpiMetadata query as stream ****")
         emf.transaction { em ->
-            val cpisStream = CpiMetadataRepositoryImpl().findAll(em)
+            val cpisStream = CpiCpkRepositoryFactory().createCpiMetadataRepository().findAll(em)
 
             cpisStream.filter {
                 it.third.cpiId.name in cpiNames

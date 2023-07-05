@@ -26,7 +26,7 @@ internal class VirtualNodeEntityRepositoryTest {
     private val emConfig = DbUtils.getEntityManagerConfiguration("chunking_db_for_test")
     private val entityManagerFactory: EntityManagerFactory
     private val repository: VirtualNodeEntityRepository
-    private val cpiMetadataRepository = CpiMetadataRepositoryImpl()
+    private val cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository()
 
     companion object {
         private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/config/db.changelog-master.xml"
@@ -54,7 +54,7 @@ internal class VirtualNodeEntityRepositoryTest {
             VirtualNodeEntities.classes.toList() + ConfigurationEntities.classes.toList() + CpiEntities.classes.toList(),
             emConfig
         )
-        repository = VirtualNodeEntityRepository(entityManagerFactory, CpiMetadataRepositoryImpl())
+        repository = VirtualNodeEntityRepository(entityManagerFactory, CpiCpkRepositoryFactory().createCpiMetadataRepository())
     }
 
     @Suppress("Unused")

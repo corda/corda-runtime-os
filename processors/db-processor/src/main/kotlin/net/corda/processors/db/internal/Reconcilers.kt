@@ -7,7 +7,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.cpi.datamodel.repository.impl.CpiMetadataRepositoryImpl
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
@@ -47,6 +47,7 @@ class Reconcilers(
     reconcilerFactory: ReconcilerFactory,
     jpaEntitiesRegistry: JpaEntitiesRegistry,
     groupParametersFactory: GroupParametersFactory,
+    cpiCpkRepositoryFactory: CpiCpkRepositoryFactory,
     allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
 ) {
     private val cpiReconciler = CpiReconciler(
@@ -55,7 +56,7 @@ class Reconcilers(
         reconcilerFactory,
         cpiInfoReadService,
         cpiInfoWriteService,
-        CpiMetadataRepositoryImpl()
+        cpiCpkRepositoryFactory.createCpiMetadataRepository()
     )
 
     private val vnodeReconciler = VirtualNodeReconciler(

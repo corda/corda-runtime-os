@@ -85,7 +85,7 @@ class VirtualNodeRepositoryTest {
                 "1.0-${Instant.now().toEpochMilli()}",
                 TestRandom.secureHash(),
                 externalMessagingRouteConfig = null,
-                cpiMetadataRepository = CpiMetadataRepositoryImpl()
+                cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository()
             )
         }
 
@@ -120,7 +120,7 @@ class VirtualNodeRepositoryTest {
                 "1.0-${Instant.now().toEpochMilli()}",
                 TestRandom.secureHash(),
                 externalMessagingRouteConfig = null,
-                cpiMetadataRepository = CpiMetadataRepositoryImpl()
+                cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository()
             )
         }
 
@@ -167,7 +167,7 @@ class VirtualNodeRepositoryTest {
                 "1.0-${Instant.now().toEpochMilli()}",
                 TestRandom.secureHash(),
                 externalMessagingRouteConfig = null,
-                cpiMetadataRepository = CpiMetadataRepositoryImpl()
+                cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository()
             )
         }
 
@@ -188,7 +188,7 @@ class VirtualNodeRepositoryTest {
                 "1.0",
                 cpiSignerSummaryHash,
                 externalMessagingRouteConfig = null,
-                cpiMetadataRepository = CpiMetadataRepositoryImpl()
+                cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository()
             )
 
         val hi = vnode.holdingIdentity.toHoldingIdentity()
@@ -254,7 +254,7 @@ class VirtualNodeRepositoryTest {
                 "1.0",
                 cpiSignerSummaryHash,
                 externalMessagingRouteConfig = null,
-                cpiMetadataRepository = CpiMetadataRepositoryImpl()
+                cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository()
             )
 
         entityManagerFactory.createEntityManager().use {
@@ -285,11 +285,11 @@ class VirtualNodeRepositoryTest {
             "v1",
             signerSummaryHash,
             externalMessagingRouteConfig = externalMessagingRouteConfig,
-            cpiMetadataRepository = CpiMetadataRepositoryImpl()
+            cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository()
         )
 
         entityManagerFactory.createEntityManager().transaction { em ->
-            CpiMetadataRepositoryImpl().put(
+            CpiCpkRepositoryFactory().createCpiMetadataRepository().put(
                 em,
                 CpiIdentifier(testName, "v2", signerSummaryHash),
                 cpiFileName = "file",
@@ -356,7 +356,7 @@ class VirtualNodeRepositoryTest {
             signerSummaryHash,
             operation,
             externalMessagingRouteConfig = null,
-            cpiMetadataRepository = CpiMetadataRepositoryImpl()
+            cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository()
         )
 
         entityManagerFactory.createEntityManager().transaction {
@@ -399,7 +399,7 @@ class VirtualNodeRepositoryTest {
             signerSummaryHash,
             operation,
             externalMessagingRouteConfig = null,
-            cpiMetadataRepository = CpiMetadataRepositoryImpl()
+            cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository()
         )
 
         entityManagerFactory.createEntityManager().transaction {
@@ -446,7 +446,7 @@ class VirtualNodeRepositoryTest {
             "v1",
             signerSummaryHash,
             externalMessagingRouteConfig = null,
-            cpiMetadataRepository = CpiMetadataRepositoryImpl()
+            cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository()
         )
 
         entityManagerFactory.createEntityManager().transaction {

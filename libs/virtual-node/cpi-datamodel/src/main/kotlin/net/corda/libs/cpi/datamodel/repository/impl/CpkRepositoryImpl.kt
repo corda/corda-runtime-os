@@ -6,7 +6,7 @@ import net.corda.libs.cpi.datamodel.repository.CpkRepository
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.v5.crypto.SecureHash
 
-class CpkRepositoryImpl: CpkRepository {
+internal class CpkRepositoryImpl: CpkRepository {
     override fun findById(em: EntityManager, cpkFileChecksum: SecureHash):  Pair<Int, CpkMetadata>? {
         val cpkMetadataEntity = em.find(CpkMetadataEntity::class.java, cpkFileChecksum.toString()) ?: return null
 

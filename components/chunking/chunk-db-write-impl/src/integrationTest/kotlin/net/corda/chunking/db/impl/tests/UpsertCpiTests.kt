@@ -67,7 +67,7 @@ class UpsertCpiTests {
 
     private val networkInfoWriter: NetworkInfoWriter = mock()
 
-    private val cpiMetadataRepository = CpiMetadataRepositoryImpl()
+    private val cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository()
 
     init {
         val dbChange = ClassloaderChangeLog(

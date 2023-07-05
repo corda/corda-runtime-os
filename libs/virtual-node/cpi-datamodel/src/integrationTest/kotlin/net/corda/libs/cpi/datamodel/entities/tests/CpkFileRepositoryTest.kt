@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.util.*
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CpkFileRepositoryTest {
@@ -28,7 +29,7 @@ class CpkFileRepositoryTest {
         dbConfig
     )
 
-    private val cpkFileRepository = CpkFileRepositoryImpl()
+    private val cpkFileRepository = CpiCpkRepositoryFactory().createCpkFileRepository()
 
     init {
         val dbChange = ClassloaderChangeLog(

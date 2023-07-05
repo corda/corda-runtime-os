@@ -10,9 +10,7 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogAudit
 import net.corda.libs.cpi.datamodel.CpkFile
 import net.corda.libs.cpi.datamodel.repository.CpiMetadataRepository
-import net.corda.libs.cpi.datamodel.repository.impl.CpkDbChangeLogAuditRepositoryImpl
-import net.corda.libs.cpi.datamodel.repository.impl.CpkDbChangeLogRepositoryImpl
-import net.corda.libs.cpi.datamodel.repository.impl.CpkFileRepositoryImpl
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
@@ -39,9 +37,9 @@ class DatabaseCpiPersistence(
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        val cpkDbChangeLogRepository = CpkDbChangeLogRepositoryImpl()
-        val cpkDbChangeLogAuditRepository = CpkDbChangeLogAuditRepositoryImpl()
-        val cpkFileRepository = CpkFileRepositoryImpl()
+        val cpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository()
+        val cpkDbChangeLogAuditRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogAuditRepository()
+        val cpkFileRepository = CpiCpkRepositoryFactory().createCpkFileRepository()
     }
 
     /**

@@ -9,7 +9,7 @@ import net.corda.libs.cpi.datamodel.entities.internal.CpkDbChangeLogAuditEntity
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogAuditRepository
 import net.corda.v5.crypto.SecureHash
 
-class CpkDbChangeLogAuditRepositoryImpl: CpkDbChangeLogAuditRepository {
+internal class CpkDbChangeLogAuditRepositoryImpl: CpkDbChangeLogAuditRepository {
     override fun put(em: EntityManager, changeLogAudit: CpkDbChangeLogAudit) {
         em.persist(changeLogAudit.toEntity())
     }
