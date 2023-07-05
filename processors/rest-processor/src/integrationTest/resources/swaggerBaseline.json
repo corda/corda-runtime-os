@@ -1227,13 +1227,13 @@
         }
       }
     },
-    "/interop/{holdingidentityshorthash}/groups" : {
+    "/interop/{vnodeshorthash}/groups" : {
       "get" : {
         "tags" : [ "Interop API" ],
         "description" : "This method returns a list of interop group ids.",
-        "operationId" : "get_interop__holdingidentityshorthash__groups",
+        "operationId" : "get_interop__vnodeshorthash__groups",
         "parameters" : [ {
-          "name" : "holdingidentityshorthash",
+          "name" : "vnodeshorthash",
           "in" : "path",
           "description" : "ID of the holding identity which groups are to be returned.",
           "required" : true,
@@ -1270,13 +1270,13 @@
         }
       }
     },
-    "/interop/{holdingidentityshorthash}/interopidentities" : {
+    "/interop/{vnodeshorthash}/interopidentities" : {
       "get" : {
         "tags" : [ "Interop API" ],
         "description" : "This method returns a list of interop identities belonging to the given holding identity.",
-        "operationId" : "get_interop__holdingidentityshorthash__interopidentities",
+        "operationId" : "get_interop__vnodeshorthash__interopidentities",
         "parameters" : [ {
-          "name" : "holdingidentityshorthash",
+          "name" : "vnodeshorthash",
           "in" : "path",
           "description" : "ID of the holding identity which identities are to be returned.",
           "required" : true,
@@ -1312,13 +1312,13 @@
         }
       }
     },
-    "/interop/{holdingidentityshorthash}/interopidentity" : {
+    "/interop/{vnodeshorthash}/interopidentity" : {
       "put" : {
         "tags" : [ "Interop API" ],
         "description" : "This method creates interop identity from holding identity id, group id and x500name.",
-        "operationId" : "put_interop__holdingidentityshorthash__interopidentity",
+        "operationId" : "put_interop__vnodeshorthash__interopidentity",
         "parameters" : [ {
-          "name" : "holdingidentityshorthash",
+          "name" : "vnodeshorthash",
           "in" : "path",
           "description" : "ID of the holding identity.",
           "required" : true,
@@ -5144,6 +5144,9 @@
             "format" : "uuid",
             "nullable" : false
           },
+          "shortHash" : {
+            "$ref" : "#/components/schemas/ShortHash"
+          },
           "x500Name" : {
             "type" : "string",
             "nullable" : false,
@@ -5354,6 +5357,17 @@
       "SecureHash" : {
         "type" : "object",
         "properties" : { }
+      },
+      "ShortHash" : {
+        "required" : [ "value" ],
+        "type" : "object",
+        "properties" : {
+          "value" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
       },
       "StartFlowParameters" : {
         "required" : [ "clientRequestId", "flowClassName", "requestBody" ],

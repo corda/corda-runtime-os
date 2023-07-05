@@ -1,6 +1,7 @@
 package net.corda.interop.rest.impl.v1
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.interop.identity.cache.InteropIdentityCacheService
 import net.corda.interop.identity.write.InteropIdentityWriteService
 import net.corda.libs.interop.endpoints.v1.InteropRestResource
@@ -51,7 +52,7 @@ internal class InteropRestResourceImpl @Activate constructor(
     override val protocolVersion = 1
 
     //TODO Add correct group policy as part of the import task CORE-10450
-    override fun getInterOpGroups(holdingidentityshorthash: String): Map<UUID, String> {
+    override fun getInterOpGroups(vnodeshorthash: String): Map<UUID, String> {
         return mapOf(
             Pair(
                 UUID.randomUUID(),
@@ -69,7 +70,7 @@ internal class InteropRestResourceImpl @Activate constructor(
 
     override fun createInterOpIdentity(
         restInteropIdentity: RestInteropIdentity,
-        holdingidentityshorthash: String
+        vnodeshorthash: String
     ): ResponseEntity<String> {
         try {
             MemberX500Name.parse(restInteropIdentity.x500Name)
@@ -79,7 +80,7 @@ internal class InteropRestResourceImpl @Activate constructor(
             )
         }
         interopIdentityWriteService.addInteropIdentity(
-            holdingidentityshorthash,
+            vnodeshorthash,
             restInteropIdentity.groupId.toString(),
             restInteropIdentity.x500Name
         )
@@ -88,12 +89,13 @@ internal class InteropRestResourceImpl @Activate constructor(
         return ResponseEntity.ok("OK")
     }
 
-    override fun getInterOpIdentities(holdingidentityshorthash: String): List<RestInteropIdentity> {
-        val groupToInteropIdentityMappings = interopIdentityCacheService.getInteropIdentities(holdingidentityshorthash)
+    override fun getInterOpIdentities(vnodeshorthash: String): List<RestInteropIdentity> {
+        val groupToInteropIdentityMappings = interopIdentityCacheService.getInteropIdentities(vnodeshorthash)
         return groupToInteropIdentityMappings.map {
             RestInteropIdentity(
                 it.value.x500Name,
-                UUID.fromString(it.value.groupId)
+                UUID.fromString(it.value.groupId),
+                HoldingIdentity(MemberX500Name.parse(it.value.x500Name), it.value.groupId).shortHash
             )
         }.toList()
     }
