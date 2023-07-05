@@ -72,6 +72,7 @@ class VirtualNodeWriterFactoryTests {
     private fun getDbConnectionManager() = mock<DbConnectionManager>().apply {
         whenever(clusterConfig).thenReturn(mock<SmartConfig>())
         whenever(getClusterEntityManagerFactory()).thenReturn(mock<EntityManagerFactory>())
+        whenever(getDataSourceConfig(any(), any())).thenReturn(mock())
     }
 
     @Test
