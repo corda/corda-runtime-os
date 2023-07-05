@@ -5,11 +5,11 @@ import brave.Tracing
 import brave.baggage.BaggagePropagation
 import brave.baggage.BaggagePropagationConfig
 import brave.context.slf4j.MDCScopeDecorator
+import brave.jakarta.servlet.TracingFilter
 import brave.propagation.B3Propagation
 import brave.propagation.ThreadLocalCurrentTraceContext
 import brave.sampler.RateLimitingSampler
 import brave.sampler.Sampler
-import brave.servlet.TracingFilter
 import jakarta.servlet.Filter
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record

@@ -4,7 +4,6 @@ package net.corda.tracing
 
 import io.javalin.config.JavalinConfig
 import jakarta.servlet.DispatcherType
-import jakarta.servlet.Filter
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.EventLogRecord
@@ -150,7 +149,7 @@ fun shutdownTracing() {
 fun configureJavalinForTracing(config: JavalinConfig) {
     val contextHandlerConsumer = Consumer<ServletContextHandler>{ sch ->
         sch.addFilter(
-            FilterHolder(TracingState.currentTraceService.getTracedServletFilter() as Filter),
+            FilterHolder(TracingState.currentTraceService.getTracedServletFilter()),
             "/*",
             EnumSet.of(DispatcherType.INCLUDE, DispatcherType.REQUEST)
         )
