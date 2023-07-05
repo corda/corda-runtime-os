@@ -30,7 +30,7 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "info.picocli:picocli:$picocliVersion"
-    implementation "io.javalin:javalin-osgi:$javalinVersion" // x
+    implementation "io.javalin:javalin-osgi:$javalinVersion"
     constraints {
         implementation("org.eclipse.jetty:jetty-server:$jettyVersion") {
             because 'Javalin uses an older version of Jetty which is exposed to CVE-2023-26048 and CVE-2023-26049. ' +
