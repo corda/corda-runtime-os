@@ -336,8 +336,9 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if serial in the registration request is negative`() {
-        val startRegistrationCommand = getStartRegistrationCommand(serial = -1)
-        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .thenReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = -1)))
+        with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
@@ -497,21 +498,22 @@ class StartRegistrationHandlerTest {
         whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
             .doReturn(MembershipQueryResult.Success(listOf(pendingMemberInfo)))
         with(
-            handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+            handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
         ) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(3)
+            assertThat(outputStates).isNotEmpty.hasSize(2)
 
             assertRegistrationStarted()
         }
         verifyServices(
-            persistRegistrationRequest = true,
+            updateRegistrationRequest = true,
             verify = true,
             verifyCustomFields = true,
             queryMemberInfo = true,
-            persistMemberInfo = true
+            persistMemberInfo = true,
+            queryRegistrationRequest = true,
         )
     }
 
