@@ -84,8 +84,8 @@ class FacadeInParameterBindingSpec {
 
     @Test
     fun `should fail if an interface method parameter has the wrong type`() {
-        ParameterIsAnnotatedWithIncorrectName::class shouldFailToBindWith
-                "There is no input parameter named currency-name in this facade method"
+        ParameterHasIncorrectType::class shouldFailToBindWith
+                "Type of parameter is not compatible with facade in-parameter type"
     }
 
     @Test
