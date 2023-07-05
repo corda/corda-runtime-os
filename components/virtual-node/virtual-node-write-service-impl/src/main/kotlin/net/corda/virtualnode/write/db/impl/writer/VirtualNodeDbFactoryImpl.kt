@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer
 
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.crypto.core.ShortHash
@@ -7,9 +8,9 @@ import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
-import net.corda.db.connection.manager.VirtualNodeDbType.VAULT
-import net.corda.db.connection.manager.VirtualNodeDbType.UNIQUENESS
 import net.corda.db.connection.manager.VirtualNodeDbType.CRYPTO
+import net.corda.db.connection.manager.VirtualNodeDbType.UNIQUENESS
+import net.corda.db.connection.manager.VirtualNodeDbType.VAULT
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
@@ -25,18 +26,13 @@ import java.security.SecureRandom
 internal class VirtualNodeDbFactoryImpl(
     private val dbConnectionManager: DbConnectionManager,
     private val virtualNodesDbAdmin: VirtualNodesDbAdmin,
-    private val schemaMigrator: LiquibaseSchemaMigrator
+    private val schemaMigrator: LiquibaseSchemaMigrator,
+    private val virtualNodesDdlPoolConfig: Config,
+    private val virtualNodesDmlPoolConfig: Config
 ) : VirtualNodeDbFactory {
     private val smartConfigFactory = dbConnectionManager.clusterConfig.factory
 
     companion object {
-        private const val ddlMaxPoolSize = 1
-        private const val dmlMaxPoolSize = 10
-        private const val dmlMinPoolSize = 0
-        private const val idleTimeout = 120
-        private const val maxLifetime = 1800 // 30 mins
-        private const val keepaliveTime = 0
-        private const val validationTimeout = 5
         private const val passwordLength = 64
         private val passwordSource = (('0'..'9') + ('A'..'Z') + ('a'..'z')).toCharArray()
         private val random = SecureRandom()
@@ -159,14 +155,13 @@ internal class VirtualNodeDbFactoryImpl(
         with(dbType) {
             val user = createUsername(dbPrivilege, holdingIdentityShortHash)
             val password = generatePassword()
-            val maxPoolSize = when (dbPrivilege) {
-                DDL -> ddlMaxPoolSize
-                DML -> dmlMaxPoolSize
-            }
-            val minPoolSize = when (dbPrivilege) {
-                DDL -> null
-                DML -> dmlMinPoolSize
-            }
+
+            val virtualNodePoolConfig = smartConfigFactory.create(
+                when (dbPrivilege) {
+                    DDL -> virtualNodesDdlPoolConfig
+                    DML -> virtualNodesDmlPoolConfig
+                }
+            )
 
             // Add reWriteBatchedInserts JDBC parameter for uniqueness db to enable Hibernate batching
             var jdbcUrl = virtualNodesDbAdmin.createJdbcUrl(getSchemaName(holdingIdentityShortHash))
@@ -179,15 +174,10 @@ internal class VirtualNodeDbFactoryImpl(
                 smartConfigFactory,
                 username = user,
                 password = password.concatToString(),
+                key = "corda-vault-$holdingIdentityShortHash-database-password",
                 jdbcDriver = null,
                 jdbcUrl = jdbcUrl,
-                maxPoolSize = maxPoolSize,
-                minPoolSize = minPoolSize,
-                idleTimeout = idleTimeout,
-                maxLifetime = maxLifetime,
-                keepaliveTime = keepaliveTime,
-                validationTimeout = validationTimeout,
-                key = "corda-vault-$holdingIdentityShortHash-database-password"
+                virtualNodePoolConfig = virtualNodePoolConfig
             )
             return DbConnectionImpl(
                 getConnectionName(holdingIdentityShortHash),
@@ -220,15 +210,10 @@ private fun createDbConfig(
     smartConfigFactory: SmartConfigFactory,
     username: String,
     password: String,
+    key: String,
     jdbcDriver: String?,
     jdbcUrl: String,
-    maxPoolSize: Int,
-    minPoolSize: Int?,
-    idleTimeout: Int,
-    maxLifetime: Int,
-    keepaliveTime: Int,
-    validationTimeout: Int,
-    key: String
+    virtualNodePoolConfig: SmartConfig
 ): SmartConfig {
     var config =
         smartConfigFactory.makeSecret(password, key).atPath(DatabaseConfig.DB_PASS)
@@ -237,12 +222,30 @@ private fun createDbConfig(
     if (jdbcDriver != null)
         config = config.withValue(DatabaseConfig.JDBC_DRIVER, ConfigValueFactory.fromAnyRef(jdbcDriver))
     config = config.withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
+
+    require(virtualNodePoolConfig.hasPath(DatabaseConfig.DB_POOL_MAX_SIZE))
+    val maxPoolSize = virtualNodePoolConfig.getInt(DatabaseConfig.DB_POOL_MAX_SIZE)
     config = config.withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(maxPoolSize))
-    if (minPoolSize != null)
+
+    if (virtualNodePoolConfig.hasPath(DatabaseConfig.DB_POOL_MIN_SIZE)) {
+        val minPoolSize = virtualNodePoolConfig.getInt(DatabaseConfig.DB_POOL_MIN_SIZE)
         config = config.withValue(DatabaseConfig.DB_POOL_MIN_SIZE, ConfigValueFactory.fromAnyRef(minPoolSize))
+    }
+    require(virtualNodePoolConfig.hasPath(DatabaseConfig.DB_POOL_IDLE_TIMEOUT_SECONDS))
+    val idleTimeout = virtualNodePoolConfig.getInt(DatabaseConfig.DB_POOL_IDLE_TIMEOUT_SECONDS)
     config = config.withValue(DatabaseConfig.DB_POOL_IDLE_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(idleTimeout))
+
+    require(virtualNodePoolConfig.hasPath(DatabaseConfig.DB_POOL_MAX_LIFETIME_SECONDS))
+    val maxLifetime = virtualNodePoolConfig.getInt(DatabaseConfig.DB_POOL_MAX_LIFETIME_SECONDS)
     config = config.withValue(DatabaseConfig.DB_POOL_MAX_LIFETIME_SECONDS, ConfigValueFactory.fromAnyRef(maxLifetime))
+
+    require(virtualNodePoolConfig.hasPath(DatabaseConfig.DB_POOL_KEEPALIVE_TIME_SECONDS))
+    val keepaliveTime = virtualNodePoolConfig.getInt(DatabaseConfig.DB_POOL_KEEPALIVE_TIME_SECONDS)
     config = config.withValue(DatabaseConfig.DB_POOL_KEEPALIVE_TIME_SECONDS, ConfigValueFactory.fromAnyRef(keepaliveTime))
+
+    require(virtualNodePoolConfig.hasPath(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS))
+    val validationTimeout = virtualNodePoolConfig.getInt(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS)
     config = config.withValue(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(validationTimeout))
+
     return config
 }

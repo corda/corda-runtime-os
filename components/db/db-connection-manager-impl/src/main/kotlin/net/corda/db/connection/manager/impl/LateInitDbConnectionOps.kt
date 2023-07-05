@@ -1,12 +1,13 @@
 package net.corda.db.connection.manager.impl
 
+import com.typesafe.config.Config
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.JpaEntitiesSet
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
@@ -48,6 +49,10 @@ class LateInitDbConnectionOps: DbConnectionOps {
 
     override fun getDataSource(config: SmartConfig): CloseableDataSource =
         delegate.getDataSource(config)
+
+    override fun getDataSourceConfig(name: String, privilege: DbPrivilege): Config? {
+        TODO("Not yet implemented")
+    }
 
     override fun getClusterEntityManagerFactory(): EntityManagerFactory =
         delegate.getClusterEntityManagerFactory()
