@@ -1,10 +1,30 @@
 package net.corda.cipher.suite.impl
 
+import java.io.ByteArrayOutputStream
+import java.io.OutputStream
+import java.math.BigInteger
+import java.security.KeyPair
+import java.security.KeyStore
+import java.security.PublicKey
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
+import java.security.spec.AlgorithmParameterSpec
+import java.security.spec.MGF1ParameterSpec
+import java.security.spec.PSSParameterSpec
+import java.time.Duration
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.Date
+import java.util.UUID
+import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 import net.corda.cipher.suite.impl.infra.generateKeyPair
 import net.corda.cipher.suite.impl.infra.inferSignatureSpecOrCreateDefault
 import net.corda.cipher.suite.impl.infra.signData
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.SignatureVerificationService
+import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.cipher.suite.schemes.SerializedAlgorithmParameterSpec
@@ -36,6 +56,7 @@ import org.bouncycastle.asn1.x509.Time
 import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.operator.ContentSigner
+import org.bouncycastle.util.encoders.DecoderException
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -47,27 +68,6 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.mock
-import java.io.ByteArrayOutputStream
-import java.io.OutputStream
-import java.math.BigInteger
-import java.security.KeyPair
-import java.security.KeyStore
-import java.security.PublicKey
-import java.security.cert.CertificateFactory
-import java.security.cert.X509Certificate
-import java.security.spec.AlgorithmParameterSpec
-import java.security.spec.MGF1ParameterSpec
-import java.security.spec.PSSParameterSpec
-import java.time.Duration
-import java.time.Instant
-import java.time.temporal.ChronoUnit
-import java.util.Date
-import java.util.UUID
-import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
-import kotlin.test.assertNotNull
-import net.corda.crypto.cipher.suite.publicKeyId
-import org.bouncycastle.util.encoders.DecoderException
 
 class CipherSchemeMetadataTests {
     companion object {
