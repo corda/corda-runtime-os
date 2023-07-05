@@ -4,14 +4,13 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.interop.FacadeService
-import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 import java.util.*
 
 @InitiatingFlow(protocol = "swap-responder-sub-flow")
-class SwapResponderSubFlow(private val session: FlowSession, private val alias: MemberX500Name, private val message: Payment):
+class SwapResponderSubFlow(private val alias: MemberX500Name, private val message: Payment):
     SubFlow<UUID> {
 
     @CordaInject
@@ -26,7 +25,6 @@ class SwapResponderSubFlow(private val session: FlowSession, private val alias: 
             facadeService.getFacade(facadeId, TokensFacade::class.java, alias, message.interopGroupId)
         val response = tokens.reserveTokensV1("USD", message.toReserve)
         log.info("Interop call returned: $response")
-        session.send(response)
 
         return response
     }

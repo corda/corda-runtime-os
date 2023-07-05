@@ -26,7 +26,8 @@ curl --insecure -u admin:admin -X POST \
   "flowClassName": "com.r3.corda.demo.interop.tokens.workflows.interop.SwapFlow",
   "requestBody": {
   "stateId" : "'"$STATE_ID"'",
-  "newOwner" : "C=GB, L=London, O=Alice"
+  "newOwner" : "C=GB, L=London, O=Bob",
+  "tokensLedgerName" : "tokens1"
 }}}'
 printf "\n"
 sleep 10

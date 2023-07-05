@@ -5,7 +5,7 @@ context=docker-desktop
 namespace=corda
 groupPolicyFile=GroupPolicy1
 cpi=demo1
-identity1=("C=GB, L=London, O=Alice" "C=GB, L=London, O=Bob" "C=GB, L=London, O=Notary")
+identity1=("C=GB, L=London, O=Bob" "C=GB, L=London, O=Alice" "C=GB, L=London, O=Notary")
 GROUP1_NOTARY_SERVICE_NAME="C=GB, L=London, O=Notary Service"
 
 SECONDS=0
@@ -43,7 +43,7 @@ cd ../corda-runtime-os
 for VARIABLE in corda-os-rest-worker corda-os-p2p-link-manager-worker corda-os-p2p-gateway-worker \
  corda-os-member-worker corda-os-flow-worker corda-os-db-worker corda-os-crypto-worker corda-os-combined-worker corda-os-app-simulator corda-os-plugins
 do
- docker tag "corda-os-docker-dev.software.r3.com/"$VARIABLE":latest-local-5.1.0-INTEROP" "corda-os-docker-dev.software.r3.com/"$VARIABLE":latest-local"
+ docker tag "corda-os-docker-dev.software.r3.com/"$VARIABLE":latest-local-5.1.0-INTEROP" "corda-os-docker-dev.software.r3.com/"$VARIABLE":latest-local-5.1.0"
 done
 rm charts/corda/Chart.lock
 helm dependency build charts/corda
@@ -287,3 +287,4 @@ printf "\n"
 sleep 10
 curl --insecure -u admin:admin -X GET "https://localhost:8888/api/v1/flow/$ALICE_HASH/$clientRequestId" -H 'accept: application/json'
 printf "\n"
+cd ..
