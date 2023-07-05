@@ -1,5 +1,6 @@
 package net.corda.cli.plugins.topicconfig
 
+import net.corda.schema.Schemas.Flow.*
 import org.apache.kafka.clients.admin.Admin
 import org.apache.kafka.clients.admin.AlterConfigOp
 import org.apache.kafka.clients.admin.ConfigEntry
@@ -38,9 +39,9 @@ class CreateConnect : Runnable {
     var delete: Boolean = false
 
     var topicPartitions: Map<String, Int> = mapOf(
-        "flow.event" to 24,
-        "flow.session" to 24,
-        "flow.start" to 24
+        FLOW_START_TOPIC to 24,
+        FLOW_SESSION_TOPIC to 24,
+        FLOW_EVENT_TOPIC to 24
     )
 
     override fun run() {
