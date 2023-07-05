@@ -26,7 +26,7 @@ import java.time.Instant
 import java.util.UUID
 
 
-data class SwapFlowArgs(val newOwner: String, val stateId: UUID, val tokensLedgerName: String)
+data class SwapFlowArgs(val newOwner: String, val stateId: UUID, val interopGroupId: String)
 
 @InitiatingFlow(protocol = "interop-sample-swap-protocol")
 class SwapFlow : ClientStartableFlow {
@@ -78,7 +78,7 @@ class SwapFlow : ClientStartableFlow {
 
             val session = flowMessaging.initiateFlow(newOwnerInfo.name)
             val reservation : UUID = session.sendAndReceive(UUID::class.java,
-                Payment(flowArgs.tokensLedgerName, BigDecimal(100)))
+                Payment(flowArgs.interopGroupId, BigDecimal(100)))
 
             val outputState =
                 inputState.withNewOwner(newOwnerInfo.name, listOf(ownerInfo.ledgerKeys[0], newOwnerInfo.ledgerKeys[0]))
@@ -132,8 +132,8 @@ class SwapResponderFlow : ResponderFlow {
 
         val msg = session.receive(Payment::class.java)
         log.info("Received message: $msg")
-        val myInteropInfo : InterOpIdentityInfo? = interopIdentityLookUp.lookup(msg.tokensLedgerName)
-        require(myInteropInfo!=null) { "Cant find InteropInfo for ${msg.tokensLedgerName}." }
+        val myInteropInfo : InterOpIdentityInfo? = interopIdentityLookUp.lookup(msg.interopGroupId)
+        require(myInteropInfo != null) { "Cant find InteropInfo for ${msg.interopGroupId}." }
 
         val result = flowEngine.subFlow(SwapResponderSubFlow(MemberX500Name.parse(myInteropInfo.x500Name), msg))
         log.info("Interop SubFlow finished with result '$result', calling FinalityFlow")

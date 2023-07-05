@@ -3,7 +3,6 @@ package com.r3.corda.demo.interop.tokens.workflows.interop
 import com.r3.corda.demo.interop.tokens.contracts.TokenContract
 import com.r3.corda.demo.interop.tokens.states.TokenState
 import com.r3.corda.demo.interop.tokens.workflows.IssueFlowResult
-import com.r3.corda.demo.interop.tokens.workflows.TransferFlowArgs
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
@@ -11,6 +10,7 @@ import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.interop.FacadeService
+import net.corda.v5.application.interop.InteropIdentityLookUp
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -18,6 +18,7 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.interop.InterOpIdentityInfo
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
@@ -47,12 +48,15 @@ class SimpleSwapFlow : ClientStartableFlow {
     @CordaInject
     lateinit var facadeService: FacadeService
 
+    @CordaInject
+    lateinit var interopIdentityLookUp : InteropIdentityLookUp
+
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
         log.info("TransferFlow.call() called")
 
         try {
-            val flowArgs = requestBody.getRequestBodyAs(jsonMarshallingService, TransferFlowArgs::class.java)
+            val flowArgs = requestBody.getRequestBodyAs(jsonMarshallingService, SwapFlowArgs::class.java)
 
             val stateId = flowArgs.stateId
 
@@ -99,8 +103,11 @@ class SimpleSwapFlow : ClientStartableFlow {
                 log.info("Success! Response: $it")
             }
 
-            val payment = Payment(toReserve = BigDecimal(100))
-            val myAlias = MemberX500Name.parse("C=GB, L=London, O=Bob2 Alias")
+            val payment = Payment(flowArgs.interopGroupId, BigDecimal(100))
+            val myInteropInfo : InterOpIdentityInfo? = interopIdentityLookUp.lookup(flowArgs.interopGroupId)
+            require(myInteropInfo != null) { "Cant find InteropInfo for ${flowArgs.interopGroupId}." }
+            val myAlias = MemberX500Name.parse(myInteropInfo.x500Name)
+
             val facadeId = "org.corda.interop/platform/tokens/v3.0"
             log.info("Interop call: $facadeId, $myAlias")
             val tokens: TokensFacade =

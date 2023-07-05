@@ -7,7 +7,7 @@ class HardcodedAliasIdentityHelper {
         fun getAliasIdentityData(): List<InterOpIdentityInfo> {
             return listOf(
                 object : InterOpIdentityInfo{
-                    override fun applicationName() = "tokens1"
+                    override fun applicationName() = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
                     override fun getX500Name() = "C=GB, L=London, O=Bob2 Alias"
                     override fun getFacadeIds(): MutableList<String>
                         = mutableListOf("org.corda.interop/platform/tokens/v1.0")
