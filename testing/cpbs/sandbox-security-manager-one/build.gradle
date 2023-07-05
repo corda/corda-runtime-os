@@ -8,7 +8,7 @@ description 'Security Manager One'
 group 'com.example.securitymanager'
 
 cordapp {
-    targetPlatformVersion = 999
+    targetPlatformVersion = platformVersion.toInteger()
     contract {
         name 'Security Manager One CPK'
         versionId 1

@@ -14,7 +14,7 @@ class PlatformInfoProviderImpl @Activate constructor(
     internal companion object {
         const val STUB_PLATFORM_VERSION = 50100
 
-        private const val DEFAULT_PLATFORM_VERSION = 50000
+        private const val DEFAULT_PLATFORM_VERSION = 50100
         private const val PLATFORM_VERSION_KEY = "net.corda.platform.version"
     }
 

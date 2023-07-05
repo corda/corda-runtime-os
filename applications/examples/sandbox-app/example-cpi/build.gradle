@@ -9,7 +9,7 @@ group 'com.example.vnode'
 version = '1.0-SNAPSHOT'
 
 cordapp {
-    targetPlatformVersion 999 as Integer
+    targetPlatformVersion platformVersion.toInteger()
     workflow {
         name 'Corda Example CPK'
         versionId 1

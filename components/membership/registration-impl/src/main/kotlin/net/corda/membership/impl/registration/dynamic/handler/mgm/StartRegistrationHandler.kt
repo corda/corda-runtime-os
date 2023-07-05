@@ -106,6 +106,13 @@ internal class StartRegistrationHandler(
             }
 
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
+            validateRegistrationRequest(registrationRequest.serial != null) {
+                "Serial on the registration request cannot be null."
+            }
+            validateRegistrationRequest(registrationRequest.serial!! >= 0) {
+                "Serial cannot be negative on the registration request."
+            }
+
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
             val persistentMemberInfo = PersistentMemberInfo.newBuilder()
                 .setMemberContext(pendingMemberInfo.memberProvidedContext.toAvro())
@@ -129,23 +136,24 @@ internal class StartRegistrationHandler(
                 pendingMemberInfo.name == pendingMemberHoldingId.x500Name
             ) { "MemberX500Name in registration request does not match member sending request over P2P." }
 
-            val existingMemberInfos = membershipQueryClient.queryMemberInfo(
+            val activeOrSuspendedInfo = membershipQueryClient.queryMemberInfo(
                 mgmHoldingId,
                 listOf(pendingMemberHoldingId)
-            ).getOrThrow()
-            // The MemberX500Name is not a duplicate
-            validateRegistrationRequest(
-                existingMemberInfos.isEmpty() || registrationRequest.serial != 0L
-            ) { "Member already exists with the same X500 name." }
-            // Serial number on the request should be smaller than the current version of the requestor's MemberInfo
-            val activeOrSuspendedInfo = existingMemberInfos.lastOrNull {
+            ).getOrThrow().lastOrNull {
                 it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED
             }
-            validateRegistrationRequest(
-                activeOrSuspendedInfo == null || activeOrSuspendedInfo.serial <= registrationRequest.serial!!
-            ) {
-                "Registration request was submitted for an older version of member info. " +
-                        "Please submit a new request."
+            if (registrationRequest.serial!! > 0) { //re-registration
+                validateRegistrationRequest(activeOrSuspendedInfo != null) {
+                    "Member has not registered previously so serial number should be 0."
+                }
+                validateRegistrationRequest(activeOrSuspendedInfo!!.serial <= registrationRequest.serial!!) {
+                    "Registration request was submitted for an older version of member info. " +
+                            "Please submit a new request."
+                }
+            } else if (registrationRequest.serial!! == 0L) { // initial registration
+                validateRegistrationRequest(activeOrSuspendedInfo == null) {
+                    "Member already exists with the same X500 name."
+                }
             }
 
             activeOrSuspendedInfo?.let { previous ->

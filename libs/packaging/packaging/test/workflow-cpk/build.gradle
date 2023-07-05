@@ -26,8 +26,8 @@ tasks.named('jar', Jar) {
 }
 
 cordapp {
-    targetPlatformVersion 1000
-    minimumPlatformVersion 999 as Integer
+    targetPlatformVersion platformVersion.toInteger()
+    minimumPlatformVersion platformVersion.toInteger()
 
     workflow {
         name = 'Workflow cpk to be used for uniut tests for the packaging module'

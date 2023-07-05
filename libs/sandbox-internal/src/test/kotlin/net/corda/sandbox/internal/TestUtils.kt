@@ -10,6 +10,12 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
 import org.osgi.framework.Constants.SYSTEM_BUNDLE_SYMBOLICNAME
 import org.osgi.framework.Version
+import org.osgi.framework.wiring.BundleCapability
+import org.osgi.framework.wiring.BundleRequirement
+import org.osgi.framework.wiring.BundleRevision
+import org.osgi.framework.wiring.BundleWiring
+import org.osgi.resource.Capability
+import org.osgi.resource.Requirement
 import kotlin.math.abs
 import kotlin.random.Random
 import kotlin.random.Random.Default.nextLong
@@ -43,6 +49,7 @@ fun mockBundle(
         val requestedClass = answer.arguments.single()
         if (klass?.name == requestedClass) klass else throw ClassNotFoundException()
     }
+    whenever(adapt(BundleRevision::class.java)).thenReturn(DummyBundleRevision(this))
     whenever(location).thenReturn(bundleLocation)
     whenever(toString()).thenReturn(description)
 }
@@ -54,5 +61,32 @@ fun mockCpkMeta(): CpkMetadata {
     return mock<CpkMetadata>().apply {
         whenever(this.cpkId).thenReturn(id)
         whenever(this.fileChecksum).thenReturn(hash)
+    }
+}
+
+private class DummyBundleRevision(private val bundle: Bundle): BundleRevision {
+    override fun getBundle(): Bundle = bundle
+    override fun getSymbolicName(): String = bundle.symbolicName
+    override fun getVersion(): Version = bundle.version
+    override fun getTypes(): Int = 0
+
+    override fun getCapabilities(namespace: String?): List<Capability> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getRequirements(namespace: String?): List<Requirement> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getDeclaredCapabilities(namespace: String?): List<BundleCapability> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getDeclaredRequirements(namespace: String?): List<BundleRequirement> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getWiring(): BundleWiring {
+        TODO("Not yet implemented")
     }
 }
