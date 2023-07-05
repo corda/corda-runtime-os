@@ -369,8 +369,7 @@ class MemberSynchronisationServiceImpl internal constructor(
                     }
                 }
 
-
-                val persistRecords = groupReader.lookup().firstOrNull { it.isMgm }?.let {
+                val persistRecords = mgmInfo.let {
                     val groupParameters = parseGroupParameters(
                         it,
                         updates.membershipPackage
@@ -378,9 +377,7 @@ class MemberSynchronisationServiceImpl internal constructor(
                     membershipPersistenceClient
                         .persistGroupParameters(viewOwningMember, groupParameters)
                         .createAsyncCommands()
-                } ?: throw CordaRuntimeException(
-                    "Could not find MGM info in the member list for member ${viewOwningMember.x500Name}"
-                )
+                }
                 allRecords + persistRecords
             } catch (e: Exception) {
                 logger.warn(

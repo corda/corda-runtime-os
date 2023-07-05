@@ -31,6 +31,9 @@ class VerifierTest {
         ByteBuffer.wrap(rawPublicKey),
         ByteBuffer.wrap(rawSignature)
     )
+    private val publicKeys = (1..3).map {
+        mock<PublicKey>()
+    }
     private val signatureSpec = CryptoSignatureSpec(SPEC, null, null)
     private val publicKey = mock<PublicKey>()
     private val keyEncodingService = mock<KeyEncodingService> {
@@ -46,12 +49,7 @@ class VerifierTest {
     @Test
     fun `verify without key call the service with the correct arguments`() {
         val data = byteArrayOf(44, 1)
-        val publicKeys = (1..3).map {
-            mock<PublicKey>()
-        }
-
         verifier.verify(publicKeys + publicKey, signature, signatureSpec, data)
-
         verify(signatureVerificationService).verify(
             eq(data),
             eq(rawSignature),
@@ -81,9 +79,6 @@ class VerifierTest {
     @Test
     fun `verify without key fails if spec can not be found`() {
         val data = byteArrayOf(44, 1)
-        val publicKeys = (1..3).map {
-            mock<PublicKey>()
-        }
         val signature = CryptoSignatureWithKey(
             signature.publicKey,
             signature.bytes
@@ -111,9 +106,6 @@ class VerifierTest {
 
     @Test
     fun `verify without key fails if signature verification service fails`() {
-        val publicKeys = (1..3).map {
-            mock<PublicKey>()
-        }
         val data = byteArrayOf(44, 1)
         whenever(
             signatureVerificationService.verify(
@@ -148,10 +140,6 @@ class VerifierTest {
 
     @Test
     fun `verify fails if signature key is not part of the acceptable keys`() {
-        val publicKeys = (1..3).map {
-            mock<PublicKey>()
-        }
-
         assertThrows<IllegalArgumentException> {
             verifier.verify(publicKeys, signature, signatureSpec, byteArrayOf(44, 1))
         }
@@ -159,10 +147,6 @@ class VerifierTest {
 
     @Test
     fun `verify pass if signature key is part of the acceptable keys`() {
-        val publicKeys = (1..3).map {
-            mock<PublicKey>()
-        }
-
         assertDoesNotThrow {
             verifier.verify(publicKeys + publicKey, signature, signatureSpec, byteArrayOf(44, 1))
         }
