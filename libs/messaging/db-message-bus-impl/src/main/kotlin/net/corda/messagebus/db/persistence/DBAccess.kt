@@ -31,15 +31,9 @@ import javax.persistence.Tuple
 class DBAccess(
     private val entityManagerFactory: EntityManagerFactory,
 ) {
-    private val autoCreate = true
-
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         internal val ATOMIC_TRANSACTION = TransactionRecordEntry("Atomic Transaction", TransactionState.COMMITTED)
-
-        // At the moment it's not easy to create partitions, so default value increased to 3 until tooling is available
-        // (There are multiple consumers using the same group for some topics and some stay idle if there is only 1 partition)
-        const val defaultNumPartitions = 3
     }
 
     fun close() {
@@ -129,13 +123,7 @@ class DBAccess(
             allowDuplicate = true,
         ) { entityManager ->
             entityManager.find(TopicEntry::class.java, topic)
-                ?: if (autoCreate) {
-                    val topicEntry = TopicEntry(topic, defaultNumPartitions)
-                    entityManager.persist(topicEntry)
-                    topicEntry
-                } else {
-                    throw CordaMessageAPIFatalException("Cannot find topic $topic")
-                }
+                ?: throw CordaMessageAPIFatalException("Cannot find topic $topic")
         }
         val topicPartitions = mutableSetOf<CordaTopicPartition>()
         repeat(topicEntry.numPartitions) { partition ->

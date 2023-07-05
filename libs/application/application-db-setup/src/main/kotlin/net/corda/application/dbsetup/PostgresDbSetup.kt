@@ -12,8 +12,7 @@ import net.corda.db.core.OSGiDataSourceFactory
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.messagebus.db.datamodel.TopicEntryForInsert
-import net.corda.messagebus.db.persistence.DBAccess.Companion.defaultNumPartitions
+import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.utilities.debug
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
@@ -32,9 +31,8 @@ class PostgresDbSetup(
     private val dbAdmin: String,
     private val dbAdminPassword: String,
     private val dbName: String,
-    private val createTopics: Boolean,
+    private val dbBusType: Boolean,
     smartConfigFactory: SmartConfigFactory
-
 ) : DbSetup {
 
     companion object {
@@ -48,6 +46,10 @@ class PostgresDbSetup(
             "net/corda/db/schema/rbac/db.changelog-master.xml" to "RBAC",
             "net/corda/db/schema/crypto/db.changelog-master.xml" to "CRYPTO"
         )
+
+        // At the moment it's not easy to create partitions, so default value increased to 3 until tooling is available
+        // (There are multiple consumers using the same group for some topics and some stay idle if there is only 1 partition)
+        const val defaultNumPartitions = 3
 
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -81,15 +83,15 @@ class PostgresDbSetup(
             populateConfigDb()
             createUserConfig("admin", "admin")
             createDbUsersAndGrants()
-            if (createTopics) {
-                createTopics()
+            if (dbBusType) {
+                createTopicsOnDbMessageBus()
             }
         } else {
             log.info("Table config.config exists in $dbSuperUserUrl, skipping DB initialisation.")
         }
     }
 
-    fun createTopics() {
+    fun createTopicsOnDbMessageBus() {
         val bundle = FrameworkUtil.getBundle(net.corda.schema.Schemas::class.java)
         log.debug { "Got bundle $bundle for class (net.corda.schema.Schemas::class.java)" }
         val paths = bundle.getEntryPaths("net/corda/schema").toList()
@@ -108,10 +110,10 @@ class PostgresDbSetup(
             it.topics.values
         }
         log.debug { "Mapping topicDefinitions to topicConfigs, topicDefinitions = $topicDefinitions \ntopicConfigs = $topicDefinitions" }
-        configConnection().use { connection ->
+        messageBusConnection().use { connection ->
             topicConfigs.map {
                 connection.createStatement().execute(
-                    TopicEntryForInsert(it.name, defaultNumPartitions).toInsertStatement()
+                    TopicEntry(it.name, defaultNumPartitions).toInsertStatement()
                 )
             }
         }
@@ -173,6 +175,14 @@ class PostgresDbSetup(
         OSGiDataSourceFactory.create(
             DB_DRIVER,
             dbAdminUrl + "&currentSchema=CONFIG",
+            dbAdmin,
+            dbAdminPassword
+        ).connection
+
+    private fun messageBusConnection() =
+        OSGiDataSourceFactory.create(
+            DB_DRIVER,
+            dbAdminUrl + "&currentSchema=MESSAGEBUS",
             dbAdmin,
             dbAdminPassword
         ).connection

@@ -139,7 +139,10 @@ class CombinedWorker @Activate constructor(
         // In the future, perhaps we can simply rely on the schema for crypto defaults, and not supply a
         // default passphrase and salt but instead require them to be specified.
 
-        val createTopics = params.defaultParams.messaging[BUS_TYPE] == BusType.DB.name
+        /**
+         * dbBusType is used to tell which Bus type we are using, so we know whether to use DATABASE specific methods
+         */
+        val dbBusType = params.defaultParams.messaging[BUS_TYPE] == BusType.DATABASE.name
 
         PostgresDbSetup(
             dbUrl,
@@ -148,7 +151,7 @@ class CombinedWorker @Activate constructor(
             dbAdmin,
             dbAdminPassword,
             dbName,
-            createTopics,
+            dbBusType,
             config.factory,
         ).run()
 
