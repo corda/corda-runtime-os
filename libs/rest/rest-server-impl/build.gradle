@@ -25,7 +25,7 @@ dependencies {
 
     implementation project(":libs:rest:rest-server")
     implementation "net.corda:corda-crypto"
-    implementation "io.javalin:javalin-osgi:$javalinVersion"
+    implementation "io.javalin:javalin-osgi:$javalinVersion"// x
     constraints {
         implementation("org.eclipse.jetty:jetty-server:$jettyVersion") {
             because 'Javalin uses an older version of Jetty which is exposed to CVE-2023-26048 and CVE-2023-26049. ' +
@@ -35,7 +35,7 @@ dependencies {
     implementation "com.nimbusds:oauth2-oidc-sdk:$nimbusVersion"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.jcip-annotations:$jcipAnnotationsVersion"
     implementation "org.eclipse.jetty.websocket:websocket-servlet:$jettyVersion"
-    implementation "org.eclipse.jetty.websocket:websocket-server:$jettyVersion"
+    implementation "org.eclipse.jetty.websocket:websocket-server:$jettyWebsocketServerVersion"
     implementation "org.eclipse.jetty.http2:http2-server:$jettyVersion"
     implementation "io.swagger.core.v3:swagger-core:$swaggerVersion"
 

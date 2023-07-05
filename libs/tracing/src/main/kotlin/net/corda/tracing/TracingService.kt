@@ -1,9 +1,9 @@
 package net.corda.tracing
 
+import jakarta.servlet.Filter
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import java.util.concurrent.ExecutorService
-import javax.servlet.Filter
 
 interface TracingService : AutoCloseable {
 

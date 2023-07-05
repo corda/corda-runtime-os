@@ -10,6 +10,7 @@ import brave.propagation.ThreadLocalCurrentTraceContext
 import brave.sampler.RateLimitingSampler
 import brave.sampler.Sampler
 import brave.servlet.TracingFilter
+import jakarta.servlet.Filter
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.tracing.BatchPublishTracing
@@ -24,7 +25,6 @@ import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.urlconnection.URLConnectionSender
 import java.util.Stack
 import java.util.concurrent.ExecutorService
-import javax.servlet.Filter
 
 internal sealed interface SampleRate
 internal object Unlimited : SampleRate

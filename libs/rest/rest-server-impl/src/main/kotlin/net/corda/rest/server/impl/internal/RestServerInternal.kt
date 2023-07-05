@@ -1,16 +1,18 @@
 package net.corda.rest.server.impl.internal
 
 import io.javalin.Javalin
-import io.javalin.core.util.Header
 import io.javalin.http.BadRequestResponse
 import io.javalin.http.ContentType
 import io.javalin.http.HandlerType
+import io.javalin.http.Header
 import io.javalin.http.HttpResponseException
+import io.javalin.http.servlet.JavalinServletContext
 import io.javalin.http.staticfiles.Location
 import io.javalin.http.util.JsonEscapeUtil
 import io.javalin.http.util.MultipartUtil
-import io.javalin.http.util.RedirectToLowercasePathPlugin
-import io.javalin.plugin.json.JavalinJackson
+import io.javalin.json.JavalinJackson
+import io.javalin.plugin.bundled.RedirectToLowercasePathPlugin
+import jakarta.servlet.MultipartConfigElement
 import net.corda.rest.server.config.RestServerSettingsProvider
 import net.corda.rest.server.impl.apigen.processing.RouteInfo
 import net.corda.rest.server.impl.apigen.processing.RouteProvider
@@ -39,13 +41,12 @@ import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.ServerConnector
 import org.eclipse.jetty.server.SslConnectionFactory
 import org.eclipse.jetty.util.ssl.SslContextFactory
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory
 import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
-import javax.servlet.MultipartConfigElement
 import java.util.LinkedList
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown", "LongParameterList")
@@ -73,11 +74,11 @@ internal class RestServerInternal(
 
     private val webSocketRouteAdaptors = LinkedList<AutoCloseable>()
     private val credentialResolver = DefaultCredentialResolver()
-    private val server = Javalin.create {
-        it.jsonMapper(JavalinJackson(serverJacksonObjectMapper))
-        it.registerPlugin(RedirectToLowercasePathPlugin())
-        configureJavalinForTracing(it)
 
+    private val server = Javalin.create{ config ->
+        config.jsonMapper(JavalinJackson(serverJacksonObjectMapper))
+        config.plugins.register(RedirectToLowercasePathPlugin())
+        configureJavalinForTracing(config)
 
         val swaggerUiBundle = getSwaggerUiBundle()
         // In an OSGi context, webjars cannot be loaded automatically using `JavalinConfig.enableWebJars`.
@@ -87,16 +88,13 @@ internal class RestServerInternal(
         if (swaggerUiBundle != null) {
             val swaggerUiClassloader = swaggerUiBundle.adapt(BundleWiring::class.java).classLoader
             executeWithThreadContextClassLoader(swaggerUiClassloader) {
-                it.addStaticFiles("/META-INF/resources/", Location.CLASSPATH)
+                config.staticFiles.add("/META-INF/resources/", Location.CLASSPATH)
             }
         } else {
-            it.enableWebjars()
+            config.staticFiles.enableWebjars()
         }
 
-        if (log.isDebugEnabled) {
-            it.enableDevLogging()
-        }
-        it.server {
+        config.jetty.server {
             configurationsProvider.getSSLKeyStorePath()
                 ?.let { createSecureServer() }
                 ?: INSECURE_SERVER_DEV_MODE_WARNING.let { msg ->
@@ -109,8 +107,11 @@ internal class RestServerInternal(
                     createInsecureServer()
                 }
         }
-        it.defaultContentType = contentTypeApplicationJson
-        it.enableCorsForAllOrigins()
+
+        config.http.defaultContentType = contentTypeApplicationJson
+        config.plugins.enableCors{ cors ->
+            cors.add{ it.anyHost() }
+        }
     }.apply {
         addRoutes()
         addOpenApiRoute()
@@ -123,14 +124,15 @@ internal class RestServerInternal(
                     multiPartDir.toString(),
                     configurationsProvider.maxContentLength().toLong(),
                     configurationsProvider.maxContentLength().toLong(),
-                    1024))
+                    1024)
+            )
         }
     }
 
     private fun addExceptionHandlers(app: Javalin) {
 
         app.exception(HttpResponseException::class.java) { e, ctx ->
-            if (ctx.header(Header.ACCEPT)?.contains(ContentType.JSON) == true || ctx.res.contentType == ContentType.JSON) {
+            if (ctx.header(Header.ACCEPT)?.contains(ContentType.JSON) == true || ctx.res().contentType == ContentType.JSON) {
                 ctx.status(e.status).result("""{
                 |    "title": "${e.message?.let { JsonEscapeUtil.escape(it) }}",
                 |    "status": ${e.status},
@@ -181,7 +183,7 @@ internal class RestServerInternal(
                     // "testEntity/getprotocolversion" and mistakenly finds "before" handler where there should be none.
                     // Javalin provides no way for modifying "before" handler finding logic.
                     if (resourceProvider.httpNoAuthRequiredGetRoutes.none { routeInfo -> routeInfo.fullPath == it.path() } &&
-                            it.method() == "GET") {
+                            it.method().name == "GET") {
                         val clientHttpRequestContext = ClientHttpRequestContext(it)
                         val authorizingSubject = authenticate(clientHttpRequestContext, restAuthProvider, credentialResolver)
                         authorize(authorizingSubject, clientHttpRequestContext.getResourceAccessString())
@@ -228,7 +230,7 @@ internal class RestServerInternal(
                 // For "before" handlers we have a global space of handlers in Javalin regardless of which method was actually
                 // used. In case when two separate handlers created for GET and for DELETE for the same resource, without "if"
                 // condition below both handlers will be used - which will be redundant.
-                if (it.method() == handlerType.name) {
+                if (it.method().name == handlerType.name) {
                     with(configurationsProvider.maxContentLength()) {
                         if (it.contentLength() > this) throw BadRequestResponse(
                             CONTENT_LENGTH_EXCEEDS_LIMIT.format(
@@ -268,7 +270,7 @@ internal class RestServerInternal(
         try {
             log.trace { "Starting the Javalin server." }
 
-            val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
+            val bundle = FrameworkUtil.getBundle(JettyWebSocketServletFactory ::class.java)
             if (bundle != null) {
                 val bundleList = listOfNotNull(bundle, getSwaggerUiBundle())
                 val osgiClassLoader = OsgiClassLoader(bundleList)
