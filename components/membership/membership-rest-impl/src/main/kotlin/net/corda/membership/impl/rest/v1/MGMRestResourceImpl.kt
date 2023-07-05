@@ -28,6 +28,7 @@ import net.corda.membership.rest.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.rest.v1.types.response.PreAuthToken
 import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
+import net.corda.membership.impl.rest.v1.verifiers.GroupParametersUpdateVerifier
 import net.corda.membership.rest.v1.types.response.MemberInfoSubmitted
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.membership.rest.v1.types.response.RegistrationStatus
@@ -616,8 +617,17 @@ class MGMRestResourceImpl internal constructor(
             holdingIdentityShortHash: String,
             newGroupParameters: Map<String, String>,
         ): Map<String, String> = handleCommonErrors(holdingIdentityShortHash) {
-            // TODO sanitize and validate input map
+            validateGroupParametersUpdate(newGroupParameters)
             mgmResourceClient.updateGroupParameters(it, newGroupParameters).toMap()
+        }
+
+        private fun validateGroupParametersUpdate(parameters: Map<String, String>) {
+            val verifierResult = GroupParametersUpdateVerifier().verify(parameters)
+            if (verifierResult is GroupParametersUpdateVerifier.Result.Failure) {
+                with(verifierResult.reason) {
+                    throw BadRequestException(this)
+                }
+            }
         }
 
         private fun RegistrationRequestDetails.toRest() =
