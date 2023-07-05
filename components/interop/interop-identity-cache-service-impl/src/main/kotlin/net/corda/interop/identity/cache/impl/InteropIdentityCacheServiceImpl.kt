@@ -40,11 +40,9 @@ class InteropIdentityCacheServiceImpl @Activate constructor(
     private val cacheData = HashMap<String, InteropIdentityCacheView>()
 
     private fun getCacheView(holdingIdentityShortHash: String): InteropIdentityCacheView {
-        if (!cacheData.containsKey(holdingIdentityShortHash)) {
-            cacheData[holdingIdentityShortHash] = InteropIdentityCacheView(holdingIdentityShortHash)
+        return cacheData.computeIfAbsent(holdingIdentityShortHash) {
+            InteropIdentityCacheView(it)
         }
-
-        return cacheData[holdingIdentityShortHash]!!
     }
 
     override fun getInteropIdentities(shortHash: String): Set<InteropIdentityCacheEntry> {
