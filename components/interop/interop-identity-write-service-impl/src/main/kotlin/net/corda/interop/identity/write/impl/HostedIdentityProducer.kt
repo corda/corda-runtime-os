@@ -1,6 +1,6 @@
 package net.corda.interop.identity.write.impl
 
-import net.corda.data.interop.InteropIdentity
+import net.corda.data.interop.PersistentInteropIdentity
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.interop.core.Utils.Companion.computeShortHash
@@ -9,6 +9,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
+import net.corda.data.identity.HoldingIdentity
+import net.corda.interop.core.InteropIdentity
 
 
 /**
@@ -33,18 +35,24 @@ class HostedIdentityProducer(private val publisher: AtomicReference<Publisher?>)
         logger.info("Interop hosted identity published with key : ${record.key} and value : ${record.value}")
     }
 
-    private fun createHostedIdentityRecord(identity: InteropIdentity): Record<String, HostedIdentityEntry> {
-        val shortHash = computeShortHash(identity.x500Name, identity.groupId)
+    private fun createHostedIdentityRecord(interopIdentity: InteropIdentity): Record<String, HostedIdentityEntry> {
+        val persistentInteropIdentity = PersistentInteropIdentity(
+            interopIdentity.groupId,
+            interopIdentity.x500Name,
+            interopIdentity.holdingIdentityShortHash
+        )
+
+        val interopIdentityShortHash = computeShortHash(interopIdentity.x500Name, interopIdentity.groupId)
 
         val hostedIdentity = HostedIdentityEntry(
-            net.corda.data.identity.HoldingIdentity(identity.x500Name, identity.groupId),
-            shortHash,
+            HoldingIdentity(persistentInteropIdentity.x500Name, persistentInteropIdentity.groupId),
+            interopIdentityShortHash,
             //TODO CORE-15168
             listOf(DUMMY_CERTIFICATE),
             HostedIdentitySessionKeyAndCert(DUMMY_PUBLIC_SESSION_KEY, null),
             emptyList()
         )
 
-        return Record(P2P_HOSTED_IDENTITIES_TOPIC, shortHash, hostedIdentity)
+        return Record(P2P_HOSTED_IDENTITIES_TOPIC, interopIdentityShortHash, hostedIdentity)
     }
 }

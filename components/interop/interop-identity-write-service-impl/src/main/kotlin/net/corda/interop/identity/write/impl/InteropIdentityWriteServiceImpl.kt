@@ -2,7 +2,6 @@ package net.corda.interop.identity.write.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.interop.InteropIdentity
 import net.corda.interop.identity.write.InteropIdentityWriteService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -24,6 +23,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
+import net.corda.interop.core.InteropIdentity
 
 
 @Suppress("ForbiddenComment")
@@ -54,19 +54,9 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
     override val isRunning: Boolean
         get() = coordinator.isRunning
 
-    override fun addInteropIdentity(
-        holdingIdentityShortHash: String,
-        interopGroupId: String,
-        newIdentityName: String
-    ) {
-        val interopIdentity = InteropIdentity().apply {
-            this.x500Name = newIdentityName
-            this.groupId = interopGroupId
-            this.holdingIdentityShortHash = holdingIdentityShortHash
-        }
-
-        interopIdentityProducer.publishInteropIdentity(holdingIdentityShortHash, interopIdentity)
-        hostedIdentityProducer.publishHostedInteropIdentity(interopIdentity)
+    override fun addInteropIdentity(vNodeShortHash: String, identity: InteropIdentity) {
+        interopIdentityProducer.publishInteropIdentity(vNodeShortHash, identity)
+        hostedIdentityProducer.publishHostedInteropIdentity(identity)
     }
 
     override fun start() {

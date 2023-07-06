@@ -1,5 +1,6 @@
 package net.corda.interop.identity.write
 
+import net.corda.interop.core.InteropIdentity
 import net.corda.lifecycle.Lifecycle
 
 
@@ -7,13 +8,8 @@ interface InteropIdentityWriteService : Lifecycle {
     /**
      * Add a new interop identity for a given holding identity within a given interop group.
      *
-     * @param holdingIdentityShortHash Short hash of the holding identity that owns the new interop identity.
-     * @param interopGroupId Group ID of the interop group to add the interop identity to.
-     * @param newIdentityName X500 name for the new interop identity.
+     * @param vNodeShortHash Short hash of the virtual node to add the interop identity to.
+     * @param identity The new interop identity to add.
      */
-    fun addInteropIdentity(
-        holdingIdentityShortHash: String,
-        interopGroupId: String,
-        newIdentityName: String
-    )
+    fun addInteropIdentity(vNodeShortHash: String, identity: InteropIdentity)
 }

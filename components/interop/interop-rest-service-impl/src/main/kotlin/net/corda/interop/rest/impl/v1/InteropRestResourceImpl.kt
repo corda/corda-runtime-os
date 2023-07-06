@@ -28,6 +28,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
+import net.corda.interop.core.InteropIdentity
 
 @Component(service = [PluggableRestResource::class])
 internal class InteropRestResourceImpl @Activate constructor(
@@ -79,11 +80,19 @@ internal class InteropRestResourceImpl @Activate constructor(
                 "X500 name \"${restInteropIdentity.x500Name}\" could not be parsed. Cause: ${e.message}"
             )
         }
+
         interopIdentityWriteService.addInteropIdentity(
             vnodeshorthash,
             restInteropIdentity.groupId.toString(),
             restInteropIdentity.x500Name
+            holdingidentityshorthash,
+            InteropIdentity(
+                groupId = restInteropIdentity.groupId.toString(),
+                x500Name = restInteropIdentity.x500Name,
+                holdingIdentityShortHash = holdingidentityshorthash
+            )
         )
+
         logger.info("InteropIdentity created.")
 
         return ResponseEntity.ok("OK")

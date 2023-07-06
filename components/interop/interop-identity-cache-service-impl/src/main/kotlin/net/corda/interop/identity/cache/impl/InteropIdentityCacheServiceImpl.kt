@@ -1,7 +1,7 @@
 package net.corda.interop.identity.cache.impl
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.interop.identity.cache.InteropIdentityCacheEntry
+import net.corda.interop.core.InteropIdentity
 import net.corda.interop.identity.cache.InteropIdentityCacheService
 import net.corda.interop.identity.cache.InteropIdentityCacheView
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -45,17 +45,17 @@ class InteropIdentityCacheServiceImpl @Activate constructor(
         }
     }
 
-    override fun getInteropIdentities(shortHash: String): Set<InteropIdentityCacheEntry> {
+    override fun getInteropIdentities(shortHash: String): Set<InteropIdentity> {
         return getCacheView(shortHash).getIdentities()
     }
 
-    override fun putInteropIdentity(shortHash: String, identity: InteropIdentityCacheEntry) {
+    override fun putInteropIdentity(shortHash: String, identity: InteropIdentity) {
         log.info("Adding interop identity, shortHash: $shortHash, identity=$identity")
         val view = getCacheView(shortHash)
         view.addIdentity(identity)
     }
 
-    override fun removeInteropIdentity(shortHash: String, identity: InteropIdentityCacheEntry) {
+    override fun removeInteropIdentity(shortHash: String, identity: InteropIdentity) {
         log.info("Removing interop identity, shortHash: $shortHash, identity=$identity")
         val view = getCacheView(shortHash)
         view.removeIdentity(identity)

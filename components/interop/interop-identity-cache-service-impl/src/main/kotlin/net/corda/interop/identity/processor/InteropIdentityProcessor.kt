@@ -1,8 +1,8 @@
 package net.corda.interop.identity.processor
 
-import net.corda.data.interop.InteropIdentity
+import net.corda.data.interop.PersistentInteropIdentity
+import net.corda.interop.core.InteropIdentity
 import net.corda.interop.core.Utils.Companion.computeShortHash
-import net.corda.interop.identity.cache.InteropIdentityCacheEntry
 import net.corda.interop.identity.cache.InteropIdentityCacheService
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
@@ -11,16 +11,16 @@ import org.slf4j.LoggerFactory
 
 class InteropIdentityProcessor(
     private val cacheService: InteropIdentityCacheService
-) : CompactedProcessor<String, InteropIdentity> {
+) : CompactedProcessor<String, PersistentInteropIdentity> {
 
     override val keyClass = String::class.java
-    override val valueClass = InteropIdentity::class.java
+    override val valueClass = PersistentInteropIdentity::class.java
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private fun verifyShortHash(identity: InteropIdentityCacheEntry, expectedShortHash: String) {
+    private fun verifyShortHash(identity: InteropIdentity, expectedShortHash: String) {
         val shortHash = computeShortHash(identity.x500Name, identity.groupId)
         if (shortHash != expectedShortHash) {
             throw CordaRuntimeException(
@@ -56,7 +56,7 @@ class InteropIdentityProcessor(
         }
     }
 
-    private fun updateCacheEntry(key: RecordKey, oldEntry: InteropIdentityCacheEntry, newEntry: InteropIdentityCacheEntry) {
+    private fun updateCacheEntry(key: RecordKey, oldEntry: InteropIdentity, newEntry: InteropIdentity) {
         val interopIdentities = cacheService.getInteropIdentities(key.holdingIdentityShortHash)
 
         // Short hash can be derived from x500 name and group ID. Might as well perform a quick sanity check!
@@ -73,7 +73,7 @@ class InteropIdentityProcessor(
         cacheService.putInteropIdentity(key.holdingIdentityShortHash, newEntry)
     }
 
-    private fun insertCacheEntry(key: RecordKey, newEntry: InteropIdentityCacheEntry) {
+    private fun insertCacheEntry(key: RecordKey, newEntry: InteropIdentity) {
         val interopIdentities = cacheService.getInteropIdentities(key.holdingIdentityShortHash)
 
         // Short hash can be derived from x500 name and group ID. Might as well perform a quick sanity check!
@@ -88,7 +88,7 @@ class InteropIdentityProcessor(
         }
     }
 
-    private fun removeCacheEntry(key: RecordKey, oldEntry: InteropIdentityCacheEntry) {
+    private fun removeCacheEntry(key: RecordKey, oldEntry: InteropIdentity) {
         val interopIdentities = cacheService.getInteropIdentities(key.holdingIdentityShortHash)
 
         // Short hash can be derived from x500 name and group ID. Might as well perform a quick sanity check!
@@ -103,17 +103,17 @@ class InteropIdentityProcessor(
     }
 
     override fun onNext(
-        newRecord: Record<String, InteropIdentity>,
-        oldValue: InteropIdentity?,
-        currentData: Map<String, InteropIdentity>
+        newRecord: Record<String, PersistentInteropIdentity>,
+        oldValue: PersistentInteropIdentity?,
+        currentData: Map<String, PersistentInteropIdentity>
     ) {
         val key = RecordKey(newRecord.key)
         val newValue = newRecord.value
 
         logger.info("Message Received onNext; key: $key, newValue: $newValue, oldValue: $oldValue")
 
-        val oldEntry = oldValue?.let { InteropIdentityCacheEntry.of(it) }
-        val newEntry = newValue?.let { InteropIdentityCacheEntry.of(it) }
+        val oldEntry = oldValue?.let { InteropIdentity.of(key.holdingIdentityShortHash, it) }
+        val newEntry = newValue?.let { InteropIdentity.of(key.holdingIdentityShortHash, it) }
 
         if ((newEntry != null) && (oldEntry != null)) {
             updateCacheEntry(key, oldEntry, newEntry)
@@ -132,12 +132,12 @@ class InteropIdentityProcessor(
         }
     }
 
-    override fun onSnapshot(currentData: Map<String, InteropIdentity>) {
+    override fun onSnapshot(currentData: Map<String, PersistentInteropIdentity>) {
         logger.info("Message Received onSnapshot; loading ${currentData.size} entries.")
 
         currentData.entries.forEach { topicEntry ->
             val keyInfo = RecordKey(topicEntry.key)
-            val cacheEntry = InteropIdentityCacheEntry.of(topicEntry.value)
+            val cacheEntry = InteropIdentity.of(keyInfo.holdingIdentityShortHash, topicEntry.value)
             cacheService.putInteropIdentity(keyInfo.holdingIdentityShortHash, cacheEntry)
         }
     }

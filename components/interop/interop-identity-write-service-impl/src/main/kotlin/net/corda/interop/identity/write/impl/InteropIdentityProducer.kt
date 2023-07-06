@@ -1,12 +1,13 @@
 package net.corda.interop.identity.write.impl
 
-import net.corda.data.interop.InteropIdentity
+import net.corda.data.interop.PersistentInteropIdentity
 import net.corda.interop.core.Utils.Companion.computeShortHash
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.INTEROP_IDENTITY_TOPIC
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
+import net.corda.interop.core.InteropIdentity
 
 
 class InteropIdentityProducer(
@@ -26,7 +27,13 @@ class InteropIdentityProducer(
         val interopIdentityShortHash = computeShortHash(identity.x500Name, identity.groupId)
         val key = "$holdingIdentityShortHash:$interopIdentityShortHash"
 
-        val futures = publisher.get()!!.publish(listOf(Record(INTEROP_IDENTITY_TOPIC, key, identity)))
+        val recordValue = PersistentInteropIdentity(
+            identity.groupId,
+            identity.x500Name,
+            identity.holdingIdentityShortHash
+        )
+
+        val futures = publisher.get()!!.publish(listOf(Record(INTEROP_IDENTITY_TOPIC, key, recordValue)))
 
         futures.forEach { it.get() }
 
