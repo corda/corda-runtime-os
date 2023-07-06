@@ -24,10 +24,12 @@ class StartFlowExecutor(
 
     private val creationCount = CordaMetrics.Metric.FlowMapperCreationCount.builder()
         .withTag(CordaMetrics.Tag.FlowEvent, startRPCFlow::class.java.name)
+        .withTag(CordaMetrics.Tag.EventType, "NewFlow")
         .build()
 
     private val deduplicationCount = CordaMetrics.Metric.FlowMapperDeduplicationCount.builder()
         .withTag(CordaMetrics.Tag.FlowEvent, startRPCFlow::class.java.name)
+        .withTag(CordaMetrics.Tag.EventType, "NewFlow")
         .build()
 
     override fun execute(): FlowMapperResult {
