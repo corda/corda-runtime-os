@@ -39,10 +39,15 @@ class CreateConnect : Runnable {
     var delete: Boolean = false
 
     var topicPartitions: Map<String, Int> = mapOf(
-        FLOW_START_TOPIC to 24,
-        FLOW_SESSION_TOPIC to 24,
-        FLOW_EVENT_TOPIC to 24
-    )
+//        FLOW_START_TOPIC to 24,
+//        FLOW_SESSION_TOPIC to 24,
+//        FLOW_EVENT_TOPIC to 24,
+//        FLOW_MAPPER_SESSION_IN_EVENT_TOPIC to 24,
+//        FLOW_MAPPER_SESSION_OUT_EVENT_TOPIC to 24,
+//        FLOW_MAPPER_EVENT_TOPIC to 24,
+//        FLOW_MAPPER_START_EVENT_TOPIC to 24
+        "" to 24
+    ).map { "traffic-congestion-poc-${it.key}" to it.value }.toMap()
 
     override fun run() {
         // Switch ClassLoader so LoginModules can be found
@@ -85,6 +90,9 @@ class CreateConnect : Runnable {
 
     private fun createTopicsWithRetry(client: Admin, topicConfigs: List<Create.TopicConfig>) {
         val topics = getTopics(topicConfigs).toMutableMap()
+        topics.forEach {
+            println("Topic '${it.value.name()}' has '${it.value.numPartitions()}'")
+        }
         println("Creating topics: ${topics.keys.joinToString { it }}")
         val end = LocalDateTime.now().plusSeconds(wait)
         while (true) {
