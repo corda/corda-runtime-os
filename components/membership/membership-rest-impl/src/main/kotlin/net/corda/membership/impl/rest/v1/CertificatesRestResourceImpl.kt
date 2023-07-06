@@ -120,6 +120,8 @@ class CertificatesRestResourceImpl @Activate constructor(
         contextMap: Map<String, String?>?,
     ): String {
         validateTenantId(tenantId)
+        // Check if a virtual node is registered for given tenantId
+        virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(tenantId)
 
         val key = tryWithExceptionHandling(logger, "find key with ID $keyId for $tenantId") {
             cryptoOpsClient.lookupKeysByIds(
