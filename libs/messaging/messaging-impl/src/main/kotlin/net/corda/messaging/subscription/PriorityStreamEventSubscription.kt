@@ -510,7 +510,10 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
     private fun isStateLocked(key: K): Boolean {
         val lockKey = getStateLockKey(key)
         val isLocked = jedisCluster.get(lockKey)
-        return isLocked[0].toInt() == 1
+        if (isLocked != null && isLocked.isNotEmpty()) {
+            return isLocked[0].toInt() == 1
+        }
+        return false
     }
 
     private fun getStateLockKey(key: K): ByteArray {

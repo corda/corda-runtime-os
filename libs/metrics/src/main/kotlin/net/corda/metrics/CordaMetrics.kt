@@ -714,7 +714,6 @@ object CordaMetrics {
          * The flow event type this metric was recorded for.
          */
         FlowEvent("flow.event"),
-        EventType("type"),
 
         /**
          * The status of the operation. Can be used to indicate whether an operation was successful or failed.

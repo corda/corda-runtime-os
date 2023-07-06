@@ -37,12 +37,10 @@ class SessionInitExecutor(
 
     private val deduplicationCount = CordaMetrics.Metric.FlowMapperDeduplicationCount.builder()
         .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)
-        .withTag(CordaMetrics.Tag.EventType, "Session")
         .build()
 
     private val creationCount = CordaMetrics.Metric.FlowMapperCreationCount.builder()
         .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)
-        .withTag(CordaMetrics.Tag.EventType, "Session")
         .build()
 
     override fun execute(): FlowMapperResult {
