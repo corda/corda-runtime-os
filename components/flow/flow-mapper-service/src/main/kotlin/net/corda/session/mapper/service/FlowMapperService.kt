@@ -105,8 +105,8 @@ class FlowMapperService @Activate constructor(
                     subscriptionFactory.createPriorityStreamSubscription(
                         SubscriptionConfig(CONSUMER_GROUP, FLOW_MAPPER_EVENT_TOPIC),
                         mapOf(
-                            Pair(1, listOf(FLOW_MAPPER_SESSION_IN_EVENT_TOPIC, FLOW_MAPPER_SESSION_OUT_EVENT_TOPIC, FLOW_MAPPER_EVENT_TOPIC)),
-//                            Pair(2, listOf(FLOW_MAPPER_SESSION_OUT_EVENT_TOPIC)),
+                            Pair(1, listOf(FLOW_MAPPER_SESSION_IN_EVENT_TOPIC, FLOW_MAPPER_EVENT_TOPIC)),
+                            Pair(2, listOf(FLOW_MAPPER_SESSION_OUT_EVENT_TOPIC)),
 //                            Pair(3, listOf(FLOW_MAPPER_EVENT_TOPIC)),
                             Pair(4, listOf(FLOW_MAPPER_START_EVENT_TOPIC)),
                         ),
