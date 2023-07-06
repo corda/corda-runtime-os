@@ -28,6 +28,7 @@ class NetworkPluginWrapper : Plugin() {
             GenerateGroupPolicy::class,
             OnBoard::class
         ],
+        hidden = true,
         mixinStandardHelpOptions = true,
         description = ["Plugin for interacting with a network."]
     )
