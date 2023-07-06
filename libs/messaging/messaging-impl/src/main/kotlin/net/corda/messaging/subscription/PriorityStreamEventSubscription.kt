@@ -202,26 +202,14 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                 processEvents()
 
             } catch (ex: Exception) {
-                when (ex) {
-                    is CordaMessageAPIIntermittentException -> {
-                        log.warn(
-                            "${ex.message} - Attempts: $attempts. Recreating " +
-                                    "consumer/producer and Retrying.", ex
-                        )
-                    }
-                    else -> {
-                        log.error(
-                            "${ex.message} - Attempts: $attempts. Closing subscription.", ex
-                        )
-                        threadLooper.updateLifecycleStatus(LifecycleStatus.ERROR, ex.message!!)
-                        threadLooper.stopLoop()
-                    }
-                }
+                log.warn(
+                    "${ex.message} - Attempts: $attempts. Recreating " +
+                            "consumer/producer and Retrying.", ex
+                )
             } finally {
                 shutdownResources()
             }
         }
-        shutdownResources()
     }
 
     private fun processEvents() {
@@ -277,7 +265,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                             markConsumerPoll(consumer)
                             val partitions = consumer.assignment()
                             if (!topics[priority]?.contains("services.token.event")!!) {
-                                log.info("Polled (${records.size}) records from topics [${topics[priority]?.joinToString(", ")}] with [$partitions]")
+                                log.info("Polled (${records.size}) records from topics [$partitions]")
                             }
                         } catch (ex: Exception) {
                             consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
