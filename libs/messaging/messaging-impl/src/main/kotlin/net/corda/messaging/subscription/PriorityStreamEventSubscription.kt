@@ -239,7 +239,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                 )
                 consumers.forEach {
                     it.value.forEach { consumer ->
-                        consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
+                        consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.LATEST)
                     }
                 }
             }
@@ -263,7 +263,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                                 log.info("Polled (${records.size}) records from topics [$partitions]")
                             }
                         } catch (ex: Exception) {
-                            consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
+                            consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.LATEST)
                         }
                     }
                 } else {
@@ -289,7 +289,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                 markConsumerPoll(consumer)
                 log.info("Triggered paused poll on consumer of priority $priority with partitions [$partitions]")
             } catch (ex: Exception) {
-                consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
+                consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.LATEST)
                 log.error("Failed to trigger paused poll on consumer of priority $priority with message '${ex.message}'")
             }
         }
@@ -398,7 +398,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
             )
             consumers.forEach {
                 it.value.forEach { consumer ->
-                    consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
+                    consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.LATEST)
                 }
             }
         } else {
