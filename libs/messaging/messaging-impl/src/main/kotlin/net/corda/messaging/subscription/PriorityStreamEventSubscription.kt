@@ -231,20 +231,15 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                     producer?.commitTransaction()
                 }
             } catch (ex: Exception) {
-                when (ex) {
-                    is CordaMessageAPIIntermittentException -> {
-                        attempts++
-                        handleProcessEventRetries(attempts, ex)
-                    }
-                    is StateAndEventConsumer.RebalanceInProgressException -> {
-                        log.warn ("Abandoning processing of events due to a rebalance", ex)
-                    }
-                    else -> {
-                        throw CordaMessageAPIFatalException(
-                            "Failed to process records from group ${config.group}, " +
-                                    "producerClientId ${config.clientId}. " +
-                                    "Fatal error occurred.", ex
-                        )
+                attempts++
+                log.warn(
+                    "Failed to process record from group ${config.group}, " +
+                            "producerClientId ${config.clientId}. " +
+                            "Retrying poll and process. Attempts: $attempts."
+                )
+                consumers.forEach {
+                    it.value.forEach { consumer ->
+                        consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
                     }
                 }
             }
