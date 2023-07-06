@@ -20,6 +20,7 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:utilities')
+    implementation project(':libs:interop:interop-core')
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 

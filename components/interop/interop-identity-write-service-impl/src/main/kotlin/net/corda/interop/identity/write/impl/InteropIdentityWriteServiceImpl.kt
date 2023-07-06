@@ -60,8 +60,9 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
         newIdentityName: String
     ) {
         val interopIdentity = InteropIdentity().apply {
-            x500Name = newIdentityName
-            groupId = interopGroupId
+            this.x500Name = newIdentityName
+            this.groupId = interopGroupId
+            this.holdingIdentityShortHash = holdingIdentityShortHash
         }
 
         interopIdentityProducer.publishInteropIdentity(holdingIdentityShortHash, interopIdentity)
