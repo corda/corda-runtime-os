@@ -2,7 +2,7 @@ package net.corda.applications.workers.workercommon.internal
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.javalin.Javalin
-import io.javalin.core.util.Header
+import io.javalin.http.Header
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmHeapPressureMetrics
@@ -19,7 +19,7 @@ import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.utilities.executeWithStdErrSuppressed
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import org.osgi.service.component.annotations.Activate
@@ -123,7 +123,7 @@ internal class WorkerMonitorImpl @Activate constructor(
 
     /** Starts a Javalin server on [port]. */
     private fun startServer(server: Javalin, port: Int) {
-        val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
+        val bundle = FrameworkUtil.getBundle(JettyWebSocketServletFactory::class.java)
 
         if (bundle == null) {
             server.start(port)
