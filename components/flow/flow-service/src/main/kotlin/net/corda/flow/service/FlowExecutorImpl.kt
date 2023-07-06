@@ -79,7 +79,7 @@ class FlowExecutorImpl constructor(
                 subscription = subscriptionFactory.createPriorityStreamSubscription(
                     SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC),
                     mapOf(
-                        Pair(1, listOf(FLOW_SESSION_TOPIC, FLOW_EVENT_TOPIC)),
+                        Pair(1, listOf(FLOW_SESSION_TOPIC)),
 //                        Pair(2, listOf(FLOW_EVENT_TOPIC)),
                         Pair(3, listOf(FLOW_START_TOPIC)),
                     ),

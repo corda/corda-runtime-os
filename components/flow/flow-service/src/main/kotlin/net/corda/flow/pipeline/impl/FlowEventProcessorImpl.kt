@@ -66,6 +66,7 @@ class FlowEventProcessorImpl(
         mdcProperties: Map<String, String>,
         traceContext: TraceContext
     ): StateAndEventProcessor.Response<Checkpoint> {
+        log.info("Starting to process flow event for ID ${event.key}")
         if (flowEvent == null) {
             log.debug { "The incoming event record '${event}' contained a null FlowEvent, this event will be discarded" }
             return StateAndEventProcessor.Response(state, listOf())
@@ -107,6 +108,8 @@ class FlowEventProcessorImpl(
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (t: Throwable) {
             flowEventExceptionProcessor.process(t)
+        } finally {
+            log.info("Processed flow event for ID ${event.key}")
         }
     }
 }

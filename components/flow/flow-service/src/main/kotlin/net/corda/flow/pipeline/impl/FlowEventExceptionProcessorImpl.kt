@@ -88,9 +88,9 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 )
             }
 
-            log.debug {
+            log.info (
                 "A transient exception was thrown the event that failed will be retried. event='${context.inputEvent}',  $exception"
-            }
+                )
 
             val records = createStatusRecord(context.checkpoint.flowId) {
                 flowMessageFactory.createFlowRetryingStatusMessage(context.checkpoint)
@@ -170,6 +170,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         exception: FlowPlatformException,
         context: FlowEventContext<*>
     ): StateAndEventProcessor.Response<Checkpoint> {
+        log.warn("A platform exception has been thrown: ${exception.message}", exception)
         return withEscalation {
             val checkpoint = context.checkpoint
 
@@ -184,6 +185,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     }
 
     override fun process(exception: FlowMarkedForKillException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint> {
+        log.warn("Flow has been marked for kill: ${exception.message}", exception)
         return withEscalation {
             val exceptionHandlingStartTime = Instant.now()
             val checkpoint = context.checkpoint
