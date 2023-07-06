@@ -276,7 +276,9 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                             recordsCount += records.size
                             markConsumerPoll(consumer)
                             val partitions = consumer.assignment()
-                            log.info("Polled (${records.size}) records from topics [${topics[priority]?.joinToString(", ")}] with [$partitions]")
+                            if (!topics[priority]?.contains("services.token.event")!!) {
+                                log.info("Polled (${records.size}) records from topics [${topics[priority]?.joinToString(", ")}] with [$partitions]")
+                            }
                         } catch (ex: Exception) {
                             consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
                         }
