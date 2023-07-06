@@ -2,7 +2,6 @@ package net.corda.interop.identity.cache.impl
 
 import net.corda.data.chunking.UploadStatus
 import net.corda.data.chunking.UploadStatusKey
-import net.corda.interop.identity.cache.InteropIdentityCacheEntry
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.subscription.CompactedSubscription
@@ -15,6 +14,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.util.UUID
+import net.corda.interop.core.InteropIdentity
 
 
 class InteropIdentityCacheServiceImplTest {
@@ -58,7 +58,7 @@ class InteropIdentityCacheServiceImplTest {
         val cache = InteropIdentityCacheServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
 
         val shortHash = "1234567890"
-        val interopIdentity = InteropIdentityCacheEntry(
+        val interopIdentity = InteropIdentity(
             groupId = UUID.randomUUID().toString(),
             x500Name = "X500 name #1",
             holdingIdentityShortHash = shortHash
@@ -94,13 +94,13 @@ class InteropIdentityCacheServiceImplTest {
 
         val shortHash = "1234567890"
 
-        val interopIdentity1 = InteropIdentityCacheEntry(
+        val interopIdentity1 = InteropIdentity(
             groupId = UUID.randomUUID().toString(),
             x500Name = "X500 name #1",
             holdingIdentityShortHash = shortHash
         )
 
-        val interopIdentity2 = InteropIdentityCacheEntry(
+        val interopIdentity2 = InteropIdentity(
             groupId = UUID.randomUUID().toString(),
             x500Name = "X500 name #2",
             holdingIdentityShortHash = shortHash
