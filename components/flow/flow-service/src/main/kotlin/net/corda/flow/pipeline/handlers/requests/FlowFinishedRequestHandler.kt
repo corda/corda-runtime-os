@@ -5,7 +5,6 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
-import net.corda.flow.pipeline.handlers.requests.helper.getRecords
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -36,14 +35,14 @@ class FlowFinishedRequestHandler @Activate constructor(
     ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
 
-        val status = flowMessageFactory.createFlowCompleteStatusMessage(checkpoint, request.result)
-        val records = getRecords(flowRecordFactory, context, status)
+//        val status = flowMessageFactory.createFlowCompleteStatusMessage(checkpoint, request.result)
+//        val records = getRecords(flowRecordFactory, context, status)
 
         log.info("Flow [${checkpoint.flowId}] completed successfully")
         checkpoint.markDeleted()
 
         context.flowMetrics.flowCompletedSuccessfully()
 
-        return context.copy(outputRecords = context.outputRecords + records)
+        return context.copy(outputRecords = context.outputRecords)
     }
 }

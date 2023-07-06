@@ -199,7 +199,7 @@ class FlowRestResourceImpl @Activate constructor(
 
             val records = listOf(
                 addTraceContextToRecord(Record(FLOW_MAPPER_START_EVENT_TOPIC, status.key.toString(), startEvent)),
-                Record(FLOW_STATUS_TOPIC, status.key, status),
+//                Record(FLOW_STATUS_TOPIC, status.key, status),
             )
 
             val recordFutures = try {
@@ -208,7 +208,7 @@ class FlowRestResourceImpl @Activate constructor(
                     "Publishing start flow events",
                     untranslatedExceptions = setOf(CordaMessageAPIFatalException::class.java)
                 ) {
-                    listOf(publisher!!.batchPublish(records))
+                    publisher!!.publish(records)
                 }
             } catch (ex: CordaMessageAPIFatalException) {
                 throw markFatalAndReturnFailureException(ex)

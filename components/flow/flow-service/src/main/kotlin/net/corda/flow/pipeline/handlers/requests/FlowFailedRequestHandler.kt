@@ -5,10 +5,8 @@ import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
-import net.corda.flow.pipeline.handlers.requests.helper.getRecords
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import org.osgi.service.component.annotations.Activate
@@ -58,18 +56,18 @@ class FlowFailedRequestHandler @Activate constructor(
             throw FlowFatalException(e.message, e)
         }
 
-        val status = flowMessageFactory.createFlowFailedStatusMessage(
-            checkpoint,
-            FLOW_FAILED,
-            request.exception.message ?: request.exception.javaClass.name
-        )
-        val records = getRecords(flowRecordFactory, context, status)
+//        val status = flowMessageFactory.createFlowFailedStatusMessage(
+//            checkpoint,
+//            FLOW_FAILED,
+//            request.exception.message ?: request.exception.javaClass.name
+//        )
+//        val records = getRecords(flowRecordFactory, context, status)
 
         log.info("Flow [${checkpoint.flowId}] failed")
         checkpoint.markDeleted()
 
         context.flowMetrics.flowFailed()
 
-        return context.copy(outputRecords = context.outputRecords + records)
+        return context.copy(outputRecords = context.outputRecords)
     }
 }

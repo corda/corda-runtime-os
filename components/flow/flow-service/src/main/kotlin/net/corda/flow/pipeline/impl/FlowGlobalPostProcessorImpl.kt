@@ -200,7 +200,8 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             return listOf()
         }
 
-        val status = flowMessageFactory.createFlowStartedStatusMessage(checkpoint)
-        return listOf(flowRecordFactory.createFlowStatusRecord(status))
+//        val status = flowMessageFactory.createFlowStartedStatusMessage(checkpoint)
+        return listOf()
+//        return listOf(flowRecordFactory.createFlowStatusRecord(status))
     }
 }

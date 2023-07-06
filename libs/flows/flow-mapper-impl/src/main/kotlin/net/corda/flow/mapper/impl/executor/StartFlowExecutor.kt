@@ -22,11 +22,17 @@ class StartFlowExecutor(
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    private val creationCount = CordaMetrics.Metric.FlowMapperCreationCount.builder()
+        .withTag(CordaMetrics.Tag.FlowEvent, startRPCFlow::class.java.name)
+        .build()
+
+    private val deduplicationCount = CordaMetrics.Metric.FlowMapperDeduplicationCount.builder()
+        .withTag(CordaMetrics.Tag.FlowEvent, startRPCFlow::class.java.name)
+        .build()
+
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
-            CordaMetrics.Metric.FlowMapperCreationCount.builder()
-                .withTag(CordaMetrics.Tag.FlowEvent, startRPCFlow::class.java.name)
-                .build().increment()
+            creationCount.increment()
             val flowId = generateFlowId()
             val newState = FlowMapperState(flowId, null, FlowMapperStateType.OPEN)
             val flowEvent = FlowEvent(flowId, startRPCFlow)
@@ -35,10 +41,8 @@ class StartFlowExecutor(
                 mutableListOf(Record(outputTopic, flowId, flowEvent))
             )
         } else {
-            CordaMetrics.Metric.FlowMapperDeduplicationCount.builder()
-                .withTag(CordaMetrics.Tag.FlowEvent, startRPCFlow::class.java.name)
-                .build().increment()
-            log.debug { "Duplicate StartRPCFlow event received. Key: $eventKey, Event: $startRPCFlow " }
+            deduplicationCount.increment()
+            log.info( "Duplicate StartRPCFlow event received. Key: $eventKey, Event: $startRPCFlow " )
             FlowMapperResult(flowMapperState, mutableListOf())
         }
     }

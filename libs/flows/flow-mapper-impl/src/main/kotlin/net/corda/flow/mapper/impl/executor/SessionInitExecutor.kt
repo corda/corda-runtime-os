@@ -35,6 +35,10 @@ class SessionInitExecutor(
         messageDirection
     )
 
+    private val deduplicationCount = CordaMetrics.Metric.FlowMapperDeduplicationCount.builder()
+        .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)
+        .build()
+
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
             CordaMetrics.Metric.FlowMapperCreationCount.builder()
@@ -59,9 +63,7 @@ class SessionInitExecutor(
                     )
                 )
             } else {
-                CordaMetrics.Metric.FlowMapperDeduplicationCount.builder()
-                    .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)
-                    .build().increment()
+                deduplicationCount.increment()
                 FlowMapperResult(flowMapperState, emptyList())
             }
         }

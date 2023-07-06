@@ -3,7 +3,6 @@ package net.corda.flow.pipeline.impl
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
-import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
@@ -15,7 +14,6 @@ import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
-import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.PLATFORM_ERROR
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
@@ -27,7 +25,6 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS
-import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -92,9 +89,9 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 "A transient exception was thrown the event that failed will be retried. event='${context.inputEvent}',  $exception"
                 )
 
-            val records = createStatusRecord(context.checkpoint.flowId) {
+            val records = createStatusRecord(context.checkpoint.flowId) /*{
                 flowMessageFactory.createFlowRetryingStatusMessage(context.checkpoint)
-            }
+            }*/
 
             // Set up records before the rollback, just in case a transient exception happens after a flow is initialised
             // but before the first checkpoint has been recorded.
@@ -122,13 +119,13 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
         removeCachedFlowFiber(context.checkpoint)
 
-        val records = createStatusRecord(context.checkpoint.flowId) {
+        val records = createStatusRecord(context.checkpoint.flowId) /*{
             flowMessageFactory.createFlowFailedStatusMessage(
                 context.checkpoint,
                 FLOW_FAILED,
                 exception.message
             )
-        }
+        }*/
 
         StateAndEventProcessor.Response(
             updatedState = null,
@@ -137,10 +134,11 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         )
     }
 
-    private fun createStatusRecord(id: String, statusGenerator: () -> FlowStatus): List<Record<*, *>> {
+    private fun createStatusRecord(id: String, /*statusGenerator: () -> FlowStatus*/): List<Record<*, *>> {
         return try {
-            val status = statusGenerator()
-            listOf(flowRecordFactory.createFlowStatusRecord(status))
+//            val status = statusGenerator()
+            listOf()
+//            listOf(flowRecordFactory.createFlowStatusRecord(status))
         } catch (e: IllegalStateException) {
             // Most errors should happen after a flow has been initialised. However, it is possible for
             // initialisation to have not yet happened at the point the failure is hit if it's a session init message
@@ -194,7 +192,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 return@withEscalation flowEventContextConverter.convert(
                     context.copy(
                         outputRecords = createFlowKilledStatusRecord(
-                            checkpoint, exception.message ?: "No exception message provided."
+                            checkpoint, /*exception.message ?: "No exception message provided."*/
                         ),
                         sendToDlq = false
                     )
@@ -213,11 +211,11 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 )
             }
             val errorEvents = flowSessionManager.getSessionErrorEventRecords(context.checkpoint, context.config, exceptionHandlingStartTime)
-            val cleanupEvents = createCleanupEventsForSessions(
-                getScheduledCleanupExpiryTime(context, exceptionHandlingStartTime),
-                checkpoint.sessions.filterNot { it.hasScheduledCleanup }
-            )
-            val statusRecord = createFlowKilledStatusRecord(checkpoint, exception.message ?: "No exception message provided.")
+//            val cleanupEvents = createCleanupEventsForSessions(
+//                getScheduledCleanupExpiryTime(context, exceptionHandlingStartTime),
+//                checkpoint.sessions.filterNot { it.hasScheduledCleanup }
+//            )
+//            val statusRecord = createFlowKilledStatusRecord(checkpoint, exception.message ?: "No exception message provided.")
 
             removeCachedFlowFiber(checkpoint)
 
@@ -225,7 +223,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
             flowEventContextConverter.convert(
                 context.copy(
-                    outputRecords = errorEvents + cleanupEvents + statusRecord,
+                    outputRecords = errorEvents,
                     sendToDlq = false // killed flows do not go to DLQ
                 )
             )
@@ -255,10 +253,10 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             }
     }
 
-    private fun createFlowKilledStatusRecord(checkpoint: FlowCheckpoint, message: String?): List<Record<*, *>> {
-        return createStatusRecord(checkpoint.flowId) {
+    private fun createFlowKilledStatusRecord(checkpoint: FlowCheckpoint, /*message: String?*/): List<Record<*, *>> {
+        return createStatusRecord(checkpoint.flowId) /*{
             flowMessageFactory.createFlowKilledStatusMessage(checkpoint, message)
-        }
+        }*/
     }
 
     private fun getScheduledCleanupExpiryTime(context: FlowEventContext<*>, now: Instant): Long {

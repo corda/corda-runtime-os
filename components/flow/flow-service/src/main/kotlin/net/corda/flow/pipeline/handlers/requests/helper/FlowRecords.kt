@@ -17,20 +17,21 @@ import java.time.Instant
 fun getRecords(
     flowRecordFactory: FlowRecordFactory,
     context: FlowEventContext<Any>,
-    status: FlowStatus
+//    status: FlowStatus
 ): List<Record<*,*>> {
     val checkpoint = context.checkpoint
     val records = if (checkpoint.flowStartContext.initiatorType == FlowInitiatorType.RPC) {
         val flowCleanupTime = context.config.getLong(FlowConfig.PROCESSING_FLOW_CLEANUP_TIME)
         val expiryTime = Instant.now().plusMillis(flowCleanupTime).toEpochMilli()
         listOf(
-            flowRecordFactory.createFlowStatusRecord(status), flowRecordFactory.createFlowMapperCleanupRecord(
+//            flowRecordFactory.createFlowStatusRecord(status),
+            flowRecordFactory.createFlowMapperCleanupRecord(
                 checkpoint.flowKey.toString(), ScheduleCleanup(expiryTime)
             )
         )
     } else {
         listOf(
-            flowRecordFactory.createFlowStatusRecord(status)
+//            flowRecordFactory.createFlowStatusRecord(status)
         )
     }
     return records

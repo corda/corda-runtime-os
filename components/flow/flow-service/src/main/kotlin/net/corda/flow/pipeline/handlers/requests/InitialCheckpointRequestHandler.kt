@@ -33,11 +33,11 @@ class InitialCheckpointRequestHandler @Activate constructor(
     ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
 
-        val status = flowMessageFactory.createFlowStartedStatusMessage(checkpoint)
+//        val status = flowMessageFactory.createFlowStartedStatusMessage(checkpoint)
 
         val records = listOf(
             flowRecordFactory.createFlowEventRecord(checkpoint.flowId,net.corda.data.flow.event.Wakeup()),
-            flowRecordFactory.createFlowStatusRecord(status)
+//            flowRecordFactory.createFlowStatusRecord(status)
         )
 
         return context.copy(outputRecords = context.outputRecords + records)
