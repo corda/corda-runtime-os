@@ -6,7 +6,8 @@ NAMESPACE_PREFIX="${USER//./}"
 
 # Chart and Docker Image versions to deploy
 CORDA_CHART_VERSION="^5.0.0-beta"
-CORDA_VERSION=5.1.0.0
+REPO_TOP_LEVEL_DIR=$(cd "$SCRIPT_DIR"; git rev-parse --show-toplevel)
+CORDA_VERSION="$(cat $REPO_TOP_LEVEL_DIR/gradle.properties | grep cordaProductVersion | awk -F= '{print $2}' | xargs).0"
 if [ -z $DOCKER_IMAGE_VERSION ]; then
   DOCKER_IMAGE_VERSION=$(curl -u $CORDA_ARTIFACTORY_USERNAME:$CORDA_ARTIFACTORY_PASSWORD  https://corda-os-docker-unstable.software.r3.com:/v2/corda-os-p2p-link-manager-worker/tags/list | jq -r -M '.["tags"] | map(select(contains("'$CORDA_VERSION'-beta"))) | sort | reverse | .[0]')
 fi
@@ -54,7 +55,6 @@ B_GATEWAY_ENDPOINT=https://$B_GATEWAY_ADDRESS:8080
 MGM_GATEWAY_ADDRESS=corda-p2p-gateway-worker.$MGM_CLUSTER_NAMESPACE
 MGM_GATEWAY_ENDPOINT=https://$MGM_GATEWAY_ADDRESS:8080
 
-REPO_TOP_LEVEL_DIR=$(cd "$SCRIPT_DIR"; git rev-parse --show-toplevel)
 CA_DIR=$REPO_TOP_LEVEL_DIR/applications/tools/p2p-test/fake-ca/
 CA_JAR=$CA_DIR/build/bin/corda-fake-ca*.jar
 APP_SIMULATOR_DIR=$REPO_TOP_LEVEL_DIR/applications/tools/p2p-test/app-simulator/
