@@ -159,6 +159,7 @@ class ClusterBuilder {
             |   } 
             | }""".trimMargin()
 
+    @Suppress("LongParameterList")
     private fun createRbacUserBody(
         enabled: Boolean,
         fullName: String,
@@ -281,6 +282,7 @@ class ClusterBuilder {
     fun getRbacRoles() = get("/api/v1/role")
 
     /** Create new RBAC user */
+    @Suppress("LongParameterList")
     fun createRbacUser(
         enabled: Boolean,
         fullName: String,
@@ -316,16 +318,16 @@ class ClusterBuilder {
     fun getPermissionByQuery(
         limit: Int,
         permissionType: String,
-        groupVisibility: String?,
-        virtualNode: String?,
-        permissionStringPrefix: String?
+        groupVisibility: String? = null,
+        virtualNode: String? = null,
+        permissionStringPrefix: String? = null
     ): SimpleResponse {
         val queries = mutableListOf<String>().apply {
             add("limit=$limit")
             add("permissiontype=$permissionType")
-            groupVisibility?.let { add("groupvisibility=$it") }
-            virtualNode?.let { add("virtualnode=$it") }
-            permissionStringPrefix?.let { add("permissionstringprefix=$it") }
+            groupVisibility?.let { add("groupvisibility=$groupVisibility") }
+            virtualNode?.let { add("virtualnode=$virtualNode") }
+            permissionStringPrefix?.let { add("permissionstringprefix=$permissionStringPrefix") }
         }
         val queryStr = if (queries.isEmpty()) {
             ""
