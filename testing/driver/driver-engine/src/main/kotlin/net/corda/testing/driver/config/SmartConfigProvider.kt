@@ -34,7 +34,7 @@ class SmartConfigProvider {
             .withValue(PROCESSING_MAX_RETRY_ATTEMPTS, ConfigValueFactory.fromAnyRef(5))
             .withValue(PROCESSING_MAX_RETRY_DELAY, ConfigValueFactory.fromAnyRef(5000L))
             .withValue(PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(5000L))
-            .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(60000L))
+            .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(600000L))
             .withValue(SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
             .withValue(SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
             .withValue(SESSION_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(5000L))

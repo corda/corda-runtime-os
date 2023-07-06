@@ -1,9 +1,12 @@
-package net.corda.testing.driver.crypto
+package net.corda.testing.driver.processor.crypto
 
 import java.nio.ByteBuffer
 import java.time.Instant
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.core.SecureHashImpl
@@ -20,30 +23,53 @@ import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.messaging.api.records.Record
+import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE
+import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE_RANKING
 import net.corda.testing.driver.config.SmartConfigProvider
+import net.corda.testing.driver.processor.ExternalProcessor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.propertytypes.ServiceRanking
 
-@Component(service = [ CryptoProcessor::class ] )
-class CryptoProcessor @Activate constructor(
-    @Reference
+@Suppress("LongParameterList")
+@Component(
+    service = [ CryptoProcessor::class, CryptoService::class ],
+    property = [ DRIVER_SERVICE ]
+)
+@ServiceRanking(DRIVER_SERVICE_RANKING)
+class CryptoProcessor private constructor(
     private val schemaMetadata: CipherSchemeMetadata,
-    @Reference
     private val signingKeyProvider: SigningKeyProvider,
-    @Reference
-    cryptoServiceProvider: CryptoServiceProvider,
-    @Reference
-    smartConfigProvider: SmartConfigProvider,
-    @Reference
-    cordaAvroSerializationFactory: CordaAvroSerializationFactory
-) {
-    private val stringDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, String::class.java)
-    private val anyDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
-    private val anySerializer = cordaAvroSerializationFactory.createAvroSerializer<Any> {}
-    private val cryptoService = cryptoServiceProvider.getInstance(smartConfigProvider.smartConfig)
+    private val stringDeserializer: CordaAvroDeserializer<String>,
+    private val anyDeserializer: CordaAvroDeserializer<Any>,
+    private val anySerializer: CordaAvroSerializer<Any>,
+    private val cryptoService: CryptoService
+) : CryptoService by cryptoService, ExternalProcessor {
 
-    fun processEvent(record: Record<*, *>): Record<String, FlowEvent> {
+    @Suppress("unused")
+    @Activate
+    constructor(
+        @Reference
+        schemaMetadata: CipherSchemeMetadata,
+        @Reference
+        signingKeyProvider: SigningKeyProvider,
+        @Reference
+        cryptoServiceProvider: CryptoServiceProvider,
+        @Reference
+        smartConfigProvider: SmartConfigProvider,
+        @Reference
+        cordaAvroSerializationFactory: CordaAvroSerializationFactory
+    ) : this(
+        schemaMetadata,
+        signingKeyProvider,
+        stringDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, String::class.java),
+        anyDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java),
+        anySerializer = cordaAvroSerializationFactory.createAvroSerializer<Any> {},
+        cryptoService = cryptoServiceProvider.getInstance(smartConfigProvider.smartConfig)
+    )
+
+    override fun processEvent(record: Record<*, *>): List<Record<String, FlowEvent>> {
         val flowId = requireNotNull((record.key as? ByteArray)?.let(stringDeserializer::deserialize)) {
             "Invalid or missing flow ID"
         }
@@ -72,7 +98,9 @@ class CryptoProcessor @Activate constructor(
             .setTimestamp(responseTimestamp)
             .setError(null)
             .build()
-        return Record(record.topic, flowId, FlowEvent(flowId, externalEventResponse))
+        return listOf(
+            Record(record.topic, flowId, FlowEvent(flowId, externalEventResponse))
+        )
     }
 
     private fun processRequest(tenantId: String, request: Any): Any {

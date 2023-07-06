@@ -1,6 +1,6 @@
 package net.corda.testing.driver.sandbox
 
-import java.net.URL
+import java.net.URI
 import java.nio.file.Path
 import java.security.KeyPair
 import java.security.PublicKey
@@ -10,6 +10,8 @@ import java.util.Hashtable
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpk.read.CpkReadService
 import net.corda.crypto.softhsm.WrappingRepository
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.membership.grouppolicy.GroupPolicyProvider
@@ -159,9 +161,24 @@ class EmbeddedNodeServiceImpl @Activate constructor(
         }
     }
 
-    override fun loadVirtualNodes(fileURL: URL): Set<VirtualNodeInfo> {
-        return virtualNodeService.loadVirtualNodes(fileURL.toString())
-            .mapTo(linkedSetOf(), net.corda.virtualnode.VirtualNodeInfo::toAvro)
+    override fun loadVirtualNodes(names: Set<MemberX500Name>, fileURI: URI): Set<VirtualNodeInfo> {
+        return names.mapTo(linkedSetOf()) { name ->
+            virtualNodeService.loadVirtualNode(name, fileURI.toString()).toAvro()
+        }
+    }
+
+    override fun loadSystemCpi(names: Set<MemberX500Name>, fileURI: URI) {
+        virtualNodeService.loadSystemNodes(names, fileURI.toString()).forEach { vNode ->
+            logger.info("Added {} to {}", vNode.cpiIdentifier.name, vNode.holdingIdentity)
+        }
+    }
+
+    override fun setGroupParameters(groupParameters: Set<KeyValuePair>) {
+        configAdmin.getConfiguration(CORDA_GROUP_PID)?.also { config ->
+            val properties = Hashtable<String, Any>()
+            properties[CORDA_GROUP_PARAMETERS] = KeyValuePairList(groupParameters.toList()).toByteBuffer().array()
+            config.update(properties)
+        }
     }
 
     override fun setMembershipGroup(network: Map<MemberX500Name, PublicKey>) {

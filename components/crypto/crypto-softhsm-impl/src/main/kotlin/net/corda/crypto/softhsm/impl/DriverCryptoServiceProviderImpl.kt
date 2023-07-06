@@ -1,11 +1,12 @@
 package net.corda.crypto.softhsm.impl
 
-import com.github.benmanes.caffeine.cache.Caffeine
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
-import net.corda.cache.caffeine.CacheFactoryImpl
+import java.security.PublicKey
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CryptoService
+import net.corda.crypto.cipher.suite.GeneratedWrappedKey
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.WrappingKeyInfo
@@ -41,6 +42,7 @@ class DriverCryptoServiceProviderImpl @Activate constructor(
     }
 
     private val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
+    private val wrappedKeys = ConcurrentHashMap<PublicKey, GeneratedWrappedKey>()
 
     init {
         wrappingRepository?.saveKey(MASTER_KEY_ALIAS, WrappingKeyInfo(
@@ -64,19 +66,26 @@ class DriverCryptoServiceProviderImpl @Activate constructor(
         }
     }
 
+    override fun store(wrappedKey: GeneratedWrappedKey) {
+        wrappedKeys.putIfAbsent(wrappedKey.publicKey, wrappedKey)
+    }
+
+    override fun fetchFor(publicKey: PublicKey): GeneratedWrappedKey? {
+        return wrappedKeys[publicKey]
+    }
+
     override fun getInstance(config: SmartConfig): CryptoService {
         if (wrappingRepository == null) {
             throw IllegalStateException("No WrappingRepository found")
         }
-        val cacheFactoryImpl = CacheFactoryImpl()
         return SoftCryptoService(
             wrappingRepositoryFactory = { wrappingRepository },
             schemeMetadata = schemeMetadata,
             defaultUnmanagedWrappingKeyName = MASTER_KEY_ALIAS,
             unmanagedWrappingKeys = mapOf(MASTER_KEY_ALIAS to rootWrappingKey),
             digestService = digestService,
-            wrappingKeyCache = cacheFactoryImpl.build("no-caching", Caffeine.newBuilder().maximumSize(0)),
-            privateKeyCache = cacheFactoryImpl.build("no-caching", Caffeine.newBuilder().maximumSize(0)),
+            wrappingKeyCache = null,
+            privateKeyCache = null,
             keyPairGeneratorFactory = KeyPairGenerator::getInstance
         )
     }

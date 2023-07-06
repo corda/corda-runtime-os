@@ -4,6 +4,7 @@ import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
@@ -20,6 +21,7 @@ import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerFactoryFactory
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.TransactionIsolationLevel
 import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE
@@ -40,33 +42,45 @@ import org.slf4j.LoggerFactory
 class DbConnectionManagerImpl private constructor(
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
     private val liquibaseSchemaMigrator: LiquibaseSchemaMigrator,
+    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     private val dataSourceFactory: DataSourceFactory
 ): DbConnectionManager, DataSourceFactory by dataSourceFactory {
     private companion object {
         private const val DRIVER_DB_NAME = "test-driver"
     }
 
+    private val entityManagerFactories = ConcurrentHashMap<String, EntityManagerFactory>()
+    private val logger = LoggerFactory.getLogger(this::class.java)
+    private var smartConfig: SmartConfig? = null
+
     @Activate
     constructor(
         @Reference
         entityManagerFactoryFactory: EntityManagerFactoryFactory,
         @Reference
+        jpaEntitiesRegistry: JpaEntitiesRegistry,
+        @Reference
         liquibaseSchemaMigrator: LiquibaseSchemaMigrator
     ) : this(
         entityManagerFactoryFactory = entityManagerFactoryFactory,
         liquibaseSchemaMigrator = liquibaseSchemaMigrator,
+        jpaEntitiesRegistry = jpaEntitiesRegistry,
         dataSourceFactory = HikariDataSourceFactory()
     )
 
     @Deactivate
     fun done() {
+        entityManagerFactories.clear()
         dataSource.destroy()
     }
 
     private fun loadVaultSchema(): DbChange {
         return object : DbChange {
             override val masterChangeLogFiles: List<String>
-                get() = listOf("net/corda/db/schema/vnode-vault/db.changelog-master.xml")
+                get() = listOf(
+                    "net/corda/db/schema/vnode-uniqueness/db.changelog-master.xml",
+                    "net/corda/db/schema/vnode-vault/db.changelog-master.xml"
+                )
             override val changeLogFileList: Set<String>
                 get() = emptySet()
             override fun fetch(path: String): InputStream {
@@ -81,8 +95,6 @@ class DbConnectionManagerImpl private constructor(
             liquibaseSchemaMigrator.updateDb(connection, loadVaultSchema())
         }
     })
-    private val logger = LoggerFactory.getLogger(this::class.java)
-    private var smartConfig: SmartConfig? = null
 
     override val isRunning: Boolean
         get() = true
@@ -150,7 +162,12 @@ class DbConnectionManagerImpl private constructor(
     }
 
     override fun getOrCreateEntityManagerFactory(db: CordaDb, privilege: DbPrivilege): EntityManagerFactory {
-        throw UnsupportedOperationException("getOrCreateEntityManagerFactory - not supported")
+        return getOrCreateEntityManagerFactory(
+            db.persistenceUnitName,
+            privilege,
+            jpaEntitiesRegistry.get(db.persistenceUnitName)
+                ?: throw IllegalArgumentException("Unknown database $db")
+        )
     }
 
     override fun getOrCreateEntityManagerFactory(
@@ -158,13 +175,19 @@ class DbConnectionManagerImpl private constructor(
         privilege: DbPrivilege,
         entitiesSet: JpaEntitiesSet
     ): EntityManagerFactory {
-        throw UnsupportedOperationException("getOrCreateEntityManagerFactory - not supported")
+        return entityManagerFactories.computeIfAbsent(name) { persistenceUnitName ->
+            createEntityManagerFactory(persistenceUnitName, entitiesSet)
+        }
     }
 
     override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory {
         logger.info("Loading DB connection details for {}", connectionId)
+        return createEntityManagerFactory(connectionId.toString(), entitiesSet)
+    }
+
+    private fun createEntityManagerFactory(name: String, entitiesSet: JpaEntitiesSet): EntityManagerFactory {
         return entityManagerFactoryFactory.create(
-            connectionId.toString(),
+            name,
             entitiesSet.classes.toList(),
             DriverEntityManagerConfiguration(
                 dataSource = dataSource,

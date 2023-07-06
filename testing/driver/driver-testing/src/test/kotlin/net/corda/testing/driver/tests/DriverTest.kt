@@ -1,7 +1,7 @@
 package net.corda.testing.driver.tests
 
 import java.util.concurrent.TimeUnit.MINUTES
-import net.corda.testing.driver.EachTestDriver
+import net.corda.testing.driver.DriverNodes
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
@@ -20,12 +20,12 @@ class DriverTest {
     private val logger = LoggerFactory.getLogger(DriverTest::class.java)
 
     @RegisterExtension
-    private val driver = EachTestDriver(alice)
+    private val driver = DriverNodes(alice).forEachTest()
 
     @BeforeAll
     fun sanityCheck() {
         // Ensure that we use the corda-driver bundle rather than a directory of its classes.
-        assertThat(EachTestDriver::class.java.protectionDomain.codeSource.location.path).endsWith(".jar")
+        assertThat(DriverNodes::class.java.protectionDomain.codeSource.location.path).endsWith(".jar")
     }
 
     @Test

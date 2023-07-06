@@ -11,6 +11,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.reconciliation.VersionedRecord
 import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE
 import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE_RANKING
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
@@ -26,6 +27,7 @@ interface VirtualNodeLoader {
         const val VNODE_LOADER_NAME = "net.corda.testing.driver.sandbox.VirtualNodeLoader"
     }
 
+    fun loadSystemNode(resourceName: String, names: Set<MemberX500Name>): List<VirtualNodeInfo>
     fun loadVirtualNode(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo
     fun unloadVirtualNode(virtualNodeInfo: VirtualNodeInfo)
     fun forgetCPI(id: CpiIdentifier)
@@ -50,28 +52,45 @@ class VirtualNodeLoaderImpl @Activate constructor(
     override val isRunning: Boolean
         get() = true
 
-    override fun loadVirtualNode(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo {
-        val cpi = cpiResources.computeIfAbsent(resourceName) { key ->
+    private fun fetchCpi(resourceName: String): Cpi {
+        return cpiResources.computeIfAbsent(resourceName) { key ->
             cpiLoader.loadCPI(key).also { cpi ->
                 resourcesLookup[cpi.metadata.cpiId] = key
             }
         }
-        return VirtualNodeInfo(
-            holdingIdentity,
-            CpiIdentifier(
-                cpi.metadata.cpiId.name,
-                cpi.metadata.cpiId.version,
-                cpi.metadata.cpiId.signerSummaryHash
-            ),
-            null,
-            UUID.randomUUID(),
-            null,
-            UUID.randomUUID(),
-            null,
-            UUID.randomUUID(),
-            null,
-            timestamp = Instant.now(),
-        ).also(::put)
+    }
+
+    override fun loadSystemNode(resourceName: String, names: Set<MemberX500Name>): List<VirtualNodeInfo> {
+        return names.flatMap { name ->
+            virtualNodeInfoMap.keys.mapTo(linkedSetOf(), HoldingIdentity::groupId).map { groupId ->
+                HoldingIdentity(name, groupId)
+            }
+        }.map { hid ->
+            loadVirtualNode(resourceName, hid)
+        }
+    }
+
+    override fun loadVirtualNode(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo {
+        return fetchCpi(resourceName).let { cpi ->
+            virtualNodeInfoMap.computeIfAbsent(holdingIdentity) { hid ->
+                VirtualNodeInfo(
+                    hid,
+                    CpiIdentifier(
+                        cpi.metadata.cpiId.name,
+                        cpi.metadata.cpiId.version,
+                        cpi.metadata.cpiId.signerSummaryHash
+                    ),
+                    vaultDdlConnectionId = null,
+                    vaultDmlConnectionId = UUID.randomUUID(),
+                    cryptoDdlConnectionId = null,
+                    cryptoDmlConnectionId = UUID.randomUUID(),
+                    uniquenessDdlConnectionId = null,
+                    uniquenessDmlConnectionId = UUID.randomUUID(),
+                    hsmConnectionId = null,
+                    timestamp = Instant.now(),
+                )
+            }
+        }
     }
 
     override fun unloadVirtualNode(virtualNodeInfo: VirtualNodeInfo) {
@@ -92,12 +111,6 @@ class VirtualNodeLoaderImpl @Activate constructor(
 
     override fun getByHoldingIdentityShortHash(holdingIdentityShortHash: ShortHash): VirtualNodeInfo? {
         TODO("Not yet implemented - getByHoldingIdentityShortHash")
-    }
-
-    private fun put(virtualNodeInfo: VirtualNodeInfo) {
-        if (virtualNodeInfoMap.putIfAbsent(virtualNodeInfo.holdingIdentity, virtualNodeInfo) != null) {
-            throw IllegalStateException("Virtual node $virtualNodeInfo already exists.")
-        }
     }
 
     override fun registerCallback(listener: VirtualNodeInfoListener): AutoCloseable {

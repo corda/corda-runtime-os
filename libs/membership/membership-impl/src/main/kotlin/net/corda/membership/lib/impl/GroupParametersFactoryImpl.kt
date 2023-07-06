@@ -32,7 +32,7 @@ class GroupParametersFactoryImpl @Activate constructor(
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService,
     @Reference(service = CordaAvroSerializationFactory::class)
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory
 ) : GroupParametersFactory {
 
     private companion object {

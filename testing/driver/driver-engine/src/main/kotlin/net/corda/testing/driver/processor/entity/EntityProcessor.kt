@@ -1,8 +1,7 @@
-package net.corda.testing.driver.entity
+package net.corda.testing.driver.processor.entity
 
 import java.util.Collections.singletonList
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.persistence.EntityRequest
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.messaging.api.records.Record
@@ -11,12 +10,12 @@ import net.corda.persistence.common.PayloadChecker
 import net.corda.persistence.common.ResponseFactory
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.testing.driver.config.SmartConfigProvider
-import net.corda.testing.driver.flow.ExternalProcessor
+import net.corda.testing.driver.processor.ExternalProcessor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Component(service = [ EntityProcessor::class, ExternalProcessor::class ])
+@Component(service = [ EntityProcessor::class ])
 class EntityProcessor @Activate constructor(
     @Reference
     currentSandboxGroupContext: CurrentSandboxGroupContext,
@@ -38,7 +37,7 @@ class EntityProcessor @Activate constructor(
         PayloadChecker(smartConfigProvider.smartConfig)::checkSize
     )
 
-    override fun processEvent(record: Record<*, *>): Record<String, FlowEvent> {
+    override fun processEvent(record: Record<*, *>): List<Record<*, *>> {
         val flowId = requireNotNull((record.key as? ByteArray)?.let(stringDeserializer::deserialize)) {
             "Invalid or missing flow ID"
         }
@@ -46,8 +45,6 @@ class EntityProcessor @Activate constructor(
             "Invalid or missing EntityRequest"
         }
 
-        val responses = processor.onNext(singletonList(Record(record.topic, flowId, request)))
-        @Suppress("unchecked_cast")
-        return responses.single() as Record<String, FlowEvent>
+        return processor.onNext(singletonList(Record(record.topic, flowId, request)))
     }
 }

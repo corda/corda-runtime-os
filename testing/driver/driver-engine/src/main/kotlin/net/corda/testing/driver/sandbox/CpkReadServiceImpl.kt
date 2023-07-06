@@ -83,8 +83,7 @@ class CpkReadServiceImpl @Activate constructor(
     }
 
     override fun getCpiMetadata(id: CpiIdentifier): CompletableFuture<CpiMetadata?> {
-        val legacyCpi: Cpi? = cpis[id]
-        val cpi: CpiMetadata? = legacyCpi?.metadata
+        val cpi = cpis[id]?.metadata
         return CompletableFuture.completedFuture(cpi)
     }
 

@@ -13,6 +13,7 @@ dependencies {
 
     integrationTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     integrationTestCpks project(':testing:cpbs:ledger-consensual-demo-app')
+    integrationTestCpks project(':testing:cpbs:ledger-utxo-demo-app')
     integrationTestCpks project(':testing:cpbs:test-cordapp')
 }
 
