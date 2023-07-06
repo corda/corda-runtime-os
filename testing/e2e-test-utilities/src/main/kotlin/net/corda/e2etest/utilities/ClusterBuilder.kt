@@ -159,11 +159,35 @@ class ClusterBuilder {
             |   } 
             | }""".trimMargin()
 
-    private fun createRbacUserBody(enabled: Boolean, fullName: String, password: String, loginName: String) =
-        """{ "enabled" : "$enabled", 
+    private fun createRbacUserBody(
+        enabled: Boolean,
+        fullName: String,
+        password: String,
+        loginName: String,
+        parentGroup: String?,
+        passwordExpiry: String?
+    ) =
+        """{ 
+            |enabled" : "$enabled", 
             |"fullName" : "$fullName", 
             |"initialPassword" : "$password", 
-            |"loginName" : "$loginName" }""".trimMargin()
+            |"loginName" : "$loginName",
+            |"parentGroup" : "$parentGroup",
+            |"passwordExpiry" : "$passwordExpiry"
+            |}""".trimMargin()
+
+    private fun createPermissionBody(
+        groupVisibility: String?,
+        permissionString: String,
+        permissionType: String,
+        virtualNode: String?
+    ) =
+        """{ 
+            |"groupVisibility" : "$groupVisibility", 
+            |"permissionString" : "$permissionString", 
+            |"permissionType" : "$permissionType", 
+            |"virtualNode" : "$virtualNode" 
+            |}""".trimMargin()
 
     /** Create a virtual node */
     fun vNodeCreate(cpiHash: String, x500Name: String) =
@@ -257,12 +281,65 @@ class ClusterBuilder {
     fun getRbacRoles() = get("/api/v1/role")
 
     /** Create new RBAC user */
-    fun createRbacUser(enabled: Boolean, fullName: String, password: String, loginName: String) =
-        post("/api/v1/user", createRbacUserBody(enabled, fullName, password, loginName))
+    fun createRbacUser(
+        enabled: Boolean,
+        fullName: String,
+        password: String,
+        loginName: String,
+        parentGroup: String? = null,
+        passwordExpiry: String? = null
+    ) =
+        post("/api/v1/user",
+            createRbacUserBody(enabled, fullName, password, loginName, parentGroup, passwordExpiry)
+        )
+
+    /** Get an RBAC user for a specific login name */
+    fun getRbacUser(loginName: String) =
+        get("/api/v1/user?loginname=$loginName")
 
     /** Assign a specified role to a specified user */
     fun assignRoleToUser(loginName: String, roleId: String) =
         put("/api/v1/user/$loginName/role/$roleId", "")
+
+    /** Create a new permission */
+    fun createPermission(
+        permissionString: String,
+        permissionType: String,
+        groupVisibility: String? = null,
+        virtualNode: String? = null
+    ) =
+        post("/api/v1/permission",
+            createPermissionBody(groupVisibility, permissionString, permissionType, virtualNode)
+        )
+
+    /** Get the permissions which satisfy the query */
+    fun getPermissionByQuery(
+        limit: Int,
+        permissionType: String,
+        groupVisibility: String,
+        virtualNode: String?,
+        permissionStringPrefix: String
+    ): SimpleResponse {
+        val queries = mutableListOf<String>().apply {
+            add("limit=$limit")
+            add("permissiontype=$permissionType")
+            groupVisibility?.let { add("groupvisibility=$it") }
+            virtualNode?.let { add("virtualnode=$it") }
+            permissionStringPrefix?.let { add("permissionstringprefix=$it") }
+        }
+        val queryStr = if (queries.isEmpty()) {
+            ""
+        } else {
+            queries.joinToString(prefix = "?", separator = "&")
+        }
+        return get("/api/v1/permission$queryStr")
+    }
+
+
+
+    /** Get the permission associated with a specific ID */
+    fun getPermissionById(permissionId: String) =
+        get("/api/v1/permission/$permissionId")
 
     /** Start a flow */
     fun flowStart(
