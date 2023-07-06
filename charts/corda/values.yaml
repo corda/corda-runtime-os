@@ -323,7 +323,7 @@ bootstrap:
             name: ""
             # -- the password secret key
             key: ""
-    virtualNodesDdlPoolConfig:
+    virtualNodesDdl:
       # JDBC connection pool configuration for TODO DB
       dbConnectionPool:
         # -- maximum JDBC connection pool size for TODO DB
@@ -338,7 +338,7 @@ bootstrap:
         keepaliveTimeSeconds: 0
         # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
         validationTimeoutSeconds: 5
-    virtualNodesDmlPoolConfig:
+    virtualNodesDml:
       # JDBC connection pool configuration for TODO DB
       dbConnectionPool:
         # -- maximum JDBC connection pool size for TODO DB

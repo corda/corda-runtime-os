@@ -913,7 +913,7 @@
                                 }
                             }]
                         },
-                        "virtualNodesDdlPoolConfig": {
+                        "virtualNodesDdl": {
                             "type": "object",
                             "default": {},
                             "title": "TODO configuration",
@@ -980,7 +980,7 @@
                                 }
                             }
                         },
-                        "virtualNodesDmlPoolConfig": {
+                        "virtualNodesDml": {
                             "type": "object",
                             "default": {},
                             "title": "TODO configuration",
