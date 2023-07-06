@@ -39,11 +39,13 @@ class SessionInitExecutor(
         .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)
         .build()
 
+    private val creationCount = CordaMetrics.Metric.FlowMapperCreationCount.builder()
+        .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)
+        .build()
+
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
-            CordaMetrics.Metric.FlowMapperCreationCount.builder()
-                .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)
-                .build().increment()
+            creationCount.increment()
             processSessionInit(sessionEvent, sessionInit)
         } else {
             //duplicate
