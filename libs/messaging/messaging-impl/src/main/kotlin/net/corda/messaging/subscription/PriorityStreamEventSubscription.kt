@@ -68,17 +68,18 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 ) : StateAndEventSubscription<K, S, E> {
 
-    private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(30)
-    private val EVENT_POLL_TIMEOUT = Duration.ofMillis(30)
-
+    private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(100)
+    private val EVENT_POLL_TIMEOUT = Duration.ofMillis(100)
     private val config: ResolvedSubscriptionConfig = getConfig(
         SubscriptionConfig("${subscriptionConfig.groupName}-default", "default"),
         messagingConfig)
-    private val log = LoggerFactory.getLogger("${this.javaClass.name}")
+    private val maxPollInterval = Duration.ofSeconds(30).toMillis()
+    private val log = LoggerFactory.getLogger(javaClass.name)
     private var threadLooper =
         ThreadLooper(log, config, lifecycleCoordinatorFactory, "state/event processing thread", ::runConsumeLoop)
     private var producer: CordaProducer? = null
     private var consumers: MutableMap<Int, MutableList<CordaConsumer<K, E>>> = topics.map { it.key to mutableListOf<CordaConsumer<K, E>>() }.toMap().toMutableMap()
+    private var consumersLastPoll: MutableMap<CordaConsumer<K, E>, Long> = mutableMapOf()
     private val priorities: List<Int> = consumers.keys.sorted()
     private val hostAndPort = HostAndPort("orr-memory-db.8b332u.clustercfg.memorydb.eu-west-2.amazonaws.com", 6379).also {
         log.warn("Connecting to host ${it.host}, port ${it.port}")
@@ -270,31 +271,47 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                 if (recordsCount == 0) {
                     for (consumer in consumers[priority]!!) {
                         try {
-                            var partitions = consumer.assignment()
-                            consumer.resume(partitions)
                             val records = consumer.poll(EVENT_POLL_TIMEOUT)
                             events[consumer] = records
                             recordsCount += records.size
-                            partitions = consumer.assignment()
-                            consumer.pause(partitions)
+                            markConsumerPoll(consumer)
+                            val partitions = consumer.assignment()
+                            log.info("Polled (${records.size}) records from [$partitions]")
                         } catch (ex: Exception) {
                             consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
                         }
                     }
                 } else {
                     for (consumer in consumers[priority]!!) {
-                        try {
-                            val records = consumer.poll(PAUSED_POLL_TIMEOUT)
-                            events[consumer] = records
-                            recordsCount += records.size
-                        } catch (ex: Exception) {
-                            consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
-                        }
+                        keepConsumersAlive(consumer, priority)
                     }
                 }
             }
             events
         }
+    }
+
+    private fun keepConsumersAlive(consumer: CordaConsumer<K, E>, priority: Int) {
+        val lastPoll = consumersLastPoll.getOrDefault(consumer, 0)
+        val gracePeriod = lastPoll + maxPollInterval
+        if (gracePeriod <= System.currentTimeMillis()) {
+            try {
+                var partitions = consumer.assignment()
+                consumer.pause(partitions)
+                consumer.poll(PAUSED_POLL_TIMEOUT)
+                partitions = consumer.assignment()
+                consumer.resume(partitions)
+                markConsumerPoll(consumer)
+                log.info("Triggered paused poll on consumer of priority $priority with partitions [$partitions]")
+            } catch (ex: Exception) {
+                consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
+                log.error("Failed to trigger paused poll on consumer of priority $priority with message '${ex.message}'")
+            }
+        }
+    }
+
+    private fun markConsumerPoll(consumer: CordaConsumer<K, E>) {
+        consumersLastPoll[consumer] = System.currentTimeMillis()
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -306,9 +323,8 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
             val states = mutableMapOf<K, S?>()
             try {
                 while (subsequentEvents.isNotEmpty()) {
-
                     val currentEvent = subsequentEvents.removeFirst()
-                    log.debug { "Processing event: $currentEvent" }
+                    log.info("Processing event: $currentEvent")
                     val state = states.computeIfAbsent(currentEvent.key) { getState(currentEvent.key) }
                     val future = waitForFunctionToFinish({ processor.onNext(state, currentEvent.toRecord()) },
                         config.processorTimeout.toMillis(),
@@ -352,7 +368,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                             log.debug { "Completed event: $currentEvent" }
                         }
                     }
-                    log.debug { "Processed event of key '${event.key}' successfully." }
+                    log.info("Processed event of key '${event.key}' successfully.")
 
                 }
                 states.forEach {
