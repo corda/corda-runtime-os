@@ -81,7 +81,7 @@ class FlowExecutorImpl constructor(
                     mapOf(
                         Pair(1, listOf(FLOW_SESSION_TOPIC)),
 //                        Pair(2, listOf(FLOW_EVENT_TOPIC)),
-                        Pair(3, listOf(FLOW_START_TOPIC)),
+                        Pair(3, listOf(FLOW_START_TOPIC))
                     ),
                     flowEventProcessorFactory.create(flowConfig),
                     messagingConfig

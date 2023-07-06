@@ -69,7 +69,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
 ) : StateAndEventSubscription<K, S, E> {
 
     private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(100)
-    private val EVENT_POLL_TIMEOUT = Duration.ofMillis(2000)
+    private val EVENT_POLL_TIMEOUT = Duration.ofMillis(100)
     private val config: ResolvedSubscriptionConfig = getConfig(
         SubscriptionConfig("${subscriptionConfig.groupName}-default", "default"),
         messagingConfig)
@@ -319,66 +319,77 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
         event: CordaConsumerRecord<K, E>
     ) {
         processorMeter.recordCallable {
-            val subsequentEvents = ArrayDeque(listOf(event))
-            val states = mutableMapOf<K, S?>()
-            try {
-                while (subsequentEvents.isNotEmpty()) {
-                    val currentEvent = subsequentEvents.removeFirst()
-                    log.info("Processing event: $currentEvent")
-                    val state = states.computeIfAbsent(currentEvent.key) { getState(currentEvent.key) }
-                    val future = waitForFunctionToFinish({ processor.onNext(state, currentEvent.toRecord()) },
-                        config.processorTimeout.toMillis(),
-                        "Processing event $currentEvent timed-out!")
-                    val currentEventUpdates = future.tryGetResult() as StateAndEventProcessor.Response<S>
-                    states[currentEvent.key] = currentEventUpdates.updatedState
-                    // Get wake-up calls
-                    val (wakeups, outputEvents) = currentEventUpdates.responseEvents.partition {
-                        isWakeup(it)
-                    }
-                    // Get REST calls
-                    val (overRestEvents, overKafkaEvents) = outputEvents.partition {
-                        topicToRestClient.containsKey(it.topic)
-                    }
-                    // Execute REST calls
-                    val responseEvents = overRestEvents.mapNotNull {
-                        topicToRestClient[it.topic]?.publish(listOf(it))
-                    }.flatten()
-                    // Add subsequent events to be processed next in the queue
-                    val eventsToProcess = (wakeups + responseEvents) as List<Record<K, E>> // + restResponses
-                    subsequentEvents.addAll(eventsToProcess.map {
-                        val ret = toCordaConsumerRecord(currentEvent, it)
-                        ret
-                    })
-                    recordsAvoidedCount.increment(eventsToProcess.size.toDouble())
-                    when {
-                        currentEventUpdates.markForDLQ -> {
-                            log.warn(
-                                "Sending state and event on key ${currentEvent.key} for topic ${currentEvent.topic} to dead letter queue. " +
-                                        "Processor marked event for the dead letter queue"
-                            )
-                            states[currentEvent.key] = null
-
-                            // In this case the processor may ask us to publish some output records regardless, so make sure these
-                            // are outputted.
-                            producer?.sendRecords(overKafkaEvents.toCordaProducerRecords())
+            val pendingEvents = ArrayDeque(listOf(event))
+            while (pendingEvents.isNotEmpty()) {
+                val states = mutableMapOf<K, S?>()
+                val currentPendingEvent = pendingEvents.removeFirst()
+                val subsequentEvents = ArrayDeque(listOf(currentPendingEvent))
+                try {
+                    while (subsequentEvents.isNotEmpty()) {
+                        val currentEvent = subsequentEvents.removeFirst()
+                        if (!states.containsKey(currentEvent.key) && isStateLocked(currentEvent.key)) {
+                            log.info("Skipping event: $currentEvent because its state is locked!")
+                            pendingEvents.add(currentEvent)
+                            continue
                         }
-
-                        else -> {
-                            producer?.sendRecords(overKafkaEvents.toCordaProducerRecords())
-                            log.debug { "Completed event: $currentEvent" }
+                        log.info("Processing event: $currentEvent")
+                        val state = states.computeIfAbsent(currentEvent.key) { getState(currentEvent.key) }
+                        val future = waitForFunctionToFinish(
+                            { processor.onNext(state, currentEvent.toRecord()) },
+                            config.processorTimeout.toMillis(),
+                            "Processing event $currentEvent timed-out!"
+                        )
+                        val currentEventUpdates = future.tryGetResult() as StateAndEventProcessor.Response<S>
+                        states[currentEvent.key] = currentEventUpdates.updatedState
+                        // Get wake-up calls
+                        val (wakeups, outputEvents) = currentEventUpdates.responseEvents.partition {
+                            isWakeup(it)
                         }
-                    }
-                    log.info("Processed event of key '${event.key}' successfully.")
+                        // Get REST calls
+                        val (overRestEvents, overKafkaEvents) = outputEvents.partition {
+                            topicToRestClient.containsKey(it.topic)
+                        }
+                        // Execute REST calls
+                        val responseEvents = overRestEvents.mapNotNull {
+                            topicToRestClient[it.topic]?.publish(listOf(it))
+                        }.flatten()
+                        // Add subsequent events to be processed next in the queue
+                        val eventsToProcess = (wakeups + responseEvents) as List<Record<K, E>> // + restResponses
+                        subsequentEvents.addAll(eventsToProcess.map {
+                            val ret = toCordaConsumerRecord(currentEvent, it)
+                            ret
+                        })
+                        recordsAvoidedCount.increment(eventsToProcess.size.toDouble())
+                        when {
+                            currentEventUpdates.markForDLQ -> {
+                                log.warn(
+                                    "Sending state and event on key ${currentEvent.key} for topic ${currentEvent.topic} to dead letter queue. " +
+                                            "Processor marked event for the dead letter queue"
+                                )
+                                states[currentEvent.key] = null
 
+                                // In this case the processor may ask us to publish some output records regardless, so make sure these
+                                // are outputted.
+                                producer?.sendRecords(overKafkaEvents.toCordaProducerRecords())
+                            }
+
+                            else -> {
+                                producer?.sendRecords(overKafkaEvents.toCordaProducerRecords())
+                                log.debug { "Completed event: $currentEvent" }
+                            }
+                        }
+                        log.info("Processed event of key '${event.key}' successfully.")
+
+                    }
                 }
-                states.forEach {
-                    updateState(it.key, it.value)
+                catch (ex: Exception) {
+                    producer?.abortTransaction()
+                    throw ex
                 }
-            }
-            catch (ex: Exception) {
-                producer?.abortTransaction()
-                states.forEach {
-                    releaseStateKey(it.key)
+                finally {
+                    states.forEach {
+                        updateState(it.key, it.value)
+                    }
                 }
             }
         }
@@ -464,7 +475,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
     @Suppress("UNCHECKED_CAST")
     fun getState(key: K): S? {
         val keyBytes = cordaAvroSerializer.serialize(key)
-        acquireLock(keyBytes!!)
+        acquireLock(key)
         val stateBytes = jedisCluster.get(keyBytes)
         return if (stateBytes != null) {
             cordaAvroDeserializer.deserialize(stateBytes) as? S
@@ -478,39 +489,43 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
         if (state != null) {
             val stateBytes = cordaAvroSerializer.serialize(state)
             jedisCluster.set(keyBytes, stateBytes)
-            releaseLock(keyBytes!!)
+            releaseLock(key)
         }
         else {
             jedisCluster.del(keyBytes)
-            deleteLock(keyBytes!!)
+            deleteLock(key)
         }
     }
 
-    private fun acquireLock(key: ByteArray) {
-        val lockKey = key + 0.toByte()
-        var isLocked = jedisCluster.get(lockKey)
-        while (isLocked != null && isLocked[0].toInt() == 1) {
+    private fun acquireLock(key: K) {
+        val lockKey = getStateLockKey(key)
+        while (isStateLocked(key)) {
             attemptStateLockCounter.increment()
             Thread.sleep(100)
-            isLocked = jedisCluster.get(lockKey)
         }
         jedisCluster.set(lockKey, byteArrayOf((1).toByte()))
         acquiredStateLocksCounter.increment()
     }
 
-    private fun releaseStateKey(key: K) {
-        val keyBytes = cordaAvroSerializer.serialize(key)
-        releaseLock(keyBytes!!)
+    private fun isStateLocked(key: K): Boolean {
+        val lockKey = getStateLockKey(key)
+        val isLocked = jedisCluster.get(lockKey)
+        return isLocked[0].toInt() == 1
     }
 
-    private fun releaseLock(key: ByteArray) {
-        val lockKey = key + 0.toByte()
+    private fun getStateLockKey(key: K): ByteArray {
+        val keyBytes = cordaAvroSerializer.serialize(key)
+        return keyBytes!! + 0.toByte()
+    }
+
+    private fun releaseLock(key: K) {
+        val lockKey = getStateLockKey(key)
         jedisCluster.set(lockKey, byteArrayOf((0).toByte()))
         releasedStateLocksCounter.increment()
     }
 
-    private fun deleteLock(key: ByteArray) {
-        val lockKey = key + 0.toByte()
+    private fun deleteLock(key: K) {
+        val lockKey = getStateLockKey(key)
         jedisCluster.del(lockKey)
     }
 
