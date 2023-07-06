@@ -304,8 +304,6 @@ class ClusterBuilder {
         return get("/api/v1/permission$queryStr")
     }
 
-
-
     /** Get the permission associated with a specific ID */
     fun getPermissionById(permissionId: String) =
         get("/api/v1/permission/$permissionId")
