@@ -1,6 +1,5 @@
 package net.corda.cli.plugins.network
 
-import net.corda.cli.api.CordaCliPlugin
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.membership.rest.v1.MemberLookupRestResource
@@ -8,8 +7,19 @@ import net.corda.membership.rest.v1.types.response.RestMemberInfo
 import picocli.CommandLine
 
 @CommandLine.Command(name = "members", description = ["List members"])
-class MemberList : RestCommand(), CordaCliPlugin {
-
+class MemberList : RestCommand(), Runnable {
+    override fun run() {
+        // Call the `getMembersList` function with default or empty values for the options
+        getMembersList(
+            holdingIdentityShortHash = null,
+            commonName = null,
+            organizationUnit = null,
+            organization = null,
+            locality = null,
+            state = null,
+            country = null
+        )
+    }
     @Suppress("LongParameterList")
     @CommandLine.Command(
         name = "members-list",
