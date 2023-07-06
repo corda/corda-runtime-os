@@ -1,0 +1,2905 @@
+---
+# Source: corda/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: corda-rest-tls
+  annotations:
+    certificate/altNames: "corda-rest-worker.default,corda-rest-worker.default.svc"
+  labels:
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+type: Opaque
+data:
+  tls.crt: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURoekNDQW0rZ0F3SUJBZ0lRVWk1NWJFM2wyRzFjVTdOL1I1UmpLakFOQmdrcWhraUc5dzBCQVFzRkFEQTYKTVRnd05nWURWUVFERXk5U1JWTlVJRmR2Y210bGNpQlRaV3htTFZOcFoyNWxaQ0JEWlhKMGFXWnBZMkYwYVc5dQpJRUYxZEdodmNtbDBlVEFlRncweU16QTNNRFl4TmpVME16QmFGdzB5TkRBM01EVXhOalUwTXpCYU1Cd3hHakFZCkJnTlZCQU1URVdOdmNtUmhMWEpsYzNRdGQyOXlhMlZ5TUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEEKTUlJQkNnS0NBUUVBcExLUEIyNzhnQ2NhQlREUVJadFEzTXdzaDlSbVlxSlFlbmhUYkhHdHRNOFJueHJXd1hzYgpTZEpvbU4xaGwyWGZ6WnFvOWxMZWs4WmFXaWk5S1hpQmNta0IwVk8vMFBCQU1uU2JndWxFakkzM21va3ZZK2U0ClYzUGpKakUwaW9SN2l6WlVKOEJMWVRyYThKczA0emsxSlR4cWx3ZXZLNjlBaE4zK3RNMllKNWhQcmc1WUpQTUMKYmkwZUEwdUQrQUdtc3NwNXROQ25WRWZlNDBGZGRoRElDeEg2L3BUTHEvcC9xUUVyNGlCTkl6RG5TYWhySTBMYgplTXlqQ3MzTUMvNW1sdW5QeEErcUQ3YXhiS2JGK3Q0QW1TcTV0MHJXYmNKKytSUE9pTFF4OEpSQnJKNFVGSWhtCk1aRk1uWXVIeS9rTk5LU0lWSXJ3ZlBDSXFOelRpbk42Y3dJREFRQUJvNEdtTUlHak1BNEdBMVVkRHdFQi93UUUKQXdJRm9EQWRCZ05WSFNVRUZqQVVCZ2dyQmdFRkJRY0RBUVlJS3dZQkJRVUhBd0l3REFZRFZSMFRBUUgvQkFJdwpBREFmQmdOVkhTTUVHREFXZ0JTd2htSU5DMU1keUhzM0M1aEhCZDJUQUR0VHNEQkRCZ05WSFJFRVBEQTZnaGxqCmIzSmtZUzF5WlhOMExYZHZjbXRsY2k1a1pXWmhkV3gwZ2gxamIzSmtZUzF5WlhOMExYZHZjbXRsY2k1a1pXWmgKZFd4MExuTjJZekFOQmdrcWhraUc5dzBCQVFzRkFBT0NBUUVBb3VzaG0vTGtWS3FQQzZtdlBaR2VTWDM1K0l2Rwp1YkJiZ2VDK2M4SlBFQU5FUGptOXdTcVpqRzAzbEsxVk9FMllSUWt6WFduQmdkSDVIV1FxT1dVc2UzSVM4SmZ2CjltSlZuU1FhVUdaZXRwRnVIUDBBUFFDS3liNkJ3UzZKdWloZWt2eEs1WTBBL3lmODBPMzNsUE9nejRtNjdKb0gKUURsZjk2STVqTUV6M0Q1eS9TdVoveDBFRXRXeTdMWjJRSWkzNE4vMmI4YTBPOUJQRHVOT1A5YnlHbGhUQ2FPeApnajVyUy9GcmNHd0J6WWZiZ1NNTjRMRFZYajVCWDVENWNBcFlKbVd1RmFoVkZ2YVo2eUxPbkNKVWxEbURZMXNKCmU1dHhUeHR0MnlaUU1SdlByOW5aT3FPVkR4SUdSN3VBcmlrNFdLVzMrZTJINzRESmxLZEVnZEFSVXc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg=="
+  tls.key: "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBcExLUEIyNzhnQ2NhQlREUVJadFEzTXdzaDlSbVlxSlFlbmhUYkhHdHRNOFJueHJXCndYc2JTZEpvbU4xaGwyWGZ6WnFvOWxMZWs4WmFXaWk5S1hpQmNta0IwVk8vMFBCQU1uU2JndWxFakkzM21va3YKWStlNFYzUGpKakUwaW9SN2l6WlVKOEJMWVRyYThKczA0emsxSlR4cWx3ZXZLNjlBaE4zK3RNMllKNWhQcmc1WQpKUE1DYmkwZUEwdUQrQUdtc3NwNXROQ25WRWZlNDBGZGRoRElDeEg2L3BUTHEvcC9xUUVyNGlCTkl6RG5TYWhyCkkwTGJlTXlqQ3MzTUMvNW1sdW5QeEErcUQ3YXhiS2JGK3Q0QW1TcTV0MHJXYmNKKytSUE9pTFF4OEpSQnJKNFUKRklobU1aRk1uWXVIeS9rTk5LU0lWSXJ3ZlBDSXFOelRpbk42Y3dJREFRQUJBb0lCQUhWbVFzWk51dmV1NThGagpkbExuejlCVVNqbllrZE1sV0xDMExPTlVkVG81a0pvVmk1Z0hwUUFPV0RqL05aMnlKTUp1eUpvdG9ETStaUkYzCmtMK0xBdHNITnlCN3puT2xqbDFvK2FGcm5rMkN0VWtYR1F6aUZHbGlWanpYUGxpdTcxSGd2RVJKc25Id2ZqaWMKcWlwK2tQK2wvV1VET1Q2dWdoTTBHMmZPVmZPQ1hhMzQrdnh1aU0xWkljS0R1MlZ2MnJCdXFGWTREd3ZFSWptQgovaTFpb1NXRFpLdTRIQTlxWVZlWGx4aEwzN0w0TWdSeDhNdDFNR292am1DSnQ3SlgrNWR3MyszZjdiRjgxYVdECkRZb0tHQy9jOUN6TUlKMW5BdkliNFNOeHpWTXVmNExWNXhKSTU5MjBDRVZGY2dWeWNvMUs2QWhBdzVqTGRYMVMKV29XR002RUNnWUVBMmFVdWdoUlZGY09LUnVuTGRKV2N6M0U0ZTZpcGdwK212bFJGelhBTi9rYld5YzFzTk91eAo0ZDZqWm1lN0xWajduQWRTbzdDa1h4NjBaYnNsN0VUcWN5Vit2d3hYZTUwRnMxZTFEQWwyM1lXS1luU3hwYzdmCkZkTDJMb1NhbFNCS1NlYnYxWGlrUldsQmZsN0g2VjltRGNzMVpmOFExTEZ5dVFVemZlOEkyUGNDZ1lFQXdiaXoKRWlrejA1R3o2Nm1HdkRGWGZiWndUQyswVjlMQVpVb25Wb0ozYUs3M1Zya3dGaXcvSkpYemd3L2tsbERpSUJMbQpydThSZElld0V2WTVFWjluc2dteEZJbmRQLzkzdUpzQVR1R1p6Wm5nem5NbUdwVSs1czdzOTYweHZlM0xOcWNICmVCcHUvOWhGRTN0NDVnVVd2Q25uSXhzT2dYTXBDUCt6L1B5SjUyVUNnWUVBMDRCZzlNbmJjVjNubDBnRmpoTUMKSXRqTTRlYWlhNnpIOWplZzZhWldBdDlHUlMrYVVzY2t3dkYvYXJtdFBNRTNLWVk0T1pnajg4ZTcyUXlJS3RWQgozSW40WktJU3RhNSs1cXg1NU91aGxsMzZmL2tVMWFOMlNSZ01ZbUk4Y21UQnJKVitSYjJLTFdXKzNwWXV3VXdTCnVaN2JFblpQSGRJZlFVdWJvV3JUOXpzQ2dZQm01M01RR1p6ekxQbXpISmw2ekljYU8xaEowQ2x2WVg5Y0R0ajQKcGxOQjQzZDF0T2VyVDVPM0hvUjlRV3Ird2pac0xUNG0vTTE3NWp3TXhvaW9LTklQakFCcDFaWVcwZURKeW1TTwpnbDZPRGNpU1FpNmlmbGNzaWd6c3dDNmxJblVKTWc3UXFOSC95K1ZkcFFBaXg5ODgwdEY2SDN4RUhXVlY1MmEzCjQzcHAxUUtCZ1FDdkRWS0t4Z0IzOWZINFluZ1pzVzZhT2xtQ2JzbWFaVjQydVloQ25QUWo2MTVzZTRTcUFvaUwKNVdMRnhBYWloVFZkQmdnMjE4dlpNV1pINHNxcnE0MTlFM21JWlM2c05lRVc3NUxRUERPc1NZbUl4VlRzbFJyMQplY0RHYVpFbWoyYlhxR1Z2K3Bqd1hOTkRtTTRpZWpYWFZmSktLQlVoL0JNQ2hIemJuYmhuNHc9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo="
+  ca.crt: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURZRENDQWtpZ0F3SUJBZ0lSQU80Y3VuSjQ3eWZsVnpTdU1IMVB2YlV3RFFZSktvWklodmNOQVFFTEJRQXcKT2pFNE1EWUdBMVVFQXhNdlVrVlRWQ0JYYjNKclpYSWdVMlZzWmkxVGFXZHVaV1FnUTJWeWRHbG1hV05oZEdsdgpiaUJCZFhSb2IzSnBkSGt3SGhjTk1qTXdOekEyTVRZMU5ETXdXaGNOTWpZd05EQXhNVFkxTkRNd1dqQTZNVGd3Ck5nWURWUVFERXk5U1JWTlVJRmR2Y210bGNpQlRaV3htTFZOcFoyNWxaQ0JEWlhKMGFXWnBZMkYwYVc5dUlFRjEKZEdodmNtbDBlVENDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFEZ2dFUEFEQ0NBUW9DZ2dFQkFORUVPMXdlSVhqSgpHMzJ1TnVnQjlPS3hud0lQOHIwdk5Fa2ZvK0I2V3lMV1JuTXlTc0RNZ1pzd252aG5WSno0Z3Nzb2lBZ3lGT3pICllZQ3dTV2VNbFdUcDIzZ2pKckNqY3diUVJoUC9KM09odGpoZTFtR2dFeEtVanRlbHluRUVJTlNGQ3R0VEh3OHUKMlhnVzcxTzF6UWpjUWlXT0k3ZlBjYkZXZEZpMjJmUUtNaGpBelBWR2dQL3VQaUJuZzFoZGhyVHNoRG1EelRUdwppVEhRNkxMc0hkNXFDTkVBSm8zTi9FMVNKMXNIZXJJMTNId1Nhb2ZyY2J5VFpCL2hxZnNzS3hnZGxmSjJzVW5sClIwcGJYUXFuS0EwME53SC9UZVJNR2dSL0Y2RStoSS9yM2NRa3NwQy9teE1tV2FXakovNE1iSDM0eEtUV3gyM1AKNG5TdmpPK2JiRU1DQXdFQUFhTmhNRjh3RGdZRFZSMFBBUUgvQkFRREFnS2tNQjBHQTFVZEpRUVdNQlFHQ0NzRwpBUVVGQndNQkJnZ3JCZ0VGQlFjREFqQVBCZ05WSFJNQkFmOEVCVEFEQVFIL01CMEdBMVVkRGdRV0JCU3dobUlOCkMxTWR5SHMzQzVoSEJkMlRBRHRUc0RBTkJna3Foa2lHOXcwQkFRc0ZBQU9DQVFFQUNlT2FIZTY3S01MdTUrb3gKYittaU5LcEtrK0xpL3Z5eXdMREdRZGltS1V6RFhoaW9ZYWFHUmN6S3lvbzJRdjNtMHo4bUl2UmFXSUcxWVJVaApuRDNQMUZ4eW5rR05YdGo5M3BockVqVEVHbXZNTFZCREkvd29ZZDZPa0V5VHB5VUgyMUpSQUM2Y0NMa3VVQUNiCkQ5ZllNZ05GN1JMcHVtR2pLajRRdGc2d2xUWElDWlFQUDl1UUVFUkY2Y2FhNTVpdzYxQVk5dlljQkNGbWRVZ2IKczZJeExmWklMa09FK3A3SlhJbkx4WCtFS2FIZENpMWNGRlFjUm5XN2FZdWh3c1dUZGNqWWlqa0wrSUEzSzllVwpxL3VGcitLK2JaMEVmdjByRWhCNHFVeXU1akVVbWJVY2JpUkozd3laalpsc016S0FZdWx4UnRLVTYxdHdYZkpYCkpmbm9YQT09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K"
+---
+# Source: corda/templates/workers.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "corda-p2p-gateway-worker"
+  labels:
+    
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: p2pGateway-worker
+spec:
+  type: 
+  selector:
+    
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/component: p2pGateway-worker
+  ports:
+  - name: http
+    port: 8080
+    targetPort: http
+---
+# Source: corda/templates/workers.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "corda-rest-worker"
+  labels:
+    
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: rest-worker
+spec:
+  type: ClusterIP
+  selector:
+    
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/component: rest-worker
+  ports:
+  - name: http
+    port: 443
+    targetPort: http
+---
+# Source: corda/templates/workers.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "corda-crypto-worker"
+  labels:
+    
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: crypto-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      
+      app.kubernetes.io/name: corda
+      app.kubernetes.io/instance: corda
+      app.kubernetes.io/component: crypto-worker
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "7000"
+      labels:
+        
+        app.kubernetes.io/name: corda
+        app.kubernetes.io/instance: corda
+        app.kubernetes.io/component: crypto-worker
+    spec:
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10002
+        fsGroup: 1000
+      
+      
+      affinity:
+        nodeAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - jason
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - crypto-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+      containers:
+      - name: "corda-crypto-worker"
+        image: "corda-os-docker-dev.software.r3.com/corda-os-crypto-worker:latest-local-5.1.0"
+        imagePullPolicy:  IfNotPresent
+        
+        securityContext:
+          runAsUser: 10001
+          runAsGroup: 10002
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - "ALL"
+        resources:
+          requests:
+          limits:
+        env:
+          - name: K8S_NODE_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.nodeName
+          - name: K8S_POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: K8S_POD_UID
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.uid
+          - name: K8S_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          - name: JAVA_TOOL_OPTIONS
+            value:
+              -XX:MaxRAMPercentage=75
+          - name: LOG4J_CONFIG_FILE
+            value: "/etc/log4j/log4j2.xml"
+          - name: CONSOLE_LOG_FORMAT
+            value: "text"
+          - name: CONSOLE_LOG_LEVEL
+            value: "info"
+          - name: SASL_USERNAME
+            value: admin
+          - name: SASL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: "prereqs-kafka"
+                key: "admin-password"
+          - name: SALT
+            valueFrom:
+              secretKeyRef:
+                name: "corda-config"
+                key: "salt"
+          - name: PASSPHRASE
+            valueFrom:
+              secretKeyRef:
+                name: "corda-config"
+                key: "passphrase"
+          - name: DB_CLUSTER_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: "corda-cluster-db"
+                key: "username"
+          - name: DB_CLUSTER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: "prereqs-postgres"
+                key: "corda-password"
+        args:
+          - "--workspace-dir=/work"
+          - "--temp-dir=/tmp"
+          - "-mbootstrap.servers=prereqs-kafka:9092"
+          - "-msasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"$(SASL_USERNAME)\" password=\"$(SASL_PASSWORD)\";"
+          - "--topic-prefix="
+          - "-msecurity.protocol=SASL_SSL"
+          - "-msasl.mechanism=PLAIN"
+          - "-mssl.truststore.location=/certs/ca.crt"
+          - "-mssl.truststore.type=PEM"
+          - "-spassphrase=$(PASSPHRASE)"
+          - "-ssalt=$(SALT)"
+          - "-ddatabase.user=$(DB_CLUSTER_USERNAME)"
+          - "-ddatabase.pass=$(DB_CLUSTER_PASSWORD)"
+          - "-ddatabase.jdbc.url=jdbc:postgresql://prereqs-postgres:5432/cordacluster?currentSchema=CONFIG"
+          - "-ddatabase.jdbc.directory=/opt/jdbc-driver"
+          - "-ddatabase.pool.max_size=5"
+          - "-ddatabase.pool.idleTimeoutSeconds=120"
+          - "-ddatabase.pool.maxLifetimeSeconds=1800"
+          - "-ddatabase.pool.keepaliveTimeSeconds=0"
+          - "-ddatabase.pool.validationTimeoutSeconds=5"
+          - "--trace-samples-per-second=1"
+          - "--hsm-id=SOFT"
+        volumeMounts:
+          - mountPath: "/tmp"
+            name: "tmp"
+            readOnly: false
+          - mountPath: "/work"
+            name: "work"
+            readOnly: false
+          - mountPath: "/certs"
+            name: "certs"
+            readOnly: true
+          - name: log4j
+            mountPath: /etc/log4j
+        ports:
+          - name: monitor
+            containerPort: 7000
+        readinessProbe:
+          httpGet:
+            path: /status
+            port: monitor
+          periodSeconds: 10
+          failureThreshold: 3
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /isHealthy
+            port: monitor
+          periodSeconds: 10
+          failureThreshold: 3
+          timeoutSeconds: 5
+        startupProbe:
+          httpGet:
+            path: /isHealthy
+            port: monitor
+          periodSeconds: 5
+          failureThreshold: 20
+          timeoutSeconds: 5
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: work
+          emptyDir: {}
+        - name: certs
+          secret:
+            secretName: "prereqs-kafka"
+            items:
+              - key: "ca.crt"
+                path: "ca.crt"
+        - name: log4j
+          configMap:
+            name: corda-log4j
+---
+# Source: corda/templates/workers.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "corda-db-worker"
+  labels:
+    
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: db-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      
+      app.kubernetes.io/name: corda
+      app.kubernetes.io/instance: corda
+      app.kubernetes.io/component: db-worker
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "7000"
+      labels:
+        
+        app.kubernetes.io/name: corda
+        app.kubernetes.io/instance: corda
+        app.kubernetes.io/component: db-worker
+    spec:
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10002
+        fsGroup: 1000
+      
+      
+      affinity:
+        nodeAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - jason
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - crypto-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - db-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 2
+      containers:
+      - name: "corda-db-worker"
+        image: "corda-os-docker-dev.software.r3.com/corda-os-db-worker:latest-local-5.1.0"
+        imagePullPolicy:  IfNotPresent
+        
+        securityContext:
+          runAsUser: 10001
+          runAsGroup: 10002
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - "ALL"
+        resources:
+          requests:
+          limits:
+        env:
+          - name: K8S_NODE_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.nodeName
+          - name: K8S_POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: K8S_POD_UID
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.uid
+          - name: K8S_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          - name: JAVA_TOOL_OPTIONS
+            value:
+              -XX:MaxRAMPercentage=75
+          - name: LOG4J_CONFIG_FILE
+            value: "/etc/log4j/log4j2.xml"
+          - name: CONSOLE_LOG_FORMAT
+            value: "text"
+          - name: CONSOLE_LOG_LEVEL
+            value: "info"
+          - name: SASL_USERNAME
+            value: admin
+          - name: SASL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: "prereqs-kafka"
+                key: "admin-password"
+          - name: SALT
+            valueFrom:
+              secretKeyRef:
+                name: "corda-config"
+                key: "salt"
+          - name: PASSPHRASE
+            valueFrom:
+              secretKeyRef:
+                name: "corda-config"
+                key: "passphrase"
+          - name: DB_CLUSTER_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: "corda-cluster-db"
+                key: "username"
+          - name: DB_CLUSTER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: "prereqs-postgres"
+                key: "corda-password"
+        args:
+          - "--workspace-dir=/work"
+          - "--temp-dir=/tmp"
+          - "-mbootstrap.servers=prereqs-kafka:9092"
+          - "-msasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"$(SASL_USERNAME)\" password=\"$(SASL_PASSWORD)\";"
+          - "--topic-prefix="
+          - "-msecurity.protocol=SASL_SSL"
+          - "-msasl.mechanism=PLAIN"
+          - "-mssl.truststore.location=/certs/ca.crt"
+          - "-mssl.truststore.type=PEM"
+          - "-spassphrase=$(PASSPHRASE)"
+          - "-ssalt=$(SALT)"
+          - "-ddatabase.user=$(DB_CLUSTER_USERNAME)"
+          - "-ddatabase.pass=$(DB_CLUSTER_PASSWORD)"
+          - "-ddatabase.jdbc.url=jdbc:postgresql://prereqs-postgres:5432/cordacluster?currentSchema=CONFIG"
+          - "-ddatabase.jdbc.directory=/opt/jdbc-driver"
+          - "-ddatabase.pool.max_size=5"
+          - "-ddatabase.pool.idleTimeoutSeconds=120"
+          - "-ddatabase.pool.maxLifetimeSeconds=1800"
+          - "-ddatabase.pool.keepaliveTimeSeconds=0"
+          - "-ddatabase.pool.validationTimeoutSeconds=5"
+          - "--trace-samples-per-second=1"
+        volumeMounts:
+          - mountPath: "/tmp"
+            name: "tmp"
+            readOnly: false
+          - mountPath: "/work"
+            name: "work"
+            readOnly: false
+          - mountPath: "/certs"
+            name: "certs"
+            readOnly: true
+          - name: log4j
+            mountPath: /etc/log4j
+        ports:
+          - name: monitor
+            containerPort: 7000
+        readinessProbe:
+          httpGet:
+            path: /status
+            port: monitor
+          periodSeconds: 10
+          failureThreshold: 3
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /isHealthy
+            port: monitor
+          periodSeconds: 10
+          failureThreshold: 3
+          timeoutSeconds: 5
+        startupProbe:
+          httpGet:
+            path: /isHealthy
+            port: monitor
+          periodSeconds: 5
+          failureThreshold: 20
+          timeoutSeconds: 5
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: work
+          emptyDir: {}
+        - name: certs
+          secret:
+            secretName: "prereqs-kafka"
+            items:
+              - key: "ca.crt"
+                path: "ca.crt"
+        - name: log4j
+          configMap:
+            name: corda-log4j
+---
+# Source: corda/templates/workers.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "corda-flow-worker"
+  labels:
+    
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: flow-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      
+      app.kubernetes.io/name: corda
+      app.kubernetes.io/instance: corda
+      app.kubernetes.io/component: flow-worker
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "7000"
+      labels:
+        
+        app.kubernetes.io/name: corda
+        app.kubernetes.io/instance: corda
+        app.kubernetes.io/component: flow-worker
+    spec:
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10002
+        fsGroup: 1000
+      
+      
+      affinity:
+        nodeAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - jason
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - crypto-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - db-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 2
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - flow-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 3
+      containers:
+      - name: "corda-flow-worker"
+        image: "corda-os-docker-dev.software.r3.com/corda-os-flow-worker:latest-local-5.1.0"
+        imagePullPolicy:  IfNotPresent
+        
+        securityContext:
+          runAsUser: 10001
+          runAsGroup: 10002
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - "ALL"
+        resources:
+          requests:
+          limits:
+        env:
+          - name: K8S_NODE_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.nodeName
+          - name: K8S_POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: K8S_POD_UID
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.uid
+          - name: K8S_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          - name: JAVA_TOOL_OPTIONS
+            value:
+              -XX:MaxRAMPercentage=75
+          - name: LOG4J_CONFIG_FILE
+            value: "/etc/log4j/log4j2.xml"
+          - name: CONSOLE_LOG_FORMAT
+            value: "text"
+          - name: CONSOLE_LOG_LEVEL
+            value: "info"
+          - name: SASL_USERNAME
+            value: admin
+          - name: SASL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: "prereqs-kafka"
+                key: "admin-password"
+          - name: SALT
+            valueFrom:
+              secretKeyRef:
+                name: "corda-config"
+                key: "salt"
+          - name: PASSPHRASE
+            valueFrom:
+              secretKeyRef:
+                name: "corda-config"
+                key: "passphrase"
+        args:
+          - "--workspace-dir=/work"
+          - "--temp-dir=/tmp"
+          - "-mbootstrap.servers=prereqs-kafka:9092"
+          - "-msasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"$(SASL_USERNAME)\" password=\"$(SASL_PASSWORD)\";"
+          - "--topic-prefix="
+          - "-msecurity.protocol=SASL_SSL"
+          - "-msasl.mechanism=PLAIN"
+          - "-mssl.truststore.location=/certs/ca.crt"
+          - "-mssl.truststore.type=PEM"
+          - "-spassphrase=$(PASSPHRASE)"
+          - "-ssalt=$(SALT)"
+          - "--trace-samples-per-second=1"
+        volumeMounts:
+          - mountPath: "/tmp"
+            name: "tmp"
+            readOnly: false
+          - mountPath: "/work"
+            name: "work"
+            readOnly: false
+          - mountPath: "/certs"
+            name: "certs"
+            readOnly: true
+          - name: log4j
+            mountPath: /etc/log4j
+        ports:
+          - name: monitor
+            containerPort: 7000
+        readinessProbe:
+          httpGet:
+            path: /status
+            port: monitor
+          periodSeconds: 10
+          failureThreshold: 3
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /isHealthy
+            port: monitor
+          periodSeconds: 10
+          failureThreshold: 3
+          timeoutSeconds: 5
+        startupProbe:
+          httpGet:
+            path: /isHealthy
+            port: monitor
+          periodSeconds: 5
+          failureThreshold: 20
+          timeoutSeconds: 5
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: work
+          emptyDir: {}
+        - name: certs
+          secret:
+            secretName: "prereqs-kafka"
+            items:
+              - key: "ca.crt"
+                path: "ca.crt"
+        - name: log4j
+          configMap:
+            name: corda-log4j
+---
+# Source: corda/templates/workers.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "corda-membership-worker"
+  labels:
+    
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: membership-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      
+      app.kubernetes.io/name: corda
+      app.kubernetes.io/instance: corda
+      app.kubernetes.io/component: membership-worker
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "7000"
+      labels:
+        
+        app.kubernetes.io/name: corda
+        app.kubernetes.io/instance: corda
+        app.kubernetes.io/component: membership-worker
+    spec:
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10002
+        fsGroup: 1000
+      
+      
+      affinity:
+        nodeAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - jason
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - crypto-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - db-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 2
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - flow-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 3
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - membership-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 4
+      containers:
+      - name: "corda-membership-worker"
+        image: "corda-os-docker-dev.software.r3.com/corda-os-member-worker:latest-local-5.1.0"
+        imagePullPolicy:  IfNotPresent
+        
+        securityContext:
+          runAsUser: 10001
+          runAsGroup: 10002
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - "ALL"
+        resources:
+          requests:
+          limits:
+        env:
+          - name: K8S_NODE_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.nodeName
+          - name: K8S_POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: K8S_POD_UID
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.uid
+          - name: K8S_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          - name: JAVA_TOOL_OPTIONS
+            value:
+              -XX:MaxRAMPercentage=75
+          - name: LOG4J_CONFIG_FILE
+            value: "/etc/log4j/log4j2.xml"
+          - name: CONSOLE_LOG_FORMAT
+            value: "text"
+          - name: CONSOLE_LOG_LEVEL
+            value: "info"
+          - name: SASL_USERNAME
+            value: admin
+          - name: SASL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: "prereqs-kafka"
+                key: "admin-password"
+          - name: SALT
+            valueFrom:
+              secretKeyRef:
+                name: "corda-config"
+                key: "salt"
+          - name: PASSPHRASE
+            valueFrom:
+              secretKeyRef:
+                name: "corda-config"
+                key: "passphrase"
+        args:
+          - "--workspace-dir=/work"
+          - "--temp-dir=/tmp"
+          - "-mbootstrap.servers=prereqs-kafka:9092"
+          - "-msasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"$(SASL_USERNAME)\" password=\"$(SASL_PASSWORD)\";"
+          - "--topic-prefix="
+          - "-msecurity.protocol=SASL_SSL"
+          - "-msasl.mechanism=PLAIN"
+          - "-mssl.truststore.location=/certs/ca.crt"
+          - "-mssl.truststore.type=PEM"
+          - "-spassphrase=$(PASSPHRASE)"
+          - "-ssalt=$(SALT)"
+          - "--trace-samples-per-second=1"
+        volumeMounts:
+          - mountPath: "/tmp"
+            name: "tmp"
+            readOnly: false
+          - mountPath: "/work"
+            name: "work"
+            readOnly: false
+          - mountPath: "/certs"
+            name: "certs"
+            readOnly: true
+          - name: log4j
+            mountPath: /etc/log4j
+        ports:
+          - name: monitor
+            containerPort: 7000
+        readinessProbe:
+          httpGet:
+            path: /status
+            port: monitor
+          periodSeconds: 10
+          failureThreshold: 3
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /isHealthy
+            port: monitor
+          periodSeconds: 10
+          failureThreshold: 3
+          timeoutSeconds: 5
+        startupProbe:
+          httpGet:
+            path: /isHealthy
+            port: monitor
+          periodSeconds: 5
+          failureThreshold: 20
+          timeoutSeconds: 5
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: work
+          emptyDir: {}
+        - name: certs
+          secret:
+            secretName: "prereqs-kafka"
+            items:
+              - key: "ca.crt"
+                path: "ca.crt"
+        - name: log4j
+          configMap:
+            name: corda-log4j
+---
+# Source: corda/templates/workers.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "corda-p2p-gateway-worker"
+  labels:
+    
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: p2pGateway-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      
+      app.kubernetes.io/name: corda
+      app.kubernetes.io/instance: corda
+      app.kubernetes.io/component: p2pGateway-worker
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "7000"
+      labels:
+        
+        app.kubernetes.io/name: corda
+        app.kubernetes.io/instance: corda
+        app.kubernetes.io/component: p2pGateway-worker
+    spec:
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10002
+        fsGroup: 1000
+      
+      
+      affinity:
+        nodeAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - jason
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - crypto-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - db-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 2
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - flow-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 3
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - membership-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 4
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - p2pGateway-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 5
+      containers:
+      - name: "corda-p2p-gateway-worker"
+        image: "corda-os-docker-dev.software.r3.com/corda-os-p2p-gateway-worker:latest-local-5.1.0"
+        imagePullPolicy:  IfNotPresent
+        
+        securityContext:
+          runAsUser: 10001
+          runAsGroup: 10002
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - "ALL"
+        resources:
+          requests:
+          limits:
+        env:
+          - name: K8S_NODE_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.nodeName
+          - name: K8S_POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: K8S_POD_UID
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.uid
+          - name: K8S_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          - name: JAVA_TOOL_OPTIONS
+            value:
+              -XX:MaxRAMPercentage=75
+          - name: LOG4J_CONFIG_FILE
+            value: "/etc/log4j/log4j2.xml"
+          - name: CONSOLE_LOG_FORMAT
+            value: "text"
+          - name: CONSOLE_LOG_LEVEL
+            value: "info"
+          - name: SASL_USERNAME
+            value: admin
+          - name: SASL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: "prereqs-kafka"
+                key: "admin-password"
+          - name: SALT
+            valueFrom:
+              secretKeyRef:
+                name: "corda-config"
+                key: "salt"
+          - name: PASSPHRASE
+            valueFrom:
+              secretKeyRef:
+                name: "corda-config"
+                key: "passphrase"
+        args:
+          - "--workspace-dir=/work"
+          - "--temp-dir=/tmp"
+          - "-mbootstrap.servers=prereqs-kafka:9092"
+          - "-msasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"$(SASL_USERNAME)\" password=\"$(SASL_PASSWORD)\";"
+          - "--topic-prefix="
+          - "-msecurity.protocol=SASL_SSL"
+          - "-msasl.mechanism=PLAIN"
+          - "-mssl.truststore.location=/certs/ca.crt"
+          - "-mssl.truststore.type=PEM"
+          - "-spassphrase=$(PASSPHRASE)"
+          - "-ssalt=$(SALT)"
+          - "--trace-samples-per-second=1"
+        volumeMounts:
+          - mountPath: "/tmp"
+            name: "tmp"
+            readOnly: false
+          - mountPath: "/work"
+            name: "work"
+            readOnly: false
+          - mountPath: "/certs"
+            name: "certs"
+            readOnly: true
+          - name: log4j
+            mountPath: /etc/log4j
+        ports:
+          - name: http
+            containerPort: 8080
+          - name: monitor
+            containerPort: 7000
+        readinessProbe:
+          httpGet:
+            path: /status
+            port: monitor
+          periodSeconds: 10
+          failureThreshold: 3
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /isHealthy
+            port: monitor
+          periodSeconds: 10
+          failureThreshold: 3
+          timeoutSeconds: 5
+        startupProbe:
+          httpGet:
+            path: /isHealthy
+            port: monitor
+          periodSeconds: 5
+          failureThreshold: 20
+          timeoutSeconds: 5
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: work
+          emptyDir: {}
+        - name: certs
+          secret:
+            secretName: "prereqs-kafka"
+            items:
+              - key: "ca.crt"
+                path: "ca.crt"
+        - name: log4j
+          configMap:
+            name: corda-log4j
+---
+# Source: corda/templates/workers.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "corda-p2p-link-manager-worker"
+  labels:
+    
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: p2pLinkManager-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      
+      app.kubernetes.io/name: corda
+      app.kubernetes.io/instance: corda
+      app.kubernetes.io/component: p2pLinkManager-worker
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "7000"
+      labels:
+        
+        app.kubernetes.io/name: corda
+        app.kubernetes.io/instance: corda
+        app.kubernetes.io/component: p2pLinkManager-worker
+    spec:
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10002
+        fsGroup: 1000
+      
+      
+      affinity:
+        nodeAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - jason
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - crypto-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - db-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 2
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - flow-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 3
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - membership-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 4
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - p2pGateway-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 5
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - p2pLinkManager-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 6
+      containers:
+      - name: "corda-p2p-link-manager-worker"
+        image: "corda-os-docker-dev.software.r3.com/corda-os-p2p-link-manager-worker:latest-local-5.1.0"
+        imagePullPolicy:  IfNotPresent
+        
+        securityContext:
+          runAsUser: 10001
+          runAsGroup: 10002
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - "ALL"
+        resources:
+          requests:
+          limits:
+        env:
+          - name: K8S_NODE_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.nodeName
+          - name: K8S_POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: K8S_POD_UID
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.uid
+          - name: K8S_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          - name: JAVA_TOOL_OPTIONS
+            value:
+              -XX:MaxRAMPercentage=75
+          - name: LOG4J_CONFIG_FILE
+            value: "/etc/log4j/log4j2.xml"
+          - name: CONSOLE_LOG_FORMAT
+            value: "text"
+          - name: CONSOLE_LOG_LEVEL
+            value: "info"
+          - name: SASL_USERNAME
+            value: admin
+          - name: SASL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: "prereqs-kafka"
+                key: "admin-password"
+          - name: SALT
+            valueFrom:
+              secretKeyRef:
+                name: "corda-config"
+                key: "salt"
+          - name: PASSPHRASE
+            valueFrom:
+              secretKeyRef:
+                name: "corda-config"
+                key: "passphrase"
+        args:
+          - "--workspace-dir=/work"
+          - "--temp-dir=/tmp"
+          - "-mbootstrap.servers=prereqs-kafka:9092"
+          - "-msasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"$(SASL_USERNAME)\" password=\"$(SASL_PASSWORD)\";"
+          - "--topic-prefix="
+          - "-msecurity.protocol=SASL_SSL"
+          - "-msasl.mechanism=PLAIN"
+          - "-mssl.truststore.location=/certs/ca.crt"
+          - "-mssl.truststore.type=PEM"
+          - "-spassphrase=$(PASSPHRASE)"
+          - "-ssalt=$(SALT)"
+          - "--trace-samples-per-second=1"
+        volumeMounts:
+          - mountPath: "/tmp"
+            name: "tmp"
+            readOnly: false
+          - mountPath: "/work"
+            name: "work"
+            readOnly: false
+          - mountPath: "/certs"
+            name: "certs"
+            readOnly: true
+          - name: log4j
+            mountPath: /etc/log4j
+        ports:
+          - name: monitor
+            containerPort: 7000
+        readinessProbe:
+          httpGet:
+            path: /status
+            port: monitor
+          periodSeconds: 10
+          failureThreshold: 3
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /isHealthy
+            port: monitor
+          periodSeconds: 10
+          failureThreshold: 3
+          timeoutSeconds: 5
+        startupProbe:
+          httpGet:
+            path: /isHealthy
+            port: monitor
+          periodSeconds: 5
+          failureThreshold: 20
+          timeoutSeconds: 5
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: work
+          emptyDir: {}
+        - name: certs
+          secret:
+            secretName: "prereqs-kafka"
+            items:
+              - key: "ca.crt"
+                path: "ca.crt"
+        - name: log4j
+          configMap:
+            name: corda-log4j
+---
+# Source: corda/templates/workers.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "corda-rest-worker"
+  labels:
+    
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: rest-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      
+      app.kubernetes.io/name: corda
+      app.kubernetes.io/instance: corda
+      app.kubernetes.io/component: rest-worker
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "7000"
+      labels:
+        
+        app.kubernetes.io/name: corda
+        app.kubernetes.io/instance: corda
+        app.kubernetes.io/component: rest-worker
+    spec:
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10002
+        fsGroup: 1000
+      
+      
+      affinity:
+        nodeAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - jason
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - crypto-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - db-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 2
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - flow-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 3
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - membership-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 4
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - p2pGateway-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 5
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - p2pLinkManager-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 6
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - rest-worker
+              topologyKey: kubernetes.io/hostname
+            weight: 7
+      containers:
+      - name: "corda-rest-worker"
+        image: "corda-os-docker-dev.software.r3.com/corda-os-rest-worker:latest-local-5.1.0"
+        imagePullPolicy:  IfNotPresent
+        
+        securityContext:
+          runAsUser: 10001
+          runAsGroup: 10002
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - "ALL"
+        resources:
+          requests:
+          limits:
+        env:
+          - name: K8S_NODE_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.nodeName
+          - name: K8S_POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: K8S_POD_UID
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.uid
+          - name: K8S_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          - name: JAVA_TOOL_OPTIONS
+            value:
+              -XX:MaxRAMPercentage=75
+          - name: LOG4J_CONFIG_FILE
+            value: "/etc/log4j/log4j2.xml"
+          - name: CONSOLE_LOG_FORMAT
+            value: "text"
+          - name: CONSOLE_LOG_LEVEL
+            value: "info"
+          - name: SASL_USERNAME
+            value: admin
+          - name: SASL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: "prereqs-kafka"
+                key: "admin-password"
+          - name: SALT
+            valueFrom:
+              secretKeyRef:
+                name: "corda-config"
+                key: "salt"
+          - name: PASSPHRASE
+            valueFrom:
+              secretKeyRef:
+                name: "corda-config"
+                key: "passphrase"
+        args:
+          - "--workspace-dir=/work"
+          - "--temp-dir=/tmp"
+          - "-mbootstrap.servers=prereqs-kafka:9092"
+          - "-msasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"$(SASL_USERNAME)\" password=\"$(SASL_PASSWORD)\";"
+          - "--topic-prefix="
+          - "-msecurity.protocol=SASL_SSL"
+          - "-msasl.mechanism=PLAIN"
+          - "-mssl.truststore.location=/certs/ca.crt"
+          - "-mssl.truststore.type=PEM"
+          - "-spassphrase=$(PASSPHRASE)"
+          - "-ssalt=$(SALT)"
+          - "--trace-samples-per-second=1"
+          - "-rtls.crt.path=/tls/tls.crt"
+          - "-rtls.key.path=/tls/tls.key"
+          - "-rtls.ca.crt.path=/tls/ca.crt"
+        volumeMounts:
+          - mountPath: "/tmp"
+            name: "tmp"
+            readOnly: false
+          - mountPath: "/work"
+            name: "work"
+            readOnly: false
+          - mountPath: "/certs"
+            name: "certs"
+            readOnly: true
+          - mountPath: "/tls"
+            name: "tlsmount"
+            readOnly: true
+          - name: log4j
+            mountPath: /etc/log4j
+        ports:
+          - name: http
+            containerPort: 8888
+          - name: monitor
+            containerPort: 7000
+        readinessProbe:
+          httpGet:
+            path: /status
+            port: monitor
+          periodSeconds: 10
+          failureThreshold: 3
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /isHealthy
+            port: monitor
+          periodSeconds: 10
+          failureThreshold: 3
+          timeoutSeconds: 5
+        startupProbe:
+          httpGet:
+            path: /isHealthy
+            port: monitor
+          periodSeconds: 5
+          failureThreshold: 20
+          timeoutSeconds: 5
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: work
+          emptyDir: {}
+        - name: certs
+          secret:
+            secretName: "prereqs-kafka"
+            items:
+              - key: "ca.crt"
+                path: "ca.crt"
+        - name: tlsmount
+          secret:
+            secretName: "corda-rest-tls"
+            items:
+              - key: "tls.crt"
+                path: "tls.crt"
+              - key: "tls.key"
+                path: "tls.key"
+              - key: "ca.crt"
+                path: "ca.crt"
+        - name: log4j
+          configMap:
+            name: corda-log4j
+---
+# Source: corda/templates/bootstrap.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-4"
+  name: corda-preinstall-service-account
+---
+# Source: corda/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: corda-bootstrap-cluster-db
+  annotations:
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook": pre-install   
+    "helm.sh/hook-delete-policy": hook-succeeded
+  labels:
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+type: Opaque
+data:
+  username: "cG9zdGdyZXM="
+---
+# Source: corda/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: corda-cluster-db
+  annotations:
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook": pre-install
+  labels:
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+type: Opaque
+data:
+  username: "Y29yZGE="
+---
+# Source: corda/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: corda-config
+  annotations:
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook": pre-install
+  labels:
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+type: Opaque
+data:
+  passphrase: "UmpPZ0xEc2F1TmFrcmNGTHFnOURrVDZocGNFRjdJeFY="
+  salt: "MXZqeENCbVZmNDA5MmVEdGFKRnJRZXF6ZVJmcmVrSDI="
+---
+# Source: corda/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: corda-crypto-db
+  annotations:
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook": pre-install   
+    "helm.sh/hook-delete-policy": hook-succeeded
+  labels:
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+type: Opaque
+data:
+  password: "VU1XUFloU0lDMFBN"
+  username: "Y3J5cHRvX3VzZXI="
+---
+# Source: corda/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: corda-rbac-db
+  annotations:
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook": pre-install   
+    "helm.sh/hook-delete-policy": hook-succeeded
+  labels:
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+type: Opaque
+data:
+  password: "c0w3TkhEMklyMlo4"
+  username: "cmJhY191c2Vy"
+---
+# Source: corda/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: corda-rest-api-admin
+  annotations:
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook": pre-install
+  labels:
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+type: Opaque
+data:
+  password: "YWRtaW4="
+  username: "YWRtaW4="
+---
+# Source: corda/templates/config-maps.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: corda-log4j
+  annotations:
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook": pre-install
+  labels:
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+data:
+  log4j2.xml: | 
+    <?xml version="1.0" encoding="UTF-8"?>
+    <Configuration status="INFO">
+        <Appenders>
+            <Console name="json" target="SYSTEM_OUT">
+                <JsonTemplateLayout eventTemplateUri="classpath:JsonLayout.json"/>
+            </Console>
+            <Console name="text" target="SYSTEM_OUT">
+                <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} %X - %msg%n"/>
+            </Console>
+        </Appenders>
+        <Loggers>
+            <logger name="Console">
+                <AppenderRef ref="${env:CONSOLE_LOG_FORMAT:-json}" level="info"/>
+            </logger>
+    
+            <!-- log warn only for these 3rd party libs -->
+            <Logger name="com.zaxxer.hikari" level="warn" />
+            <Logger name="io.javalin.Javalin" level="warn" />
+            <Logger name="org.apache.aries.spifly" level="warn" />
+            <Logger name="org.apache.kafka" level="warn" />
+            <Logger name="org.eclipse.jetty" level="warn" />
+            <Logger name="org.hibernate" level="warn" />
+            <Logger name="org.pf4j" level="warn" />
+    
+            <!-- default to warn only for OSGi logging -->
+            <Logger name="net.corda.osgi.framework.OSGiFrameworkWrap" level="warn" />
+    
+            <root level="${env:CONSOLE_LOG_LEVEL:-info}">
+                <AppenderRef ref="${env:CONSOLE_LOG_FORMAT:-json}" level="${env:CONSOLE_LOG_LEVEL:-info}"/>
+            </root>
+        </Loggers>
+    </Configuration>
+---
+# Source: corda/templates/bootstrap.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-3"
+  name: corda-preinstall-role
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "watch", "list"]
+---
+# Source: corda/templates/bootstrap.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-2"
+  name: corda-preinstall-role-binding
+subjects:
+- kind: ServiceAccount
+  name: corda-preinstall-service-account
+roleRef:
+  kind: Role
+  name: corda-preinstall-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: corda/templates/bootstrap.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: corda-preinstall-checks
+  labels:
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-1"
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: corda
+        app.kubernetes.io/instance: corda
+    spec:
+      
+      
+      serviceAccountName: corda-preinstall-service-account
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10002
+        fsGroup: 1000
+      containers:
+        - name: preinstall-checks
+          image: "corda-os-docker-dev.software.r3.com/corda-os-plugins:latest-local-5.1.0"
+          imagePullPolicy: IfNotPresent
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          
+          resources:
+            requests:
+            limits:
+          args: ['preinstall', 'run-all', '/tmp/values.yaml']
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+            
+            - name: log4j
+              mountPath: /etc/log4j
+          env:
+            
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Dlog4j2.configurationFile=/etc/log4j/log4j2.xml"
+            - name: CONSOLE_LOG_FORMAT
+              value: text
+            - name: CONSOLE_LOG_LEVEL
+              value: info
+            - name: CORDA_CLI_HOME_DIR
+              value: "/tmp"
+      initContainers:
+        - name: create-preinstall-values
+          image: "corda-os-docker-dev.software.r3.com/corda-os-plugins:latest-local-5.1.0"
+          imagePullPolicy: IfNotPresent
+          
+          resources:
+            requests:
+            limits:
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          command:
+            - /bin/bash
+            - -c
+          args:
+            - |
+                echo -e "affinity:\n  nodeAntiAffinity:\n    requiredDuringSchedulingIgnoredDuringExecution:\n    - podAffinityTerm:\n        labelSelector:\n          matchExpressions:\n          - key: app.kubernetes.io/component\n            operator: In\n            values:\n            - jason\n        topologyKey: kubernetes.io/hostname\n      weight: 1\n  podAntiAffinity:\n    preferredDuringSchedulingIgnoredDuringExecution:\n    - podAffinityTerm:\n        labelSelector:\n          matchExpressions:\n          - key: app.kubernetes.io/component\n            operator: In\n            values:\n            - crypto-worker\n        topologyKey: kubernetes.io/hostname\n      weight: 1\n    - podAffinityTerm:\n        labelSelector:\n          matchExpressions:\n          - key: app.kubernetes.io/component\n            operator: In\n            values:\n            - db-worker\n        topologyKey: kubernetes.io/hostname\n      weight: 2\n    - podAffinityTerm:\n        labelSelector:\n          matchExpressions:\n          - key: app.kubernetes.io/component\n            operator: In\n            values:\n            - flow-worker\n        topologyKey: kubernetes.io/hostname\n      weight: 3\n    - podAffinityTerm:\n        labelSelector:\n          matchExpressions:\n          - key: app.kubernetes.io/component\n            operator: In\n            values:\n            - membership-worker\n        topologyKey: kubernetes.io/hostname\n      weight: 4\n    - podAffinityTerm:\n        labelSelector:\n          matchExpressions:\n          - key: app.kubernetes.io/component\n            operator: In\n            values:\n            - p2pGateway-worker\n        topologyKey: kubernetes.io/hostname\n      weight: 5\n    - podAffinityTerm:\n        labelSelector:\n          matchExpressions:\n          - key: app.kubernetes.io/component\n            operator: In\n            values:\n            - p2pLinkManager-worker\n        topologyKey: kubernetes.io/hostname\n      weight: 6\n    - podAffinityTerm:\n        labelSelector:\n          matchExpressions:\n          - key: app.kubernetes.io/component\n            operator: In\n            values:\n            - rest-worker\n        topologyKey: kubernetes.io/hostname\n      weight: 7\nannotations: {}\nbootstrap:\n  db:\n    clientImage:\n      registry: \"\"\n      repository: postgres\n      tag: \"14.4\"\n    cluster:\n      password:\n        value: \"\"\n        valueFrom:\n          secretKeyRef:\n            key: postgres-password\n            name: prereqs-postgres\n      username:\n        value: postgres\n        valueFrom:\n          secretKeyRef:\n            key: \"\"\n            name: \"\"\n    crypto:\n      dbConnectionPool:\n        idleTimeoutSeconds: 120\n        keepaliveTimeSeconds: 0\n        maxLifetimeSeconds: 1800\n        maxSize: 5\n        minSize: null\n        validationTimeoutSeconds: 5\n      password:\n        value: \"\"\n        valueFrom:\n          secretKeyRef:\n            key: \"\"\n            name: \"\"\n      schema: CRYPTO\n      username:\n        value: crypto_user\n        valueFrom:\n          secretKeyRef:\n            key: \"\"\n            name: \"\"\n    enabled: true\n    rbac:\n      dbConnectionPool:\n        idleTimeoutSeconds: 120\n        keepaliveTimeSeconds: 0\n        maxLifetimeSeconds: 1800\n        maxSize: 5\n        minSize: null\n        validationTimeoutSeconds: 5\n      password:\n        value: \"\"\n        valueFrom:\n          secretKeyRef:\n            key: \"\"\n            name: \"\"\n      schema: RBAC\n      username:\n        value: rbac_user\n        valueFrom:\n          secretKeyRef:\n            key: \"\"\n            name: \"\"\n  image:\n    registry: \"\"\n    repository: corda-os-plugins\n    tag: \"\"\n  kafka:\n    cleanup: false\n    enabled: true\n    partitions: 10\n    replicas: 1\n    sasl:\n      password:\n        value: \"\"\n        valueFrom:\n          secretKeyRef:\n            key: \"\"\n            name: \"\"\n      username:\n        value: \"\"\n        valueFrom:\n          secretKeyRef:\n            key: \"\"\n            name: \"\"\n  nodeSelector: {}\n  preinstallCheck:\n    enabled: true\n  rbac:\n    enabled: true\n  resources:\n    limits: {}\n    requests: {}\n  restApiAdmin:\n    password:\n      value: admin\n      valueFrom:\n        secretKeyRef:\n          key: \"\"\n          name: \"\"\n    username:\n      value: admin\n      valueFrom:\n        secretKeyRef:\n          key: \"\"\n          name: \"\"\n  serviceAccount:\n    name: \"\"\nconfig:\n  encryption:\n    passphrase:\n      value: \"\"\n      valueFrom:\n        secretKeyRef:\n          key: \"\"\n          name: \"\"\n    salt:\n      value: \"\"\n      valueFrom:\n        secretKeyRef:\n          key: \"\"\n          name: \"\"\ncorda-lib:\n  global: {}\ndb:\n  cluster:\n    database: cordacluster\n    host: prereqs-postgres\n    password:\n      value: \"\"\n      valueFrom:\n        secretKeyRef:\n          key: corda-password\n          name: prereqs-postgres\n    port: 5432\n    schema: CONFIG\n    type: postgresql\n    username:\n      value: corda\n      valueFrom:\n        secretKeyRef:\n          key: \"\"\n          name: \"\"\ndumpHostPath: \"\"\nfullnameOverride: \"\"\nheapDumpOnOutOfMemoryError: false\nimage:\n  registry: corda-os-docker-dev.software.r3.com\n  tag: latest-local-5.1.0\nimagePullPolicy: IfNotPresent\nimagePullSecrets: []\nkafka:\n  bootstrapServers: prereqs-kafka:9092\n  sasl:\n    enabled: true\n    mechanism: PLAIN\n    password:\n      value: \"\"\n      valueFrom:\n        secretKeyRef:\n          key: admin-password\n          name: prereqs-kafka\n    username:\n      value: admin\n      valueFrom:\n        secretKeyRef:\n          key: \"\"\n          name: \"\"\n  tls:\n    enabled: true\n    truststore:\n      password:\n        value: \"\"\n        valueFrom:\n          secretKeyRef:\n            key: \"\"\n            name: \"\"\n      type: PEM\n      valueFrom:\n        secretKeyRef:\n          key: ca.crt\n          name: prereqs-kafka\n  topicPrefix: \"\"\nlogging:\n  format: text\n  level: info\nmetrics:\n  podMonitor:\n    enabled: false\n    labels: {}\n  scrape: true\nnameOverride: \"\"\nnodeSelector: {}\nresources:\n  limits: {}\n  requests: {}\nserviceAccount:\n  name: \"\"\ntolerations: []\ntracing:\n  endpoint: \"\"\n  samplesPerSecond: \"1\"\nworkers:\n  crypto:\n    annotations: {}\n    clusterDbConnectionPool:\n      idleTimeoutSeconds: 120\n      keepaliveTimeSeconds: 0\n      maxLifetimeSeconds: 1800\n      maxSize: 5\n      minSize: null\n      validationTimeoutSeconds: 5\n    debug:\n      enabled: false\n      suspend: false\n    image:\n      registry: \"\"\n      repository: corda-os-crypto-worker\n      tag: \"\"\n    javaOptions: -XX:MaxRAMPercentage=75\n    kafka:\n      sasl:\n        password:\n          value: \"\"\n          valueFrom:\n            secretKeyRef:\n              key: \"\"\n              name: \"\"\n        username:\n          value: \"\"\n          valueFrom:\n            secretKeyRef:\n              key: \"\"\n              name: \"\"\n    logging:\n      level: null\n      override: \"\"\n    profiling:\n      enabled: false\n    replicaCount: 1\n    resources:\n      limits: {}\n      requests: {}\n  db:\n    annotations: {}\n    clusterDbConnectionPool:\n      idleTimeoutSeconds: 120\n      keepaliveTimeSeconds: 0\n      maxLifetimeSeconds: 1800\n      maxSize: 5\n      minSize: null\n      validationTimeoutSeconds: 5\n    debug:\n      enabled: false\n      suspend: false\n    image:\n      registry: \"\"\n      repository: corda-os-db-worker\n      tag: \"\"\n    javaOptions: -XX:MaxRAMPercentage=75\n    kafka:\n      sasl:\n        password:\n          value: \"\"\n          valueFrom:\n            secretKeyRef:\n              key: \"\"\n              name: \"\"\n        username:\n          value: \"\"\n          valueFrom:\n            secretKeyRef:\n              key: \"\"\n              name: \"\"\n    logging:\n      level: null\n      override: \"\"\n    profiling:\n      enabled: false\n    replicaCount: 1\n    resources:\n      limits: {}\n      requests: {}\n  flow:\n    annotations: {}\n    debug:\n      enabled: false\n      suspend: false\n    image:\n      registry: \"\"\n      repository: corda-os-flow-worker\n      tag: \"\"\n    javaOptions: -XX:MaxRAMPercentage=75\n    kafka:\n      sasl:\n        password:\n          value: \"\"\n          valueFrom:\n            secretKeyRef:\n              key: \"\"\n              name: \"\"\n        username:\n          value: \"\"\n          valueFrom:\n            secretKeyRef:\n              key: \"\"\n              name: \"\"\n    logging:\n      level: null\n      override: \"\"\n    profiling:\n      enabled: false\n    replicaCount: 1\n    resources:\n      limits: {}\n      requests: {}\n    verifyInstrumentation: false\n  membership:\n    annotations: {}\n    debug:\n      enabled: false\n      suspend: false\n    image:\n      registry: \"\"\n      repository: corda-os-member-worker\n      tag: \"\"\n    javaOptions: -XX:MaxRAMPercentage=75\n    kafka:\n      sasl:\n        password:\n          value: \"\"\n          valueFrom:\n            secretKeyRef:\n              key: \"\"\n              name: \"\"\n        username:\n          value: \"\"\n          valueFrom:\n            secretKeyRef:\n              key: \"\"\n              name: \"\"\n    logging:\n      level: null\n      override: \"\"\n    profiling:\n      enabled: false\n    replicaCount: 1\n    resources:\n      limits: {}\n      requests: {}\n  p2pGateway:\n    annotations: {}\n    debug:\n      enabled: false\n      suspend: false\n    image:\n      registry: \"\"\n      repository: corda-os-p2p-gateway-worker\n      tag: \"\"\n    javaOptions: -XX:MaxRAMPercentage=75\n    kafka:\n      sasl:\n        password:\n          value: \"\"\n          valueFrom:\n            secretKeyRef:\n              key: \"\"\n              name: \"\"\n        username:\n          value: \"\"\n          valueFrom:\n            secretKeyRef:\n              key: \"\"\n              name: \"\"\n    logging:\n      level: null\n      override: \"\"\n    profiling:\n      enabled: false\n    replicaCount: 1\n    resources:\n      limits: {}\n      requests: {}\n    service:\n      port: 8080\n  p2pLinkManager:\n    annotations: {}\n    debug:\n      enabled: false\n      suspend: false\n    image:\n      registry: \"\"\n      repository: corda-os-p2p-link-manager-worker\n      tag: \"\"\n    javaOptions: -XX:MaxRAMPercentage=75\n    kafka:\n      sasl:\n        password:\n          value: \"\"\n          valueFrom:\n            secretKeyRef:\n              key: \"\"\n              name: \"\"\n        username:\n          value: \"\"\n          valueFrom:\n            secretKeyRef:\n              key: \"\"\n              name: \"\"\n    logging:\n      level: null\n      override: \"\"\n    profiling:\n      enabled: false\n    replicaCount: 1\n    resources:\n      limits: {}\n      requests: {}\n  rest:\n    annotations: {}\n    debug:\n      enabled: false\n      suspend: false\n    image:\n      registry: \"\"\n      repository: corda-os-rest-worker\n      tag: \"\"\n    ingress:\n      annotations: {}\n      className: \"\"\n      hosts: []\n    javaOptions: -XX:MaxRAMPercentage=75\n    kafka:\n      sasl:\n        password:\n          value: \"\"\n          valueFrom:\n            secretKeyRef:\n              key: \"\"\n              name: \"\"\n        username:\n          value: \"\"\n          valueFrom:\n            secretKeyRef:\n              key: \"\"\n              name: \"\"\n    logging:\n      level: null\n      override: \"\"\n    profiling:\n      enabled: false\n    replicaCount: 1\n    resources:\n      limits: {}\n      requests: {}\n    service:\n      annotations: {}\n      externalTrafficPolicy: \"\"\n      loadBalancerSourceRanges: []\n      port: 443\n      type: ClusterIP\n    tls:\n      ca:\n        secretKey: ca.crt\n      crt:\n        secretKey: tls.crt\n      generation:\n        altNames: []\n      key:\n        secretKey: tls.key\n      secretName: \"\"" > /tmp/values.yaml
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+      volumes:
+        - name: temp
+          emptyDir: {}
+        
+        - name: log4j
+          configMap:
+            name: corda-log4j
+      restartPolicy: Never
+      
+  backoffLimit: 0
+---
+# Source: corda/templates/bootstrap.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: corda-setup-db
+  labels:
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": pre-install
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: corda
+        app.kubernetes.io/instance: corda
+    spec:
+      
+      
+      
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10002
+        fsGroup: 1000
+      containers:
+        - name: fin
+          image: "corda-os-docker-dev.software.r3.com/corda-os-plugins:latest-local-5.1.0"
+          imagePullPolicy: IfNotPresent
+          
+          resources:
+            requests:
+            limits:
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          command:
+            - /bin/bash
+            - -e
+            - -c
+          args: ["echo", "'DB Bootstrapped'"]
+          workingDir: /tmp
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+      initContainers:
+        - name: 01-create-db
+          image: "corda-os-docker-dev.software.r3.com/corda-os-plugins:latest-local-5.1.0"
+          imagePullPolicy: IfNotPresent
+          
+          resources:
+            requests:
+            limits:
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          args: [ 'database', 'spec', '-g', 'config:CONFIG,rbac:RBAC,crypto:CRYPTO', '-c', '-l', '/tmp', '--jdbc-url', 'jdbc:postgresql://prereqs-postgres:5432/cordacluster', '-u', $(PGUSER), '-p', $(PGPASSWORD) ]
+          workingDir: /tmp
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+            
+            - name: log4j
+              mountPath: /etc/log4j
+          env:
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-bootstrap-cluster-db"
+                  key: "username"
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "prereqs-postgres"
+                  key: "postgres-password"
+            
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Dlog4j2.configurationFile=/etc/log4j/log4j2.xml"
+            - name: CONSOLE_LOG_FORMAT
+              value: text
+            - name: CONSOLE_LOG_LEVEL
+              value: info
+            - name: CORDA_CLI_HOME_DIR
+              value: "/tmp"
+        - name: 02-apply-db
+          image: "postgres:14.4"
+          imagePullPolicy: IfNotPresent
+          
+          resources:
+            requests:
+            limits:
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          command: [ 'sh', '-c', '-e', 'for f in /tmp/*.sql; do psql -v ON_ERROR_STOP=1 -h prereqs-postgres -p 5432 -f "$f" --dbname cordacluster; done' ]
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+          env:
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-bootstrap-cluster-db"
+                  key: "username"
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "prereqs-postgres"
+                  key: "postgres-password"
+        - name: 03-create-rbac
+          image: "corda-os-docker-dev.software.r3.com/corda-os-plugins:latest-local-5.1.0"
+          imagePullPolicy: IfNotPresent
+          
+          resources:
+            requests:
+            limits:
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          args: [ 'initial-config', 'create-db-config', '-u', '$(RBAC_DB_USER_USERNAME)', '-p', '$(RBAC_DB_USER_PASSWORD)', '--name', 'corda-rbac', '--jdbc-url', 'jdbc:postgresql://prereqs-postgres:5432/cordacluster?currentSchema=RBAC', '--jdbc-pool-max-size', "5", '--idle-timeout', "120", '--max-lifetime', "1800", '--keepalive-time', "0", '--validation-timeout', "5", '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp']
+          workingDir: /tmp
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+            
+            - name: log4j
+              mountPath: /etc/log4j
+          env:
+            
+            - name: SALT
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-config"
+                  key: "salt"
+            - name: PASSPHRASE
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-config"
+                  key: "passphrase"
+            
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Dlog4j2.configurationFile=/etc/log4j/log4j2.xml"
+            - name: CONSOLE_LOG_FORMAT
+              value: text
+            - name: CONSOLE_LOG_LEVEL
+              value: info
+            - name: CORDA_CLI_HOME_DIR
+              value: "/tmp"
+            
+            - name: RBAC_DB_USER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-rbac-db"
+                  key: "username"
+            - name: RBAC_DB_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-rbac-db"
+                  key: "password"
+        - name: 04-apply-rbac
+          image: "postgres:14.4"
+          imagePullPolicy: IfNotPresent
+          
+          resources:
+            requests:
+            limits:
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          command: [ 'sh', '-c', '-e', 'psql -v ON_ERROR_STOP=1 -h prereqs-postgres -p 5432 -f /tmp/db-config.sql --dbname "dbname=cordacluster options=--search_path=CONFIG"' ]
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+          env:
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-bootstrap-cluster-db"
+                  key: "username"
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "prereqs-postgres"
+                  key: "postgres-password"
+        - name: 05-create-vnodes
+          image: "corda-os-docker-dev.software.r3.com/corda-os-plugins:latest-local-5.1.0"
+          imagePullPolicy: IfNotPresent
+          
+          resources:
+            requests:
+            limits:
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          args: [ 'initial-config', 'create-db-config', '-a','-u', '$(DB_CLUSTER_USERNAME)', '-p', '$(DB_CLUSTER_PASSWORD)', '--name', 'corda-virtual-nodes', '--jdbc-url', 'jdbc:postgresql://prereqs-postgres:5432/cordacluster', '--jdbc-pool-max-size', "5", '--idle-timeout', "120", '--max-lifetime', "1800", '--keepalive-time', "0", '--validation-timeout', "5", '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp']
+          workingDir: /tmp
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+            
+            - name: log4j
+              mountPath: /etc/log4j
+          env:
+            
+            - name: SALT
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-config"
+                  key: "salt"
+            - name: PASSPHRASE
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-config"
+                  key: "passphrase"
+            
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Dlog4j2.configurationFile=/etc/log4j/log4j2.xml"
+            - name: CONSOLE_LOG_FORMAT
+              value: text
+            - name: CONSOLE_LOG_LEVEL
+              value: info
+            - name: CORDA_CLI_HOME_DIR
+              value: "/tmp"
+            
+            - name: RBAC_DB_USER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-rbac-db"
+                  key: "username"
+            - name: RBAC_DB_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-rbac-db"
+                  key: "password"
+            - name: DB_CLUSTER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-cluster-db"
+                  key: "username"
+            - name: DB_CLUSTER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "prereqs-postgres"
+                  key: "corda-password"
+        - name: 06-apply-vnodes
+          image: "postgres:14.4"
+          imagePullPolicy: IfNotPresent
+          
+          resources:
+            requests:
+            limits:
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          command: [ 'sh', '-c', '-e', 'psql -v ON_ERROR_STOP=1 -h prereqs-postgres -p 5432 -f /tmp/db-config.sql --dbname "dbname=cordacluster options=--search_path=CONFIG"' ]
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+          env:
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-bootstrap-cluster-db"
+                  key: "username"
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "prereqs-postgres"
+                  key: "postgres-password"
+        - name: 07-create-crypto
+          image: "corda-os-docker-dev.software.r3.com/corda-os-plugins:latest-local-5.1.0"
+          imagePullPolicy: IfNotPresent
+          
+          resources:
+            requests:
+            limits:
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          args: [ 'initial-config', 'create-db-config', '-u', '$(CRYPTO_DB_USER_USERNAME)', '-p', '$(CRYPTO_DB_USER_PASSWORD)', '--name', 'corda-crypto', '--jdbc-url', 'jdbc:postgresql://prereqs-postgres:5432/cordacluster?currentSchema=CRYPTO', '--jdbc-pool-max-size', "5", '--idle-timeout', "120", '--max-lifetime', "1800", '--keepalive-time', "0", '--validation-timeout', "5", '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp']
+          workingDir: /tmp
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+            
+            - name: log4j
+              mountPath: /etc/log4j
+          env:
+            
+            - name: SALT
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-config"
+                  key: "salt"
+            - name: PASSPHRASE
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-config"
+                  key: "passphrase"
+            
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Dlog4j2.configurationFile=/etc/log4j/log4j2.xml"
+            - name: CONSOLE_LOG_FORMAT
+              value: text
+            - name: CONSOLE_LOG_LEVEL
+              value: info
+            - name: CORDA_CLI_HOME_DIR
+              value: "/tmp"
+            - name: CRYPTO_DB_USER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-crypto-db"
+                  key: "username"
+            - name: CRYPTO_DB_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-crypto-db"
+                  key: "password"
+        - name: 08-apply-crypto
+          image: "postgres:14.4"
+          imagePullPolicy: IfNotPresent
+          
+          resources:
+            requests:
+            limits:
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          command: [ 'sh', '-c', '-e', 'psql -v ON_ERROR_STOP=1 -h prereqs-postgres -p 5432 -f /tmp/db-config.sql --dbname "dbname=cordacluster options=--search_path=CONFIG"' ]
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+          env:
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-bootstrap-cluster-db"
+                  key: "username"
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "prereqs-postgres"
+                  key: "postgres-password"
+        - name: 09-create-rest
+          image: "corda-os-docker-dev.software.r3.com/corda-os-plugins:latest-local-5.1.0"
+          imagePullPolicy: IfNotPresent
+          
+          resources:
+            requests:
+            limits:
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          args: [ 'initial-config', 'create-user-config', '-u', '$(REST_API_ADMIN_USERNAME)', '-p', '$(REST_API_ADMIN_PASSWORD)', '-l', '/tmp']
+          workingDir: /tmp
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+            
+            - name: log4j
+              mountPath: /etc/log4j
+          env:
+            
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Dlog4j2.configurationFile=/etc/log4j/log4j2.xml"
+            - name: CONSOLE_LOG_FORMAT
+              value: text
+            - name: CONSOLE_LOG_LEVEL
+              value: info
+            - name: CORDA_CLI_HOME_DIR
+              value: "/tmp"
+            - name: REST_API_ADMIN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: corda-rest-api-admin
+                  key: username
+            - name: REST_API_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: corda-rest-api-admin
+                  key: password
+        - name: 10-apply-rest
+          image: "postgres:14.4"
+          imagePullPolicy: IfNotPresent
+          
+          resources:
+            requests:
+            limits:
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          command: [ 'sh', '-c', '-e', 'psql -v ON_ERROR_STOP=1 -h prereqs-postgres -p 5432 -f /tmp/rbac-config.sql --dbname "dbname=cordacluster options=--search_path=RBAC"' ]
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+          env:
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-bootstrap-cluster-db"
+                  key: "username"
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "prereqs-postgres"
+                  key: "postgres-password"
+        - name: 11-create-db-users-and-grant
+          image: "postgres:14.4"
+          imagePullPolicy: IfNotPresent
+          
+          resources:
+            requests:
+            limits:
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          command: [ '/bin/bash', '-e', '-c' ]
+          args:
+            - |
+              psql -v ON_ERROR_STOP=1 -h prereqs-postgres -p 5432 cordacluster << SQL
+                GRANT USAGE ON SCHEMA CONFIG TO "$DB_CLUSTER_USERNAME";
+                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA CONFIG TO "$DB_CLUSTER_USERNAME";
+                GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA CONFIG TO "$DB_CLUSTER_USERNAME";
+                DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '$RBAC_DB_USER_USERNAME') THEN RAISE NOTICE 'Role "$RBAC_DB_USER_USERNAME" already exists'; ELSE CREATE USER "$RBAC_DB_USER_USERNAME" WITH ENCRYPTED PASSWORD '$RBAC_DB_USER_PASSWORD'; END IF; END \$\$;
+                GRANT USAGE ON SCHEMA RBAC TO "$RBAC_DB_USER_USERNAME";
+                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA RBAC TO "$RBAC_DB_USER_USERNAME";
+                DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '$CRYPTO_DB_USER_USERNAME') THEN RAISE NOTICE 'Role "$CRYPTO_DB_USER_USERNAME" already exists'; ELSE CREATE USER "$CRYPTO_DB_USER_USERNAME" WITH ENCRYPTED PASSWORD '$CRYPTO_DB_USER_PASSWORD'; END IF; END \$\$;
+                GRANT USAGE ON SCHEMA CRYPTO TO "$CRYPTO_DB_USER_USERNAME";
+                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA CRYPTO TO "$CRYPTO_DB_USER_USERNAME";
+              SQL
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+          env:
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-bootstrap-cluster-db"
+                  key: "username"
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "prereqs-postgres"
+                  key: "postgres-password"
+          
+            - name: RBAC_DB_USER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-rbac-db"
+                  key: "username"
+            - name: RBAC_DB_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-rbac-db"
+                  key: "password"
+          
+            - name: CRYPTO_DB_USER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-crypto-db"
+                  key: "username"
+            - name: CRYPTO_DB_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-crypto-db"
+                  key: "password"
+            - name: DB_CLUSTER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-cluster-db"
+                  key: "username"
+            - name: DB_CLUSTER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "prereqs-postgres"
+                  key: "corda-password"
+        - name: 12-create-crypto-config
+          image: "corda-os-docker-dev.software.r3.com/corda-os-plugins:latest-local-5.1.0"
+          imagePullPolicy: IfNotPresent
+          
+          resources:
+            requests:
+            limits:
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          args: [ 'initial-config', 'create-crypto-config', '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp']
+          workingDir: /tmp
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+            
+            - name: log4j
+              mountPath: /etc/log4j
+          env:
+            - name: SALT
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-config"
+                  key: "salt"
+            - name: PASSPHRASE
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-config"
+                  key: "passphrase"
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Dlog4j2.configurationFile=/etc/log4j/log4j2.xml"
+            - name: CONSOLE_LOG_FORMAT
+              value: text
+            - name: CONSOLE_LOG_LEVEL
+              value: info
+            - name: CORDA_CLI_HOME_DIR
+              value: "/tmp"
+        - name: 13-apply-crypto-config
+          image: "postgres:14.4"
+          imagePullPolicy: IfNotPresent
+          
+          resources:
+            requests:
+            limits:
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          command: [ 'sh', '-c', '-e', 'psql -v ON_ERROR_STOP=1 -h prereqs-postgres -p 5432 -f /tmp/crypto-config.sql --dbname "dbname=cordacluster options=--search_path=CONFIG"' ]
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+          env:
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: "corda-bootstrap-cluster-db"
+                  key: "username"
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "prereqs-postgres"
+                  key: "postgres-password"
+      volumes:
+        - name: temp
+          emptyDir: {}
+        
+        - name: log4j
+          configMap:
+            name: corda-log4j
+      
+
+      restartPolicy: Never
+  backoffLimit: 0
+---
+# Source: corda/templates/bootstrap.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: corda-create-topics
+  labels:
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": pre-install
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: corda
+        app.kubernetes.io/instance: corda
+    spec:
+      
+      
+      
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10002
+        fsGroup: 1000
+      containers:
+        - name: create-topics
+          image: "corda-os-docker-dev.software.r3.com/corda-os-plugins:latest-local-5.1.0"
+          imagePullPolicy: IfNotPresent
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          
+          resources:
+            requests:
+            limits:
+          args: [
+            'topic',
+            '-b', 'prereqs-kafka:9092',
+            '-k', '/tmp/config.properties',
+            'create',
+            '-u', 'crypto=$(KAFKA_SASL_USERNAME_CRYPTO)',
+            '-u', 'db=$(KAFKA_SASL_USERNAME_DB)',
+            '-u', 'flow=$(KAFKA_SASL_USERNAME_FLOW)',
+            '-u', 'membership=$(KAFKA_SASL_USERNAME_MEMBERSHIP)',
+            '-u', 'p2pGateway=$(KAFKA_SASL_USERNAME_P2P_GATEWAY)',
+            '-u', 'p2pLinkManager=$(KAFKA_SASL_USERNAME_P2P_LINK_MANAGER)',
+            '-u', 'rest=$(KAFKA_SASL_USERNAME_REST)',
+            '-r', '1',
+            '-p', '10',
+            'connect'
+          ]
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+            - mountPath: "/certs"
+              name: certs
+              readOnly: true
+            
+            - name: log4j
+              mountPath: /etc/log4j
+          env:
+            
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Dlog4j2.configurationFile=/etc/log4j/log4j2.xml"
+            - name: CONSOLE_LOG_FORMAT
+              value: text
+            - name: CONSOLE_LOG_LEVEL
+              value: info
+            - name: CORDA_CLI_HOME_DIR
+              value: "/tmp"
+            - name: "KAFKA_SASL_USERNAME_CRYPTO"
+              value: "admin"
+            - name: "KAFKA_SASL_USERNAME_DB"
+              value: "admin"
+            - name: "KAFKA_SASL_USERNAME_FLOW"
+              value: "admin"
+            - name: "KAFKA_SASL_USERNAME_MEMBERSHIP"
+              value: "admin"
+            - name: "KAFKA_SASL_USERNAME_P2P_GATEWAY"
+              value: "admin"
+            - name: "KAFKA_SASL_USERNAME_P2P_LINK_MANAGER"
+              value: "admin"
+            - name: "KAFKA_SASL_USERNAME_REST"
+              value: "admin"
+      initContainers:
+        - name: create-trust-store
+          image: "corda-os-docker-dev.software.r3.com/corda-os-plugins:latest-local-5.1.0"
+          imagePullPolicy: IfNotPresent
+          
+          resources:
+            requests:
+            limits:
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          env:
+            
+            - name: SASL_USERNAME
+              value: admin
+            - name: SASL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "prereqs-kafka"
+                  key: "admin-password"
+            
+          command:
+            - /bin/bash
+            - -c
+          args:
+            - |
+                touch /tmp/config.properties
+                echo "security.protocol=SASL_SSL\n" >> /tmp/config.properties
+                echo "sasl.mechanism=PLAIN\n" >> /tmp/config.properties
+                echo "sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"$SASL_USERNAME\" password=\"$SASL_PASSWORD\" ;\n">> /tmp/config.properties
+                echo "ssl.truststore.location=/certs/ca.crt\n" >> /tmp/config.properties
+                echo "ssl.truststore.type=PEM\n" >> /tmp/config.properties
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+      volumes:
+        - name: temp
+          emptyDir: {}
+        - name: certs
+          secret:
+            secretName: "prereqs-kafka"
+            items:
+              - key: "ca.crt"
+                path: ca.crt
+        
+        - name: log4j
+          configMap:
+            name: corda-log4j
+      restartPolicy: Never
+      
+  backoffLimit: 0
+---
+# Source: corda/templates/bootstrap.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: corda-setup-rbac
+  labels:
+    helm.sh/chart: corda-5.1.0
+    app.kubernetes.io/name: corda
+    app.kubernetes.io/instance: corda
+    app.kubernetes.io/version: "unstable-5.1.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": post-install
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: corda
+        app.kubernetes.io/instance: corda
+    spec:
+      
+      
+      
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10002
+        fsGroup: 1000
+      containers:
+        - name: create-rbac-role-user-admin
+          image: "corda-os-docker-dev.software.r3.com/corda-os-plugins:latest-local-5.1.0"
+          imagePullPolicy: IfNotPresent
+          
+          resources:
+            requests:
+            limits:
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          args: ['initial-rbac', 'user-admin', '--yield', '300', '--user', "$(REST_API_ADMIN_USERNAME)",
+            '--password', "$(REST_API_ADMIN_PASSWORD)",
+            '--target', "https://corda-rest-worker:443", '--insecure']
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+            
+            - name: log4j
+              mountPath: /etc/log4j
+          env:
+            
+            - name: REST_API_ADMIN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: corda-rest-api-admin
+                  key: username
+            - name: REST_API_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: corda-rest-api-admin
+                  key: password
+            
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Dlog4j2.configurationFile=/etc/log4j/log4j2.xml"
+            - name: CONSOLE_LOG_FORMAT
+              value: text
+            - name: CONSOLE_LOG_LEVEL
+              value: info
+            - name: CORDA_CLI_HOME_DIR
+              value: "/tmp"
+        - name: create-rbac-role-vnode-creator
+          image: "corda-os-docker-dev.software.r3.com/corda-os-plugins:latest-local-5.1.0"
+          imagePullPolicy: IfNotPresent
+          
+          resources:
+            requests:
+            limits:
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          args: ['initial-rbac', 'vnode-creator', '--yield', '300', '--user', "$(REST_API_ADMIN_USERNAME)",
+            '--password', "$(REST_API_ADMIN_PASSWORD)",
+            '--target', "https://corda-rest-worker:443", '--insecure']
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+            
+            - name: log4j
+              mountPath: /etc/log4j
+          env:
+            
+            - name: REST_API_ADMIN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: corda-rest-api-admin
+                  key: username
+            - name: REST_API_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: corda-rest-api-admin
+                  key: password
+            
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Dlog4j2.configurationFile=/etc/log4j/log4j2.xml"
+            - name: CONSOLE_LOG_FORMAT
+              value: text
+            - name: CONSOLE_LOG_LEVEL
+              value: info
+            - name: CORDA_CLI_HOME_DIR
+              value: "/tmp"
+        - name: create-rbac-role-corda-dev
+          image: "corda-os-docker-dev.software.r3.com/corda-os-plugins:latest-local-5.1.0"
+          imagePullPolicy: IfNotPresent
+          
+          resources:
+            requests:
+            limits:
+          
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10002
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          args: ['initial-rbac', 'corda-developer', '--yield', '300', '--user', "$(REST_API_ADMIN_USERNAME)",
+            '--password', "$(REST_API_ADMIN_PASSWORD)",
+            '--target', "https://corda-rest-worker:443", '--insecure']
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+            
+            - name: log4j
+              mountPath: /etc/log4j
+          env:
+            
+            - name: REST_API_ADMIN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: corda-rest-api-admin
+                  key: username
+            - name: REST_API_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: corda-rest-api-admin
+                  key: password
+            
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Dlog4j2.configurationFile=/etc/log4j/log4j2.xml"
+            - name: CONSOLE_LOG_FORMAT
+              value: text
+            - name: CONSOLE_LOG_LEVEL
+              value: info
+            - name: CORDA_CLI_HOME_DIR
+              value: "/tmp"
+      
+      volumes:
+        - name: temp
+          emptyDir: {}
+        
+        - name: log4j
+          configMap:
+            name: corda-log4j
+      restartPolicy: Never
+  backoffLimit: 0

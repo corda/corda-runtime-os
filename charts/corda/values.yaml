@@ -4,6 +4,8 @@
 # -- override chart fullname
 fullnameOverride: ""
 
+affinity: {}
+
 # -- override chart name
 nameOverride: ""
 

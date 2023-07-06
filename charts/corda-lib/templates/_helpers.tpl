@@ -78,6 +78,7 @@ securityContext:
 {{- end }}
 {{- end }}
 
+
 {{/*
 tolerations for node taints
 */}}
