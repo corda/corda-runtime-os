@@ -1,8 +1,5 @@
 package net.corda.e2etest.utilities
 
-import net.corda.rest.RestResource
-import net.corda.rest.client.RestClient
-import net.corda.rest.client.config.RestClientConfig
 import java.net.URI
 
 /**
@@ -40,19 +37,6 @@ abstract class ClusterInfo {
             System.getenv(restPasswordPropertyName) ?: AdminPasswordUtil.adminPassword
         )
     }
-
-    fun <I : RestResource> restClientFor(
-        restResourceClass: Class<I>,
-        userName: String = AdminPasswordUtil.adminUser,
-        restPassword: String = System.getenv(restPasswordPropertyName) ?: AdminPasswordUtil.adminPassword
-    ): RestClient<I> = RestClient(
-        rest.uri.toString()+"/api/v1/", restResourceClass, RestClientConfig()
-            .enableSSL(true)
-            .secureSSL(false)
-            .minimumServerProtocolVersion(1)
-            .username(userName)
-            .password(restPassword)
-    )
 
     /**
      * P2P gateway properties.
