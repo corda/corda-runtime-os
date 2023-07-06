@@ -1,5 +1,7 @@
 package net.corda.session.mapper.service.executor
 
+import java.time.Duration
+import java.time.Instant
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
@@ -13,10 +15,7 @@ import net.corda.schema.configuration.FlowConfig
 import net.corda.tracing.traceStateAndEventExecution
 import net.corda.utilities.debug
 import net.corda.utilities.time.UTCClock
-import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
-import java.time.Duration
-import java.time.Instant
 
 /**
  * The [FlowMapperMessageProcessor] receives states and events that are keyed by strings. These strings can be either:
@@ -44,7 +43,8 @@ class FlowMapperMessageProcessor(
     ): StateAndEventProcessor.Response<FlowMapperState> {
 
         val key = event.key
-        logger.trace { "Received event. Key: $key Event: ${event.value}" }
+//        logger.trace { "Received event. Key: $key Event: ${event.value}" }
+        logger.info("Flow Mapper Received event. Key: $key Event: ${event.value}")
         val value = event.value ?: return StateAndEventProcessor.Response(state, emptyList())
         val eventType = value.payload?.let { it.javaClass.simpleName } ?: "Unknown"
 

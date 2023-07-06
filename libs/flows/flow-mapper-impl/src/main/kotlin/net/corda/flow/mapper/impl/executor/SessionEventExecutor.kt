@@ -1,5 +1,6 @@
 package net.corda.flow.mapper.impl.executor
 
+import java.time.Instant
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
@@ -16,7 +17,6 @@ import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import org.slf4j.LoggerFactory
-import java.time.Instant
 
 @Suppress("LongParameterList")
 class SessionEventExecutor(
@@ -94,7 +94,7 @@ class SessionEventExecutor(
             }
             FlowMapperStateType.CLOSING -> {
                 if (messageDirection == MessageDirection.OUTBOUND) {
-                    log.warn("Attempted to send a message but flow mapper state is in CLOSING. Session ID: ${sessionEvent.sessionId}")
+                    log.info("Attempted to send a message but flow mapper state is in CLOSING. Session ID: ${sessionEvent.sessionId}")
                     FlowMapperResult(flowMapperState, listOf())
                 } else {
                     if (sessionEvent.payload is SessionClose) {
@@ -109,24 +109,27 @@ class SessionEventExecutor(
                             )
                         FlowMapperResult(flowMapperState, listOf(outputRecord))
                     } else {
+                        log.info("FlowMapper ignoring event ${sessionEvent.sessionId} ${sessionEvent.payload::class.simpleName} while closing")
                         FlowMapperResult(flowMapperState, listOf())
                     }
                 }
             }
             FlowMapperStateType.OPEN -> {
                 val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
+                    log.info("FlowMapper handling OUTBOUND record: ${sessionEvent.sessionId} ${sessionEvent.payload::class.simpleName}")
                     Record(
                         outputTopic,
                         sessionEvent.sessionId,
                         appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig)
                     )
                 } else {
+                    log.info("FlowMapper handling INBOUND record: ${sessionEvent.sessionId} ${sessionEvent.payload::class.simpleName}")
                     Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
                 }
                 FlowMapperResult(flowMapperState, listOf(outputRecord))
             }
             FlowMapperStateType.ERROR -> {
-                log.warn(errorMsg + "Ignoring event.")
+                log.info(errorMsg + "Ignoring event.")
                 FlowMapperResult(flowMapperState, listOf())
             }
         }

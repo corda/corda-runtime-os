@@ -1,7 +1,9 @@
 package net.corda.flow.p2p.filter
 
+import java.nio.ByteBuffer
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
@@ -15,7 +17,6 @@ import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
 import net.corda.tracing.traceEventProcessingNullableSingle
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
 
 /**
  * Processes events from the P2P.in topic.
@@ -36,11 +37,22 @@ class FlowP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializati
             SessionEvent::class.java
         )
 
+    private fun eventToString(eventPayload: Any?): String {
+        val eventType = eventPayload?.javaClass?.simpleName
+        val eventSubtype = when (eventPayload) {
+            is FlowEvent -> "." + eventPayload.payload?.javaClass?.simpleName
+            is FlowMapperEvent -> "." + eventPayload.payload?.javaClass?.simpleName
+            else -> ""
+        }
+        return "$eventType$eventSubtype"
+    }
+
     override fun onNext(
         events: List<Record<String, AppMessage>>
     ): List<Record<*, *>> {
         val outputEvents = mutableListOf<Record<*, *>>()
         events.forEach { appMessage ->
+            logger.info("P2PFilter Received Event: [${appMessage.key}] [${eventToString(appMessage.value)}]")
             val authMessage = appMessage.value?.message
             if (authMessage != null && authMessage is AuthenticatedMessage && authMessage.header.subsystem == FLOW_SESSION_SUBSYSTEM) {
 
