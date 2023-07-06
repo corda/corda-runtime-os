@@ -316,9 +316,9 @@ class ClusterBuilder {
     fun getPermissionByQuery(
         limit: Int,
         permissionType: String,
-        groupVisibility: String,
+        groupVisibility: String?,
         virtualNode: String?,
-        permissionStringPrefix: String
+        permissionStringPrefix: String?
     ): SimpleResponse {
         val queries = mutableListOf<String>().apply {
             add("limit=$limit")
