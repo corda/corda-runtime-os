@@ -57,6 +57,7 @@ internal class DeclineRegistrationHandler(
         if (!memberTypeChecker.isMgm(declinedBy)) {
             logger.warn("Trying to decline registration request: '$registrationId' by ${declinedBy.x500Name} which is not an MGM")
         }
+        logger.info("Trying to read member info.")
         val memberInfo = groupReaderProvider.getGroupReader(declinedBy.toCorda())
             .lookup(declinedMember.toCorda().x500Name, MembershipStatusFilter.PENDING)
             ?: throw CordaRuntimeException("Failed to retrieve pending member's info " +
