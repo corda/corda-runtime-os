@@ -69,7 +69,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
 ) : StateAndEventSubscription<K, S, E> {
 
     private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(100)
-    private val EVENT_POLL_TIMEOUT = Duration.ofMillis(100)
+    private val EVENT_POLL_TIMEOUT = Duration.ofMillis(1000)
     private val config: ResolvedSubscriptionConfig = getConfig(
         SubscriptionConfig("${subscriptionConfig.groupName}-default", "default"),
         messagingConfig)
@@ -276,7 +276,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                             recordsCount += records.size
                             markConsumerPoll(consumer)
                             val partitions = consumer.assignment()
-                            log.info("Polled (${records.size}) records from [$partitions]")
+                            log.info("Polled (${records.size}) records from topics [${topics[priority]?.joinToString(", ")}] with [$partitions]")
                         } catch (ex: Exception) {
                             consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
                         }
