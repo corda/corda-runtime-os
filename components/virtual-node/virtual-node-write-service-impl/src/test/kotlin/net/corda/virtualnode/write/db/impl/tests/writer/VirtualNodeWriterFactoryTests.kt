@@ -9,6 +9,7 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.libs.external.messaging.entities.InactiveResponseType
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -82,7 +83,7 @@ class VirtualNodeWriterFactoryTests {
 
         val publisherFactory = getPublisherFactory()
         val virtualNodeWriterFactory = VirtualNodeWriterFactory(
-            getSubscriptionFactory(), publisherFactory, getDbConnectionManager(), mock(), mock(), mock(), mock())
+            getSubscriptionFactory(), publisherFactory, getDbConnectionManager(), mock(), mock(), mock(), CpiCpkRepositoryFactory())
         virtualNodeWriterFactory.create(expectedConfig, externalMsgConfig)
 
         verify(publisherFactory).createPublisher(expectedPublisherConfig, expectedConfig)
@@ -105,7 +106,7 @@ class VirtualNodeWriterFactoryTests {
 
         val subscriptionFactory = getSubscriptionFactory()
         val virtualNodeWriterFactory = VirtualNodeWriterFactory(
-            subscriptionFactory, getPublisherFactory(), getDbConnectionManager(), mock(), mock(), mock(), mock()
+            subscriptionFactory, getPublisherFactory(), getDbConnectionManager(), mock(), mock(), mock(), CpiCpkRepositoryFactory()
         )
 
         val processor = argumentCaptor<VirtualNodeAsyncOperationProcessor>()
