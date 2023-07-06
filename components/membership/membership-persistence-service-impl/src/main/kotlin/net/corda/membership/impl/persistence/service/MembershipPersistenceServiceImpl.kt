@@ -225,7 +225,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
 
         coordinator.updateStatus(
             LifecycleStatus.UP,
-            "Received config and started RPC topic subscription."
+            "Received config and started Membership persistence topic subscriptions."
         )
     }
 }
