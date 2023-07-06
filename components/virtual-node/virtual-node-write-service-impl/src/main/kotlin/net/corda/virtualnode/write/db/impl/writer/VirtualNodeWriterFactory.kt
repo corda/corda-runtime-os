@@ -81,7 +81,10 @@ internal class VirtualNodeWriterFactory(
     ): Subscription<String, VirtualNodeAsynchronousRequest> {
         val subscriptionConfig = SubscriptionConfig(ASYNC_OPERATION_GROUP, VIRTUAL_NODE_ASYNC_REQUEST_TOPIC)
         val oldVirtualNodeEntityRepository =
-            VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory(), cpiCpkRepositoryFactory.createCpiMetadataRepository())
+            VirtualNodeEntityRepository(
+                dbConnectionManager.getClusterEntityManagerFactory(),
+                cpiCpkRepositoryFactory.createCpiMetadataRepository()
+            )
         val migrationUtility = MigrationUtilityImpl(dbConnectionManager, schemaMigrator)
         val externalMessagingRouteConfigGenerator = ExternalMessagingRouteConfigGeneratorImpl(
             ExternalMessagingConfigProviderImpl(externalMsgConfig),
@@ -159,7 +162,10 @@ internal class VirtualNodeWriterFactory(
             VirtualNodeManagementResponse::class.java,
         )
         val virtualNodeEntityRepository =
-            VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory(), cpiCpkRepositoryFactory.createCpiMetadataRepository())
+            VirtualNodeEntityRepository(
+                dbConnectionManager.getClusterEntityManagerFactory(),
+                cpiCpkRepositoryFactory.createCpiMetadataRepository()
+            )
 
         val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl()
         val virtualNodeOperationStatusHandler =
