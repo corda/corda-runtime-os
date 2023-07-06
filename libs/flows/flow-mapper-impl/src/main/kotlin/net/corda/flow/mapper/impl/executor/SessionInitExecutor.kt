@@ -51,7 +51,7 @@ class SessionInitExecutor(
             processSessionInit(sessionEvent, sessionInit)
         } else {
             //duplicate
-            log.debug { "Duplicate SessionInit event received. Key: $eventKey, Event: $sessionEvent" }
+            log.info("Duplicate SessionInit event received. Key: $eventKey, Event: $sessionEvent")
             if (messageDirection == MessageDirection.OUTBOUND) {
                 sessionEvent.messageDirection = MessageDirection.INBOUND
                 sessionEvent.sessionId = toggleSessionId(sessionEvent.sessionId)

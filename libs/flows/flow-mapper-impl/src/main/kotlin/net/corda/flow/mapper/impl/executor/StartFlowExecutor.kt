@@ -44,7 +44,7 @@ class StartFlowExecutor(
             )
         } else {
             deduplicationCount.increment()
-            log.info( "Duplicate StartRPCFlow event received. Key: $eventKey, Event: $startRPCFlow " )
+            log.info("Duplicate StartRPCFlow event received. Key: $eventKey, Event: $startRPCFlow")
             FlowMapperResult(flowMapperState, mutableListOf())
         }
     }
