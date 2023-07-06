@@ -7,6 +7,7 @@ import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messagebus.kafka.config.MessageBusConfigResolver
+import net.corda.messagebus.kafka.consumer.builder.CordaKafkaConsumerBuilderImpl
 import net.corda.messagebus.kafka.producer.CordaKafkaProducerImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializerImpl
 import net.corda.messagebus.kafka.utils.KafkaRetryUtils.executeKafkaActionWithRetry
@@ -88,6 +89,9 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
                 CordaAvroSerializerImpl(avroSchemaRegistry, onSerializationError),
                 CordaAvroSerializerImpl(avroSchemaRegistry, onSerializationError)
             )
+        } catch (e: Exception) {
+            log.error("Failed to create producer $kafkaProperties", e)
+            throw e
         } finally {
             Thread.currentThread().contextClassLoader = contextClassLoader
         }

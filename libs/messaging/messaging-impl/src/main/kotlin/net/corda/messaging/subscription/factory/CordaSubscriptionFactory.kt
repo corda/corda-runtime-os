@@ -157,7 +157,7 @@ class CordaSubscriptionFactory @Activate constructor(
         stateAndEventListener: StateAndEventListener<K, S>?
     ): StateAndEventSubscription<K, S, E> {
         val eventConfig = getConfig(SubscriptionType.STATE_AND_EVENT, subscriptionConfig, messagingConfig)
-        val stateConfig = getConfig(SubscriptionType.STATE_AND_EVENT, subscriptionConfig, messagingConfig)
+        val stateConfig = getConfig(SubscriptionType.COMPACTED, subscriptionConfig, messagingConfig)
         val stateUpdateConfig = getConfig(SubscriptionType.STATE_AND_EVENT, subscriptionConfig, messagingConfig)
         val eventOutputConfig = getConfig(SubscriptionType.STATE_AND_EVENT, subscriptionConfig, messagingConfig)
         val eventTopic = subscriptionConfig.eventTopic
@@ -171,7 +171,7 @@ class CordaSubscriptionFactory @Activate constructor(
         val stateConsumerConfiguration = ConsumerConfig(
             stateConfig.group,
             stateConfig.clientId,
-            ConsumerRoles.SAE_STATE
+            ConsumerRoles.COMPACTED
         )
 
         val eventOutputPublisherConfiguration = ProducerConfig(

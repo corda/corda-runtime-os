@@ -46,7 +46,7 @@ class SecurityManagerServiceImpl @Activate constructor(
     private var cordaSecurityManager: CordaSecurityManager? = null
 
     init {
-        if (System.getProperty("securityMangerEnabled", "true").toBoolean()) {
+        if (System.getProperty("securityMangerEnabled", "false").toBoolean()) {
             enablePackageAccessPermission("net.corda.")
             startRestrictiveMode()
             applyDefaultSecurityPolicy(bundleContext)

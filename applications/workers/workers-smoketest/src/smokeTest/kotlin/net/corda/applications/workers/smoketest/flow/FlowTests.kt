@@ -128,6 +128,7 @@ class FlowTests {
             assertThat(notaryActualHoldingId).isEqualTo(notaryHoldingId)
 
             registerStaticMember(bobHoldingId)
+
             registerStaticMember(charlieHoldingId)
             registerStaticMember(notaryHoldingId, isNotary = true)
         }

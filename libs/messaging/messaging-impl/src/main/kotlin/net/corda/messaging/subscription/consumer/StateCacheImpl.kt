@@ -22,7 +22,6 @@ class StateCacheImpl<K : Any, S : Any>(
         if (isRunning) {
             return
         }
-        consumer.subscribe(config.topic)
         val partitions = consumer.getPartitions(config.topic)
         consumer.assign(partitions)
         val endOffsets = consumer.endOffsets(partitions)

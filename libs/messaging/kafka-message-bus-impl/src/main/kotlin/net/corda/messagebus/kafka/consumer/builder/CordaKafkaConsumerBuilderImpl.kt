@@ -91,6 +91,10 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
                 keyDeserializer,
                 valueDeserializer
             )
+        } catch(e:Exception)
+        {
+            log.error("Failed to create consumer $kafkaProperties",e)
+            throw e
         } finally {
             Thread.currentThread().contextClassLoader = contextClassLoader
         }
