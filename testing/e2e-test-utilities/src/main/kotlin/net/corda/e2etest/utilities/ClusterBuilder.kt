@@ -159,36 +159,19 @@ class ClusterBuilder {
             |   } 
             | }""".trimMargin()
 
-    @Suppress("LongParameterList")
-    private fun createRbacUserBody(
-        enabled: Boolean,
-        fullName: String,
-        password: String,
-        loginName: String,
-        parentGroup: String?,
-        passwordExpiry: String?
-    ) =
-        """{ 
-            |enabled" : "$enabled", 
+    private fun createRbacUserBody(enabled: Boolean, fullName: String, password: String, loginName: String) =
+        """{ "enabled" : "$enabled", 
             |"fullName" : "$fullName", 
             |"initialPassword" : "$password", 
-            |"loginName" : "$loginName",
-            |"parentGroup" : "$parentGroup",
-            |"passwordExpiry" : "$passwordExpiry"
-            |}""".trimMargin()
+            |"loginName" : "$loginName" }""".trimMargin()
 
     private fun createPermissionBody(
-        groupVisibility: String?,
         permissionString: String,
         permissionType: String,
-        virtualNode: String?
     ) =
         """{ 
-            |"groupVisibility" : "$groupVisibility", 
             |"permissionString" : "$permissionString", 
-            |"permissionType" : "$permissionType", 
-            |"virtualNode" : "$virtualNode" 
-            |}""".trimMargin()
+            |"permissionType" : "$permissionType" }""".trimMargin()
 
     /** Create a virtual node */
     fun vNodeCreate(cpiHash: String, x500Name: String) =
@@ -282,18 +265,8 @@ class ClusterBuilder {
     fun getRbacRoles() = get("/api/v1/role")
 
     /** Create new RBAC user */
-    @Suppress("LongParameterList")
-    fun createRbacUser(
-        enabled: Boolean,
-        fullName: String,
-        password: String,
-        loginName: String,
-        parentGroup: String? = null,
-        passwordExpiry: String? = null
-    ) =
-        post("/api/v1/user",
-            createRbacUserBody(enabled, fullName, password, loginName, parentGroup, passwordExpiry)
-        )
+    fun createRbacUser(enabled: Boolean, fullName: String, password: String, loginName: String) =
+        post("/api/v1/user", createRbacUserBody(enabled, fullName, password, loginName))
 
     /** Get an RBAC user for a specific login name */
     fun getRbacUser(loginName: String) =
@@ -307,26 +280,20 @@ class ClusterBuilder {
     fun createPermission(
         permissionString: String,
         permissionType: String,
-        groupVisibility: String? = null,
-        virtualNode: String? = null
     ) =
         post("/api/v1/permission",
-            createPermissionBody(groupVisibility, permissionString, permissionType, virtualNode)
+            createPermissionBody(permissionString, permissionType)
         )
 
     /** Get the permissions which satisfy the query */
     fun getPermissionByQuery(
         limit: Int,
         permissionType: String,
-        groupVisibility: String? = null,
-        virtualNode: String? = null,
         permissionStringPrefix: String? = null
     ): SimpleResponse {
         val queries = mutableListOf<String>().apply {
             add("limit=$limit")
             add("permissiontype=$permissionType")
-            groupVisibility?.let { add("groupvisibility=$groupVisibility") }
-            virtualNode?.let { add("virtualnode=$virtualNode") }
             permissionStringPrefix?.let { add("permissionstringprefix=$permissionStringPrefix") }
         }
         val queryStr = if (queries.isEmpty()) {
