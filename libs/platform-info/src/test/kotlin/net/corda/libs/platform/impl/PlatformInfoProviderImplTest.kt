@@ -12,7 +12,7 @@ import org.osgi.framework.Version
 class PlatformInfoProviderImplTest {
 
     companion object {
-        const val PLATFORM_VERSION = "999"
+        const val PLATFORM_VERSION = "12345"
         const val SOFTWARE_VERSION = "5.0.0.0-SNAPSHOT"
     }
 

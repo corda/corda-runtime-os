@@ -219,6 +219,7 @@ fun ClusterInfo.registerStaticMember(
     cluster {
         assertWithRetry {
             interval(1.seconds)
+            timeout(10.seconds)
             command { registerStaticMember(holdingIdentityShortHash, isNotary) }
             condition {
                 it.code == ResponseCode.OK.statusCode
@@ -231,7 +232,7 @@ fun ClusterInfo.registerStaticMember(
             // Use a fairly long timeout here to give plenty of time for the other side to respond. Longer
             // term this should be changed to not use the RPC message pattern and have the information available in a
             // cache on the REST worker, but for now this will have to suffice.
-            timeout(1.minutes)
+            timeout(20.seconds)
             interval(1.seconds)
             command { getRegistrationStatus(holdingIdentityShortHash) }
             condition {

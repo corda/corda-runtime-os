@@ -748,7 +748,6 @@ class RestServerRequestsTest : RestServerTestBase() {
     }
 
     @Test
-    @Disabled("Due to https://r3-cev.atlassian.net/browse/CORE-14538")
     fun `Call update on test entity with percentage symbol`() {
         val createEntityResponse = client.call(
             PUT,
