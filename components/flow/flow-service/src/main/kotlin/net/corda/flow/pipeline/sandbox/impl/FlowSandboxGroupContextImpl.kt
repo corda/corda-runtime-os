@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline.sandbox.impl
 
 import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.flow.pipeline.sandbox.FlowSandboxDependencyInjector
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -25,7 +24,7 @@ class FlowSandboxGroupContextImpl(
 
         @Suppress("ThrowsCount")
         fun fromContext(sandboxGroupContext: SandboxGroupContext): FlowSandboxGroupContext {
-            val dependencyInjector = sandboxGroupContext.getObjectByKey<FlowSandboxDependencyInjector>(DEPENDENCY_INJECTOR)
+            val dependencyInjector = sandboxGroupContext.getObjectByKey<SandboxDependencyInjector<Flow>>(DEPENDENCY_INJECTOR)
                 ?: throw FlowFatalException(
                     "The flow sandbox has not been initialized with a dependency injector for " +
                             "identity ${sandboxGroupContext.virtualNodeContext.holdingIdentity}"
