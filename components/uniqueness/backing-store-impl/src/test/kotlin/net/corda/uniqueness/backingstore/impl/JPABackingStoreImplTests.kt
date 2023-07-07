@@ -39,7 +39,7 @@ import org.mockito.kotlin.doReturn
 import java.sql.Connection
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
@@ -47,7 +47,7 @@ import javax.persistence.TypedQuery
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JPABackingStoreImplTests {
-    private lateinit var backingStoreImpl: JPABackingStoreImpl
+    private lateinit var backingStoreImpl: JPABackingStoreLifecycleImpl
 
     private lateinit var lifecycleCoordinator: LifecycleCoordinator
     private lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
@@ -137,10 +137,11 @@ class JPABackingStoreImplTests {
             whenever(getOrCreateEntityManagerFactory(any(), any(), any())) doReturn entityManagerFactory
         }
 
-        backingStoreImpl = JPABackingStoreImpl(
+        backingStoreImpl = JPABackingStoreLifecycleImpl(
             lifecycleCoordinatorFactory,
             jpaEntitiesRegistry,
-            dbConnectionManager
+            dbConnectionManager,
+            JPABackingStoreImpl(jpaEntitiesRegistry, dbConnectionManager)
         )
     }
 
