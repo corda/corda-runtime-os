@@ -323,12 +323,13 @@ bootstrap:
             name: ""
             # -- the password secret key
             key: ""
+    # Virtual Nodes DDL connections configuration for Corda managed Virtual Nodes DBs
     virtualNodesDdl:
-      # JDBC connection pool configuration for TODO DB
+      # JDBC connection pool configuration
       dbConnectionPool:
-        # -- maximum JDBC connection pool size for TODO DB
+        # -- maximum JDBC connection pool size
         maxSize: 1
-        # -- minimum JDBC connection pool size for TODO DB; null value means pool's min size will default to pool's max size value
+        # -- minimum JDBC connection pool size; null value means pool's min size will default to pool's max size value
         minSize: null
         # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
         idleTimeoutSeconds: 120
@@ -338,12 +339,13 @@ bootstrap:
         keepaliveTimeSeconds: 0
         # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
         validationTimeoutSeconds: 5
+    # Virtual Nodes DML connections configuration for Corda managed Virtual Nodes DBs
     virtualNodesDml:
-      # JDBC connection pool configuration for TODO DB
+      # JDBC connection pool configuration
       dbConnectionPool:
-        # -- maximum JDBC connection pool size for TODO DB
+        # -- maximum JDBC connection pool size
         maxSize: 10
-        # -- minimum JDBC connection pool size for TODO DB; null value means pool's min size will default to pool's max size value
+        # -- minimum JDBC connection pool size; null value means pool's min size will default to pool's max size value
         minSize: 0
         # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
         idleTimeoutSeconds: 120
