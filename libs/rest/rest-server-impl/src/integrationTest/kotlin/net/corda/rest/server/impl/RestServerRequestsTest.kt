@@ -63,7 +63,7 @@ class RestServerRequestsTest : RestServerTestBase() {
                 true
             ).apply { start() }
             client = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/" +
-                    "${restServerSettings.context.basePath}/v${restServerSettings.context.version}/")
+                    "${restServerSettings.context.basePath}/${apiVersion.versionPath}/")
         }
 
         @AfterAll

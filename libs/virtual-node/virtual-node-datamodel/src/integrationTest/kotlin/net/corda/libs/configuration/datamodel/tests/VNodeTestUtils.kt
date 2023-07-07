@@ -1,21 +1,22 @@
 package net.corda.libs.configuration.datamodel.tests
 
+import java.time.Instant
+import java.util.UUID
+import javax.persistence.EntityManagerFactory
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
+import net.corda.libs.cpi.datamodel.repository.CpiMetadataRepository
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.entities.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.entities.OperationType
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationEntity
 import net.corda.libs.virtualnode.datamodel.entities.VirtualNodeOperationState
 import net.corda.orm.utils.transaction
-import net.corda.v5.base.types.MemberX500Name
-import net.corda.virtualnode.HoldingIdentity
-import java.time.Instant
-import java.util.UUID
-import javax.persistence.EntityManagerFactory
-import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.test.util.TestRandom
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.HoldingIdentity
 
 internal object VNodeTestUtils {
     fun newVNode(
@@ -26,11 +27,11 @@ internal object VNodeTestUtils {
         virtualNodeOperationEntity: VirtualNodeOperationEntity? = null,
         holdingIdentityEntity: HoldingIdentityEntity? = null,
         externalMessagingRouteConfig: String?,
+        cpiMetadataRepository: CpiMetadataRepository
     ): VirtualNodeEntity {
 
         println("Creating VNode for testing: $cpiName, $cpiVersion, $cpiSignerSummaryHash")
 
-        val cpiMetadata = newCpiMetadataEntity(cpiName, cpiVersion, cpiSignerSummaryHash)
         val holdingIdentity = holdingIdentityEntity ?: newHoldingIdentityEntity(cpiName)
         val virtualNode = VirtualNodeEntity(
             holdingIdentity.holdingIdentityShortHash,
@@ -57,7 +58,18 @@ internal object VNodeTestUtils {
             em.persist(newDbConnection(virtualNode.uniquenessDMLConnectionId!!, DbPrivilege.DML))
         }
 
-        entityManagerFactory.createEntityManager().transaction { em -> em.persist(cpiMetadata) }
+        entityManagerFactory.createEntityManager().transaction { em ->
+            cpiMetadataRepository.put(
+                em,
+                CpiIdentifier(cpiName, cpiVersion, cpiSignerSummaryHash),
+                cpiFileName = "file",
+                fileChecksum = TestRandom.secureHash(24),
+                groupPolicy = "group policy",
+                groupId = "group ID",
+                fileUploadRequestId = "request ID",
+                cpks = emptySet()
+            )
+        }
         entityManagerFactory.createEntityManager().transaction { em -> return em.merge(virtualNode) }
     }
 
@@ -105,20 +117,4 @@ internal object VNodeTestUtils {
             hsmConnectionId = UUID.randomUUID()
         )
     }
-
-    fun newCpiMetadataEntity(
-        name: String,
-        version: String,
-        signerSummaryHash: SecureHash,
-    ) = CpiMetadataEntity(
-        name = name,
-        version = version,
-        signerSummaryHash = signerSummaryHash.toString(),
-        fileName = "file",
-        fileChecksum = TestRandom.hex(24),
-        groupPolicy = "group policy",
-        groupId = "group ID",
-        fileUploadRequestId = "request ID",
-        cpks = emptySet()
-    )
 }

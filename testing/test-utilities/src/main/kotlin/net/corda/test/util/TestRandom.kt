@@ -9,4 +9,5 @@ object TestRandom {
     fun holdingIdentityShortHash() = hex(12)
 
     fun secureHash(): SecureHash = parseSecureHash("foo:${holdingIdentityShortHash()}")
+    fun secureHash(len: Int): SecureHash = parseSecureHash("foo:${hex(len)}")
 }

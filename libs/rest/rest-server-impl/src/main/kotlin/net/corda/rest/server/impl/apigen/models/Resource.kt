@@ -1,5 +1,7 @@
 package net.corda.rest.server.impl.apigen.models
 
+import net.corda.rest.annotations.RestApiVersion
+
 internal data class Resource(
     /**
      * The name of the resource, used for the API spec.
@@ -17,5 +19,10 @@ internal data class Resource(
     /**
      * The endpoints under this resource.
      */
-    val endpoints: Set<Endpoint>
+    val endpoints: Set<Endpoint>,
+
+    /**
+     * A set of REST API versions fot this resource.
+     */
+    val apiVersions: Set<RestApiVersion>
 )

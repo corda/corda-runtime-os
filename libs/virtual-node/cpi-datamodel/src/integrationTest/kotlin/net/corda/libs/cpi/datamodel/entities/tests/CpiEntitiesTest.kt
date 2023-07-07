@@ -1,5 +1,8 @@
 package net.corda.libs.cpi.datamodel.entities.tests
 
+import java.util.*
+import javax.persistence.EntityManagerFactory
+import kotlin.streams.toList
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.parseSecureHash
 import net.corda.db.admin.impl.ClassloaderChangeLog
@@ -8,13 +11,12 @@ import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpkFile
-import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
-import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
-import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
-import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntityKey
-import net.corda.libs.cpi.datamodel.entities.findAllCpiMetadata
+import net.corda.libs.cpi.datamodel.entities.internal.CpiCpkEntity
+import net.corda.libs.cpi.datamodel.entities.internal.CpiCpkKey
+import net.corda.libs.cpi.datamodel.entities.internal.CpiMetadataEntity
+import net.corda.libs.cpi.datamodel.entities.internal.CpiMetadataEntityKey
 import net.corda.libs.cpi.datamodel.entities.internal.CpkFileEntity
-import net.corda.libs.cpi.datamodel.repository.CpkFileRepositoryImpl
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
@@ -24,9 +26,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import java.util.*
-import javax.persistence.EntityManagerFactory
-import kotlin.streams.toList
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CpiEntitiesIntegrationTest {
@@ -37,7 +36,7 @@ class CpiEntitiesIntegrationTest {
         dbConfig
     )
 
-    private val cpkFileRepository = CpkFileRepositoryImpl()
+    private val cpkFileRepository = CpiCpkRepositoryFactory().createCpkFileRepository()
 
     init {
         val dbChange = ClassloaderChangeLog(
@@ -312,38 +311,28 @@ class CpiEntitiesIntegrationTest {
             }
         }
 
-        // Find all - fetches eagerly
         println("**** [START] findAllCpiMetadata query as list ****")
-        val cpisEagerlyLoaded =
+        val cpis =
             emf.createEntityManager().use { em ->
-                em.findAllCpiMetadata().toList() // toList here materialises the stream.
+                CpiCpkRepositoryFactory().createCpiMetadataRepository().findAll(em).map { it.third }.toList()
             }
-            // closing the EntityManager validates that we haven't returned proxies but instead eagerly loaded all data
 
-        cpisEagerlyLoaded.filter {
-            it.name in cpiNames
+        cpis.filter {
+            it.cpiId.name in cpiNames
         }.forEach {
-            assertThat(it.cpks.size).isEqualTo(2)
-            it.cpks.forEach { cpkMetadataEntity ->
-                println("****       invoke metadata property ****")
-                assertThat(cpkMetadataEntity.metadata).isNotNull
-            }
+            assertThat(it.cpksMetadata.size).isEqualTo(2)
         }
         println("**** [END] findAllCpiMetadata query as list ****")
 
         // Repeat the above, but consume from stream
         println("**** [START] findAllCpiMetadata query as stream ****")
         emf.transaction { em ->
-            val cpisLazyLoaded = em.findAllCpiMetadata()
+            val cpisStream = CpiCpkRepositoryFactory().createCpiMetadataRepository().findAll(em)
 
-            cpisLazyLoaded.filter {
-                it.name in cpiNames
+            cpisStream.filter {
+                it.third.cpiId.name in cpiNames
             }.forEach {
-                assertThat(it.cpks.size).isEqualTo(2)
-                it.cpks.forEach { cpkMetadataEntity ->
-                    println("****       invoke metadata property ****")
-                    assertThat(cpkMetadataEntity.metadata).isNotNull
-                }
+                assertThat(it.third.cpksMetadata.size).isEqualTo(2)
             }
         }
         println("**** [END] findAllCpiMetadata query as stream ****")

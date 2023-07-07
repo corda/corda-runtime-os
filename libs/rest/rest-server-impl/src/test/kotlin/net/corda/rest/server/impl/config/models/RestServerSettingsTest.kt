@@ -22,7 +22,7 @@ class RestServerSettingsTest {
     fun `Sensitive data should be omitted`() {
         val restServerSettingsStr = RestServerSettings(
             NetworkHostAndPort("localhost", 8080),
-            RestContext("1", "api", "RestContext test title ", "RestContext test description"),
+            RestContext("api", "RestContext test title ", "RestContext test description"),
             RestSSLSettings(Path.of("path"), "pwd"),
             SsoSettings(
                 AzureAdSettings(
