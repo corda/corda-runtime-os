@@ -467,7 +467,6 @@ class StartRegistrationHandlerTest {
             verify = true,
             verifyCustomFields = true,
             queryRegistrationRequest = true,
-            queryMemberInfo = true,
         )
     }
 
@@ -536,7 +535,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).hasSize(2)
+            assertThat(outputStates).hasSize(1)
 
             assertDeclinedRegistration()
         }
@@ -573,7 +572,7 @@ class StartRegistrationHandlerTest {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
             assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
-            assertThat(outputStates).hasSize(2)
+            assertThat(outputStates).hasSize(1)
 
             assertDeclinedRegistration()
         }

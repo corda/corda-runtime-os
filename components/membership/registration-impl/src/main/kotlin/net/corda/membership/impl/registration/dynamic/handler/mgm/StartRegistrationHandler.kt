@@ -89,6 +89,9 @@ internal class StartRegistrationHandler(
             validateRegistrationRequest(registrationRequest!!.serial != null) {
                 "Serial on the registration request should not be null."
             }
+            validateRegistrationRequest(registrationRequest.serial!! >= 0) {
+                "Serial cannot be negative on the registration request."
+            }
             validateRegistrationRequest(!memberTypeChecker.isMgm(pendingMemberHoldingId)) {
                 "Registration request is registering an MGM holding identity."
             }
@@ -106,36 +109,14 @@ internal class StartRegistrationHandler(
             }
 
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
-            validateRegistrationRequest(registrationRequest.serial != null) {
-                "Serial on the registration request cannot be null."
-            }
-            validateRegistrationRequest(registrationRequest.serial!! >= 0) {
-                "Serial cannot be negative on the registration request."
-            }
 
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
-            val persistentMemberInfo = PersistentMemberInfo.newBuilder()
-                .setMemberContext(pendingMemberInfo.memberProvidedContext.toAvro())
-                .setViewOwningMember(mgmMemberInfo.holdingIdentity.toAvro())
-                .setMgmContext(pendingMemberInfo.mgmProvidedContext.toAvro())
-                .build()
-            val pendingMemberRecord = Record(
-                topic = Schemas.Membership.MEMBER_LIST_TOPIC,
-                key = "${mgmMemberInfo.holdingIdentity.shortHash}-${pendingMemberInfo.holdingIdentity.shortHash}" +
-                        "-${pendingMemberInfo.status}",
-                value = persistentMemberInfo,
-            )
-            // Publish pending member record so that we can notify the member of declined registration if failure occurs
-            // after this point
-            outputRecords.add(pendingMemberRecord)
-
-            validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo, registrationRequest)
+            // We don't want to overwrite existing member's information or persist member with wrong name
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging
             validateRegistrationRequest(
                 pendingMemberInfo.name == pendingMemberHoldingId.x500Name
             ) { "MemberX500Name in registration request does not match member sending request over P2P." }
-
             val activeOrSuspendedInfo = membershipQueryClient.queryMemberInfo(
                 mgmHoldingId,
                 listOf(pendingMemberHoldingId)
@@ -155,6 +136,35 @@ internal class StartRegistrationHandler(
                     "Member already exists with the same X500 name."
                 }
             }
+
+            val persistentMemberInfo = PersistentMemberInfo.newBuilder()
+                .setMemberContext(pendingMemberInfo.memberProvidedContext.toAvro())
+                .setViewOwningMember(mgmMemberInfo.holdingIdentity.toAvro())
+                .setMgmContext(pendingMemberInfo.mgmProvidedContext.toAvro())
+                .build()
+            val pendingMemberRecord = Record(
+                topic = Schemas.Membership.MEMBER_LIST_TOPIC,
+                key = "${mgmMemberInfo.holdingIdentity.shortHash}-${pendingMemberInfo.holdingIdentity.shortHash}" +
+                        "-${pendingMemberInfo.status}",
+                value = persistentMemberInfo,
+            )
+            // Persist pending member info so that we can notify the member of declined registration if failure occurs
+            // after this point
+            val signedMemberInfo = SignedMemberInfo(
+                pendingMemberInfo,
+                registrationRequest.memberSignature,
+                registrationRequest.memberSignatureSpec
+            )
+            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(signedMemberInfo))
+                .execute().also {
+                    require(it as? MembershipPersistenceResult.Failure == null) {
+                        "Failed to persist pending member info. Reason: " +
+                                (it as MembershipPersistenceResult.Failure).errorMsg
+                    }
+                }
+            outputRecords.add(pendingMemberRecord)
+
+            validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo, registrationRequest)
 
             activeOrSuspendedInfo?.let { previous ->
                 val previousContext = previous.memberProvidedContext.toMap()
@@ -184,21 +194,6 @@ internal class StartRegistrationHandler(
 
             // Validate role-specific information if any role is set
             validateRoleInformation(mgmHoldingId, pendingMemberInfo)
-
-            val signedMemberInfo = SignedMemberInfo(
-                pendingMemberInfo,
-                registrationRequest.memberSignature,
-                registrationRequest.memberSignatureSpec
-            )
-
-            // Persist pending member info
-            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(signedMemberInfo))
-                .execute().also {
-                require(it as? MembershipPersistenceResult.Failure == null) {
-                    "Failed to persist pending member info. Reason: " +
-                            (it as MembershipPersistenceResult.Failure).errorMsg
-                }
-            }
 
             logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
             VerifyMember()
