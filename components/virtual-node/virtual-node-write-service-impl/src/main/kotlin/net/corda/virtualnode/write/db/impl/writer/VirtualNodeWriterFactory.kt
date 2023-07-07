@@ -105,8 +105,6 @@ internal class VirtualNodeWriterFactory(
             publisher
         )
 
-        // TODO The following configs and `virtualNodeDbFactory` do not depend on dynamic config so they could be extracted out to not be
-        //  re-created on dynamic config update.
         val virtualNodesDdlPoolConfig =
             requireNotNull(dbConnectionManager.getDataSourceConfig(VIRTUAL_NODES_DDL, DbPrivilege.DDL)) {
                 "\"$VIRTUAL_NODES_DDL\" config not found in DB table: \"config.db_connection\""
