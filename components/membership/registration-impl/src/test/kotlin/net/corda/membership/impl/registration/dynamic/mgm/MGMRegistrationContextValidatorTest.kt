@@ -160,7 +160,7 @@ class MGMRegistrationContextValidatorTest {
     }
 
     @Test
-    fun `registration fails when registration protocol provided is invalid`() {
+    fun `context validation fails when registration protocol provided is invalid`() {
         val contextWithInvalidProtocol = validTestContext.plus("corda.group.protocol.registration" to "invalid")
         val exception = assertThrows<MGMRegistrationContextValidationException> {
             mgmRegistrationContextValidator.validate(contextWithInvalidProtocol)
@@ -169,7 +169,7 @@ class MGMRegistrationContextValidatorTest {
     }
 
     @Test
-    fun `registration fails when sync protocol provided is invalid`() {
+    fun `context validation fails when sync protocol provided is invalid`() {
         val contextWithInvalidProtocol = validTestContext.plus("corda.group.protocol.synchronisation" to "invalid")
         val exception = assertThrows<MGMRegistrationContextValidationException> {
             mgmRegistrationContextValidator.validate(contextWithInvalidProtocol)
