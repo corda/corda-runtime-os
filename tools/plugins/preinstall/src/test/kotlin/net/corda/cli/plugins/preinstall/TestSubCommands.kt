@@ -1,5 +1,6 @@
 package net.corda.cli.plugins.preinstall
 
+import net.corda.cli.plugins.preinstall.PreInstallPlugin.ReportEntry
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.Report
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.common.KafkaException
