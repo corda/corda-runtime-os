@@ -4,6 +4,7 @@ import net.corda.ledger.utxo.data.transaction.ContractVerificationFailureImpl
 import net.corda.metrics.CordaMetrics
 import net.corda.v5.ledger.utxo.ContractVerificationException
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
+import net.corda.v5.ledger.utxo.Contract
 import net.corda.virtualnode.HoldingIdentity
 
 /**
@@ -16,7 +17,8 @@ import net.corda.virtualnode.HoldingIdentity
 fun verifyContracts(
     transactionFactory: () -> UtxoLedgerTransaction,
     transaction: UtxoLedgerTransaction = transactionFactory.invoke(),
-    holdingIdentity: HoldingIdentity
+    holdingIdentity: HoldingIdentity,
+    injectService: (Contract) -> Unit
 ) {
 
     CordaMetrics.Metric.Ledger.ContractVerificationTime
@@ -47,6 +49,7 @@ fun verifyContracts(
 
                         try {
                             val contract = contractClass.getConstructor().newInstance()
+                            injectService(contract)
                             contract.verify(transactionFactory.invoke())
                         } catch (ex: Exception) {
                             failureReasons.add(

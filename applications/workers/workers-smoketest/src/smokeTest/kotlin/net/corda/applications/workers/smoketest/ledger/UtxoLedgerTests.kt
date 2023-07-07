@@ -184,10 +184,11 @@ class UtxoLedgerTests {
 
         // Peek into the last transaction
 
-        val peekFlowId =  startRpcFlow(
+        val peekFlowId = startRpcFlow(
             bobHoldingId,
             mapOf("transactionId" to parsedEvolveFlowResult.transactionId!!),
-            "com.r3.corda.demo.utxo.PeekTransactionFlow")
+            "com.r3.corda.demo.utxo.PeekTransactionFlow"
+        )
 
         val peekFlowResult = awaitRpcFlowFinished(bobHoldingId, peekFlowId)
         assertThat(peekFlowResult.flowError).isNull()
@@ -200,7 +201,6 @@ class UtxoLedgerTests {
         assertThat(parsedPeekFlowResult.inputs).singleElement().extracting { it.testField }.isEqualTo(input)
         assertThat(parsedPeekFlowResult.outputs).singleElement().extracting { it.testField }.isEqualTo(evolvedMessage)
     }
-
 
     @Test
     fun `Utxo Ledger - creating a transaction that fails custom validation causes finality to fail`() {
@@ -230,7 +230,8 @@ class UtxoLedgerTests {
 
     data class EvolveResponse(
         val transactionId: String?,
-        val errorMessage: String?)
+        val errorMessage: String?
+    )
 
     data class PeekTransactionResponse(
         val inputs: List<TestUtxoStateResult>,
