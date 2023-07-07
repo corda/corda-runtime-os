@@ -58,4 +58,20 @@ interface InteropRestResource : RestResource {
         @RestPathParameter(description = "ID of the holding identity which identities are to be returned.")
         vnodeshorthash: String
     ): List<RestInteropIdentity>
+
+    /**
+     * Get the details of my interop identity.
+     */
+    @HttpGET(
+        path = "{vnodeshorthash}/export/identity/{interopIdentityShortHash}",
+        title = "Returns groupId, group policy and InterOpIdentityInfo belonging to a given interop identity",
+        description = "This method returns Json String containing GroupID, Group Policy and my InterOpIdentityInfo.",
+        responseDescription = "Interop identity"
+    )
+    fun exportInterOpIdentity(
+        @RestPathParameter(description = "ID of the holding identity which interop identity is to be returned.")
+        vnodeshorthash: String,
+        @RestPathParameter(description = "ShortHash of the interop identity")
+        interopIdentityShortHash: String
+    ): String
 }
