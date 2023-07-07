@@ -10,7 +10,9 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogAudit
 import net.corda.libs.cpi.datamodel.CpkFile
 import net.corda.libs.cpi.datamodel.repository.CpiMetadataRepository
-import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogAuditRepository
+import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
+import net.corda.libs.cpi.datamodel.repository.CpkFileRepository
 import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
@@ -32,14 +34,14 @@ class DatabaseCpiPersistence(
     private val entityManagerFactory: EntityManagerFactory,
     private val networkInfoWriter: NetworkInfoWriter,
     private val cpiMetadataRepository: CpiMetadataRepository,
+    private val cpkDbChangeLogRepository: CpkDbChangeLogRepository,
+    private val cpkDbChangeLogAuditRepository: CpkDbChangeLogAuditRepository,
+    private val cpkFileRepository: CpkFileRepository,
     private val groupPolicyParser: GroupPolicyParser.Companion
 ) : CpiPersistence {
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        val cpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository()
-        val cpkDbChangeLogAuditRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogAuditRepository()
-        val cpkFileRepository = CpiCpkRepositoryFactory().createCpkFileRepository()
     }
 
     /**
