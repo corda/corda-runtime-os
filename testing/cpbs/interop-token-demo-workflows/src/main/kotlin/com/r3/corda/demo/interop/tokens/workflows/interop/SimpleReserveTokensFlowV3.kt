@@ -42,7 +42,7 @@ class SimpleReserveTokensFlowV3 : ClientStartableFlow {
         log.info("Calling facade method '$facadeId' with payload '$uuid' to $alias")
 
         val tokens: TokensFacade =
-            facadeService.getFacade(facadeId, TokensFacade::class.java, alias, interopGroupId)
+            facadeService.getProxy(facadeId, TokensFacade::class.java, alias, interopGroupId)
 
         val responseObject: SimpleTokenReservation = tokens.reserveTokensV3("USD", BigDecimal(100), 100)
         val response = responseObject.toString()
