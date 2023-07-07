@@ -97,7 +97,7 @@ class FacadeOutParameterBindingSpec {
     @Test
     fun `should fail if there are no out-parameters but the return type is non-void`() {
         MethodReturnTypeIsIncorrectlyNonVoid::class shouldFailToBindWith
-                "Return type class java.lang.Long is not Void/Unit"
+                "Return type long is not void/Void/Unit"
     }
 
     @Test

@@ -44,26 +44,6 @@ object CordaMetrics {
         object SandboxCreateTime : Metric<Timer>("sandbox.create.time", CordaMetrics::timer)
 
         /**
-         * Time it took to execute a message pattern processor
-         */
-        object MessageProcessorTime : Metric<Timer>("messaging.processor.time", CordaMetrics::timer)
-
-        /**
-         * The size of batches of messages received in a poll from the message bus.
-         */
-        object MessageBatchSize : Metric<DistributionSummary>("messaging.batch.size", Metrics::summary)
-
-        /**
-         * The time taken to commit a processed batch of messages back to the bus.
-         */
-        object MessageCommitTime : Metric<Timer>("messaging.commit.time", CordaMetrics::timer)
-
-        /**
-         * The time blocking inside a poll call waiting for messages from the bus.
-         */
-        object MessagePollTime : Metric<Timer>("messaging.poll.time", CordaMetrics::timer)
-
-        /**
          * FLOW METRICS
          *
          * Time it took for a flow or subFlow to complete successfully or to error.
@@ -501,10 +481,21 @@ object CordaMetrics {
 
             /**
              * The length of resolved backchains when performing backchain resolution.
+             *
+             * - 0.05 included to get a sense of the smallest chains.
+             * - 0.50 included for average chain lengths.
+             * - 0.95, 0.99 for large chain lengths.
+             * - 1.00 for outlier chain lengths.
              */
             object BackchainResolutionChainLength : Metric<DistributionSummary>(
                 "ledger.backchain.resolution.chain.length",
-                Metrics::summary
+                { name, tags ->
+                    DistributionSummary.builder(name)
+                        .publishPercentiles(0.05, 0.50, 0.95, 0.99, 1.00)
+                        .publishPercentileHistogram()
+                        .tags(tags)
+                        .register(registry)
+                }
             )
 
             /**
@@ -620,6 +611,50 @@ object CordaMetrics {
              * Metric for the number of reconciled records for a reconciliation run.
              */
             object ReconciliationRecordsCount : Metric<DistributionSummary>("db.reconciliation.records.count", Metrics::summary)
+        }
+
+        object Messaging {
+
+            /**
+             * Time it took to execute a message pattern processor
+             */
+            object MessageProcessorTime : Metric<Timer>("messaging.processor.time", CordaMetrics::timer)
+
+            /**
+             * The size of batches of messages received in polls from the message bus by consumers.
+             */
+            object ConsumerBatchSize : Metric<DistributionSummary>("consumer.batch.size", Metrics::summary)
+
+            /**
+             * The time taken to commit a processed batch of messages back to the bus.
+             */
+            object MessageCommitTime : Metric<Timer>("messaging.commit.time", CordaMetrics::timer)
+
+            /**
+             * Generic consumer poll time, time taken by kafka to respond to consumer polls for each client ID.
+             */
+            object ConsumerPollTime : Metric<Timer>("consumer.poll.time", CordaMetrics::timer)
+
+            /**
+             * Measure for the number of chunks generated when writing records.
+             */
+            object ProducerChunksGenerated : Metric<DistributionSummary>("producer.chunks.generated", Metrics::summary)
+
+            /**
+             * Measure for the number of in-memory states held in compacted consumers.
+             */
+            class CompactedConsumerInMemoryStore(computation: Supplier<Number>) : ComputedValue<Nothing>(
+                "consumer.compacted.inmemory.store",
+                computation
+            )
+
+            /**
+             * Measure for the number of in-memory states held in consumers with partitions.
+             */
+            class PartitionedConsumerInMemoryStore(computation: Supplier<Number>) : ComputedValue<Nothing>(
+                "consumer.partitioned.inmemory.store",
+                computation
+            )
         }
     }
 
@@ -792,7 +827,17 @@ object CordaMetrics {
         /**
          * Result of a TLS connection (i.e. success or failure).
          */
-        ConnectionResult("connection.result")
+        ConnectionResult("connection.result"),
+
+        /**
+         * Name of a message bus topic published to or consumed from.
+         */
+        Topic("topic"),
+
+        /**
+         * Partition of a message bus topic published to or consumed from.
+         */
+        Partition("partition")
     }
 
     /**
@@ -835,7 +880,6 @@ object CordaMetrics {
 
     private fun timer(name: String, tags: Iterable<micrometerTag>): Timer {
         return Timer.builder(name)
-            .publishPercentiles(0.50, 0.95, 0.99)
             .publishPercentileHistogram()
             .tags(tags)
             .register(registry)

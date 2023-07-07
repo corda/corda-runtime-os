@@ -46,13 +46,6 @@ interface MethodSignatureHasTooManyParameters {
     fun getBalance(denomination: String, superogatoryParameter: UUID): Long
 }
 
-// Binding will fail because the return type must be wrapped with InteropAction
-@BindsFacade("org.corda.interop/platform/tokens")
-interface MethodSignatureHasNonInteropActionReturnType {
-    @BindsFacadeMethod
-    fun getBalance(denomination: String): UUID
-}
-
 class FacadeMethodBindingSpec {
     val facadeV1 = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade.json")!!)
     val facadeV2 =
@@ -196,11 +189,5 @@ class FacadeMethodBindingSpec {
     fun `should fail if an interface method has too many parameters`() {
         MethodSignatureHasTooManyParameters::class shouldFailToBindWith
                 "Interface method has 2 parameters, but facade method has 1"
-    }
-
-    @Test
-    fun `should fail if an interface method has a non InteropAction return type`() {
-        MethodSignatureHasNonInteropActionReturnType::class shouldFailToBindWith
-                "Method return type must be InteropAction<T>"
     }
 }

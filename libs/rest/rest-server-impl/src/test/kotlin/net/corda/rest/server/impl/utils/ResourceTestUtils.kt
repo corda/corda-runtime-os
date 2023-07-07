@@ -1,5 +1,6 @@
 package net.corda.rest.server.impl.utils
 
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.impl.apigen.models.Endpoint
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
 import net.corda.rest.server.impl.apigen.models.EndpointParameter
@@ -14,6 +15,8 @@ import kotlin.reflect.jvm.javaMethod
 
 internal fun getHealthCheckApiTestResource(): Resource {
 
+  val apiVersions = setOf(RestApiVersion.C5_0, RestApiVersion.C5_1)
+
   val endpointVoid = Endpoint(
     method = EndpointMethod.GET,
     title = "Void",
@@ -21,7 +24,8 @@ internal fun getHealthCheckApiTestResource(): Resource {
     path = "void",
     parameters = listOf(),
     responseBody = ResponseBody(description = "", type = Void.TYPE),
-    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::voidResponse.javaMethod!!, instance = TestHealthCheckAPIImpl())
+    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::voidResponse.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+    apiVersions
   )
   val endpointSanity = Endpoint(
     method = EndpointMethod.GET,
@@ -30,7 +34,8 @@ internal fun getHealthCheckApiTestResource(): Resource {
     path = "sanity",
     parameters = listOf(),
     responseBody = ResponseBody(description = "", type = String::class.java),
-    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::void.javaMethod!!, instance = TestHealthCheckAPIImpl())
+    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::void.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+    apiVersions
   )
 
   val endpointHello2 = Endpoint(
@@ -60,7 +65,8 @@ internal fun getHealthCheckApiTestResource(): Resource {
 
     ),
     responseBody = ResponseBody(description = "", type = String::class.java),
-    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::hello2.javaMethod!!, instance = TestHealthCheckAPIImpl())
+    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::hello2.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+    apiVersions
   )
 
   val endpointHello = Endpoint(
@@ -90,7 +96,8 @@ internal fun getHealthCheckApiTestResource(): Resource {
       )
     ),
     responseBody = ResponseBody(description = "", type = String::class.java),
-    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::hello.javaMethod!!, instance = TestHealthCheckAPIImpl())
+    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::hello.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+    apiVersions
   )
 
   val endpointPing = Endpoint(
@@ -110,7 +117,8 @@ internal fun getHealthCheckApiTestResource(): Resource {
       )
     ),
     responseBody = ResponseBody(description = "", type = String::class.java),
-    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::ping.javaMethod!!, instance = TestHealthCheckAPIImpl())
+    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::ping.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+    apiVersions
   )
 
   val endpointplusOne = Endpoint(
@@ -135,7 +143,8 @@ internal fun getHealthCheckApiTestResource(): Resource {
       type = List::class.java,
       parameterizedTypes = listOf(GenericParameterizedType(java.lang.Double::class.java))
     ),
-    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::plusOne.javaMethod!!, instance = TestHealthCheckAPIImpl())
+    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::plusOne.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+    apiVersions
   )
 
   val endpointPlus = Endpoint(
@@ -155,7 +164,8 @@ internal fun getHealthCheckApiTestResource(): Resource {
       )
     ),
     responseBody = ResponseBody(description = "", type = Long::class.java),
-    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::plus.javaMethod!!, instance = TestHealthCheckAPIImpl())
+    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::plus.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+    apiVersions
   )
 
   val endpointBodyPlayground = Endpoint(
@@ -184,7 +194,8 @@ internal fun getHealthCheckApiTestResource(): Resource {
       )
     ),
     responseBody = ResponseBody(description = "", type = String::class.java),
-    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::bodyPlayground.javaMethod!!, instance = TestHealthCheckAPIImpl())
+    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::bodyPlayground.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+    apiVersions
   )
 
   val endpointTimeCall = Endpoint(
@@ -204,9 +215,9 @@ internal fun getHealthCheckApiTestResource(): Resource {
       )
     ),
     responseBody = ResponseBody(description = "", type = String::class.java),
-    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::timeCall.javaMethod!!, instance = TestHealthCheckAPIImpl())
+    invocationMethod = InvocationMethod(method = TestHealthCheckAPI::timeCall.javaMethod!!, instance = TestHealthCheckAPIImpl()),
+    apiVersions
   )
-
 
   return Resource(
     "HealthCheckAPI", "Health Check", "health/",
@@ -220,6 +231,7 @@ internal fun getHealthCheckApiTestResource(): Resource {
       endpointPlus,
       endpointBodyPlayground,
       endpointTimeCall
-    )
+    ),
+    apiVersions
   )
 }

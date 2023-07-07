@@ -1,5 +1,6 @@
 package net.corda.rest.server.impl.apigen.processing
 
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.impl.apigen.models.Endpoint
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
 import net.corda.rest.server.impl.apigen.models.InvocationMethod
@@ -21,9 +22,10 @@ class RouteInfoTest {
             parameters = emptyList(),
             path = "sanity",
             responseBody = ResponseBody(description = "", type = String::class.java, parameterizedTypes = emptyList()),
-            title = "Sanity"
+            title = "Sanity",
+            apiVersions = setOf(RestApiVersion.C5_0)
         )
-        val route = RouteInfo("sanity", "", "", endpoint)
+        val route = RouteInfo("sanity", "", RestApiVersion.C5_0, endpoint)
         assertEquals("Sane", route.invokeDelegatedMethod())
     }
 
@@ -36,11 +38,12 @@ class RouteInfoTest {
             parameters = emptyList(),
             path = "hello/{name}",
             responseBody = ResponseBody(description = "", type = String::class.java, parameterizedTypes = emptyList()),
-            title = "Hello"
+            title = "Hello",
+            apiVersions = setOf(RestApiVersion.C5_0)
         )
         val param1 = "name"
         val param2 = 1
-        val route = RouteInfo("", "", "", endpoint)
+        val route = RouteInfo("", "", RestApiVersion.C5_0, endpoint)
         assertEquals("Hello 1 : name", route.invokeDelegatedMethod(param1, param2))
     }
 
@@ -53,10 +56,11 @@ class RouteInfoTest {
             parameters = emptyList(),
             path = "sanity",
             responseBody = ResponseBody(description = "Increased by one", type = String::class.java, parameterizedTypes = emptyList()),
-            title = "Sanity"
+            title = "Sanity",
+            apiVersions = setOf(RestApiVersion.C5_0)
         )
         val params = listOf("1", "2", "3")
-        val route = RouteInfo("", "", "", endpoint)
+        val route = RouteInfo("", "", RestApiVersion.C5_0, endpoint)
         assertEquals(listOf(2.0, 3.0, 4.0), route.invokeDelegatedMethod(params))
     }
 }
