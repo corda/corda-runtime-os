@@ -57,8 +57,8 @@ internal class VirtualNodeWriterFactory(
     private companion object {
         const val ASYNC_OPERATION_GROUP = "virtual.node.async.operation.group"
 
-        const val VIRTUAL_NODES_DDL_POOL_CONFIG = "corda-virtual-nodes-ddl-pool-config"
-        const val VIRTUAL_NODES_DML_POOL_CONFIG = "corda-virtual-nodes-dml-pool-config"
+        const val VIRTUAL_NODES_DDL_POOL_CONFIG = "corda-virtual-nodes-ddl"
+        const val VIRTUAL_NODES_DML_POOL_CONFIG = "corda-virtual-nodes-dml"
     }
 
     /**
