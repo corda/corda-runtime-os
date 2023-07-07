@@ -66,7 +66,7 @@ class MGMRegistrationService @Activate constructor(
     private val configurationGetService: ConfigurationGetService,
 ) : MemberRegistrationService {
 
-    companion object {
+    private companion object {
         val SUPPORTED_REGISTRATION_PROTOCOLS = setOf(
             "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService"
         )
