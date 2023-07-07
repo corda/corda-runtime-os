@@ -173,6 +173,7 @@ class ClusterBuilder {
         return bodyStr
     }
 
+    @Suppress("LongParameterList")
     private fun createRbacUserBody(
         enabled: Boolean,
         fullName: String,
@@ -316,6 +317,7 @@ class ClusterBuilder {
     fun getRole(roleId: String) = get("/api/v1/role/$roleId")
 
     /** Create new RBAC user */
+    @Suppress("LongParameterList")
     fun createRbacUser(
         enabled: Boolean,
         fullName: String,
