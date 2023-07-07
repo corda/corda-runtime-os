@@ -27,7 +27,7 @@ class FacadeClientProxySpec {
             facade.response("get-balance", balance.of(BigDecimal(1000)))
         }
 
-        assertEquals(1000.0, proxy.getBalance("USD").result)
+        assertEquals(1000.0, proxy.getBalance("USD"))
     }
 
     @Test
@@ -57,6 +57,6 @@ class FacadeClientProxySpec {
             )
         }
 
-        assertEquals(TokenReservation(ref, expiration), proxy.reserveTokensV2("USD", BigDecimal(1000), 5000L).result)
+        assertEquals(TokenReservation(ref, expiration), proxy.reserveTokensV2("USD", BigDecimal(1000), 5000L))
     }
 }

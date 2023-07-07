@@ -2,7 +2,6 @@ package net.corda.flow.application.services.impl.interop.binding
 
 import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeMethod
-import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.interop.parameters.TypedParameter
 import java.lang.reflect.Constructor
 import java.lang.reflect.Method
@@ -90,9 +89,9 @@ data class BoundParameter(val index: Int, val type: Class<*>)
 /**
  * Bindings for the out-parameters of a facade method. There are three flavours:
  *
- * - NoOutParameters - when the method returns `InteropAction<Void>` and there are no out-parameters to bind
+ * - NoOutParameters - when the method returns `void` and there are no out-parameters to bind
  * - SingletonOutParameterBinding - when there is only one out-parameter to bind, and it is bound directly to the
- *   return type (wrapped with [InteropAction]) of the method
+ *   return type of the method
  * - DataClassOutParameterBinding - used when there are multiple out-parameters to bind, and they are bound to the
  *   properties of a Kotlin data class or Java POJO.
  *
