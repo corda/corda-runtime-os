@@ -104,12 +104,10 @@ class SimpleSwapFlow : ClientStartableFlow {
             val facadeId = "org.corda.interop/platform/tokens/v3.0"
             log.info("Interop call: $facadeId, $myAlias")
             val tokens: TokensFacade =
-                facadeService.getProxy(facadeId, TokensFacade::class.java, myAlias, payment.interopGroupId)
+                facadeService.getFacade(facadeId, TokensFacade::class.java, myAlias, payment.interopGroupId)
 
-            val responseObject = tokens.reserveTokensV3("USD", payment.toReserve, 1000L)
-            log.info("Interop remedy call finished")
-            val response : SimpleTokenReservation = responseObject
-            log.info("Interop call get $response")
+            val response= tokens.reserveTokensV3("USD", payment.toReserve, 1000L)
+            log.info("Interop call returned: $response")
 
             return jsonMarshallingService.format(IssueFlowResult(userResult, outputState.linearId.toString()))
         } catch (e: Exception) {

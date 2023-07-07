@@ -179,7 +179,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         return if (dog == null) {
             "no dog found"
         } else {
-            "found dog id='${dog.id}' name='${dog.name}"
+            "found dog id='${dog.id}' name='${dog.name}'"
         }
     }
 
@@ -190,7 +190,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         return if (dogs.isEmpty()) {
             "no dogs found"
         } else {
-            "found dogs ${dogs.map { dog -> "id='${dog.id}' name='${dog.name}" }}"
+            "found dogs ${dogs.map { dog -> "id='${dog.id}' name='${dog.name}'" }}"
         }
     }
 

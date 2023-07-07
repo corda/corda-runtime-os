@@ -3,7 +3,6 @@ package net.corda.flow.application.services.interop.binding
 import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
 import net.corda.v5.application.interop.binding.BindsFacade
 import net.corda.v5.application.interop.binding.BindsFacadeMethod
-import net.corda.v5.application.interop.binding.InteropAction
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 import java.time.ZonedDateTime
@@ -14,28 +13,28 @@ import kotlin.reflect.KClass
 @BindsFacade("org.corda.interop/platform/tokens")
 interface MethodReturnTypeIsIncorrectlyNonVoid {
     @BindsFacadeMethod
-    fun releaseReservedTokens(reservationRef: UUID): InteropAction<Long>
+    fun releaseReservedTokens(reservationRef: UUID): Long
 }
 
 // Binding will fail because the facade method has an out parameter, and we are returning Void
 @BindsFacade("org.corda.interop/platform/tokens")
 interface MethodReturnTypeIsIncorrectlyVoid {
     @BindsFacadeMethod
-    fun getBalance(denomination: String): InteropAction<Unit>
+    fun getBalance(denomination: String): Unit
 }
 
 // Binding will fail because the return type should be BigDecimal, Double, Long or Int
 @BindsFacade("org.corda.interop/platform/tokens")
 interface MethodSignatureHasIncompatibleReturnType {
     @BindsFacadeMethod
-    fun getBalance(denomination: String): InteropAction<UUID>
+    fun getBalance(denomination: String): UUID
 }
 
 // Binding will fail because the facade method has multiple out parameters, and we are returning a primitive type
 @BindsFacade("org.corda.interop/platform/tokens")
 interface MethodReturnTypeIsIncorrectlyScalar {
     @BindsFacadeMethod
-    fun reserveTokens(denomination: String, amount: BigDecimal, ttlMs: Long): InteropAction<UUID>
+    fun reserveTokens(denomination: String, amount: BigDecimal, ttlMs: Long): UUID
 }
 
 class DataClassMissingGetters(
@@ -47,7 +46,7 @@ class DataClassMissingGetters(
 @BindsFacade("org.corda.interop/platform/tokens")
 interface MethodReturnTypeIsNotDataClass {
     @BindsFacadeMethod
-    fun reserveTokens(denomination: String, amount: BigDecimal, ttlMs: Long): InteropAction<DataClassMissingGetters>
+    fun reserveTokens(denomination: String, amount: BigDecimal, ttlMs: Long): DataClassMissingGetters
 }
 
 data class DataClassWithMultipleConstructors(val reservationRef: UUID, val expirationTimestamp: ZonedDateTime) {
@@ -63,7 +62,7 @@ interface MethodReturnTypeDoesNotHaveUniquePrimaryConstructor {
         denomination: String,
         amount: BigDecimal,
         ttlMs: Long
-    ): InteropAction<DataClassWithMultipleConstructors>
+    ): DataClassWithMultipleConstructors
 }
 
 data class IncompleteTokenReference(val reservationRef: UUID)
@@ -72,7 +71,7 @@ data class IncompleteTokenReference(val reservationRef: UUID)
 @BindsFacade("org.corda.interop/platform/tokens")
 interface MethodReturnTypeIsDataClassWithTooFewProperties {
     @BindsFacadeMethod
-    fun reserveTokens(denomination: String, amount: BigDecimal, ttlMs: Long): InteropAction<IncompleteTokenReference>
+    fun reserveTokens(denomination: String, amount: BigDecimal, ttlMs: Long): IncompleteTokenReference
 }
 
 data class IncorrectlyTypedTokenReference(val reservationRef: Long, val expirationTimestamp: UUID)
@@ -85,7 +84,7 @@ interface MethodReturnTypeIsDataClassWithIncorrectTypes {
         denomination: String,
         amount: BigDecimal,
         ttlMs: Long
-    ): InteropAction<IncorrectlyTypedTokenReference>
+    ): IncorrectlyTypedTokenReference
 }
 
 class FacadeOutParameterBindingSpec {
@@ -98,7 +97,7 @@ class FacadeOutParameterBindingSpec {
     @Test
     fun `should fail if there are no out-parameters but the return type is non-void`() {
         MethodReturnTypeIsIncorrectlyNonVoid::class shouldFailToBindWith
-                "Return type class java.lang.Long is not Void/Unit"
+                "Return type long is not void/Void/Unit"
     }
 
     @Test

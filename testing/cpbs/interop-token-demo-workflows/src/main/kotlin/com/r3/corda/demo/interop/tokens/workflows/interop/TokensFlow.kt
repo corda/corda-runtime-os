@@ -89,10 +89,8 @@ class TokensFlow: FacadeDispatcherFlow(), TokensFacade {
     }
 
     @Suspendable
-    override fun releaseReservedTokens(reservationRef: UUID): Unit {
+    override fun releaseReservedTokens(reservationRef: UUID) {
         reservations.remove(reservationRef)
-
-        return Unit
     }
 
     @Suspendable
@@ -100,7 +98,7 @@ class TokensFlow: FacadeDispatcherFlow(), TokensFacade {
         reservationRef: UUID,
         transactionRef: UUID,
         recipient: String
-    ): Unit {
+    ) {
         val reservation = reservations[reservationRef] ?:
         throw IllegalArgumentException("Reservation $reservationRef does not exist")
 
@@ -117,8 +115,6 @@ class TokensFlow: FacadeDispatcherFlow(), TokensFacade {
 
 
          flowEngine.subFlow(TransferSubFlow(TransferFlowArgs(recipient, reservationRef)))
-
-        return Unit
     }
 
 }

@@ -49,17 +49,15 @@ class TestTokenServer(initialBalances: Map<String, BigDecimal>, private val time
         return TokenReservation(ref, expirationTimestamp)
     }
 
-    override fun releaseReservedTokens(reservationRef: UUID): Unit {
+    override fun releaseReservedTokens(reservationRef: UUID) {
         reservations.remove(reservationRef)
-
-        return Unit
     }
 
     override fun spendReservedTokens(
         reservationRef: UUID,
         transactionRef: UUID,
         recipient: String
-    ): Unit {
+    ) {
         val reservation = reservations[reservationRef] ?:
         throw IllegalArgumentException("Reservation $reservationRef does not exist")
 
@@ -71,8 +69,6 @@ class TestTokenServer(initialBalances: Map<String, BigDecimal>, private val time
             balance.subtract(BigDecimal(reservation.amount))
         }
         spendHistory.add(Spend(reservation, transactionRef, recipient))
-
-        return Unit
     }
 
 }

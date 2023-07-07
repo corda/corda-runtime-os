@@ -284,7 +284,7 @@ class MemberSynchronisationServiceImpl internal constructor(
         override fun processMembershipUpdates(updates: ProcessMembershipUpdates): List<Record<*, *>> {
             val viewOwningMember = updates.synchronisationMetaData.member.toCorda()
             val mgm = updates.synchronisationMetaData.mgm.toCorda()
-            logger.debug { "Member $viewOwningMember received membership updates from $mgm." }
+            logger.info("Member $viewOwningMember received membership updates from $mgm.")
 
             return try {
                 cancelCurrentRequestAndScheduleNewOne(viewOwningMember, mgm)

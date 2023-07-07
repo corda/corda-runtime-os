@@ -7,7 +7,7 @@ description 'Corda Sandbox CPK Three'
 group 'com.example.sandbox'
 
 cordapp {
-    targetPlatformVersion = 999
+    targetPlatformVersion = platformVersion.toInteger()
     workflow {
         name 'Sandbox CPK-3'
         versionId 1

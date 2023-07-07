@@ -52,9 +52,8 @@ class FacadeInvocationFlow : ClientStartableFlow {
 
         log.info("Calling facade method '$methodName@$facadeId' with payload '$payload' to $alias")
 
-        val client : SampleTokensFacade = facadeService.getProxy(facadeId, SampleTokensFacade::class.java, alias, interopGroupId)
-        val responseObject = client.getHello(payload)
-        val response = responseObject.result.toString()
+        val client : SampleTokensFacade = facadeService.getFacade(facadeId, SampleTokensFacade::class.java, alias, interopGroupId)
+        val response = client.getHello(payload)
 
         log.info("Facade responded with '$response'")
         log.info("FacadeInvocationFlow.call() ending")

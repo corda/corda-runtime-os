@@ -22,7 +22,6 @@ import java.beans.PropertyDescriptor
 import java.lang.reflect.AnnotatedElement
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
-import java.lang.reflect.ParameterizedType
 import java.math.BigDecimal
 import java.nio.ByteBuffer
 import java.security.AccessController
@@ -186,14 +185,8 @@ private class MethodBindingContext(
     }
 
     private fun createOutParameterBindings(): FacadeOutParameterBindings {
-        // Obtain the wrapped return type by reflecting over the InteropAction<T> type and obtaining its first type
-        // argument, e.g. InteropAction<String> wraps String.
-        val wrappedReturnType = try { //TODO only login in catch should remain
-            (boundMethod.genericReturnType as ParameterizedType).actualTypeArguments[0]
-                    as Class<*>
-        } catch(ex: Exception) {
-            boundMethod.returnType as Class<*>
-        }
+        val returnType = boundMethod.returnType as Class<*>
+
         /*
         Depending on the number of out parameters, we are either binding:
 
@@ -205,16 +198,16 @@ private class MethodBindingContext(
         reflection to create the binding.
          */
         val bindingContext = when (facadeMethod.outParameters.size) {
-            0 -> NoOutParametersBindingContext(this, wrappedReturnType)
+            0 -> NoOutParametersBindingContext(this, returnType)
             1 -> SingletonOutParameterBindingContext(
                 this,
-                wrappedReturnType,
+                returnType,
                 facadeMethod.outParameters.first()
             )
 
             else -> DataClassOutParametersBindingContext(
                 this,
-                wrappedReturnType,
+                returnType,
                 facadeMethod.outParameters
             )
         }
@@ -299,14 +292,13 @@ private class InParameterBindingContext(
 // BindingContext in which we are binding no out parameters to a Void/Unit wrapped return type.
 private class NoOutParametersBindingContext(
     val parent: MethodBindingContext,
-    val wrappedReturnType: Class<*>
+    val returnType: Class<*>
 ) : BindingContext<FacadeOutParameterBindings>() {
 
     override fun createBinding(): FacadeOutParameterBindings {
         // If the caller is expecting anything other than Void/Unit, something is wrong.
-        test(wrappedReturnType == Unit::class.java || wrappedReturnType == Void::class.java
-                || wrappedReturnType == Void.TYPE) {
-            "Return type $wrappedReturnType is not Void/Unit"
+        test(returnType == Unit::class.java || returnType == Void::class.java || returnType == Void.TYPE) {
+            "Return type $returnType is not void/Void/Unit"
         }
 
         return FacadeOutParameterBindings.NoOutParameters

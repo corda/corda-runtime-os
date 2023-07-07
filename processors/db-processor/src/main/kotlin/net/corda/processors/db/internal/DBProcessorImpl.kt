@@ -112,7 +112,7 @@ class DBProcessorImpl @Activate constructor(
     @Reference(service = MembershipGroupPolicyValidator::class)
     private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
     @Reference(service = AllowedCertificatesReaderWriterService::class)
-    private val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
+    private val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -163,7 +163,7 @@ class DBProcessorImpl @Activate constructor(
         ::groupParametersWriterService,
         ::groupParametersReaderService,
         ::membershipGroupPolicyValidator,
-        ::allowedCertificatesReaderWriterService,
+        ::allowedCertificatesReaderWriterService
     )
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(dependentComponents, ::eventHandler)
 

@@ -12,7 +12,6 @@ import net.corda.flow.application.services.impl.interop.proxies.JacksonJsonMarsh
 import net.corda.flow.application.services.impl.interop.proxies.JsonMarshaller
 import net.corda.v5.application.interop.binding.BindsFacade
 import net.corda.v5.application.interop.binding.FacadeVersions
-import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
@@ -65,12 +64,7 @@ class FacadeServerDispatcher(
         )
 
         val args = buildMethodArguments(boundMethod, request)
-        val resultObj = boundMethod.interfaceMethod.invoke(target, *args)
-        val result = try {
-            (resultObj as InteropAction<Any>).result //TODO not needed
-        } catch (e: Exception) {
-            resultObj
-        }
+        val result = boundMethod.interfaceMethod.invoke(target, *args)
         val outParameterValues = getOutParameterValues(result, boundMethod.outParameterBindings)
 
         return binding.facade.response(boundMethod.facadeMethod.name, *outParameterValues.toTypedArray())
@@ -82,9 +76,7 @@ class FacadeServerDispatcher(
         result: Any?,
         outParameterBindings: FacadeOutParameterBindings
     ): List<TypedParameterValue<*>> = when (outParameterBindings) {
-        FacadeOutParameterBindings.NoOutParameters ->  {
-            emptyList()
-        }
+        FacadeOutParameterBindings.NoOutParameters -> emptyList()
 
         is FacadeOutParameterBindings.SingletonOutParameterBinding -> {
             val parameter = outParameterBindings.outParameter as TypedParameter<Any>
