@@ -64,7 +64,15 @@ class UpsertValidationTest {
         val groupId = "ABC"
         val groupPolicyParser = createGroupPolicyParser(groupId)
 
-        val p = DatabaseCpiPersistence(createMockEntityManagerFactory(), mock(), mock(), mock(), mock(), mock(), groupPolicyParser)
+        val p = DatabaseCpiPersistence(
+            createMockEntityManagerFactory(),
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            groupPolicyParser
+        )
 
         assertDoesNotThrow {
             p.validateCanUpsertCpi(cpiId, groupId, false, "id")
@@ -85,7 +93,8 @@ class UpsertValidationTest {
                 mock(),
                 mock(),
                 mock(),
-                groupPolicyParser)
+                groupPolicyParser
+            )
 
         assertDoesNotThrow {
             p.validateCanUpsertCpi(cpiId, groupId, true, "id")
@@ -99,7 +108,15 @@ class UpsertValidationTest {
         val groupPolicyParser = createGroupPolicyParser("foo")
 
         val p =
-            DatabaseCpiPersistence(createMockEntityManagerFactory(), mock(), createCpiMetadataRepo(cpiId), mock(), mock(), mock(), groupPolicyParser)
+            DatabaseCpiPersistence(
+                createMockEntityManagerFactory(),
+                mock(),
+                createCpiMetadataRepo(cpiId),
+                mock(),
+                mock(),
+                mock(),
+                groupPolicyParser
+            )
 
         assertThrows<ValidationException> {
             p.validateCanUpsertCpi(cpiId, groupId, true, "id")
@@ -157,7 +174,15 @@ class UpsertValidationTest {
         val groupPolicyParser = createGroupPolicyParser(groupId)
 
         val p =
-            DatabaseCpiPersistence(createMockEntityManagerFactory(), mock(), createCpiMetadataRepo(cpiId), mock(), mock(), mock(), groupPolicyParser)
+            DatabaseCpiPersistence(
+                createMockEntityManagerFactory(),
+                mock(),
+                createCpiMetadataRepo(cpiId),
+                mock(),
+                mock(),
+                mock(),
+                groupPolicyParser
+            )
 
         assertThrows<DuplicateCpiUploadException> {
             p.validateCanUpsertCpi(cpiId, groupId, false, "id")

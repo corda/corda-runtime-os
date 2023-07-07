@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory
  * This class provides some simple APIs to interact with the database for manipulating CPIs, CPKs and their associated
  * metadata.
  */
+@Suppress("LongParameterList")
 class DatabaseCpiPersistence(
     private val entityManagerFactory: EntityManagerFactory,
     private val networkInfoWriter: NetworkInfoWriter,
