@@ -1,13 +1,11 @@
 package net.corda.cli.plugins.preinstall
 
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.Report
-import net.corda.cli.plugins.preinstall.PreInstallPlugin.ReportEntry
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.Node
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -15,7 +13,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import picocli.CommandLine
 
-@Disabled
 class TestSubCommands {
     @Test
     fun testLimitsFileParsing() {
