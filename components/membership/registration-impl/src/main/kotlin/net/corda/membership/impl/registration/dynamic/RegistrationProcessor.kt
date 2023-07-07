@@ -85,11 +85,11 @@ class RegistrationProcessor(
         ),
         DeclineRegistration::class.java to DeclineRegistrationHandler(
             membershipPersistenceClient,
+            membershipQueryClient,
             clock,
             cordaAvroSerializationFactory,
             memberTypeChecker,
             membershipConfig,
-            membershipGroupReaderProvider,
         ),
 
         ProcessMemberVerificationRequest::class.java to ProcessMemberVerificationRequestHandler(
