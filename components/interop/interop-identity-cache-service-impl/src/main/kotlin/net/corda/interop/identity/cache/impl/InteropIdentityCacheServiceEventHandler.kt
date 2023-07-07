@@ -2,7 +2,6 @@ package net.corda.interop.identity.cache.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.interop.identity.cache.InteropIdentityCacheService
 import net.corda.interop.identity.processor.InteropIdentityProcessor
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -24,7 +23,7 @@ import org.slf4j.LoggerFactory
 class InteropIdentityCacheServiceEventHandler(
     private val configurationReadService: ConfigurationReadService,
     private val subscriptionFactory: SubscriptionFactory,
-    private val cacheService: InteropIdentityCacheService
+    private val cacheService: InteropIdentityCacheServiceImpl
 ) : LifecycleEventHandler {
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)

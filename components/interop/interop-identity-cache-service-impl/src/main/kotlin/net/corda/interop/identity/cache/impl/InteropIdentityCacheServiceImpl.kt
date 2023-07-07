@@ -35,30 +35,26 @@ class InteropIdentityCacheServiceImpl @Activate constructor(
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, lifecycleEventHandler)
 
     /**
-     * Map of holding identity short hashes to [InteropIdentityCacheView] objects
+     * Map of holding identity short hashes to [InteropIdentityCacheViewImpl] objects
      */
-    private val cacheData = HashMap<String, InteropIdentityCacheView>()
+    private val cacheData = HashMap<String, InteropIdentityCacheViewImpl>()
 
-    private fun getCacheView(holdingIdentityShortHash: String): InteropIdentityCacheView {
-        return cacheData.computeIfAbsent(holdingIdentityShortHash) {
-            InteropIdentityCacheView(it)
+    private fun getOrCreateView(shortHash: String): InteropIdentityCacheViewImpl {
+        return cacheData.computeIfAbsent(shortHash) {
+            InteropIdentityCacheViewImpl(shortHash)
         }
     }
 
-    override fun getInteropIdentities(shortHash: String): Set<InteropIdentity> {
-        return getCacheView(shortHash).getIdentities()
+    fun putInteropIdentity(holdingIdentityShortHash: String, identity: InteropIdentity) {
+        getOrCreateView(holdingIdentityShortHash).putInteropIdentity(identity)
     }
 
-    override fun putInteropIdentity(shortHash: String, identity: InteropIdentity) {
-        log.info("Adding interop identity, shortHash: $shortHash, identity=$identity")
-        val view = getCacheView(shortHash)
-        view.addIdentity(identity)
+    fun removeInteropIdentity(holdingIdentityShortHash: String, identity: InteropIdentity) {
+        getOrCreateView(holdingIdentityShortHash).removeInteropIdentity(identity)
     }
 
-    override fun removeInteropIdentity(shortHash: String, identity: InteropIdentity) {
-        log.info("Removing interop identity, shortHash: $shortHash, identity=$identity")
-        val view = getCacheView(shortHash)
-        view.removeIdentity(identity)
+    override fun getHoldingIdentityCacheView(shortHash: String): InteropIdentityCacheView {
+        return getOrCreateView(shortHash)
     }
 
     override val isRunning: Boolean

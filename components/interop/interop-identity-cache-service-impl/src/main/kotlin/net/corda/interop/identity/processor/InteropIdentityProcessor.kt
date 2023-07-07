@@ -3,14 +3,15 @@ package net.corda.interop.identity.processor
 import net.corda.data.interop.PersistentInteropIdentity
 import net.corda.interop.core.InteropIdentity
 import net.corda.interop.core.Utils.Companion.computeShortHash
-import net.corda.interop.identity.cache.InteropIdentityCacheService
+import net.corda.interop.identity.cache.impl.InteropIdentityCacheServiceImpl
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 
+
 class InteropIdentityProcessor(
-    private val cacheService: InteropIdentityCacheService
+    private val cacheService: InteropIdentityCacheServiceImpl
 ) : CompactedProcessor<String, PersistentInteropIdentity> {
 
     override val keyClass = String::class.java
@@ -57,7 +58,8 @@ class InteropIdentityProcessor(
     }
 
     private fun updateCacheEntry(key: RecordKey, oldEntry: InteropIdentity, newEntry: InteropIdentity) {
-        val interopIdentities = cacheService.getInteropIdentities(key.holdingIdentityShortHash)
+        val cacheView = cacheService.getHoldingIdentityCacheView(key.holdingIdentityShortHash)
+        val interopIdentities = cacheView.getIdentities()
 
         // Short hash can be derived from x500 name and group ID. Might as well perform a quick sanity check!
         verifyShortHash(oldEntry, key.interopIdentityShortHash)
@@ -74,7 +76,8 @@ class InteropIdentityProcessor(
     }
 
     private fun insertCacheEntry(key: RecordKey, newEntry: InteropIdentity) {
-        val interopIdentities = cacheService.getInteropIdentities(key.holdingIdentityShortHash)
+        val cacheView = cacheService.getHoldingIdentityCacheView(key.holdingIdentityShortHash)
+        val interopIdentities = cacheView.getIdentities()
 
         // Short hash can be derived from x500 name and group ID. Might as well perform a quick sanity check!
         verifyShortHash(newEntry, key.interopIdentityShortHash)
@@ -89,14 +92,15 @@ class InteropIdentityProcessor(
     }
 
     private fun removeCacheEntry(key: RecordKey, oldEntry: InteropIdentity) {
-        val interopIdentities = cacheService.getInteropIdentities(key.holdingIdentityShortHash)
+        val cacheView = cacheService.getHoldingIdentityCacheView(key.holdingIdentityShortHash)
+        val interopIdentities = cacheView.getIdentities()
 
         // Short hash can be derived from x500 name and group ID. Might as well perform a quick sanity check!
         verifyShortHash(oldEntry, key.interopIdentityShortHash)
 
         // Remove the entry if present, log if not present when expected.
         if (interopIdentities.contains(oldEntry)) {
-            cacheService.removeInteropIdentity(key.holdingIdentityShortHash, oldEntry)
+            cacheService.putInteropIdentity(key.holdingIdentityShortHash, oldEntry)
         } else {
             logger.warn("Remove: No cache entry exists for the provided group ID. Ignoring.")
         }

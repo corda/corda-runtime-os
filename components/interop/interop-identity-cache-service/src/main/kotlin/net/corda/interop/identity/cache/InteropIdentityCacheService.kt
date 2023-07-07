@@ -1,31 +1,14 @@
 package net.corda.interop.identity.cache
 
-import net.corda.interop.core.InteropIdentity
 import net.corda.lifecycle.Lifecycle
 
 
 interface InteropIdentityCacheService : Lifecycle {
     /**
-     * Gets all interop identities for a given holding identity.
+     * Returns an object representing a given holding identities view of the cache.
      *
-     * @param shortHash Short hash of the real holding identity to get interop identities for.
-     * @return A set of interop identity cache entries visible to the holding identity.
+     * @param shortHash Short hash of the real holding identity to get the view for.
+     * @return A cache view object containing interop identities visible to that interop identity.
      */
-    fun getInteropIdentities(shortHash: String): Set<InteropIdentity>
-
-    /**
-     * Add an interop identity to the cache.
-     *
-     * @param shortHash Short hash of the real holding identity to add interop identity to.
-     * @param identity New interop identity to add to the cache.
-     */
-    fun putInteropIdentity(shortHash: String, identity: InteropIdentity)
-
-    /**
-     * Remove an interop identity from the cache.
-     *
-     * @param shortHash Short hash of the real holding identity to remove interop identity from.
-     * @param identity Interop identity to remove from the cache.
-     */
-    fun removeInteropIdentity(shortHash: String, identity: InteropIdentity)
+    fun getHoldingIdentityCacheView(shortHash: String): InteropIdentityCacheView
 }

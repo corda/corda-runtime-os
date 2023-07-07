@@ -17,6 +17,7 @@ dependencies {
     implementation project(':libs:external-messaging')
     implementation project(':libs:interop:interop-rest')
     implementation project(':libs:interop:interop-core')
+    implementation project(':libs:virtual-node:virtual-node-info')
     implementation project(':libs:rest:rest')
     implementation project(':libs:rest:rest-common')
     implementation project(':libs:lifecycle:lifecycle')

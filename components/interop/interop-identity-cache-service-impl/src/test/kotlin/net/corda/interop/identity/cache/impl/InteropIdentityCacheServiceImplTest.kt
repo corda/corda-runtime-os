@@ -19,7 +19,7 @@ import net.corda.interop.core.InteropIdentity
 
 class InteropIdentityCacheServiceImplTest {
     @Test
-    fun `get before put returns empty map`() {
+    fun `get before put returns empty cache view`() {
         val coordinator = mock<LifecycleCoordinator>()
         val coordinatorFactory = mock<LifecycleCoordinatorFactory>().also {
             whenever(it.createCoordinator(any(), any())).doReturn(coordinator)
@@ -35,14 +35,13 @@ class InteropIdentityCacheServiceImplTest {
         val cache = InteropIdentityCacheServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
 
         val shortHash = "1234567890"
-        val response = cache.getInteropIdentities(shortHash)
+        val response = cache.getHoldingIdentityCacheView(shortHash)
 
-        assertThat(response).isInstanceOf(Set::class.java)
-        assertThat(response.isEmpty()).isTrue
+        assertThat(response.getIdentities().isEmpty()).isTrue
     }
 
     @Test
-    fun `get after put returns value from put`() {
+    fun `holding identity views are separate`() {
         val coordinator = mock<LifecycleCoordinator>()
         val coordinatorFactory = mock<LifecycleCoordinatorFactory>().also {
             whenever(it.createCoordinator(any(), any())).doReturn(coordinator)
@@ -57,63 +56,33 @@ class InteropIdentityCacheServiceImplTest {
 
         val cache = InteropIdentityCacheServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
 
-        val shortHash = "1234567890"
-        val interopIdentity = InteropIdentity(
-            groupId = UUID.randomUUID().toString(),
-            x500Name = "X500 name #1",
-            holdingIdentityShortHash = shortHash
-        )
+        val shortHash1 = "1234567890"
+        val shortHash2 = "0987654321"
 
-        cache.putInteropIdentity(shortHash, interopIdentity)
-
-        val interopIdentities = cache.getInteropIdentities(shortHash)
-
-        assertThat(interopIdentities).isInstanceOf(Set::class.java)
-        assertThat(interopIdentities.size).isEqualTo(1)
-
-        val value = interopIdentities.single()
-
-        assertThat(value).isEqualTo(interopIdentity)
-    }
-
-    @Test
-    fun `get returns values from multiple puts as a map`() {
-        val coordinator = mock<LifecycleCoordinator>()
-        val coordinatorFactory = mock<LifecycleCoordinatorFactory>().also {
-            whenever(it.createCoordinator(any(), any())).doReturn(coordinator)
-        }
-
-        val subscription: CompactedSubscription<UploadStatusKey, UploadStatus> = mock()
-        val subscriptionFactory = mock<SubscriptionFactory>().apply {
-            Mockito.`when`(createCompactedSubscription<UploadStatusKey, UploadStatus>(any(), any(), any())).thenReturn(
-                subscription
-            )
-        }
-
-        val cache = InteropIdentityCacheServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
-
-        val shortHash = "1234567890"
+        val view1 = cache.getHoldingIdentityCacheView(shortHash1)
+        val view2 = cache.getHoldingIdentityCacheView(shortHash2)
 
         val interopIdentity1 = InteropIdentity(
             groupId = UUID.randomUUID().toString(),
             x500Name = "X500 name #1",
-            holdingIdentityShortHash = shortHash
+            holdingIdentityShortHash = shortHash1
         )
 
         val interopIdentity2 = InteropIdentity(
             groupId = UUID.randomUUID().toString(),
             x500Name = "X500 name #2",
-            holdingIdentityShortHash = shortHash
+            holdingIdentityShortHash = shortHash2
         )
 
-        cache.putInteropIdentity(shortHash, interopIdentity1)
-        cache.putInteropIdentity(shortHash, interopIdentity2)
+        cache.putInteropIdentity(shortHash1, interopIdentity1)
+        cache.putInteropIdentity(shortHash2, interopIdentity2)
 
-        val interopIdentities = cache.getInteropIdentities(shortHash)
+        assertThat(view1).isNotEqualTo(view2)
 
-        assertThat(interopIdentities).isInstanceOf(Set::class.java)
-        assertThat(interopIdentities.size).isEqualTo(2)
+        assertThat(view1.getIdentities()).hasSize(1)
+        assertThat(view1.getIdentities()).contains(interopIdentity1)
 
-        assertThat(interopIdentities).contains(interopIdentity1, interopIdentity2)
+        assertThat(view2.getIdentities()).hasSize(1)
+        assertThat(view2.getIdentities()).contains(interopIdentity2)
     }
 }

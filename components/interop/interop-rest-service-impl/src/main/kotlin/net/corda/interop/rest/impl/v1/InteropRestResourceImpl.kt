@@ -95,8 +95,9 @@ internal class InteropRestResourceImpl @Activate constructor(
     }
 
     override fun getInterOpIdentities(holdingidentityshorthash: String): List<RestInteropIdentity> {
-        val groupToInteropIdentityMappings = interopIdentityCacheService.getInteropIdentities(holdingidentityshorthash)
-        return groupToInteropIdentityMappings.map {
+        val cacheView = interopIdentityCacheService.getHoldingIdentityCacheView(holdingidentityshorthash)
+        val interopIdentities = cacheView.getIdentities()
+        return interopIdentities.map {
             RestInteropIdentity(
                 it.x500Name,
                 UUID.fromString(it.groupId)
