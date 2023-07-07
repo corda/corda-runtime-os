@@ -17,11 +17,14 @@ import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.crypto.SecureHash
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import org.mockito.kotlin.verify
 import org.osgi.framework.Bundle
 import java.util.UUID.randomUUID
 
@@ -38,10 +41,10 @@ private const val PUBLIC_LIBRARY_BUNDLE_NAME = "public_library_bundle_symbolic_n
 
 /**
  * Tests of [SandboxGroupImpl].
- *
- * There are no tests of the sandbox-retrieval and class-loading functionality, since this is likely to be deprecated.
  */
 class SandboxGroupImplTests {
+    private class DoesNotExist
+
     private val cpkClass = Double::class.java
     private val cpkLibraryClass = String::class.java
     private val publicClass = Int::class.java
@@ -61,6 +64,7 @@ class SandboxGroupImplTests {
         whenever(getBundle(publicClass)).thenReturn(mockPublicBundle)
         whenever(getBundle(publicLibraryClass)).thenReturn(mockPublicLibraryBundle)
         whenever(getBundle(nonSandboxClass)).thenReturn(mockNonSandboxBundle)
+        whenever(loadClassFromSystemBundle(DoesNotExist::class.java.name)).thenThrow(ClassNotFoundException())
     }
 
 
@@ -71,6 +75,58 @@ class SandboxGroupImplTests {
     private val sandboxGroupImpl = SandboxGroupImpl(
         randomUUID(), setOf(cpkSandbox), setOf(publicSandbox), DummyClassTagFactory(cpkSandbox.cpkMetadata), mockBundleUtils
     )
+
+    @Test
+    fun `loading a public class is cached`() {
+        val firstClazz = sandboxGroupImpl.loadClassFromPublicBundles(publicClass.name)
+        assertSame(publicClass, firstClazz)
+        verify(mockPublicBundle).loadClass(publicClass.name)
+
+        // Reloading the same class should not invoke Bundle.loadClass again.
+        val secondClazz = sandboxGroupImpl.loadClassFromPublicBundles(publicClass.name)
+        assertSame(firstClazz, secondClazz)
+        verify(mockPublicBundle).loadClass(publicClass.name)
+    }
+
+    @Test
+    fun `loading a missing public class is cached`() {
+        val nonExistentName = DoesNotExist::class.java.name
+        assertNull(sandboxGroupImpl.loadClassFromPublicBundles(nonExistentName))
+        verify(mockPublicBundle).loadClass(nonExistentName)
+        verify(mockBundleUtils).loadClassFromSystemBundle(nonExistentName)
+
+        // Trying to reload the same class should not invoke Bundle.loadClass again.
+        assertNull(sandboxGroupImpl.loadClassFromPublicBundles(nonExistentName))
+        verify(mockPublicBundle).loadClass(nonExistentName)
+        verify(mockBundleUtils).loadClassFromSystemBundle(nonExistentName)
+    }
+
+    @Test
+    fun `loading a sandbox class is cached`() {
+        val firstClazz = sandboxGroupImpl.loadClassFromMainBundles(cpkClass.name)
+        assertSame(cpkClass, firstClazz)
+        verify(mockCpkMainBundle).loadClass(cpkClass.name)
+
+        // Reloading the same class should not invoke Bundle.loadClass again.
+        val secondClazz = sandboxGroupImpl.loadClassFromMainBundles(cpkClass.name)
+        assertSame(firstClazz, secondClazz)
+        verify(mockCpkMainBundle).loadClass(cpkClass.name)
+    }
+
+    @Test
+    fun `loading a missing sandbox class is cached`() {
+        val nonExistentName = DoesNotExist::class.java.name
+        assertThrows<SandboxException> {
+            sandboxGroupImpl.loadClassFromMainBundles(nonExistentName)
+        }
+        verify(mockCpkMainBundle).loadClass(nonExistentName)
+
+        // Trying to reload the same class should not invoke Bundle.loadClass again.
+        assertThrows<SandboxException> {
+            sandboxGroupImpl.loadClassFromMainBundles(nonExistentName)
+        }
+        verify(mockCpkMainBundle).loadClass(nonExistentName)
+    }
 
     @Test
     fun `creates valid static tag for a non-bundle class`() {

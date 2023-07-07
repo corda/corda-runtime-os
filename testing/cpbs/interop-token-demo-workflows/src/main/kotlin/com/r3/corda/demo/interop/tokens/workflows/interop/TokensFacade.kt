@@ -4,7 +4,6 @@ import net.corda.v5.application.interop.binding.BindsFacade
 import net.corda.v5.application.interop.binding.BindsFacadeMethod
 import net.corda.v5.application.interop.binding.BindsFacadeParameter
 import net.corda.v5.application.interop.binding.FacadeVersions
-import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.interop.binding.QualifiedWith
 import net.corda.v5.base.annotations.Suspendable
 import java.math.BigDecimal
@@ -32,12 +31,12 @@ interface TokensFacade {
 
     @BindsFacadeMethod
     @Suspendable
-    fun getBalance(@Denomination denomination: String): @QualifiedWith("foo") InteropAction<Double>
+    fun getBalance(@Denomination denomination: String): @QualifiedWith("foo") Double
 
     @FacadeVersions("v1.0")
     @BindsFacadeMethod("reserve-tokens")
     @Suspendable
-    fun reserveTokensV1(@Denomination denomination: String, amount: BigDecimal): InteropAction<UUID>
+    fun reserveTokensV1(@Denomination denomination: String, amount: BigDecimal): UUID
 
     @FacadeVersions("v2.0")
     @BindsFacadeMethod("reserve-tokens")
@@ -46,7 +45,7 @@ interface TokensFacade {
         @Denomination denomination: String,
         amount: BigDecimal,
         @BindsFacadeParameter("ttl-ms") timeToLiveMs: Long
-    ): InteropAction<TokenReservation>
+    ): TokenReservation
 
     @FacadeVersions("v3.0")
     @BindsFacadeMethod("reserve-tokens")
@@ -55,11 +54,11 @@ interface TokensFacade {
         @Denomination denomination: String,
         amount: BigDecimal,
         @BindsFacadeParameter("ttl-ms") timeToLiveMs: Long
-    ): InteropAction<SimpleTokenReservation>
+    ): SimpleTokenReservation
 
     @BindsFacadeMethod
     @Suspendable
-    fun releaseReservedTokens(reservationRef: UUID): InteropAction<Unit>
+    fun releaseReservedTokens(reservationRef: UUID)
 
     @BindsFacadeMethod
     @Suspendable
@@ -67,5 +66,5 @@ interface TokensFacade {
         reservationRef: UUID,
         transactionRef: UUID,
         recipient: String
-    ): InteropAction<Unit>
+    )
 }

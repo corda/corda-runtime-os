@@ -33,6 +33,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PEND
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
@@ -165,11 +166,16 @@ class StartRegistrationHandlerTest {
         on { parse(eq(MODIFIED_TIME), eq(Instant::class.java)) } doReturn clock.instant()
         on { entries } doReturn emptySet()
     }
+    private val pendingMemberMgmContext: MGMContext = mock {
+        on { parse(eq(MODIFIED_TIME), eq(Instant::class.java)) } doReturn clock.instant()
+        on { entries } doReturn emptySet()
+        on { parse(eq(STATUS), eq(String::class.java)) } doReturn MEMBER_STATUS_PENDING
+    }
     private val pendingMemberInfo: MemberInfo = mock {
         on { name } doReturn aliceX500Name
         on { isActive } doReturn true
         on { memberProvidedContext } doReturn memberMemberContext
-        on { mgmProvidedContext } doReturn memberMgmContext
+        on { mgmProvidedContext } doReturn pendingMemberMgmContext
         on { status } doReturn MEMBER_STATUS_PENDING
         on { serial } doReturn 1L
     }
@@ -350,6 +356,19 @@ class StartRegistrationHandlerTest {
     }
 
     @Test
+    fun `declined if serial in the registration request is negative`() {
+        val startRegistrationCommand = getStartRegistrationCommand(serial = -1)
+        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
+            assertThat(updatedState).isNotNull
+            assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
+            assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
+            assertThat(outputStates).isNotEmpty.hasSize(1)
+
+            assertDeclinedRegistration()
+        }
+    }
+
+    @Test
     fun `declined if persistence of registration request fails`() {
         val failure = object: MembershipPersistenceOperation<Unit> {
             override fun execute(): MembershipPersistenceResult<Unit> {
@@ -496,6 +515,29 @@ class StartRegistrationHandlerTest {
             verify = true,
             verifyCustomFields = true,
             queryMemberInfo = true,
+        )
+    }
+
+    @Test
+    fun `not declined if member already exists in a pending state`() {
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+            .doReturn(MembershipQueryResult.Success(listOf(pendingMemberInfo)))
+        with(
+            handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+        ) {
+            assertThat(updatedState).isNotNull
+            assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
+            assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
+            assertThat(outputStates).isNotEmpty.hasSize(3)
+
+            assertRegistrationStarted()
+        }
+        verifyServices(
+            persistRegistrationRequest = true,
+            verify = true,
+            verifyCustomFields = true,
+            queryMemberInfo = true,
+            persistMemberInfo = true
         )
     }
 

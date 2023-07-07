@@ -7,7 +7,6 @@ import net.corda.flow.application.services.interop.example.TokensFacade
 import net.corda.v5.application.interop.binding.BindsFacade
 import net.corda.v5.application.interop.binding.BindsFacadeMethod
 import net.corda.v5.application.interop.binding.BindsFacadeParameter
-import net.corda.v5.application.interop.binding.InteropAction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
@@ -18,7 +17,7 @@ import kotlin.reflect.KClass
 @BindsFacade("org.corda.interop/platform/tokens")
 interface ParameterHasIncorrectType {
     @BindsFacadeMethod
-    fun getBalance(denomination: Long): InteropAction<Long>
+    fun getBalance(denomination: Long): Long
 }
 
 // Binding will fail because currencyName is not the name of the parameter
@@ -26,7 +25,7 @@ interface ParameterHasIncorrectType {
 interface ParameterHasIncorrectName {
 
     @BindsFacadeMethod
-    fun getBalance(currencyName: String): InteropAction<Long>
+    fun getBalance(currencyName: String): Long
 }
 
 // Binding will fail because the annotation gives an incorrect alias to the parameter
@@ -34,7 +33,7 @@ interface ParameterHasIncorrectName {
 interface ParameterIsAnnotatedWithIncorrectName {
 
     @BindsFacadeMethod
-    fun getBalance(@BindsFacadeParameter("currency-name") denomination: String): InteropAction<Long>
+    fun getBalance(@BindsFacadeParameter("currency-name") denomination: String): Long
 }
 
 class FacadeInParameterBindingSpec {

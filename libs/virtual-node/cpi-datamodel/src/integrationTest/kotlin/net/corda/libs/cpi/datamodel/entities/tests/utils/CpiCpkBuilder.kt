@@ -1,14 +1,15 @@
-package net.corda.test.util.dsl.entities.cpx
+package net.corda.libs.cpi.datamodel.entities.tests.utils
 
+import java.util.UUID
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.parseSecureHash
-import java.util.UUID
-import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
-import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
-import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
+import net.corda.libs.cpi.datamodel.entities.internal.CpiCpkEntity
+import net.corda.libs.cpi.datamodel.entities.internal.CpiCpkKey
+import net.corda.libs.cpi.datamodel.entities.internal.CpkMetadataEntity
+import net.corda.test.util.dsl.entities.cpx.DslException
 import net.corda.v5.crypto.SecureHash
 
-class CpiCpkBuilder(
+internal class CpiCpkBuilder(
     private var cpkFileChecksumSupplier: () -> SecureHash? = { null },
     private var cpiNameSupplier: () -> String? = { null },
     private var cpiVersionSupplier: () -> String? = { null },

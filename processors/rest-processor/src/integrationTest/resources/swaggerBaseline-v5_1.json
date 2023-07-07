@@ -3,10 +3,10 @@
   "info" : {
     "title" : "Corda REST API",
     "description" : "All the endpoints for publicly visible Open API calls",
-    "version" : "1"
+    "version" : "v5_1"
   },
   "servers" : [ {
-    "url" : "/api/v1"
+    "url" : "/api/v5_1"
   } ],
   "security" : [ {
     "basicAuth" : [ ]
@@ -1227,63 +1227,13 @@
         }
       }
     },
-    "/interop/{vnodeshorthash}/export/identity/{interopidentityshorthash}" : {
-      "get" : {
-        "tags" : [ "Interop API" ],
-        "description" : "This method returns Json String containing GroupID, Group Policy and my InterOpIdentityInfo.",
-        "operationId" : "get_interop__vnodeshorthash__export_identity__interopidentityshorthash_",
-        "parameters" : [ {
-          "name" : "vnodeshorthash",
-          "in" : "path",
-          "description" : "ID of the holding identity which interop identity is to be returned.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "ID of the holding identity which interop identity is to be returned.",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }, {
-          "name" : "interopidentityshorthash",
-          "in" : "path",
-          "description" : "ShortHash of the interop identity",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "ShortHash of the interop identity",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Interop identity",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "string",
-                  "nullable" : false,
-                  "example" : "string"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
-    "/interop/{vnodeshorthash}/groups" : {
+    "/interop/{holdingidentityshorthash}/groups" : {
       "get" : {
         "tags" : [ "Interop API" ],
         "description" : "This method returns a list of interop group ids.",
-        "operationId" : "get_interop__vnodeshorthash__groups",
+        "operationId" : "get_interop__holdingidentityshorthash__groups",
         "parameters" : [ {
-          "name" : "vnodeshorthash",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
           "description" : "ID of the holding identity which groups are to be returned.",
           "required" : true,
@@ -1320,13 +1270,13 @@
         }
       }
     },
-    "/interop/{vnodeshorthash}/interopidentities" : {
+    "/interop/{holdingidentityshorthash}/interopidentities" : {
       "get" : {
         "tags" : [ "Interop API" ],
         "description" : "This method returns a list of interop identities belonging to the given holding identity.",
-        "operationId" : "get_interop__vnodeshorthash__interopidentities",
+        "operationId" : "get_interop__holdingidentityshorthash__interopidentities",
         "parameters" : [ {
-          "name" : "vnodeshorthash",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
           "description" : "ID of the holding identity which identities are to be returned.",
           "required" : true,
@@ -1362,13 +1312,13 @@
         }
       }
     },
-    "/interop/{vnodeshorthash}/interopidentity" : {
+    "/interop/{holdingidentityshorthash}/interopidentity" : {
       "put" : {
         "tags" : [ "Interop API" ],
         "description" : "This method creates interop identity from holding identity id, group id and x500name.",
-        "operationId" : "put_interop__vnodeshorthash__interopidentity",
+        "operationId" : "put_interop__holdingidentityshorthash__interopidentity",
         "parameters" : [ {
-          "name" : "vnodeshorthash",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
           "description" : "ID of the holding identity.",
           "required" : true,
@@ -5193,11 +5143,6 @@
             "type" : "string",
             "format" : "uuid",
             "nullable" : false
-          },
-          "shortHash" : {
-            "type" : "string",
-            "nullable" : true,
-            "example" : "string"
           },
           "x500Name" : {
             "type" : "string",

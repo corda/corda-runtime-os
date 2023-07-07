@@ -5,7 +5,6 @@ import net.corda.flow.application.services.impl.interop.binding.internal.FacadeI
 import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
 import net.corda.v5.application.interop.binding.BindsFacade
 import net.corda.v5.application.interop.binding.BindsFacadeMethod
-import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.interop.binding.QualifiedWith
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -18,7 +17,7 @@ interface MethodSignatureHasWronglyQualifiedParameter {
     @BindsFacadeMethod
     fun getBalance(
         @QualifiedWith("org.corda.interop/platform/tokens/denomination/v2.0") denomination: String
-    ): InteropAction<Long>
+    ): Long
 }
 
 class UnqualifiedFruit
@@ -63,7 +62,7 @@ interface MismatchedParameterQualifier {
     fun makePie(
         @QualifiedWith("org.corda.test/test/fruit/v2.0") fruit: FruitV1,
         pastry: UnqualifiedPastry
-    ): InteropAction<CorrectlyQualifiedPudding>
+    ): CorrectlyQualifiedPudding
 
 }
 
@@ -72,7 +71,7 @@ interface MismatchedTypeQualifier {
 
     // This should be refused because the type qualifier on FruitV2 doesn't match the expected qualifier
     @BindsFacadeMethod
-    fun makePie(fruit: UnqualifiedFruit, pastry: PastryV2): InteropAction<CorrectlyQualifiedPudding>
+    fun makePie(fruit: UnqualifiedFruit, pastry: PastryV2): CorrectlyQualifiedPudding
 }
 
 @BindsFacade("org.corda.interop/test/qualification")
@@ -81,7 +80,7 @@ interface MismatchedTypeQualifierInOutput {
     // This should be refused because the type qualifier on the ingredients property of IncorrectlyQualifiedPudding
     // does not match that of the corresponding out parameter
     @BindsFacadeMethod
-    fun makePie(fruit: UnqualifiedFruit, pastry: UnqualifiedPastry): InteropAction<IncorrectlyQualifiedPudding>
+    fun makePie(fruit: UnqualifiedFruit, pastry: UnqualifiedPastry): IncorrectlyQualifiedPudding
 }
 
 @BindsFacade("org.corda.interop/test/qualification")
@@ -90,7 +89,7 @@ interface InconsistentlyQualifiedOutParameter {
     // This should be refused because there are inconsistent annotations on the parameter and type of
     // InconsistentlyQualifiedPudding::ingredients
     @BindsFacadeMethod
-    fun makePie(fruit: UnqualifiedFruit, pastry: UnqualifiedPastry): InteropAction<InconsistentlyQualifiedPudding>
+    fun makePie(fruit: UnqualifiedFruit, pastry: UnqualifiedPastry): InconsistentlyQualifiedPudding
 }
 
 @BindsFacade("org.corda.interop/test/qualification")
@@ -99,7 +98,7 @@ interface IllFormedDataClassOutput {
     // This should be refused because the data class used for the return type is ill=formed - the getter has a
     // different return type to the corresponding constructor parameter
     @BindsFacadeMethod
-    fun makePie(fruit: UnqualifiedFruit, pastry: UnqualifiedPastry): InteropAction<MismatchedConstructorAndGetterTypes>
+    fun makePie(fruit: UnqualifiedFruit, pastry: UnqualifiedPastry): MismatchedConstructorAndGetterTypes
 }
 
 class TypeQualificationSpec {
