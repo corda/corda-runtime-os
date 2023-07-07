@@ -1,13 +1,11 @@
-package net.corda.libs.cpi.datamodel.entities
+package net.corda.libs.cpi.datamodel.entities.internal
 
 import java.io.Serializable
 import java.time.Instant
-import java.util.stream.Stream
 import javax.persistence.CascadeType
 import javax.persistence.Column
 import javax.persistence.Embeddable
 import javax.persistence.Entity
-import javax.persistence.EntityManager
 import javax.persistence.FetchType
 import javax.persistence.Id
 import javax.persistence.IdClass
@@ -17,7 +15,6 @@ import javax.persistence.OneToMany
 import javax.persistence.PreUpdate
 import javax.persistence.Table
 import javax.persistence.Version
-
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.v5.crypto.SecureHash
 
@@ -39,7 +36,7 @@ import net.corda.v5.crypto.SecureHash
 @Table(name = "cpi")
 @IdClass(CpiMetadataEntityKey::class)
 @Suppress("LongParameterList")
-class CpiMetadataEntity(
+internal class CpiMetadataEntity(
     @Id
     @Column(name = "name", nullable = false)
     val name: String,
@@ -184,7 +181,7 @@ class CpiMetadataEntity(
 
 /** The composite primary key for a CpiEntity. */
 @Embeddable
-class CpiMetadataEntityKey(
+internal class CpiMetadataEntityKey(
     private val name: String,
     private val version: String,
     private val signerSummaryHash: String,
@@ -206,15 +203,4 @@ class CpiMetadataEntityKey(
         result = 31 * result + signerSummaryHash.hashCode()
         return result
     }
-}
-
-fun EntityManager.findAllCpiMetadata(): Stream<CpiMetadataEntity> {
-    // Joining the other tables to ensure all data is fetched eagerly
-    return createQuery(
-        "FROM ${CpiMetadataEntity::class.simpleName} cpi_ " +
-                "INNER JOIN FETCH cpi_.cpks cpk_ " +
-                "INNER JOIN FETCH cpk_.metadata cpk_meta_ " +
-                "ORDER BY cpi_.name, cpi_.version, cpi_.signerSummaryHash",
-        CpiMetadataEntity::class.java
-    ).resultStream
 }
