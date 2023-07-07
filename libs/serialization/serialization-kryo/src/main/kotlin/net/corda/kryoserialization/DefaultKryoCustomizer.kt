@@ -41,7 +41,6 @@ import java.security.cert.CertPath
 import java.security.cert.X509Certificate
 import java.util.Collections.unmodifiableSet
 
-
 class DefaultKryoCustomizer {
 
     companion object {

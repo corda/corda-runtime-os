@@ -4,6 +4,8 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import java.lang.IllegalArgumentException
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.FlowStartContext
+import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.output.FlowStates
@@ -215,12 +217,13 @@ class FlowToBeKilledExceptionProcessingTest {
     fun `processing MarkedForKillException when checkpoint does not exist only outputs flow killed status record`() {
         whenever(checkpoint.doesExist).thenReturn(false)
 
-        val testContext = buildFlowEventContext(checkpoint, Any())
+        val inputEventPayload = StartFlow(FlowStartContext().apply {statusKey = flowKey}, "")
+
+        val testContext = buildFlowEventContext(checkpoint, inputEventPayload)
         val exception = FlowMarkedForKillException("reasoning")
         val contextCapture = argumentCaptor<FlowEventContext<*>>()
 
-        whenever(flowMessageFactory.createFlowKilledStatusMessage(any(), any())).thenReturn(flowKilledStatus)
-        whenever(flowRecordFactory.createFlowStatusRecord(flowKilledStatus)).thenReturn(flowKilledStatusRecord)
+        whenever(flowRecordFactory.createFlowStatusRecord(any())).thenReturn(flowKilledStatusRecord)
 
         whenever(flowEventContextConverter.convert(contextCapture.capture())).thenReturn(mockResponse)
 

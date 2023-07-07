@@ -1,4 +1,4 @@
-package net.corda.libs.cpi.datamodel.entities
+package net.corda.libs.cpi.datamodel.entities.internal
 
 import java.io.Serializable
 import java.time.Instant
@@ -19,7 +19,7 @@ import javax.persistence.Version
  */
 @Entity
 @Table(name = "cpi_cpk")
-class CpiCpkEntity(
+internal class CpiCpkEntity(
     @EmbeddedId
     val id: CpiCpkKey,
     @Column(name = "cpk_file_name", nullable = false)
@@ -59,7 +59,7 @@ class CpiCpkEntity(
 }
 
 @Embeddable
-class CpiCpkKey(
+internal class CpiCpkKey(
     @Column(name = "cpi_name")
     val cpiName: String,
     @Column(name = "cpi_version")

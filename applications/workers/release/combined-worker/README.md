@@ -108,15 +108,6 @@ Or if you want to connect to "real" Kafka:
 ./gradlew :applications:workers:release:combined-worker:clean :applications:workers:release:combined-worker:appJar -PbusImpl=kafka
 ```
 
-:bulb: there's currently [an issue](https://github.com/xerial/snappy-java/issues/302) with the OSGi metadata published 
-by the `snappy-java` library (pulled as a transitive dependency by `org.apache.servicemix.bundles.kafka-clients`). As a 
-temporal fix, the library must be excluded [here](../../../../libs/messaging/kafka-message-bus-impl/build.gradle): 
-```groovy
-implementation ("org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion") {
-    exclude group: 'org.xerial.snappy'
-}
-```
-
 Run the worker using:
 ```bash
 java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \

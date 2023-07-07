@@ -49,7 +49,7 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
     private val errorMsg = "PubSubConsumer failed to create and subscribe consumer for group ${config.group}, " +
             "topic ${config.topic}."
 
-    private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
+    private val processorMeter = CordaMetrics.Metric.Messaging.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.PUB_SUB_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_NEXT_OPERATION)

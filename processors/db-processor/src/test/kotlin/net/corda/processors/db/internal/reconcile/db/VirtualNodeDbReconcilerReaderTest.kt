@@ -26,7 +26,7 @@ class VirtualNodeDbReconcilerReaderTest {
         val uniquenessDmlConnectionId = UUID.randomUUID()
         val uniquenessDdlConnectionId = UUID.randomUUID()
         val timestamp = Instant.now()
-        const val entityVersion = 999
+        const val entityVersion = 24680
     }
 
     private fun mockVirtualNodeEntity(): VirtualNodeInfo {

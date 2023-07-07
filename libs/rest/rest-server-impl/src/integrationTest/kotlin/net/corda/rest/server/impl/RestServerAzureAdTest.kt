@@ -38,7 +38,7 @@ class RestServerAzureAdTest {
         securityManager = FakeSecurityManager()
         val restServerSettings = RestServerSettings(
             NetworkHostAndPort("localhost", 0),
-            RestContext("1", "api", "RestContext test title ", "RestContext test description"),
+            RestContext("api", "RestContext test title ", "RestContext test description"),
             null,
             SsoSettings(
                 AzureAdSettings(AzureAdMock.clientId, null, AzureAdMock.tenantId, trustedIssuers = listOf(AzureAdMock.issuer))
@@ -54,7 +54,7 @@ class RestServerAzureAdTest {
             true
         ).apply { start() }
         client = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${restServer.port}/" +
-                "${restServerSettings.context.basePath}/v${restServerSettings.context.version}/")
+                "${restServerSettings.context.basePath}/${RestServerTestBase.apiVersion.versionPath}/")
     }
 
     @AfterEach

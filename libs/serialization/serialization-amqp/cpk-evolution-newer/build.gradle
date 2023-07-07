@@ -2,13 +2,9 @@ plugins {
     id 'net.corda.plugins.cordapp-cpb2'
 }
 
-ext {
-    platformVersion = 999
-}
-
 cordapp {
-    targetPlatformVersion platformVersion as Integer
-    minimumPlatformVersion platformVersion as Integer
+    targetPlatformVersion platformVersion.toInteger()
+    minimumPlatformVersion platformVersion.toInteger()
     workflow {
         name "Test Serializable Test"
         // Change version to 1 when rebuilding the test resources
