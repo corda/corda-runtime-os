@@ -1,11 +1,10 @@
 package net.corda.crypto.service.impl
 
 import com.github.benmanes.caffeine.cache.Cache
-import com.github.benmanes.caffeine.cache.Caffeine
-import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.cipher.suite.PlatformDigestService
@@ -13,14 +12,15 @@ import net.corda.crypto.cipher.suite.SharedSecretWrappedSpec
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
-import net.corda.crypto.config.impl.CryptoSigningServiceConfig
 import net.corda.crypto.core.DigitalSignatureWithKey
+import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullIdHash
+import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
-import net.corda.crypto.service.CryptoServiceFactory
+import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningService
 import net.corda.crypto.softhsm.SigningRepositoryFactory
@@ -31,7 +31,6 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
 import java.security.PublicKey
-import java.util.concurrent.TimeUnit
 
 data class CacheKey(val tenantId: String, val publicKeyId: ShortHash)
 
@@ -47,36 +46,13 @@ data class CacheKey(val tenantId: String, val publicKeyId: ShortHash)
  */
 @Suppress("TooManyFunctions", "LongParameterList")
 class SigningServiceImpl(
-    private val cryptoServiceFactory: CryptoServiceFactory,
+    private val cryptoService: CryptoService,
     private val signingRepositoryFactory: SigningRepositoryFactory,
     override val schemeMetadata: CipherSchemeMetadata,
     private val digestService: PlatformDigestService,
     private val cache: Cache<CacheKey, SigningKeyInfo>,
+    private val hsmStore: HSMStore,
 ) : SigningService {
-
-    /**
-     * Secondary constructor used for production purposes, so that the caller does not need to set the
-     * cache up themselves but can instead just supply the config.
-     */
-    @Suppress("LongParameterList")
-    constructor(
-        cryptoServiceFactory: CryptoServiceFactory,
-        signingRepositoryFactory: SigningRepositoryFactory,
-        schemeMetadata: CipherSchemeMetadata,
-        digestService: PlatformDigestService,
-        config: CryptoSigningServiceConfig,
-    ) : this(
-        cryptoServiceFactory,
-        signingRepositoryFactory,
-        schemeMetadata,
-        digestService,
-        CacheFactoryImpl().build(
-            "Signing-Key-Cache",
-            Caffeine.newBuilder()
-                .expireAfterAccess(config.cache.expireAfterAccessMins, TimeUnit.MINUTES)
-                .maximumSize(config.cache.maximumSize)
-        )
-    )
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -87,8 +63,7 @@ class SigningServiceImpl(
 
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> {
         logger.debug { "getSupportedSchemes(tenant=$tenantId, category=$category)" }
-        val ref = cryptoServiceFactory.findInstance(tenantId = tenantId, category = category)
-        return ref.instance.supportedSchemes.map { it.key.codeName }
+        return cryptoService.supportedSchemes.map { it.key.codeName }
     }
 
     override fun querySigningKeys(
@@ -180,7 +155,7 @@ class SigningServiceImpl(
             "createWrappingKey(hsmId=$hsmId,masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists," +
                     "onBehalf=${context[CRYPTO_TENANT_ID]})"
         }
-        cryptoServiceFactory.getInstance(hsmId).createWrappingKey(masterKeyAlias, failIfExists, context)
+        cryptoService.createWrappingKey(masterKeyAlias, failIfExists, context)
     }
 
     override fun generateKeyPair(
@@ -265,7 +240,6 @@ class SigningServiceImpl(
 
         logger.debug { "sign(tenant=$tenantId, publicKey=${record.data.id})" }
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
-        val cryptoService = cryptoServiceFactory.getInstance(record.data.hsmId)
         val spec = SigningWrappedSpec(getKeySpec(record, publicKey, tenantId), record.publicKey, scheme, signatureSpec)
         val signedBytes = cryptoService.sign(spec, data, context + mapOf(CRYPTO_TENANT_ID to tenantId))
         return DigitalSignatureWithKey(record.publicKey, signedBytes)
@@ -286,9 +260,7 @@ class SigningServiceImpl(
             otherPublicKey.publicKeyId()
         )
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
-        val cryptoService = cryptoServiceFactory.getInstance(record.data.hsmId)
-        val spec =
-            SharedSecretWrappedSpec(getKeySpec(record, publicKey, tenantId), record.publicKey, scheme, otherPublicKey)
+        val spec = SharedSecretWrappedSpec(getKeySpec(record, publicKey, tenantId), record.publicKey, scheme, otherPublicKey)
         return cryptoService.deriveSharedSecret(spec, context + mapOf(CRYPTO_TENANT_ID to tenantId))
     }
 
@@ -300,7 +272,7 @@ class SigningServiceImpl(
         "HSM alias must be specified if key material is not specified, and both are null for ${publicKey.publicKeyId()} of tenant $tenantId"
     )
 
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "ThrowsCount")
     private fun doGenerateKeyPair(
         tenantId: String,
         category: String,
@@ -310,7 +282,8 @@ class SigningServiceImpl(
         context: Map<String, String>,
     ): PublicKey {
         logger.info("generateKeyPair(tenant={}, category={}, alias={}))", tenantId, category, alias)
-        val ref = cryptoServiceFactory.findInstance(tenantId = tenantId, category = category)
+        val association = hsmStore.findTenantAssociation(tenantId, category) ?:
+            throw InvalidParamsException("The tenant '$tenantId' is not configured for category '$category'.")
         signingRepositoryFactory.getInstance(tenantId).use { repo ->
             if (alias != null && repo.findKey(alias) != null) {
                 throw KeyAlreadyExistsException(
@@ -320,23 +293,32 @@ class SigningServiceImpl(
                 )
             }
             logger.trace(
-                "generateKeyPair for tenant={}, category={}, alias={} using wrapping key ${ref.masterKeyAlias}",
+                "generateKeyPair for tenant={}, category={}, alias={} using wrapping key ${association.masterKeyAlias}",
                 tenantId,
                 category,
                 alias
             )
 
-            val generatedKey = ref.instance.generateKeyPair(
-                KeyGenerationSpec(scheme, alias, ref.masterKeyAlias),
+            // TODO always return GeneratedWrappedKey here
+            val key = cryptoService.generateKeyPair(
+                KeyGenerationSpec(scheme, alias, association.masterKeyAlias),
                 context + mapOf(
                     CRYPTO_TENANT_ID to tenantId,
                     CRYPTO_CATEGORY to category
                 )
             )
-            val saveContext = ref.toSaveKeyContext(generatedKey, alias, scheme, externalId)
+            val saveContext = SigningWrappedKeySaveContext(
+                    key = key,
+                    wrappingKeyAlias = association.masterKeyAlias,
+                    externalId = externalId,
+                    alias = alias,
+                    keyScheme = scheme,
+                    category = category,
+                    hsmId = "SOFT" // TODO remove field
+                )
             val signingKeyInfo = repo.savePrivateKey(saveContext)
             cache.put(CacheKey(tenantId, signingKeyInfo.id), signingKeyInfo)
-            return schemeMetadata.toSupportedPublicKey(generatedKey.publicKey)
+            return schemeMetadata.toSupportedPublicKey(key.publicKey)
         }
     }
 

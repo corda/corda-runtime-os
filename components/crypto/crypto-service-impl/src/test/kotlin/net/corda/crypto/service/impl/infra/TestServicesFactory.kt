@@ -1,6 +1,8 @@
 package net.corda.crypto.service.impl.infra
 
+import com.github.benmanes.caffeine.cache.Caffeine
 import com.typesafe.config.ConfigFactory
+import net.corda.cache.caffeine.CacheFactoryImpl
 import java.security.KeyPairGenerator
 import java.security.Provider
 import java.util.concurrent.ConcurrentHashMap
@@ -24,10 +26,8 @@ import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.service.SigningService
-import net.corda.crypto.service.impl.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.HSMServiceImpl
 import net.corda.crypto.service.impl.SigningServiceImpl
-import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.crypto.softhsm.impl.SoftCryptoService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -36,6 +36,7 @@ import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.crypto.SignatureSpec
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 
 
@@ -159,29 +160,7 @@ class TestServicesFactory {
     }
 
     val cryptoWrappingRepository = TestWrappingRepository()
-    val signingService: SigningService by lazy {
-        SigningServiceImpl(
-            cryptoServiceFactory = cryptoServiceFactory,
-            signingRepositoryFactory = { signingRepository },
-            digestService = PlatformDigestServiceImpl(schemeMetadata),
-            schemeMetadata = schemeMetadata,
-            config = cryptoConfig.signingService(),
-        )
-    }
 
-    val hsmService: HSMServiceImpl by lazy {
-        HSMServiceImpl(
-            coordinatorFactory,
-            configurationReadService,
-            hsmStore,
-            cryptoServiceFactory = cryptoServiceFactory
-        ).also {
-            it.start()
-            eventually {
-                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
-            }
-        }
-    }
 
     val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
 
@@ -201,26 +180,33 @@ class TestServicesFactory {
                 wrappingKeyFactory = {
                     WrappingKeyImpl.generateWrappingKey(it)
                 },
+                signingRepositoryFactory =  {
+                    signingRepository
+                }
             ),
             recordedCryptoContexts
         )
     }
 
-    // this MUST return cryptoService at the end of the day, rather than make its own,
-    // or else we'll end up multiple instances of the crypto service with different second level wrapping keys
-    val cryptoServiceFactory: CryptoServiceFactoryImpl = CryptoServiceFactoryImpl(
-        coordinatorFactory,
-        configurationReadService,
-        hsmStore,
-        object : CryptoServiceProvider {
-            override fun getInstance(config: SmartConfig): CryptoService = cryptoService
-        }
-    ).also {
-        it.start()
-        it.bootstrapConfig(bootstrapConfig)
-        eventually {
-            assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
-        }
+    val signingConfig = cryptoConfig.signingService()
+    val signingService: SigningService by lazy {
+        SigningServiceImpl(
+            cryptoService = cryptoService,
+            signingRepositoryFactory = { signingRepository },
+            digestService = PlatformDigestServiceImpl(schemeMetadata),
+            schemeMetadata = schemeMetadata,
+            cache = CacheFactoryImpl().build(
+                "Signing-Key-Cache",
+                Caffeine.newBuilder()
+                    .expireAfterAccess(signingConfig.cache.expireAfterAccessMins, TimeUnit.MINUTES)
+                    .maximumSize(signingConfig.cache.maximumSize)
+            ),
+            hsmStore = hsmStore
+        )
+    }
+
+    val hsmService: HSMServiceImpl by lazy {
+        HSMServiceImpl(hsmStore, cryptoService)
     }
 
     private class CryptoServiceWrapper(
