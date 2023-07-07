@@ -106,61 +106,54 @@ internal class StartRegistrationHandler(
             }
 
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
+            validateRegistrationRequest(registrationRequest.serial != null) {
+                "Serial on the registration request cannot be null."
+            }
+            validateRegistrationRequest(registrationRequest.serial!! >= 0) {
+                "Serial cannot be negative on the registration request."
+            }
+
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
             val persistentMemberInfo = PersistentMemberInfo.newBuilder()
                 .setMemberContext(pendingMemberInfo.memberProvidedContext.toAvro())
                 .setViewOwningMember(mgmMemberInfo.holdingIdentity.toAvro())
                 .setMgmContext(pendingMemberInfo.mgmProvidedContext.toAvro())
                 .build()
-
-            // we don't want to overwrite existing member's information or persist member with wrong name
-            val existingMemberInfos = membershipQueryClient.queryMemberInfo(
-                mgmHoldingId,
-                listOf(pendingMemberHoldingId)
-            ).getOrThrow()
-            // The MemberX500Name is not a duplicate
-            validateRegistrationRequest(
-                existingMemberInfos.isEmpty() || registrationRequest.serial != 0L
-            ) { "Member already exists with the same X500 name." }
-            // The MemberX500Name matches the source MemberX500Name from the P2P messaging
-            validateRegistrationRequest(
-                pendingMemberInfo.name == pendingMemberHoldingId.x500Name
-            ) { "MemberX500Name in registration request does not match member sending request over P2P." }
-
             val pendingMemberRecord = Record(
                 topic = Schemas.Membership.MEMBER_LIST_TOPIC,
                 key = "${mgmMemberInfo.holdingIdentity.shortHash}-${pendingMemberInfo.holdingIdentity.shortHash}" +
                         "-${pendingMemberInfo.status}",
                 value = persistentMemberInfo,
             )
-            outputRecords.add(pendingMemberRecord)
-            val signedMemberInfo = SignedMemberInfo(
-                pendingMemberInfo,
-                registrationRequest.memberSignature,
-                registrationRequest.memberSignatureSpec
-            )
-
-            // Persist pending member record so that we can notify the member of declined registration if failure occurs
+            // Publish pending member record so that we can notify the member of declined registration if failure occurs
             // after this point
-            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(signedMemberInfo))
-                .execute().also {
-                    require(it as? MembershipPersistenceResult.Failure == null) {
-                        "Failed to persist pending member info. Reason: " +
-                                (it as MembershipPersistenceResult.Failure).errorMsg
-                    }
-                }
+            outputRecords.add(pendingMemberRecord)
 
             validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo, registrationRequest)
+            // Parse the registration request and verify contents
+            // The MemberX500Name matches the source MemberX500Name from the P2P messaging
+            validateRegistrationRequest(
+                pendingMemberInfo.name == pendingMemberHoldingId.x500Name
+            ) { "MemberX500Name in registration request does not match member sending request over P2P." }
 
-            // Serial number on the request should be smaller than the current version of the requestor's MemberInfo
-            val activeOrSuspendedInfo = existingMemberInfos.lastOrNull {
+            val activeOrSuspendedInfo = membershipQueryClient.queryMemberInfo(
+                mgmHoldingId,
+                listOf(pendingMemberHoldingId)
+            ).getOrThrow().lastOrNull {
                 it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED
             }
-            validateRegistrationRequest(
-                activeOrSuspendedInfo == null || activeOrSuspendedInfo.serial <= registrationRequest.serial!!
-            ) {
-                "Registration request was submitted for an older version of member info. " +
-                        "Please submit a new request."
+            if (registrationRequest.serial!! > 0) { //re-registration
+                validateRegistrationRequest(activeOrSuspendedInfo != null) {
+                    "Member has not registered previously so serial number should be 0."
+                }
+                validateRegistrationRequest(activeOrSuspendedInfo!!.serial <= registrationRequest.serial!!) {
+                    "Registration request was submitted for an older version of member info. " +
+                            "Please submit a new request."
+                }
+            } else if (registrationRequest.serial!! == 0L) { // initial registration
+                validateRegistrationRequest(activeOrSuspendedInfo == null) {
+                    "Member already exists with the same X500 name."
+                }
             }
 
             activeOrSuspendedInfo?.let { previous ->
@@ -191,6 +184,21 @@ internal class StartRegistrationHandler(
 
             // Validate role-specific information if any role is set
             validateRoleInformation(mgmHoldingId, pendingMemberInfo)
+
+            val signedMemberInfo = SignedMemberInfo(
+                pendingMemberInfo,
+                registrationRequest.memberSignature,
+                registrationRequest.memberSignatureSpec
+            )
+
+            // Persist pending member info
+            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(signedMemberInfo))
+                .execute().also {
+                require(it as? MembershipPersistenceResult.Failure == null) {
+                    "Failed to persist pending member info. Reason: " +
+                            (it as MembershipPersistenceResult.Failure).errorMsg
+                }
+            }
 
             logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
             VerifyMember()

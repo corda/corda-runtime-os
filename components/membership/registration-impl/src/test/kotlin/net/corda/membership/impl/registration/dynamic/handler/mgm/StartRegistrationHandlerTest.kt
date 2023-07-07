@@ -31,6 +31,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PEND
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
@@ -134,11 +135,16 @@ class StartRegistrationHandlerTest {
         on { parse(eq(MODIFIED_TIME), eq(Instant::class.java)) } doReturn clock.instant()
         on { entries } doReturn emptySet()
     }
+    private val pendingMemberMgmContext: MGMContext = mock {
+        on { parse(eq(MODIFIED_TIME), eq(Instant::class.java)) } doReturn clock.instant()
+        on { entries } doReturn emptySet()
+        on { parse(eq(STATUS), eq(String::class.java)) } doReturn MEMBER_STATUS_PENDING
+    }
     private val pendingMemberInfo: MemberInfo = mock {
         on { name } doReturn aliceX500Name
         on { isActive } doReturn true
         on { memberProvidedContext } doReturn memberMemberContext
-        on { mgmProvidedContext } doReturn memberMgmContext
+        on { mgmProvidedContext } doReturn pendingMemberMgmContext
         on { status } doReturn MEMBER_STATUS_PENDING
         on { serial } doReturn 1L
         on { platformVersion } doReturn 50100
@@ -157,7 +163,6 @@ class StartRegistrationHandlerTest {
             createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
         } doReturn authenticatedMessageRecord
     }
-
 
     private val mgmMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
@@ -330,6 +335,20 @@ class StartRegistrationHandlerTest {
     }
 
     @Test
+    fun `declined if serial in the registration request is negative`() {
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .thenReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = -1)))
+        with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {
+            assertThat(updatedState).isNotNull
+            assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
+            assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
+            assertThat(outputStates).isNotEmpty.hasSize(1)
+
+            assertDeclinedRegistration()
+        }
+    }
+
+    @Test
     fun `declined if updating the status of the registration request fails`() {
         val operation = mock<MembershipPersistenceOperation<Unit>> {
             on { execute() } doReturn MembershipPersistenceResult.Failure("error")
@@ -471,6 +490,30 @@ class StartRegistrationHandlerTest {
             verify = true,
             verifyCustomFields = true,
             queryMemberInfo = true,
+            queryRegistrationRequest = true,
+        )
+    }
+
+    @Test
+    fun `not declined if member already exists in a pending state`() {
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+            .doReturn(MembershipQueryResult.Success(listOf(pendingMemberInfo)))
+        with(
+            handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+        ) {
+            assertThat(updatedState).isNotNull
+            assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
+            assertThat(updatedState!!.registeringMember).isEqualTo(aliceHoldingIdentity)
+            assertThat(outputStates).isNotEmpty.hasSize(2)
+
+            assertRegistrationStarted()
+        }
+        verifyServices(
+            updateRegistrationRequest = true,
+            verify = true,
+            verifyCustomFields = true,
+            queryMemberInfo = true,
+            persistMemberInfo = true,
             queryRegistrationRequest = true,
         )
     }

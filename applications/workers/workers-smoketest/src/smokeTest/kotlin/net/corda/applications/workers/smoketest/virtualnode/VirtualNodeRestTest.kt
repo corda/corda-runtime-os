@@ -16,7 +16,6 @@ import net.corda.e2etest.utilities.awaitVirtualNodeOperationStatusCheck
 import net.corda.e2etest.utilities.cluster
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.startRpcFlow
-import net.corda.e2etest.utilities.toJson
 import net.corda.e2etest.utilities.truncateLongHash
 import net.corda.rest.ResponseCode.CONFLICT
 import net.corda.rest.asynchronous.v1.AsyncOperationState
@@ -44,11 +43,6 @@ class VirtualNodeRestTest {
         private const val ERROR_HOLDING_ID =
             "Holding id could not be created - this test needs to be run on a clean cluster."
         private const val ERROR_REQUEST_ID = "Request Id not found."
-        private const val ERROR_VNODE_NOT_IN_MAINTENANCE =
-            "Virtual node must be in maintenance to perform an upgrade."
-
-        // Server side messages
-        private const val EXPECTED_ERROR_CPB_INSTEAD_OF_CPI = "Invalid CPI.  Unknown Corda-CPI-Format - \"1.0\""
 
         private val testRunUniqueId = UUID.randomUUID()
         private val groupId = UUID.randomUUID().toString()
@@ -63,7 +57,6 @@ class VirtualNodeRestTest {
 
         private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
         private val upgradeTestingCpiName = "${VNODE_UPGRADE_TEST_CPI_NAME}_$testRunUniqueId"
-        private val otherCpiName = "${TEST_CPI_NAME}_OTHER_$testRunUniqueId"
 
         private val retryTimeout = 120.seconds
         private val retryInterval = 1.seconds
@@ -146,43 +139,6 @@ class VirtualNodeRestTest {
     }
 
     @Test
-    @Order(32)
-    fun `can upload different CPI with same groupId`() {
-        cluster {
-            val requestId = cpiUpload(
-                TEST_CPB_LOCATION,
-                "8c5d6948-e17b-44e7-9d1c-fa4a3f667cad",
-                staticMemberList,
-                otherCpiName
-            ).let { it.toJson()["id"].textValue() }
-
-            val json = assertWithRetry {
-                // CPI upload can be slow in the combined worker, especially after it has just started up.
-                timeout(retryTimeout)
-                interval(retryInterval)
-                command { cpiStatus(requestId) }
-                condition {
-                    it.code == 200 && it.toJson()["status"].textValue() == "OK"
-                }
-                immediateFailCondition {
-                    it.code == CONFLICT.statusCode
-                            && null != it.toJson()["details"]
-                            && it.toJson()["details"]["code"].textValue().equals(CONFLICT.toString())
-                            && null != it.toJson()["title"]
-                            && it.toJson()["title"].textValue().contains("already uploaded")
-                }
-            }.toJson()
-
-            val cpiHash = json["cpiFileChecksum"].textValue()
-            assertThat(cpiHash).isNotNull.isNotEmpty
-            val actualChecksum = getCpiChecksum(otherCpiName)
-            assertThat(actualChecksum).isNotNull.isNotEmpty
-            assertThat(cpiHash).withFailMessage(ERROR_CPI_NOT_UPLOADED).isNotNull
-            assertThat(actualChecksum).isEqualTo(cpiHash)
-        }
-    }
-
-    @Test
     @Order(33)
     fun `list cpis`() {
         cluster {
@@ -198,18 +154,6 @@ class VirtualNodeRestTest {
     }
 
     @Test
-    @Order(37)
-    fun `list cpis and check group id matches value in group policy file`() {
-        cluster {
-            val json = cpiList().toJson()
-            val cpiJson = json["cpis"].first { it["id"]["cpiName"].textValue() == cpiName }
-
-            val groupPolicyJson = cpiJson["groupPolicy"].textValue().toJson()
-            assertThat(groupPolicyJson["groupId"].textValue()).isEqualTo(groupId)
-        }
-    }
-
-    @Test
     @Order(40)
     fun `can create virtual node with holding id and CPI`() {
         cluster {
@@ -219,7 +163,7 @@ class VirtualNodeRestTest {
         }
     }
 
-    private fun ClusterBuilder.eventuallyCreateVirtualNode(cpiFileChecksum: String, x500Name: String): String? {
+    private fun ClusterBuilder.eventuallyCreateVirtualNode(cpiFileChecksum: String, x500Name: String): String {
         val vNodeJson = assertWithRetry {
             timeout(retryTimeout)
             interval(retryInterval)
@@ -231,21 +175,6 @@ class VirtualNodeRestTest {
         assertThat(requestId).isNotNull.isNotEmpty
 
         return awaitVirtualNodeOperationStatusCheck(requestId)
-    }
-
-    @Test
-    @Order(50)
-    fun `cannot create duplicate virtual node`() {
-        cluster {
-            val hash = getCpiChecksum(cpiName)
-
-            assertWithRetry {
-                timeout(retryTimeout)
-                interval(retryInterval)
-                command { vNodeCreate(hash, aliceX500) }
-                condition { it.code == 409 }
-            }
-        }
     }
 
     @Test
@@ -311,63 +240,6 @@ class VirtualNodeRestTest {
                     false
                 }
             }
-        }
-    }
-
-    @Test
-    @Order(65)
-    fun `cpi status returns 400 for unknown request id`() {
-        cluster {
-            assertWithRetry {
-                timeout(retryTimeout)
-                interval(retryInterval)
-                command { cpiStatus("THIS_WILL_NEVER_BE_A_CPI_STATUS") }
-                condition { it.code == 400 }
-            }
-        }
-    }
-
-    @Test
-    @Order(80)
-    fun `can force upload same CPI`() {
-        cluster {
-            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
-
-            val requestId = forceCpiUpload(
-                TEST_CPB_LOCATION,
-                groupId,
-                staticMemberList,
-                cpiName
-            ).let { it.toJson()["id"].textValue() }
-            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
-
-            assertWithRetry {
-                timeout(retryTimeout)
-                interval(retryInterval)
-                command { cpiStatus(requestId) }
-                condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
-            }
-
-            // Force uploaded CPI may take some time to propagate through the system and arrive to REST worker's CpiInfoReadService
-            eventually(retryTimeout, retryInterval) {
-                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
-            }
-        }
-    }
-
-    @Test
-    @Order(81)
-    fun `can run the uploaded CPI`() {
-        cluster {
-            runReturnAStringFlow("original-cpi")
-        }
-    }
-
-    @Test
-    @Order(82)
-    fun `persist dog`() {
-        cluster {
-            runSimplePersistenceCheckFlow("Could persist dog")
         }
     }
 
@@ -491,12 +363,6 @@ class VirtualNodeRestTest {
         val flowStatus = awaitRpcFlowFinished(holdingId, requestId)
 
         assertThat(flowStatus.flowResult).isEqualTo(expectedResult)
-    }
-
-    private fun ClusterBuilder.getCpiFileChecksum(cpiName: String): String {
-        val cpis = cpiList().toJson()["cpis"]
-        val cpiJson = cpis.toList().first { it["id"]["cpiName"].textValue() == cpiName }
-        return cpiJson["cpiFileFullChecksum"].toString()
     }
 
     private fun ClusterBuilder.getCpiChecksum(cpiName: String): String {
