@@ -75,5 +75,10 @@
         <root level="debug">
             <AppenderRef ref="App" level="info"/>
         </root>
+
+        <logger name="net.corda.session.manager.impl" level="trace" additivity="false">
+            <AppenderRef ref="Console" level="trace"/>
+            <AppenderRef ref="App" level="trace"/>
+        </logger>
     </Loggers>
 </Configuration>

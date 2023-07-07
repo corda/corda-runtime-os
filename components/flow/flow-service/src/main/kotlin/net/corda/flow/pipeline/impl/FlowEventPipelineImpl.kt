@@ -1,5 +1,8 @@
 package net.corda.flow.pipeline.impl
 
+import java.nio.ByteBuffer
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.Wakeup
@@ -24,9 +27,6 @@ import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 
 /**
  * [FlowEventPipelineImpl] encapsulates the pipeline steps that are executed when a [FlowEvent] is received by a [FlowEventProcessor].
@@ -181,7 +181,7 @@ class FlowEventPipelineImpl(
         if (payload is SessionEvent) {
             eventSubtype += "." + payload.payload.javaClass.simpleName
         }
-        return "$eventType$eventSubtype"
+        return "$eventType$eventSubtype$eventPayload"
     }
 
     private fun getFlowEventHandler(event: FlowEvent): FlowEventHandler<Any> {
