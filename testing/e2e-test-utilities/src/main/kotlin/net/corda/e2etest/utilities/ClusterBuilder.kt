@@ -5,6 +5,7 @@ import java.io.FileNotFoundException
 import java.io.InputStream
 import java.net.URI
 import java.nio.file.Paths
+import java.time.Instant
 
 /**
  *  All functions return a [SimpleResponse] if not explicitly declared.
@@ -159,19 +160,62 @@ class ClusterBuilder {
             |   } 
             | }""".trimMargin()
 
-    private fun createRbacUserBody(enabled: Boolean, fullName: String, password: String, loginName: String) =
-        """{ "enabled" : "$enabled", 
-            |"fullName" : "$fullName", 
-            |"initialPassword" : "$password", 
-            |"loginName" : "$loginName" }""".trimMargin()
+    private fun createRbacRoleBody(roleName: String, groupVisibility: String?): String {
+        val body = mutableListOf<String>().apply {
+            groupVisibility?.let { add(""""groupVisibility": "$groupVisibility"""") }
+            add(""""roleName": "$roleName"""")
+        }
+        val bodyStr = if (body.isEmpty()) {
+            ""
+        } else {
+            body.joinToString(prefix = "{", postfix = "}")
+        }
+        return bodyStr
+    }
+
+    private fun createRbacUserBody(
+        enabled: Boolean,
+        fullName: String,
+        password: String,
+        loginName: String,
+        parentGroup: String?,
+        passwordExpiry: Instant?
+    ): String {
+        val body = mutableListOf<String>().apply {
+            add(""""enabled": "$enabled"""")
+            add(""""fullName": "$fullName"""")
+            add(""""initialPassword": "$password"""")
+            add(""""loginName": "$loginName"""")
+            parentGroup?.let { add(""""parentGroup": "$parentGroup"""") }
+            passwordExpiry?.let { add(""""passwordExpiry": "$passwordExpiry"""") }
+            }
+            val bodyStr = if (body.isEmpty()) {
+                ""
+            } else {
+                body.joinToString(prefix = "{", postfix = "}")
+            }
+            return bodyStr
+    }
 
     private fun createPermissionBody(
         permissionString: String,
         permissionType: String,
-    ) =
-        """{ 
-            |"permissionString" : "$permissionString", 
-            |"permissionType" : "$permissionType" }""".trimMargin()
+        groupVisibility: String?,
+        virtualNode: String?
+    ): String {
+        val body = mutableListOf<String>().apply {
+            groupVisibility?.let { add(""""groupVisibility": "$groupVisibility"""") }
+            add(""""permissionString": "$permissionString"""")
+            add(""""permissionType": "$permissionType"""")
+            virtualNode?.let { add(""""virtualNode": "$virtualNode"""") }
+        }
+        val bodyStr = if (body.isEmpty()) {
+            ""
+        } else {
+            body.joinToString(prefix = "{", postfix = "}")
+        }
+        return bodyStr
+    }
 
     /** Create a virtual node */
     fun vNodeCreate(cpiHash: String, x500Name: String) =
@@ -261,12 +305,28 @@ class ClusterBuilder {
     fun runnableFlowClasses(holdingIdentityShortHash: String) =
         get("/api/v1/flowclass/$holdingIdentityShortHash")
 
+    /** Create a new RBAC role */
+    fun createRbacRole(roleName: String, groupVisibility: String? = null) =
+        post("/api/v1/role", createRbacRoleBody(roleName, groupVisibility))
+
     /** Get all RBAC roles */
     fun getRbacRoles() = get("/api/v1/role")
 
+    /** Get a role for a specified ID */
+    fun getRole(roleId: String) = get("/api/v1/role/$roleId")
+
     /** Create new RBAC user */
-    fun createRbacUser(enabled: Boolean, fullName: String, password: String, loginName: String) =
-        post("/api/v1/user", createRbacUserBody(enabled, fullName, password, loginName))
+    fun createRbacUser(
+        enabled: Boolean,
+        fullName: String,
+        password: String,
+        loginName: String,
+        parentGroup: String? = null,
+        passwordExpiry: Instant? = null
+    ) =
+        post("/api/v1/user",
+            createRbacUserBody(enabled, fullName, password, loginName, parentGroup, passwordExpiry)
+        )
 
     /** Get an RBAC user for a specific login name */
     fun getRbacUser(loginName: String) =
@@ -276,13 +336,19 @@ class ClusterBuilder {
     fun assignRoleToUser(loginName: String, roleId: String) =
         put("/api/v1/user/$loginName/role/$roleId", "")
 
+    /** Remove the specified role from a specified user */
+    fun removeRoleFromUser(loginName: String, roleId: String) =
+        delete("/api/v1/user/$loginName/role/$roleId")
+
     /** Create a new permission */
     fun createPermission(
         permissionString: String,
         permissionType: String,
+        groupVisibility: String? = null,
+        virtualNode: String? = null
     ) =
         post("/api/v1/permission",
-            createPermissionBody(permissionString, permissionType)
+            createPermissionBody(permissionString, permissionType, groupVisibility, virtualNode)
         )
 
     /** Get the permissions which satisfy the query */
@@ -307,6 +373,14 @@ class ClusterBuilder {
     /** Get the permission associated with a specific ID */
     fun getPermissionById(permissionId: String) =
         get("/api/v1/permission/$permissionId")
+
+    /** Add the specified permission to the specified role */
+    fun assignPermissionToRole(roleId: String, permissionId: String) =
+        put("/api/v1/role/$roleId/permission/$permissionId", "")
+
+    /** Remove the specified permission from the specified role */
+    fun removePermissionFromRole(roleId: String, permissionId: String) =
+        delete("/api/v1/role/$roleId/permission/$permissionId")
 
     /** Start a flow */
     fun flowStart(
