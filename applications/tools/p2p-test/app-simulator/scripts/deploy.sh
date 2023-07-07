@@ -29,7 +29,7 @@ deploy() {
               --values $REPO_TOP_LEVEL_DIR/debug.yaml --wait --version $CORDA_CHART_VERSION"
    if kubectl get ns metrics-server > /dev/null 2>/dev/null ; then
      prereqs_args+=" -f \"$SCRIPT_DIR/prereqs-eks.metrics.yaml\""
-    corda_args+=" -f \"$SCRIPT_DIR/corda-eks.metrics.yaml\""
+     corda_args+=" -f \"$SCRIPT_DIR/corda-eks.metrics.yaml\""
    fi
 
    echo Installing prereqs into $namespace

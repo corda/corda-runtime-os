@@ -14,9 +14,14 @@ POSTGRES_ADMIN_PASSWORD=$(kubectl get secret --namespace $APP_SIMULATOR_DB_NAMES
 HELM_A_X500_NAME=$(echo $A_X500_NAME | sed 's/,/\\,/g')
 HELM_B_X500_NAME=$(echo $B_X500_NAME | sed 's/,/\\,/g')
 
+if kubectl get ns metrics-server > /dev/null 2>/dev/null ; then
+  metrics_args=" -f \"$SCRIPT_DIR/app-simulator-eks.metrics.yaml\""
+fi
+
 helm upgrade --install \
   app-simulator-sender $APP_SIMULATOR_CHART_DIR \
-  -f sender.yaml \
+  -f "$SCRIPT_DIR"/sender.yaml \
+  $metrics_args \
   -n $A_CLUSTER_NAMESPACE \
   --set db.appSimulator.password=$POSTGRES_ADMIN_PASSWORD \
   --set "imagePullSecrets={docker-registry-cred}" \

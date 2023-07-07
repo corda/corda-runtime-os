@@ -30,7 +30,11 @@ resources:
   requests: {}
 
 # -- node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/
-nodeSelector: {}
+nodeSelector: { node: "prereqs" }
+tolerations:
+  - effect: "NoSchedule"
+    key: "node"
+    value: "prereqs"
 
 # Database configuration
 db:
