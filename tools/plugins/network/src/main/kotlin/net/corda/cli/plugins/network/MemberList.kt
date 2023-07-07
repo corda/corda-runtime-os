@@ -20,12 +20,8 @@ class MemberList : RestCommand(), Runnable {
             country = null
         )
     }
-    @Suppress("LongParameterList")
-    @CommandLine.Command(
-        name = "members-list",
-        description = ["Shows the list of members on the network."]
-    )
-    fun getMembersList(
+
+    private fun getMembersList(
         @CommandLine.Option(
             names = ["-h", "--holding-identity-short-hash"],
             arity = "1",
