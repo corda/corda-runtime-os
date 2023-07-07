@@ -47,7 +47,7 @@ class VerifierTest {
     )
 
     @Test
-    fun `verify without key call the service with the correct arguments`() {
+    fun `verify with multiple keys call the service with the correct arguments`() {
         val data = byteArrayOf(44, 1)
         verifier.verify(publicKeys + publicKey, signature, signatureSpec, data)
         verify(signatureVerificationService).verify(
@@ -77,7 +77,7 @@ class VerifierTest {
     }
 
     @Test
-    fun `verify without key fails if spec can not be found`() {
+    fun `verify with multiple keys fails if spec can not be found`() {
         val data = byteArrayOf(44, 1)
         val signature = CryptoSignatureWithKey(
             signature.publicKey,
@@ -105,7 +105,7 @@ class VerifierTest {
     }
 
     @Test
-    fun `verify without key fails if signature verification service fails`() {
+    fun `verify with multiple keys fails if signature verification service fails`() {
         val data = byteArrayOf(44, 1)
         whenever(
             signatureVerificationService.verify(
