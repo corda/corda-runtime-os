@@ -17,7 +17,6 @@ import java.security.KeyStore
 import java.security.Security
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
-import java.security.cert.X509Certificate
 import java.util.jar.JarInputStream
 import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
@@ -91,7 +90,7 @@ internal object SigningHelpers {
                 val jarsignerSignatureAlgorithm = if (keyIsRsa) { "SHA256withRSA" } else { "SHA256withECDSA" }
 
                 val certChain = readCertFromFile(certFile)
-                val certPath = buildCertPath(listOf(certChain))
+                val certPath = buildCertPath(certChain.toList())
 
                 // Create JarSigner
                 val builder = JarSigner.Builder(privateKey, certPath)
@@ -157,10 +156,10 @@ internal object SigningHelpers {
             .getInstance(STANDARD_CERT_FACTORY_TYPE)
             .generateCertPath(certificateChain)
 
-    private fun readCertFromFile(certificate: Path): X509Certificate {
+    private fun readCertFromFile(certificate: Path): MutableCollection<out Certificate> {
         val targetStream: InputStream = File(certificate.toUri()).inputStream()
         return CertificateFactory
             .getInstance(STANDARD_CERT_FACTORY_TYPE)
-            .generateCertificate(targetStream) as X509Certificate
+            .generateCertificates(targetStream)
     }
 }
