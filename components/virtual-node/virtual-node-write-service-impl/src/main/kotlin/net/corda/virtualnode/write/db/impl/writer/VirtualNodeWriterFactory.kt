@@ -56,8 +56,8 @@ internal class VirtualNodeWriterFactory(
     private companion object {
         const val ASYNC_OPERATION_GROUP = "virtual.node.async.operation.group"
 
-        const val VIRTUAL_NODES_DDL_POOL_CONFIG = "corda-virtual-nodes-ddl"
-        const val VIRTUAL_NODES_DML_POOL_CONFIG = "corda-virtual-nodes-dml"
+        const val VIRTUAL_NODES_DDL = "corda-virtual-nodes-ddl"
+        const val VIRTUAL_NODES_DML = "corda-virtual-nodes-dml"
     }
 
     /**
@@ -104,13 +104,13 @@ internal class VirtualNodeWriterFactory(
         // TODO The following configs and `virtualNodeDbFactory` do not depend on dynamic config so they could be extracted out to not be
         //  re-created on dynamic config update.
         val virtualNodesDdlPoolConfig =
-            requireNotNull(dbConnectionManager.getDataSourceConfig(VIRTUAL_NODES_DDL_POOL_CONFIG, DbPrivilege.DDL)) {
-                "\"$VIRTUAL_NODES_DDL_POOL_CONFIG\" not found in DB table: \"config.db_connection\""
+            requireNotNull(dbConnectionManager.getDataSourceConfig(VIRTUAL_NODES_DDL, DbPrivilege.DDL)) {
+                "\"$VIRTUAL_NODES_DDL\" config not found in DB table: \"config.db_connection\""
             }
 
         val virtualNodesDmlPoolConfig =
-            requireNotNull(dbConnectionManager.getDataSourceConfig(VIRTUAL_NODES_DML_POOL_CONFIG, DbPrivilege.DML)) {
-                "\"$VIRTUAL_NODES_DML_POOL_CONFIG\" not found in DB table: \"config.db_connection\""
+            requireNotNull(dbConnectionManager.getDataSourceConfig(VIRTUAL_NODES_DML, DbPrivilege.DML)) {
+                "\"$VIRTUAL_NODES_DML\" config not found in DB table: \"config.db_connection\""
             }
 
         val virtualNodeDbFactory =
