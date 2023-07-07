@@ -23,7 +23,7 @@ class ReserveTokensSubFlowV2(private val alias: MemberX500Name, private val inte
         log.info("Calling facade method '$facadeId' to $alias")
 
         val client: TokensFacade =
-            facadeService.getFacade(facadeId, TokensFacade::class.java, alias, interopGroupId)
+            facadeService.getProxy(facadeId, TokensFacade::class.java, alias, interopGroupId)
 
         val response: TokenReservation = client.reserveTokensV2(denomination, amount, timeToLiveMs)
 
