@@ -11,7 +11,7 @@ import net.corda.ledger.utxo.flow.impl.flows.finality.v1.FinalityNotarizationFai
 import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
-import net.corda.ledger.utxo.transaction.verifier.SignedGroupParametersVerifier
+import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.trace
@@ -113,7 +113,7 @@ class UtxoReceiveFinalityFlowV1(
             persistInvalidTransaction(initialTransaction)
             throw CordaRuntimeException(message)
         }
-        signedGroupParametersVerifier.verifySignature(currentGroupParameters, currentGroupParametersService.getMgmKeys())
+        signedGroupParametersVerifier.verifySignature(currentGroupParameters)
         return currentGroupParameters
     }
 

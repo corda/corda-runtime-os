@@ -6,11 +6,10 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerMetricRecorder
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TopologicalSort
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
-import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersService
 import net.corda.ledger.utxo.flow.impl.persistence.TransactionExistenceStatus
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
-import net.corda.ledger.utxo.transaction.verifier.SignedGroupParametersVerifier
+import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.trace
@@ -42,9 +41,6 @@ class TransactionBackchainReceiverFlowV2(
 
     @CordaInject
     lateinit var utxoLedgerMetricRecorder: UtxoLedgerMetricRecorder
-
-    @CordaInject
-    lateinit var currentGroupParametersService: CurrentGroupParametersService
 
     @CordaInject
     lateinit var signedGroupParametersVerifier: SignedGroupParametersVerifier
@@ -148,8 +144,7 @@ class TransactionBackchainReceiverFlowV2(
             throw CordaRuntimeException(message)
         }
         signedGroupParametersVerifier.verifySignature(
-            retrievedSignedGroupParameters,
-            currentGroupParametersService.getMgmKeys()
+            retrievedSignedGroupParameters
         )
 
         utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(retrievedSignedGroupParameters)

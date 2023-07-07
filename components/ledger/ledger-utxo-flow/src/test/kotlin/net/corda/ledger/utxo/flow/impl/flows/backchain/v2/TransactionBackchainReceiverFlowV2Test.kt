@@ -10,7 +10,7 @@ import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersSer
 import net.corda.ledger.utxo.flow.impl.persistence.TransactionExistenceStatus
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
-import net.corda.ledger.utxo.transaction.verifier.SignedGroupParametersVerifier
+import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -289,7 +289,7 @@ class TransactionBackchainReceiverFlowV2Test {
             groupParameters,
         )
         whenever(groupParameters.hash).thenReturn(groupParametersHash1)
-        whenever(signedGroupParametersVerifier.verifySignature(any(), any())).thenThrow(
+        whenever(signedGroupParametersVerifier.verifySignature(any())).thenThrow(
             CryptoSignatureException("Invalid signature")
         )
 
@@ -467,7 +467,6 @@ class TransactionBackchainReceiverFlowV2Test {
             utxoLedgerPersistenceService = this@TransactionBackchainReceiverFlowV2Test.utxoLedgerPersistenceService
             utxoLedgerMetricRecorder = this@TransactionBackchainReceiverFlowV2Test.utxoLedgerMetricRecorder
             utxoLedgerGroupParametersPersistenceService = this@TransactionBackchainReceiverFlowV2Test.utxoLedgerGroupParametersPersistenceService
-            currentGroupParametersService = this@TransactionBackchainReceiverFlowV2Test.currentGroupParametersService
             signedGroupParametersVerifier = this@TransactionBackchainReceiverFlowV2Test.signedGroupParametersVerifier
         }.call()
     }
