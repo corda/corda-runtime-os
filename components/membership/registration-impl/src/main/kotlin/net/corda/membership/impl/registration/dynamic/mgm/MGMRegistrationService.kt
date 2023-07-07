@@ -66,15 +66,6 @@ class MGMRegistrationService @Activate constructor(
     private val configurationGetService: ConfigurationGetService,
 ) : MemberRegistrationService {
 
-    private companion object {
-        val SUPPORTED_REGISTRATION_PROTOCOLS = setOf(
-            "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService"
-        )
-        val SUPPORTED_SYNC_PROTOCOLS = setOf(
-            "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl"
-        )
-    }
-
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
      */
@@ -168,7 +159,6 @@ class MGMRegistrationService @Activate constructor(
             return try {
                 mgmRegistrationRequestHandler.throwIfRegistrationAlreadyApproved(member)
                 mgmRegistrationContextValidator.validate(context)
-                validateProtocols(context)
 
                 val mgmInfo = mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(member, context)
 
@@ -209,16 +199,6 @@ class MGMRegistrationService @Activate constructor(
         }
     }
 
-    private fun validateProtocols(context: Map<String, String>) {
-        if (context[REGISTRATION_PROTOCOL] !in SUPPORTED_REGISTRATION_PROTOCOLS) {
-            throw MGMRegistrationContextValidationException("Invalid value for key $REGISTRATION_PROTOCOL in registration context. " +
-                    "It should be one of the following values: $SUPPORTED_REGISTRATION_PROTOCOLS.", null)
-        }
-        if (context[SYNCHRONISATION_PROTOCOL] !in SUPPORTED_SYNC_PROTOCOLS) {
-            throw MGMRegistrationContextValidationException("Invalid value for key $SYNCHRONISATION_PROTOCOL in registration context. " +
-                    "It should be one of the following values: $SUPPORTED_REGISTRATION_PROTOCOLS.", null)
-        }
-    }
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {

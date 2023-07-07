@@ -599,32 +599,7 @@ class MGMRegistrationServiceTest {
 
             assertThat(exception).hasMessageContaining("Could not find virtual node info")
         }
-
-        @Test
-        fun `registration fails when registration protocol provided is invalid`() {
-            postUpEvent()
-            val contextWithInvalidProtocol = properties.plus("corda.group.protocol.registration" to "invalid")
-            registrationService.start()
-            val exception = assertThrows<InvalidMembershipRegistrationException> {
-                registrationService.register(registrationRequest, mgm, contextWithInvalidProtocol)
-            }
-
-            assertThat(exception).hasMessageContaining("Invalid value for key $REGISTRATION_PROTOCOL in registration context.")
-            registrationService.stop()
-        }
-
-        @Test
-        fun `registration fails when sync protocol provided is invalid`() {
-            postUpEvent()
-            val contextWithInvalidProtocol = properties.plus("corda.group.protocol.synchronisation" to "invalid")
-            registrationService.start()
-            val exception = assertThrows<InvalidMembershipRegistrationException> {
-                registrationService.register(registrationRequest, mgm, contextWithInvalidProtocol)
-            }
-
-            assertThat(exception).hasMessageContaining("Invalid value for key $SYNCHRONISATION_PROTOCOL in registration context.")
-            registrationService.stop()
-        }
+        
     }
 
     @Nested
