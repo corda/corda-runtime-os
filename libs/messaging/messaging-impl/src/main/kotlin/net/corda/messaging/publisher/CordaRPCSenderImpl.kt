@@ -62,7 +62,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private var responsePartition: CordaTopicPartition? = null
     private val responseTopic = getRPCResponseTopic(config.topic)
 
-    private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
+    private val processorMeter = CordaMetrics.Metric.Messaging.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.RPC_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.RPC_SENDER_OPERATION)

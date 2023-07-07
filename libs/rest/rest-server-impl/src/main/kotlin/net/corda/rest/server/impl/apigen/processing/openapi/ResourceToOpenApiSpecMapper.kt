@@ -19,6 +19,7 @@ import java.io.InputStream
 import java.util.Collections.singletonList
 import java.util.Locale
 import net.corda.rest.HttpFileUpload
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.impl.apigen.models.Endpoint
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
 import net.corda.rest.server.impl.apigen.models.EndpointParameter
@@ -47,14 +48,22 @@ private const val APPLICATION_JSON_CONTENT_TYPE = "application/json"
 /**
  * Convert a Resource list to an OpenAPI object
  */
-internal fun List<Resource>.toOpenAPI(schemaModelContextHolder: SchemaModelContextHolder): OpenAPI {
+internal fun List<Resource>.toOpenAPI(
+    schemaModelContextHolder: SchemaModelContextHolder,
+    apiVersion: RestApiVersion
+): OpenAPI {
     log.trace { "Map \"${this.size}\" resources to OpenAPI." }
     val swaggerPathInfos = mutableMapOf<String, PathItem>()
     val tags = mutableListOf<Tag>()
 
-    this.forEach {
-        swaggerPathInfos.putAll(it.getPathToPathItems(DefaultSchemaModelProvider(schemaModelContextHolder)))
-        tags.add(it.toTag())
+    this.filter { apiVersion in it.apiVersions }.forEach { resource ->
+        swaggerPathInfos.putAll(
+            resource.getPathToPathItems(
+                DefaultSchemaModelProvider(schemaModelContextHolder),
+                apiVersion
+            )
+        )
+        tags.add(resource.toTag())
     }
     val paths = Paths().apply { swaggerPathInfos.toSortedMap().forEach { addPathItem(it.key, it.value) } }
     val schemas =
@@ -270,9 +279,13 @@ private fun Resource.toTag(): Tag {
         .also { log.trace { "Map resource: \"${this.name}\" to OpenApi Tag: \"$it\" completed." } }
 }
 
-private fun Resource.getPathToPathItems(schemaModelProvider: SchemaModelProvider): Map<String, PathItem> {
+private fun Resource.getPathToPathItems(
+    schemaModelProvider: SchemaModelProvider,
+    apiVersion: RestApiVersion
+): Map<String, PathItem> {
     log.trace { "Map resource: \"${this.name}\" to Map of Path to PathItem." }
-    return this.endpoints.groupBy { joinResourceAndEndpointPaths(path, it.path).toOpenApiPath() }.map {
+    return endpoints.filter { apiVersion in it.apiVersions }
+        .groupBy { joinResourceAndEndpointPaths(path, it.path).toOpenApiPath() }.map {
         val getEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.GET == endpoint.method }
         val postEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.POST == endpoint.method }
         val putEndpoint = it.value.singleOrNull { endpoint -> EndpointMethod.PUT == endpoint.method }

@@ -10,24 +10,24 @@ import java.util.UUID;
 public interface JavaTokensFacade {
 
     @BindsFacadeMethod
-    InteropAction<Double> getBalance(String denomination);
+    Double getBalance(String denomination);
 
     @FacadeVersions("v1.0")
     @BindsFacadeMethod("reserve-tokens")
-    InteropAction<UUID> reserveTokensV1(String denomination, BigDecimal amount);
+    UUID reserveTokensV1(String denomination, BigDecimal amount);
 
     @FacadeVersions("v2.0")
     @BindsFacadeMethod("reserve-tokens")
-    InteropAction<JavaTokenReservation> reserveTokensV2(
+    JavaTokenReservation reserveTokensV2(
             @Denomination String denomination,
             BigDecimal amount,
             @BindsFacadeParameter("ttl-ms") long timeToLiveMs);
 
     @BindsFacadeMethod
-    InteropAction<Void> releaseReservedTokens(UUID reservationRef);
+    void releaseReservedTokens(UUID reservationRef);
 
     @BindsFacadeMethod
-    InteropAction<Void> spendReservedTokens(
+    void spendReservedTokens(
             UUID reservationRef,
             UUID transactionRef,
             String recipient);

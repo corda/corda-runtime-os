@@ -68,7 +68,7 @@ class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
     @Timeout(100)
     fun `start connection-aware client against server with accepted protocol version and SSL enabled succeeds`() {
         val client = RestClient(
-            baseAddress = "https://localhost:${server.port}/api/v1/",
+            baseAddress = "https://localhost:${server.port}/api/${apiVersion.versionPath}/",
             TestHealthCheckAPI::class.java,
             RestClientConfig()
                 .enableSSL(true)
@@ -94,7 +94,7 @@ class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
     @Timeout(100)
     fun `start client against server with accepted protocol version and SSL enabled and custom serializers succeeds`() {
         val client = RestClient(
-            baseAddress = "https://localhost:${server.port}/api/v1/",
+            baseAddress = "https://localhost:${server.port}/api/${apiVersion.versionPath}/",
             CustomSerializationAPI::class.java,
             RestClientConfig()
                 .enableSSL(true)
@@ -116,7 +116,7 @@ class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
     @Timeout(100)
     fun `start client with SSL enabled against server with less than rest version since but valid version `() {
         val client = RestClient(
-            baseAddress = "https://localhost:${server.port}/api/v1/",
+            baseAddress = "https://localhost:${server.port}/api/${apiVersion.versionPath}/",
             TestHealthCheckAPI::class.java,
             RestClientConfig()
                 .enableSSL(true)
@@ -143,7 +143,7 @@ class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
     @Timeout(100)
     fun `start client with SSL enabled against server with lower protocol version than minimum expected fails`() {
         val client = RestClient(
-            baseAddress = "https://localhost:${server.port}/api/v1/",
+            baseAddress = "https://localhost:${server.port}/api/${apiVersion.versionPath}/",
             TestHealthCheckAPI::class.java,
             RestClientConfig()
                 .enableSSL(true)
@@ -160,7 +160,7 @@ class RestSSLClientIntegrationTest : RestIntegrationTestBase() {
     @Timeout(100)
     fun `check correct error when certificate cannot be verified`() {
         val client = RestClient(
-            baseAddress = "https://localhost:${server.port}/api/v1/",
+            baseAddress = "https://localhost:${server.port}/api/${apiVersion.versionPath}/",
             TestHealthCheckAPI::class.java,
             RestClientConfig()
                 .enableSSL(true)

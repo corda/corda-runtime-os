@@ -1,4 +1,4 @@
-package net.corda.libs.cpi.datamodel.entities
+package net.corda.libs.cpi.datamodel.entities.internal
 
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -12,7 +12,7 @@ import javax.persistence.Version
 @Entity
 @Table(name = "cpk_metadata")
 @Suppress("LongParameterList")
-class CpkMetadataEntity(
+internal class CpkMetadataEntity(
     @Id
     @Column(name = "file_checksum", nullable = false, unique = true)
     var cpkFileChecksum: String,

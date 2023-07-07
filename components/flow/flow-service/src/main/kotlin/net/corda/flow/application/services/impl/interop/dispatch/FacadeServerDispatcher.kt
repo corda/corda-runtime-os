@@ -12,7 +12,6 @@ import net.corda.flow.application.services.impl.interop.proxies.JacksonJsonMarsh
 import net.corda.flow.application.services.impl.interop.proxies.JsonMarshaller
 import net.corda.v5.application.interop.binding.BindsFacade
 import net.corda.v5.application.interop.binding.FacadeVersions
-import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
@@ -65,7 +64,7 @@ class FacadeServerDispatcher(
         )
 
         val args = buildMethodArguments(boundMethod, request)
-        val result = (boundMethod.interfaceMethod.invoke(target, *args) as InteropAction<Any>).result
+        val result = boundMethod.interfaceMethod.invoke(target, *args)
         val outParameterValues = getOutParameterValues(result, boundMethod.outParameterBindings)
 
         return binding.facade.response(boundMethod.facadeMethod.name, *outParameterValues.toTypedArray())
@@ -74,21 +73,21 @@ class FacadeServerDispatcher(
     @Suppress("UNCHECKED_CAST")
     @Suspendable
     private fun getOutParameterValues(
-        result: Any,
+        result: Any?,
         outParameterBindings: FacadeOutParameterBindings
     ): List<TypedParameterValue<*>> = when (outParameterBindings) {
         FacadeOutParameterBindings.NoOutParameters -> emptyList()
 
         is FacadeOutParameterBindings.SingletonOutParameterBinding -> {
             val parameter = outParameterBindings.outParameter as TypedParameter<Any>
-            val value = typeConverter.convertJvmToFacade(result, parameter.type.typeLabel)
+            val value = typeConverter.convertJvmToFacade(result!!, parameter.type.typeLabel)
 
             listOf(parameter.of(value))
         }
 
         is FacadeOutParameterBindings.DataClassOutParameterBindings -> {
             outParameterBindings.bindings.map { binding ->
-                val propertyValue = binding.readMethod.invoke(result)
+                val propertyValue = binding.readMethod.invoke(result!!)
                 (binding.facadeOutParameter as TypedParameter<Any>).of(propertyValue)
             }
         }

@@ -13,6 +13,7 @@ dependencies {
     api project(':libs:rest:rest')
 
     implementation project(":libs:external-messaging")
+    implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:rest:rest")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")

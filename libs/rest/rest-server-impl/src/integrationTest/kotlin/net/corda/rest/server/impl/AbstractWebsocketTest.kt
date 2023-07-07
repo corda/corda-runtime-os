@@ -103,7 +103,7 @@ abstract class AbstractWebsocketTest : RestServerTestBase() {
 
         val uri = URI(
             "$wsProtocol://${restServerSettings.address.host}:$port/" +
-                    "${restServerSettings.context.basePath}/v${restServerSettings.context.version}/health/counterfeed/$start?range=$range"
+                    "${restServerSettings.context.basePath}/${apiVersion.versionPath}/health/counterfeed/$start?range=$range"
         )
 
         log.info("Connecting to: $uri")
@@ -119,7 +119,7 @@ abstract class AbstractWebsocketTest : RestServerTestBase() {
         assertThat(list).isEqualTo(expectedContent)
 
         assertThat(securityManager.checksExecuted).hasSize(1)
-            .allMatch { it.action == "WS:/${restServerSettings.context.basePath}/v${restServerSettings.context.version}/" +
+            .allMatch { it.action == "WS:/${restServerSettings.context.basePath}/${apiVersion.versionPath}/" +
                     "health/counterfeed/{start}?range=$range" }
     }
 
@@ -175,7 +175,7 @@ abstract class AbstractWebsocketTest : RestServerTestBase() {
 
         val uri = URI(
             "$wsProtocol://${restServerSettings.address.host}:$port/" +
-                    "${restServerSettings.context.basePath}/v${restServerSettings.context.version}/health/counterfeed/100"
+                    "${restServerSettings.context.basePath}/${apiVersion.versionPath}/health/counterfeed/100"
         )
 
         log.info("Connecting to: $uri")

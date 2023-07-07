@@ -4,5 +4,6 @@ import java.util.UUID
 
 data class RestInteropIdentity(
     val x500Name: String,
-    val groupId: UUID
+    val groupId: UUID,
+    val shortHash: String?
 )

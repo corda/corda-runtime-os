@@ -111,7 +111,7 @@ class FlowCheckpointImplTest {
             flowId = "F1"
             flowState = newFlowState
             pipelineState = newPipelineState
-            initialPlatformVersion = 50000
+            initialPlatformVersion = 13579
         }
     }
 
@@ -177,7 +177,7 @@ class FlowCheckpointImplTest {
     fun `existing checkpoint - sets initial platform version`() {
         val checkpoint = setupAvroCheckpoint()
 
-        assertThat(createFlowCheckpoint(checkpoint).initialPlatformVersion).isEqualTo(50000)
+        assertThat(createFlowCheckpoint(checkpoint).initialPlatformVersion).isEqualTo(13579)
     }
 
     @Test

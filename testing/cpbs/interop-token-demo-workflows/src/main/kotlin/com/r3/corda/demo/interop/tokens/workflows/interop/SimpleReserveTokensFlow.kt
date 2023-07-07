@@ -5,7 +5,6 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.interop.FacadeService
-import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
@@ -46,8 +45,8 @@ class SimpleReserveTokensFlow : ClientStartableFlow {
         val tokens: TokensFacade =
             facadeService.getFacade(facadeId, TokensFacade::class.java, alias, interopGroupId)
 
-        val responseObject: InteropAction<UUID> = tokens.reserveTokensV1("USD", BigDecimal(100))
-        val response = responseObject.result.toString()
+        val responseObject: UUID = tokens.reserveTokensV1("USD", BigDecimal(100))
+        val response = responseObject.toString()
 
         log.info("Facade responded with '$response'")
         log.info("${this::class.java.simpleName}.call() ending")

@@ -4,7 +4,6 @@ import net.corda.v5.application.interop.binding.BindsFacade
 import net.corda.v5.application.interop.binding.BindsFacadeMethod
 import net.corda.v5.application.interop.binding.BindsFacadeParameter
 import net.corda.v5.application.interop.binding.FacadeVersions
-import net.corda.v5.application.interop.binding.InteropAction
 import net.corda.v5.application.interop.binding.QualifiedWith
 import java.math.BigDecimal
 import java.time.ZonedDateTime
@@ -24,7 +23,7 @@ data class TokenReservation(
 @FacadeVersions("v2.0")
 interface SampleTokensFacade {
     @BindsFacadeMethod("hello")
-    fun processHello(greeting: String): @QualifiedWith("greeting") InteropAction<String>
+    fun processHello(greeting: String): @QualifiedWith("greeting") String
 
     @FacadeVersions("v2.0")
     @BindsFacadeMethod("reserve-tokens")
@@ -32,5 +31,5 @@ interface SampleTokensFacade {
         @Denomination denomination: String,
         amount: BigDecimal,
         @BindsFacadeParameter("ttl-ms") timeToLiveMs: Long
-    ): InteropAction<TokenReservation>
+    ): TokenReservation
 }

@@ -67,7 +67,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
     private val errorMsg = "Failed to read and process records from topic ${config.topic}, group ${config.group}, producerClientId " +
             "${config.clientId}."
 
-    private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
+    private val processorMeter = CordaMetrics.Metric.Messaging.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.DURABLE_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_NEXT_OPERATION)
