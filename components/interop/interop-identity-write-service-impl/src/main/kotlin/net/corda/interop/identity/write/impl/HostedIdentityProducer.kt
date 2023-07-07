@@ -1,6 +1,5 @@
 package net.corda.interop.identity.write.impl
 
-import net.corda.data.interop.PersistentInteropIdentity
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.interop.core.Utils.Companion.computeShortHash
@@ -36,16 +35,10 @@ class HostedIdentityProducer(private val publisher: AtomicReference<Publisher?>)
     }
 
     private fun createHostedIdentityRecord(interopIdentity: InteropIdentity): Record<String, HostedIdentityEntry> {
-        val persistentInteropIdentity = PersistentInteropIdentity(
-            interopIdentity.groupId,
-            interopIdentity.x500Name,
-            interopIdentity.holdingIdentityShortHash
-        )
-
         val interopIdentityShortHash = computeShortHash(interopIdentity.x500Name, interopIdentity.groupId)
 
         val hostedIdentity = HostedIdentityEntry(
-            HoldingIdentity(persistentInteropIdentity.x500Name, persistentInteropIdentity.groupId),
+            HoldingIdentity(interopIdentity.x500Name, interopIdentity.groupId),
             interopIdentityShortHash,
             //TODO CORE-15168
             listOf(DUMMY_CERTIFICATE),
