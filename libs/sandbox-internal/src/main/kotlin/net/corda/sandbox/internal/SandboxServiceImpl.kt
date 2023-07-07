@@ -91,15 +91,15 @@ internal class SandboxServiceImpl @Activate constructor(
         createSandboxes(cpks, securityDomain, startBundles = false)
 
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
-        val sandboxGroupInternal = sandboxGroup as SandboxGroupInternal
-
-        sandboxGroupInternal.cpkSandboxes.forEach { sandbox ->
-            val unloaded = sandbox.unload()
-            unloaded[false]?.also(zombieBundles::addAll)
-            unloaded[true]?.forEach { bundle ->
-                val bundleId = bundle.bundleId
-                bundleIdToSandbox.remove(bundleId)
-                bundleIdToSandboxGroup.remove(bundleId)
+        (sandboxGroup as SandboxGroupInternal).also { sandboxGroupInternal ->
+            sandboxGroupInternal.cpkSandboxes.forEach { sandbox ->
+                val unloaded = sandbox.unload()
+                unloaded[false]?.also(zombieBundles::addAll)
+                unloaded[true]?.forEach { bundle ->
+                    val bundleId = bundle.bundleId
+                    bundleIdToSandbox.remove(bundleId)
+                    bundleIdToSandboxGroup.remove(bundleId)
+                }
             }
         }
 
