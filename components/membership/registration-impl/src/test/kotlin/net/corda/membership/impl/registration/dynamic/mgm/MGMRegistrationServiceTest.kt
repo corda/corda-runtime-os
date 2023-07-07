@@ -267,7 +267,7 @@ class MGMRegistrationServiceTest {
         "corda.session.keys.0.id" to SESSION_KEY_ID,
         "corda.ecdh.key.id" to ECDH_KEY_ID,
         "corda.group.protocol.registration"
-                to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
+                to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
         "corda.group.protocol.synchronisation"
                 to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
         "corda.group.protocol.p2p.mode" to "AUTHENTICATION_ENCRYPTION",
@@ -413,7 +413,7 @@ class MGMRegistrationServiceTest {
                 .containsExactlyInAnyOrderElementsOf(
                     mapOf(
                         "protocol.registration"
-                                to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
+                                to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
                         "protocol.synchronisation"
                                 to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
                         "protocol.p2p.mode" to "AUTHENTICATION_ENCRYPTION",
@@ -598,6 +598,32 @@ class MGMRegistrationServiceTest {
             }
 
             assertThat(exception).hasMessageContaining("Could not find virtual node info")
+        }
+
+        @Test
+        fun `registration fails when registration protocol provided is invalid`() {
+            postUpEvent()
+            val contextWithInvalidProtocol = properties.plus("corda.group.protocol.registration" to "invalid")
+            registrationService.start()
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationRequest, mgm, contextWithInvalidProtocol)
+            }
+
+            assertThat(exception).hasMessageContaining("Invalid value for key $REGISTRATION_PROTOCOL in registration context.")
+            registrationService.stop()
+        }
+
+        @Test
+        fun `registration fails when sync protocol provided is invalid`() {
+            postUpEvent()
+            val contextWithInvalidProtocol = properties.plus("corda.group.protocol.synchronisation" to "invalid")
+            registrationService.start()
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationRequest, mgm, contextWithInvalidProtocol)
+            }
+
+            assertThat(exception).hasMessageContaining("Invalid value for key $SYNCHRONISATION_PROTOCOL in registration context.")
+            registrationService.stop()
         }
     }
 
