@@ -39,7 +39,7 @@ class InteropIdentityProcessor(
             val tokens = keyText.split(":")
 
             if (tokens.size != 2) {
-                throw CordaRuntimeException("Invalid record key '$keyText'. Expected key of the format <short hash>:<group UUID>")
+                throw CordaRuntimeException("Invalid record key '$keyText'. Expected key of the format <short hash>:<short hash>")
             }
 
             holdingIdentityShortHash = if (tokens[0].length == 12) {
@@ -48,10 +48,10 @@ class InteropIdentityProcessor(
                 throw CordaRuntimeException("Invalid record key '$keyText', expected string of length 12, got ${tokens[0].length}.")
             }
 
-            interopIdentityShortHash = try {
+            interopIdentityShortHash = if (tokens[1].length == 12) {
                 tokens[1]
-            } catch (e: Exception) {
-                throw CordaRuntimeException("Invalid record key '$keyText', failed to parse UUID.", e)
+            } else {
+                throw CordaRuntimeException("Invalid record key '$keyText', expected string of length 12, got ${tokens[1].length}.")
             }
         }
     }
