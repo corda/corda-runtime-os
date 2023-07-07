@@ -2,6 +2,7 @@ package net.corda.rest.server.impl
 
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.RestResource
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.security.read.RestSecurityManager
 import net.corda.rest.server.RestServer
 import net.corda.rest.server.config.RestServerSettingsProvider
@@ -47,15 +48,22 @@ class RestServerImpl(
     private val restServerInternal = RestServerInternal(
         JavalinRouteProviderImpl(
             restServerSettings.context.basePath,
-            restServerSettings.context.version,
             resources
         ),
         RestAuthenticationProviderImpl(createAuthenticationProviders(restServerConfigProvider, restSecurityManagerSupplier)),
         restServerConfigProvider,
-        OpenApiInfoProvider(resources, restServerConfigProvider),
+        createOpenApiInfoProviders(resources, restServerConfigProvider),
         multiPartDir,
         DeferredWebSocketCloserService()
     )
+
+    private fun createOpenApiInfoProviders(
+        resources: List<Resource>,
+        restServerConfigProvider: RestServerObjectSettingsProvider
+    ): List<OpenApiInfoProvider> {
+        return RestApiVersion.values()
+            .map { apiVersion -> OpenApiInfoProvider(resources, restServerConfigProvider, apiVersion) }
+    }
 
     override val port: Int
         get() = restServerInternal.port

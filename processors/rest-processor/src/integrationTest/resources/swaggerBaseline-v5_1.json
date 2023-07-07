@@ -3,10 +3,10 @@
   "info" : {
     "title" : "Corda REST API",
     "description" : "All the endpoints for publicly visible Open API calls",
-    "version" : "1"
+    "version" : "v5_1"
   },
   "servers" : [ {
-    "url" : "/api/v1"
+    "url" : "/api/v5_1"
   } ],
   "security" : [ {
     "basicAuth" : [ ]
@@ -32,9 +32,6 @@
   }, {
     "name" : "Hello Rest API",
     "description" : "The Hello Rest API is used to test interactions via the Rest API. It verifies that a call to Rest can be made, and that the identity of the user making the call can be recognized. RBAC permissions are checked and the call is successfully processed by the HTTP-Rest worker."
-  }, {
-    "name" : "Interop API",
-    "description" : "The Interop API consists of a number of endpoints to manage interop functionality."
   }, {
     "name" : "Keys Management API",
     "description" : "The Keys Management API consists of endpoints used to manage public and private key pairs. The API allows you to list scheme codes which are supported by the associated HSM integration, retrieve information about key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's public key in PEM format."
@@ -1185,170 +1182,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/HsmAssociationInfo"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
-    "/interop/getprotocolversion" : {
-      "get" : {
-        "tags" : [ "Interop API" ],
-        "description" : "",
-        "operationId" : "get_interop_getprotocolversion",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "An integer value specifying the version of the endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "integer",
-                  "format" : "int32",
-                  "nullable" : false,
-                  "example" : 0
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
-    "/interop/{holdingidentityshorthash}/groups" : {
-      "get" : {
-        "tags" : [ "Interop API" ],
-        "description" : "This method returns a list of interop group ids.",
-        "operationId" : "get_interop__holdingidentityshorthash__groups",
-        "parameters" : [ {
-          "name" : "holdingidentityshorthash",
-          "in" : "path",
-          "description" : "ID of the holding identity which groups are to be returned.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "ID of the holding identity which groups are to be returned.",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Map of interop group ids to group policy",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "object",
-                  "additionalProperties" : {
-                    "type" : "string",
-                    "example" : "string"
-                  },
-                  "nullable" : false,
-                  "example" : "No example available for this type"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
-    "/interop/{holdingidentityshorthash}/interopidentities" : {
-      "get" : {
-        "tags" : [ "Interop API" ],
-        "description" : "This method returns a list of interop identities belonging to the given holding identity.",
-        "operationId" : "get_interop__holdingidentityshorthash__interopidentities",
-        "parameters" : [ {
-          "name" : "holdingidentityshorthash",
-          "in" : "path",
-          "description" : "ID of the holding identity which identities are to be returned.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "ID of the holding identity which identities are to be returned.",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "List of interop identities",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "uniqueItems" : false,
-                  "type" : "array",
-                  "nullable" : false,
-                  "items" : {
-                    "$ref" : "#/components/schemas/RestInteropIdentity"
-                  }
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
-    "/interop/{holdingidentityshorthash}/interopidentity" : {
-      "put" : {
-        "tags" : [ "Interop API" ],
-        "description" : "This method creates interop identity from holding identity id, group id and x500name.",
-        "operationId" : "put_interop__holdingidentityshorthash__interopidentity",
-        "parameters" : [ {
-          "name" : "holdingidentityshorthash",
-          "in" : "path",
-          "description" : "ID of the holding identity.",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "ID of the holding identity.",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "description" : "requestBody",
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/RestInteropIdentity"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "Response entity with the status of the request.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "string",
-                  "nullable" : false,
-                  "example" : "No example available for this type"
                 }
               }
             }
@@ -5129,22 +4962,6 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }
-      },
-      "RestInteropIdentity" : {
-        "required" : [ "groupId", "x500Name" ],
-        "type" : "object",
-        "properties" : {
-          "groupId" : {
-            "type" : "string",
-            "format" : "uuid",
-            "nullable" : false
-          },
-          "x500Name" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"

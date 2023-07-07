@@ -2,6 +2,7 @@ package net.corda.rest.server.impl
 
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.config.RestServerSettingsProvider
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
 import net.corda.rest.server.impl.apigen.processing.APIStructureRetriever
@@ -36,7 +37,6 @@ class RestServerTest {
     fun `start server with ssl option but without ssl password specified throws illegal argument exception`() {
         val configProvider = mock(RestServerSettingsProvider::class.java)
         doReturn(NetworkHostAndPort("localhost", portAllocator)).whenever(configProvider).getHostAndPort()
-        doReturn("1").whenever(configProvider).getApiVersion()
         doReturn("/").whenever(configProvider).getBasePath()
         doReturn(Paths.get("my", "ssl", "keystore", "path")).whenever(configProvider).getSSLKeyStorePath()
         doReturn(null).whenever(configProvider).getSSLKeyStorePassword()
@@ -46,12 +46,17 @@ class RestServerTest {
                 RestServerInternal(
                     JavalinRouteProviderImpl(
                         "/",
-                        "1",
                         APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure
                     ),
                     RestAuthenticationProviderImpl(emptySet()),
                     configProvider,
-                    OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure, configProvider),
+                    listOf(
+                        OpenApiInfoProvider(
+                            APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure,
+                            configProvider,
+                            RestApiVersion.C5_0
+                        )
+                    ),
                     multiPartDir,
                     mock()
                 )
@@ -64,7 +69,6 @@ class RestServerTest {
     fun `start server with ssl disabled but without dev mode enabled throws unsupported operation exception`() {
         val configProvider = mock(RestServerSettingsProvider::class.java)
         doReturn(NetworkHostAndPort("localhost", portAllocator)).whenever(configProvider).getHostAndPort()
-        doReturn("1").whenever(configProvider).getApiVersion()
         doReturn("/").whenever(configProvider).getBasePath()
         doReturn(null).whenever(configProvider).getSSLKeyStorePath()
         doReturn(null).whenever(configProvider).getSSLKeyStorePassword()
@@ -74,12 +78,17 @@ class RestServerTest {
                 RestServerInternal(
                     JavalinRouteProviderImpl(
                         "/",
-                        "1",
                         APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure
                     ),
                     RestAuthenticationProviderImpl(emptySet()),
                     configProvider,
-                    OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure, configProvider),
+                    listOf(
+                        OpenApiInfoProvider(
+                            APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure,
+                            configProvider,
+                            RestApiVersion.C5_0
+                        )
+                    ),
                     multiPartDir,
                     mock()
                 )
@@ -92,7 +101,6 @@ class RestServerTest {
     fun `OpenApi Json of discovered REST resources should be deserializable to OpenApi object`() {
         val configProvider = mock(RestServerSettingsProvider::class.java)
         doReturn(NetworkHostAndPort("localhost", portAllocator)).whenever(configProvider).getHostAndPort()
-        doReturn("1").whenever(configProvider).getApiVersion()
         doReturn("/").whenever(configProvider).getBasePath()
         doReturn("testOpenApi").whenever(configProvider).getApiTitle()
         doReturn(null).whenever(configProvider).getSSLKeyStorePath()
@@ -102,7 +110,7 @@ class RestServerTest {
         val resources = APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure
         val endpointsCount =
             resources.sumOf { resource -> resource.endpoints.filterNot { it.method == EndpointMethod.WS }.count() }
-        val openApiJson = OpenApiInfoProvider(resources, configProvider).openApiString
+        val openApiJson = OpenApiInfoProvider(resources, configProvider, RestApiVersion.C5_0).openApiString
         val openApi = Json.mapper().readValue(openApiJson, OpenAPI::class.java)
         val totalPathsCount = openApi.paths.count { it.value.get != null } + openApi.paths.count { it.value.post != null }
 
@@ -115,7 +123,6 @@ class RestServerTest {
     fun `start server with duplicate Parameter throws exception`() {
         val configProvider = mock(RestServerSettingsProvider::class.java)
         doReturn(NetworkHostAndPort("localhost", portAllocator)).whenever(configProvider).getHostAndPort()
-        doReturn("1").whenever(configProvider).getApiVersion()
         doReturn("/").whenever(configProvider).getBasePath()
         doReturn(null).whenever(configProvider).getSSLKeyStorePath()
         doReturn(null).whenever(configProvider).getSSLKeyStorePassword()
@@ -124,12 +131,17 @@ class RestServerTest {
             RestServerInternal(
                 JavalinRouteProviderImpl(
                     "/",
-                    "1",
                     APIStructureRetriever(listOf(MultipleParamAnnotationApiImpl())).structure
                 ),
                 RestAuthenticationProviderImpl(emptySet()),
                 configProvider,
-                OpenApiInfoProvider(APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure, configProvider),
+                listOf(
+                    OpenApiInfoProvider(
+                        APIStructureRetriever(listOf(TestHealthCheckAPIImpl())).structure,
+                        configProvider,
+                        RestApiVersion.C5_0
+                    )
+                ),
                 multiPartDir,
                 mock()
             )
