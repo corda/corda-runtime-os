@@ -1,5 +1,7 @@
 package net.corda.rest.server.impl.apigen.models
 
+import net.corda.rest.annotations.RestApiVersion
+
 internal data class Endpoint(
     /**
      * The API method (GET, POST).
@@ -28,7 +30,11 @@ internal data class Endpoint(
     /**
      * The method to invoke when this endpoint is triggered.
      */
-    val invocationMethod: InvocationMethod
+    val invocationMethod: InvocationMethod,
+    /**
+     * A set of REST API versions fot this resource.
+     */
+    val apiVersions: Set<RestApiVersion>
 )
 
 internal enum class EndpointMethod {

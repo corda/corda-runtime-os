@@ -35,6 +35,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
@@ -392,7 +393,11 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `failed member signature verification will ask for sync again`() {
-        whenever(verifier.verify(eq(memberSignature), any(), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(verifier.verify(
+            eq(memberInfo.sessionInitiationKeys),
+            eq(memberSignature),
+            any(),
+            any())).thenThrow(CordaRuntimeException("Mock failure"))
         postConfigChangedEvent()
         synchronisationService.start()
 
@@ -403,7 +408,11 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `failed MGM signature verification will ask for sync again`() {
-        whenever(verifier.verify(eq(mgmSignature), any(), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(verifier.verify(
+            eq(mgmInfo.sessionInitiationKeys),
+            eq(mgmSignature),
+            any(),
+            any())).thenThrow(CordaRuntimeException("Mock failure"))
         postConfigChangedEvent()
         synchronisationService.start()
 
@@ -414,7 +423,11 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `failed MGM signature verification and create sync request will not return anything`() {
-        whenever(verifier.verify(eq(mgmSignature), any(), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(verifier.verify(
+            eq(mgmInfo.sessionInitiationKeys),
+            eq(mgmSignature),
+            any(),
+            any())).thenThrow(CordaRuntimeException("Mock failure"))
         whenever(groupReader.lookup(any(), any())).doReturn(null)
         postConfigChangedEvent()
         synchronisationService.start()
@@ -428,7 +441,11 @@ class MemberSynchronisationServiceImplTest {
     fun `failed MGM signature verification and create sync request will schedule another request`() {
         val captureDelay = argumentCaptor<Long>()
         doNothing().whenever(coordinator).setTimer(any(), captureDelay.capture(), any())
-        whenever(verifier.verify(eq(mgmSignature), any(), any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(verifier.verify(
+            eq(mgmInfo.sessionInitiationKeys),
+            eq(mgmSignature),
+            any(),
+            any())).thenThrow(CordaRuntimeException("Mock failure"))
         whenever(groupReader.lookup(any(), any())).doReturn(null)
         postConfigChangedEvent()
         synchronisationService.start()
@@ -463,8 +480,8 @@ class MemberSynchronisationServiceImplTest {
 
         synchronisationService.processMembershipUpdates(updates)
 
-        verify(verifier).verify(memberSignature, memberSignatureSpec, MEMBER_CONTEXT_BYTES)
-        verify(verifier).verify(mgmSignature, mgmSignatureSpec, byteArrayOf(1, 2, 3))
+        verify(verifier).verify(memberInfo.sessionInitiationKeys, memberSignature, memberSignatureSpec, MEMBER_CONTEXT_BYTES)
+        verify(verifier).verify(mgmInfo.sessionInitiationKeys, mgmSignature, mgmSignatureSpec, byteArrayOf(1, 2, 3))
     }
 
     @Test

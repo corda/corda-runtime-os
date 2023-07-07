@@ -3,10 +3,10 @@
   "info" : {
     "title" : "Corda REST API",
     "description" : "All the endpoints for publicly visible Open API calls",
-    "version" : "1"
+    "version" : "v5_1"
   },
   "servers" : [ {
-    "url" : "/api/v1"
+    "url" : "/api/v5_1"
   } ],
   "security" : [ {
     "basicAuth" : [ ]

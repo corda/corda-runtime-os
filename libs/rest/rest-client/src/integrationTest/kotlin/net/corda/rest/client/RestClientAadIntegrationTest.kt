@@ -45,7 +45,7 @@ class RestClientAadIntegrationTest : RestIntegrationTestBase() {
     fun `azuread token accepted as authentication`() {
         AzureAdMock.create().use {
             val client = RestClient(
-                baseAddress = "http://localhost:${server.port}/api/v1/",
+                baseAddress = "http://localhost:${server.port}/api/${apiVersion.versionPath}/",
                 TestHealthCheckAPI::class.java,
                 RestClientConfig()
                     .enableSSL(false)
