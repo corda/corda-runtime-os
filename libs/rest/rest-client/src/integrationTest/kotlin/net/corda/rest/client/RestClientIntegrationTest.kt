@@ -86,7 +86,7 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
     @Timeout(100)
     fun `start client against server with accepted protocol version succeeds`() {
         val client = RestClient(
-            baseAddress = "http://localhost:${server.port}/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/${apiVersion.versionPath}/",
             TestHealthCheckAPI::class.java,
             RestClientConfig()
                 .enableSSL(false)
@@ -139,7 +139,7 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
     @Timeout(100)
     fun `return list of complex types`() {
         val client = RestClient(
-            baseAddress = "http://localhost:${server.port}/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/${apiVersion.versionPath}/",
             TestHealthCheckAPI::class.java,
             RestClientConfig()
                 .enableSSL(false)
@@ -172,7 +172,7 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
     @Timeout(100)
     fun `start client against server with accepted protocol version and custom serializers succeeds`() {
         val client = RestClient(
-            baseAddress = "http://localhost:${server.port}/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/${apiVersion.versionPath}/",
             CustomSerializationAPI::class.java,
             RestClientConfig()
                 .enableSSL(false)
@@ -193,7 +193,7 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
     @Timeout(100)
     fun `start client against server with accepted protocol version and infinite durable streams call succeeds`() {
         val client = RestClient(
-            baseAddress = "http://localhost:${server.port}/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/${apiVersion.versionPath}/",
             NumberSequencesRestResource::class.java,
             RestClientConfig()
                 .enableSSL(false)
@@ -248,7 +248,7 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
     @Timeout(100)
     fun `start client against server with accepted protocol version and finite durable streams call succeeds`() {
         val client = RestClient(
-            baseAddress = "http://localhost:${server.port}/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/${apiVersion.versionPath}/",
             CalendarRestResource::class.java,
             RestClientConfig()
                 .enableSSL(false)
@@ -292,7 +292,7 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
     @Timeout(100)
     fun `start client against server with less than rest version since but valid version for the resource fails only on the unsupported call`() {
         val client = RestClient(
-            baseAddress = "http://localhost:${server.port}/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/${apiVersion.versionPath}/",
             TestHealthCheckAPI::class.java,
             RestClientConfig()
                 .enableSSL(false)
@@ -320,7 +320,7 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
     @Timeout(100)
     fun `start client against server with lower protocol version than minimum expected fails`() {
         val client = RestClient(
-            baseAddress = "http://localhost:${server.port}/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/${apiVersion.versionPath}/",
             TestHealthCheckAPI::class.java,
             RestClientConfig()
                 .enableSSL(false)
@@ -336,7 +336,7 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
     @Timeout(100)
     fun `operations on TestEntity`() {
         val client = RestClient(
-            baseAddress = "http://localhost:${server.port}/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/${apiVersion.versionPath}/",
             TestEntityRestResource::class.java,
             RestClientConfig()
                 .enableSSL(false)
@@ -388,7 +388,7 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
     @Timeout(100)
     fun `operations on file upload using InputStream`() {
         val client = RestClient(
-            baseAddress = "http://localhost:${server.port}/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/${apiVersion.versionPath}/",
             TestFileUploadAPI::class.java,
             RestClientConfig()
                 .enableSSL(false)
@@ -431,7 +431,7 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
     @Timeout(100)
     fun `operations on file upload using HttpFileUpload`() {
         val client = RestClient(
-            baseAddress = "http://localhost:${server.port}/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/${apiVersion.versionPath}/",
             TestFileUploadAPI::class.java,
             RestClientConfig()
                 .enableSSL(false)
@@ -509,7 +509,7 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
     @Timeout(100)
     fun `name in annotation method call`() {
         val client = RestClient(
-            baseAddress = "http://localhost:${server.port}/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/${apiVersion.versionPath}/",
             TestHealthCheckAPI::class.java,
             RestClientConfig()
                 .enableSSL(false)
@@ -532,7 +532,7 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
     @Timeout(100)
     fun `test api with nullable object return type that returns null`() {
         val client = RestClient(
-            baseAddress = "http://localhost:${server.port}/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/${apiVersion.versionPath}/",
             TestHealthCheckAPI::class.java,
             RestClientConfig()
                 .enableSSL(false)
@@ -554,7 +554,7 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
     @Timeout(100)
     fun `test api with nullable String return type that returns null`() {
         val client = RestClient(
-            baseAddress = "http://localhost:${server.port}/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/${apiVersion.versionPath}/",
             TestHealthCheckAPI::class.java,
             RestClientConfig()
                 .enableSSL(false)
@@ -577,7 +577,7 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
     @Timeout(100)
     fun `test api with object return type with nullable String inside returns that null string value`() {
         val client = RestClient(
-            baseAddress = "http://localhost:${server.port}/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/${apiVersion.versionPath}/",
             TestHealthCheckAPI::class.java,
             RestClientConfig()
                 .enableSSL(false)
@@ -601,7 +601,7 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
     @Timeout(100)
     fun `optional query parameter call`() {
         val client = RestClient(
-            baseAddress = "http://localhost:${server.port}/api/v1/",
+            baseAddress = "http://localhost:${server.port}/api/${apiVersion.versionPath}/",
             TestHealthCheckAPI::class.java,
             RestClientConfig()
                 .enableSSL(false)

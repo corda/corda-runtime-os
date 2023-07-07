@@ -10,6 +10,7 @@ import io.swagger.v3.oas.models.security.Scopes
 import io.swagger.v3.oas.models.security.SecurityRequirement
 import io.swagger.v3.oas.models.security.SecurityScheme
 import io.swagger.v3.oas.models.servers.Server
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.impl.apigen.models.Resource
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.SchemaModelContextHolder
 import net.corda.rest.server.config.RestServerSettingsProvider
@@ -24,7 +25,8 @@ import org.slf4j.LoggerFactory
  */
 internal class OpenApiInfoProvider(
     private val resources: List<Resource>,
-    private val configurationsProvider: RestServerSettingsProvider
+    private val configurationsProvider: RestServerSettingsProvider,
+    private val apiVersion: RestApiVersion
 ) {
 
     internal companion object {
@@ -32,7 +34,8 @@ internal class OpenApiInfoProvider(
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    val pathForOpenApiUI = "/${configurationsProvider.getBasePath()}/v${configurationsProvider.getApiVersion()}/swagger"
+    val pathForOpenApiUI =
+        "/${configurationsProvider.getBasePath()}/${apiVersion.versionPath}/swagger"
     val pathForOpenApiJson = pathForOpenApiUI.jsonPath()
 
     val swaggerUIRenderer = SwaggerUIRenderer(configurationsProvider)
@@ -41,10 +44,9 @@ internal class OpenApiInfoProvider(
     private fun generateOpenApi(): OpenAPI {
         log.trace { "Generate OpenApi for ${resources.size} resources." }
         val basePath = configurationsProvider.getBasePath()
-        val apiVersion = configurationsProvider.getApiVersion()
-        return resources.toOpenAPI(SchemaModelContextHolder()).apply openapi@{
+        return resources.toOpenAPI(SchemaModelContextHolder(), apiVersion).apply openapi@{
             info(createSwaggerInfo())
-            addServersItem(Server().url("/$basePath/v${apiVersion}".replace("/+".toRegex(), "/")))
+            addServersItem(Server().url("/$basePath/${apiVersion.versionPath}".replace("/+".toRegex(), "/")))
             components((components ?: Components()).apply {
                 addSecuritySchemes(
                     "basicAuth",
@@ -54,12 +56,11 @@ internal class OpenApiInfoProvider(
                 addAzureAdIfNecessary(this@openapi, this)
             })
         }.also { log.trace { "Generate OpenApi for ${resources.size} resources completed." } }
-
     }
 
     private fun createSwaggerInfo() = Info().apply {
         log.trace { "Create SwaggerInfo." }
-        version(configurationsProvider.getApiVersion())
+        version(apiVersion.versionPath)
         title(configurationsProvider.getApiTitle())
         description(configurationsProvider.getApiDescription())
         log.trace { "Create SwaggerInfo completed." }
