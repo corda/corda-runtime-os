@@ -17,7 +17,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
-import org.slf4j.LoggerFactory
 
 class MembershipGroupReaderImpl(
     private val holdingIdentity: HoldingIdentity,
@@ -26,10 +25,6 @@ class MembershipGroupReaderImpl(
 ) : MembershipGroupReader {
     override val groupId: String = holdingIdentity.groupId
     override val owningMember: MemberX500Name = holdingIdentity.x500Name
-
-    private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
 
     private val memberList: List<MemberInfo>
         get() = membershipGroupReadCache.memberListCache.get(holdingIdentity)
@@ -56,10 +51,8 @@ class MembershipGroupReaderImpl(
         NotaryVirtualNodeLookupImpl(this)
     }
 
-    override fun lookup(name: MemberX500Name, filter: MembershipStatusFilter): MemberInfo? {
-        logger.info("looking for member $name")
-        return memberList.filterBy(filter).singleOrNull { it.name == name }
-    }
+    override fun lookup(name: MemberX500Name, filter: MembershipStatusFilter): MemberInfo? =
+        memberList.filterBy(filter).singleOrNull { it.name == name }
 
     private fun List<MemberInfo>.filterBy(filter: MembershipStatusFilter): List<MemberInfo> {
         return when (filter) {
