@@ -22,7 +22,7 @@ fun makeSoftCryptoService(
     wrappingKeyFactory: (schemeMetadata: CipherSchemeMetadata) -> WrappingKey = { it ->
         WrappingKeyImpl.generateWrappingKey(it)
     },
-    wrappingRepository: WrappingRepository = TestWrappingRepository(),
+    wrappingRepository: WrappingRepository = TestWrappingRepository()
 ) = SoftCryptoService(
     wrappingRepositoryFactory = { wrappingRepository },
     schemeMetadata = schemeMetadata,

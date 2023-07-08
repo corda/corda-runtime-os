@@ -43,7 +43,7 @@ class TestSigningRepository: SigningRepository {
             externalId = context.externalId,
             encodingVersion = context.key.encodingVersion,
             timestamp = Instant.now(),
-            hsmId = context.hsmId,
+            hsmId = "SOFT",
             status = SigningKeyStatus.NORMAL
         ).also {
             if (keys.putIfAbsent(it.id, it) != null) {

@@ -1,9 +1,5 @@
 package net.corda.crypto.softhsm.impl
 
-import java.time.Instant
-import java.util.UUID
-import javax.persistence.EntityManager
-import javax.persistence.Tuple
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.persistence.HSMUsage
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
@@ -14,7 +10,11 @@ import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.base.util.EncodingUtils.toHex
 import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.util.UUID
+import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import javax.persistence.Tuple
 
 /**
  * Database operations for HSM.
@@ -74,13 +74,12 @@ class HSMRepositoryImpl(
     override fun associate(
         tenantId: String,
         category: String,
-        hsmId: String,
         masterKeyPolicy: MasterKeyPolicy,
     ): HSMAssociationInfo = entityManagerFactory.createEntityManager().use {
         it.transaction { em ->
             val association =
-                findHSMAssociationEntity(em, tenantId, hsmId)
-                    ?: createAndPersistAssociation(em, tenantId, hsmId, masterKeyPolicy)
+                findHSMAssociationEntity(em, tenantId)
+                    ?: createAndPersistAssociation(em, tenantId, "SOFT", masterKeyPolicy)
 
             val categoryAssociation = HSMCategoryAssociationEntity(
                 id = UUID.randomUUID().toString(),
@@ -99,8 +98,7 @@ class HSMRepositoryImpl(
 
     private fun findHSMAssociationEntity(
         entityManager: EntityManager,
-        tenantId: String,
-        hsmId: String,
+        tenantId: String
     ) =
         entityManager.createQuery(
             """
@@ -109,7 +107,7 @@ class HSMRepositoryImpl(
             WHERE a.tenantId = :tenantId AND a.hsmId = :hsmId
             """.trimIndent(),
             HSMAssociationEntity::class.java
-        ).setParameter("tenantId", tenantId).setParameter("hsmId", hsmId).resultList.singleOrNull()
+        ).setParameter("tenantId", tenantId).setParameter("hsmId", "SOFT").resultList.singleOrNull()
 
     private fun createAndPersistAssociation(
         entityManager: EntityManager,

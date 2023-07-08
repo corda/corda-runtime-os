@@ -27,7 +27,6 @@ class CryptoServiceRef(
         externalId = externalId,
         alias = alias,
         keyScheme = scheme,
-        category = category,
-        hsmId = hsmId
+        category = category
     )
 }

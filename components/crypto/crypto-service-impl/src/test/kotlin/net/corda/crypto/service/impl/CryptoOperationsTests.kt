@@ -93,7 +93,7 @@ class CryptoOperationsTests {
             tenantId = UUID.randomUUID().toString()
             category = CryptoConsts.Categories.LEDGER
             CryptoConsts.Categories.all.forEach {
-                factory.hsmService.assignSoftHSM(tenantId, it)
+                factory.tenantInfoService.populate(tenantId, it)
             }
             signingAliasedKeys = factory.cryptoService.supportedSchemes.keys.associateWith {
                 val alias = UUID.randomUUID().toString()
