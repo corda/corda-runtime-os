@@ -323,7 +323,7 @@ bootstrap:
             name: ""
             # -- the password secret key
             key: ""
-    # Virtual Nodes DDL connections configuration for Corda managed Virtual Nodes DBs
+    # Virtual Nodes DDL connection configuration for each Corda managed Virtual Node schema in the DB
     virtualNodesDdl:
       # JDBC connection pool configuration
       dbConnectionPool:
@@ -339,7 +339,7 @@ bootstrap:
         keepaliveTimeSeconds: 0
         # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
         validationTimeoutSeconds: 5
-    # Virtual Nodes DML connections configuration for Corda managed Virtual Nodes DBs
+    # Virtual Nodes DML connection configuration for each Corda managed Virtual Node schema in the DB
     virtualNodesDml:
       # JDBC connection pool configuration
       dbConnectionPool:

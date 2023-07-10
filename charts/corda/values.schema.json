@@ -916,7 +916,7 @@
                         "virtualNodesDdl": {
                             "type": "object",
                             "default": {},
-                            "title": "Virtual Nodes DDL connections configuration for Corda managed Virtual Nodes DBs",
+                            "title": "Virtual Nodes DDL connection configuration for each Corda managed Virtual Node schema in the DB",
                             "required": [
                                 "dbConnectionPool"
                             ],
@@ -983,7 +983,7 @@
                         "virtualNodesDml": {
                             "type": "object",
                             "default": {},
-                            "title": "Virtual Nodes DML connections configuration for Corda managed Virtual Nodes DBs",
+                            "title": "Virtual Nodes DML connection configuration for each Corda managed Virtual Node schema in the DB",
                             "required": [
                                 "dbConnectionPool"
                             ],
