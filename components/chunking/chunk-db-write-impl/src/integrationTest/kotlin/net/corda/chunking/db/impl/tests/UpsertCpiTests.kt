@@ -1,12 +1,6 @@
 package net.corda.chunking.db.impl.tests
 
 import com.google.common.jimfs.Jimfs
-import java.nio.file.FileSystem
-import java.nio.file.Files
-import java.nio.file.Path
-import java.time.Instant
-import java.util.Random
-import java.util.UUID
 import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence
 import net.corda.crypto.core.SecureHashImpl
@@ -48,6 +42,12 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.nio.file.FileSystem
+import java.nio.file.Files
+import java.nio.file.Path
+import java.time.Instant
+import java.util.Random
+import java.util.UUID
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class UpsertCpiTests {
@@ -102,7 +102,7 @@ class UpsertCpiTests {
     fun afterEach() = fs.close()
 
     private val cpiPersistence =
-        DatabaseCpiPersistence(entityManagerFactory, networkInfoWriter, cpiMetadataRepository, mock())
+        DatabaseCpiPersistence(entityManagerFactory, networkInfoWriter, cpiMetadataRepository, mock(), mock(), mock(), mock())
 
     private fun String.writeToPath(): Path {
         val path = fs.getPath(UUID.randomUUID().toString())
@@ -244,7 +244,7 @@ class UpsertCpiTests {
             on { groupIdFromJson(any()) } doReturn (groupId)
         }
         val cpiPersistence =
-            DatabaseCpiPersistence(entityManagerFactory, networkInfoWriter, cpiMetadataRepository, groupPolicyParser)
+            DatabaseCpiPersistence(entityManagerFactory, networkInfoWriter, cpiMetadataRepository, mock(), mock(), mock(), groupPolicyParser)
 
         val cpi = persistCpi(name, version, groupId, cpiPersistence)
         val cpiMetadata = findCpiMetadata(cpi)

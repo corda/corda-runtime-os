@@ -1,17 +1,17 @@
-package net.corda.flow.pipeline.sandbox.factory
+package net.corda.sandboxgroupcontext.service.factory
 
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
-import net.corda.flow.pipeline.sandbox.impl.SandboxDependencyInjectorImpl
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandbox.type.UsedByVerification
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.sandboxgroupcontext.SandboxGroupType.FLOW
+import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
+import net.corda.sandboxgroupcontext.service.impl.SandboxDependencyInjectorImpl
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.Bundle
-import org.osgi.framework.Constants.OBJECTCLASS
-import org.osgi.framework.Constants.SCOPE_SINGLETON
 import org.osgi.framework.Constants.SERVICE_SCOPE
+import org.osgi.framework.Constants.SCOPE_SINGLETON
+import org.osgi.framework.Constants.OBJECTCLASS
 import org.osgi.framework.ServiceReference
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
@@ -25,21 +25,25 @@ class SandboxDependencyInjectorFactoryImpl : SandboxDependencyInjectorFactory {
         private const val INJECTOR_FILTER = "(&$CORDA_SANDBOX_FILTER($SERVICE_SCOPE=$SCOPE_SINGLETON))"
         private val FORBIDDEN_INTERFACES: Set<String> = unmodifiableSet(setOf(
             SingletonSerializeAsToken::class.java.name,
-            UsedByFlow::class.java.name
+            UsedByFlow::class.java.name,
+            UsedByVerification::class.java.name
         ))
     }
 
-    override fun create(sandboxGroupContext: SandboxGroupContext): SandboxDependencyInjector {
-        check(sandboxGroupContext.virtualNodeContext.sandboxGroupType === FLOW) {
-            "Expected serviceGroupType=$FLOW but found ${sandboxGroupContext.virtualNodeContext.sandboxGroupType}"
+    override fun <T: Any> create(sandboxGroupContext: SandboxGroupContext): SandboxDependencyInjector<T> {
+        val sandboxGroupType = sandboxGroupContext.virtualNodeContext.sandboxGroupType
+
+        require(sandboxGroupType.hasInjection) {
+            "Expected serviceGroupType=${sandboxGroupType} doesn't support service injection"
         }
         val references = LinkedList<ServiceReference<*>>()
         val sandboxGroup = sandboxGroupContext.sandboxGroup
         val sandboxId = sandboxGroup.id
+        val serviceMarkerType = sandboxGroupType.serviceMarkerType
         return sandboxGroup.metadata.keys.firstOrNull()
             ?.let(Bundle::getBundleContext)
             ?.let { bundleContext ->
-                bundleContext.getServiceReferences(UsedByFlow::class.java, INJECTOR_FILTER)
+                bundleContext.getServiceReferences(serviceMarkerType, INJECTOR_FILTER)
                     .mapNotNull<ServiceReference<*>, Pair<SingletonSerializeAsToken, List<String>>> { ref ->
                         if (ref.getProperty(CORDA_SANDBOX) != sandboxId) {
                             // This shouldn't happen - it would imply our isolation hooks are buggy!
