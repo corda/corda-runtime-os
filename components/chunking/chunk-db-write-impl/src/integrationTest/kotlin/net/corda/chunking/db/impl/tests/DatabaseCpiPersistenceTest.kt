@@ -117,7 +117,15 @@ internal class DatabaseCpiPersistenceTest {
     private val cpiCpkRepository = cpiCpkRepositoryFactory.createCpiCpkRepository()
     private val cpkRepository = cpiCpkRepositoryFactory.createCpkRepository()
 
-    private val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory, networkInfoWriter, cpiMetadataRepository, mock())
+    private val cpiPersistence = DatabaseCpiPersistence(
+        entityManagerFactory,
+        networkInfoWriter,
+        cpiMetadataRepository,
+        cpkDbChangeLogRepository,
+        cpkDbChangeLogAuditRepository,
+        cpkFileRepository,
+        mock())
+
     private val mockCpkContent = """
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin id mauris ut tortor
             condimentum porttitor. Praesent commodo, ipsum vitae malesuada placerat, nisl sem

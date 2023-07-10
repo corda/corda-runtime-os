@@ -80,13 +80,13 @@ private fun List<Tag>?.diff(baseline: List<Tag>?): List<String> {
         currentSet.subtract(baselineSet).forEach {
             differences.add("Tag in current but not in baseline: $it")
         }
-    }
-
-    val currentSorted = this.sortedBy { it.name }
-    val baselineSorted = baseline.sortedBy { it.name }
-    (currentSorted.indices).forEach { i ->
-        if (currentSorted[i] != baselineSorted[i]) {
-            differences.add("Tags do not match. Current tag: ${currentSorted[i]} is different to baseline: ${baselineSorted[i]}")
+    } else {
+        val currentSorted = this.sortedBy { it.name }
+        val baselineSorted = baseline.sortedBy { it.name }
+        (currentSorted.indices).forEach { i ->
+            if (currentSorted[i] != baselineSorted[i]) {
+                differences.add("Tags do not match. Current tag: ${currentSorted[i]} is different to baseline: ${baselineSorted[i]}")
+            }
         }
     }
 

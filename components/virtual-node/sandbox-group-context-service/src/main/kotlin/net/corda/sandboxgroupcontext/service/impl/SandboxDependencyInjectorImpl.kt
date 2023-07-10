@@ -1,17 +1,16 @@
-package net.corda.flow.pipeline.sandbox.impl
+package net.corda.sandboxgroupcontext.service.impl
 
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
+import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.Flow
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.FrameworkUtil
 import java.lang.reflect.Field
 import java.util.Collections.unmodifiableMap
 
-class SandboxDependencyInjectorImpl(
+class SandboxDependencyInjectorImpl<T : Any>(
     singletons: Map<SingletonSerializeAsToken, List<String>>,
     private val closeable: AutoCloseable
-) : SandboxDependencyInjector {
+) : SandboxDependencyInjector<T> {
     private val serviceTypeMap: Map<Class<*>, SingletonSerializeAsToken>
 
     init {
@@ -26,8 +25,8 @@ class SandboxDependencyInjectorImpl(
         closeable.close()
     }
 
-    override fun injectServices(flow: Flow) {
-        val requiredFields = flow::class.java.getFieldsForInjection()
+    override fun injectServices(obj: T) {
+        val requiredFields = obj::class.java.getFieldsForInjection()
         val mismatchedFields = requiredFields.filterNot { serviceTypeMap.containsKey(it.type) }
         if (mismatchedFields.any()) {
             val fields = mismatchedFields.joinToString(separator = ", ", transform = Field::getName)
@@ -38,9 +37,9 @@ class SandboxDependencyInjectorImpl(
 
         requiredFields.forEach { field ->
             field.isAccessible = true
-            if (field.get(flow) == null) {
+            if (field.get(obj) == null) {
                 field.set(
-                    flow,
+                    obj,
                     serviceTypeMap[field.type]
                 )
             }
