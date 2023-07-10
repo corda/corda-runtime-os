@@ -4,6 +4,7 @@ import brave.Tracer
 import brave.Tracing
 import brave.baggage.BaggagePropagation
 import brave.baggage.BaggagePropagationConfig
+import brave.baggage.CorrelationScopeConfig
 import brave.context.slf4j.MDCScopeDecorator
 import brave.propagation.B3Propagation
 import brave.propagation.ThreadLocalCurrentTraceContext
@@ -44,7 +45,7 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String, samp
 
         val braveCurrentTraceContext = ThreadLocalCurrentTraceContext.newBuilder()
             .addScopeDecorator(MDCScopeDecorator.newBuilder()
-                .add(SingleCorrelationField.create(BraveBaggageFields.REQUEST_ID))
+                .add(CorrelationScopeConfig.SingleCorrelationField.create(BraveBaggageFields.REQUEST_ID))
                 .build())
             .build()
 
