@@ -13,7 +13,8 @@ image:
 logging:
   format: "text"
   level: "info"
-
+labels:
+  jason: "test"
 affinity:
   nodeAntiAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:

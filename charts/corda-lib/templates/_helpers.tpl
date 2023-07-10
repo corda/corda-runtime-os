@@ -40,6 +40,11 @@ helm.sh/chart: {{ include "corda.chart" . }}
 app.kubernetes.io/version: {{ . | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{-  if .Values.labels }}
+{{- range $k, $v := .Values.labels }}
+{{ $k }}: {{ $v | quote }}
+{{- end }}
+{{- end }}
 {{- end }}
 
 {{/*
@@ -49,6 +54,7 @@ Selector labels
 app.kubernetes.io/name: {{ include "corda.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
 
 {{/*
 Image pull secrets
