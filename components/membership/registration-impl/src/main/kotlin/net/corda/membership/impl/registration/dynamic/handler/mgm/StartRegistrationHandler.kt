@@ -86,52 +86,23 @@ internal class StartRegistrationHandler(
             validateRegistrationRequest(registrationRequest != null) {
                 "Could not find registration request with ID `$registrationId`."
             }
-            validateRegistrationRequest(registrationRequest!!.serial != null) {
-                "Serial on the registration request should not be null."
-            }
-            validateRegistrationRequest(registrationRequest.serial!! >= 0) {
-                "Serial cannot be negative on the registration request."
-            }
-            validateRegistrationRequest(!memberTypeChecker.isMgm(pendingMemberHoldingId)) {
-                "Registration request is registering an MGM holding identity."
-            }
-
-            logger.info("Updating the status of the registration request.")
-            membershipPersistenceClient.setRegistrationRequestStatus(
-                mgmHoldingId,
-                registrationId,
-                RegistrationStatus.STARTED_PROCESSING_BY_MGM
-            ).execute().also {
-                require(it as? MembershipPersistenceResult.Failure == null) {
-                    "Failed to update the status of the registration request. Reason: " +
-                            (it as MembershipPersistenceResult.Failure).errorMsg
-                }
-            }
 
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
-
-            val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
+            val pendingMemberInfo = buildPendingMemberInfo(registrationRequest!!)
             // We don't want to overwrite existing member's information or persist member with wrong name
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging
             validateRegistrationRequest(
                 pendingMemberInfo.name == pendingMemberHoldingId.x500Name
             ) { "MemberX500Name in registration request does not match member sending request over P2P." }
+
             val activeOrSuspendedInfo = membershipQueryClient.queryMemberInfo(
                 mgmHoldingId,
                 listOf(pendingMemberHoldingId)
             ).getOrThrow().lastOrNull {
                 it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED
             }
-            if (registrationRequest.serial!! > 0) { //re-registration
-                validateRegistrationRequest(activeOrSuspendedInfo != null) {
-                    "Member has not registered previously so serial number should be 0."
-                }
-                validateRegistrationRequest(activeOrSuspendedInfo!!.serial <= registrationRequest.serial!!) {
-                    "Registration request was submitted for an older version of member info. " +
-                            "Please submit a new request."
-                }
-            } else if (registrationRequest.serial!! == 0L) { // initial registration
+            if (registrationRequest.serial != null && registrationRequest.serial == 0L) { // name check for initial registration
                 validateRegistrationRequest(activeOrSuspendedInfo == null) {
                     "Member already exists with the same X500 name."
                 }
@@ -163,6 +134,38 @@ internal class StartRegistrationHandler(
                     }
                 }
             outputRecords.add(pendingMemberRecord)
+
+            logger.info("Updating the status of the registration request.")
+            membershipPersistenceClient.setRegistrationRequestStatus(
+                mgmHoldingId,
+                registrationId,
+                RegistrationStatus.STARTED_PROCESSING_BY_MGM
+            ).execute().also {
+                require(it as? MembershipPersistenceResult.Failure == null) {
+                    "Failed to update the status of the registration request. Reason: " +
+                            (it as MembershipPersistenceResult.Failure).errorMsg
+                }
+            }
+
+            validateRegistrationRequest(registrationRequest.serial != null) {
+                "Serial on the registration request should not be null."
+            }
+            validateRegistrationRequest(registrationRequest.serial!! >= 0) {
+                "Serial cannot be negative on the registration request."
+            }
+            validateRegistrationRequest(!memberTypeChecker.isMgm(pendingMemberHoldingId)) {
+                "Registration request is registering an MGM holding identity."
+            }
+
+            if (registrationRequest.serial!! > 0) { // serial number checks for re-registration
+                validateRegistrationRequest(activeOrSuspendedInfo != null) {
+                    "Member has not registered previously so serial number should be 0."
+                }
+                validateRegistrationRequest(activeOrSuspendedInfo!!.serial <= registrationRequest.serial!!) {
+                    "Registration request was submitted for an older version of member info. " +
+                            "Please submit a new request."
+                }
+            }
 
             validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo, registrationRequest)
 
