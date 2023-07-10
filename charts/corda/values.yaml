@@ -4,6 +4,7 @@
 # -- override chart fullname
 fullnameOverride: ""
 
+# Affinity for pod assignment
 affinity: {}
 
 # -- override chart name
@@ -15,6 +16,9 @@ image:
   registry: "corda-os-docker.software.r3.com"
   # -- worker image tag, defaults to Chart appVersion
   tag: ""
+
+# Labels to add to all deployed objects
+commonLabels: {}
 
 # -- image pull secrets
 imagePullSecrets: []

@@ -40,8 +40,8 @@ helm.sh/chart: {{ include "corda.chart" . }}
 app.kubernetes.io/version: {{ . | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
-{{-  if .Values.labels }}
-{{- range $k, $v := .Values.labels }}
+{{-  if .Values.commonLabels }}
+{{- range $k, $v := .Values.commonLabels }}
 {{ $k }}: {{ $v | quote }}
 {{- end }}
 {{- end }}
@@ -83,7 +83,6 @@ securityContext:
       - "ALL"
 {{- end }}
 {{- end }}
-
 
 {{/*
 tolerations for node taints
