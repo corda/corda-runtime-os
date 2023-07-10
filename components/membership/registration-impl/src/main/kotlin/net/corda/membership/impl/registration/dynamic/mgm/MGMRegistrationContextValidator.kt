@@ -40,6 +40,13 @@ internal class MGMRegistrationContextValidator(
                 PKI_TLS to format("TLS PKI property"),
             )
         }
+
+        val SUPPORTED_REGISTRATION_PROTOCOLS = setOf(
+            "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService"
+        )
+        val SUPPORTED_SYNC_PROTOCOLS = setOf(
+            "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl"
+        )
     }
 
     private val certificateFactory = CertificateFactory.getInstance("X.509")
@@ -85,6 +92,7 @@ internal class MGMRegistrationContextValidator(
         for (key in errorMessageMap.keys) {
             context[key] ?: throw IllegalArgumentException(errorMessageMap[key])
         }
+        validateProtocols(context)
         p2pEndpointVerifier.verifyContext(context)
         if (context[PKI_SESSION] != NO_PKI.toString()) {
             context.keys.filter { TRUSTSTORE_SESSION.format("[0-9]+").toRegex().matches(it) }.apply {
@@ -116,6 +124,17 @@ internal class MGMRegistrationContextValidator(
                 "A cluster configured with TLS type of $clusterTlsType can not register " +
                 "an MGM with TLS type $contextRegistrationTlsType"
             )
+        }
+    }
+
+    private fun validateProtocols(context: Map<String, String>) {
+        if (context[REGISTRATION_PROTOCOL] !in SUPPORTED_REGISTRATION_PROTOCOLS) {
+            throw MGMRegistrationContextValidationException("Invalid value for key $REGISTRATION_PROTOCOL in registration context. " +
+                    "It should be one of the following values: $SUPPORTED_REGISTRATION_PROTOCOLS.", null)
+        }
+        if (context[SYNCHRONISATION_PROTOCOL] !in SUPPORTED_SYNC_PROTOCOLS) {
+            throw MGMRegistrationContextValidationException("Invalid value for key $SYNCHRONISATION_PROTOCOL in registration context. " +
+                    "It should be one of the following values: $SUPPORTED_SYNC_PROTOCOLS.", null)
         }
     }
 

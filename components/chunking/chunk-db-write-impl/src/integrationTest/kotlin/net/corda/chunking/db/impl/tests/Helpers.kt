@@ -1,7 +1,5 @@
 package net.corda.chunking.db.impl.tests
 
-import java.util.Random
-import java.util.UUID
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.crypto.core.SecureHashImpl
@@ -10,6 +8,8 @@ import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
+import java.util.Random
+import java.util.UUID
 
 fun newRandomSecureHash(): SecureHash {
     val random = Random()

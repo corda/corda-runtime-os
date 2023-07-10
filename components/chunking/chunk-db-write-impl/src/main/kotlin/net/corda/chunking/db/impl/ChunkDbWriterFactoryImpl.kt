@@ -135,6 +135,9 @@ class ChunkDbWriterFactoryImpl(
             entityManagerFactory,
             networkInfoWriter,
             cpiCpkRepositoryFactory.createCpiMetadataRepository(),
+            cpiCpkRepositoryFactory.createCpkDbChangeLogRepository(),
+            cpiCpkRepositoryFactory.createCpkDbChangeLogAuditRepository(),
+            cpiCpkRepositoryFactory.createCpkFileRepository(),
             GroupPolicyParser.Companion
         )
         val publisher = createPublisher(messagingConfig)

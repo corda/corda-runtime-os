@@ -15,6 +15,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.uniqueness.backingstore.BackingStore
+import net.corda.uniqueness.backingstore.BackingStoreLifecycle
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
@@ -31,19 +32,19 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @ServiceRanking(Int.MAX_VALUE)
-@Component(service = [BackingStore::class])
+@Component(service = [BackingStoreLifecycle::class, BackingStore::class])
 @Suppress("ForbiddenComment")
 open class BackingStoreImplFake @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory
-) : BackingStore {
+) : BackingStoreLifecycle {
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val lifecycleCoordinator: LifecycleCoordinator = coordinatorFactory
-        .createCoordinator<BackingStore>(::eventHandler)
+        .createCoordinator<BackingStoreLifecycle>(::eventHandler)
 
     override val isRunning: Boolean
         get() = lifecycleCoordinator.isRunning

@@ -1,7 +1,7 @@
-package net.corda.flow.pipeline.sandbox.factory
+package net.corda.sandboxgroupcontext.service.factory
 
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 
 /**
  * The [SandboxDependencyInjectorFactory] is responsible for creating instances of the [SandboxDependencyInjector]
@@ -13,5 +13,5 @@ interface SandboxDependencyInjectorFactory {
      *
      * @param sandboxGroupContext The instance of the sandbox to associate the injector with.
      */
-    fun create(sandboxGroupContext: SandboxGroupContext): SandboxDependencyInjector
+    fun <T: Any> create(sandboxGroupContext: SandboxGroupContext): SandboxDependencyInjector<T>
 }
