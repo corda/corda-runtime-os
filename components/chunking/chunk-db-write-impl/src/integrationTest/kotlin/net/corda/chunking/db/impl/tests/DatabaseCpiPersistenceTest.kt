@@ -3,30 +3,32 @@ package net.corda.chunking.db.impl.tests
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.jimfs.Jimfs
+import java.nio.file.FileSystem
+import java.nio.file.Files
+import java.nio.file.Path
+import java.security.PublicKey
+import java.time.Instant
+import java.util.Random
+import java.util.UUID
+import javax.persistence.PersistenceException
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.crypto.core.parseSecureHash
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
+import net.corda.libs.cpi.datamodel.CpiCpkIdentifier
+import net.corda.libs.cpi.datamodel.CpiCpkMetadata
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.CpkFile
-import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
-import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
-import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
-import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntityKey
-import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
-import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogAuditRepositoryImpl
-import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
-import net.corda.libs.cpi.datamodel.repository.CpkFileRepositoryImpl
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CordappManifest
@@ -64,17 +66,10 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.nio.file.FileSystem
-import java.nio.file.Files
-import java.nio.file.Path
-import java.security.PublicKey
-import java.time.Instant
-import java.util.Random
-import java.util.UUID
-import javax.persistence.PersistenceException
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class DatabaseCpiPersistenceTest {
@@ -90,7 +85,7 @@ internal class DatabaseCpiPersistenceTest {
         emConfig
     )
     private val platformInfoProvider: PlatformInfoProvider = mock {
-        on { activePlatformVersion } doReturn 50000
+        on { activePlatformVersion } doReturn 12345
         on { localWorkerSoftwareVersion } doReturn "5.0.0"
     }
     private val mgmPubKeyStr = "PUB-KEY"
@@ -113,19 +108,37 @@ internal class DatabaseCpiPersistenceTest {
         keyEncodingService,
         cordaAvroSerializationFactory
     )
-    private val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory, networkInfoWriter)
+
+    private val cpiCpkRepositoryFactory = CpiCpkRepositoryFactory()
+    private val cpkDbChangeLogRepository = cpiCpkRepositoryFactory.createCpkDbChangeLogRepository()
+    private val cpkDbChangeLogAuditRepository = cpiCpkRepositoryFactory.createCpkDbChangeLogAuditRepository()
+    private val cpkFileRepository = cpiCpkRepositoryFactory.createCpkFileRepository()
+    private val cpiMetadataRepository = cpiCpkRepositoryFactory.createCpiMetadataRepository()
+    private val cpiCpkRepository = cpiCpkRepositoryFactory.createCpiCpkRepository()
+    private val cpkRepository = cpiCpkRepositoryFactory.createCpkRepository()
+
+    private val cpiPersistence = DatabaseCpiPersistence(
+        entityManagerFactory,
+        networkInfoWriter,
+        cpiMetadataRepository,
+        cpkDbChangeLogRepository,
+        cpkDbChangeLogAuditRepository,
+        cpkFileRepository,
+        mock())
+
     private val mockCpkContent = """
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin id mauris ut tortor 
-            condimentum porttitor. Praesent commodo, ipsum vitae malesuada placerat, nisl sem 
-            ornare nibh, id rutrum mi elit in metus. Sed ac tincidunt elit. Aliquam quis 
-            pellentesque lacus. Quisque commodo tristique pellentesque. Nam sodales, urna id 
-            convallis condimentum, nulla lacus vestibulum ipsum, et ultrices sem magna sed neque. 
-            Pellentesque id accumsan odio, non interdum nibh. Nullam lacinia vestibulum purus, 
-            finibus maximus enim scelerisque eu. Ut nibh lacus, semper eget cursus a, porttitor 
-            eu odio. Vivamus vel placerat eros, sed convallis est. Proin tristique ut odio at 
-            finibus. 
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin id mauris ut tortor
+            condimentum porttitor. Praesent commodo, ipsum vitae malesuada placerat, nisl sem
+            ornare nibh, id rutrum mi elit in metus. Sed ac tincidunt elit. Aliquam quis
+            pellentesque lacus. Quisque commodo tristique pellentesque. Nam sodales, urna id
+            convallis condimentum, nulla lacus vestibulum ipsum, et ultrices sem magna sed neque.
+            Pellentesque id accumsan odio, non interdum nibh. Nullam lacinia vestibulum purus,
+            finibus maximus enim scelerisque eu. Ut nibh lacus, semper eget cursus a, porttitor
+            eu odio. Vivamus vel placerat eros, sed convallis est. Proin tristique ut odio at
+            finibus.
     """.trimIndent()
     private val mockChangeLogContent = "lorum ipsum"
+
     /**
      * Creates an in-memory database, applies the relevant migration scripts, and initialises
      * [entityManagerFactory].
@@ -144,10 +157,6 @@ internal class DatabaseCpiPersistenceTest {
             LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
         }
     }
-
-    private val cpkDbChangeLogRepository = CpkDbChangeLogRepositoryImpl()
-    private val cpkDbChangeLogAuditRepository = CpkDbChangeLogAuditRepositoryImpl()
-    private val cpkFileRepository = CpkFileRepositoryImpl()
 
     @Suppress("Unused")
     @AfterAll
@@ -324,13 +333,21 @@ internal class DatabaseCpiPersistenceTest {
             )
         )
 
-        val persistedCpi = loadCpiDirectFromDatabase(cpi)
+        val persistedCpi = loadCpiDirectFromDatabase(cpi.metadata.cpiId)
+        val persistedCpiCpk = loadCpiCpkDirectFromDatabase(
+            CpiCpkIdentifier(
+                cpi.metadata.cpiId.name,
+                cpi.metadata.cpiId.version,
+                cpi.metadata.cpiId.signerSummaryHash,
+                persistedCpi.cpksMetadata.first().fileChecksum
+            )
+        )
 
         // We have persisted a CPK with this CPI, this counts as a version increment on the owning entity, therefore entity version = 1.
-        assertThat(persistedCpi.entityVersion).isEqualTo(1)
-        assertThat(persistedCpi.cpks.size).isEqualTo(1)
+        assertThat(persistedCpi.version).isEqualTo(1)
+        assertThat(persistedCpi.cpksMetadata.size).isEqualTo(1)
         // The CPK which was merged will have entity version 0.
-        assertThat(persistedCpi.cpks.first().entityVersion).isEqualTo(0)
+        assertThat(persistedCpiCpk.entityVersion).isEqualTo(0)
 
         val cpk2 = mockCpk()
         val updatedCpi = mockCpiWithId(listOf(cpk1, cpk2), cpi.metadata.cpiId)
@@ -354,25 +371,45 @@ internal class DatabaseCpiPersistenceTest {
             )
         )
 
-        val forceUploadedCpi = loadCpiDirectFromDatabase(updatedCpi)
+        val forceUploadedCpi = loadCpiDirectFromDatabase(updatedCpi.metadata.cpiId)
+        val forceUploadedCpiCpk = loadCpiCpkDirectFromDatabase(
+            CpiCpkIdentifier(
+                updatedCpi.metadata.cpiId.name,
+                updatedCpi.metadata.cpiId.version,
+                updatedCpi.metadata.cpiId.signerSummaryHash,
+                cpk1.metadata.fileChecksum
+            )
+        )
+
+        val forceUploadedCpiCpk2 = loadCpiCpkDirectFromDatabase(
+            CpiCpkIdentifier(
+                updatedCpi.metadata.cpiId.name,
+                updatedCpi.metadata.cpiId.version,
+                updatedCpi.metadata.cpiId.signerSummaryHash,
+                cpk2.metadata.fileChecksum
+            )
+        )
 
         // optimistic force increment + calling merge on this entity has incremented by 2
-        assertThat(forceUploadedCpi.entityVersion).isEqualTo(3)
-        assertThat(forceUploadedCpi.cpks.size).isEqualTo(2)
+        assertThat(forceUploadedCpi.version).isEqualTo(3)
+        assertThat(forceUploadedCpi.cpksMetadata.size).isEqualTo(2)
+
         // cpk1 has incremented because we called merge on the CPI with this entity already existing in the set.
-        val forceUploadedCpk1 = forceUploadedCpi.cpks.single { it.id.cpkFileChecksum == cpk1.metadata.fileChecksum.toString() }
-        assertThat(forceUploadedCpk1.entityVersion).isEqualTo(0)
-        assertThat(forceUploadedCpk1.metadata.entityVersion).isEqualTo(0)
-        val forceUploadedCpk2 = forceUploadedCpi.cpks.single { it.id.cpkFileChecksum == cpk2.metadata.fileChecksum.toString() }
-        assertThat(forceUploadedCpk2.entityVersion).isEqualTo(0)
-        assertThat(forceUploadedCpk2.metadata.entityVersion).isEqualTo(0)
+        assertThat(forceUploadedCpiCpk.entityVersion).isEqualTo(0) // /CpiCpkMetadata
+        val (forceUploadedCpkEntityVersion1, _) = findCpkMetadata(cpk1.metadata.fileChecksum)
+        assertThat(forceUploadedCpkEntityVersion1).isEqualTo(0) //CpkMetadata
+
+        assertThat(forceUploadedCpiCpk2.entityVersion).isEqualTo(0)
+        val (forceUploadedCpkEntityVersion2, _) = findCpkMetadata(cpk2.metadata.fileChecksum)
+        assertThat(forceUploadedCpkEntityVersion2).isEqualTo(0) //CpkMetadata
 
         assertChangeLogPersistedWithCpi(cpk1)
         assertChangeLogPersistedWithCpi(cpk2)
     }
 
     private fun assertChangeLogPersistedWithCpi(cpk: Cpk) {
-        val dbChangeLogAsList = loadCpkDbChangeLog(CpkDbChangeLogIdentifier(cpk.metadata.fileChecksum, cpk.path.toString()))
+        val dbChangeLogAsList =
+            loadCpkDbChangeLog(CpkDbChangeLogIdentifier(cpk.metadata.fileChecksum, cpk.path.toString()))
         assertThat(dbChangeLogAsList).isNotNull
         assertThat(dbChangeLogAsList.id.cpkFileChecksum).isEqualTo(cpk.metadata.fileChecksum)
     }
@@ -402,24 +439,40 @@ internal class DatabaseCpiPersistenceTest {
 
         cpiPersistence.persistMetadataAndCpksWithDefaults(cpi, "test.cpi", cpiChecksum)
 
-        val loadedCpi = loadCpiDirectFromDatabase(cpi)
+        val loadedCpi = loadCpiDirectFromDatabase(cpi.metadata.cpiId)
+        val loadedCpiCpk = loadCpiCpkDirectFromDatabase(
+            CpiCpkIdentifier(
+                cpi.metadata.cpiId.name,
+                cpi.metadata.cpiId.version,
+                cpi.metadata.cpiId.signerSummaryHash,
+                loadedCpi.cpksMetadata.first().fileChecksum
+            )
+        )
 
-        assertThat(loadedCpi.entityVersion).isEqualTo(1)
-        assertThat(loadedCpi.cpks.size).isEqualTo(1)
-        assertThat(loadedCpi.cpks.first().entityVersion).isEqualTo(0)
+        assertThat(loadedCpi.version).isEqualTo(1) //CpiMetadata
+        assertThat(loadedCpi.cpksMetadata.size).isEqualTo(1)
+        assertThat(loadedCpiCpk.entityVersion).isEqualTo(0)
 
         cpiPersistence.updateMetadataAndCpksWithDefaults(
             cpi,
             cpiFileChecksum = cpiChecksum
         )  // force update same CPI
 
-        val updatedCpi = loadCpiDirectFromDatabase(cpi)
+        val updatedCpi = loadCpiDirectFromDatabase(cpi.metadata.cpiId)
+        val updatedCpiCpk = loadCpiCpkDirectFromDatabase(
+            CpiCpkIdentifier(
+                cpi.metadata.cpiId.name,
+                cpi.metadata.cpiId.version,
+                cpi.metadata.cpiId.signerSummaryHash,
+                updatedCpi.cpksMetadata.first().fileChecksum
+            )
+        )
 
-        assertThat(updatedCpi.insertTimestamp).isAfter(loadedCpi.insertTimestamp)
+        assertThat(updatedCpi.timestamp).isAfter(loadedCpi.timestamp)
         // merging updated cpi accounts for 1 modification, find with optimistic force increment accounts for the other modification
-        assertThat(updatedCpi.entityVersion).isEqualTo(3)
-        assertThat(updatedCpi.cpks.size).isEqualTo(1)
-        assertThat(updatedCpi.cpks.first().entityVersion).isEqualTo(0)
+        assertThat(updatedCpi.version).isEqualTo(3)
+        assertThat(updatedCpi.cpksMetadata.size).isEqualTo(1)
+        assertThat(updatedCpiCpk.entityVersion).isEqualTo(0)
     }
 
     @Test
@@ -529,7 +582,10 @@ internal class DatabaseCpiPersistenceTest {
     @Test
     fun `persist changelog writes data and can be read back`() {
         val cpi = mockCpi(mockCpk())
-        cpiPersistence.persistMetadataAndCpksWithDefaults(cpi, cpkDbChangeLog = genChangeLogs(arrayOf(cpi.cpks.first())))
+        cpiPersistence.persistMetadataAndCpksWithDefaults(
+            cpi,
+            cpkDbChangeLog = genChangeLogs(arrayOf(cpi.cpks.first()))
+        )
 
         val changeLogsRetrieved = loadCpkDbChangeLog(cpi.cpks.first().metadata.fileChecksum)
 
@@ -553,7 +609,7 @@ internal class DatabaseCpiPersistenceTest {
         val cpk1 = mockCpk()
         val cpiWithChangelogs = mockCpi(cpk1)
 
-        val cpiEntity = cpiPersistence.persistMetadataAndCpksWithDefaults(
+        val cpiMetadata = cpiPersistence.persistMetadataAndCpksWithDefaults(
             cpiWithChangelogs,
             cpkDbChangeLog = listOf(
                 cpkDbChangeLog {
@@ -563,15 +619,15 @@ internal class DatabaseCpiPersistenceTest {
             )
         )
 
-        val changelogsWith = findChangelogs(cpiEntity)
+        val changelogsWith = findChangelogs(cpiMetadata.cpiId)
         assertThat(changelogsWith.size).isEqualTo(1)
 
         val updatedCpi = mockCpiWithId(listOf(mockCpk()), cpiWithChangelogs.metadata.cpiId)
 
         // no change sets in this CPK
-        val updateCpiEntity = cpiPersistence.updateMetadataAndCpksWithDefaults(updatedCpi)
+        val updateCpiMetadata = cpiPersistence.updateMetadataAndCpksWithDefaults(updatedCpi)
 
-        val changelogsWithout = findChangelogs(updateCpiEntity)
+        val changelogsWithout = findChangelogs(updateCpiMetadata.cpiId)
         assertThat(changelogsWithout.size).isEqualTo(0)
     }
 
@@ -582,12 +638,12 @@ internal class DatabaseCpiPersistenceTest {
         val cpiV2 = mockCpi(mockCpk(), name = name, version = "v2")
         val cpiEntityV1 = cpiPersistence.persistMetadataAndCpksWithDefaults(cpiV1)
         val cpiEntityV2 = cpiPersistence.persistMetadataAndCpksWithDefaults(cpiV2)
-        assertThat(cpiEntityV1.name).isEqualTo(name)
-        assertThat(cpiEntityV1.version).isEqualTo("v1")
-        assertThat(cpiEntityV1.cpks).hasSize(1)
-        assertThat(cpiEntityV2.name).isEqualTo(name)
-        assertThat(cpiEntityV2.version).isEqualTo("v2")
-        assertThat(cpiEntityV2.cpks).hasSize(1)
+        assertThat(cpiEntityV1.cpiId.name).isEqualTo(name)
+        assertThat(cpiEntityV1.cpiId.version).isEqualTo("v1")
+        assertThat(cpiEntityV1.cpksMetadata).hasSize(1)
+        assertThat(cpiEntityV2.cpiId.name).isEqualTo(name)
+        assertThat(cpiEntityV2.cpiId.version).isEqualTo("v2")
+        assertThat(cpiEntityV2.cpksMetadata).hasSize(1)
     }
 
     @Test
@@ -596,7 +652,7 @@ internal class DatabaseCpiPersistenceTest {
         val cpi = mockCpi(cpk1)
         val rand1 = UUID.randomUUID().toString()
         val filePath = "path_1_$rand1.xml"
-        val cpiEntity = cpiPersistence.persistMetadataAndCpksWithDefaults(
+        val cpiMetadata = cpiPersistence.persistMetadataAndCpksWithDefaults(
             cpi,
             cpkDbChangeLog = listOf(
                 cpkDbChangeLog {
@@ -606,7 +662,7 @@ internal class DatabaseCpiPersistenceTest {
             )
         )
 
-        val changelogs = findChangelogs(cpiEntity)
+        val changelogs = findChangelogs(cpiMetadata.cpiId)
         val changelogAudits = findAuditLogs(listOf(cpk1.metadata.fileChecksum))
         assertThat(changelogs.size).isEqualTo(1)
         assertThat(changelogAudits.size).isEqualTo(1)
@@ -614,7 +670,7 @@ internal class DatabaseCpiPersistenceTest {
         val cpk2 = mockCpk()
         val updatedCpi = mockCpiWithId(listOf(cpk1, cpk2), cpi.metadata.cpiId)
 
-        val updateCpiEntity = cpiPersistence.updateMetadataAndCpksWithDefaults(
+        val updateCpiMetadata = cpiPersistence.updateMetadataAndCpksWithDefaults(
             updatedCpi,
             cpkDbChangeLog = listOf(
                 cpkDbChangeLog {
@@ -627,7 +683,7 @@ internal class DatabaseCpiPersistenceTest {
                 }
             )
         )
-        val updatedChangelogs = findChangelogs(updateCpiEntity)
+        val updatedChangelogs = findChangelogs(updateCpiMetadata.cpiId)
         val updatedChangelogAudits = findAuditLogs(listOf(cpk1.metadata.fileChecksum, cpk2.metadata.fileChecksum))
 
         assertThat(updatedChangelogs.size)
@@ -643,7 +699,7 @@ internal class DatabaseCpiPersistenceTest {
         val cpk = mockCpk()
         val cpi = mockCpi(cpk)
         val cpk1FileChecksum = cpk.metadata.fileChecksum
-        val cpiEntity = cpiPersistence.persistMetadataAndCpksWithDefaults(
+        val cpiMetadata = cpiPersistence.persistMetadataAndCpksWithDefaults(
             cpi,
             cpkDbChangeLog = listOf(
                 cpkDbChangeLog {
@@ -652,7 +708,7 @@ internal class DatabaseCpiPersistenceTest {
             )
         )
 
-        val changelogs = findChangelogs(cpiEntity)
+        val changelogs = findChangelogs(cpiMetadata.cpiId)
         val changelogAudits = findAuditLogs(listOf(cpk.metadata.fileChecksum))
         assertThat(changelogs.size).isEqualTo(1)
         assertThat(changelogAudits.size).isEqualTo(1)
@@ -661,7 +717,7 @@ internal class DatabaseCpiPersistenceTest {
         val updatedCpi = mockCpiWithId(listOf(cpk2), cpi.metadata.cpiId)
         val cpk2FileChecksum = cpk2.metadata.fileChecksum
 
-        val updateCpiEntity = cpiPersistence.updateMetadataAndCpksWithDefaults(
+        val updateCpiMetadata = cpiPersistence.updateMetadataAndCpksWithDefaults(
             updatedCpi,
             cpkDbChangeLog = listOf(
                 cpkDbChangeLog {
@@ -674,7 +730,7 @@ internal class DatabaseCpiPersistenceTest {
             )
         )
 
-        val updatedChangelogs = findChangelogs(updateCpiEntity)
+        val updatedChangelogs = findChangelogs(updateCpiMetadata.cpiId)
         assertThat(updatedChangelogs.size).isEqualTo(2)
 
         val updatedChangelogAudits = findAuditLogs(listOf(cpk1FileChecksum, cpk2FileChecksum))
@@ -739,7 +795,7 @@ internal class DatabaseCpiPersistenceTest {
             val originalGroupPolicy = mapper.readTree(minimumStaticNetworkGroupPolicy)
             assertThat(originalGroupPolicy.has(MGM_INFO)).isFalse
 
-            val persistedGroupPolicy = mapper.readTree(loadCpiDirectFromDatabase(cpi).groupPolicy)
+            val persistedGroupPolicy = mapper.readTree(findCpiMetadata(cpi.metadata.cpiId).groupPolicy)
             assertThat(persistedGroupPolicy.has(MGM_INFO)).isTrue
 
             val mgmInfo = mapper.convertValue(
@@ -759,7 +815,7 @@ internal class DatabaseCpiPersistenceTest {
             val originalGroupPolicy = mapper.readTree(nonStaticNetworkGroupPolicy)
             assertThat(originalGroupPolicy.has(MGM_INFO)).isFalse
 
-            val persistedGroupPolicy = mapper.readTree(loadCpiDirectFromDatabase(cpi).groupPolicy)
+            val persistedGroupPolicy = mapper.readTree(findCpiMetadata(cpi.metadata.cpiId).groupPolicy)
             assertThat(persistedGroupPolicy.has(MGM_INFO)).isFalse
         }
 
@@ -769,7 +825,7 @@ internal class DatabaseCpiPersistenceTest {
 
             val result = cpiPersistence.persistMetadataAndCpksWithDefaults(cpi)
             assertThat(result.groupPolicy).isNotEqualTo(minimumStaticNetworkGroupPolicy)
-            assertThat(result.groupPolicy).isEqualTo(loadCpiDirectFromDatabase(cpi).groupPolicy)
+            assertThat(result.groupPolicy).isEqualTo(findCpiMetadata(cpi.metadata.cpiId).groupPolicy)
         }
 
         @Test
@@ -778,31 +834,32 @@ internal class DatabaseCpiPersistenceTest {
 
             val result = cpiPersistence.persistMetadataAndCpksWithDefaults(cpi)
             assertThat(result.groupPolicy).isEqualTo(nonStaticNetworkGroupPolicy)
-            assertThat(result.groupPolicy).isEqualTo(loadCpiDirectFromDatabase(cpi).groupPolicy)
+            assertThat(result.groupPolicy).isEqualTo(findCpiMetadata(cpi.metadata.cpiId).groupPolicy)
         }
     }
 
-    private fun findChangelogs(cpiEntity: CpiMetadataEntity) = entityManagerFactory.createEntityManager().transaction {
-        cpkDbChangeLogRepository.findByCpiId(it, CpiIdentifier(cpiEntity.name, cpiEntity.version, parseSecureHash(cpiEntity.signerSummaryHash)))
+    private fun findChangelogs(cpiId: CpiIdentifier) = entityManagerFactory.createEntityManager().transaction {
+        cpkDbChangeLogRepository.findByCpiId(it, cpiId)
     }
 
-    private fun findAuditLogs(cpkFileChecksums: Collection<SecureHash>) = entityManagerFactory.createEntityManager().transaction {
-        cpkDbChangeLogAuditRepository.findByFileChecksums(it, cpkFileChecksums)
-    }
+    private fun findAuditLogs(cpkFileChecksums: Collection<SecureHash>) =
+        entityManagerFactory.createEntityManager().transaction {
+            cpkDbChangeLogAuditRepository.findByFileChecksums(it, cpkFileChecksums)
+        }
 
     private fun assertCpkIsNotAssociatedWithCpi(cpi: Cpi, cpk: Cpk) {
         entityManagerFactory.createEntityManager().transaction { em ->
             assertThat(
-                em.find(
-                    CpiCpkEntity::class.java,
-                    CpiCpkKey(
+                cpiCpkRepository.exist(
+                    em,
+                    CpiCpkIdentifier(
                         cpi.metadata.cpiId.name,
                         cpi.metadata.cpiId.version,
-                        cpi.metadata.cpiId.signerSummaryHash.toString(),
-                        cpk.metadata.fileChecksum.toString()
+                        cpi.metadata.cpiId.signerSummaryHash,
+                        cpk.metadata.fileChecksum
                     )
                 )
-            ).isNull()
+            ).isFalse()
         }
     }
 
@@ -832,15 +889,24 @@ internal class DatabaseCpiPersistenceTest {
         }
     }
 
-    private fun loadCpiDirectFromDatabase(cpi: Cpi): CpiMetadataEntity =
-        entityManagerFactory.createEntityManager().transaction {
-            it.find(
-                CpiMetadataEntity::class.java, CpiMetadataEntityKey(
-                    cpi.metadata.cpiId.name,
-                    cpi.metadata.cpiId.version,
-                    cpi.metadata.cpiId.signerSummaryHash.toString(),
-                )
-            )
+    private fun findCpiMetadata(cpiId: CpiIdentifier): CpiMetadata =
+        entityManagerFactory.createEntityManager().transaction { em ->
+            cpiMetadataRepository.findById(em, cpiId)
+        }!!
+
+    private fun loadCpiDirectFromDatabase(cpiId: CpiIdentifier): CpiMetadata =
+        entityManagerFactory.createEntityManager().transaction { em ->
+            cpiMetadataRepository.findById(em, cpiId)
+        }!!
+
+    private fun loadCpiCpkDirectFromDatabase(cpiCpkId: CpiCpkIdentifier): CpiCpkMetadata =
+        entityManagerFactory.createEntityManager().transaction { em ->
+            cpiCpkRepository.findById(em, cpiCpkId)
+        }!!
+
+    private fun findCpkMetadata(fileChecksum: SecureHash) =
+        entityManagerFactory.createEntityManager().transaction { em ->
+            cpkRepository.findById(em, fileChecksum)
         }!!
 
     private fun findAndAssertCpks(
@@ -851,26 +917,20 @@ internal class DatabaseCpiPersistenceTest {
         expectedCpiCpkEntityVersion: Int = 0
     ) {
         combos.forEach { (cpi, cpk) ->
-            val (cpkMetadata, cpkFile, cpiCpk) = entityManagerFactory.createEntityManager().transaction {
-                val cpiCpkKey = CpiCpkKey(
-                    cpi.metadata.cpiId.name,
-                    cpi.metadata.cpiId.version,
-                    cpi.metadata.cpiId.signerSummaryHash.toString(),
-                    cpk.metadata.fileChecksum.toString()
-                )
+            val (pairEntityVersionAndCpkMetadata, cpkFile, cpiCpk) = entityManagerFactory.createEntityManager().transaction { em ->
                 val cpkKey = cpk.metadata.fileChecksum
-                val cpiCpk = it.find(CpiCpkEntity::class.java, cpiCpkKey)
-                val cpkMetadata = it.find(CpkMetadataEntity::class.java, cpkKey.toString())
-                val cpkFile = cpkFileRepository.findById(it, cpkKey)
-                Triple(cpkMetadata, cpkFile, cpiCpk)
+                val cpiCpk = cpiCpkRepository.findById(em, CpiCpkIdentifier(cpi.metadata.cpiId.name, cpi.metadata.cpiId.version, cpi.metadata.cpiId.signerSummaryHash, cpk.metadata.fileChecksum))!!
+                val pairEntityVersionAndCpkMetadata = cpkRepository.findById(em, cpkKey)!!
+                val cpkFile = cpkFileRepository.findById(em, cpkKey)
+                Triple(pairEntityVersionAndCpkMetadata, cpkFile, cpiCpk)
             }
 
-            assertThat(cpkMetadata.cpkFileChecksum).isEqualTo(expectedCpkFileChecksum?.toString() ?: cpk.metadata.fileChecksum.toString())
+            assertThat(pairEntityVersionAndCpkMetadata.second.fileChecksum).isEqualTo(expectedCpkFileChecksum ?: cpk.metadata.fileChecksum)
             assertThat(cpkFile.fileChecksum).isEqualTo(expectedCpkFileChecksum ?: cpk.metadata.fileChecksum)
-            assertThat(cpkMetadata.serializedMetadata).isEqualTo(cpk.metadata.toJsonAvro())
+            assertThat(pairEntityVersionAndCpkMetadata.second.toJsonAvro()).isEqualTo(cpk.metadata.toJsonAvro())
 
-            assertThat(cpkMetadata.entityVersion)
-                .withFailMessage("CpkMetadataEntity.entityVersion expected $expectedMetadataEntityVersion but was ${cpkMetadata.entityVersion}.")
+            assertThat(pairEntityVersionAndCpkMetadata.first)
+                .withFailMessage("CpkMetadataEntity.entityVersion expected $expectedMetadataEntityVersion but was ${pairEntityVersionAndCpkMetadata.first}.")
                 .isEqualTo(expectedMetadataEntityVersion)
             assertThat(cpkFile.version)
                 .withFailMessage("CpkFileEntity.entityVersion expected $expectedFileEntityVersion but was ${cpkFile.version}.")
@@ -881,4 +941,3 @@ internal class DatabaseCpiPersistenceTest {
         }
     }
 }
-

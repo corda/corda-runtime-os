@@ -1,17 +1,17 @@
-package net.corda.test.util.dsl.entities.cpx
+package net.corda.libs.cpi.datamodel.entities.tests.utils
 
-import net.corda.crypto.core.SecureHashImpl
-import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
-import net.corda.v5.crypto.SecureHash
 import java.util.UUID
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.libs.cpi.datamodel.entities.internal.CpkMetadataEntity
+import net.corda.v5.crypto.SecureHash
 
-fun cpk(init: CpkMetadataBuilder.() -> Unit): CpkMetadataEntity {
+internal fun cpk(init: CpkMetadataBuilder.() -> Unit): CpkMetadataEntity {
     val cpkBuilder = CpkMetadataBuilder()
     init(cpkBuilder)
     return cpkBuilder.build()
 }
 
-class CpkMetadataBuilder(
+internal class CpkMetadataBuilder(
     internal var fileChecksumSupplier: () -> SecureHash? = { null },
     private var randomId: UUID = UUID.randomUUID()
 ) {

@@ -49,7 +49,8 @@ public class RestJavaClientIntegrationTest extends RestIntegrationTestBase {
     @Test
     void start_connection_aware_client_from_java_against_server_with_accepted_protocol_version_succeeds() {
         RestClient<TestHealthCheckAPI> client = new RestClient<>(
-            "http://localhost:" + RestIntegrationTestBase.Companion.getServer().getPort() + "/api/v1/",
+            "http://localhost:" + RestIntegrationTestBase.Companion.getServer().getPort() + "/api/" +
+                    RestIntegrationTestBase.Companion.getApiVersion().getVersionPath() + "/",
             TestHealthCheckAPI.class,
             new RestClientConfig().enableSSL(false).minimumServerProtocolVersion(1)
                 .username(RestIntegrationTestBase.Companion.getUserAlice().getUsername())

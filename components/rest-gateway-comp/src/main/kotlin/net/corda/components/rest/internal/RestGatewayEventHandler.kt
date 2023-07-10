@@ -198,7 +198,6 @@ internal class RestGatewayEventHandler(
         val restServerSettings = RestServerSettings(
             address = NetworkHostAndPort.parse(config.getString(REST_ADDRESS)),
             context = RestContext(
-                version = "1",
                 basePath = "/api",
                 description = config.getString(REST_CONTEXT_DESCRIPTION),
                 title = config.getString(REST_CONTEXT_TITLE)

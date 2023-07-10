@@ -35,7 +35,6 @@ class FlowMapperMessageProcessor(
 
     private val sessionP2PTtl = flowConfig.getLong(FlowConfig.SESSION_P2P_TTL)
 
-    private val errorMsg = "This event is expired and will be %. Event: % State: %"
     private val clock = UTCClock()
 
     override fun onNext(
@@ -62,9 +61,7 @@ class FlowMapperMessageProcessor(
                     val result = executor.execute()
                     StateAndEventProcessor.Response(result.flowMapperState, result.outputEvents)
                 } else {
-                    logger.debug {
-                        errorMsg.format("ignored", event, state)
-                    }
+                    logger.debug { "This event is expired and will be ignored. Event: $event State: $state" }
                     CordaMetrics.Metric.FlowMapperExpiredSessionEventCount.builder()
                         .build().increment()
                     StateAndEventProcessor.Response(state, emptyList())

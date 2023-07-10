@@ -9,7 +9,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.processors.uniqueness.UniquenessProcessor
-import net.corda.uniqueness.checker.UniquenessChecker
+import net.corda.uniqueness.checker.UniquenessCheckerLifecycle
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -22,8 +22,8 @@ import org.slf4j.LoggerFactory
 class UniquenessProcessorImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = UniquenessChecker::class)
-    private val uniquenessChecker: UniquenessChecker
+    @Reference(service = UniquenessCheckerLifecycle::class)
+    private val uniquenessChecker: UniquenessCheckerLifecycle
 ) : UniquenessProcessor {
 
     companion object {
