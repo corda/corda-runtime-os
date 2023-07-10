@@ -14,22 +14,6 @@ logging:
   format: "text"
   level: "info"
 
-commonLabels:
-  jason: "test"
-  
-affinity:
-  nodeAntiAffinity:
-    requiredDuringSchedulingIgnoredDuringExecution:
-      - weight: 1
-        podAffinityTerm:
-          labelSelector:
-            matchExpressions:
-              - key: "app.kubernetes.io/component"
-                operator: In
-                values:
-                  - jason
-          topologyKey: "kubernetes.io/hostname"
-
 bootstrap:
   restApiAdmin:
     password:
