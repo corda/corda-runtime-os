@@ -20,6 +20,7 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     api 'net.corda:corda-notary-plugin'
+    api 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-ledger-utxo'
     implementation 'net.corda:corda-topic-schema'
     implementation project(':components:ledger:ledger-common-flow-api')

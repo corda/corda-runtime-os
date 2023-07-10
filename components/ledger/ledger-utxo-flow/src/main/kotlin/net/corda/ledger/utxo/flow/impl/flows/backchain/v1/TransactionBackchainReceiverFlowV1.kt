@@ -8,6 +8,7 @@ import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.persistence.TransactionExistenceStatus
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.sandbox.CordaSystemFlow
+import net.corda.schema.configuration.ConfigKeys.UTXO_LEDGER_CONFIG
 import net.corda.utilities.trace
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
@@ -27,7 +28,6 @@ class TransactionBackchainReceiverFlowV1(
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val BACKCHAIN_BATCH_CONFIG_PATH = "backchain.batchsize"
-        private const val BACKCHAIN_DEFAULT_BATCH_SIZE = 10
     }
 
     @CordaInject
@@ -48,15 +48,13 @@ class TransactionBackchainReceiverFlowV1(
 
         val sortedTransactionIds = TopologicalSort()
 
-        val ledgerConfig = flowConfigService.getLedgerConfig()
+        val ledgerConfig = flowConfigService.getConfig(UTXO_LEDGER_CONFIG)
 
-        val batchSize = if (ledgerConfig != null && ledgerConfig.hasPath(BACKCHAIN_BATCH_CONFIG_PATH)) {
-            ledgerConfig.getInt(BACKCHAIN_BATCH_CONFIG_PATH)
-        } else {
-            log.warn("Config path for backchain batch size does not exist, " +
-                    "defaulting batch size to $BACKCHAIN_DEFAULT_BATCH_SIZE")
-            BACKCHAIN_DEFAULT_BATCH_SIZE
+        requireNotNull(ledgerConfig) {
+            "Could not find UTXO ledger config in the flow context with key: $UTXO_LEDGER_CONFIG"
         }
+
+        val batchSize = ledgerConfig.getInt(BACKCHAIN_BATCH_CONFIG_PATH)
 
         while (transactionsToRetrieve.isNotEmpty()) {
             val batch = transactionsToRetrieve.take(batchSize)

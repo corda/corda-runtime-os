@@ -7,12 +7,7 @@ import net.corda.v5.base.annotations.DoNotImplement
 interface FlowConfigService {
 
     /**
-     * Retrieves all the available configs from the flow context.
+     * Retrieves the config that is associated with the provided [configKey] if available.
      */
-    fun getFlowConfigs(): Map<String, SmartConfig>
-
-    /**
-     * Retrieves the ledger config from the flow context if available.
-     */
-    fun getLedgerConfig(): SmartConfig?
+    fun getConfig(configKey: String): SmartConfig?
 }
