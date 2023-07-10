@@ -6,6 +6,7 @@ import com.esotericsoftware.kryo.io.Output
 import com.esotericsoftware.kryo.Serializer
 import java.lang.reflect.Method
 
+//TODO CORE-15338 remove this class
 class MethodSerializer : Serializer<Method>() {
 
     override fun write(kryo: Kryo, output: Output, method: Method) {

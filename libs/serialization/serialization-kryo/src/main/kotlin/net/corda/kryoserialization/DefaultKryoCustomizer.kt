@@ -127,6 +127,7 @@ class DefaultKryoCustomizer {
                 // Register a serializer to reject the serialization of NonSerializable classes
                 addDefaultSerializer(NonSerializable::class.java, NonSerializableSerializer)
 
+                //TODO CORE-15338 remove this serializer
                 kryo.register(Method::class.java, MethodSerializer())
             }
         }
