@@ -9,11 +9,10 @@ import net.corda.ledger.utxo.flow.impl.flows.backchain.TopologicalSort
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackChainResolutionVersion
 import net.corda.ledger.utxo.flow.impl.flows.backchain.base.TransactionBackchainReceiverFlowBase
 import net.corda.ledger.utxo.flow.impl.flows.backchain.base.TransactionBackchainRequestBase
-import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersService
+import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.ledger.utxo.flow.impl.persistence.TransactionExistenceStatus
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
-import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -62,7 +61,6 @@ class TransactionBackchainReceiverFlowV2Test {
     private val utxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
     private val utxoLedgerMetricRecorder = mock<UtxoLedgerMetricRecorder>()
     private val utxoLedgerGroupParametersPersistenceService = mock<UtxoLedgerGroupParametersPersistenceService>()
-    private val currentGroupParametersService = mock<CurrentGroupParametersService>()
     private val signedGroupParametersVerifier = mock<SignedGroupParametersVerifier>()
 
     private val session = mock<FlowSession>()
