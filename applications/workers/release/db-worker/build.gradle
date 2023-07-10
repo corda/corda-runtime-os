@@ -13,6 +13,7 @@ osgiRun {
 }
 
 dependencies {
+    implementation project(path: ':processors:token-cache-processor')
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")

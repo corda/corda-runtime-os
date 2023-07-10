@@ -52,8 +52,6 @@ class FlowProcessorImpl @Activate constructor(
     private val sandboxGroupContextComponent: SandboxGroupContextComponent,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    @Reference(service = TokenCacheComponentFactory::class)
-    private val tokenCacheComponentFactory: TokenCacheComponentFactory,
     @Reference(service = GroupParametersReaderService::class)
     private val groupParametersReaderService: GroupParametersReaderService,
     @Reference(service = CpkReadService::class)
@@ -81,7 +79,7 @@ class FlowProcessorImpl @Activate constructor(
         ::cpkReadService,
         ::groupPolicyProvider,
         ::membershipQueryClient
-    ).with(tokenCacheComponentFactory.create(), TokenCacheComponent::class.java)
+    )
 
     private val lifecycleCoordinator =
         coordinatorFactory.createCoordinator<FlowProcessorImpl>(dependentComponents, ::eventHandler)
