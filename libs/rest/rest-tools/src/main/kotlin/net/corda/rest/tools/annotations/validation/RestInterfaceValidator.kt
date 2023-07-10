@@ -27,7 +27,8 @@ object RestInterfaceValidator {
             URLPathParameterNotDeclaredValidator(rpcOpsInterface),
             DurableStreamsEndPointValidator(rpcOpsInterface),
             DurableStreamsContextParameterValidator(rpcOpsInterface),
-            NestedGenericsParameterTypeValidator(rpcOpsInterface)
+            NestedGenericsParameterTypeValidator(rpcOpsInterface),
+            EndpointMinMaxVersionValidator(rpcOpsInterface)
         ).fold(RestValidationResult()) { total, next -> total + next.validate() }
 
     /**
