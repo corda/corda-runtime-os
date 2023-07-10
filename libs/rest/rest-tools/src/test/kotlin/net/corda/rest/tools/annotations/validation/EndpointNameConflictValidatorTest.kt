@@ -5,6 +5,7 @@ import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.RestQueryParameter
 import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.tools.annotations.validation.EndpointNameConflictValidator.Companion.error
 import net.corda.rest.tools.annotations.validation.utils.EndpointType
 import org.assertj.core.api.Assertions.assertThat
@@ -15,7 +16,25 @@ import kotlin.reflect.jvm.javaMethod
 class EndpointNameConflictValidatorTest {
 
     @Test
-    fun `validate withEndpointNameConflictOnSamePath errorListContainsError`() {
+    fun `validate withEndpointNameConflictOnSamePathDifferentVersions errorListIsEmpty`() {
+        @HttpRestResource
+        abstract class TestInterface : RestResource {
+            @HttpGET("/test", maxVersion= RestApiVersion.C5_0)
+            @Suppress("unused")
+            abstract fun test()
+
+            @HttpGET("/test", minVersion= RestApiVersion.C5_1)
+            @Suppress("unused")
+            abstract fun test2()
+        }
+
+        val result = EndpointNameConflictValidator(TestInterface::class.java).validate()
+
+        assertEquals(0, result.errors.size)
+    }
+
+    @Test
+    fun `validate withEndpointNameConflictOnSamePathSameVersions errorListContainsError`() {
         @HttpRestResource
         abstract class TestInterface : RestResource {
             @HttpGET("/test")
