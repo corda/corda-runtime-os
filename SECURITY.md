@@ -1,5 +1,5 @@
 ## Security
-[R3](https://r3.com/), the company behind [Corda](https://corda.net/), welcomes collaboration with the security community and takes the security of our software products and services seriously. This includes all source code repositories managed through our GitHub organizations including [corda-runtime-os] and [others](https://github.com/orgs/corda/repositories).
+[R3](https://r3.com/), the company behind [Corda](https://corda.net/), welcomes collaboration with the security community and takes the security of our software products and services seriously. This includes all source code repositories managed through our GitHub organizations including [corda-runtime-os](https://github.com/corda/corda-runtime-os) and [others](https://github.com/orgs/corda/repositories).
 
 Please note that [corda-runtime-os](https://github.com/corda/corda-runtime-os) pre-release software and is not yet intended to facilitate full CorDapp development.
 
