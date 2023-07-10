@@ -9,7 +9,6 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ResponderFlow
-import net.corda.v5.application.interop.InteropIdentityLookUp
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -17,7 +16,6 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.interop.InterOpIdentityInfo
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
@@ -124,19 +122,13 @@ class SwapResponderFlow : ResponderFlow {
     @CordaInject
     lateinit var flowEngine: FlowEngine
 
-    @CordaInject
-    lateinit var interopIdentityLookUp : InteropIdentityLookUp
-
     @Suspendable
     override fun call(session: FlowSession) {
 
         val msg = session.receive(Payment::class.java)
         log.info("Received message: $msg")
-        val myInteropInfo : InterOpIdentityInfo? = interopIdentityLookUp.lookup(msg.interopGroupId)
-        require(myInteropInfo != null) { "Cant find InteropInfo for ${msg.interopGroupId}." }
 
-        val result = flowEngine.subFlow(SwapResponderSubFlow(MemberX500Name.parse(myInteropInfo.x500Name), msg))
-        log.info("Interop SubFlow finished with result '$result', calling FinalityFlow")
+        val result = flowEngine.subFlow(SwapResponderSubFlow(msg))
         session.send(result)
 
         try {
