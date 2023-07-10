@@ -43,7 +43,9 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String, samp
     private val tracing: Tracing by lazy {
 
         val braveCurrentTraceContext = ThreadLocalCurrentTraceContext.newBuilder()
-            .addScopeDecorator(MDCScopeDecorator.get())
+            .addScopeDecorator(MDCScopeDecorator.newBuilder()
+                .add(SingleCorrelationField.create(BraveBaggageFields.REQUEST_ID))
+                .build())
             .build()
 
         val sampler = when (samplesPerSecond) {
