@@ -19,6 +19,7 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -26,7 +27,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.AccessController
 import java.security.PrivilegedExceptionAction
-import kotlin.reflect.full.primaryConstructor
 
 @CordaSystemFlow
 class UtxoFinalityFlowV1(
@@ -52,7 +52,7 @@ class UtxoFinalityFlowV1(
     @Suspendable
     override fun call(): UtxoSignedTransaction {
         addTransactionIdToFlowContext(flowEngine, transactionId)
-        log.trace("Starting finality flow for transaction: $transactionId")
+        log.trace("Starting finality flow for transaction: {}", transactionId)
         verifyExistingSignatures(initialTransaction)
         verifyTransaction(initialTransaction)
 
@@ -67,7 +67,7 @@ class UtxoFinalityFlowV1(
         val (notarizedTransaction, notarySignatures) = notarize(transaction)
         persistNotarizedTransaction(notarizedTransaction)
         sendNotarySignaturesToCounterparties(notarySignatures)
-        log.trace { "Finalisation of transaction $transactionId has been finished." }
+        log.trace("Finalisation of transaction {} has been finished.", transactionId)
         return notarizedTransaction
     }
 
@@ -273,7 +273,7 @@ class UtxoFinalityFlowV1(
         transaction: UtxoSignedTransactionInternal
     ): PluggableNotaryClientFlow {
         return AccessController.doPrivileged(PrivilegedExceptionAction {
-            pluggableNotaryClientFlow.kotlin.primaryConstructor!!.call(
+            pluggableNotaryClientFlow.getConstructor(UtxoSignedTransaction::class.java, MemberX500Name::class.java).newInstance(
                 transaction, virtualNodeSelectorService.selectVirtualNode(transaction.notaryName)
             )
         })

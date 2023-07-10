@@ -56,8 +56,8 @@ class MGMRegistrationContextValidatorTest {
             get() = mutableMapOf(
                 SESSION_KEY_IDS.format(0) to "session key",
                 ECDH_KEY_ID to "ECDH key",
-                REGISTRATION_PROTOCOL to "registration protocol",
-                SYNCHRONISATION_PROTOCOL to "synchronisation protocol",
+                REGISTRATION_PROTOCOL to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
+                SYNCHRONISATION_PROTOCOL to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
                 P2P_MODE to "P2P mode",
                 SESSION_KEY_POLICY to "session key policy",
                 PKI_SESSION to "session PKI property",
@@ -157,6 +157,24 @@ class MGMRegistrationContextValidatorTest {
         assertThrows<MGMRegistrationContextValidationException> {
             mgmRegistrationContextValidator.validate(testContext)
         }
+    }
+
+    @Test
+    fun `context validation fails when registration protocol provided is invalid`() {
+        val contextWithInvalidProtocol = validTestContext.plus("corda.group.protocol.registration" to "invalid")
+        val exception = assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationContextValidator.validate(contextWithInvalidProtocol)
+        }
+        assertThat(exception).hasMessageContaining("Invalid value for key $REGISTRATION_PROTOCOL in registration context.")
+    }
+
+    @Test
+    fun `context validation fails when sync protocol provided is invalid`() {
+        val contextWithInvalidProtocol = validTestContext.plus("corda.group.protocol.synchronisation" to "invalid")
+        val exception = assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationContextValidator.validate(contextWithInvalidProtocol)
+        }
+        assertThat(exception).hasMessageContaining("Invalid value for key $SYNCHRONISATION_PROTOCOL in registration context.")
     }
 
     @Test

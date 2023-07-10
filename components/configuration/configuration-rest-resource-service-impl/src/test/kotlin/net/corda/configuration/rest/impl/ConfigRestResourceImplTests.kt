@@ -58,7 +58,7 @@ class ConfigRestResourceImplTests {
         }
     }
 
-    private val req = UpdateConfigParameters("section", 50000, TestJsonObject("a=b"), ConfigSchemaVersion(888, 0))
+    private val req = UpdateConfigParameters("section", 45678, TestJsonObject("a=b"), ConfigSchemaVersion(888, 0))
     private val successFuture = CompletableFuture.supplyAsync {
         ConfigurationManagementResponse(
             true, null, req.section, req.config.escapedJson, ConfigurationSchemaVersion(

@@ -62,7 +62,7 @@ import java.time.LocalDateTime
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.Duration
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
@@ -84,7 +84,7 @@ import kotlin.reflect.full.createInstance
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JPABackingStoreImplIntegrationTests {
-    private lateinit var backingStoreImpl: JPABackingStoreImpl
+    private lateinit var backingStoreImpl: JPABackingStoreLifecycleImpl
     private lateinit var lifecycleCoordinator: LifecycleCoordinator
     private lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
     private lateinit var testClock: AutoTickTestClock
@@ -139,13 +139,18 @@ class JPABackingStoreImplIntegrationTests {
         testClock = AutoTickTestClock(baseTime, Duration.ofSeconds(1))
     }
 
-    private fun createBackingStoreImpl(emFactory: EntityManagerFactory): JPABackingStoreImpl {
-        return JPABackingStoreImpl(lifecycleCoordinatorFactory,
-            JpaEntitiesRegistryImpl(),
-            mock<DbConnectionManager>().apply {
-                whenever(getOrCreateEntityManagerFactory(any(), any(), any())) doReturn emFactory
-                whenever(getClusterDataSource()) doReturn dbConfig.dataSource
-            })
+    private fun createBackingStoreImpl(emFactory: EntityManagerFactory): JPABackingStoreLifecycleImpl {
+        val jpaEntitiesRegistry = JpaEntitiesRegistryImpl()
+        val dbConnectionManager = mock<DbConnectionManager>().apply {
+            whenever(getOrCreateEntityManagerFactory(any(), any(), any())) doReturn emFactory
+            whenever(getClusterDataSource()) doReturn dbConfig.dataSource
+        }
+        return JPABackingStoreLifecycleImpl(
+            lifecycleCoordinatorFactory,
+            jpaEntitiesRegistry,
+            dbConnectionManager,
+            JPABackingStoreImpl(jpaEntitiesRegistry, dbConnectionManager)
+        )
     }
 
     private fun createEntityManagerFactory(persistenceUnitName: String = "uniqueness"): EntityManagerFactory {

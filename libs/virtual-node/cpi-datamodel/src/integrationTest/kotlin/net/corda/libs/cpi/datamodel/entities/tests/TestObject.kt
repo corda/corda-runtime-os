@@ -1,17 +1,27 @@
 package net.corda.libs.cpi.datamodel.entities.tests
 
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.UUID
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.cpi.datamodel.CpkFile
-import net.corda.libs.cpi.datamodel.entities.CpiCpkEntity
-import net.corda.libs.cpi.datamodel.entities.CpiCpkKey
-import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
-import net.corda.libs.cpi.datamodel.entities.CpkMetadataEntity
+import net.corda.libs.cpi.datamodel.entities.internal.CpiCpkEntity
+import net.corda.libs.cpi.datamodel.entities.internal.CpiCpkKey
+import net.corda.libs.cpi.datamodel.entities.internal.CpiMetadataEntity
+import net.corda.libs.cpi.datamodel.entities.internal.CpkMetadataEntity
+import net.corda.libs.packaging.core.CordappManifest
+import net.corda.libs.packaging.core.CordappType
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpkFormatVersion
+import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.libs.packaging.core.CpkManifest
+import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.libs.packaging.core.CpkType
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
-import java.util.UUID
 
-object TestObject {
+internal object TestObject {
 
     val SIGNER_SUMMARY_HASH = SecureHashImpl("SHA-256", "test-cpi-hash".toByteArray())
 
@@ -52,7 +62,43 @@ object TestObject {
         name: String,
         version: String,
         signerSummaryHash: String,
-    ) = CpkMetadataEntity(cpkFileChecksum, name, version, signerSummaryHash, "1.0", "{}")
+    ) = CpkMetadataEntity(
+        cpkFileChecksum,
+        name,
+        version,
+        signerSummaryHash,
+        "1.0",
+        CpkMetadata(
+            CpkIdentifier(
+                name,
+                version,
+                parseSecureHash(signerSummaryHash)
+            ),
+            CpkManifest(CpkFormatVersion(2, 3)),
+            "mainBundle.jar",
+            listOf("library.jar"),
+            CordappManifest(
+                "com.r3.corda.Bundle",
+                "1.2.3",
+                12,
+                34,
+                CordappType.WORKFLOW,
+                "someName",
+                "R3",
+                42,
+                "some license",
+                mapOf(
+                    "Corda-Contract-Classes" to "contractClass1, contractClass2",
+                    "Corda-Flow-Classes" to "flowClass1, flowClass2"
+                ),
+            ),
+            CpkType.CORDA_API,
+            SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32)),
+            emptySet(),
+            Instant.now().truncatedTo(ChronoUnit.MILLIS),
+            externalChannelsConfig = "{}"
+        ).toJsonAvro()
+    )
 
     fun genRandomCpkFile() =
         createCpkFile(SecureHashImpl("SHA-256", "cpk-checksum-${UUID.randomUUID()}".toByteArray()), ByteArray(2000))
