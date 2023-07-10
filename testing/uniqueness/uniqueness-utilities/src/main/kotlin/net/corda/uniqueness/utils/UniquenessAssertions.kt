@@ -26,6 +26,8 @@ import java.time.Instant
  */
 @Suppress("SpreadOperator", "TooManyFunctions")
 object UniquenessAssertions {
+    private const val UNSPECIFIED_VALUE = "<UNSPECIFIED-VALUE>"
+
     /**
      * Checks for a valid, standard success response. If a clock is specified, will additionally
      * check the commit timestamp is valid with respect to the provider.
@@ -52,10 +54,14 @@ object UniquenessAssertions {
      */
     fun assertUnhandledExceptionResponse(
         response: UniquenessCheckResponseAvro,
-        expectedExceptionType: String
+        expectedExceptionType: String,
+        expectedErrorMessage: String? = UNSPECIFIED_VALUE
     ) {
         getResultOfType<UniquenessCheckResultUnhandledExceptionAvro>(response).run {
             assertThat(exception.errorType).isEqualTo(expectedExceptionType)
+            if (expectedErrorMessage != UNSPECIFIED_VALUE) {
+                assertThat(exception.errorMessage).isEqualTo(expectedErrorMessage)
+            }
         }
     }
 
@@ -304,7 +310,6 @@ object UniquenessAssertions {
 
     private inline fun <reified T> getResultOfType(response: UniquenessCheckResponseAvro): T {
         assertInstanceOf(T::class.java, response.result)
-        @Suppress("UNCHECKED_CAST")
         return response.result as T
     }
 
