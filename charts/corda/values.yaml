@@ -17,7 +17,7 @@ image:
   # -- worker image tag, defaults to Chart appVersion
   tag: ""
 
-# Labels to add to all deployed objects
+# extra labels to add to all deployed objects
 commonLabels: {}
 
 # -- image pull secrets
