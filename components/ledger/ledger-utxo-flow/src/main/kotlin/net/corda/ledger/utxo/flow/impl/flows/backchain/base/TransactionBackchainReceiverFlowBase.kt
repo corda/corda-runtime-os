@@ -1,26 +1,34 @@
-package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
+package net.corda.ledger.utxo.flow.impl.flows.backchain.base
 
+import net.corda.crypto.core.parseSecureHash
+import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerMetricRecorder
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TopologicalSort
+import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackChainResolutionVersion
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
+import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.ledger.utxo.flow.impl.persistence.TransactionExistenceStatus
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.trace
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
-class TransactionBackchainReceiverFlowV1(
+class TransactionBackchainReceiverFlowBase(
     private val initialTransactionIds: Set<SecureHash>,
     private val originalTransactionsToRetrieve: Set<SecureHash>,
-    private val session: FlowSession
+    private val session: FlowSession,
+    val version: TransactionBackChainResolutionVersion
 ) : SubFlow<TopologicalSort> {
 
     private companion object {
@@ -32,6 +40,12 @@ class TransactionBackchainReceiverFlowV1(
 
     @CordaInject
     lateinit var utxoLedgerMetricRecorder: UtxoLedgerMetricRecorder
+
+    @CordaInject
+    lateinit var utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService
+
+    @CordaInject
+    lateinit var signedGroupParametersVerifier: SignedGroupParametersVerifier
 
     @Suspendable
     override fun call(): TopologicalSort {
@@ -53,7 +67,7 @@ class TransactionBackchainReceiverFlowV1(
             @Suppress("unchecked_cast")
             val retrievedTransactions = session.sendAndReceive(
                 List::class.java,
-                TransactionBackchainRequestV1.Get(batch)
+                TransactionBackchainRequestBase.Get(batch)
             ) as List<UtxoSignedTransaction>
 
             log.trace { "Backchain resolution of $initialTransactionIds - Received content for transactions $batch" }
@@ -67,6 +81,7 @@ class TransactionBackchainReceiverFlowV1(
                             "requested in the last batch $batch"
                 }
 
+                retrieveGroupParameters(retrievedTransaction)
                 val (status, _) = utxoLedgerPersistenceService.persistIfDoesNotExist(retrievedTransaction, UNVERIFIED)
 
                 transactionsToRetrieve.remove(retrievedTransactionId)
@@ -93,12 +108,52 @@ class TransactionBackchainReceiverFlowV1(
         }
 
         if (sortedTransactionIds.isNotEmpty()) {
-            session.send(TransactionBackchainRequestV1.Stop)
+            session.send(TransactionBackchainRequestBase.Stop)
         }
 
         utxoLedgerMetricRecorder.recordTransactionBackchainLength(sortedTransactionIds.size)
 
         return sortedTransactionIds
+    }
+
+    @Suspendable
+    private fun retrieveGroupParameters(
+        retrievedTransaction: UtxoSignedTransaction
+    ) {
+        if(version == TransactionBackChainResolutionVersion.V1){
+            log.trace("Backchain resolution of $initialTransactionIds - Group parameters retrieval is not available in V1")
+            return
+        }
+        val retrievedTransactionId = retrievedTransaction.id
+        val groupParametersHash = parseSecureHash(requireNotNull(
+            (retrievedTransaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()
+        ) {
+            "Received transaction does not have group parameters in its metadata."
+        })
+
+        if (utxoLedgerGroupParametersPersistenceService.find(groupParametersHash) != null) {
+            return
+        }
+        log.trace {
+            "Backchain resolution of $initialTransactionIds - Retrieving group parameters ($groupParametersHash) " +
+                    "for transaction ($retrievedTransactionId)"
+        }
+        val retrievedSignedGroupParameters = session.sendAndReceive(
+            SignedGroupParameters::class.java,
+            TransactionBackchainRequestBase.GetSignedGroupParameters(groupParametersHash)
+        )
+        if (retrievedSignedGroupParameters.hash != groupParametersHash) {
+            val message =
+                "Backchain resolution of $initialTransactionIds - Requested group parameters: $groupParametersHash, " +
+                        "but received: ${retrievedSignedGroupParameters.hash}"
+            log.warn(message)
+            throw CordaRuntimeException(message)
+        }
+        signedGroupParametersVerifier.verifySignature(
+            retrievedSignedGroupParameters
+        )
+
+        utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(retrievedSignedGroupParameters)
     }
 
     private fun addUnseenDependenciesToRetrieve(
@@ -125,7 +180,7 @@ class TransactionBackchainReceiverFlowV1(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as TransactionBackchainReceiverFlowV1
+        other as TransactionBackchainReceiverFlowBase
 
         if (initialTransactionIds != other.initialTransactionIds) return false
         if (originalTransactionsToRetrieve != other.originalTransactionsToRetrieve) return false
@@ -140,6 +195,4 @@ class TransactionBackchainReceiverFlowV1(
         result = 31 * result + session.hashCode()
         return result
     }
-
-
 }

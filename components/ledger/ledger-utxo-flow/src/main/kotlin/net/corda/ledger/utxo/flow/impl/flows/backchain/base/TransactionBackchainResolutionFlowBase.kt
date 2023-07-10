@@ -1,6 +1,7 @@
-package net.corda.ledger.utxo.flow.impl.flows.backchain.v2
+package net.corda.ledger.utxo.flow.impl.flows.backchain.base
 
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
+import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackChainResolutionVersion
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainVerifier
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.sandbox.CordaSystemFlow
@@ -17,13 +18,14 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
-class TransactionBackchainResolutionFlowV2(
+class TransactionBackchainResolutionFlowBase(
     private val initialTransactionIds: Set<SecureHash>,
     private val session: FlowSession,
+    val version: TransactionBackChainResolutionVersion
 ) : SubFlow<Unit> {
 
     private companion object {
-        val log: Logger = LoggerFactory.getLogger(TransactionBackchainResolutionFlowV2::class.java)
+        val log: Logger = LoggerFactory.getLogger(TransactionBackchainResolutionFlowBase::class.java)
     }
 
     @CordaInject
@@ -46,10 +48,11 @@ class TransactionBackchainResolutionFlowV2(
                         "$originalTransactionsToRetrieve in its backchain, starting transaction backchain resolution"
             }
             val topologicalSort = flowEngine.subFlow(
-                TransactionBackchainReceiverFlowV2(
+                TransactionBackchainReceiverFlowBase(
                     initialTransactionIds = initialTransactionIds,
                     originalTransactionsToRetrieve,
-                    session
+                    session,
+                    version
                 )
             )
             log.debug {
@@ -86,7 +89,7 @@ class TransactionBackchainResolutionFlowV2(
                             "been verified locally, skipping transaction backchain resolution"
                 }
             }
-            session.send(TransactionBackchainRequestV2.Stop)
+            session.send(TransactionBackchainRequestBase.Stop)
         }
     }
 
@@ -94,7 +97,7 @@ class TransactionBackchainResolutionFlowV2(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as TransactionBackchainResolutionFlowV2
+        other as TransactionBackchainResolutionFlowBase
 
         if (initialTransactionIds != other.initialTransactionIds) return false
         if (session != other.session) return false

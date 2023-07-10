@@ -1,11 +1,11 @@
 package net.corda.ledger.utxo.flow.impl.flows.backchain
 
-import net.corda.ledger.utxo.flow.impl.flows.backchain.v1.TransactionBackchainSenderFlowV1
-import net.corda.ledger.utxo.flow.impl.flows.backchain.v2.TransactionBackchainSenderFlowV2
-import org.assertj.core.api.Assertions.assertThat
+import net.corda.ledger.utxo.flow.impl.flows.backchain.base.TransactionBackchainSenderFlowBase
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
+import kotlin.test.assertSame
 
 class TransactionBackchainSenderFlowVersionedFlowFactoryTest {
 
@@ -13,22 +13,42 @@ class TransactionBackchainSenderFlowVersionedFlowFactoryTest {
 
     @Test
     fun `with platform version 1 creates TransactionBackchainSenderFlowV1`() {
-        assertThat(factory.create(1, listOf(mock()))).isExactlyInstanceOf(TransactionBackchainSenderFlowV1::class.java)
+        val flow = factory.create(1, listOf(mock()))
+        Assertions.assertThat(flow).isExactlyInstanceOf(TransactionBackchainSenderFlowBase::class.java)
+        assertSame(
+            TransactionBackChainResolutionVersion.V1,
+            (flow as TransactionBackchainSenderFlowBase).version
+        )
     }
 
     @Test
     fun `with platform version 50099 creates TransactionBackchainSenderFlowV1`() {
-        assertThat(factory.create(50099, listOf(mock()))).isExactlyInstanceOf(TransactionBackchainSenderFlowV1::class.java)
+        val flow = factory.create(50099, listOf(mock()))
+        Assertions.assertThat(flow).isExactlyInstanceOf(TransactionBackchainSenderFlowBase::class.java)
+        assertSame(
+            TransactionBackChainResolutionVersion.V1,
+            (flow as TransactionBackchainSenderFlowBase).version
+        )
     }
 
     @Test
     fun `with platform version 50100 creates TransactionBackchainSenderFlowV2`() {
-        assertThat(factory.create(50100, listOf(mock()))).isExactlyInstanceOf(TransactionBackchainSenderFlowV2::class.java)
+        val flow = factory.create(50100, listOf(mock()))
+        Assertions.assertThat(flow).isExactlyInstanceOf(TransactionBackchainSenderFlowBase::class.java)
+        assertSame(
+            TransactionBackChainResolutionVersion.V2,
+            (flow as TransactionBackchainSenderFlowBase).version
+        )
     }
 
     @Test
     fun `with platform version 50199 creates TransactionBackchainSenderFlowV2`() {
-        assertThat(factory.create(50199, listOf(mock()))).isExactlyInstanceOf(TransactionBackchainSenderFlowV2::class.java)
+        val flow = factory.create(50199, listOf(mock()))
+        Assertions.assertThat(flow).isExactlyInstanceOf(TransactionBackchainSenderFlowBase::class.java)
+        assertSame(
+            TransactionBackChainResolutionVersion.V2,
+            (flow as TransactionBackchainSenderFlowBase).version
+        )
     }
 
     @Test
