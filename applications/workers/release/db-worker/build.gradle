@@ -13,7 +13,7 @@ osgiRun {
 }
 
 dependencies {
-    implementation project(path: ':processors:token-cache-processor')
+
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -26,6 +26,7 @@ dependencies {
     // Processor list must be kept in sync with workersForProcessor in net.corda.cli.plugins.topicconfig.Create
     implementation project(':processors:db-processor')
     implementation project(':processors:uniqueness-processor')
+    implementation project(':processors:token-cache-processor')
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
