@@ -1,5 +1,7 @@
 package net.corda.session.manager.impl
 
+import java.nio.ByteBuffer
+import java.time.Instant
 import net.corda.data.chunking.Chunk
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -21,12 +23,11 @@ import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.setErrorState
 import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.time.Instant
 
 @Suppress("TooManyFunctions")
 @Component
@@ -288,6 +289,11 @@ class SessionManagerImpl @Activate constructor(
             it.sequenceNum == null ||
                     (it.sequenceNum > highestContiguousSeqNum &&
                             (outOfOrderSeqNums.isNullOrEmpty() || !outOfOrderSeqNums.contains(it.sequenceNum)))
+        }
+        // EXTRA LOGGING
+        logger.trace {
+            val acknowledgedMessages = sessionState.sendEventsState.undeliveredMessages - undeliveredMessages.toSet()
+            "Acknowledging messages with sequence numbers: ${acknowledgedMessages.map { it.sequenceNum }}, messages: $acknowledgedMessages"
         }
 
         return sessionState.apply {
