@@ -12,15 +12,15 @@ import java.security.PublicKey
  * @param keyScheme The scheme for the key used for signing operation.
  * @param signatureSpec The signature spec to use for signing, such as SHA256withECDSA, etc.
  */
-class SigningWrappedSpec(
+data class SigningWrappedSpec(
     /**
      * The spec for the wrapped key.
      */
     val keyMaterialSpec: KeyMaterialSpec,
-    override val publicKey: PublicKey,
-    override val keyScheme: KeyScheme,
-    override val signatureSpec: SignatureSpec
-) : SigningSpec {
+    val publicKey: PublicKey,
+    val keyScheme: KeyScheme,
+    val signatureSpec: SignatureSpec,
+) {
 
     /**
      * Converts a [SigningWrappedSpec] object to a string representation.
