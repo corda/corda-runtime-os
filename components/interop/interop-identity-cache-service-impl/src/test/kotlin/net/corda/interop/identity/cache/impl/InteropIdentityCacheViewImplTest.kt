@@ -69,4 +69,34 @@ class InteropIdentityCacheViewImplTest {
 
         assertThat(testView.getIdentities()).isEmpty()
     }
+
+    @Test
+    fun `get interop identities by short hash`() {
+        val testInteropIdentity = InteropIdentity(
+            x500Name = "C=GB, L=London, O=Alice",
+            groupId = INTEROP_GROUP_ID,
+            holdingIdentityShortHash = "101010101010"
+        )
+
+        testView.putInteropIdentity(testInteropIdentity)
+
+        var byShortHash = testView.getIdentitiesByShortHash()
+
+        assertThat(byShortHash).hasSize(1)
+
+        val singleEntry = byShortHash.entries.single()
+
+        assertThat(singleEntry.value).hasSize(1)
+
+        val singleIdentity = singleEntry.value.single()
+
+        assertThat(singleEntry.key).isEqualTo(testInteropIdentity.shortHash)
+        assertThat(singleIdentity).isEqualTo(testInteropIdentity)
+
+        testView.removeInteropIdentity(testInteropIdentity)
+
+        byShortHash = testView.getIdentitiesByShortHash()
+
+        assertThat(byShortHash).hasSize(0)
+    }
 }

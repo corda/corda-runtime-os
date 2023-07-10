@@ -11,6 +11,8 @@ data class InteropIdentity(
     val groupId: String,
     val holdingIdentityShortHash: String
 ) {
+    val shortHash = Utils.computeShortHash(x500Name, groupId)
+
     companion object {
         fun of(holdingIdentityShortHash: String, interopIdentity: PersistentInteropIdentity): InteropIdentity {
             return InteropIdentity(

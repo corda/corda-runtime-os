@@ -27,4 +27,11 @@ interface InteropIdentityCacheView {
      * @return Map of holding identity short hashes to sets of [InteropIdentity] objects.
      */
     fun getIdentitiesByHoldingIdentity(): Map<String, Set<InteropIdentity>>
+
+    /**
+     * Get identities within the view as a map with the interop identity short hash as a key.
+     *
+     * @return Map of interop identity short hashes to sets of [InteropIdentity] objects.
+     */
+    fun getIdentitiesByShortHash(): Map<String, Set<InteropIdentity>>
 }

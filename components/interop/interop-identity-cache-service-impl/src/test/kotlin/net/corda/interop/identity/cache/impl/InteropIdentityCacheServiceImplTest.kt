@@ -64,13 +64,13 @@ class InteropIdentityCacheServiceImplTest {
 
         val interopIdentity1 = InteropIdentity(
             groupId = UUID.randomUUID().toString(),
-            x500Name = "X500 name #1",
+            x500Name = "C=GB, L=London, O=Alice",
             holdingIdentityShortHash = shortHash1
         )
 
         val interopIdentity2 = InteropIdentity(
             groupId = UUID.randomUUID().toString(),
-            x500Name = "X500 name #2",
+            x500Name = "C=GB, L=London, O=Bob",
             holdingIdentityShortHash = shortHash2
         )
 
