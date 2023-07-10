@@ -59,6 +59,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.spy
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
@@ -71,6 +72,7 @@ class UtxoFinalityFlowV1Test {
         val TX_ID = SecureHashImpl("algo", byteArrayOf(1, 2, 3))
         val ALICE = MemberX500Name("Alice", "London", "GB")
         val BOB = MemberX500Name("Bob", "London", "GB")
+        val CHARLIE = MemberX500Name("Charlie", "London", "GB")
     }
 
     private val memberLookup = mock<MemberLookup>()
@@ -92,28 +94,32 @@ class UtxoFinalityFlowV1Test {
 
     private val sessionAlice = mock<FlowSession>()
     private val sessionBob = mock<FlowSession>()
+    private val sessionCharlie = mock<FlowSession>()
     private val sessions = setOf(sessionAlice, sessionBob)
 
     private val memberInfoAlice = mock<MemberInfo>()
     private val memberInfoBob = mock<MemberInfo>()
+    private val memberInfoCharlie = mock<MemberInfo>()
 
     private val publicKeyAlice1 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01)) }
     private val publicKeyAlice2 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x02)) }
     private val publicKeyBob = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x03)) }
+    private val publicKeyCharlie = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x04)) }
 
-    private val publicKeyNotaryVNode1 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x04)) }
-    private val publicKeyNotaryVNode2 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x05)) }
-    private val invalidNotaryVNodeKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x06)) }
+    private val publicKeyNotaryVNode1 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x05)) }
+    private val publicKeyNotaryVNode2 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x06)) }
+    private val invalidNotaryVNodeKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x07)) }
 
     private val notaryServiceKey = mock<CompositeKey>()
 
     private val signature0 = digitalSignatureAndMetadata(
-        mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x07)) },
+        mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x08)) },
         byteArrayOf(1, 2, 0)
     )
     private val signatureAlice1 = digitalSignatureAndMetadata(publicKeyAlice1, byteArrayOf(1, 2, 3))
     private val signatureAlice2 = digitalSignatureAndMetadata(publicKeyAlice2, byteArrayOf(1, 2, 4))
     private val signatureBob = digitalSignatureAndMetadata(publicKeyBob, byteArrayOf(1, 2, 5))
+    private val signatureCharlie = digitalSignatureAndMetadata(publicKeyCharlie, byteArrayOf(1, 2, 8))
 
     private val signatureNotary = digitalSignatureAndMetadata(publicKeyNotaryVNode1, byteArrayOf(1, 2, 6))
     private val invalidNotarySignature = digitalSignatureAndMetadata(invalidNotaryVNodeKey, byteArrayOf(1, 2, 7))
@@ -139,12 +145,16 @@ class UtxoFinalityFlowV1Test {
         whenever(sessionAlice.receive(Unit::class.java)).thenReturn(Unit)
         whenever(sessionBob.counterparty).thenReturn(BOB)
         whenever(sessionBob.receive(Unit::class.java)).thenReturn(Unit)
+        whenever(sessionCharlie.counterparty).thenReturn(CHARLIE)
+        whenever(sessionCharlie.receive(Unit::class.java)).thenReturn(Unit)
 
         whenever(memberLookup.myInfo()).thenReturn(memberInfoAlice)
         whenever(memberInfoAlice.ledgerKeys).thenReturn(listOf(publicKeyAlice1, publicKeyAlice2))
         whenever(memberInfoAlice.toString()).thenReturn(ALICE.toString())
         whenever(memberInfoBob.ledgerKeys).thenReturn(listOf(publicKeyBob))
         whenever(memberInfoBob.toString()).thenReturn(BOB.toString())
+        whenever(memberInfoCharlie.ledgerKeys).thenReturn(listOf(publicKeyCharlie))
+        whenever(memberInfoCharlie.toString()).thenReturn(CHARLIE.toString())
 
         whenever(flowEngine.subFlow(any<TransactionBackchainSenderFlow>())).thenReturn(Unit)
 
@@ -1027,6 +1037,73 @@ class UtxoFinalityFlowV1Test {
 
         verify(flowEngine, never()).subFlow(TransactionBackchainSenderFlow(TX_ID, sessionAlice))
         verify(flowEngine, never()).subFlow(TransactionBackchainSenderFlow(TX_ID, sessionBob))
+    }
+
+    @Test
+    fun `not sending unseen signatures to conterparties when there are only two parties`() {
+        whenever(initialTx.inputStateRefs).thenReturn(emptyList())
+        whenever(initialTx.referenceStateRefs).thenReturn(emptyList())
+
+        whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
+
+        whenever(flowMessaging.receiveAllMap(mapOf(
+            sessionAlice to Payload::class.java,
+            sessionBob to Payload::class.java
+        ))).thenReturn(
+            mapOf(
+                sessionAlice to Payload.Success(
+                    listOf(
+                        signatureAlice1,
+                        signatureAlice2
+                    )
+                ),
+                sessionBob to Payload.Success(listOf(signatureBob))
+            )
+        )
+
+        callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
+
+        verify(flowMessaging, times(0)).sendAllMap(
+            mapOf(
+                sessionAlice to listOf(signatureBob),
+                sessionBob to listOf(signatureAlice1, signatureAlice2)
+            )
+        )
+    }
+
+    @Test
+    fun `sending unseen signatures to conterparties when there more than two parties`()
+    {
+        whenever(initialTx.getMissingSignatories()).thenReturn(setOf(publicKeyAlice1, publicKeyAlice2, publicKeyBob, publicKeyCharlie))
+        whenever(initialTx.inputStateRefs).thenReturn(emptyList())
+        whenever(initialTx.referenceStateRefs).thenReturn(emptyList())
+        whenever(updatedTxSomeSigs.addSignature(signatureCharlie)).thenReturn(
+            updatedTxAllSigs
+        )
+
+        whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
+
+        whenever(flowMessaging.receiveAllMap(mapOf(
+            sessionAlice to Payload::class.java,
+            sessionBob to Payload::class.java,
+            sessionCharlie to Payload::class.java
+        ))).thenReturn(
+            mapOf(
+                sessionAlice to Payload.Success(listOf(signatureAlice1, signatureAlice2)),
+                sessionBob to Payload.Success(listOf(signatureBob)),
+                sessionCharlie to Payload.Success(listOf(signatureCharlie))
+            )
+        )
+
+        callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob, sessionCharlie))
+
+        verify(flowMessaging, times(1)).sendAllMap(
+            mapOf(
+                sessionAlice to listOf(signatureBob),
+                sessionBob to listOf(signatureAlice1, signatureAlice2),
+                sessionCharlie to listOf(signatureCharlie)
+            )
+        )
     }
 
     private fun callFinalityFlow(signedTransaction: UtxoSignedTransactionInternal, sessions: List<FlowSession>) {
