@@ -2,14 +2,11 @@ package net.corda.ledger.utxo.flow.impl.flows.backchain.v2
 
 import net.corda.crypto.core.parseSecureHash
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
-import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
-import net.corda.ledger.utxo.flow.impl.UtxoLedgerMetricRecorder
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TopologicalSort
-import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
-import net.corda.ledger.utxo.flow.impl.persistence.TransactionExistenceStatus
-import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
-import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
+import net.corda.ledger.utxo.flow.impl.flows.backchain.v1.TransactionBackchainReceiverFlowV1
+import net.corda.ledger.utxo.flow.impl.flows.backchain.v1.TransactionBackchainRequestV1
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.trace
@@ -27,95 +24,22 @@ class TransactionBackchainReceiverFlowV2(
     private val initialTransactionIds: Set<SecureHash>,
     private val originalTransactionsToRetrieve: Set<SecureHash>,
     private val session: FlowSession
-) : SubFlow<TopologicalSort> {
+) : TransactionBackchainReceiverFlowV1(
+    initialTransactionIds, originalTransactionsToRetrieve, session
+), SubFlow<TopologicalSort> {
 
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
-    lateinit var utxoLedgerPersistenceService: UtxoLedgerPersistenceService
-
-    @CordaInject
     lateinit var utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService
-
-    @CordaInject
-    lateinit var utxoLedgerMetricRecorder: UtxoLedgerMetricRecorder
 
     @CordaInject
     lateinit var signedGroupParametersVerifier: SignedGroupParametersVerifier
 
     @Suspendable
-    override fun call(): TopologicalSort {
-        // Using a [Set] here ensures that if two or more transactions at the same level in the graph are dependent on the same transaction
-        // then when the second and subsequent transactions see this dependency to add it to [transactionsToRetrieve] it will only exist
-        // once and be retrieved once due to the properties of a [Set].
-        val transactionsToRetrieve = LinkedHashSet(originalTransactionsToRetrieve)
-
-        val sortedTransactionIds = TopologicalSort()
-
-        while (transactionsToRetrieve.isNotEmpty()) {
-            // For now, we'll assume a batch size of 1
-            val batch = setOf(transactionsToRetrieve.first())
-
-            log.trace {
-                "Backchain resolution of $initialTransactionIds - Requesting the content of transactions $batch from transaction backchain"
-            }
-
-            @Suppress("unchecked_cast")
-            val retrievedTransactions = session.sendAndReceive(
-                List::class.java,
-                TransactionBackchainRequestV2.Get(batch)
-            ) as List<UtxoSignedTransaction>
-
-            log.trace { "Backchain resolution of $initialTransactionIds - Received content for transactions $batch" }
-
-            for (retrievedTransaction in retrievedTransactions) {
-
-                val retrievedTransactionId = retrievedTransaction.id
-
-                require(retrievedTransactionId in batch) {
-                    "Backchain resolution of $initialTransactionIds - Received transaction $retrievedTransactionId which was not " +
-                            "requested in the last batch $batch"
-                }
-
-                retrieveGroupParameters(retrievedTransaction)
-
-                val (status, _) = utxoLedgerPersistenceService.persistIfDoesNotExist(retrievedTransaction, UNVERIFIED)
-
-                when (status) {
-                    TransactionExistenceStatus.DOES_NOT_EXIST -> log.trace {
-                        "Backchain resolution of $initialTransactionIds - Persisted transaction $retrievedTransactionId as " +
-                                "unverified"
-                    }
-                    TransactionExistenceStatus.UNVERIFIED -> log.trace {
-                        "Backchain resolution of $initialTransactionIds - Transaction $retrievedTransactionId already exists as " +
-                                "unverified"
-                    }
-                    TransactionExistenceStatus.VERIFIED -> log.trace {
-                        "Backchain resolution of $initialTransactionIds - Transaction $retrievedTransactionId already exists as " +
-                                "verified"
-                    }
-                }
-                transactionsToRetrieve.remove(retrievedTransactionId)
-
-                if (status != TransactionExistenceStatus.VERIFIED) {
-                    addUnseenDependenciesToRetrieve(retrievedTransaction, sortedTransactionIds, transactionsToRetrieve)
-                }
-            }
-        }
-
-        if (sortedTransactionIds.isNotEmpty()) {
-            session.send(TransactionBackchainRequestV2.Stop)
-        }
-
-        utxoLedgerMetricRecorder.recordTransactionBackchainLength(sortedTransactionIds.size)
-
-        return sortedTransactionIds
-    }
-
-    @Suspendable
-    private fun retrieveGroupParameters(
+    override fun retrieveGroupParameters(
         retrievedTransaction: UtxoSignedTransaction
     ) {
         val retrievedTransactionId = retrievedTransaction.id
@@ -134,7 +58,7 @@ class TransactionBackchainReceiverFlowV2(
         }
         val retrievedSignedGroupParameters = session.sendAndReceive(
             SignedGroupParameters::class.java,
-            TransactionBackchainRequestV2.GetSignedGroupParameters(groupParametersHash)
+            TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash)
         )
         if (retrievedSignedGroupParameters.hash != groupParametersHash) {
             val message =
@@ -148,26 +72,6 @@ class TransactionBackchainReceiverFlowV2(
         )
 
         utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(retrievedSignedGroupParameters)
-    }
-
-    private fun addUnseenDependenciesToRetrieve(
-        retrievedTransaction: UtxoSignedTransaction,
-        sortedTransactionIds: TopologicalSort,
-        transactionsToRetrieve: LinkedHashSet<SecureHash>
-    ) {
-        if (retrievedTransaction.id !in sortedTransactionIds.transactionIds) {
-            retrievedTransaction.dependencies.let { dependencies ->
-                val unseenDependencies = dependencies - sortedTransactionIds.transactionIds
-                log.trace {
-                    val ignoredDependencies = dependencies - unseenDependencies
-                    "Backchain resolution of $initialTransactionIds - Adding dependencies for transaction ${retrievedTransaction.id} " +
-                            "dependencies: $unseenDependencies to transactions to retrieve. Ignoring dependencies: $ignoredDependencies " +
-                            "as they have already been seen."
-                }
-                sortedTransactionIds.add(retrievedTransaction.id, dependencies)
-                transactionsToRetrieve.addAll(unseenDependencies)
-            }
-        }
     }
 
     override fun equals(other: Any?): Boolean {

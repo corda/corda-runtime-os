@@ -17,7 +17,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
-class TransactionBackchainReceiverFlowV1(
+open class TransactionBackchainReceiverFlowV1(
     private val initialTransactionIds: Set<SecureHash>,
     private val originalTransactionsToRetrieve: Set<SecureHash>,
     private val session: FlowSession
@@ -67,6 +67,7 @@ class TransactionBackchainReceiverFlowV1(
                             "requested in the last batch $batch"
                 }
 
+                retrieveGroupParameters(retrievedTransaction)
                 val (status, _) = utxoLedgerPersistenceService.persistIfDoesNotExist(retrievedTransaction, UNVERIFIED)
 
                 transactionsToRetrieve.remove(retrievedTransactionId)
@@ -101,7 +102,14 @@ class TransactionBackchainReceiverFlowV1(
         return sortedTransactionIds
     }
 
-    private fun addUnseenDependenciesToRetrieve(
+    @Suspendable
+    open fun retrieveGroupParameters(
+        retrievedTransaction: UtxoSignedTransaction
+    ) {
+        // Not implemented in v1
+    }
+
+    protected fun addUnseenDependenciesToRetrieve(
         retrievedTransaction: UtxoSignedTransaction,
         sortedTransactionIds: TopologicalSort,
         transactionsToRetrieve: LinkedHashSet<SecureHash>
@@ -140,6 +148,4 @@ class TransactionBackchainReceiverFlowV1(
         result = 31 * result + session.hashCode()
         return result
     }
-
-
 }

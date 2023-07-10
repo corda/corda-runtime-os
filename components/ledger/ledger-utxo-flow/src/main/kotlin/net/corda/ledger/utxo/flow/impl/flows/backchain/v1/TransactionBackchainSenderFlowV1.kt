@@ -13,7 +13,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
-class TransactionBackchainSenderFlowV1(private val headTransactionIds: Set<SecureHash>, private val session: FlowSession) : SubFlow<Unit> {
+open class TransactionBackchainSenderFlowV1(private val headTransactionIds: Set<SecureHash>, private val session: FlowSession) : SubFlow<Unit> {
 
     constructor (headTransactionId: SecureHash, session: FlowSession) : this(setOf(headTransactionId), session)
 
@@ -53,8 +53,17 @@ class TransactionBackchainSenderFlowV1(private val headTransactionIds: Set<Secur
                     }
                     return
                 }
+                is TransactionBackchainRequestV1.GetSignedGroupParameters ->
+                    handleSignedGroupParametersRequest(request)
             }
         }
+    }
+
+    open fun handleSignedGroupParametersRequest(request: TransactionBackchainRequestV1.GetSignedGroupParameters) {
+        val message =
+            "Backchain resolution of $headTransactionIds - GetSignedGroupParameters is not available in TransactionBackchainSenderFlowV1"
+        log.warn(message)
+        throw CordaRuntimeException(message)
     }
 
     override fun equals(other: Any?): Boolean {

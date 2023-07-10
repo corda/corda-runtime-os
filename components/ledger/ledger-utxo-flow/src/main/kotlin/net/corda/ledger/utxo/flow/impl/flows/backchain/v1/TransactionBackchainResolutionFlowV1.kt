@@ -17,7 +17,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
-class TransactionBackchainResolutionFlowV1(
+open class TransactionBackchainResolutionFlowV1(
     private val initialTransactionIds: Set<SecureHash>,
     private val session: FlowSession,
 ) : SubFlow<Unit> {

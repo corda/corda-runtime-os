@@ -1,20 +1,23 @@
 package net.corda.ledger.utxo.flow.impl.flows.backchain.v2
 
+import net.corda.ledger.utxo.flow.impl.flows.backchain.v1.TransactionBackchainRequestV1
+import net.corda.ledger.utxo.flow.impl.flows.backchain.v1.TransactionBackchainSenderFlowV1
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
-import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.sandbox.CordaSystemFlow
+import net.corda.utilities.trace
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.utilities.trace
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
-class TransactionBackchainSenderFlowV2(private val headTransactionIds: Set<SecureHash>, private val session: FlowSession) : SubFlow<Unit> {
+class TransactionBackchainSenderFlowV2(
+    private val headTransactionIds: Set<SecureHash>,
+    private val session: FlowSession
+) : TransactionBackchainSenderFlowV1(headTransactionIds, session), SubFlow<Unit> {
 
     constructor (headTransactionId: SecureHash, session: FlowSession) : this(setOf(headTransactionId), session)
 
@@ -23,56 +26,20 @@ class TransactionBackchainSenderFlowV2(private val headTransactionIds: Set<Secur
     }
 
     @CordaInject
-    lateinit var utxoLedgerPersistenceService: UtxoLedgerPersistenceService
-
-    @CordaInject
     lateinit var utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService
 
-    @Suspendable
-    override fun call() {
+    override fun handleSignedGroupParametersRequest(request: TransactionBackchainRequestV1.GetSignedGroupParameters) {
+        val signedGroupParameters =
+            utxoLedgerGroupParametersPersistenceService.find(request.groupParametersHash)
+                ?: throw CordaRuntimeException(
+                    "Requested signed group parameters is not available (${request.groupParametersHash})."
+                )
+        // Any signed group parameters can be requested regardless if it is related to the resolved transactions
+        // or not. But they are not private information. CORE-10543
+        session.send(signedGroupParameters)
         log.trace {
-            "Backchain resolution of $headTransactionIds - Waiting to be told what transactions to send to ${session.counterparty} " +
-                    "so that the backchain can be resolved"
-        }
-        while (true) {
-            when (val request = session.receive(TransactionBackchainRequestV2::class.java)) {
-                is TransactionBackchainRequestV2.Get -> {
-                    val transactions = request.transactionIds.map { id ->
-                        utxoLedgerPersistenceService.find(id)
-                            ?: throw CordaRuntimeException("Requested transaction does not exist locally")
-                    }
-                    // sending in batches of 1
-                    // TODO Switch to [FlowMessaging.sendAll]
-                    transactions.map { session.send(listOf(it)) }
-                    log.trace {
-                        "Backchain resolution of $headTransactionIds - Sent backchain transactions ${transactions.map { it.id }} to " +
-                                session.counterparty
-                    }
-                }
-
-                is TransactionBackchainRequestV2.GetSignedGroupParameters -> {
-                    val signedGroupParameters =
-                        utxoLedgerGroupParametersPersistenceService.find(request.groupParametersHash)
-                            ?: throw CordaRuntimeException(
-                                "Requested signed group parameters is not available (${request.groupParametersHash})."
-                            )
-                    // Any signed group parameters can be requested regardless if it is related to the resolved transactions
-                    // or not. But they are not private information. CORE-10543
-                    session.send(signedGroupParameters)
-                    log.trace {
-                        "Backchain resolution of $headTransactionIds - Sent signed group parameters (${request.groupParametersHash}) to " +
-                                session.counterparty
-                    }
-                }
-
-                is TransactionBackchainRequestV2.Stop -> {
-                    log.trace {
-                        "Backchain resolution of $headTransactionIds - Received stop, finishing sending of backchain transaction to " +
-                                session.counterparty
-                    }
-                    return
-                }
-            }
+            "Backchain resolution of $headTransactionIds - Sent signed group parameters (${request.groupParametersHash}) to " +
+                    session.counterparty
         }
     }
 
