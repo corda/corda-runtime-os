@@ -89,24 +89,11 @@ internal class StartRegistrationHandler(
 
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest!!)
-            // We don't want to overwrite existing member's information or persist member with wrong name
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging
             validateRegistrationRequest(
                 pendingMemberInfo.name == pendingMemberHoldingId.x500Name
             ) { "MemberX500Name in registration request does not match member sending request over P2P." }
-
-            val activeOrSuspendedInfo = membershipQueryClient.queryMemberInfo(
-                mgmHoldingId,
-                listOf(pendingMemberHoldingId)
-            ).getOrThrow().lastOrNull {
-                it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED
-            }
-            if (registrationRequest.serial != null && registrationRequest.serial == 0L) { // name check for initial registration
-                validateRegistrationRequest(activeOrSuspendedInfo == null) {
-                    "Member already exists with the same X500 name."
-                }
-            }
 
             val persistentMemberInfo = PersistentMemberInfo.newBuilder()
                 .setMemberContext(pendingMemberInfo.memberProvidedContext.toAvro())
@@ -144,6 +131,18 @@ internal class StartRegistrationHandler(
                 require(it as? MembershipPersistenceResult.Failure == null) {
                     "Failed to update the status of the registration request. Reason: " +
                             (it as MembershipPersistenceResult.Failure).errorMsg
+                }
+            }
+
+            val activeOrSuspendedInfo = membershipQueryClient.queryMemberInfo(
+                mgmHoldingId,
+                listOf(pendingMemberHoldingId)
+            ).getOrThrow().lastOrNull {
+                it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED
+            }
+            if (registrationRequest.serial != null && registrationRequest.serial == 0L) { // name check for initial registration
+                validateRegistrationRequest(activeOrSuspendedInfo == null) {
+                    "Member already exists with the same X500 name."
                 }
             }
 
