@@ -35,6 +35,22 @@
             "title": "override chart fullname",
             "examples": [""]
         },
+        "affinity": {
+            "type": "object",
+            "default": {},
+            "title": "Labels to add to all deployed objects"
+        },
+        "commonLabels": {
+            "type": "object",
+            "default": {},
+            "title": "Labels to add to all deployed objects",
+            "additionalProperties": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            }
+        },
         "nameOverride": {
             "type": "string",
             "default": "",
