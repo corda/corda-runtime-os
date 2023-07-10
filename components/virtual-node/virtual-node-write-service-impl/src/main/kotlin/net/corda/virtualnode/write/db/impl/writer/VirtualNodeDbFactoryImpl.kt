@@ -170,7 +170,7 @@ internal class VirtualNodeDbFactoryImpl(
             }
 
             // TODO support for CharArray passwords in SmartConfig
-            val config = createDbConfig(
+            val config = createVirtualNodeDbConfig(
                 smartConfigFactory,
                 username = user,
                 password = password.concatToString(),
@@ -206,7 +206,7 @@ internal class VirtualNodeDbFactoryImpl(
 }
 
 @Suppress("LongParameterList")
-private fun createDbConfig(
+private fun createVirtualNodeDbConfig(
     smartConfigFactory: SmartConfigFactory,
     username: String,
     password: String,
