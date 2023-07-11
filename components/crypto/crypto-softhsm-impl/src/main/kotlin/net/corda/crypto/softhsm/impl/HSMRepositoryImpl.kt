@@ -15,6 +15,7 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.Tuple
+import net.corda.crypto.core.CryptoConsts
 
 /**
  * Database operations for HSM.
@@ -79,7 +80,7 @@ class HSMRepositoryImpl(
         it.transaction { em ->
             val association =
                 findHSMAssociationEntity(em, tenantId)
-                    ?: createAndPersistAssociation(em, tenantId, "SOFT", masterKeyPolicy)
+                    ?: createAndPersistAssociation(em, tenantId, CryptoConsts.SOFT_HSM_ID, masterKeyPolicy)
 
             val categoryAssociation = HSMCategoryAssociationEntity(
                 id = UUID.randomUUID().toString(),
@@ -107,7 +108,7 @@ class HSMRepositoryImpl(
             WHERE a.tenantId = :tenantId AND a.hsmId = :hsmId
             """.trimIndent(),
             HSMAssociationEntity::class.java
-        ).setParameter("tenantId", tenantId).setParameter("hsmId", "SOFT").resultList.singleOrNull()
+        ).setParameter("tenantId", tenantId).setParameter("hsmId", CryptoConsts.SOFT_HSM_ID).resultList.singleOrNull()
 
     private fun createAndPersistAssociation(
         entityManager: EntityManager,

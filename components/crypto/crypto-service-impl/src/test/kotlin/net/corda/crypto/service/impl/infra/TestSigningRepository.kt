@@ -22,6 +22,7 @@ import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
 import net.corda.layeredpropertymap.impl.PropertyConverter
 import net.corda.v5.crypto.SecureHash
 import kotlin.concurrent.withLock
+import net.corda.crypto.core.CryptoConsts
 
 class TestSigningRepository: SigningRepository {
     private val lock = ReentrantLock()
@@ -43,7 +44,7 @@ class TestSigningRepository: SigningRepository {
             externalId = context.externalId,
             encodingVersion = context.key.encodingVersion,
             timestamp = Instant.now(),
-            hsmId = "SOFT",
+            hsmId = CryptoConsts.SOFT_HSM_ID,
             status = SigningKeyStatus.NORMAL
         ).also {
             if (keys.putIfAbsent(it.id, it) != null) {

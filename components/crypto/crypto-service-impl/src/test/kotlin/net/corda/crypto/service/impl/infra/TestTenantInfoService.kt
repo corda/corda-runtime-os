@@ -11,6 +11,7 @@ import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+import net.corda.crypto.core.CryptoConsts
 
 class TestTenantInfoService(val cryptoService: CryptoService) : TenantInfoService {
     private val lock = ReentrantLock()
@@ -49,7 +50,7 @@ class TestTenantInfoService(val cryptoService: CryptoService) : TenantInfoServic
         val association = HSMAssociationEntity(
             id = UUID.randomUUID().toString(),
             tenantId = tenantId,
-            hsmId = "SOFT",
+            hsmId = CryptoConsts.SOFT_HSM_ID,
             timestamp = Instant.now(),
             masterKeyAlias = if (masterKeyPolicy == MasterKeyPolicy.UNIQUE) {
                 cryptoService.createWrappingKey(alias, true, emptyMap())
@@ -70,7 +71,7 @@ class TestTenantInfoService(val cryptoService: CryptoService) : TenantInfoServic
 private fun HSMCategoryAssociationEntity.toHSMAssociation() = HSMAssociationInfo(
     id,
     hsmAssociation.tenantId,
-    "SOFT",
+    CryptoConsts.SOFT_HSM_ID,
     category,
     hsmAssociation.masterKeyAlias,
     deprecatedAt

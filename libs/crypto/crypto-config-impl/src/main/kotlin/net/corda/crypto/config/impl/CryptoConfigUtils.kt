@@ -145,7 +145,6 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 const val HSM_ID = "hsmId"
 const val EXPIRE_AFTER_ACCESS_MINS = "expireAfterAccessMins"
 const val MAXIMUM_SIZE = "maximumSize"
-const val HSM_MAP = "hsmMap"
 const val DEFAULT = "default"
 const val CACHING = "caching"
 const val RETRYING = "retrying"
@@ -171,7 +170,6 @@ fun SmartConfig.toConfigurationSecrets(): ConfigurationSecrets = ConfigurationSe
 fun SmartConfig.signingService(): CryptoSigningServiceConfig =
     CryptoSigningServiceConfig(this)
 
-// TODO remove me, dead?
 fun SmartConfig.hsm(): CryptoHSMConfig {
     return try {
         CryptoHSMConfig(getConfig(HSM))

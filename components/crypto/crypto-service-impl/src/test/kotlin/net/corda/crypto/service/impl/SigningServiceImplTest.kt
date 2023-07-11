@@ -18,7 +18,7 @@ class SigningServiceImplTest {
     private val repo = mock<SigningRepository>()
     private val schemeMetadata = mock<CipherSchemeMetadata>()
 
-    private val masterKeyAlias = "IAMGROOT"
+    private val masterKeyAlias = "alias1"
 
     private val association =  mock<HSMAssociationInfo> {
         on { masterKeyAlias }.thenReturn(masterKeyAlias)

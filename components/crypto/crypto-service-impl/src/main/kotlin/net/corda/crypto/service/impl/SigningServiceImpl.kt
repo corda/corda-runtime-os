@@ -299,7 +299,6 @@ class SigningServiceImpl(
                 alias
             )
 
-            // TODO always return GeneratedWrappedKey here
             val key = cryptoService.generateKeyPair(
                 KeyGenerationSpec(scheme, alias, association.masterKeyAlias),
                 context + mapOf(

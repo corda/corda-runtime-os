@@ -223,7 +223,6 @@ class CryptoProcessorImpl @Activate constructor(
         require(unmanagedWrappingKeys.containsKey(defaultUnmanagedWrappingKeyName)) {
             "default key $defaultUnmanagedWrappingKeyName must be in $HSM.$WRAPPING_KEYS"
         }
-        // TODO drop this compatibility code that supports name between KEY_MAP_TRANSIENT_NAME and if so disables caching
         val wrappingKeyCache: Cache<String, WrappingKey> = CacheFactoryImpl().build(
             "HSM-Wrapping-Keys-Map",
             Caffeine.newBuilder()

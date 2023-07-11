@@ -42,6 +42,7 @@ import java.time.ZoneOffset
 import java.util.*
 import javax.persistence.EntityManagerFactory
 import javax.persistence.PersistenceException
+import net.corda.crypto.core.CryptoConsts
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SigningRepositoryTest : CryptoRepositoryTest() {
@@ -68,7 +69,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             schemeCodeName = "FOO",
             externalId = "e-$unique",
             timestamp = Instant.now().toSafeWindowsPrecision(),
-            hsmId = "SOFT",
+            hsmId = CryptoConsts.SOFT_HSM_ID,
             status = SigningKeyStatus.NORMAL,
             keyMaterial = privKey,
             encodingVersion = 1,

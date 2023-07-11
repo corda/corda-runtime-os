@@ -57,7 +57,7 @@ class SigningServiceGeneralTests {
     companion object {
         private lateinit var schemeMetadata: CipherSchemeMetadata
 
-        private val wrappingKeyAlias = "Enoch Root"
+        private val wrappingKeyAlias = "wrapping1"
         @BeforeAll
         @JvmStatic
         fun setup() {
