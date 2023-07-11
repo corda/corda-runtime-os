@@ -616,9 +616,15 @@ class MGMRestResourceImpl internal constructor(
         override fun updateGroupParameters(
             holdingIdentityShortHash: String,
             newGroupParameters: Map<String, String>,
-        ): Map<String, String> = handleCommonErrors(holdingIdentityShortHash) {
-            validateGroupParametersUpdate(newGroupParameters)
-            mgmResourceClient.updateGroupParameters(it, newGroupParameters).toMap()
+        ): Map<String, String> {
+            return try {
+                handleCommonErrors(holdingIdentityShortHash) {
+                    validateGroupParametersUpdate(newGroupParameters)
+                    mgmResourceClient.updateGroupParameters(it, newGroupParameters).toMap()
+                }
+            } catch (e: PessimisticLockException) {
+                throw InvalidStateChangeException("${e.message}")
+            }
         }
 
         private fun validateGroupParametersUpdate(parameters: Map<String, String>) {

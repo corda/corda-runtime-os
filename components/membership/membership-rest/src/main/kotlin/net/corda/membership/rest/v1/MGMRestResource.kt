@@ -477,9 +477,9 @@ interface MGMRestResource : RestResource {
     )
 
     /**
-     * TODO
      * The [updateGroupParameters] method allows you to make changes to the group parameters by submitting an updated
-     * version of the group parameters.
+     * version of the group parameters. [newGroupParameters] may only include custom fields (with "ext." prefix) and
+     * minimum platform version. If [newGroupParameters] contains no changes, the current group parameters are returned.
      *
      * @see MemberLookupRestResource.viewGroupParameters for how to view the current group parameters for the group.
      *

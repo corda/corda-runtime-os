@@ -35,11 +35,15 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARIES_KEY
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.approval.ApprovalRuleParams
+import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toPersistentGroupParameters
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -591,11 +595,55 @@ class MGMResourceClientImpl @Activate constructor(
 
         override fun updateGroupParameters(
             holdingIdentityShortHash: ShortHash, newGroupParameters: Map<String, String>
-        ): InternalGroupParameters =
-            membershipPersistenceClient.updateGroupParameters(
-                mgmHoldingIdentity(holdingIdentityShortHash),
-                newGroupParameters
+        ): InternalGroupParameters {
+            val mgm = mgmHoldingIdentity(holdingIdentityShortHash)
+            val groupReader = membershipGroupReaderProvider.getGroupReader(mgm)
+
+            groupReader.groupParameters.let { current ->
+                val changeableParameters = current?.toMap()?.filterNot {
+                    it.key in setOf(EPOCH_KEY, MODIFIED_TIME_KEY) || it.key.startsWith(NOTARIES_KEY)
+                }
+                if (newGroupParameters == changeableParameters) {
+                    logger.info("Nothing to persist - submitted group parameters are identical to the existing group " +
+                            "parameters.")
+                    return current
+                }
+            }
+
+            val updatedParameters = membershipPersistenceClient.updateGroupParameters(
+                mgm, newGroupParameters
             ).getOrThrow()
+
+            createDistributionRequest(
+                mgm,
+                updatedParameters.epoch,
+                groupReader.lookup(mgm.x500Name)?.serial ?: throw CouldNotFindMemberException(holdingIdentityShortHash)
+            )
+
+            return updatedParameters
+        }
+
+        private fun createDistributionRequest(mgm: HoldingIdentity, epoch: Int, serial: Long) {
+            val distributionRequest = MembershipActionsRequest(
+                DistributeMemberInfo(
+                    mgm.toAvro(),
+                    mgm.toAvro(),
+                    epoch,
+                    serial
+                )
+            )
+            coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.apply {
+                publish(
+                    listOf(
+                        Record(
+                            topic = MEMBERSHIP_ACTIONS_TOPIC,
+                            key = "${mgm.x500Name}-${mgm.groupId}",
+                            value = distributionRequest
+                        )
+                    )
+                ).forEach { it.join() }
+            }
+        }
 
         private fun validateSuspensionActivationRequest(
             holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name

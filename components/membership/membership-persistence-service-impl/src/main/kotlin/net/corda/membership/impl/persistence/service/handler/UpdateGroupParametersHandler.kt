@@ -9,6 +9,7 @@ import net.corda.data.membership.db.request.command.UpdateGroupParameters
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARIES_KEY
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
@@ -55,13 +56,17 @@ internal class UpdateGroupParametersHandler(
                     "Failed to update group parameters - could not retrieve current set of group parameters."
                 )
             }
-            val parametersMap = deserializer.deserializeKeyValuePairList(previous.singleResult.parameters).toMap()
+            val previousParameters = previous.singleResult
+            val parametersMap = deserializer.deserializeKeyValuePairList(previousParameters.parameters).toMap()
 
+            val newEpoch = parametersMap[EPOCH_KEY]!!.toInt() + 1
             val newGroupParameters = KeyValuePairList(
-                (request.update + parametersMap.filter { it.key.startsWith(NOTARIES_KEY) }).toKeyValuePairs()
+                (request.update + parametersMap.filter { it.key.startsWith(NOTARIES_KEY) }).toKeyValuePairs() + listOf(
+                    KeyValuePair(EPOCH_KEY, newEpoch.toString()), KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
+                )
             )
             GroupParametersEntity(
-                epoch = parametersMap[EPOCH_KEY]!!.toInt() + 1,
+                epoch = newEpoch,
                 parameters = serializer.serializeKeyValuePairList(newGroupParameters),
                 signaturePublicKey = null,
                 signatureContent = null,
