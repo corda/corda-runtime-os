@@ -229,6 +229,10 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
      */
     private fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>): Boolean {
         val outputRecords = mutableListOf<Record<*, *>>()
+
+        if (config.group.contains("FlowMapperConsumer")) {
+            log.info("Received events in flow mapper subscription: $events")
+        }
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
         // Pre-populate the updated states with the current in-memory state.
         events.forEach {
@@ -252,6 +256,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             return true
         }
 
+        log.info("Sending events from group ${config.group} [ $outputRecords ]")
         commitTimer.recordCallable {
             producer.beginTransaction()
             producer.sendRecords(outputRecords.toCordaProducerRecords())
@@ -268,7 +273,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             producer.sendRecordOffsetsToTransaction(eventConsumer, events)
             producer.commitTransaction()
         }
-        log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." }
+        log.info ("Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." )
 
         stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
         return false
@@ -291,7 +296,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 "." + payload.javaClass.simpleName
             } else ""
             if (payload is SessionEvent) {
-                eventSubtype += "." + payload.payload.javaClass.simpleName
+                eventSubtype += "." + payload.payload.javaClass.simpleName + "." + payload.sessionId
             }
             return "$eventType$eventSubtype"
         }
@@ -338,6 +343,11 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 outputRecords.addAll(thisEventUpdates.responseEvents)
                 outputRecords.add(Record(stateTopic, key, updatedState))
                 updatedStates.computeIfAbsent(partitionId) { mutableMapOf() }[key] = updatedState
+
+                if (config.group.contains("FlowEventConsumer")) {
+                    log.info("output events for flow event pattern: $outputRecords")
+                }
+
                 log.debug { "Completed event: $event" }
                 val payload = event.value
                 if (payload is FlowEvent || payload is FlowMapperEvent) {

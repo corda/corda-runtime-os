@@ -94,7 +94,7 @@ class SessionDataProcessorSend(
         val nextSeqNum = sendEventsState.lastProcessedSequenceNum + 1
         sessionEvent.sequenceNum = nextSeqNum
         sendEventsState.lastProcessedSequenceNum = nextSeqNum
-        logger.debug { "Adding data message with seqNum ${sessionEvent.sequenceNum} to send queue. ${sessionEvent.sessionId}" }
+       // logger.info ("Adding data message with seqNum ${sessionEvent.sequenceNum} to send queue. ${sessionEvent.sessionId}" )
         sendEventsState.undeliveredMessages = sendEventsState.undeliveredMessages.plus(sessionEvent)
     }
 

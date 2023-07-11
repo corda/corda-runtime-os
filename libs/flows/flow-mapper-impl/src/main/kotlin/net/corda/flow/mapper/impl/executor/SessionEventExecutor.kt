@@ -98,6 +98,8 @@ class SessionEventExecutor(
                     FlowMapperResult(flowMapperState, listOf())
                 } else {
                     if (sessionEvent.payload is SessionClose) {
+                        log.info("FlowMapper handling INBOUND close record: ${sessionEvent.sessionId} ${sessionEvent.payload::class.simpleName}")
+
                         val outputRecord =
                             createP2PRecord(
                                 sessionEvent,

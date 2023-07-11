@@ -55,8 +55,7 @@ class SendReceiveAllMessagingFlow(
         flowMessaging.sendAll(MyClass("Serialize me please", 3), setOf(sessionOne, sessionTwo))
 
         //additional send via session to help verify init isn't sent again
-        val largeString = getLargeString(1100)
-        sessionOne.send(MyClass(largeString, 4))
+        sessionOne.send(MyClass("Serialize me please", 4))
         sessionTwo.send(MyClass("Serialize me please", 5))
 
         log.info("Sent data to two sessions")

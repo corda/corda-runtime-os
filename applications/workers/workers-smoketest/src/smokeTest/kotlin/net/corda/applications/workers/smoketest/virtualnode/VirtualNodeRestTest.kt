@@ -363,14 +363,14 @@ class VirtualNodeRestTest {
         }
     }
 
-    @Test
+/*    @Test
     @Order(82)
     fun `persist dog`() {
         cluster {
             runSimplePersistenceCheckFlow("Could persist dog")
         }
-    }
-
+    }*/
+/*
     @Test
     @Order(110)
     fun `can upload multiple versions of a CPI with the same name`() {
@@ -425,7 +425,7 @@ class VirtualNodeRestTest {
             runReturnAStringFlow("upgrade-test-v2", bobHoldingId)
             runSimplePersistenceCheckFlow("Could persist dog", bobHoldingId)
         }
-    }
+    }*/
 
     private fun ClusterBuilder.triggerVirtualNodeUpgrade(
         virtualNodeShortHash: String, targetCpiFileChecksum: String

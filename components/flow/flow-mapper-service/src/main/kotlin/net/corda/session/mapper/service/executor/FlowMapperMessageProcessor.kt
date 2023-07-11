@@ -85,6 +85,7 @@ class FlowMapperMessageProcessor(
             val sessionEventExpiryTime = payload.timestamp.toEpochMilli() + sessionP2PTtl
             val currentTime = Instant.now().toEpochMilli()
             if (currentTime > sessionEventExpiryTime) {
+                logger.warn("Dropping expired message")
                 return true
             }
         }

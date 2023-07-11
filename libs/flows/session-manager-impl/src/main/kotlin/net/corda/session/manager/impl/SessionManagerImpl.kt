@@ -46,7 +46,7 @@ class SessionManagerImpl @Activate constructor(
 
     override fun processMessageReceived(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant):
             SessionState {
-        logger.info("<recv>> [$key] [${event.payload.javaClass.simpleName}] [$event]")
+        logger.info("Received session event ${event.payload::class.java}  with seqNum ${event.sequenceNum} on key $key" )
         val updatedSessionState = sessionState?.let {
             it.lastReceivedMessageTime = instant
             processAcks(event, it)
@@ -115,6 +115,11 @@ class SessionManagerImpl @Activate constructor(
         if (messagesToReturn.isNotEmpty()) {
             sessionState.sendAck = false
             sessionState.lastSentMessageTime = instant
+        }
+
+        if (sessionState.sendEventsState.undeliveredMessages.size > messagesToReturn.size) {
+            logger.info("Session manager [time ${instant.toEpochMilli()}] sending events with seqNums ${messagesToReturn.map { it.sequenceNum to it.sessionId+"-"+it.timestamp.toEpochMilli()+""+it.payload::class.java }.toList()}")
+            logger.info("Session manager send events ${sessionState.sendEventsState.undeliveredMessages.map { it.sequenceNum to it.sessionId+"-"+it.timestamp.toEpochMilli()+""+it.payload::class.java }.toList()}")
         }
 
         return Pair(sessionState, messagesToReturn)
