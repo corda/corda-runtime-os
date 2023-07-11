@@ -54,7 +54,7 @@
         "commonLabels": {
             "type": "object",
             "default": {},
-            "title": "labels to add to all deployed objects",
+            "title": "extra labels to add to all deployed objects",
             "additionalProperties": {
                 "type": [
                     "string",
