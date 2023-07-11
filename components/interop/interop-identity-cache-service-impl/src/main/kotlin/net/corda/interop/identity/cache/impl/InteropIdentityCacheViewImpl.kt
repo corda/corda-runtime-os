@@ -13,6 +13,7 @@ class InteropIdentityCacheViewImpl(private val holdingIdentityShortHash: String)
     private val byGroupId = HashMap<String, HashSet<InteropIdentity>>()
     private val byHoldingIdentity = HashMap<String, HashSet<InteropIdentity>>()
     private val byShortHash = HashMap<String, HashSet<InteropIdentity>>()
+    private val myIdentities = HashMap<String, InteropIdentity>()
 
     private fun getOrCreateByGroupIdEntry(groupId: String): HashSet<InteropIdentity> {
         return byGroupId.computeIfAbsent(groupId) {
@@ -33,7 +34,17 @@ class InteropIdentityCacheViewImpl(private val holdingIdentityShortHash: String)
     }
 
     fun putInteropIdentity(identity: InteropIdentity) {
+        if (identity.holdingIdentityShortHash == holdingIdentityShortHash) {
+            val existingOwnedIdentity = myIdentities[identity.groupId]
+            require(existingOwnedIdentity == null || identity == existingOwnedIdentity) {
+                "Unable to add identity $identity to context of holding identity $holdingIdentityShortHash, " +
+                "specified holding identity already owns an identity in this interop group."
+            }
+            myIdentities[identity.groupId] = identity
+        }
+
         interopIdentities.add(identity)
+
         getOrCreateByGroupIdEntry(identity.groupId).add(identity)
         getOrCreateByHoldingIdentityEntry(identity.holdingIdentityShortHash).add(identity)
         getOrCreateByShortHashIdentity(identity.shortHash).add(identity)
@@ -62,6 +73,10 @@ class InteropIdentityCacheViewImpl(private val holdingIdentityShortHash: String)
                 byShortHash.remove(identity.shortHash)
             }
         }
+
+        if (identity.holdingIdentityShortHash == holdingIdentityShortHash) {
+            myIdentities.remove(identity.groupId)
+        }
     }
 
     override fun getIdentities(): Set<InteropIdentity> = interopIdentities
@@ -74,4 +89,7 @@ class InteropIdentityCacheViewImpl(private val holdingIdentityShortHash: String)
 
     override fun getIdentitiesByShortHash(): Map<String, Set<InteropIdentity>> =
         Collections.unmodifiableMap(byShortHash)
+
+    override fun getOwnedIdentities(): Map<String, InteropIdentity> =
+        Collections.unmodifiableMap(myIdentities)
 }

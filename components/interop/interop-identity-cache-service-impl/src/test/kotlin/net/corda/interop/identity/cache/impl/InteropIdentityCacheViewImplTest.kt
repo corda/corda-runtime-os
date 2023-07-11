@@ -2,16 +2,17 @@ package net.corda.interop.identity.cache.impl
 
 import net.corda.interop.core.InteropIdentity
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.Test
 
 
 class InteropIdentityCacheViewImplTest {
     companion object {
-        private const val SHORT_HASH = "0123456789AB"
+        private const val VIEW_OWNER_SHORT_HASH = "0123456789AB"
         private const val INTEROP_GROUP_ID = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
     }
 
-    private val testView = InteropIdentityCacheViewImpl(SHORT_HASH)
+    private val testView = InteropIdentityCacheViewImpl(VIEW_OWNER_SHORT_HASH)
 
     @Test
     fun `add interop identity by value`() {
@@ -98,5 +99,56 @@ class InteropIdentityCacheViewImplTest {
         byShortHash = testView.getIdentitiesByShortHash()
 
         assertThat(byShortHash).hasSize(0)
+    }
+
+    @Test
+    fun `get owned identities`() {
+        val ownedIdentity = InteropIdentity(
+            x500Name = "C=GB, L=London, O=Alice",
+            groupId = INTEROP_GROUP_ID,
+            holdingIdentityShortHash = VIEW_OWNER_SHORT_HASH
+        )
+
+        val notOwnedIdentity = InteropIdentity(
+            x500Name = "C=GB, L=London, O=Bob",
+            groupId = INTEROP_GROUP_ID,
+            holdingIdentityShortHash = "101010101010"
+        )
+
+        testView.putInteropIdentity(ownedIdentity)
+        testView.putInteropIdentity(notOwnedIdentity)
+
+        var ownedIdentities = testView.getOwnedIdentities()
+
+        assertThat(ownedIdentities).hasSize(1)
+        assertThat(ownedIdentities.values).contains(ownedIdentity)
+        assertThat(ownedIdentities.values).doesNotContain(notOwnedIdentity)
+
+        testView.removeInteropIdentity(ownedIdentity)
+
+        ownedIdentities = testView.getOwnedIdentities()
+
+        assertThat(ownedIdentities).hasSize(0)
+    }
+
+    @Test
+    fun `multiple owned identities causes an error`() {
+        val ownedIdentity1 = InteropIdentity(
+            x500Name = "C=GB, L=London, O=Alice1",
+            groupId = INTEROP_GROUP_ID,
+            holdingIdentityShortHash = VIEW_OWNER_SHORT_HASH
+        )
+
+        val ownedIdentity2 = InteropIdentity(
+            x500Name = "C=GB, L=London, O=Alice2",
+            groupId = INTEROP_GROUP_ID,
+            holdingIdentityShortHash = VIEW_OWNER_SHORT_HASH
+        )
+
+        testView.putInteropIdentity(ownedIdentity1)
+
+        assertThrows<IllegalArgumentException> {
+            testView.putInteropIdentity(ownedIdentity2)
+        }
     }
 }

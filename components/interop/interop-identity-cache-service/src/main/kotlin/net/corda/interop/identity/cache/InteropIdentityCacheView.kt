@@ -34,4 +34,11 @@ interface InteropIdentityCacheView {
      * @return Map of interop identity short hashes to sets of [InteropIdentity] objects.
      */
     fun getIdentitiesByShortHash(): Map<String, Set<InteropIdentity>>
+
+    /**
+     * Get interop identities owned by the owner of this view by group ID.
+     *
+     * @return Map of group IDs to [InteropIdentity] objects.
+     */
+    fun getOwnedIdentities(): Map<String, InteropIdentity>
 }
