@@ -14,6 +14,10 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.metrics.CordaMetrics
+import net.corda.tracing.TraceContext
+import net.corda.tracing.addTraceContextToRecord
+import net.corda.tracing.getOrCreateBatchPublishTracing
+import net.corda.tracing.traceSend
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
@@ -42,10 +46,11 @@ class CordaKafkaProducerImpl(
     private val config: ResolvedProducerConfig,
     private val producer: Producer<Any, Any>,
     private val chunkSerializerService: ChunkSerializerService,
-    private val producerMetricsBinder : MeterBinder,
+    private val producerMetricsBinder: MeterBinder,
 ) : CordaProducer {
     private val topicPrefix = config.topicPrefix
     private val transactional = config.transactional
+    private val clientId = config.clientId
 
     init {
         producerMetricsBinder.bindTo(CordaMetrics.registry)
@@ -60,23 +65,38 @@ class CordaKafkaProducerImpl(
         const val asyncChunkErrorMessage = "Tried to send record which requires chunking using an asynchronous producer"
     }
 
-    private fun CordaProducer.Callback.toKafkaCallback(): Callback {
-        return Callback { _, ex -> this@toKafkaCallback.onCompletion(ex) }
+    private fun toTraceKafkaCallback(callback: CordaProducer.Callback, ctx: TraceContext): Callback {
+        return Callback { m, ex ->
+            ctx.markInScope().use {
+                ctx.traceTag("send.offset", m.offset().toString())
+                ctx.traceTag("send.partition", m.partition().toString())
+                ctx.traceTag("send.topic", m.topic())
+                callback.onCompletion(ex)
+                if (ex != null) {
+                    ctx.errorAndFinish(ex)
+                } else {
+                    ctx.finish()
+                }
+            }
+        }
     }
 
     override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
+        getOrCreateBatchPublishTracing(clientId).begin(listOf(record.headers))
         tryWithCleanupOnFailure("send single record, no partition") {
             sendRecord(record, callback)
         }
     }
 
     override fun send(record: CordaProducerRecord<*, *>, partition: Int, callback: CordaProducer.Callback?) {
+        getOrCreateBatchPublishTracing(clientId).begin(listOf(record.headers))
         tryWithCleanupOnFailure("send single record, with partition") {
             sendRecord(record, callback, partition)
         }
     }
 
     override fun sendRecords(records: List<CordaProducerRecord<*, *>>) {
+        getOrCreateBatchPublishTracing(clientId).begin(records.map { it.headers })
         tryWithCleanupOnFailure("send multiple records, no partition") {
             for (record in records) {
                 sendRecord(record)
@@ -85,6 +105,8 @@ class CordaKafkaProducerImpl(
     }
 
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
+        val tracing = getOrCreateBatchPublishTracing(clientId)
+        tracing.begin(recordsWithPartitions.map { it.second.headers })
         tryWithCleanupOnFailure("send multiple records, with partitions") {
             for ((partition, record) in recordsWithPartitions) {
                 sendRecord(record, null, partition)
@@ -104,9 +126,24 @@ class CordaKafkaProducerImpl(
         if (chunkedRecords.isNotEmpty()) {
             sendChunks(chunkedRecords, callback, partition)
         } else {
+            sendWholeRecord(record, partition, callback)
+        }
+    }
+
+    private fun sendWholeRecord(
+        record: CordaProducerRecord<*, *>,
+        partition: Int?,
+        callback: CordaProducer.Callback?
+    ) {
+        val traceContext = traceSend(record.headers, "send $clientId")
+        traceContext.markInScope().use {
             try {
-                producer.send(record.toKafkaRecord(topicPrefix , partition), callback?.toKafkaCallback())
+                producer.send(
+                    addTraceContextToRecord(record).toKafkaRecord(topicPrefix, partition),
+                    toTraceKafkaCallback({ exception -> callback?.onCompletion(exception) }, traceContext)
+                )
             } catch (ex: CordaRuntimeException) {
+                traceContext.errorAndFinish(ex)
                 val msg = "Failed to send record to topic ${record.topic} with key ${record.key}"
                 if (config.throwOnSerializationError) {
                     log.error(msg, ex)
@@ -114,6 +151,9 @@ class CordaKafkaProducerImpl(
                 } else {
                     log.warn(msg, ex)
                 }
+            } catch (ex: Exception) {
+                traceContext.errorAndFinish(ex)
+                throw ex
             }
         }
     }
@@ -140,10 +180,26 @@ class CordaKafkaProducerImpl(
             callback?.onCompletion(exceptionThrown)
             throw exceptionThrown
         }
+
+        recordChunksCountPerTopic(cordaProducerRecords)
+
         cordaProducerRecords.forEach {
             //note callback is only applicable to async calls which are not allowed
-            producer.send(it.toKafkaRecord(topicPrefix,partition))
+            producer.send(it.toKafkaRecord(topicPrefix, partition))
         }
+    }
+
+    private fun recordChunksCountPerTopic(cordaProducerRecords: List<CordaProducerRecord<*, *>>) {
+        cordaProducerRecords.groupBy { it.topic }
+            .mapValues { (_, records) -> records.size }
+            .forEach { (topic, count) ->
+                CordaMetrics.Metric.Messaging.ProducerChunksGenerated.builder()
+                    .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+                    .withTag(CordaMetrics.Tag.Topic, topic)
+                    .build()
+                    .record(count.toDouble())
+            }
+
     }
 
     override fun beginTransaction() {
@@ -153,6 +209,7 @@ class CordaKafkaProducerImpl(
     }
 
     override fun abortTransaction() {
+        getOrCreateBatchPublishTracing(config.clientId).abort()
         tryWithCleanupOnFailure("aborting transaction", abortTransactionOnFailure = false) {
             producer.abortTransaction()
         }
@@ -171,6 +228,8 @@ class CordaKafkaProducerImpl(
                 retryableException = commitTransactionAndCatchRetryable()
             }
         }
+
+        getOrCreateBatchPublishTracing(config.clientId).complete()
 
         if (retryableException != null) {
             // We have retried once, we are not retrying again, so the only other option compatible with the producer
@@ -285,7 +344,12 @@ class CordaKafkaProducerImpl(
     ) {
         try {
             block()
+            // transactional publications will be completed in commitTransaction()
+            if (!transactional) {
+                getOrCreateBatchPublishTracing(config.clientId).complete()
+            }
         } catch (ex: Exception) {
+            getOrCreateBatchPublishTracing(config.clientId).abort()
             handleException(ex, operation, abortTransactionOnFailure)
         }
     }

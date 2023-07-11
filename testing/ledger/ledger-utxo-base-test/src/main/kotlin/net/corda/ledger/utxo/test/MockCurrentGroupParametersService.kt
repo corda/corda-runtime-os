@@ -12,10 +12,10 @@ fun mockCurrentGroupParametersService(): CurrentGroupParametersService {
     val mockCurrentGroupParametersService = Mockito.mock(CurrentGroupParametersService::class.java)
     val mockSignedGroupParameters = Mockito.mock(SignedGroupParameters::class.java)
 
-    Mockito.`when`(mockSignedGroupParameters.bytes).thenReturn(byteArrayOf(1, 1, 11))
+    Mockito.`when`(mockSignedGroupParameters.groupParameters).thenReturn(byteArrayOf(1, 1, 11))
     Mockito.`when`(mockSignedGroupParameters.hash).thenReturn(SecureHashImpl("algo", byteArrayOf(1, 2, 11)))
-    Mockito.`when`(mockSignedGroupParameters.signature).thenReturn(Mockito.mock(DigitalSignatureWithKey::class.java))
-    Mockito.`when`(mockSignedGroupParameters.signatureSpec).thenReturn(Mockito.mock(SignatureSpec::class.java))
+    Mockito.`when`(mockSignedGroupParameters.mgmSignature).thenReturn(Mockito.mock(DigitalSignatureWithKey::class.java))
+    Mockito.`when`(mockSignedGroupParameters.mgmSignatureSpec).thenReturn(Mockito.mock(SignatureSpec::class.java))
     Mockito.`when`(mockCurrentGroupParametersService.get()).thenReturn(mockSignedGroupParameters)
 
     return mockCurrentGroupParametersService

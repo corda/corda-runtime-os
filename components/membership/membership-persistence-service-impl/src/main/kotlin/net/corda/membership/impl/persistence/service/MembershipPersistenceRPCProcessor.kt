@@ -17,14 +17,17 @@ internal class MembershipPersistenceRPCProcessor(
 ) : RPCResponderProcessor<MembershipPersistenceRequest, MembershipPersistenceResponse> {
 
     private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun onNext(
         request: MembershipPersistenceRequest,
         respFuture: CompletableFuture<MembershipPersistenceResponse>
     ) {
-        logger.info("Received membership persistence request: ${request.request::class.java}")
+        logger.info(
+            "Received membership persistence request: ${request.request::class.java} " +
+                "ID: ${request.context.requestId}"
+        )
         val result = try {
             val result = handlerFactories.handle(
                 request,

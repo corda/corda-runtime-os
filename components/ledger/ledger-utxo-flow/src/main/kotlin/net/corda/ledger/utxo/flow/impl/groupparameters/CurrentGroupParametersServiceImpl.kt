@@ -14,6 +14,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
+import org.slf4j.LoggerFactory
 import java.security.PublicKey
 
 @Suppress("Unused")
@@ -28,6 +29,10 @@ class CurrentGroupParametersServiceImpl @Activate constructor(
     @Reference(service = GroupPolicyProvider::class)
     private val groupPolicyProvider: GroupPolicyProvider
 ) : CurrentGroupParametersService, UsedByFlow, SingletonSerializeAsToken {
+
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     override fun get(): SignedGroupParameters {
         val groupReader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
@@ -46,7 +51,12 @@ class CurrentGroupParametersServiceImpl @Activate constructor(
         val currentMGMKeyEncoded = mgmInfo[PARTY_SESSION_KEYS_PEM.format(0)] ?:
             mgmInfo[PARTY_SESSION_KEYS.format(0)]
         requireNotNull(currentMGMKeyEncoded) { "MGM info does not have first key." }
-        val currentMGMKey = keyEncodingService.decodePublicKey(currentMGMKeyEncoded)
+        val currentMGMKey = try {
+            keyEncodingService.decodePublicKey(currentMGMKeyEncoded)
+        } catch (e: Exception) {
+            logger.info("Failed to decode public key {}", currentMGMKeyEncoded)
+            throw e
+        }
         return listOf(currentMGMKey)
     }
 

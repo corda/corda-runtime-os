@@ -28,7 +28,6 @@ import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.impl.FlowRunnerImpl
 import net.corda.flow.pipeline.runner.impl.remoteToLocalContextMapper
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
 import net.corda.flow.test.utils.buildFlowEventContext
@@ -37,8 +36,10 @@ import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
+import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.OperationalStatus
@@ -66,9 +67,9 @@ class FlowRunnerImplTest {
     private val flowFiberExecutionContextFactory = mock<FlowFiberExecutionContextFactory>()
     private val cpiInfoReadService = mock<CpiInfoReadService>()
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
-    private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
+    private val sandboxDependencyInjector = mock<SandboxDependencyInjector<Flow>>()
     private val fiberFuture = mock<FiberFuture>()
-    private val platformInfoProvider = mock<PlatformInfoProvider> { on { localWorkerPlatformVersion} doReturn 50000 }
+    private val platformInfoProvider = mock<PlatformInfoProvider> { on { localWorkerPlatformVersion} doReturn 67890 }
     private var flowFiberExecutionContext: FlowFiberExecutionContext
     private var flowStackItem = FlowStackItem().apply { sessions = mutableListOf() }
     private var clientFlow = mock<ClientStartableFlow>()
@@ -100,12 +101,13 @@ class FlowRunnerImplTest {
             BOB_X500_HOLDING_IDENTITY.toCorda(),
             mock(),
             mock(),
-            emptyMap()
+            emptyMap(),
+            mock()
         )
         whenever(virtualNodeInfoReadService.get(any())).thenReturn(getMockVNodeInfo())
         whenever(cpiInfoReadService.get(any())).thenReturn(getMockCpiMetaData())
-        whenever(flowCheckpoint.initialPlatformVersion).thenReturn(50000)
-        whenever(platformInfoProvider.localWorkerSoftwareVersion).thenReturn("50000")
+        whenever(flowCheckpoint.initialPlatformVersion).thenReturn(67890)
+        whenever(platformInfoProvider.localWorkerSoftwareVersion).thenReturn("67890")
     }
 
     @BeforeEach
@@ -140,7 +142,14 @@ class FlowRunnerImplTest {
             )
         ).thenReturn(fiberFuture)
 
-        whenever(flowStack.pushWithContext(clientFlow, emptyKeyValuePairList(), platformContext.avro)).thenReturn(
+        whenever(
+            flowStack.pushWithContext(
+                eq(clientFlow),
+                eq(emptyKeyValuePairList()),
+                eq(platformContext.avro),
+                any()
+            )
+        ).thenReturn(
             flowStackItem
         )
 
@@ -176,7 +185,8 @@ class FlowRunnerImplTest {
         // content of the mapped local context is out of the scope of this test
         val localContextProperties = remoteToLocalContextMapper(
             remoteUserContextProperties = userContext.avro,
-            remotePlatformContextProperties = platformContext.avro
+            remotePlatformContextProperties = platformContext.avro,
+            mapOf("corda.account" to "account-zero")
         )
 
         val context = buildFlowEventContext<Any>(flowCheckpoint, sessionEvent)
@@ -198,9 +208,10 @@ class FlowRunnerImplTest {
 
         whenever(
             flowStack.pushWithContext(
-                initiatedFlow,
-                localContextProperties.userProperties,
-                localContextProperties.platformProperties
+                eq(initiatedFlow),
+                eq(localContextProperties.userProperties),
+                eq(localContextProperties.platformProperties),
+                any()
             )
         ).thenReturn(
             flowStackItem

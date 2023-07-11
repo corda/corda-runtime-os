@@ -148,6 +148,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
         return VaultNamedParameterizedQueryImpl(
             queryName,
             externalEventExecutor,
+            currentSandboxGroupContext,
             resultSetFactory,
             parameters = mutableMapOf(),
             limit = Int.MAX_VALUE,

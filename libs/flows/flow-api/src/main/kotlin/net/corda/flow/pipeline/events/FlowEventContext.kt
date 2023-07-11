@@ -1,9 +1,11 @@
 package net.corda.flow.pipeline.events
 
 import net.corda.data.flow.event.FlowEvent
+import net.corda.flow.pipeline.metrics.FlowMetrics
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
+import net.corda.tracing.TraceContext
 
 /**
  * [FlowEventContext] contains information about a received [FlowEvent] and state that should be modified when passed through a
@@ -19,6 +21,8 @@ import net.corda.messaging.api.records.Record
  * @param outputRecords The [Record]s that should be sent back to the message bus when the pipeline completes.
  * @param T The type of [FlowEvent.payload].
  * @param mdcProperties properties to set the flow fibers MDC with.
+ * @param flowMetrics The [FlowMetrics] instance associated with the flow event
+ * @param flowTraceContext The [TraceContext] instance associated with the flow event
  */
 data class FlowEventContext<T>(
     val checkpoint: FlowCheckpoint,
@@ -28,5 +32,7 @@ data class FlowEventContext<T>(
     var isRetryEvent: Boolean = false,
     val outputRecords: List<Record<*, *>>,
     val sendToDlq: Boolean = false,
-    val mdcProperties: Map<String, String>
+    val mdcProperties: Map<String, String>,
+    val flowMetrics: FlowMetrics,
+    val flowTraceContext: TraceContext
 )

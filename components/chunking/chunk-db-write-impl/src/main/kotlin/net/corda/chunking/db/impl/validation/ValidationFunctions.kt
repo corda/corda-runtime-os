@@ -1,5 +1,8 @@
 package net.corda.chunking.db.impl.validation
 
+import java.nio.file.Files
+import java.nio.file.Path
+import javax.persistence.PersistenceException
 import net.corda.chunking.ChunkReaderFactory
 import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
 import net.corda.chunking.RequestId
@@ -7,10 +10,10 @@ import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseScriptExtractor
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
-import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.CpiReader
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.membership.lib.grouppolicy.GroupPolicyIdNotFoundException
 import net.corda.membership.lib.grouppolicy.GroupPolicyParseException
@@ -18,9 +21,6 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
-import java.nio.file.Files
-import java.nio.file.Path
-import javax.persistence.PersistenceException
 
 /**
  * Assembles the CPI from chunks in the database, and returns the temporary path
@@ -69,21 +69,13 @@ fun assembleFileFromChunks(
  * @throws ValidationException
  */
 fun FileInfo.validateAndGetCpi(cpiPartsDir: Path, requestId: String): Cpi {
-    val cpi: Cpi =
-        try {
-            Files.newInputStream(this.path).use { CpiReader.readCpi(it, cpiPartsDir) }
-        } catch (ex: Exception) {
-            when (ex) {
-                is PackagingException -> {
-                    throw ValidationException("Invalid CPI.  ${ex.message}", requestId, ex)
-                }
-
-                else -> {
-                    throw ValidationException("Unexpected exception when unpacking CPI.  ${ex.message}", requestId, ex)
-                }
-            }
-        }
-    return cpi
+    return try {
+        Files.newInputStream(path).use { CpiReader.readCpi(it, cpiPartsDir) }
+    } catch (ex: PackagingException) {
+        throw ValidationException("Invalid CPI: ${ex.message}", requestId, ex)
+    } catch (ex: Exception) {
+        throw ValidationException("Unexpected exception when unpacking CPI: ${ex.message}", requestId, ex)
+    }
 }
 
 /**
@@ -99,7 +91,7 @@ fun CpiPersistence.persistCpiToDatabase(
     requestId: RequestId,
     changelogsExtractedFromCpi: List<CpkDbChangeLog>,
     log: Logger
-): CpiMetadataEntity {
+): CpiMetadata {
     // Cannot compare the CPI.metadata.hash to our checksum above
     // because two different digest algorithms might have been used to create them.
     // We'll publish to the database using the de-chunking checksum.

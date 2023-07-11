@@ -4,10 +4,12 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
+import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.flows.finality.v1.FinalityNotarizationFailureType.Companion.toFinalityNotarizationFailureType
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
+import net.corda.utilities.trace
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
@@ -33,6 +35,7 @@ class UtxoReceiveFinalityFlowV1(
     override fun call(): UtxoSignedTransaction {
         val initialTransaction = receiveTransactionAndBackchain()
         val transactionId = initialTransaction.id
+        addTransactionIdToFlowContext(flowEngine, transactionId)
         verifyExistingSignatures(initialTransaction, session)
         verifyTransaction(initialTransaction)
         var transaction = if (validateTransaction(initialTransaction)) {
@@ -69,7 +72,14 @@ class UtxoReceiveFinalityFlowV1(
         if (log.isDebugEnabled) {
             log.debug( "Beginning receive finality for transaction: ${initialTransaction.id}")
         }
-        flowEngine.subFlow(TransactionBackchainResolutionFlow(initialTransaction.dependencies, session))
+        val transactionDependencies = initialTransaction.dependencies
+        if (transactionDependencies.isNotEmpty()) {
+            flowEngine.subFlow(TransactionBackchainResolutionFlow(transactionDependencies, session))
+        } else {
+            log.trace {
+                "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
+            }
+        }
         return initialTransaction
     }
 

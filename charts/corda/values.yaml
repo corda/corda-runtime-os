@@ -45,6 +45,13 @@ metrics:
     # -- Labels that can be used so PodMonitor is discovered by Prometheus
     labels: {}
 
+# Distributed tracing configuration
+tracing:
+  # -- URL for endpoint to send Zipkin-format distributed traces to e.g. http://tempo:9411
+  endpoint: ""
+  # --  Number of request traces to sample per second, defaults to 1 sample per second. Set to 'unlimited' to record all traces, but in this case amount of tracing data produced can be quite vast.
+  samplesPerSecond: "1"
+
 # -- Path on Kubernetes hosts to mount on Corda workers for collecting dumps
 dumpHostPath: ""
 
@@ -171,6 +178,10 @@ kafka:
 
 # Configuration for cluster bootstrap
 bootstrap:
+  # Configuration for the preinstall check
+  preinstallCheck:
+    # -- indicates whether the preinstall check is enabled
+    enabled: true
   # Configuration for the REST API admin to be created during cluster bootstrap
   restApiAdmin:
     # the username configuration for the REST API admin to be created during cluster bootstrap
@@ -235,6 +246,16 @@ bootstrap:
       dbConnectionPool:
         # -- maximum JDBC connection pool size for crypto DB
         maxSize: 5
+        # -- minimum JDBC connection pool size for crypto DB; null value means pool's min size will default to pool's max size value
+        minSize: null
+        # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+        idleTimeoutSeconds: 120
+        # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+        maxLifetimeSeconds: 1800
+        # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+        keepaliveTimeSeconds: 0
+        # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+        validationTimeoutSeconds: 5
       # the username configuration
       username:
         # -- the username, defaults to a value randomly-generated on install
@@ -268,6 +289,16 @@ bootstrap:
       dbConnectionPool:
         # -- maximum JDBC connection pool size for RBAC DB
         maxSize: 5
+        # -- minimum JDBC connection pool size for RBAC DB; null value means pool's min size will default to pool's max size value
+        minSize: null
+        # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+        idleTimeoutSeconds: 120
+        # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+        maxLifetimeSeconds: 1800
+        # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+        keepaliveTimeSeconds: 0
+        # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+        validationTimeoutSeconds: 5
       # the username configuration
       username:
         # -- the username, defaults to a value randomly-generated on install
@@ -438,6 +469,16 @@ workers:
     clusterDbConnectionPool:
       # -- crypto worker maximum JDBC connection pool size for cluster DB
       maxSize: 5
+      # -- crypto worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value
+      minSize: null
+      # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+      idleTimeoutSeconds: 120
+      # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+      maxLifetimeSeconds: 1800
+      # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+      keepaliveTimeSeconds: 0
+      # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+      validationTimeoutSeconds: 5
     # crypto worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the crypto worker
@@ -509,6 +550,16 @@ workers:
     clusterDbConnectionPool:
       # -- DB worker maximum JDBC connection pool size for cluster DB
       maxSize: 5
+      # -- DB worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value
+      minSize: null
+      # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+      idleTimeoutSeconds: 120
+      # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+      maxLifetimeSeconds: 1800
+      # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+      keepaliveTimeSeconds: 0
+      # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+      validationTimeoutSeconds: 5
     # DB worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the DB worker

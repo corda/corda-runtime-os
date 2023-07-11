@@ -25,10 +25,16 @@ dependencies {
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    implementation "io.fabric8:kubernetes-client:6.5.1"
+    implementation "io.fabric8:kubernetes-client:$kubernetesClientVersion"
 
     implementation "org.postgresql:postgresql:$postgresDriverVersion"
-    implementation "org.apache.kafka:kafka-clients:3.3.1"
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    constraints {
+        implementation("org.xerial.snappy:snappy-java:$xerialSnappyVersion") {
+            because 'Kafka Client uses an older version of Snappy library which is exposed to CVE-2023-34455. ' +
+                    'This might be resolved in the future versions of Kafka Client.'
+        }
+    }
 }
 
 cliPlugin {

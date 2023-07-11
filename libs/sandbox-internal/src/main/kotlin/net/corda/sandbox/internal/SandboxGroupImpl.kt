@@ -1,5 +1,10 @@
 package net.corda.sandbox.internal
 
+import java.util.Collections.unmodifiableSortedMap
+import java.util.SortedMap
+import java.util.TreeMap
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
@@ -11,12 +16,8 @@ import net.corda.sandbox.internal.sandbox.CpkSandbox
 import net.corda.sandbox.internal.sandbox.Sandbox
 import net.corda.sandbox.internal.utilities.BundleUtils
 import org.osgi.framework.Bundle
+import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
 import org.slf4j.LoggerFactory
-import java.util.Collections.unmodifiableMap
-import java.util.Collections.unmodifiableSortedMap
-import java.util.SortedMap
-import java.util.TreeMap
-import java.util.UUID
 
 /**
  * An implementation of the [SandboxGroup] interface.
@@ -38,56 +39,71 @@ internal class SandboxGroupImpl(
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        private val primitiveTypes = unmodifiableMap(setOf(
-            Long::class.java,
-            Int::class.java,
-            Short::class.java,
-            Byte::class.java,
-            Char::class.java,
-            Boolean::class.java,
-            Double::class.java,
-            Float::class.java
-        ).associateBy(Class<*>::getName))
-
         private fun Throwable.withSuppressed(exceptions: Iterable<Throwable>): Throwable {
             exceptions.forEach(::addSuppressed)
             return this
         }
     }
 
+    // Marker for a missing class.
+    private class NotFound
+
+    private val publicBundles = publicSandboxes.flatMap(Sandbox::publicBundles).filterNot { bundle ->
+        // The system bundle's classloader is actually the JVM's Application Classloader,
+        // which is not constrained by the OSGi framework's resolver hooks. So skip the
+        // system bundle here to avoid blowing our sandbox wide open!
+        bundle.isFragment || bundle.bundleId == SYSTEM_BUNDLE_ID
+    }
+    private val publicClassCache = ConcurrentHashMap<String, Class<*>>()
+    private val sandboxClassCache = ConcurrentHashMap<String, Class<*>>()
+    private val staticTagCache = ConcurrentHashMap<Class<*>, String>()
+    private val evolvableTagCache = ConcurrentHashMap<Class<*>, String>()
+
     override val metadata: SortedMap<Bundle, CpkMetadata> = unmodifiableSortedMap(cpkSandboxes.associateTo(TreeMap()) { cpk ->
         cpk.mainBundle to cpk.cpkMetadata
     })
 
     override fun loadClassFromPublicBundles(className: String): Class<*>? {
-        val clazz = publicSandboxes
-            .flatMap(Sandbox::publicBundles)
-            .filterNot(Bundle::isFragment)
-            .mapNotNullTo(LinkedHashSet()) { bundle ->
+        val clazz = publicClassCache[className] ?: run {
+            val publicClass = publicBundles.mapNotNullTo(linkedSetOf()) { bundle ->
                 try {
                     bundle.loadClass(className)
                 } catch (e: ClassNotFoundException) {
                     logger.debug("Could not load class {} from bundle {}: {}", className, bundle, e.message)
                     null
                 }
-            }.singleOrNull()
-        if (clazz == null) {
-            logger.warn("Class {} was not found in any sandbox in the sandbox group.", className)
+            }.singleOrNull() ?: run {
+                try {
+                    bundleUtils.loadClassFromSystemBundle(className)
+                } catch (e: ClassNotFoundException) {
+                    NotFound::class.java
+                }
+            }
+            publicClassCache.putIfAbsent(className, publicClass) ?: publicClass
         }
-        return clazz
+        return if (clazz === NotFound::class.java) {
+            logger.warn("Class {} was not found in any sandbox in the sandbox group.", className)
+            null
+        } else {
+            clazz
+        }
     }
 
     override fun loadClassFromMainBundles(className: String): Class<*> {
         val suppressed = mutableListOf<Exception>()
-        return cpkSandboxes.mapNotNullTo(HashSet()) { sandbox ->
-            try {
-                sandbox.loadClassFromMainBundle(className)
-            } catch (e: SandboxException) {
-                suppressed += e
-                null
-            }
-        }.singleOrNull()
-            ?: throw SandboxException("Class $className was not found in any sandbox in the sandbox group.")
+        return (sandboxClassCache[className] ?: run {
+            val sandboxClass = cpkSandboxes.mapNotNullTo(linkedSetOf()) { sandbox ->
+                try {
+                    sandbox.loadClassFromMainBundle(className)
+                } catch (e: SandboxException) {
+                    suppressed += e
+                    null
+                }
+            }.singleOrNull() ?: NotFound::class.java
+            sandboxClassCache.putIfAbsent(className, sandboxClass) ?: sandboxClass
+        }).takeUnless { clazz ->
+            clazz === NotFound::class.java
+        } ?: throw SandboxException("Class $className was not found in any sandbox in the sandbox group.")
                 .withSuppressed(suppressed)
     }
 
@@ -102,9 +118,13 @@ internal class SandboxGroupImpl(
         }
     }
 
-    override fun getStaticTag(klass: Class<*>) = getClassTag(klass, isStaticTag = true)
+    override fun getStaticTag(klass: Class<*>) = staticTagCache.computeIfAbsent(klass) {
+        getClassTag(klass, isStaticTag = true)
+    }
 
-    override fun getEvolvableTag(klass: Class<*>) = getClassTag(klass, isStaticTag = false)
+    override fun getEvolvableTag(klass: Class<*>) = evolvableTagCache.computeIfAbsent(klass) {
+        getClassTag(klass, isStaticTag = false)
+    }
 
     @Suppress("ComplexMethod", "NestedBlockDepth")
     override fun getClass(className: String, serialisedClassTag: String): Class<*> {
@@ -113,7 +133,7 @@ internal class SandboxGroupImpl(
         return when (classTag.classType) {
             ClassType.NonBundleClass -> {
                 try {
-                    primitiveTypes[className] ?: bundleUtils.loadClassFromSystemBundle(className)
+                    bundleUtils.loadClassFromSystemBundle(className)
                 } catch (e: ClassNotFoundException) {
                     throw SandboxException(
                         "Class $className was not from a bundle, and could not be found in the system classloader."
@@ -130,7 +150,7 @@ internal class SandboxGroupImpl(
                         cpkSandboxes.find {
                             it.cpkMetadata.cpkId.signerSummaryHash == classTag.cpkSignerSummaryHash &&
                                     (it.cpkMetadata.cpkId.name == classTag.cordaCpkCordappName || // CPK given names match or
-                                    it.mainBundle.symbolicName == classTag.classBundleName) // symbolic names of class bundle match
+                                            it.mainBundle.symbolicName == classTag.classBundleName) // symbolic names of class bundle match
                         }?.let { Pair(it, it.mainBundle.symbolicName) } // only load evolvable classes from the main bundle
                     }
                 } ?: throw SandboxException(

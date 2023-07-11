@@ -16,8 +16,8 @@ interface DataSourceFactory {
      * @param minimumPoolSize the minimum number of connections in the pool.
      *      Defaults - the same as the maximum number of connections configured ([maximumPoolSize])
      * @param idleTimeout the maximum amount of time a connection is allowed to be idle before being removed from the pool.
-     *      If [minimumPoolSize] is equal to [maximumPoolSize], then connections will never be removed.
-     *      Default - 2 minutes.
+     *      If [minimumPoolSize] is equal to [maximumPoolSize], then connections will never be removed and this
+     *      parameter is ignored. Default - 2 minutes.
      * @param maxLifetime the maximum lifetime of a connection in the pool.
      *      An in-use connection will never be retired, only when it is closed will it then be removed.
      *      This should be set several seconds shorter than any database or infrastructure imposed connection time limit.
@@ -37,11 +37,11 @@ interface DataSourceFactory {
         password: String,
         isAutoCommit: Boolean = false,
         isReadOnly: Boolean = false,
-        maximumPoolSize: Int = 10,
-        minimumPoolSize: Int = maximumPoolSize,
-        idleTimeout: Duration = Duration.ofMinutes(2),
-        maxLifetime: Duration = Duration.ofMinutes(30),
-        keepaliveTime: Duration = Duration.ZERO,
-        validationTimeout: Duration = Duration.ofSeconds(5),
+        maximumPoolSize: Int,
+        minimumPoolSize: Int?,
+        idleTimeout: Duration,
+        maxLifetime: Duration,
+        keepaliveTime: Duration,
+        validationTimeout: Duration,
     ): CloseableDataSource
 }

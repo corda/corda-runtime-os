@@ -56,6 +56,7 @@ import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.MessagingConfig
@@ -141,7 +142,14 @@ class FlowServiceTestContext @Activate constructor(
     override val initiatedIdentityMemberName: MemberX500Name
         get() = MemberX500Name.parse(sessionInitiatedIdentity!!.x500Name)
 
-    override fun virtualNode(cpiId: String, holdingId: HoldingIdentity, flowOperationalStatus: OperationalStatus) {
+    override fun virtualNode(
+        cpiId: String,
+        holdingId: HoldingIdentity,
+        flowP2pOperationalStatus: OperationalStatus,
+        flowStartOperationalStatus: OperationalStatus,
+        flowOperationalStatus: OperationalStatus,
+        vaultDbOperationalStatus: OperationalStatus
+    ) {
         val emptyUUID = UUID(0, 0)
 
         virtualNodeInfoReadService.addOrUpdate(
@@ -154,8 +162,12 @@ class FlowServiceTestContext @Activate constructor(
                 emptyUUID,
                 emptyUUID,
                 emptyUUID,
-                timestamp = Instant.now(),
-                flowOperationalStatus = flowOperationalStatus
+                emptyUUID,
+                flowP2pOperationalStatus = flowP2pOperationalStatus,
+                flowStartOperationalStatus = flowStartOperationalStatus,
+                flowOperationalStatus = flowOperationalStatus,
+                vaultDbOperationalStatus = vaultDbOperationalStatus,
+                timestamp = Instant.now()
             )
         )
     }
@@ -415,7 +427,7 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     override fun resetFlowFiberCache() {
-        ALL_TEST_VIRTUAL_NODES.forEach { flowFiberCache.remove(it) }
+        ALL_TEST_VIRTUAL_NODES.forEach { flowFiberCache.remove(it.toCorda()) }
     }
 
     fun clearTestRuns() {

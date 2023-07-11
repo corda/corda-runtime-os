@@ -41,7 +41,7 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<K, V> {
 
-    private val log = LoggerFactory.getLogger(config.loggerName)
+    private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
 
     private var threadLooper =
         ThreadLooper(log, config, lifecycleCoordinatorFactory, "pubsub processing thread", ::runConsumeLoop)
@@ -49,7 +49,7 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
     private val errorMsg = "PubSubConsumer failed to create and subscribe consumer for group ${config.group}, " +
             "topic ${config.topic}."
 
-    private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
+    private val processorMeter = CordaMetrics.Metric.Messaging.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.PUB_SUB_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_NEXT_OPERATION)
@@ -90,9 +90,7 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
                     processor.valueClass,
                     ::logFailedDeserialize
                 ).use {
-                    val listener = PubSubConsumerRebalanceListener(
-                        config.topic, config.group, it
-                    )
+                    val listener = PubSubConsumerRebalanceListener(config.clientId, it)
                     it.setDefaultRebalanceListener(listener)
                     it.subscribe(config.topic)
                     threadLooper.updateLifecycleStatus(LifecycleStatus.UP)

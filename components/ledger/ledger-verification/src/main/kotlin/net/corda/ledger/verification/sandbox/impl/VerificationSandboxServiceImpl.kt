@@ -6,6 +6,7 @@ import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableExcept
 import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
 import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
+import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.RequireSandboxJSON
@@ -18,8 +19,11 @@ import net.corda.sandboxgroupcontext.service.registerCordappCustomSerializers
 import net.corda.sandboxgroupcontext.service.registerCustomCryptography
 import net.corda.sandboxgroupcontext.service.registerCustomJsonDeserializers
 import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
+import net.corda.sandboxgroupcontext.service.SANDBOX_DEPENDENCY_INJECTOR_KEY
+import net.corda.sandboxgroupcontext.service.factory.SandboxDependencyInjectorFactory
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.ledger.utxo.Contract
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -34,12 +38,14 @@ import org.slf4j.LoggerFactory
  */
 @RequireSandboxAMQP
 @RequireSandboxJSON
-@Component(service = [ VerificationSandboxService::class ])
+@Component(service = [VerificationSandboxService::class])
 class VerificationSandboxServiceImpl @Activate constructor(
     @Reference
     private val sandboxService: SandboxGroupContextComponent,
     @Reference
-    private val cpkReadService: CpkReadService
+    private val cpkReadService: CpkReadService,
+    @Reference(service = SandboxDependencyInjectorFactory::class)
+    private val dependencyInjectionFactory: SandboxDependencyInjectorFactory
 ) : VerificationSandboxService {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -74,6 +80,9 @@ class VerificationSandboxServiceImpl @Activate constructor(
         val jsonDeserializers = sandboxService.registerCustomJsonDeserializers(ctx)
         val jsonSerializers = sandboxService.registerCustomJsonSerializers(ctx)
 
+        val injectorService = dependencyInjectionFactory.create<Contract>(ctx)
+        ctx.putObjectByKey(SANDBOX_DEPENDENCY_INJECTOR_KEY, injectorService)
+
         // Instruct all CustomMetadataConsumers to accept their metadata.
         sandboxService.acceptCustomMetadata(ctx)
 
@@ -84,6 +93,7 @@ class VerificationSandboxServiceImpl @Activate constructor(
             jsonSerializers.close()
             jsonDeserializers.close()
             customSerializers.close()
+            injectorService.close()
             customCrypto.close()
         }
     }

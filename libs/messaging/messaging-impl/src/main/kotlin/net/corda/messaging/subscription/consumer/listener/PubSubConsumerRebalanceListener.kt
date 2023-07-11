@@ -6,12 +6,11 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 class PubSubConsumerRebalanceListener<K : Any, V : Any>(
-    topic: String,
-    groupName: String,
+    clientId: String,
     val consumer: CordaConsumer<K, V>
-) : LoggingConsumerRebalanceListener(topic, groupName) {
+) : LoggingConsumerRebalanceListener(clientId) {
 
-    override val log: Logger = LoggerFactory.getLogger("${this.javaClass.name}-$topic-$groupName")
+    override val log: Logger = LoggerFactory.getLogger("${this.javaClass.name}-${clientId}")
 
     /**
      * When assigned [partitions] set the consumer offset to the end of the partition.
