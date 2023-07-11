@@ -6,7 +6,7 @@ else
   namespace="$1"
 fi
 
-if [ -z "$namespace" ]; then
+if [ -z "${namespace}" ]; then
       printf "No namespace has been provided.\nPlease set one by either doing:\n  ./support_bundle.sh <namespace>\nor\n  kubectl config set-context --current --namespace=<namespace>\n"
       exit 1
 fi
