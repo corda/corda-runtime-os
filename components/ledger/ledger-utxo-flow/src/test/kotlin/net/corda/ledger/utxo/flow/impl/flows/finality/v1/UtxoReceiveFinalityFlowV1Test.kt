@@ -6,6 +6,7 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.fullIdHash
 import net.corda.flow.state.ContextPlatformProperties
 import net.corda.flow.state.FlowContext
+import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.testkit.publicKeyExample
@@ -13,6 +14,8 @@ import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
+import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersService
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.TransactionVerificationException
@@ -21,6 +24,8 @@ import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.getExampleInvalidStateAndRefImpl
 import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
+import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.flows.FlowEngine
@@ -29,7 +34,6 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
-import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
@@ -54,11 +58,16 @@ class UtxoReceiveFinalityFlowV1Test {
     private companion object {
         val MEMBER = MemberX500Name("Alice", "London", "GB")
         val ID = SecureHashImpl("algo", byteArrayOf(1, 2, 3))
+        val transactionGroupParametersHash = SecureHashImpl("algo", byteArrayOf(10, 0, 0))
+        val anotherGroupParametersHash = SecureHashImpl("algo", byteArrayOf(11, 0, 0))
     }
 
     private val memberLookup = mock<MemberLookup>()
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
+    private val currentGroupParametersService = mock<CurrentGroupParametersService>()
+    private val utxoLedgerGroupParametersPersistenceService = mock<UtxoLedgerGroupParametersPersistenceService>()
     private val transactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
+    private val signedGroupParametersVerifier = mock<SignedGroupParametersVerifier>()
     private val visibilityChecker = mock<VisibilityChecker>()
 
     private val platformProperties = mock<ContextPlatformProperties>().also { properties ->
@@ -87,7 +96,9 @@ class UtxoReceiveFinalityFlowV1Test {
     private val signature3 = digitalSignatureAndMetadata(publicKey3, byteArrayOf(1, 2, 5))
     private val signatureNotary = digitalSignatureAndMetadata(publicKeyNotary, byteArrayOf(1, 2, 6))
 
-    private val metadata = mock<TransactionMetadata>()
+    private val metadata = mock<TransactionMetadataInternal>()
+
+    private val currentGroupParameters = mock<SignedGroupParameters>()
 
     private val ledgerTransaction = mock<UtxoLedgerTransactionImpl>()
     private val signedTransaction = mock<UtxoSignedTransactionInternal>()
@@ -126,6 +137,11 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(ledgerTransaction.commands).thenReturn(listOf(UtxoCommandExample()))
         whenever(ledgerTransaction.timeWindow).thenReturn(utxoTimeWindowExample)
         whenever(ledgerTransaction.metadata).thenReturn(metadata)
+
+        whenever(metadata.getMembershipGroupParametersHash()).thenReturn(transactionGroupParametersHash.toString())
+
+        whenever(currentGroupParametersService.get()).thenReturn(currentGroupParameters)
+        whenever(currentGroupParameters.hash).thenReturn(transactionGroupParametersHash)
     }
 
     @Test
@@ -157,6 +173,17 @@ class UtxoReceiveFinalityFlowV1Test {
     }
 
     @Test
+    fun `receiving a transaction initially with not the current group parameters throws and persists as invalid`() {
+        whenever(currentGroupParameters.hash).thenReturn(anotherGroupParametersHash)
+        assertThatThrownBy { callReceiveFinalityFlow() }
+            .isInstanceOf(CordaRuntimeException::class.java)
+            .hasMessageContaining("Transactions can be created only with the latest membership group parameters.")
+
+        verify(signedTransaction, never()).addMissingSignatures()
+        verify(persistenceService).persist(signedTransaction, TransactionStatus.INVALID)
+    }
+
+    @Test
     fun `receiving a transaction initially with invalid signature throws and persists as invalid`() {
         whenever(signedTransaction.verifySignatorySignature(any())).thenThrow(
             CryptoSignatureException("Verifying signature failed!!")
@@ -172,7 +199,7 @@ class UtxoReceiveFinalityFlowV1Test {
 
     @Test
     fun `receiving an invalid transaction initially throws and persists as invalid`() {
-        whenever(transactionVerificationService.initialVerify(any())).thenThrow(
+        whenever(transactionVerificationService.verify(any())).thenThrow(
             TransactionVerificationException(
                 ID,
                 TransactionVerificationStatus.INVALID,
@@ -428,7 +455,7 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(ledgerTransaction.outputStateAndRefs).thenReturn(listOf(getExampleInvalidStateAndRefImpl()))
         whenever(signedTransaction.inputStateRefs).thenReturn(listOf(mock()))
         whenever(signedTransaction.referenceStateRefs).thenReturn(listOf(mock()))
-        whenever(transactionVerificationService.initialVerify(any())).thenThrow(
+        whenever(transactionVerificationService.verify(any())).thenThrow(
             TransactionVerificationException(
                 ID,
                 TransactionVerificationStatus.INVALID,
@@ -463,6 +490,9 @@ class UtxoReceiveFinalityFlowV1Test {
         flow.transactionVerificationService = transactionVerificationService
         flow.flowEngine = flowEngine
         flow.visibilityChecker = visibilityChecker
+        flow.currentGroupParametersService = currentGroupParametersService
+        flow.utxoLedgerGroupParametersPersistenceService = utxoLedgerGroupParametersPersistenceService
+        flow.signedGroupParametersVerifier = signedGroupParametersVerifier
         flow.call()
     }
 
