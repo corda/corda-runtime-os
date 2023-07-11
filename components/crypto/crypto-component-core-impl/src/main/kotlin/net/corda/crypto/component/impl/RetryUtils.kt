@@ -16,7 +16,6 @@ inline fun <R> retry(numRetries: Int, logger: Logger, block: () -> R): R {
             logger.warn("Exception occurred in retry block (invocation: ${i + 1}, retries left: ${numRetries - i}): $e")
             if (firstException == null)
                 firstException = e
-            Thread.sleep((1000 * 1.0.pow(i+1)).roundToLong())
         }
         i += 1
         if (i >= numRetries) throw firstException!!
