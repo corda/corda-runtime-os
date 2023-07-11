@@ -8,6 +8,7 @@ import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.CreateRoleRequestDto
 import net.corda.libs.permissions.manager.request.GetRoleRequestDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -38,8 +39,11 @@ internal class RoleEndpointImplTest {
     private val permissionService = mock<PermissionManagementService>().also {
         whenever(it.permissionManager).thenReturn(permissionManager)
     }
+    private val platformInfoProvider = mock<PlatformInfoProvider>().also {
+        whenever(it.localWorkerPlatformVersion).thenReturn(1)
+    }
 
-    private val endpoint = RoleEndpointImpl(lifecycleCoordinatorFactory, permissionService)
+    private val endpoint = RoleEndpointImpl(lifecycleCoordinatorFactory, permissionService, platformInfoProvider)
 
     @BeforeEach
     fun beforeEach() {
