@@ -56,7 +56,6 @@ class SessionCertificateTest {
     }
 
     @Test
-    @Tag("Unstable")
     fun `Create mgm and allow members to join the group`() {
         onboardMultiClusterGroup()
     }
