@@ -407,7 +407,6 @@ class StartRegistrationHandlerTest {
             verify = true,
             verifyCustomFields = true,
             queryRegistrationRequest = true,
-            queryMemberInfo = true,
             persistMemberInfo = true,
         )
     }

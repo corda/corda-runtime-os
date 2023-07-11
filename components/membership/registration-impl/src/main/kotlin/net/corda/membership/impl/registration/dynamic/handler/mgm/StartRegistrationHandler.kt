@@ -134,18 +134,6 @@ internal class StartRegistrationHandler(
                 }
             }
 
-            val activeOrSuspendedInfo = membershipQueryClient.queryMemberInfo(
-                mgmHoldingId,
-                listOf(pendingMemberHoldingId)
-            ).getOrThrow().lastOrNull {
-                it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED
-            }
-            if (registrationRequest.serial != null && registrationRequest.serial == 0L) { // name check for initial registration
-                validateRegistrationRequest(activeOrSuspendedInfo == null) {
-                    "Member already exists with the same X500 name."
-                }
-            }
-
             validateRegistrationRequest(registrationRequest.serial != null) {
                 "Serial on the registration request should not be null."
             }
@@ -156,13 +144,23 @@ internal class StartRegistrationHandler(
                 "Registration request is registering an MGM holding identity."
             }
 
-            if (registrationRequest.serial!! > 0) { // serial number checks for re-registration
+            val activeOrSuspendedInfo = membershipQueryClient.queryMemberInfo(
+                mgmHoldingId,
+                listOf(pendingMemberHoldingId)
+            ).getOrThrow().lastOrNull {
+                it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED
+            }
+            if (registrationRequest.serial!! > 0) { //re-registration
                 validateRegistrationRequest(activeOrSuspendedInfo != null) {
                     "Member has not registered previously so serial number should be 0."
                 }
                 validateRegistrationRequest(activeOrSuspendedInfo!!.serial <= registrationRequest.serial!!) {
                     "Registration request was submitted for an older version of member info. " +
                             "Please submit a new request."
+                }
+            } else if (registrationRequest.serial!! == 0L) { // initial registration
+                validateRegistrationRequest(activeOrSuspendedInfo == null) {
+                    "Member already exists with the same X500 name."
                 }
             }
 
