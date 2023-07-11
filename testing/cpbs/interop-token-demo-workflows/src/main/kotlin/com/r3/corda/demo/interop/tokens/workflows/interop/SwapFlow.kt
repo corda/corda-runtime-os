@@ -2,7 +2,6 @@ package com.r3.corda.demo.interop.tokens.workflows.interop
 
 import com.r3.corda.demo.interop.tokens.contracts.TokenContract
 import com.r3.corda.demo.interop.tokens.states.TokenState
-import com.r3.corda.demo.interop.tokens.workflows.TransferFlowArgs
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
@@ -25,6 +24,8 @@ import java.time.Instant
 import java.util.UUID
 
 
+data class SwapFlowArgs(val newOwner: String, val stateId: UUID, val interopGroupId: String)
+
 @InitiatingFlow(protocol = "interop-sample-swap-protocol")
 class SwapFlow : ClientStartableFlow {
 
@@ -46,10 +47,10 @@ class SwapFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        log.info("TransferFlow.call() called")
+        log.info("SwapFlow.call() called")
 
         try {
-            val flowArgs = requestBody.getRequestBodyAs(jsonMarshallingService, TransferFlowArgs::class.java)
+            val flowArgs = requestBody.getRequestBodyAs(jsonMarshallingService, SwapFlowArgs::class.java)
 
             val stateId = flowArgs.stateId
 
@@ -73,6 +74,10 @@ class SwapFlow : ClientStartableFlow {
                 throw CordaRuntimeException("Only the owner of a state can transfer it to a new owner.")
             }
 
+            val session = flowMessaging.initiateFlow(newOwnerInfo.name)
+            val reservation : UUID = session.sendAndReceive(UUID::class.java,
+                Payment(flowArgs.interopGroupId, BigDecimal(100)))
+
             val outputState =
                 inputState.withNewOwner(newOwnerInfo.name, listOf(ownerInfo.ledgerKeys[0], newOwnerInfo.ledgerKeys[0]))
 
@@ -86,14 +91,11 @@ class SwapFlow : ClientStartableFlow {
 
             val signedTransaction = txBuilder.toSignedTransaction()
 
-            val session1 = flowMessaging.initiateFlow(newOwnerInfo.name)
-            val reservation : UUID = session1.sendAndReceive(UUID::class.java, Payment(toReserve = BigDecimal(100)))
-
             log.info("Reserved $reservation")
 
             val finalizationResult = ledgerService.finalize(
                 signedTransaction,
-                listOf(session1)
+                listOf(session)
             )
             val userResult = finalizationResult.transaction.id.toString().also {
                 log.info("Success! Response: $it")
@@ -125,10 +127,9 @@ class SwapResponderFlow : ResponderFlow {
 
         val msg = session.receive(Payment::class.java)
         log.info("Received message: $msg")
-        val myAlias = MemberX500Name.parse("C=GB, L=London, O=Bob2 Alias")//TODO replace with alias lookup
 
-        val result = flowEngine.subFlow(SwapResponderSubFlow(session, myAlias, msg))
-        log.info("Interop SubFlow finished with result '$result', calling FinalityFlow")
+        val result = flowEngine.subFlow(SwapResponderSubFlow(msg))
+        session.send(result)
 
         try {
             val finalizationResult = utxoLedgerService.receiveFinality(session) { ledgerTransaction ->

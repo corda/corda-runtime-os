@@ -17,7 +17,7 @@ class InteropIdentityLookUpImpl @Activate constructor() :
 
     @Suspendable
     override fun lookup(applicationName: String?): InterOpIdentityInfo? {
-        return getAliasMemberData().firstOrNull(){
+        return getAliasMemberData().firstOrNull{
             it.applicationName() == applicationName
         }
     }

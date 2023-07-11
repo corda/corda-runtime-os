@@ -39,18 +39,24 @@ class FacadeServiceImpl @Activate constructor(
 
     @Suspendable
     override fun <T : Any?> getProxy(facadeId: String?, expectedType: Class<T>?, alias: MemberX500Name?, interopGroup: String?): T {
-        logger.info("Creating Proxy for: $facadeId, $expectedType, $alias, $interopGroup") //TODO lower level to debug
+        logger.info("Creating Proxy for: facadeId=$facadeId, expectedType=$expectedType, alias=$alias, " +
+                "interopGroup=$interopGroup") //TODO lower level to debug
         require(facadeId != null)
+        require(alias != null)
+        require(interopGroup != null)
+        require(expectedType != null)
         val facade = facadeLookup(facadeId)
         val marshaller = JacksonJsonMarshallerAdaptor(jsonMarshallingService)
-        val transportLayer = MessagingDispatcher(flowMessaging, jsonMarshallingService, alias!!, interopGroup!!)
-        return facade.getClientProxy(marshaller, expectedType!!, transportLayer)
+        val transportLayer = MessagingDispatcher(flowMessaging, jsonMarshallingService, alias, interopGroup)
+        return facade.getClientProxy(marshaller, expectedType, transportLayer)
     }
 
     @Suspendable
     override fun dispatchFacadeRequest(target: Any?, request: String?): String {
-        logger.info("Dispatching: ${target!!::class.java}, $request") //TODO eliminate !!, lower level to debug
-        val facadeRequest = jsonMarshallingService.parse(request!!, FacadeRequestImpl::class.java)
+        logger.info("Dispatching: target=$target, request=$request") //TODO lower level to debug
+        require(target != null)
+        require(request != null)
+        val facadeRequest = jsonMarshallingService.parse(request, FacadeRequestImpl::class.java)
         val facade = facadeLookup(facadeRequest.facadeId.toString())
         val marshaller = JacksonJsonMarshallerAdaptor(jsonMarshallingService)
         val dispatcher = target.buildDispatcher(facade, marshaller) //TODO return dispatcher which can be reused
@@ -80,7 +86,7 @@ class FacadeServiceImpl @Activate constructor(
     }
 }
 
-class MessagingDispatcher(private var flowMessaging: FlowMessaging, private val jsonMarshallingService: JsonMarshallingService,
+private class MessagingDispatcher(private var flowMessaging: FlowMessaging, private val jsonMarshallingService: JsonMarshallingService,
     private val alias: MemberX500Name, private val aliasGroupId: String) : (FacadeRequest) -> FacadeResponse {
     override fun invoke(request: FacadeRequest): FacadeResponse {
         val payload = jsonMarshallingService.format(request)
