@@ -143,6 +143,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         )
 
         removeCachedFlowFiber(checkpoint)
+        checkpoint.markDeleted()
 
         val records = createStatusRecord(checkpoint.flowId) {
             flowMessageFactory.createFlowFailedStatusMessage(
