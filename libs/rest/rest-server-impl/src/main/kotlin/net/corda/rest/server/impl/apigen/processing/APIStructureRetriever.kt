@@ -21,8 +21,8 @@ import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpDELETE
 import net.corda.rest.annotations.HttpPUT
 import net.corda.rest.annotations.HttpWS
-import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.annotations.isRestEndpointAnnotation
+import net.corda.rest.annotations.retrieveApiVersionsSet
 import net.corda.rest.tools.annotations.extensions.name
 import net.corda.rest.tools.annotations.extensions.path
 import net.corda.rest.tools.annotations.extensions.title
@@ -86,23 +86,6 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
                 throw e
             }
         }
-    }
-
-    private fun retrieveApiVersionsSet(minVersion: RestApiVersion, maxVersion: RestApiVersion): Set<RestApiVersion> {
-        val result = EnumSet.noneOf(RestApiVersion::class.java)
-
-        var current: RestApiVersion? = maxVersion
-        while (current != null) {
-            result.add(current)
-
-            // Check if we have reached the bottom
-            if (current == minVersion) {
-                break
-            }
-
-            current = current.parentVersion
-        }
-        return result
     }
 
     private fun List<Class<out RestResource>>.validated(): List<Class<out RestResource>> {

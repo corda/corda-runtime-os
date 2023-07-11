@@ -2,6 +2,7 @@ package net.corda.rest.tools.annotations.validation
 
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.RestApiVersion
+import net.corda.rest.annotations.retrieveApiVersionsSet
 import net.corda.rest.tools.annotations.validation.utils.EndpointType
 import net.corda.rest.tools.annotations.validation.utils.endpointPath
 import net.corda.rest.tools.annotations.validation.utils.endpointType
@@ -23,31 +24,28 @@ internal class EndpointNameConflictValidator(private val clazz: Class<out RestRe
 
     override fun validate(): RestValidationResult = validateSameTypeEndpoints(clazz.endpoints)
 
-    private data class VersionRange(val minVersion: RestApiVersion, val maxVersion: RestApiVersion) {
-        fun overlapsWith(other: VersionRange): Boolean {
-            return other.minVersion <= maxVersion && other.maxVersion >= minVersion
-        }
-    }
-
     private fun validateSameTypeEndpoints(endpoints: List<Method>): RestValidationResult {
-        val pathsAndTypesToVersions = mutableMapOf<Pair<String?, EndpointType>, MutableList<VersionRange>>()
+        val pathsToTypesAndVersions = mutableSetOf<Triple<String?, EndpointType, RestApiVersion>>()
         return endpoints.fold(RestValidationResult()) { total, method ->
             val endpointType = method.endpointType
-            total + pathsAndTypesToVersions.validateNoDuplicatePath(method, endpointType)
+            total + pathsToTypesAndVersions.validateNoDuplicatePath(method, endpointType)
         }
     }
 
-    private fun MutableMap<Pair<String?, EndpointType>, MutableList<VersionRange>>.validateNoDuplicatePath(
+    private fun MutableSet<Triple<String?, EndpointType, RestApiVersion>>.validateNoDuplicatePath(
         method: Method,
         type: EndpointType
     ): RestValidationResult {
         val path = method.endpointPath(type)?.lowercase()
-        val newVersionRange = VersionRange(method.restApiVersions.minVersion, method.restApiVersions.maxVersion)
-        return if (this[path to type]?.any { it.overlapsWith(newVersionRange) } == true) {
-            RestValidationResult(listOf(error(path, type, method)))
-        } else {
-            this.getOrPut(path to type) { mutableListOf() }.add(newVersionRange)
-            RestValidationResult()
+        val newVersions = retrieveApiVersionsSet(method.restApiVersions.minVersion, method.restApiVersions.maxVersion)
+
+        newVersions.forEach {
+            val version = Triple(path, type, it)
+            if (!this.add(version)) {
+                return RestValidationResult(listOf(error(path, type, method)))
+            }
         }
+
+        return RestValidationResult()
     }
 }

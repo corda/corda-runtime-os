@@ -30,11 +30,11 @@ class EndpointNameConflictValidatorTest {
 
         val result = EndpointNameConflictValidator(TestInterface::class.java).validate()
 
-        assertEquals(0, result.errors.size)
+        assertEquals(emptyList<String>(), result.errors)
     }
 
     @Test
-    fun `validate withEndpointNameConflictOnSamePathSameVersions errorListContainsError`() {
+    fun `validate withEndpointNameConflictOnSamePathDefaultVersions errorListContainsError`() {
         @HttpRestResource
         abstract class TestInterface : RestResource {
             @HttpGET("/test")
@@ -48,7 +48,43 @@ class EndpointNameConflictValidatorTest {
 
         val result = EndpointNameConflictValidator(TestInterface::class.java).validate()
 
-        assertEquals(1, result.errors.size)
+        assertEquals(listOf(error("/test", EndpointType.GET, TestInterface::test2.javaMethod!!)), result.errors)
+    }
+
+    @Test
+    fun `validate withEndpointNameConflictOnSamePathOverlappingVersions errorListContainsError`() {
+        @HttpRestResource
+        abstract class TestInterface : RestResource {
+            @HttpGET("/test", minVersion = RestApiVersion.C5_0, maxVersion = RestApiVersion.C5_1)
+            @Suppress("unused")
+            abstract fun test()
+
+            @HttpGET("/test", minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_2)
+            @Suppress("unused")
+            abstract fun test2()
+        }
+
+        val result = EndpointNameConflictValidator(TestInterface::class.java).validate()
+
+        assertEquals(listOf(error("/test", EndpointType.GET, TestInterface::test2.javaMethod!!)), result.errors)
+    }
+
+    @Test
+    fun `validate withEndpointNameConflictOnSamePathContainedVersions errorListContainsError`() {
+        @HttpRestResource
+        abstract class TestInterface : RestResource {
+            @HttpGET("/test", minVersion = RestApiVersion.C5_0, maxVersion = RestApiVersion.C5_2)
+            @Suppress("unused")
+            abstract fun test()
+
+            @HttpGET("/test", minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_1)
+            @Suppress("unused")
+            abstract fun test2()
+        }
+
+        val result = EndpointNameConflictValidator(TestInterface::class.java).validate()
+
+        assertEquals(listOf(error("/test", EndpointType.GET, TestInterface::test2.javaMethod!!)), result.errors)
     }
 
     @Test
@@ -83,7 +119,7 @@ class EndpointNameConflictValidatorTest {
 
         val result = EndpointNameConflictValidator(TestInterface::class.java).validate()
 
-        assertEquals(0, result.errors.size)
+        assertEquals(emptyList<String>(), result.errors)
     }
 
     @Test
