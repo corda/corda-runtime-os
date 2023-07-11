@@ -14,6 +14,8 @@ import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
+import net.corda.ledger.utxo.flow.impl.flows.finality.INITIAL_TRANSACTION
+import net.corda.ledger.utxo.flow.impl.flows.finality.NUMBER_OF_COUNTER_PARTIES
 import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
@@ -104,11 +106,15 @@ class UtxoReceiveFinalityFlowV1Test {
     private val signedTransaction = mock<UtxoSignedTransactionInternal>()
     private val signedTransactionWithOwnKeys = mock<UtxoSignedTransactionInternal>()
     private val notarizedTransaction = mock<UtxoSignedTransactionInternal>()
+    private val receivedPayload = mock<Map<*, *>>()
 
     @BeforeEach
     fun beforeEach() {
         whenever(session.counterparty).thenReturn(MEMBER)
-        whenever(session.receive(UtxoSignedTransactionInternal::class.java)).thenReturn(signedTransaction)
+
+        whenever(session.receive(Map::class.java)).thenReturn(receivedPayload)
+        whenever(session.receive(Map::class.java)[INITIAL_TRANSACTION]).thenReturn(signedTransaction)
+        whenever(session.receive(Map::class.java)[NUMBER_OF_COUNTER_PARTIES]).thenReturn(2)
 
         whenever(memberLookup.myInfo()).thenReturn(memberInfo)
 
@@ -481,6 +487,31 @@ class UtxoReceiveFinalityFlowV1Test {
         callReceiveFinalityFlow()
 
         verify(flowEngine, never()).subFlow(TransactionBackchainResolutionFlow(signedTransaction.dependencies, session))
+    }
+
+    @Test
+    fun `skip receiving and persisting signatures when there are only two parties`() {
+        whenever(session.receive(Map::class.java)[NUMBER_OF_COUNTER_PARTIES]).thenReturn(1)
+        whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1))
+        whenever(session.receive(List::class.java)).thenReturn(listOf(signature2))
+        whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
+
+        callReceiveFinalityFlow()
+
+        verify(session, times(0)).receive(List::class.java)
+        verify(persistenceService, times(1)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
+    }
+
+    @Test
+    fun `receiving and persisting signatures when there are more than two parties`() {
+        whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
+        whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
+        whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
+
+        callReceiveFinalityFlow()
+
+        verify(session, times(1)).receive(List::class.java)
+        verify(persistenceService, times(2)).persist(signedTransactionWithOwnKeys, TransactionStatus.UNVERIFIED)
     }
 
     private fun callReceiveFinalityFlow(validator: UtxoTransactionValidator = UtxoTransactionValidator { }) {
