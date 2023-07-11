@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory
 import java.time.Instant
 import net.corda.flow.fiber.cache.FlowFiberCache
 
-@Suppress("Unused")
+@Suppress("Unused" , "TooManyFunctions")
 @Component(service = [FlowEventExceptionProcessor::class])
 class FlowEventExceptionProcessorImpl @Activate constructor(
     @Reference(service = FlowMessageFactory::class)
@@ -119,7 +119,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
         val msg = if (!checkpoint.doesExist) {
             "Flow processing for flow ID ${checkpoint.flowId} has failed due to a fatal exception. " +
-                    "doesExist was false"
+                    "Checkpoint/Flow start context doesn't exist"
         } else {
             "Flow processing for flow ID ${checkpoint.flowId} has failed due to a fatal exception. " +
                     "Flow start context: ${checkpoint.flowStartContext}"
