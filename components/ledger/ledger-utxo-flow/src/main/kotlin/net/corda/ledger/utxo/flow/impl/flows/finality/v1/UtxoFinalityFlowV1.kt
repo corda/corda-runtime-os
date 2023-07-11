@@ -63,7 +63,11 @@ class UtxoFinalityFlowV1(
         val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction()
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
         persistTransactionWithCounterpartySignatures(transaction)
-        sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
+
+        if (transaction.signatories.size > 2) {
+            sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
+        }
+
         val (notarizedTransaction, notarySignatures) = notarize(transaction)
         persistNotarizedTransaction(notarizedTransaction)
         sendNotarySignaturesToCounterparties(notarySignatures)

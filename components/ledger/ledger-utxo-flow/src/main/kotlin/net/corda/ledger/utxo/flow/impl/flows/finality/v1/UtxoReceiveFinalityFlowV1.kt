@@ -73,9 +73,13 @@ class UtxoReceiveFinalityFlowV1(
             session.send(payload)
             throw CordaRuntimeException(payload.message)
         }
-        transaction = receiveSignaturesAndAddToTransaction(transaction)
-        verifyAllReceivedSignatures(transaction)
-        persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
+
+        if (transaction.signatories.size > 2) {
+            transaction = receiveSignaturesAndAddToTransaction(transaction)
+            verifyAllReceivedSignatures(transaction)
+            persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
+        }
+
         transaction = receiveNotarySignaturesAndAddToTransaction(transaction)
         persistNotarizedTransaction(transaction)
         return transaction
