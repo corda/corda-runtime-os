@@ -83,7 +83,7 @@ allprojects {
             includeConfigs = ["runtimeClasspath"]
             skipProjects = [rootProject.name]
             destination = file("${buildDir}/reports/SBOM")
-            outputName = "${project.name}-corda-runtime-os-sbom"   
+            outputName = "${project.name}-corda-runtime-os-sbom"
         }
     }
 
