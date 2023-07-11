@@ -97,3 +97,8 @@ CODEOWNERS         @corda/blt @corda/corda5-team-leads
 /notary-plugins/                                                @corda/notaries
 /processors/uniqueness-processor/                               @corda/notaries
 /testing/uniqueness/                                            @corda/notaries
+
+# Ledger token selection files to be reviewed by the REST team
+# This needs to be after the ledger rules to partially override those
+/components/ledger/ledger-utxo-token-cache                      @corda/rest
+/components/ledger/ledger-utxo-flow/src/main/kotlin/net/corda/ledger/utxo/impl/token @corda/rest
