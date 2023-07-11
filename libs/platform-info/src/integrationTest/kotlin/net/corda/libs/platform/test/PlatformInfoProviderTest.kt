@@ -13,7 +13,7 @@ class PlatformInfoProviderTest {
     lateinit var platformInfoProvider: PlatformInfoProvider
 
     private companion object {
-        val EXPECTED_STUB_PLATFORM_VERSION = CORDA_5_1.platformVersion
+        val EXPECTED_STUB_PLATFORM_VERSION = CORDA_5_1.value
     }
 
     @Test

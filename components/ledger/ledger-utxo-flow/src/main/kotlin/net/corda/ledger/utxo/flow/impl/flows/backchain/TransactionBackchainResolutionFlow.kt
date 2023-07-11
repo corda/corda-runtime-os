@@ -55,12 +55,12 @@ class TransactionBackchainResolutionFlowVersionedFlowFactory(
 
     override fun create(version: Int, session: FlowSession): SubFlow<Unit> {
         return when {
-            version >= CORDA_5_1.platformVersion -> TransactionBackchainResolutionFlowV1(
+            version >= CORDA_5_1.value -> TransactionBackchainResolutionFlowV1(
                 initialTransactionIds,
                 session,
                 TransactionBackChainResolutionVersion.V2
             )
-            version in 1 until CORDA_5_1.platformVersion -> TransactionBackchainResolutionFlowV1(
+            version in 1 until CORDA_5_1.value -> TransactionBackchainResolutionFlowV1(
                 initialTransactionIds,
                 session,
                 TransactionBackChainResolutionVersion.V1

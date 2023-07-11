@@ -54,12 +54,12 @@ class TransactionBackchainSenderFlowVersionedFlowFactory(
 
     override fun create(version: Int, sessions: List<FlowSession>): SubFlow<Unit> {
         return when {
-            version >= CORDA_5_1.platformVersion -> TransactionBackchainSenderFlowV1(
+            version >= CORDA_5_1.value -> TransactionBackchainSenderFlowV1(
                 headTransactionIds,
                 sessions.single(),
                 TransactionBackChainResolutionVersion.V2
             )
-            version in 1 until CORDA_5_1.platformVersion -> TransactionBackchainSenderFlowV1(
+            version in 1 until CORDA_5_1.value -> TransactionBackchainSenderFlowV1(
                 headTransactionIds,
                 sessions.single(),
                 TransactionBackChainResolutionVersion.V1
