@@ -8,12 +8,14 @@ This is a plug-in for [Corda CLI plugin host](https://github.com/corda/corda-cli
 
 # Generate Group Policy
 
-This is a sub-command under the `mgm` plugin for generating a GroupPolicy.json file. This has been preserved for backward compatibility.
+This is a sub-command under the `network` plugin for generating a GroupPolicy.json file. This is a new command.
 
 Running `groupPolicy` without any command line arguments prints a sample GroupPolicy file for the user to manually tweak.
 ```shell
-./corda-cli.sh mgm groupPolicy
+./corda-cli.sh network groupPolicy
 ```
+
+NOTE: The `groupPolicy` sub-command is also available under the `mgm` command in order to preserve backwards compatibility.
 
 Alternatively, the following command line arguments can be used to define the static network section of the GroupPolicy:
 
