@@ -24,8 +24,9 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.LoggerFactory
 
 /**
- * V2 is essentially an extension of V1, so in order to avoid huge code duplication,
- * we kept V1 class implementing both.
+ * The V2 protocol is an extension of the V1 protocol, which can be enabled via a switch (on both sides).
+ * In order to avoid huge code duplication, we kept V1 class implementing both protocols and added a switch that makes
+ * it behave according to the V2 protocol.
  */
 
 @CordaSystemFlow

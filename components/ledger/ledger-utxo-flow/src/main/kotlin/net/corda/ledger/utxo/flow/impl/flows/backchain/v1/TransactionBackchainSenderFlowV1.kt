@@ -15,8 +15,9 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /**
- * V2 is essentially an extension of V1, so in order to avoid huge code duplication,
- * we kept V1 class implementing both.
+ * The V2 protocol is an extension of the V1 protocol, which can be enabled via a switch (on both sides).
+ * In order to avoid huge code duplication, we kept V1 class implementing both protocols and added a switch that makes
+ * it behave according to the V2 protocol.
  */
 
 @CordaSystemFlow
@@ -80,6 +81,7 @@ class TransactionBackchainSenderFlowV1(
     @Suspendable
     private fun handleSignedGroupParametersRequest(request: TransactionBackchainRequestV1.GetSignedGroupParameters) {
         if (version == TransactionBackChainResolutionVersion.V1) {
+            // V1 fails earlier with deserialization anyway in the case of SignedGroupParameters requests.
             val message =
                 "Backchain resolution of $headTransactionIds - GetSignedGroupParameters is " +
                         "not available in TransactionBackchainSenderFlowV1 V1"
