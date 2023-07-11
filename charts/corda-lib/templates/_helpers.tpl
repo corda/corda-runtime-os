@@ -55,7 +55,6 @@ app.kubernetes.io/name: {{ include "corda.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
-
 {{/*
 Image pull secrets
 */}}

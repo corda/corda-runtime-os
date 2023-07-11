@@ -7,6 +7,9 @@ fullnameOverride: ""
 # Affinity for pod assignment
 affinity: {}
 
+# Topology Spread Constraints
+topologySpreadConstraints: []
+
 # -- override chart name
 nameOverride: ""
 
