@@ -1024,7 +1024,7 @@ class UtxoFinalityFlowV1Test {
             )
         )
 
-        callFinalityFlow(initialTx, listOf(sessionBob))
+        callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
 
         verify(flowEngine, never()).subFlow(TransactionBackchainSenderFlow(TX_ID, sessionAlice))
         verify(flowEngine, never()).subFlow(TransactionBackchainSenderFlow(TX_ID, sessionBob))
