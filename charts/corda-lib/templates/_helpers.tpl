@@ -85,6 +85,18 @@ securityContext:
 {{- end }}
 
 {{/*
+topologySpreadConstraints to achieve high availability
+*/}}
+{{- define "corda.topologySpreadConstraints" -}}
+{{- if .Values.topologySpreadConstraints }}
+topologySpreadConstraints:
+{{- range $k := $.Values.topologySpreadConstraints }}
+- {{- $k | toYaml | indent 2 }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
 tolerations for node taints
 */}}
 {{- define "corda.tolerations" -}}

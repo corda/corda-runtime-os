@@ -114,6 +114,7 @@ spec:
       {{- with $.Values.serviceAccount.name  }}
       serviceAccountName: {{ . }}
       {{- end }}
+      {{- include "corda.topologySpreadConstraints" $ | indent 6 }}
       affinity: 
         {{- include "corda.affinity" (list $ . $worker ) | nindent 8 }}
       containers:
