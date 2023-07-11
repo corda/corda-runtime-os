@@ -28,6 +28,7 @@ import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
 import net.corda.libs.configuration.exception.WrongConfigVersionException
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -52,6 +53,7 @@ import net.corda.v5.base.versioning.Version
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
 
@@ -68,7 +70,9 @@ internal class ConfigRestResourceImpl @Activate constructor(
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = ConfigurationGetService::class)
-    private val configurationGetService: ConfigurationGetService
+    private val configurationGetService: ConfigurationGetService,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider
 ) : ConfigRestResource, PluggableRestResource<ConfigRestResource>, Lifecycle {
     private companion object {
         // The configuration used for the RPC sender.
@@ -79,7 +83,7 @@ internal class ConfigRestResourceImpl @Activate constructor(
             ConfigurationManagementRequest::class.java,
             ConfigurationManagementResponse::class.java
         )
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val REGISTRATION = "REGISTRATION"
         const val SENDER = "SENDER"
@@ -91,7 +95,7 @@ internal class ConfigRestResourceImpl @Activate constructor(
     private val validator = configurationValidatorFactory.createConfigValidator()
 
     override val targetInterface = ConfigRestResource::class.java
-    override val protocolVersion = 1
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     private var requestTimeout: Duration? = null
     private var rpcSender: RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>? = null
