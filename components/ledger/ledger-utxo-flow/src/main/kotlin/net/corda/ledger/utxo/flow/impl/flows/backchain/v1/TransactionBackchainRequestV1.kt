@@ -5,6 +5,7 @@ import net.corda.v5.crypto.SecureHash
 
 @CordaSerializable
 sealed interface TransactionBackchainRequestV1 {
-    data class Get(val transactionIds: Set<SecureHash>): TransactionBackchainRequestV1
-    object Stop: TransactionBackchainRequestV1
+    data class Get(val transactionIds: Set<SecureHash>) : TransactionBackchainRequestV1
+    data class GetSignedGroupParameters(val groupParametersHash: SecureHash) : TransactionBackchainRequestV1
+    object Stop : TransactionBackchainRequestV1
 }

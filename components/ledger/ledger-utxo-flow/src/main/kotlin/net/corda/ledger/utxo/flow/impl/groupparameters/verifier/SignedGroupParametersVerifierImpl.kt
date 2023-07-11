@@ -1,7 +1,8 @@
-package net.corda.ledger.utxo.transaction.verifier
+package net.corda.ledger.utxo.flow.impl.groupparameters.verifier
 
 import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
+import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersService
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
@@ -25,19 +26,20 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 class SignedGroupParametersVerifierImpl @Activate constructor(
     @Reference(service = SignatureVerificationService::class)
     private val signatureVerificationService: SignatureVerificationService,
+    @Reference(service = CurrentGroupParametersService::class)
+    private val currentGroupParametersService: CurrentGroupParametersService,
 ): SignedGroupParametersVerifier, UsedByFlow, SingletonSerializeAsToken {
 
     override fun verify(
         transaction: UtxoLedgerTransaction,
-        signedGroupParameters: SignedGroupParameters?,
-        mgmPublicKeys: List<PublicKey>
+        signedGroupParameters: SignedGroupParameters?
     ) {
         requireNotNull(signedGroupParameters){
             "Signed group parameters referenced in the transaction metadata not found. [" +
                     (transaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash() + "]"
         }
         verifyHash(transaction, signedGroupParameters)
-        verifySignature(signedGroupParameters, mgmPublicKeys)
+        verifySignature(signedGroupParameters)
     }
 
     private fun verifyHash(transaction: UtxoLedgerTransaction, signedGroupParameters: SignedGroupParameters) {
@@ -49,8 +51,8 @@ class SignedGroupParametersVerifierImpl @Activate constructor(
         }
     }
 
-    override fun verifySignature(signedGroupParameters: SignedGroupParameters, mgmPublicKeys: List<PublicKey>) {
-        check(mgmPublicKeys.contains(signedGroupParameters.signature.by)) {
+    override fun verifySignature(signedGroupParameters: SignedGroupParameters) {
+        check(currentGroupParametersService.getMgmKeys().contains(signedGroupParameters.signature.by)) {
             "The group parameters is not signed with a recognized MGM public key."
         }
         signatureVerificationService.verify(

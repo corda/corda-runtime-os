@@ -6,6 +6,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.sandbox.type.SandboxConstants
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -17,7 +18,11 @@ import org.osgi.service.component.annotations.ServiceScope
 import java.security.PublicKey
 
 @Suppress("Unused")
-@Component(service = [CurrentGroupParametersService::class, UsedByFlow::class], scope = ServiceScope.PROTOTYPE)
+@Component(
+    service = [CurrentGroupParametersService::class, UsedByFlow::class],
+    property = [SandboxConstants.CORDA_SYSTEM_SERVICE],
+    scope = ServiceScope.PROTOTYPE
+)
 class CurrentGroupParametersServiceImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class)
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,

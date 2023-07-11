@@ -1,23 +1,21 @@
-package net.corda.ledger.utxo.transaction.verifier
+package net.corda.ledger.utxo.flow.impl.groupparameters.verifier
 
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
-import java.security.PublicKey
 
 /*
  * Verify Signed Group parameters consistency. (hash and MGM signature.)
  */
 interface SignedGroupParametersVerifier {
     /* Verify hash matching in transaction and signature */
+    /* todo CORE-15320 converge Signed and Ledger Transactions with a shared interface */
     fun verify(
         transaction: UtxoLedgerTransaction,
-        signedGroupParameters: SignedGroupParameters?,
-        mgmPublicKeys: List<PublicKey>
+        signedGroupParameters: SignedGroupParameters?
     )
 
     fun verifySignature(
-        signedGroupParameters: SignedGroupParameters,
-        mgmPublicKeys: List<PublicKey>
+        signedGroupParameters: SignedGroupParameters
     )
 
 }

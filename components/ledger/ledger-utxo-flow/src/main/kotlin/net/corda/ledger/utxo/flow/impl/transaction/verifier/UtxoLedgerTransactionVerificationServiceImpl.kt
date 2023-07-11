@@ -12,7 +12,7 @@ import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersSer
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationParameters
-import net.corda.ledger.utxo.transaction.verifier.SignedGroupParametersVerifier
+import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
@@ -96,8 +96,7 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
         }
         signedGroupParametersVerifier.verify(
             transaction,
-            signedGroupParameters,
-            currentGroupParametersService.getMgmKeys()
+            signedGroupParameters
         )
         return signedGroupParameters
     }
