@@ -59,6 +59,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.spy
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
@@ -1023,11 +1024,104 @@ class UtxoFinalityFlowV1Test {
             )
         )
 
-        callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
+        callFinalityFlow(initialTx, listOf(sessionBob))
 
         verify(flowEngine, never()).subFlow(TransactionBackchainSenderFlow(TX_ID, sessionAlice))
         verify(flowEngine, never()).subFlow(TransactionBackchainSenderFlow(TX_ID, sessionBob))
     }
+
+    @Test
+    fun `not sending unseen signatures to counterparties when there are only two parties`() {
+        whenever(initialTx.getMissingSignatories()).thenReturn(
+            setOf(publicKeyBob)
+        )
+
+        whenever(flowMessaging.receiveAllMap(mapOf(
+            sessionBob to Payload::class.java
+        ))).thenReturn(
+            mapOf(
+                sessionBob to Payload.Success(
+                    listOf(
+                        signatureBob
+                    )
+                )
+            )
+        )
+
+        val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
+        whenever(initialTx.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
+        whenever(txAfterBobSignature.addSignature(signatureNotary)).thenReturn(notarizedTx)
+
+        whenever(txAfterBobSignature.signatures).thenReturn(listOf(signatureBob))
+        whenever(notarizedTx.outputStateAndRefs).thenReturn(listOf(stateAndRef))
+
+        whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
+
+        whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyBob))).thenReturn(true)
+
+        callFinalityFlow(initialTx, listOf(sessionBob))
+
+        verify(flowMessaging, times(0)).sendAllMap(mapOf())
+    }
+
+    @Test
+    fun `sending unseen signatures to counterparties when there more than two parties`()
+    {
+        whenever(initialTx.getMissingSignatories()).thenReturn(
+            setOf(
+                publicKeyAlice1,
+                publicKeyAlice2,
+                publicKeyBob
+            )
+        )
+
+        whenever(flowMessaging.receiveAllMap(mapOf(
+            sessionAlice to Payload::class.java,
+            sessionBob to Payload::class.java
+        ))).thenReturn(
+            mapOf(
+                sessionAlice to Payload.Success(
+                    listOf(
+                        signatureAlice1,
+                        signatureAlice2
+                    )
+                ),
+                sessionBob to Payload.Success(
+                    listOf(
+                        signatureBob
+                    )
+                )
+            )
+        )
+
+        val txAfterAlice1Signature = mock<UtxoSignedTransactionInternal>()
+        whenever(initialTx.addSignature(signatureAlice1)).thenReturn(txAfterAlice1Signature)
+        val txAfterAlice2Signature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterAlice1Signature.addSignature(signatureAlice2)).thenReturn(txAfterAlice2Signature)
+        val txAfterBobSignature = mock<UtxoSignedTransactionInternal>()
+        whenever(txAfterBobSignature.notaryName).thenReturn(notaryX500Name)
+        whenever(txAfterAlice2Signature.addSignature(signatureBob)).thenReturn(txAfterBobSignature)
+        whenever(txAfterBobSignature.addSignature(signatureNotary)).thenReturn(notarizedTx)
+
+        whenever(txAfterBobSignature.signatures).thenReturn(listOf(signatureAlice1, signatureAlice2, signatureBob))
+        whenever(notarizedTx.outputStateAndRefs).thenReturn(listOf(stateAndRef))
+
+        whenever(flowEngine.subFlow(pluggableNotaryClientFlow)).thenReturn(listOf(signatureNotary))
+
+        whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyAlice1))).thenReturn(true)
+        whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyBob))).thenReturn(true)
+
+        callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
+
+        verify(flowMessaging).sendAllMap(
+            mapOf(
+                sessionAlice to listOf(signatureBob),
+                sessionBob to listOf(signatureAlice1, signatureAlice2)
+            )
+        )
+    }
+
 
     private fun callFinalityFlow(signedTransaction: UtxoSignedTransactionInternal, sessions: List<FlowSession>) {
         val flow = spy(UtxoFinalityFlowV1(
