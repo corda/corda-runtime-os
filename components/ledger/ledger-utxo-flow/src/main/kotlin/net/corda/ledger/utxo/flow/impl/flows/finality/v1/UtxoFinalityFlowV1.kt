@@ -64,7 +64,7 @@ class UtxoFinalityFlowV1(
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
         persistTransactionWithCounterpartySignatures(transaction)
 
-        if (transaction.signatories.size > 2) {
+        if (sessions.size > 2) {
             sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
         }
 
@@ -83,7 +83,7 @@ class UtxoFinalityFlowV1(
 
     @Suspendable
     private fun sendTransactionAndBackchainToCounterparties() {
-        flowMessaging.sendAll(initialTransaction, sessions.toSet())
+        flowMessaging.sendAll(initialTransaction.setNumberOfParties(sessions.size), sessions.toSet())
         sessions.forEach {
             if (initialTransaction.dependencies.isNotEmpty()) {
                 flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction.id, it))

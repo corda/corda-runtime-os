@@ -30,7 +30,8 @@ data class UtxoSignedTransactionImpl(
     private val transactionSignatureServiceInternal: TransactionSignatureServiceInternal,
     private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
     override val wireTransaction: WireTransaction,
-    private val signatures: List<DigitalSignatureAndMetadata>
+    private val signatures: List<DigitalSignatureAndMetadata>,
+    var numberOfParties: Int = 1
 ) : UtxoSignedTransactionInternal {
 
     private val keyIdToSignatories: MutableMap<String, Map<SecureHash, PublicKey>> = mutableMapOf()
@@ -87,6 +88,13 @@ data class UtxoSignedTransactionImpl(
         return wrappedWireTransaction.signatories
     }
 
+    override fun getNumberOfParties(): Int {
+        require(numberOfParties > 1) {
+            "the number of parties should be at least 2"
+        }
+        return numberOfParties
+    }
+
     override fun addSignature(signature: DigitalSignatureAndMetadata): UtxoSignedTransactionInternal =
         UtxoSignedTransactionImpl(
             serializationService,
@@ -112,6 +120,17 @@ data class UtxoSignedTransactionImpl(
                 signatures + newSignatures
             ),
             newSignatures
+        )
+    }
+
+    override fun setNumberOfParties(sessionSize: Int): UtxoSignedTransactionInternal {
+        return UtxoSignedTransactionImpl(
+            serializationService,
+            transactionSignatureServiceInternal,
+            utxoLedgerTransactionFactory,
+            wireTransaction,
+            signatures,
+            numberOfParties + sessionSize
         )
     }
 

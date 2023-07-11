@@ -74,7 +74,7 @@ class UtxoReceiveFinalityFlowV1(
             throw CordaRuntimeException(payload.message)
         }
 
-        if (transaction.signatories.size > 2) {
+        if (transaction.getNumberOfParties() > 2) {
             transaction = receiveSignaturesAndAddToTransaction(transaction)
             verifyAllReceivedSignatures(transaction)
             persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)

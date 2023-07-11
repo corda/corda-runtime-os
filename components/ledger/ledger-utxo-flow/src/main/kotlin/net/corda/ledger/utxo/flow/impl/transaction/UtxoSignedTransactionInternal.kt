@@ -38,6 +38,23 @@ interface UtxoSignedTransactionInternal: UtxoSignedTransaction {
     fun addMissingSignatures(): Pair<UtxoSignedTransactionInternal, List<DigitalSignatureAndMetadata>>
 
     /**
+     * Set the number of participation involved to the [UtxoSignedTransactionInternal].
+     * this is to skip send/receive process of sending collected signatures when the number is two
+     *
+     * @param sessionSize The size of session, meaning the number of parties
+     *
+     * @return Returns a new [UtxoSignedTransactionInternal] containing the number of parties payload
+     */
+    fun setNumberOfParties(sessionSize: Int): UtxoSignedTransactionInternal
+
+    /**
+     * Gets the number of parties involved in the transaction
+     *
+     * @return Returns the number of parties
+     */
+    fun getNumberOfParties(): Int
+
+    /**
      * Gets the missing signatories from the current [UtxoSignedTransactionInternal].
      * It does not verify the available ones.
      *
