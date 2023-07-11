@@ -90,7 +90,11 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     private var rpcSubscription: RPCSubscription<MembershipPersistenceRequest, MembershipPersistenceResponse>? = null
     private var asyncSubscription:
         StateAndEventSubscription<String, MembershipPersistenceAsyncRequestState, MembershipPersistenceAsyncRequest>? = null
-    private var retryManager: MembershipPersistenceAsyncRetryManager? = null
+    private val retryManager = MembershipPersistenceAsyncRetryManager(
+        coordinatorFactory,
+        publisherFactory,
+        clock,
+    )
 
     private var dependencyServiceHandle: RegistrationHandle? = null
     private var configHandle: AutoCloseable? = null
@@ -144,8 +148,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
         rpcSubscription = null
         asyncSubscription?.close()
         asyncSubscription = null
-        retryManager?.close()
-        retryManager = null
+        retryManager.stop()
     }
 
     private fun handleRegistrationStatusChangedEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
@@ -200,14 +203,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
             it.start()
         }
         asyncSubscription?.close()
-        retryManager?.close()
-        retryManager =
-            MembershipPersistenceAsyncRetryManager(
-                coordinatorFactory = coordinatorFactory,
-                publisherFactory = publisherFactory,
-                messagingConfig = messagingConfig,
-                clock = clock,
-            )
+        retryManager.start(messagingConfig)
         subscriptionFactory.createStateAndEventSubscription(
             subscriptionConfig = SubscriptionConfig(
                 groupName = ASYNC_GROUP_NAME,
