@@ -31,7 +31,7 @@ internal object Unlimited : SampleRate
 internal data class PerSecond(val samplesPerSecond: Int) : SampleRate
 
 @Suppress("TooManyFunctions")
-internal class BraveTracingService(serviceName: String, zipkinHost: String, samplesPerSecond: SampleRate) : TracingService {
+internal class BraveTracingService(serviceName: String, zipkinHost: String?, samplesPerSecond: SampleRate) : TracingService {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
@@ -70,20 +70,29 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String, samp
                     .build()
             )
 
-        // The console reporter is useful when debugging test runs on the combined worker.
-        // uncomment it to enable it.
-        val reporters = mutableListOf<Reporter<Span>>(/*Reporter.CONSOLE*/)
-        val reporter = CombinedSpanReporter(reporters)
+        //Establish zipkin connection iff url host is provided
+        if (zipkinHost != null){
 
-        val zipkinUrl = "$zipkinHost/api/v2/spans"
-        val spanAsyncReporter =
-            AsyncReporter.create(URLConnectionSender.create(zipkinUrl))
-                .also(resourcesToClose::push)
-        reporters.add(spanAsyncReporter)
+            // The console reporter is useful when debugging test runs on the combined worker.
+            // uncomment it to enable it.
+            val reporters = mutableListOf<Reporter<Span>>(Reporter.CONSOLE)
+            val reporter = CombinedSpanReporter(reporters)
 
-        val spanHandler = ZipkinSpanHandler.create(reporter)
+            val zipkinUrl = "$zipkinHost/api/v2/spans"
+            val spanAsyncReporter =
+                AsyncReporter.create(URLConnectionSender.create(zipkinUrl))
+                    .also(resourcesToClose::push)
 
-        tracingBuilder.addSpanHandler(spanHandler)
+            reporters.add(spanAsyncReporter)
+
+            val spanHandler = ZipkinSpanHandler.create(reporter)
+
+            tracingBuilder.addSpanHandler(spanHandler)
+        }
+
+
+
+
         tracingBuilder.build().also(resourcesToClose::push)
     }
 
