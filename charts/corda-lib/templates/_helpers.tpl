@@ -87,11 +87,9 @@ securityContext:
 topologySpreadConstraints to achieve high availability
 */}}
 {{- define "corda.topologySpreadConstraints" -}}
-{{- if .Values.topologySpreadConstraints }}
 {{- with .Values.topologySpreadConstraints }}
 topologySpreadConstraints:
   {{- toYaml . | nindent 2 }}
-{{- end }}
 {{- end }}
 {{- end }}
 
