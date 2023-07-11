@@ -44,7 +44,7 @@
         "topologySpreadConstraints": {
             "type": "array",
             "default": [],
-            "title": "Topology spread constraints."
+            "title": "topology spread constraints."
         },
         "affinity": {
             "type": "object",
@@ -54,7 +54,7 @@
         "commonLabels": {
             "type": "object",
             "default": {},
-            "title": "Labels to add to all deployed objects",
+            "title": "labels to add to all deployed objects",
             "additionalProperties": {
                 "type": [
                     "string",
