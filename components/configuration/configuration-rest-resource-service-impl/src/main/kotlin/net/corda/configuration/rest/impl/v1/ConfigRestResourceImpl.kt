@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory
 import java.time.Duration
 
 /** An implementation of [ConfigRestResource]. */
-@Suppress("Unused")
+@Suppress("Unused", "LongParameterList")
 @Component(service = [PluggableRestResource::class])
 internal class ConfigRestResourceImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
