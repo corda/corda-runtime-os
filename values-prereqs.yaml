@@ -14,14 +14,6 @@ logging:
   format: "text"
   level: "info"
 
-topologySpreadConstraints:
-- maxSkew: 1
-  topologyKey: zone
-  whenUnsatisfiable: DoNotSchedule
-  labelSelector:
-    matchLabels:
-      foo: bar
-
 bootstrap:
   restApiAdmin:
     password:

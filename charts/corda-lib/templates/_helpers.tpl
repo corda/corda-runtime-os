@@ -89,9 +89,9 @@ topologySpreadConstraints to achieve high availability
 */}}
 {{- define "corda.topologySpreadConstraints" -}}
 {{- if .Values.topologySpreadConstraints }}
+{{- with .Values.topologySpreadConstraints }}
 topologySpreadConstraints:
-{{- range $k := $.Values.topologySpreadConstraints }}
-- {{- $k | toYaml | indent 2 }}
+  {{- toYaml . | nindent 2 }}
 {{- end }}
 {{- end }}
 {{- end }}
