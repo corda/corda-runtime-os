@@ -12,6 +12,7 @@ private val mapper = ObjectMapper()
 
 const val REGISTRATION_KEY_PRE_AUTH = "corda.auth.token"
 const val REGISTRATION_DECLINED = "DECLINED"
+const val REGISTRATION_INVALID = "INVALID"
 const val REGISTRATION_APPROVED = "APPROVED"
 const val REGISTRATION_SUBMITTED = "SUBMITTED"
 const val REGISTRATION_SENT_TO_MGM = "SENT_TO_MGM"
@@ -83,6 +84,28 @@ fun ClusterInfo.onboardMember(
     val registrationId = register(holdingId, registrationContext, waitForApproval)
 
     return NetworkOnboardingMetadata(holdingId, x500Name, registrationId, registrationContext, this)
+}
+
+/**
+ * Register a member who has registered previously using the [NetworkOnboardingMetadata] from the previous registration
+ * for the cluster connection details and for the member identifier.
+ */
+fun NetworkOnboardingMetadata.reregisterMember(
+    contextToMerge: Map<String, String?> = emptyMap(),
+    waitForApproval: Boolean = true
+): NetworkOnboardingMetadata {
+    val newContext = registrationContext.toMutableMap()
+    contextToMerge.forEach {
+        if (it.value == null) {
+            newContext.remove(it.key)
+        } else {
+            newContext[it.key] = it.value!!
+        }
+    }
+    return copy(
+        registrationContext = newContext,
+        registrationId = clusterInfo.register(holdingId, newContext, waitForApproval)
+    )
 }
 
 /**

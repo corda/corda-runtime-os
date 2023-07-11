@@ -9,8 +9,8 @@ import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificat
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationRequestDetails
-import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.p2p.SetOwnRegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
+import net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.state.RegistrationState
@@ -24,6 +24,7 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.VersionedMessageBuilder
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -42,10 +43,12 @@ import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
+import org.apache.avro.specific.SpecificRecordBase
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
@@ -65,7 +68,6 @@ class ProcessMemberVerificationResponseHandlerTest {
         const val TOPIC = "dummyTopic"
         const val APPROVE_ALL_STRING = "^*"
         const val APPROVE_NONE_STRING = "^ThisShouldNotMatchAnyKey$"
-        const val REGISTRATION_KEY = "member"
         const val MEMBER_KEY = "member"
         const val ADDITIONAL_TEST_KEY = "corda.additional.test.key"
         const val ADDITIONAL_TEST_VALUE = "corda.additional.test.value"
@@ -85,7 +87,7 @@ class ProcessMemberVerificationResponseHandlerTest {
             )
         )
     )
-    private val expectedRegistrationTopicKey = "$REGISTRATION_ID-${mgm.toCorda().shortHash}"
+    private val expectedRegistrationTopicKey = "${member.x500Name}-${member.groupId}"
     private val state = RegistrationState(
         REGISTRATION_ID,
         member,
@@ -144,7 +146,7 @@ class ProcessMemberVerificationResponseHandlerTest {
         on { getGroupReader(any()) } doReturn groupReader
     }
     private val record = mock<Record<String, AppMessage>>()
-    private val capturedStatus = argumentCaptor<SetOwnRegistrationStatus>()
+    private val capturedStatus = argumentCaptor<SpecificRecordBase>()
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
         on {
             createAuthenticatedMessageRecord(
@@ -177,6 +179,7 @@ class ProcessMemberVerificationResponseHandlerTest {
     @Test
     fun `handler returns approve member command with auto-approval status`() {
         mockApprovalRules(ApprovalRuleType.STANDARD)
+        mockMemberLookup(memberContextKeyValues, MEMBER_STATUS_PENDING)
 
         val result = invokeTestFunction()
 
@@ -200,6 +203,7 @@ class ProcessMemberVerificationResponseHandlerTest {
     @Test
     fun `handler sets request status to manual approval`() {
         mockApprovalRules(ApprovalRuleType.STANDARD, manuallyApproveAllRule)
+        mockMemberLookup(memberContextKeyValues, MEMBER_STATUS_PENDING)
         val result = invokeTestFunction()
 
         verifySetRegistrationStatus(RegistrationStatus.PENDING_MANUAL_APPROVAL)
@@ -254,6 +258,7 @@ class ProcessMemberVerificationResponseHandlerTest {
     @Test
     fun `handler use the correct TTL configuration`() {
         mockApprovalRules(ApprovalRuleType.STANDARD)
+        mockMemberLookup(memberContextKeyValues, MEMBER_STATUS_PENDING)
         invokeTestFunction()
 
         verify(config).getIsNull("$TTLS.$UPDATE_TO_PENDING_AUTO_APPROVAL")
@@ -315,7 +320,7 @@ class ProcessMemberVerificationResponseHandlerTest {
         ) {
             val context = registrationContextKeyValues +
                     KeyValuePair(PRE_AUTH_TOKEN, token)
-            whenever(registrationContext.items).doReturn(context.filterNotNull())
+            whenever(registrationContext.items).doReturn(context)
         }
 
         @Suppress("MaxLineLength")
@@ -325,6 +330,7 @@ class ProcessMemberVerificationResponseHandlerTest {
             mockQueryToken(MembershipQueryResult.Success(listOf(mockToken)))
             mockPreAuthTokenInRegistrationContext()
             mockApprovalRules(ApprovalRuleType.PREAUTH, manuallyApproveAllRule)
+            mockMemberLookup(memberContextKeyValues, MEMBER_STATUS_PENDING)
 
             val result = invokeTestFunction()
 
@@ -343,6 +349,7 @@ class ProcessMemberVerificationResponseHandlerTest {
             mockMemberLookup(
                 memberContextKeyValues + KeyValuePair(ADDITIONAL_TEST_KEY, ADDITIONAL_TEST_VALUE)
             )
+            mockMemberLookup(memberContextKeyValues, MEMBER_STATUS_PENDING)
 
             mockConsumeToken()
             mockQueryToken(MembershipQueryResult.Success(listOf(mockToken)))
@@ -364,6 +371,7 @@ class ProcessMemberVerificationResponseHandlerTest {
         fun `handler sets re-registration request with valid pre-auth token to status manual approval if there are pre-auth token rules checking for added key`() {
             // Configure active member for re-registration scenario
             mockMemberLookup(memberContextKeyValues)
+            mockMemberLookup(memberContextKeyValues, MEMBER_STATUS_PENDING)
 
             mockConsumeToken()
             mockQueryToken(MembershipQueryResult.Success(listOf(mockToken)))
@@ -388,6 +396,7 @@ class ProcessMemberVerificationResponseHandlerTest {
             mockMemberLookup(
                 memberContextKeyValues + KeyValuePair(ADDITIONAL_TEST_KEY, ADDITIONAL_TEST_VALUE)
             )
+            mockMemberLookup(memberContextKeyValues, MEMBER_STATUS_PENDING)
 
             mockConsumeToken()
             mockQueryToken(MembershipQueryResult.Success(listOf(mockToken)))
@@ -411,6 +420,7 @@ class ProcessMemberVerificationResponseHandlerTest {
             mockQueryToken(MembershipQueryResult.Success(listOf(mockToken)))
             mockPreAuthTokenInRegistrationContext()
             mockApprovalRules(ApprovalRuleType.PREAUTH, manuallyApproveNoneRule)
+            mockMemberLookup(memberContextKeyValues, MEMBER_STATUS_PENDING)
 
             val result = invokeTestFunction()
 
@@ -449,6 +459,29 @@ class ProcessMemberVerificationResponseHandlerTest {
             verifyGetApprovalRules(ApprovalRuleType.PREAUTH)
             verifySetRegistrationStatus(RegistrationStatus.PENDING_MANUAL_APPROVAL)
             verifySetOwnRegistrationStatus(RegistrationStatus.PENDING_MANUAL_APPROVAL)
+        }
+
+        @Test
+        fun `handler does not send registration status update message when status cannot be retrieved`() {
+            mockConsumeToken()
+            mockQueryToken(MembershipQueryResult.Success(listOf(mockToken)))
+            mockPreAuthTokenInRegistrationContext()
+            mockApprovalRules(ApprovalRuleType.PREAUTH, manuallyApproveNoneRule)
+            mockMemberLookup(memberContextKeyValues, MEMBER_STATUS_PENDING)
+
+            val mockedBuilder = Mockito.mockStatic(VersionedMessageBuilder::class.java).also {
+                it.`when`<VersionedMessageBuilder> {
+                    VersionedMessageBuilder.retrieveRegistrationStatusMessage(any(), any(), any())
+                } doReturn null
+            }
+
+            val results = invokeTestFunction()
+            verify(p2pRecordsFactory, never()).createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
+            assertThat(results.outputStates)
+                .hasSize(2)
+            results.outputStates.forEach { assertThat(it.value).isNotInstanceOf(AppMessage::class.java) }
+
+            mockedBuilder.close()
         }
 
         @Test
@@ -509,7 +542,7 @@ class ProcessMemberVerificationResponseHandlerTest {
         regState: RegistrationState? = state,
         regCommand: Any = command
     ) = processMemberVerificationResponseHandler.invoke(
-        regState, Record(TOPIC, member.toString(), RegistrationCommand(regCommand))
+        regState, Record(TOPIC, "${member.x500Name}-${member.groupId}", RegistrationCommand(regCommand))
     )
 
     private fun mockApprovalRules(
@@ -583,7 +616,12 @@ class ProcessMemberVerificationResponseHandlerTest {
         val member = mock<MemberInfo> {
             on { memberProvidedContext } doReturn memberContext
             on { mgmProvidedContext } doReturn mgmContext
+            on { platformVersion } doReturn 50100
         }
-        whenever(groupReader.lookup(this.member.toCorda().x500Name)).doReturn(member)
+        if(memberStatus == MEMBER_STATUS_ACTIVE) {
+            whenever(groupReader.lookup(this.member.toCorda().x500Name)).doReturn(member)
+        } else {
+            whenever(groupReader.lookup(this.member.toCorda().x500Name, MembershipStatusFilter.PENDING)).doReturn(member)
+        }
     }
 }

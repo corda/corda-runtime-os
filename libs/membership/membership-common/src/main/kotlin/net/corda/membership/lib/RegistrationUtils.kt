@@ -3,6 +3,7 @@ package net.corda.membership.lib
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.membership.MemberContext
 
 /**
  * Transforms [KeyValuePairList] into map.
@@ -30,4 +31,9 @@ fun LayeredPropertyMap.toWire(): KeyValuePairList {
         }
     )
 }
+
+/**
+ * Transforms [MemberContext] into map.
+ */
+fun MemberContext.toMap() = entries.associate { it.key to it.value }
 

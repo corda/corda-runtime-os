@@ -16,6 +16,7 @@ import kotlin.jvm.Throws
 /**
  * The MGM ops client to perform group operations.
  */
+@Suppress("TooManyFunctions")
 interface MGMResourceClient : Lifecycle {
 
     /**
@@ -174,6 +175,23 @@ interface MGMResourceClient : Lifecycle {
         requestId: UUID,
         approve: Boolean,
         reason: String? = null,
+    )
+
+    /**
+     * Force decline an in-progress registration request that may be stuck or displaying some other unexpected
+     * behaviour. This method should only be used under exceptional circumstances.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param requestId ID of the registration request.
+     *
+     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
+     * @throws [IllegalArgumentException] If the request is not found, or has already been approved/declined.
+     */
+    @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class, IllegalArgumentException::class)
+    fun forceDeclineRegistrationRequest(
+        holdingIdentityShortHash: ShortHash,
+        requestId: UUID,
     )
 
     /**
