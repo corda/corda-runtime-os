@@ -36,6 +36,7 @@ class UtxoReceiveFinalityFlowV1(
     }
 
     override val log: Logger = UtxoReceiveFinalityFlowV1.log
+    private var numberOfParties = 1
 
     @CordaInject
     lateinit var currentGroupParametersService: CurrentGroupParametersService
@@ -74,7 +75,7 @@ class UtxoReceiveFinalityFlowV1(
             throw CordaRuntimeException(payload.message)
         }
 
-        if (transaction.getNumberOfParties() > 2) {
+        if (numberOfParties > 2) {
             transaction = receiveSignaturesAndAddToTransaction(transaction)
             verifyAllReceivedSignatures(transaction)
             persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
@@ -87,7 +88,10 @@ class UtxoReceiveFinalityFlowV1(
 
     @Suspendable
     private fun receiveTransactionAndBackchain(): UtxoSignedTransactionInternal {
-        val initialTransaction = session.receive(UtxoSignedTransactionInternal::class.java)
+        val payload = session.receive(Map::class.java) as Map<String, *>
+        val initialTransaction = payload["initialTransaction"] as UtxoSignedTransactionInternal
+        numberOfParties += payload["numberOfParties"] as Int
+
         if (log.isDebugEnabled) {
             log.debug( "Beginning receive finality for transaction: ${initialTransaction.id}")
         }

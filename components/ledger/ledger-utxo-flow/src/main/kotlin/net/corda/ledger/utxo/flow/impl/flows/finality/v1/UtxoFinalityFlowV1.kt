@@ -83,7 +83,7 @@ class UtxoFinalityFlowV1(
 
     @Suspendable
     private fun sendTransactionAndBackchainToCounterparties() {
-        flowMessaging.sendAll(initialTransaction.setNumberOfParties(sessions.size), sessions.toSet())
+        flowMessaging.sendAll(mapOf("initialTransaction" to initialTransaction, "numberOfParties" to sessions.size), sessions.toSet())
         sessions.forEach {
             if (initialTransaction.dependencies.isNotEmpty()) {
                 flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction.id, it))
