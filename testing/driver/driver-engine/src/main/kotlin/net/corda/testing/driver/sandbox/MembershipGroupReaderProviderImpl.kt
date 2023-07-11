@@ -7,7 +7,6 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
-import net.corda.crypto.cipher.suite.SigningSpec
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.fullIdHash
@@ -116,13 +115,13 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
 
     private val groupReaders = ConcurrentHashMap<HoldingIdentity, MembershipGroupReader>()
 
-    private fun getSigningSpecFor(publicKey: PublicKey): SigningSpec {
+    private fun getSigningSpecFor(publicKey: PublicKey): SigningWrappedSpec {
         val wrappedKey = requireNotNull(privateKeyService.fetchFor(publicKey)) {
             "Wrapped key missing for $publicKey"
         }
         val keyMaterialSpec = KeyMaterialSpec(
             keyMaterial = wrappedKey.keyMaterial,
-            wrappingKeyAlias = MASTER_KEY_ALIAS,
+            wrappingKeyAlias = WRAPPING_KEY_ALIAS,
             encodingVersion = 1
         )
         return SigningWrappedSpec(

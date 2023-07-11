@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory
 
 @Suppress("unused")
 /**
- * JPA backing store implementation, which uses a JPA compliant database to persist data.
+ * Corda lifecycle integration for the underlying [BackingStore] component.
  */
 @Component(service = [BackingStoreLifecycle::class])
 open class JPABackingStoreLifecycleImpl @Activate constructor(

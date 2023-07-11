@@ -19,6 +19,6 @@ const val CORDA_LOCAL_TENANCY_PID = "net.corda.testing.driver.sandbox.LocalTenan
 
 const val FIRST_SESSION_KEY = "$SESSION_KEYS.0"
 const val DEFAULT_KEY_SCHEME = ECDSA_SECP256R1_CODE_NAME
-const val MASTER_KEY_ALIAS = "master"
+const val WRAPPING_KEY_ALIAS = "master"
 
 const val WAIT_MILLIS = 100L

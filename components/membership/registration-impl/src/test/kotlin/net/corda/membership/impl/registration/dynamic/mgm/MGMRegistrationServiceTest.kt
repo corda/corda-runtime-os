@@ -16,7 +16,7 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.event.MembershipEvent
 import net.corda.data.membership.event.registration.MgmOnboarded
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
@@ -70,6 +70,7 @@ import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.membership.registration.ExpirationProcessor
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
 import net.corda.messaging.api.records.Record
@@ -168,6 +169,7 @@ class MGMRegistrationServiceTest {
     private val dependentComponents = setOf(
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
         LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+        LifecycleCoordinatorName.forComponent<ExpirationProcessor>(),
     )
 
     private var coordinatorIsRunning = false
@@ -246,6 +248,7 @@ class MGMRegistrationServiceTest {
         on { get(eq(mgm)) } doReturn virtualNodeInfo
     }
     private val writerService: GroupParametersWriterService = mock()
+    private val expirationProcessor: ExpirationProcessor = mock()
 
     private val registrationService = MGMRegistrationService(
         lifecycleCoordinatorFactory,
@@ -261,6 +264,7 @@ class MGMRegistrationServiceTest {
         virtualNodeInfoReadService,
         writerService,
         configurationGetService,
+        expirationProcessor,
     )
 
     private val properties = mapOf(
@@ -390,6 +394,7 @@ class MGMRegistrationServiceTest {
                 assertThat(statusUpdate.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
                 assertThat(statusUpdate.firstValue.registrationId).isEqualTo(registrationRequest.toString())
             }
+            verify(expirationProcessor).scheduleProcessingOfExpiredRequests(mgm)
             registrationService.stop()
         }
 
@@ -504,6 +509,8 @@ class MGMRegistrationServiceTest {
             val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationRequest, mgm, properties)
             }
+
+            verify(expirationProcessor, never()).scheduleProcessingOfExpiredRequests(mgm)
 
             assertThat(exception).hasMessageContaining("Registration failed, persistence error. Reason: Nop")
         }

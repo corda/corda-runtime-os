@@ -18,6 +18,7 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.registration.ExpirationProcessor
 import net.corda.membership.registration.RegistrationManagementService
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.membership.service.MemberOpsService
@@ -73,6 +74,8 @@ class MemberProcessorImpl @Activate constructor(
     private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
     @Reference(service = MembersClientCertificatePublisher::class)
     private val membersClientCertificatePublisher: MembersClientCertificatePublisher,
+    @Reference(service = ExpirationProcessor::class)
+    private val expirationProcessor: ExpirationProcessor,
 ) : MemberProcessor {
 
     private companion object {
@@ -99,6 +102,7 @@ class MemberProcessorImpl @Activate constructor(
         ::groupParametersReaderService,
         ::locallyHostedIdentitiesService,
         ::membersClientCertificatePublisher,
+        ::expirationProcessor,
     )
 
     private val coordinator =

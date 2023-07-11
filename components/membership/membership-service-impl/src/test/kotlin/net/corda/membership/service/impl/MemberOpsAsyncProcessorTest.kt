@@ -9,7 +9,7 @@ import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.async.request.RetriableFailure
 import net.corda.data.membership.async.request.SentToMgmWaitingForNetwork
 import net.corda.data.membership.common.RegistrationRequestDetails
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
@@ -644,6 +644,7 @@ class MemberOpsAsyncProcessorTest {
                         Instant.MIN,
                         RegistrationStatus.SENT_TO_MGM,
                         "",
+                        "holdingId",
                         0,
                         mock(),
                         mock(),
@@ -700,6 +701,7 @@ class MemberOpsAsyncProcessorTest {
                         Instant.MIN,
                         RegistrationStatus.NEW,
                         "",
+                        "holdingId",
                         0,
                         mock(),
                         mock(),
@@ -748,6 +750,7 @@ class MemberOpsAsyncProcessorTest {
                         Instant.MIN,
                         Instant.MIN,
                         RegistrationStatus.RECEIVED_BY_MGM,
+                        "",
                         "",
                         0,
                         mock(),
@@ -804,6 +807,7 @@ class MemberOpsAsyncProcessorTest {
                         Instant.MIN,
                         RegistrationStatus.NEW,
                         "",
+                        "",
                         0,
                         mock(),
                         mock(),
@@ -858,6 +862,7 @@ class MemberOpsAsyncProcessorTest {
                         Instant.MIN,
                         Instant.MIN,
                         RegistrationStatus.NEW,
+                        "",
                         "",
                         0,
                         mock(),
