@@ -2,8 +2,8 @@ package net.corda.ledger.utxo.flow.impl.flows.backchain.v2
 
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackChainResolutionVersion
-import net.corda.ledger.utxo.flow.impl.flows.backchain.base.TransactionBackchainRequestBase
-import net.corda.ledger.utxo.flow.impl.flows.backchain.base.TransactionBackchainSenderFlowBase
+import net.corda.ledger.utxo.flow.impl.flows.backchain.v1.TransactionBackchainRequestV1
+import net.corda.ledger.utxo.flow.impl.flows.backchain.v1.TransactionBackchainSenderFlowV1
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
@@ -36,7 +36,7 @@ class TransactionBackchainSenderFlowV2Test {
     private val ledgerTransaction2 = mock<UtxoLedgerTransaction>()
     private val ledgerTransaction3 = mock<UtxoLedgerTransaction>()
 
-    private val flow = TransactionBackchainSenderFlowBase(TX_ID_0, session, TransactionBackChainResolutionVersion.V2)
+    private val flow = TransactionBackchainSenderFlowV1(TX_ID_0, session, TransactionBackChainResolutionVersion.V2)
 
     @BeforeEach
     fun beforeEach() {
@@ -55,18 +55,19 @@ class TransactionBackchainSenderFlowV2Test {
 
     @Test
     fun `does nothing when receiving an initial stop request`() {
-        whenever(session.receive(TransactionBackchainRequestBase::class.java)).thenReturn(TransactionBackchainRequestBase.Stop)
+        whenever(session.receive(TransactionBackchainRequestV1::class.java)).thenReturn(
+            TransactionBackchainRequestV1.Stop)
 
         flow.call()
 
-        verify(session).receive(TransactionBackchainRequestBase::class.java)
+        verify(session).receive(TransactionBackchainRequestV1::class.java)
         verifyNoInteractions(utxoLedgerPersistenceService)
     }
 
     @Test
     fun `sends the requested transactions to the requesting session`() {
-        whenever(session.receive(TransactionBackchainRequestBase::class.java))
-            .thenReturn(TransactionBackchainRequestBase.Get(setOf(TX_ID_1, TX_ID_2, TX_ID_3)), TransactionBackchainRequestBase.Stop)
+        whenever(session.receive(TransactionBackchainRequestV1::class.java))
+            .thenReturn(TransactionBackchainRequestV1.Get(setOf(TX_ID_1, TX_ID_2, TX_ID_3)), TransactionBackchainRequestV1.Stop)
 
         whenever(ledgerTransaction1.inputStateRefs).thenReturn(emptyList())
         whenever(ledgerTransaction1.referenceStateRefs).thenReturn(emptyList())

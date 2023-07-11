@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.flow.impl.flows.backchain.base
+package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
 
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackChainResolutionVersion
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
@@ -14,8 +14,13 @@ import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+/**
+ * V2 is essentially an extension of V1, so in order to avoid huge code duplication,
+ * we kept V1 class implementing both.
+ */
+
 @CordaSystemFlow
-class TransactionBackchainSenderFlowBase(
+class TransactionBackchainSenderFlowV1(
     private val headTransactionIds: Set<SecureHash>,
     private val session: FlowSession,
     val version: TransactionBackChainResolutionVersion
@@ -28,7 +33,7 @@ class TransactionBackchainSenderFlowBase(
     ) : this(setOf(headTransactionId), session, version)
 
     private companion object {
-        val log: Logger = LoggerFactory.getLogger(TransactionBackchainSenderFlowBase::class.java)
+        val log: Logger = LoggerFactory.getLogger(TransactionBackchainSenderFlowV1::class.java)
     }
 
     @CordaInject
@@ -44,8 +49,8 @@ class TransactionBackchainSenderFlowBase(
                     "so that the backchain can be resolved"
         }
         while (true) {
-            when (val request = session.receive(TransactionBackchainRequestBase::class.java)) {
-                is TransactionBackchainRequestBase.Get -> {
+            when (val request = session.receive(TransactionBackchainRequestV1::class.java)) {
+                is TransactionBackchainRequestV1.Get -> {
                     val transactions = request.transactionIds.map { id ->
                         utxoLedgerPersistenceService.find(id)
                             ?: throw CordaRuntimeException("Requested transaction does not exist locally")
@@ -59,21 +64,21 @@ class TransactionBackchainSenderFlowBase(
                     }
                 }
 
-                is TransactionBackchainRequestBase.Stop -> {
+                is TransactionBackchainRequestV1.Stop -> {
                     log.trace {
                         "Backchain resolution of $headTransactionIds - Received stop, finishing sending of backchain transaction to " +
                                 session.counterparty
                     }
                     return
                 }
-                is TransactionBackchainRequestBase.GetSignedGroupParameters ->
+                is TransactionBackchainRequestV1.GetSignedGroupParameters ->
                     handleSignedGroupParametersRequest(request)
             }
         }
     }
 
     @Suspendable
-    private fun handleSignedGroupParametersRequest(request: TransactionBackchainRequestBase.GetSignedGroupParameters) {
+    private fun handleSignedGroupParametersRequest(request: TransactionBackchainRequestV1.GetSignedGroupParameters) {
         if (version == TransactionBackChainResolutionVersion.V1) {
             val message =
                 "Backchain resolution of $headTransactionIds - GetSignedGroupParameters is " +
@@ -99,7 +104,7 @@ class TransactionBackchainSenderFlowBase(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as TransactionBackchainSenderFlowBase
+        other as TransactionBackchainSenderFlowV1
 
         if (session != other.session) return false
         if (headTransactionIds != other.headTransactionIds) return false

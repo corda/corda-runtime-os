@@ -6,8 +6,6 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerMetricRecorder
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TopologicalSort
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackChainResolutionVersion
-import net.corda.ledger.utxo.flow.impl.flows.backchain.base.TransactionBackchainReceiverFlowBase
-import net.corda.ledger.utxo.flow.impl.flows.backchain.base.TransactionBackchainRequestBase
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.ledger.utxo.flow.impl.persistence.TransactionExistenceStatus
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
@@ -84,10 +82,10 @@ class TransactionBackchainReceiverFlowV1Test {
 
         assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_1, TX_ID_2)).complete()).isEqualTo(listOf(TX_ID_3, TX_ID_2, TX_ID_1))
 
-        verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestBase.Get(setOf(TX_ID_1)))
-        verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestBase.Get(setOf(TX_ID_2)))
-        verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestBase.Get(setOf(TX_ID_3)))
-        verify(session).send(TransactionBackchainRequestBase.Stop)
+        verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_1)))
+        verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_2)))
+        verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_3)))
+        verify(session).send(TransactionBackchainRequestV1.Stop)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction1, UNVERIFIED)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction2, UNVERIFIED)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction3, UNVERIFIED)
@@ -137,9 +135,9 @@ class TransactionBackchainReceiverFlowV1Test {
 
         assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_1, TX_ID_2)).complete()).isEqualTo(listOf(TX_ID_3, TX_ID_2, TX_ID_1))
 
-        verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestBase.Get(setOf(TX_ID_1)))
-        verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestBase.Get(setOf(TX_ID_2)))
-        verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestBase.Get(setOf(TX_ID_3)))
+        verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_1)))
+        verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_2)))
+        verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_3)))
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction1, UNVERIFIED)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction2, UNVERIFIED)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction3, UNVERIFIED)
@@ -174,9 +172,9 @@ class TransactionBackchainReceiverFlowV1Test {
 
         assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_1, TX_ID_2)).complete()).isEqualTo(listOf(TX_ID_2))
 
-        verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestBase.Get(setOf(TX_ID_1)))
-        verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestBase.Get(setOf(TX_ID_2)))
-        verify(session, never()).sendAndReceive(List::class.java, TransactionBackchainRequestBase.Get(setOf(TX_ID_3)))
+        verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_1)))
+        verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_2)))
+        verify(session, never()).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_3)))
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction1, UNVERIFIED)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction2, UNVERIFIED)
         verify(utxoLedgerPersistenceService, never()).persistIfDoesNotExist(retrievedTransaction3, UNVERIFIED)
@@ -207,7 +205,7 @@ class TransactionBackchainReceiverFlowV1Test {
         assertThatThrownBy { callTransactionBackchainReceiverFlow(setOf(TX_ID_1)) }
             .isExactlyInstanceOf(IllegalArgumentException::class.java)
 
-        verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestBase.Get(setOf(TX_ID_1)))
+        verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_1)))
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction1, UNVERIFIED)
         verify(utxoLedgerPersistenceService, never()).persistIfDoesNotExist(retrievedTransaction2, UNVERIFIED)
         verifyNoInteractions(
@@ -287,10 +285,10 @@ class TransactionBackchainReceiverFlowV1Test {
         )
 
         session.inOrder {
-            verify().sendAndReceive(List::class.java, TransactionBackchainRequestBase.Get(setOf(transactionId3)))
-            verify().sendAndReceive(List::class.java, TransactionBackchainRequestBase.Get(setOf(transactionId4)))
-            verify().sendAndReceive(List::class.java, TransactionBackchainRequestBase.Get(setOf(transactionId1)))
-            verify().sendAndReceive(List::class.java, TransactionBackchainRequestBase.Get(setOf(transactionId2)))
+            verify().sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(transactionId3)))
+            verify().sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(transactionId4)))
+            verify().sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(transactionId1)))
+            verify().sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(transactionId2)))
             Unit
 
         }
@@ -309,7 +307,7 @@ class TransactionBackchainReceiverFlowV1Test {
     }
 
     private fun callTransactionBackchainReceiverFlow(originalTransactionsToRetrieve: Set<SecureHash>): TopologicalSort {
-        return TransactionBackchainReceiverFlowBase(
+        return TransactionBackchainReceiverFlowV1(
             setOf(SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))),
             originalTransactionsToRetrieve, session,
             TransactionBackChainResolutionVersion.V1

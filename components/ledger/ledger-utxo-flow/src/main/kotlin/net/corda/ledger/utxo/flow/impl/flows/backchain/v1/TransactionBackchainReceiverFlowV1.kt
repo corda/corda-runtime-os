@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.flow.impl.flows.backchain.base
+package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
 
 import net.corda.crypto.core.parseSecureHash
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
@@ -23,8 +23,13 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.LoggerFactory
 
+/**
+ * V2 is essentially an extension of V1, so in order to avoid huge code duplication,
+ * we kept V1 class implementing both.
+ */
+
 @CordaSystemFlow
-class TransactionBackchainReceiverFlowBase(
+class TransactionBackchainReceiverFlowV1(
     private val initialTransactionIds: Set<SecureHash>,
     private val originalTransactionsToRetrieve: Set<SecureHash>,
     private val session: FlowSession,
@@ -67,7 +72,7 @@ class TransactionBackchainReceiverFlowBase(
             @Suppress("unchecked_cast")
             val retrievedTransactions = session.sendAndReceive(
                 List::class.java,
-                TransactionBackchainRequestBase.Get(batch)
+                TransactionBackchainRequestV1.Get(batch)
             ) as List<UtxoSignedTransaction>
 
             log.trace { "Backchain resolution of $initialTransactionIds - Received content for transactions $batch" }
@@ -108,7 +113,7 @@ class TransactionBackchainReceiverFlowBase(
         }
 
         if (sortedTransactionIds.isNotEmpty()) {
-            session.send(TransactionBackchainRequestBase.Stop)
+            session.send(TransactionBackchainRequestV1.Stop)
         }
 
         utxoLedgerMetricRecorder.recordTransactionBackchainLength(sortedTransactionIds.size)
@@ -140,7 +145,7 @@ class TransactionBackchainReceiverFlowBase(
         }
         val retrievedSignedGroupParameters = session.sendAndReceive(
             SignedGroupParameters::class.java,
-            TransactionBackchainRequestBase.GetSignedGroupParameters(groupParametersHash)
+            TransactionBackchainRequestV1.GetSignedGroupParameters(groupParametersHash)
         )
         if (retrievedSignedGroupParameters.hash != groupParametersHash) {
             val message =
@@ -180,7 +185,7 @@ class TransactionBackchainReceiverFlowBase(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as TransactionBackchainReceiverFlowBase
+        other as TransactionBackchainReceiverFlowV1
 
         if (initialTransactionIds != other.initialTransactionIds) return false
         if (originalTransactionsToRetrieve != other.originalTransactionsToRetrieve) return false

@@ -2,7 +2,7 @@ package net.corda.ledger.utxo.flow.impl.flows.backchain
 
 import net.corda.flow.application.services.VersioningService
 import net.corda.flow.application.versioning.VersionedReceiveFlowFactory
-import net.corda.ledger.utxo.flow.impl.flows.backchain.base.TransactionBackchainResolutionFlowBase
+import net.corda.ledger.utxo.flow.impl.flows.backchain.v1.TransactionBackchainResolutionFlowV1
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
@@ -54,12 +54,12 @@ class TransactionBackchainResolutionFlowVersionedFlowFactory(
 
     override fun create(version: Int, session: FlowSession): SubFlow<Unit> {
         return when {
-            version >= 50100 -> TransactionBackchainResolutionFlowBase(
+            version >= 50100 -> TransactionBackchainResolutionFlowV1(
                 initialTransactionIds,
                 session,
                 TransactionBackChainResolutionVersion.V2
             )
-            version in 1..50099 -> TransactionBackchainResolutionFlowBase(
+            version in 1..50099 -> TransactionBackchainResolutionFlowV1(
                 initialTransactionIds,
                 session,
                 TransactionBackChainResolutionVersion.V1
