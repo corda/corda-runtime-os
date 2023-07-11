@@ -5,6 +5,8 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
+import net.corda.ledger.utxo.flow.impl.flows.finality.INITIAL_TRANSACTION
+import net.corda.ledger.utxo.flow.impl.flows.finality.NUMBER_OF_COUNTER_PARTIES
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.flows.finality.v1.FinalityNotarizationFailureType.Companion.toFinalityNotarizationFailureType
@@ -33,10 +35,11 @@ class UtxoReceiveFinalityFlowV1(
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(UtxoReceiveFinalityFlowV1::class.java)
+        private const val NUMBER_OF_INITIATOR = 1
     }
 
     override val log: Logger = UtxoReceiveFinalityFlowV1.log
-    private var numberOfParties = 1
+    private var numberOfParties = 0
 
     @CordaInject
     lateinit var currentGroupParametersService: CurrentGroupParametersService
@@ -88,9 +91,9 @@ class UtxoReceiveFinalityFlowV1(
 
     @Suspendable
     private fun receiveTransactionAndBackchain(): UtxoSignedTransactionInternal {
-        val payload = session.receive(Map::class.java) as Map<String, *>
-        val initialTransaction = payload["initialTransaction"] as UtxoSignedTransactionInternal
-        numberOfParties += payload["numberOfParties"] as Int
+        val payload = session.receive(Map::class.java)
+        val initialTransaction = payload[INITIAL_TRANSACTION] as UtxoSignedTransactionInternal
+        numberOfParties = NUMBER_OF_INITIATOR + payload[NUMBER_OF_COUNTER_PARTIES] as Int
 
         if (log.isDebugEnabled) {
             log.debug( "Beginning receive finality for transaction: ${initialTransaction.id}")

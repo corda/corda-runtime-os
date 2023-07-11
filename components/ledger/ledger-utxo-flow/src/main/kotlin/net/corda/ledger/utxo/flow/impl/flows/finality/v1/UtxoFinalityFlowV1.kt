@@ -6,6 +6,8 @@ import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesExce
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
+import net.corda.ledger.utxo.flow.impl.flows.finality.INITIAL_TRANSACTION
+import net.corda.ledger.utxo.flow.impl.flows.finality.NUMBER_OF_COUNTER_PARTIES
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
@@ -83,7 +85,7 @@ class UtxoFinalityFlowV1(
 
     @Suspendable
     private fun sendTransactionAndBackchainToCounterparties() {
-        flowMessaging.sendAll(mapOf("initialTransaction" to initialTransaction, "numberOfParties" to sessions.size), sessions.toSet())
+        flowMessaging.sendAll(mapOf(INITIAL_TRANSACTION to initialTransaction, NUMBER_OF_COUNTER_PARTIES to sessions.size), sessions.toSet())
         sessions.forEach {
             if (initialTransaction.dependencies.isNotEmpty()) {
                 flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction.id, it))
