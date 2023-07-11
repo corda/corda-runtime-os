@@ -44,12 +44,26 @@
         "topologySpreadConstraints": {
             "type": "array",
             "default": [],
-            "title": "topology spread constraints"
+            "title": "topology spread constraints",
+            "additionalProperties": {
+                "type": [
+                    "string",
+                    "object",
+                    "list"
+                ]
+            }
         },
         "affinity": {
             "type": "object",
             "default": {},
-            "title": "affinity for pod assignment"
+            "title": "affinity for pod assignment",
+            "additionalProperties": {
+                "type": [
+                    "string",
+                    "object",
+                    "list"
+                ]
+            }
         },
         "commonLabels": {
             "type": "object",
