@@ -4,7 +4,7 @@
 # -- override chart fullname
 fullnameOverride: ""
 
-# Affinity for pod assignment
+# -- affinity for pod assignment
 affinity: {}
 
 # Topology Spread Constraints
