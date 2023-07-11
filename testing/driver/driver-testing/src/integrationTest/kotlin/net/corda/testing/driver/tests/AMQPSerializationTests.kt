@@ -2,7 +2,7 @@ package net.corda.testing.driver.tests
 
 import com.r3.corda.testing.smoketests.flow.AmqpSerializationTestFlow
 import java.util.concurrent.TimeUnit.MINUTES
-import net.corda.testing.driver.AllTestsDriver
+import net.corda.testing.driver.DriverNodes
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
@@ -25,7 +25,7 @@ class AMQPSerializationTests {
     private val virtualNodes = mutableSetOf<VirtualNodeInfo>()
 
     @RegisterExtension
-    private val driver = AllTestsDriver(alice)
+    private val driver = DriverNodes(alice).forAllTests()
 
     @BeforeAll
     fun start() {

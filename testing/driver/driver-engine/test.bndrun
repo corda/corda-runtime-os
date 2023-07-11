@@ -11,9 +11,14 @@
 -runsystemcapabilities: \
     osgi.service;objectClass:List<String>='net.corda.lifecycle.LifecycleCoordinatorFactory';effective:=active
 
+# Identify all bundles which contain system flows.
+systemFlows = ${findproviders;corda.system;(corda.system=flow)}
+
 -runrequires: \
     bnd.identity;id='net.corda.driver-engine',\
-    bnd.identity;id='net.corda.ledger-consensual-flow',\
+    ${template;systemFlows;bnd.identity;id='${@}'},\
+    bnd.identity;id='net.corda.notary-worker-selection-impl',\
+    bnd.identity;id='net.corda.uniqueness-checker-client-service-impl',\
     bnd.identity;id='slf4j.simple'
 
 -runstartlevel: \

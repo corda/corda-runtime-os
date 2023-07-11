@@ -10,7 +10,7 @@ import com.r3.corda.demo.consensual.FindTransactionResponse
 import com.r3.corda.demo.consensual.TestConsensualStateResult
 import java.util.concurrent.TimeUnit.MINUTES
 import net.corda.crypto.core.parseSecureHash
-import net.corda.testing.driver.AllTestsDriver
+import net.corda.testing.driver.DriverNodes
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
@@ -50,7 +50,7 @@ class ConsensualLedgerTests {
     }
 
     @RegisterExtension
-    private val driver = AllTestsDriver(alice, bob, charlie)
+    private val driver = DriverNodes(alice, bob, charlie).forAllTests()
 
     @BeforeAll
     fun start() {

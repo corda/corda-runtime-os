@@ -1,4 +1,4 @@
-package net.corda.testing.driver.crypto
+package net.corda.testing.driver.processor.crypto
 
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.crypto.persistence.WrappingKeyInfo

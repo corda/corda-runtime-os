@@ -5,7 +5,7 @@ import com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow
 import com.r3.corda.testing.smoketests.flow.messages.RpcSmokeTestInput
 import java.util.UUID
 import java.util.concurrent.TimeUnit.MINUTES
-import net.corda.testing.driver.AllTestsDriver
+import net.corda.testing.driver.DriverNodes
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
@@ -30,7 +30,7 @@ class FlowTests {
     private val jsonMapper = ObjectMapper()
 
     @RegisterExtension
-    private val driver = AllTestsDriver(alice, bob)
+    private val driver = DriverNodes(alice, bob).forAllTests()
 
     private lateinit var aliceCorDapp: VirtualNodeInfo
 

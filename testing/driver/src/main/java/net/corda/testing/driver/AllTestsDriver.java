@@ -1,28 +1,22 @@
 package net.corda.testing.driver;
 
+import java.security.KeyPair;
+import java.util.Map;
 import java.util.Set;
+import net.corda.data.KeyValuePair;
 import net.corda.v5.base.types.MemberX500Name;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-@SuppressWarnings("unused")
 public final class AllTestsDriver extends AbstractDriver implements BeforeAllCallback, AfterAllCallback {
-    public AllTestsDriver(@NotNull String schemeName, @NotNull Set<MemberX500Name> members) {
-        super(schemeName, members);
-    }
-
-    public AllTestsDriver(@NotNull String schemeName, @NotNull MemberX500Name member, MemberX500Name... members) {
-        this(schemeName, setOf(member, members));
-    }
-
-    public AllTestsDriver(@NotNull Set<MemberX500Name> members) {
-        this(DEFAULT_SCHEME_NAME, members);
-    }
-
-    public AllTestsDriver(@NotNull MemberX500Name member, MemberX500Name... members) {
-        this(setOf(member, members));
+    AllTestsDriver(
+        @NotNull Map<MemberX500Name, KeyPair> members,
+        @NotNull Map<MemberX500Name, KeyPair> notaries,
+        @NotNull Set<KeyValuePair> groupParameters
+    ) {
+        super(members, notaries, groupParameters);
     }
 
     @Override

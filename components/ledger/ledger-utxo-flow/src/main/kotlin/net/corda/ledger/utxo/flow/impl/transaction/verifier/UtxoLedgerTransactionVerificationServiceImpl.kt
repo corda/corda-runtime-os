@@ -77,11 +77,11 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
 
     @Suspendable
     override fun initialVerify(transaction: UtxoLedgerTransaction) {
-        verifyCurrenGroupParametersUsed(transaction)
+        verifyCurrentGroupParametersUsed(transaction)
         verify(transaction)
     }
 
-    private fun verifyCurrenGroupParametersUsed(transaction: UtxoLedgerTransaction){
+    private fun verifyCurrentGroupParametersUsed(transaction: UtxoLedgerTransaction){
         check(
             transaction.getMembershipGroupParametersHash() ==
                     currentGroupParametersService.get().hash.toString()

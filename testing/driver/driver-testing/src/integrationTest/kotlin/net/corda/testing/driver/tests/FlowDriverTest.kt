@@ -5,7 +5,7 @@ import com.r3.corda.demo.mandelbrot.CalculateBlockFlow
 import com.r3.corda.demo.mandelbrot.RequestMessage
 import java.util.concurrent.TimeUnit.MINUTES
 import java.util.stream.Stream
-import net.corda.testing.driver.AllTestsDriver
+import net.corda.testing.driver.DriverNodes
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
@@ -34,12 +34,12 @@ class FlowDriverTest {
     private val jsonMapper = ObjectMapper()
 
     @RegisterExtension
-    private val driver = AllTestsDriver(alice, bob)
+    private val driver = DriverNodes(alice, bob).forAllTests()
 
     @BeforeAll
     fun start() {
         // Ensure that we use the corda-driver bundle rather than a directory of its classes.
-        assertThat(AllTestsDriver::class.java.protectionDomain.codeSource.location.path).endsWith(".jar")
+        assertThat(DriverNodes::class.java.protectionDomain.codeSource.location.path).endsWith(".jar")
 
         driver.run { dsl ->
             virtualNodes += dsl.startNode(setOf(alice, bob)).onEach { vNode ->

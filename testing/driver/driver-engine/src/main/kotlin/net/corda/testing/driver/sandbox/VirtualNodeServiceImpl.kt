@@ -17,9 +17,11 @@ import org.osgi.service.component.annotations.ConfigurationPolicy.REQUIRE
 import org.osgi.service.component.annotations.Reference
 
 interface VirtualNodeService {
-    fun loadVirtualNodes(resourceName: String): Set<VirtualNodeInfo>
+    fun loadVirtualNode(name: MemberX500Name, resourceName: String): VirtualNodeInfo
     fun releaseVirtualNode(virtualNodeContext: VirtualNodeContext): CompletableFuture<*>?
     fun unloadVirtualNode(completion: CompletableFuture<*>)
+
+    fun loadSystemNodes(names: Set<MemberX500Name>, resourceName: String): List<VirtualNodeInfo>
 
     fun getLocalMembers(): Set<MemberX500Name>
 }
@@ -73,10 +75,12 @@ class VirtualNodeServiceImpl @Activate constructor(
         return localMemberNames
     }
 
-    override fun loadVirtualNodes(resourceName: String): Set<VirtualNodeInfo> {
-        return getLocalMembers().mapTo(linkedSetOf()) { memberName ->
-            virtualNodeLoader.loadVirtualNode(resourceName, generateHoldingIdentity(memberName, resourceName))
-        }
+    override fun loadSystemNodes(names: Set<MemberX500Name>, resourceName: String): List<VirtualNodeInfo> {
+        return virtualNodeLoader.loadSystemNode(resourceName, names)
+    }
+
+    override fun loadVirtualNode(name: MemberX500Name, resourceName: String): VirtualNodeInfo {
+        return virtualNodeLoader.loadVirtualNode(resourceName, generateHoldingIdentity(name, resourceName))
     }
 
     override fun releaseVirtualNode(virtualNodeContext: VirtualNodeContext): CompletableFuture<*>? {

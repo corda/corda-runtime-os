@@ -14,9 +14,9 @@ class SignedGroupParametersImpl(
     private val deserializer: (serialisedParams: ByteArray) -> LayeredPropertyMap
 ) : SignedGroupParameters, InternalGroupParameters by UnsignedGroupParametersImpl(groupParameters, deserializer) {
     override fun equals(other: Any?): Boolean {
-        if (other == null || other !is SignedGroupParametersImpl) return false
         if (this === other) return true
-        return groupParameters.contentEquals(other.groupParameters) &&
+        return (other is SignedGroupParametersImpl) &&
+                groupParameters.contentEquals(other.groupParameters) &&
                 mgmSignature == other.mgmSignature &&
                 mgmSignatureSpec == other.mgmSignatureSpec
     }

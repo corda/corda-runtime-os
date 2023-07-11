@@ -3,6 +3,7 @@ package net.corda.testing.driver.impl
 
 import aQute.bnd.header.OSGiHeader
 import java.io.IOException
+import java.net.URI
 import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Path
@@ -19,7 +20,9 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.jar.JarFile.MANIFEST_NAME
 import java.util.jar.Manifest
+import net.corda.data.KeyValuePair
 import net.corda.libs.packaging.PackagingConstants.CPB_FORMAT_ATTRIBUTE
+import net.corda.libs.packaging.PackagingConstants.CPB_NAME_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPK_FORMAT_ATTRIBUTE
 import net.corda.testing.driver.Framework
 import net.corda.testing.driver.Service
@@ -48,7 +51,11 @@ import org.osgi.framework.wiring.FrameworkWiring
 import org.slf4j.LoggerFactory
 import org.slf4j.bridge.SLF4JBridgeHandler
 
-internal class DriverDSLImpl(private val network: Map<MemberX500Name, KeyPair>) : DriverInternalDSL, AutoCloseable {
+internal class DriverDSLImpl(
+    private val members: Map<MemberX500Name, KeyPair>,
+    private val notaries: Map<MemberX500Name, KeyPair>,
+    private val groupParameters: Set<KeyValuePair>
+) : DriverInternalDSL, AutoCloseable {
     private companion object {
         private const val CORDA_API_ATTRIBUTE = "Corda-Api"
         private const val JAR_PROTOCOL = "jar"
@@ -113,19 +120,24 @@ internal class DriverDSLImpl(private val network: Map<MemberX500Name, KeyPair>) 
             "osgi.annotation",
             "osgi.core"
         )
+        private val notaryPluginNames = setOf(
+            "notary-plugin-non-validating-server"
+        )
         private val shutdownCounter = AtomicInteger()
         private val logger = LoggerFactory.getLogger(DriverDSLImpl::class.java)
-        private val cordaBundles: Map<URL, Manifest>
+        private val cordaBundles: Map<URI, Manifest>
         private val systemPackagesExtra: String
-        private val testCPBs: Set<URL>
+        private val notaryCPBs: Set<URI>
+        private val testCPBs: Set<URI>
 
         init {
             SLF4JBridgeHandler.removeHandlersForRootLogger()
             SLF4JBridgeHandler.install()
 
             val systemPackages = linkedSetOf<String>()
-            val bundles = mutableMapOf<URL, Manifest>()
-            val cpbs = linkedSetOf<URL>()
+            val bundles = mutableMapOf<URI, Manifest>()
+            val notaryPlugins = linkedSetOf<URI>()
+            val cpbs = linkedSetOf<URI>()
 
             this::class.java.classLoader.getResources(MANIFEST_NAME).asSequence()
                 .filter { url ->
@@ -137,8 +149,13 @@ internal class DriverDSLImpl(private val network: Map<MemberX500Name, KeyPair>) 
                         if (mainAttributes.getValue(CPK_FORMAT_ATTRIBUTE) != null) {
                             return@forEach
                         } else if (mainAttributes.getValue(CPB_FORMAT_ATTRIBUTE) != null) {
-                            val cpb = url.fileURL
-                            if (cpbs.add(cpb)) {
+                            val cpbName = mainAttributes.getValue(CPB_NAME_ATTRIBUTE) ?: ""
+                            val cpb = url.fileURI
+                            if (cpbName in notaryPluginNames) {
+                                if (notaryPlugins.add(cpb)) {
+                                    logger.info("Found Notary plugin: {}", cpb)
+                                }
+                            } else if (cpbs.add(cpb)) {
                                 logger.info("Found CPB: {}", cpb)
                             }
                             return@forEach
@@ -149,7 +166,7 @@ internal class DriverDSLImpl(private val network: Map<MemberX500Name, KeyPair>) 
                         if (((cordaApi != null) && bsn.startsWith("net.corda.")) || bsn in systemBundleNames) {
                             systemPackages += getPackageEntries(mainAttributes.getValue(EXPORT_PACKAGE))
                         } else if (acceptBundle(bsn)) {
-                            bundles[url.fileURL] = mf
+                            bundles[url.fileURI] = mf
                         }
                     } catch (e: IOException) {
                         logger.warn("Failed to read resource $url", e)
@@ -157,6 +174,7 @@ internal class DriverDSLImpl(private val network: Map<MemberX500Name, KeyPair>) 
                 }
             systemPackagesExtra = systemPackages.joinToString(separator = ",")
             cordaBundles = unmodifiableMap(bundles)
+            notaryCPBs = unmodifiableSet(notaryPlugins)
             testCPBs = unmodifiableSet(cpbs)
         }
 
@@ -194,8 +212,8 @@ internal class DriverDSLImpl(private val network: Map<MemberX500Name, KeyPair>) 
         fun start(memberNames: Set<MemberX500Name>): List<VirtualNodeInfo> {
             framework.start()
             try {
-                val bundles = cordaBundles.keys.map { url ->
-                    framework.bundleContext.installBundle(url.toString(), url.openStream())
+                val bundles = cordaBundles.keys.map { uri ->
+                    framework.bundleContext.installBundle(uri.toString(), uri.toURL().openStream())
                 }
 
                 if (!framework.adapt(FrameworkWiring::class.java).resolveBundles(null)) {
@@ -286,8 +304,11 @@ internal class DriverDSLImpl(private val network: Map<MemberX500Name, KeyPair>) 
             val vNodes = mutableListOf<VirtualNodeInfo>()
 
             getService(EmbeddedNodeService::class.java, null, Duration.ZERO).andAlso { ens ->
+                val network = members + notaries
+                val localNames = memberNames + notaries.keys
+                ens.setGroupParameters(groupParameters)
                 ens.setMembershipGroup(network.mapValues { it.value.public })
-                ens.setLocalIdentities(memberNames, network.filterKeys(memberNames::contains))
+                ens.setLocalIdentities(localNames, network.filterKeys(localNames::contains))
                 ens.configure(frameworkDirectory, TIMEOUT)
 
                 // Show every service registered inside this framework.
@@ -299,8 +320,12 @@ internal class DriverDSLImpl(private val network: Map<MemberX500Name, KeyPair>) 
                 }
 
                 for (testCPB in testCPBs) {
-                    logger.info("Uploading CPB: {}", Path.of(testCPB.toURI()).fileName)
-                    vNodes += ens.loadVirtualNodes(testCPB).map(net.corda.data.virtualnode.VirtualNodeInfo::toCorda)
+                    logger.info("Uploading CPB: {}", Path.of(testCPB).fileName)
+                    vNodes += ens.loadVirtualNodes(memberNames, testCPB).map(net.corda.data.virtualnode.VirtualNodeInfo::toCorda)
+                }
+
+                if (notaries.isNotEmpty()) {
+                    ens.loadSystemCpi(notaries.keys, notaryCPBs.single())
                 }
 
                 // Broadcast our (tenantId, MemberX500Name) associations to anyone listening.
@@ -405,10 +430,10 @@ private class ServiceImpl<T : Any>(
 private val Bundle.isFragment: Boolean
     get() = (adapt(BundleRevision::class.java).types and TYPE_FRAGMENT) != 0
 
-private val URL.fileURL: URL
+private val URL.fileURI: URI
     get() {
         val idx = path.indexOf("!/")
-        return URL(if (idx >= 0) {
+        return URI(if (idx >= 0) {
             path.substring(0, idx)
         } else {
             path
