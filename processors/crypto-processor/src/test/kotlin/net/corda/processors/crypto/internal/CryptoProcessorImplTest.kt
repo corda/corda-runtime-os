@@ -136,7 +136,6 @@ class CryptoProcessorImplTest {
             LifecycleTest {
                 addDependency<LifecycleCoordinatorFactory>()
                 addDependency<ConfigurationReadService>()
-                addDependency<CryptoServiceFactory>()
                 addDependency<TenantInfoService>()
                 addDependency<JpaEntitiesRegistry>()
                 addDependency<DbConnectionManager>()
