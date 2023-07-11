@@ -15,9 +15,10 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.impl.registration.dynamic.handler.TestUtils.mockMemberInfo
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.VersionedMessageBuilder
-import net.corda.membership.read.MembershipGroupReader
-import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.DECLINE_REGISTRATION
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
@@ -47,7 +48,7 @@ class DeclineRegistrationHandlerTest {
 
     private val mgm = createTestHoldingIdentity("C=GB, L=London, O=MGM", GROUP_ID).toAvro()
     private val member = createTestHoldingIdentity("C=GB, L=London, O=Alice", GROUP_ID).toAvro()
-    private val memberInfo = mockMemberInfo(member.toCorda())
+    private val memberInfo = mockMemberInfo(holdingIdentity = member.toCorda(), status = MEMBER_STATUS_PENDING)
     private val command = DeclineRegistration()
     private val state = RegistrationState(
         REGISTRATION_ID,
@@ -94,15 +95,12 @@ class DeclineRegistrationHandlerTest {
             )
         } doReturn record
     }
-    private val groupReader = mock<MembershipGroupReader> {
-        on { lookup(member.toCorda().x500Name, MembershipStatusFilter.PENDING) } doReturn memberInfo
-    }
-    private val groupReaderProvider = mock<MembershipGroupReaderProvider> {
-        on { getGroupReader(mgm.toCorda()) } doReturn groupReader
+    private val membershipQueryClient = mock<MembershipQueryClient> {
+        on { queryMemberInfo(eq(mgm.toCorda()), eq(listOf(member.toCorda()))) } doReturn MembershipQueryResult.Success(listOf(memberInfo))
     }
 
     private val handler = DeclineRegistrationHandler(
-        membershipPersistenceClient, mock(), mock(), mock(), config, groupReaderProvider, p2pRecordsFactory
+        membershipPersistenceClient, membershipQueryClient, mock(), mock(), mock(), config, p2pRecordsFactory
     )
 
     @Test
@@ -166,10 +164,12 @@ class DeclineRegistrationHandlerTest {
     }
 
     @Test
-    fun `exception is thrown when member's information cannot be found`() {
-        whenever(groupReader.lookup(member.toCorda().x500Name, MembershipStatusFilter.PENDING)) doReturn null
-        assertThrows<MissingRegistrationStateException> {
-            handler.invoke(null, Record(TOPIC, member.toString(), RegistrationCommand(command)))
-        }
+    fun `update registration status message is not sent when member's pending information cannot be found`() {
+        val activeInfo = mockMemberInfo(holdingIdentity = member.toCorda())
+        whenever(membershipQueryClient.queryMemberInfo(any(), any()))
+            .thenReturn(MembershipQueryResult.Success(listOf(activeInfo)))
+        handler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
+        verify(p2pRecordsFactory, never())
+            .createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
     }
 }
