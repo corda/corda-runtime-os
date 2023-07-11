@@ -5,6 +5,7 @@ import net.corda.rest.annotations.HttpDELETE
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpPUT
+import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.HttpWS
 import net.corda.rest.annotations.RestApiVersion
@@ -68,6 +69,8 @@ internal val Method.restApiVersions: MinMaxRestApiVersions
     } else {
         throw IllegalArgumentException("Annotation is missing and not statically exposed")
     }
+
+internal val HttpRestResource.versions get() = MinMaxRestApiVersions(this.minVersion, this.maxVersion)
 
 private val Method.staticExposedEndpointType: EndpointType
     get() = if (isStaticallyExposedGet()) EndpointType.GET
