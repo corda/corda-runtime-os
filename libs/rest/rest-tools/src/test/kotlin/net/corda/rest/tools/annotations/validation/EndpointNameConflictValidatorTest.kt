@@ -11,6 +11,7 @@ import net.corda.rest.tools.annotations.validation.utils.EndpointType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import kotlin.reflect.jvm.javaGetter
 import kotlin.reflect.jvm.javaMethod
 
 class EndpointNameConflictValidatorTest {
@@ -48,7 +49,8 @@ class EndpointNameConflictValidatorTest {
 
         val result = EndpointNameConflictValidator(TestInterface::class.java).validate()
 
-        assertEquals(listOf(error("/test", EndpointType.GET, TestInterface::test2.javaMethod!!)), result.errors)
+        val expectedError = error("/test", EndpointType.GET, TestInterface::test2.javaMethod!!, TestInterface::test.javaMethod!!)
+        assertEquals(listOf(expectedError), result.errors)
     }
 
     @Test
@@ -66,7 +68,8 @@ class EndpointNameConflictValidatorTest {
 
         val result = EndpointNameConflictValidator(TestInterface::class.java).validate()
 
-        assertEquals(listOf(error("/test", EndpointType.GET, TestInterface::test2.javaMethod!!)), result.errors)
+        val expectedError = error("/test", EndpointType.GET, TestInterface::test2.javaMethod!!, TestInterface::test.javaMethod!!)
+        assertEquals(listOf(expectedError), result.errors)
     }
 
     @Test
@@ -84,7 +87,8 @@ class EndpointNameConflictValidatorTest {
 
         val result = EndpointNameConflictValidator(TestInterface::class.java).validate()
 
-        assertEquals(listOf(error("/test", EndpointType.GET, TestInterface::test2.javaMethod!!)), result.errors)
+        val expectedError = error("/test", EndpointType.GET, TestInterface::test2.javaMethod!!, TestInterface::test.javaMethod!!)
+        assertEquals(listOf(expectedError), result.errors)
     }
 
     @Test
@@ -102,7 +106,7 @@ class EndpointNameConflictValidatorTest {
 
         val result = EndpointNameConflictValidator(TestInterface::class.java).validate()
 
-        assertEquals(0, result.errors.size)
+        assertEquals(emptyList<String>(), result.errors)
     }
 
     @Test
@@ -142,7 +146,8 @@ class EndpointNameConflictValidatorTest {
         val result = EndpointNameConflictValidator(TestInterface::class.java).validate()
 
         assertThat(result.errors).hasSize(2).allMatch { error ->
-            error == error("test", EndpointType.GET, TestInterface::class.java.methods.first { it.name == "test" }) }
+            error == error("test", EndpointType.GET, TestInterface::class.java.methods.first { it.name == "test" },
+                TestInterface::class.java.methods.last { it.name == "test" })}
     }
 
     @Test
@@ -159,7 +164,7 @@ class EndpointNameConflictValidatorTest {
 
         val result = RestInterfaceValidator.validate(TestInterface::class.java)
 
-        assertThat(result.errors).hasSize(1).contains(error("null", EndpointType.GET, TestInterface::test2.javaMethod!!))
+        assertThat(result.errors).hasSize(1).contains(error("null", EndpointType.GET, TestInterface::test2.javaMethod!!, TestInterface::test.javaMethod!!))
     }
 
     @Test
@@ -186,9 +191,9 @@ class EndpointNameConflictValidatorTest {
         val result = RestInterfaceValidator.validate(TestInterface::class.java)
 
         assertThat(result.errors).hasSize(3).contains(
-            error("test", EndpointType.GET, TestInterface::test2.javaMethod!!),
-            error("test", EndpointType.GET, TestInterface::test3.javaMethod!!),
-            error("test", EndpointType.GET, TestInterface::test4.javaMethod!!)
+            error("test", EndpointType.GET, TestInterface::test2.javaMethod!!, TestInterface::teSt.javaMethod!!),
+            error("test", EndpointType.GET, TestInterface::test3.javaMethod!!, TestInterface::teSt.javaMethod!!),
+            error("test", EndpointType.GET, TestInterface::test4.javaMethod!!, TestInterface::teSt.javaMethod!!)
         )
     }
 
@@ -208,7 +213,7 @@ class EndpointNameConflictValidatorTest {
         val result = RestInterfaceValidator.validate(TestInterface::class.java)
 
         assertThat(result.errors).hasSize(1).contains(error("getprotocolversion", EndpointType.GET,
-            TestInterface::test.javaMethod!!))
+            TestInterface::test.javaMethod!!, RestResource::protocolVersion.javaGetter!!))
     }
 
     @Test
@@ -236,7 +241,7 @@ class EndpointNameConflictValidatorTest {
 
         assertThat(result.errors).hasSize(2).
             contains(
-                error("null", EndpointType.GET, TestInterface::test2.javaMethod!!),
-                error("null", EndpointType.POST, TestInterface::test4.javaMethod!!))
+                error("null", EndpointType.GET, TestInterface::test2.javaMethod!!, TestInterface::test.javaMethod!!),
+                error("null", EndpointType.POST, TestInterface::test4.javaMethod!!, TestInterface::test3.javaMethod!!))
     }
 }

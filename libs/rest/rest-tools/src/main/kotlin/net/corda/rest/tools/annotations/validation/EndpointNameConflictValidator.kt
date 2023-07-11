@@ -17,22 +17,23 @@ import java.lang.reflect.Method
 internal class EndpointNameConflictValidator(private val clazz: Class<out RestResource>) : RestValidator {
 
     companion object {
-        fun error(path: String?, type: EndpointType, method: Method): String =
+        fun error(path: String?, type: EndpointType, method: Method, conflictingMethod: Method): String =
             "Duplicate endpoint path '$path' with $type HTTP method for version range (${method.restApiVersions.minVersion} -> " +
-                    "${method.restApiVersions.maxVersion}) in '${method.declaringClass.simpleName}.${method.name}'."
+                    "${method.restApiVersions.maxVersion}) in '${method.declaringClass.simpleName}.${method.name}'." +
+                    "Conflicting method: '${conflictingMethod.declaringClass.simpleName}.${conflictingMethod.name}'"
     }
 
     override fun validate(): RestValidationResult = validateSameTypeEndpoints(clazz.endpoints)
 
     private fun validateSameTypeEndpoints(endpoints: List<Method>): RestValidationResult {
-        val pathsToTypesAndVersions = mutableSetOf<Triple<String?, EndpointType, RestApiVersion>>()
+        val pathsToTypesAndVersions = mutableMapOf<Triple<String?, EndpointType, RestApiVersion>, Method>()
         return endpoints.fold(RestValidationResult()) { total, method ->
             val endpointType = method.endpointType
             total + pathsToTypesAndVersions.validateNoDuplicatePath(method, endpointType)
         }
     }
 
-    private fun MutableSet<Triple<String?, EndpointType, RestApiVersion>>.validateNoDuplicatePath(
+    private fun MutableMap<Triple<String?, EndpointType, RestApiVersion>, Method>.validateNoDuplicatePath(
         method: Method,
         type: EndpointType
     ): RestValidationResult {
@@ -41,8 +42,11 @@ internal class EndpointNameConflictValidator(private val clazz: Class<out RestRe
 
         newVersions.forEach {
             val version = Triple(path, type, it)
-            if (!this.add(version)) {
-                return RestValidationResult(listOf(error(path, type, method)))
+            if (this.keys.contains(version)) {
+                val existingMethod = this.getValue(version)
+                return RestValidationResult(listOf(error(path, type, method, existingMethod)))
+            } else {
+                this[version] = method
             }
         }
 
