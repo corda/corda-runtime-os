@@ -196,7 +196,7 @@ class CryptoProcessorImpl @Activate constructor(
             }
             is ConfigChangedEvent -> {
                 startCryptoService(event.config.getConfig(CRYPTO_CONFIG))
-                startHSMService()
+                startTenantInfoService()
                 startBusProcessors(event, coordinator)
                 setStatus(LifecycleStatus.UP, coordinator)
             }
@@ -264,7 +264,7 @@ class CryptoProcessorImpl @Activate constructor(
         )
     }
 
-    private fun startHSMService() {
+    private fun startTenantInfoService() {
         tenantInfoService = TenantInfoServiceImpl(dbConnectionManager, jpaEntitiesRegistry, virtualNodeInfoReadService, cryptoService)
         CryptoConsts.Categories.all.forEach { category ->
             CryptoTenants.allClusterTenants.forEach { tenantId ->
