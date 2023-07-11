@@ -256,7 +256,9 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             return true
         }
 
-        log.info("Sending events from group ${config.group} [ $outputRecords ]")
+        if (config.group.contains("FlowEventConsumer")) {
+            log.info("Sending events from group ${config.group} [ $outputRecords ]")
+        }
         commitTimer.recordCallable {
             producer.beginTransaction()
             producer.sendRecords(outputRecords.toCordaProducerRecords())
@@ -273,7 +275,9 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             producer.sendRecordOffsetsToTransaction(eventConsumer, events)
             producer.commitTransaction()
         }
-        log.info ("Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size}) complete." )
+        if (config.group.contains("FlowEventConsumer")) {
+            log.info ("Sent events complete." )
+        }
 
         stateAndEventConsumer.updateInMemoryStatePostCommit(updatedStates, clock)
         return false
@@ -285,7 +289,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         updatedStates: MutableMap<Int, MutableMap<K, S?>>
     ) {
 
-        fun eventToString(eventPayload: Any?): String {
+/*        fun eventToString(eventPayload: Any?): String {
             val eventType = eventPayload?.javaClass?.simpleName
             val payload = when (eventPayload) {
                 is FlowEvent -> eventPayload.payload
@@ -299,10 +303,10 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 eventSubtype += "." + payload.payload.javaClass.simpleName + "." + payload.sessionId
             }
             return "$eventType$eventSubtype"
-        }
+        }*/
 
         log.debug { "Processing event: $event" }
-        log.info("Processing event [${event.key}] [${eventToString(event.value)}]")
+       // log.info("Processing event [${event.key}] [${eventToString(event.value)}]")
 
         val key = event.key
         val state = updatedStates[event.partition]?.get(event.key)
@@ -349,13 +353,13 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 }
 
                 log.debug { "Completed event: $event" }
-                val payload = event.value
+             /*   val payload = event.value
                 if (payload is FlowEvent || payload is FlowMapperEvent) {
                     val outEvents = thisEventUpdates.responseEvents.map { record ->
                         eventToString(record.value)
                     }
                     log.info("Output events for [${event.key}] [$outEvents]")
-                }
+                }*/
             }
         }
     }

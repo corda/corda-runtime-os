@@ -55,7 +55,8 @@ class SendReceiveAllMessagingFlow(
         flowMessaging.sendAll(MyClass("Serialize me please", 3), setOf(sessionOne, sessionTwo))
 
         //additional send via session to help verify init isn't sent again
-        sessionOne.send(MyClass("Serialize me please", 4))
+        val largeString = getLargeString(1100)
+        sessionOne.send(MyClass(largeString, 4))
         sessionTwo.send(MyClass("Serialize me please", 5))
 
         log.info("Sent data to two sessions")
@@ -87,6 +88,27 @@ class SendReceiveAllMessagingFlow(
         sessionTwo.receive(MyClass::class.java).let {
             receivedNumSum+=it.int
         }
+
+        log.info("sending  session1 4")
+        sessionOne.send(MyClass("Serialize me please", 4))
+        log.info("sending  session2 4")
+        sessionTwo.send(MyClass("Serialize me please", 4))
+
+        log.info("sending  session1 5")
+        sessionOne.send(MyClass("Serialize me please", 5))
+        log.info("sending  session2 5")
+        sessionTwo.send(MyClass("Serialize me please", 5))
+
+        log.info("sending  session1 6")
+        sessionOne.send(MyClass("Serialize me please", 6))
+        log.info("sending  session2 6")
+        sessionTwo.send(MyClass("Serialize me please", 6))
+
+        log.info("sending  session1 7")
+        sessionOne.send(MyClass("Serialize me please", 7))
+        log.info("sending  session2 7")
+        sessionTwo.send(MyClass("Serialize me please", 7))
+
 
         log.info("Closing session1")
         sessionOne.close()
@@ -142,6 +164,15 @@ class SendReceiveAllInitiatedFlow : ResponderFlow {
         //this string is so large it activates chunking so do not log it
         log.info("Receive from send from peer. Message size: ${received3.string.length}")
         session.send(received3.copy(string = "this is a new object 3"))
+        log.info("receiving 4")
+        session.receive(MyClass::class.java)
+        log.info("receiving 5")
+        session.receive(MyClass::class.java)
+        log.info("receiving 6")
+        session.receive(MyClass::class.java)
+        log.info("receiving 7")
+        session.receive(MyClass::class.java)
+
         log.info("Closing session")
 
         session.close()

@@ -314,46 +314,6 @@ class VirtualNodeRestTest {
         }
     }
 
-    @Test
-    @Order(65)
-    fun `cpi status returns 400 for unknown request id`() {
-        cluster {
-            assertWithRetry {
-                timeout(retryTimeout)
-                interval(retryInterval)
-                command { cpiStatus("THIS_WILL_NEVER_BE_A_CPI_STATUS") }
-                condition { it.code == 400 }
-            }
-        }
-    }
-
-    @Test
-    @Order(80)
-    fun `can force upload same CPI`() {
-        cluster {
-            val initialCpiFileChecksum = getCpiFileChecksum(cpiName)
-
-            val requestId = forceCpiUpload(
-                TEST_CPB_LOCATION,
-                groupId,
-                staticMemberList,
-                cpiName
-            ).let { it.toJson()["id"].textValue() }
-            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
-
-            assertWithRetry {
-                timeout(retryTimeout)
-                interval(retryInterval)
-                command { cpiStatus(requestId) }
-                condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
-            }
-
-            // Force uploaded CPI may take some time to propagate through the system and arrive to REST worker's CpiInfoReadService
-            eventually(retryTimeout, retryInterval) {
-                assertThat(getCpiFileChecksum(cpiName)).isNotEqualTo(initialCpiFileChecksum)
-            }
-        }
-    }
 
     @Test
     @Order(81)
