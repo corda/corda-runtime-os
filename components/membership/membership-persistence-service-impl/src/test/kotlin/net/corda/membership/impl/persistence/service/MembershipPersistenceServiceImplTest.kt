@@ -142,7 +142,7 @@ class MembershipPersistenceServiceImplTest {
             mock(),
             mock(),
         )
-        verify(coordinatorFactory).createCoordinator(any(), any())
+        verify(coordinatorFactory, times(2)).createCoordinator(any(), any())
     }
 
     @Test
