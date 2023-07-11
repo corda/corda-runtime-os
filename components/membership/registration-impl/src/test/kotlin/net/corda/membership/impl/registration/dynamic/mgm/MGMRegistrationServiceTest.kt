@@ -271,7 +271,7 @@ class MGMRegistrationServiceTest {
         "corda.session.keys.0.id" to SESSION_KEY_ID,
         "corda.ecdh.key.id" to ECDH_KEY_ID,
         "corda.group.protocol.registration"
-                to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
+                to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
         "corda.group.protocol.synchronisation"
                 to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
         "corda.group.protocol.p2p.mode" to "AUTHENTICATION_ENCRYPTION",
@@ -418,7 +418,7 @@ class MGMRegistrationServiceTest {
                 .containsExactlyInAnyOrderElementsOf(
                     mapOf(
                         "protocol.registration"
-                                to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
+                                to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
                         "protocol.synchronisation"
                                 to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
                         "protocol.p2p.mode" to "AUTHENTICATION_ENCRYPTION",
@@ -606,6 +606,7 @@ class MGMRegistrationServiceTest {
 
             assertThat(exception).hasMessageContaining("Could not find virtual node info")
         }
+        
     }
 
     @Nested

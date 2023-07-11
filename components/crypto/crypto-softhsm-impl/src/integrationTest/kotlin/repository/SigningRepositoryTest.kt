@@ -2,7 +2,6 @@ package repository
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
-import net.corda.crypto.cipher.suite.GeneratedPublicKey
 import net.corda.crypto.cipher.suite.GeneratedWrappedKey
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
@@ -14,7 +13,6 @@ import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeyStatus
-import net.corda.crypto.persistence.SigningPublicKeySaveContext
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
@@ -54,7 +52,8 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
     private val defaultTenantId = "Memento Mori"
     private val defaultMasterKeyName = "Domination's the name of the game"
 
-    private fun createNewPubKeyInfo(): SigningKeyInfo {
+    private fun createSigningKeyInfo(): SigningKeyInfo {
+        val privKey = SecureHashUtils.randomBytes()
         val unique = UUID.randomUUID().toString()
         val key = SecureHashUtils.randomBytes()
         val keyId = publicKeyIdFromBytes(key)
@@ -65,41 +64,24 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             tenantId = "t-$unique".take(12),
             category = "c-$unique",
             alias = "a-$unique",
-            hsmAlias = "ha-$unique",
+            hsmAlias = null,
             publicKey = key,
-            keyMaterial = null,
             schemeCodeName = "FOO",
-            masterKeyAlias = null,
             externalId = "e-$unique",
-            encodingVersion = null,
             timestamp = Instant.now().toSafeWindowsPrecision(),
             hsmId = "hi-$unique".take(36),
-            status = SigningKeyStatus.NORMAL
-        )
-    }
-
-    private fun createPrivateKeyInfo(): SigningKeyInfo {
-        val privKey = SecureHashUtils.randomBytes()
-        return createNewPubKeyInfo().copy(
+            status = SigningKeyStatus.NORMAL,
             keyMaterial = privKey,
             encodingVersion = 1,
-            hsmAlias = null,
-            masterKeyAlias = defaultMasterKeyName
+            wrappingKeyAlias = defaultMasterKeyName
         )
-    }
-
-    private fun createGeneratedPublicKey(info: SigningKeyInfo): GeneratedPublicKey {
-        val pubKey = mock<PublicKey> {
-            on { encoded } doReturn(info.publicKey)
-        }
-        return GeneratedPublicKey(pubKey, info.hsmAlias!!)
     }
 
     private fun createGeneratedWrappedKey(info: SigningKeyInfo): GeneratedWrappedKey {
         val pubKey = mock<PublicKey> {
             on { encoded } doReturn(info.publicKey)
         }
-        return GeneratedWrappedKey(pubKey, info.keyMaterial!!, info.encodingVersion!!)
+        return GeneratedWrappedKey(pubKey, info.keyMaterial, info.encodingVersion!!)
     }
 
     private fun createKeyScheme(info: SigningKeyInfo) =
@@ -159,36 +141,20 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
 
         saveWrappingKey(emf, defaultMasterKeyName)
         val privateKeys = (0..2).map { _ ->
-            val info = createPrivateKeyInfo()
+            val info = createSigningKeyInfo()
             val ctx = createSigningWrappedKeySaveContext(info)
             repo.savePrivateKey(ctx)
         }
 
-        val publicKeys = (0..3).map { _ ->
-            val info = createNewPubKeyInfo()
-            val ctx = createSigningPublicKeySaveContext(info)
-            repo.savePublicKey(ctx)
-        }
-        return privateKeys + publicKeys
-    }
 
-    fun createSigningPublicKeySaveContext(info: SigningKeyInfo) : SigningPublicKeySaveContext {
-        val pubKey = createGeneratedPublicKey(info)
-        return SigningPublicKeySaveContext(
-            key = pubKey,
-            alias = info.alias,
-            category = info.category,
-            keyScheme = createKeyScheme(info),
-            externalId = info.externalId,
-            hsmId = info.hsmId,
-        )
+        return privateKeys
     }
 
     fun createSigningWrappedKeySaveContext(info: SigningKeyInfo) : SigningWrappedKeySaveContext {
         val privKey = createGeneratedWrappedKey(info)
         return SigningWrappedKeySaveContext(
             key = privKey,
-            masterKeyAlias = info.masterKeyAlias,
+            wrappingKeyAlias = info.wrappingKeyAlias,
             externalId = info.externalId,
             alias = info.alias,
             category = info.category,
@@ -197,55 +163,12 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
         )
     }
 
-    @ParameterizedTest
-    @MethodSource("emfs")
-    fun `savePublicKey and find`(emf: EntityManagerFactory) {
-        val info = createNewPubKeyInfo()
-        val pubKey = createGeneratedPublicKey(info)
-        val ctx = createSigningPublicKeySaveContext(info)
-
-        val repo = SigningRepositoryImpl(
-            emf,
-            info.tenantId,
-            cipherSchemeMetadata,
-            digestService,
-            createLayeredPropertyMapFactory(),
-        )
-
-        repo.savePublicKey(ctx)
-
-        val found = repo.findKey(pubKey.publicKey)
-
-        assertThat(found)
-            .usingRecursiveComparison().ignoringFields("timestamp")
-            .isEqualTo(info)
-    }
-
-    @ParameterizedTest
-    @MethodSource("emfs")
-    fun `savePublicKey twice fails`(emf: EntityManagerFactory) {
-        val info = createNewPubKeyInfo()
-        val ctx = createSigningPublicKeySaveContext(info)
-
-        val repo = SigningRepositoryImpl(
-            emf,
-            info.tenantId,
-            cipherSchemeMetadata,
-            digestService,
-            createLayeredPropertyMapFactory(),
-        )
-
-        repo.savePublicKey(ctx)
-        assertThrows<PersistenceException> {
-            repo.savePublicKey(ctx)
-        }
-    }
 
     @ParameterizedTest
     @MethodSource("emfs")
     fun `savePrivateKey and find by alias`(emf: EntityManagerFactory) {
-        val info = createPrivateKeyInfo()
-        saveWrappingKey(emf, info.masterKeyAlias!!)
+        val info = createSigningKeyInfo()
+        saveWrappingKey(emf, info.wrappingKeyAlias)
 
         val ctx = createSigningWrappedKeySaveContext(info)
 
@@ -269,8 +192,8 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
     @ParameterizedTest
     @MethodSource("emfs")
     fun `savePrivateKey twice fails`(emf: EntityManagerFactory) {
-        val info = createPrivateKeyInfo()
-        saveWrappingKey(emf, info.masterKeyAlias!!)
+        val info = createSigningKeyInfo()
+        saveWrappingKey(emf, info.wrappingKeyAlias)
 
         val ctx = createSigningWrappedKeySaveContext(info)
 
@@ -291,8 +214,8 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
     @ParameterizedTest
     @MethodSource("emfs")
     fun `save same key for 2 tenants should work`(emf: EntityManagerFactory) {
-        val info = createPrivateKeyInfo()
-        saveWrappingKey(emf, info.masterKeyAlias!!)
+        val info = createSigningKeyInfo()
+        saveWrappingKey(emf, info.wrappingKeyAlias)
 
         val ctx = createSigningWrappedKeySaveContext(info)
 

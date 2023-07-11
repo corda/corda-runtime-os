@@ -14,8 +14,10 @@ import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.data.chunking.Chunk
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.membership.certificate.service.CertificatesService
 import net.corda.membership.group.policy.validation.MembershipGroupPolicyValidator
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.network.writer.NetworkInfoWriter
 import net.corda.messaging.api.publisher.Publisher
@@ -42,6 +44,7 @@ class ChunkDbWriterFactoryImpl(
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
     private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
+    private val cpiCpkRepositoryFactory: CpiCpkRepositoryFactory,
     private val networkInfoWriter: NetworkInfoWriter,
 ) : ChunkDbWriterFactory {
 
@@ -69,6 +72,7 @@ class ChunkDbWriterFactoryImpl(
         membershipSchemaValidatorFactory,
         membershipGroupPolicyValidator,
         configurationValidatorFactory,
+        CpiCpkRepositoryFactory(),
         networkInfoWriter,
     )
 
@@ -127,7 +131,15 @@ class ChunkDbWriterFactoryImpl(
         cpiInfoWriteService: CpiInfoWriteService
     ): Pair<Publisher, Subscription<RequestId, Chunk>> {
         val chunkPersistence = DatabaseChunkPersistence(entityManagerFactory)
-        val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory, networkInfoWriter)
+        val cpiPersistence = DatabaseCpiPersistence(
+            entityManagerFactory,
+            networkInfoWriter,
+            cpiCpkRepositoryFactory.createCpiMetadataRepository(),
+            cpiCpkRepositoryFactory.createCpkDbChangeLogRepository(),
+            cpiCpkRepositoryFactory.createCpkDbChangeLogAuditRepository(),
+            cpiCpkRepositoryFactory.createCpkFileRepository(),
+            GroupPolicyParser.Companion
+        )
         val publisher = createPublisher(messagingConfig)
         val statusPublisher = StatusPublisher(statusTopic, publisher)
         val cpiCacheDir = tempPathProvider.getOrCreate(bootConfig, CPI_CACHE_DIR)

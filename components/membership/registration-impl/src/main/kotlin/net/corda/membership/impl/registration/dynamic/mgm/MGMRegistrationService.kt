@@ -68,6 +68,7 @@ class MGMRegistrationService @Activate constructor(
     @Reference(service = ExpirationProcessor::class)
     private val expirationProcessor: ExpirationProcessor,
 ) : MemberRegistrationService {
+
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
      */
@@ -202,6 +203,7 @@ class MGMRegistrationService @Activate constructor(
             }
         }
     }
+
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {

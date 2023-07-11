@@ -481,10 +481,21 @@ object CordaMetrics {
 
             /**
              * The length of resolved backchains when performing backchain resolution.
+             *
+             * - 0.05 included to get a sense of the smallest chains.
+             * - 0.50 included for average chain lengths.
+             * - 0.95, 0.99 for large chain lengths.
+             * - 1.00 for outlier chain lengths.
              */
             object BackchainResolutionChainLength : Metric<DistributionSummary>(
                 "ledger.backchain.resolution.chain.length",
-                Metrics::summary
+                { name, tags ->
+                    DistributionSummary.builder(name)
+                        .publishPercentiles(0.05, 0.50, 0.95, 0.99, 1.00)
+                        .publishPercentileHistogram()
+                        .tags(tags)
+                        .register(registry)
+                }
             )
 
             /**
