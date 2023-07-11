@@ -14,9 +14,8 @@ internal class FlowRunner(private val dsl: DriverInternalDSL) {
         flowArgMapper: ThrowingSupplier<String>,
         timeout: Duration
     ): String? {
-        val memberX500Name = virtualNodeInfo.holdingIdentity.x500Name
         return try {
-            dsl.getFramework(memberX500Name).getService(RunFlow::class.java, null, timeout).andThen { runner ->
+            dsl.framework.getService(RunFlow::class.java, null, timeout).andThen { runner ->
                 runner.runFlow(virtualNodeInfo.toAvro(), flowClass.name, flowArgMapper.get())
             }
         } catch (e: RuntimeException) {

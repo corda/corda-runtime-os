@@ -13,7 +13,7 @@ import org.jetbrains.annotations.Nullable;
 @DoNotImplement
 public interface DriverDSL {
     @NotNull
-    List<VirtualNodeInfo> startNode(@NotNull Set<MemberX500Name> memberNames);
+    List<VirtualNodeInfo> startNodes(@NotNull Set<MemberX500Name> memberNames);
 
     @Nullable
     String runFlow(

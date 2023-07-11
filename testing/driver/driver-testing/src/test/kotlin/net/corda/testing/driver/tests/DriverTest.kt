@@ -1,6 +1,7 @@
 package net.corda.testing.driver.tests
 
 import java.util.concurrent.TimeUnit.MINUTES
+import net.corda.testing.driver.DriverDSL
 import net.corda.testing.driver.DriverNodes
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
@@ -17,10 +18,12 @@ import org.slf4j.LoggerFactory
 @TestInstance(PER_CLASS)
 class DriverTest {
     private val alice = MemberX500Name.parse("CN=Alice, OU=Testing, O=R3, L=London, C=GB")
+    private val bob = MemberX500Name.parse("CN=Bob, OU=Testing, O=R3, L=San Francisco, C=US")
+    private val lucy = MemberX500Name.parse("CN=Lucy, OU=Testing, O=R3, L=Rome, C=IT")
     private val logger = LoggerFactory.getLogger(DriverTest::class.java)
 
     @RegisterExtension
-    private val driver = DriverNodes(alice).forEachTest()
+    private val driver = DriverNodes(alice, bob).withNotary(lucy, 1).forEachTest()
 
     @BeforeAll
     fun sanityCheck() {
@@ -28,15 +31,19 @@ class DriverTest {
         assertThat(DriverNodes::class.java.protectionDomain.codeSource.location.path).endsWith(".jar")
     }
 
-    @Test
-    fun testStartNode() {
-        driver.run { dsl ->
-            val aliceNodes = dsl.startNode(setOf(alice)).onEach { vNode ->
-                logger.info("VirtualNode({}): {}", vNode.holdingIdentity.x500Name, vNode)
-            }
-            assertThat(aliceNodes).hasSize(2)
+    private fun DriverDSL.testNodesFor(member: MemberX500Name) {
+        val nodes = startNodes(setOf(member)).onEach { vNode ->
+            logger.info("VirtualNode({}): {}", vNode.holdingIdentity.x500Name, vNode)
         }
+        assertThat(nodes).hasSize(2)
+        logger.info("{} started successfully", member.commonName)
+    }
 
-        logger.info("{} started successfully", alice.commonName)
+    @Test
+    fun testStartNodes() {
+        driver.run { dsl ->
+            dsl.testNodesFor(alice)
+            dsl.testNodesFor(bob)
+        }
     }
 }

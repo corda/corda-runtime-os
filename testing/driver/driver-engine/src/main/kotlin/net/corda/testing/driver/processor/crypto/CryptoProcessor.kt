@@ -21,6 +21,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.messaging.api.records.Record
 import net.corda.testing.driver.processor.ExternalProcessor
+import net.corda.testing.driver.sandbox.DRIVER_SERVICE_FILTER
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -32,7 +33,7 @@ class CryptoProcessor @Activate constructor(
     private val schemaMetadata: CipherSchemeMetadata,
     @Reference
     private val signingKeyProvider: SigningKeyProvider,
-    @Reference
+    @Reference(target = DRIVER_SERVICE_FILTER)
     private val cryptoService: CryptoService,
     @Reference
     cordaAvroSerializationFactory: CordaAvroSerializationFactory
@@ -105,14 +106,16 @@ class CryptoProcessor @Activate constructor(
                     ))
                 )
             }
-            is ByIdsFlowQuery -> {
+
+            is ByIdsFlowQuery ->
                 CryptoSigningKeys(
                     signingKeyProvider.getSigningKeys(tenantId, request.fullKeyIds.hashes.map {
                         SecureHashImpl(it.algorithm, it.bytes.array())
                     })
                 )
-            }
-            else -> throw IllegalStateException("Unknown request ${request::class.java.name}")
+
+            else ->
+                throw IllegalStateException("Unknown request ${request::class.java.name}")
         }
     }
 }

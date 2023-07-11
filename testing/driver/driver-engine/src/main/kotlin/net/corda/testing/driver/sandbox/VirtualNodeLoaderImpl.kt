@@ -29,6 +29,8 @@ interface VirtualNodeLoader {
     fun loadVirtualNode(resourceName: String, holdingIdentity: HoldingIdentity): VirtualNodeInfo
     fun unloadVirtualNode(virtualNodeInfo: VirtualNodeInfo)
     fun forgetCPI(id: CpiIdentifier)
+
+    fun getMemberNameFor(tenantId: String): MemberX500Name?
 }
 
 @Suppress("unused")
@@ -40,7 +42,7 @@ interface VirtualNodeLoader {
 @ServiceRanking(DRIVER_SERVICE_RANKING)
 class VirtualNodeLoaderImpl @Activate constructor(
     @Reference
-    private val cpiLoader: CpiLoader,
+    private val cpiLoader: CpiLoader
 ) : VirtualNodeLoader, VirtualNodeInfoReadService {
     private val virtualNodeInfoMap = ConcurrentHashMap<HoldingIdentity, VirtualNodeInfo>()
     private val resourcesLookup = mutableMapOf<CpiIdentifier, String>()
@@ -93,6 +95,10 @@ class VirtualNodeLoaderImpl @Activate constructor(
 
     override fun unloadVirtualNode(virtualNodeInfo: VirtualNodeInfo) {
         virtualNodeInfoMap.remove(virtualNodeInfo.holdingIdentity)
+    }
+
+    override fun getMemberNameFor(tenantId: String): MemberX500Name? {
+        return virtualNodeInfoMap.keys.firstOrNull { it.shortHash.value == tenantId }?.x500Name
     }
 
     override fun forgetCPI(id: CpiIdentifier) {
