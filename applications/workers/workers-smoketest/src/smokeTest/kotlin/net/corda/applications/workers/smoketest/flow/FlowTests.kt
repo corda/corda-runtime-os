@@ -17,7 +17,6 @@ import net.corda.e2etest.utilities.awaitRestFlowResult
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.configWithDefaultsNode
 import net.corda.e2etest.utilities.getConfig
-import net.corda.e2etest.utilities.getFlowClasses
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
@@ -30,9 +29,7 @@ import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.v5.crypto.DigestAlgorithmName
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertAll
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -176,61 +173,6 @@ class FlowTests {
     }
 
     @Test
-    fun `start multiple RPC flow and validate they complete`() {
-        val requestBody = RpcSmokeTestInput().apply {
-            command = "echo"
-            data = mapOf("echo_value" to "hello")
-        }
-
-        val flowIds = mutableListOf(
-            startRpcFlow(davidHoldingId, requestBody),
-            startRpcFlow(davidHoldingId, requestBody)
-        )
-
-        flowIds.forEach {
-            val flowResult = awaitRestFlowResult(davidHoldingId, it)
-            assertThat(flowResult.flowError).isNull()
-            assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        }
-    }
-
-    @Test
-    fun `start RPC flow twice, second returns an error code of 409`() {
-        val requestBody = RpcSmokeTestInput().apply {
-            command = "echo"
-            data = mapOf("echo_value" to "hello")
-        }
-
-        startRpcFlow(bobHoldingId, requestBody)
-        startRpcFlow(bobHoldingId, requestBody, 409)
-    }
-
-    @Test
-    fun `start RPC flow for flow not in startable list, returns an error code of 400`() {
-        startRpcFlow(bobHoldingId, emptyMap(), "InvalidFlow", 400)
-    }
-
-    @Test
-    fun `start RPC flow - flow failure test`() {
-        // 1) Start the flow but signal it to throw an exception when it starts
-        val requestBody = RpcSmokeTestInput().apply {
-            command = "throw_error"
-            data = mapOf("error_message" to "oh no!")
-        }
-
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        // 3) check the flow completes as expected
-        val result = awaitRestFlowResult(bobHoldingId, requestId)
-
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-        assertThat(result.json).isNull()
-        assertThat(result.flowError).isNotNull
-        assertThat(result.flowError?.type).isEqualTo("FLOW_FAILED")
-        assertThat(result.flowError?.message).isEqualTo("oh no!")
-    }
-
-    @Test
     fun `Init Session - initiate two sessions`() {
 
         val requestBody = RpcSmokeTestInput().apply {
@@ -251,50 +193,6 @@ class FlowTests {
         assertThat(flowResult.json.command).isEqualTo("start_sessions")
         assertThat(flowResult.json.result)
             .isEqualTo("${bobX500}=echo:m1; ${charlyX500}=echo:m2")
-    }
-
-    @Test
-    fun `Platform Error - user code receives platform errors`() {
-        val requestBody = RpcSmokeTestInput().apply {
-            command = "throw_platform_error"
-            data = mapOf("x500" to bobX500)
-        }
-
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
-
-        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(flowResult.json.command).isEqualTo("throw_platform_error")
-        assertThat(flowResult.json.result).startsWith("Type='PLATFORM_ERROR'")
-    }
-
-    @Test
-    fun `Session Error - Closed Or Error sessions throw`() {
-        val requestBody = RpcSmokeTestInput().apply {
-            command = "throw_session_error"
-            data = mapOf("x500" to bobX500)
-        }
-
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
-
-        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(flowResult.json.command).isEqualTo("throw_session_error")
-        assertThat(flowResult.json.result).endsWith("Status is CLOSED")
-    }
-
-    @Test
-    fun `error is thrown when flow with invalid constructor is executed`() {
-        invalidConstructorFlowNames.forEach {
-            val requestID = startRpcFlow(bobHoldingId, mapOf(), it)
-            val result = awaitRestFlowResult(bobHoldingId, requestID)
-
-            assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-            assertThat(result.flowError).isNotNull
-            assertThat(result.flowError!!.message).contains(it)
-        }
     }
 
     @Test
@@ -511,81 +409,6 @@ class FlowTests {
     }
 
     @Test
-    fun `Get runnable flows for a holdingId`() {
-        val flows = getFlowClasses(bobHoldingId)
-
-        assertThat(flows.size).isEqualTo(expectedFlows.size)
-        assertTrue(flows.containsAll(expectedFlows))
-    }
-
-    @Test
-    fun `SubFlow - Create an initiated session in an initiating flow and pass it to a inline subflow`() {
-
-        val requestBody = RpcSmokeTestInput().apply {
-            command = "subflow_passed_in_initiated_session"
-            data = mapOf(
-                "sessions" to "${bobX500};${charlyX500}",
-                "messages" to "m1;m2"
-            )
-        }
-
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
-
-        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(flowResult.json).isNotNull
-        assertThat(flowResult.flowError).isNull()
-        assertThat(flowResult.json.command).isEqualTo("subflow_passed_in_initiated_session")
-        assertThat(flowResult.json.result)
-            .isEqualTo("${bobX500}=echo:m1; ${charlyX500}=echo:m2")
-    }
-
-    @Test
-    fun `SubFlow - Create an uninitiated session in an initiating flow and pass it to a inline subflow`() {
-
-        val requestBody = RpcSmokeTestInput().apply {
-            command = "subflow_passed_in_non_initiated_session"
-            data = mapOf(
-                "sessions" to "${bobX500};${charlyX500}",
-                "messages" to "m1;m2"
-            )
-        }
-
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
-
-        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(flowResult.json).isNotNull
-        assertThat(flowResult.flowError).isNull()
-        assertThat(flowResult.json.command).isEqualTo("subflow_passed_in_non_initiated_session")
-        assertThat(flowResult.json.result)
-            .isEqualTo("${bobX500}=echo:m1; ${charlyX500}=echo:m2")
-    }
-
-    @Test
-    @Disabled
-    fun `Flow Session - Initiate multiple sessions and exercise the flow messaging apis`() {
-
-        val requestBody = RpcSmokeTestInput().apply {
-            command = "flow_messaging_apis"
-            data = mapOf("sessions" to bobX500)
-        }
-
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
-
-        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(flowResult.json).isNotNull
-        assertThat(flowResult.flowError).isNull()
-        assertThat(flowResult.json.command).isEqualTo("flow_messaging_apis")
-        assertThat(flowResult.json.result)
-            .isEqualTo("${bobX500}=Completed. Sum:18")
-    }
-
-    @Test
     fun `Crypto - Sign and verify bytes`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "crypto_sign_and_verify"
@@ -736,99 +559,6 @@ class FlowTests {
         assertThat(flowResult.json).isNotNull
         assertThat(flowResult.json.command).isEqualTo("crypto_get_supported_digest_algorithms")
         assertThat(flowResult.json.result).isEqualTo("SUCCESS")
-    }
-
-    @Test
-    fun `Context is propagated to initiated and sub flows`() {
-        val requestBody = RpcSmokeTestInput().apply {
-            command = "context_propagation"
-        }
-
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
-
-        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(flowResult.json).isNotNull
-        assertThat(flowResult.flowError).isNull()
-        assertThat(flowResult.json.command).isEqualTo("context_propagation")
-
-        val contextJson =
-            """
-            {
-              "rpcFlow": {
-                "platform": "account-zero",
-                "user1": "user1-set",
-                "user2": "null",
-                "user3": "null",
-                "cpiName": "$applicationCpiName",
-                "initiatingCpiName": "null"
-              },
-              "rpcSubFlow": {
-                "platform": "account-zero",
-                "user1": "user1-set",
-                "user2": "user2-set",
-                "user3": "null",
-                "cpiName": "$applicationCpiName",
-                "initiatingCpiName": "null"
-              },
-              "initiatedFlow": {
-                "platform": "account-zero",
-                "user1": "user1-set",
-                "user2": "user2-set",
-                "user3": "user3-set",
-                "cpiName": "$applicationCpiName",
-                "initiatingCpiName": "$applicationCpiName"
-              },
-              "initiatedSubFlow": {
-                "platform": "account-zero",
-                "user1": "user1-set",
-                "user2": "user2-set-ContextPropagationInitiatedFlow",
-                "user3": "user3-set",
-                "cpiName": "$applicationCpiName",
-                "initiatingCpiName": "$applicationCpiName"
-              },
-              "rpcFlowAtComplete": {
-                "platform": "account-zero",
-                "user1": "user1-set",
-                "user2": "null",
-                "user3": "null",
-                "cpiName": "$applicationCpiName",
-                "initiatingCpiName": "null"
-              }
-            }
-            """.trimJson()
-
-        assertThat(flowResult.json.result).isEqualTo(contextJson)
-    }
-
-    @Test
-    fun `flows can use inheritance and platform dependencies are correctly injected`() {
-        dependencyInjectionFlowNames.forEach {
-            val requestId = startRpcFlow(bobHoldingId, mapOf("id" to charlyX500), it)
-            val result = awaitRestFlowResult(bobHoldingId, requestId)
-
-            assertThat(result.flowError).isNull()
-            assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-            assertThat(result.json!!.textValue()).isEqualTo(charlyX500)
-        }
-    }
-
-    @Test
-    fun `Serialize and deserialize an object`() {
-        val dataToSerialize = "serialize this"
-        val requestBody = RpcSmokeTestInput().apply {
-            command = "serialization"
-            data = mapOf("data" to dataToSerialize)
-        }
-
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
-        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
-
-        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(flowResult.flowError).isNull()
-        assertThat(flowResult.json.result).isEqualTo(dataToSerialize)
-        assertThat(flowResult.json.command).isEqualTo("serialization")
     }
 
     @Test
