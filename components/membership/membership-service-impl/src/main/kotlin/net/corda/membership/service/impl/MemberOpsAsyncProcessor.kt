@@ -196,10 +196,10 @@ internal class MemberOpsAsyncProcessor(
         val cause = state?.cause
         if (cause is SentToMgmWaitingForNetwork) {
             if (cause.stopRetriesAfter.isBefore(clock.instant())) {
-                val message = "Registration request ${state.request} was not received by the MGM after many attempts."
+                val message = "Registration request was not acknowledged as received by the MGM after many attempts to send it."
                 logger.warn(
-                    "Registration request ${state.request} was not received by the MGM after many attempts." +
-                        "Will not retry it.",
+                    "Registration request ${state.request.requestId} was not acknowledged as received by the MGM " +
+                            "after many attempts to send it. No more retries will be attempted and the request will be marked as FAILED.",
                 )
                 return persistAndCreateFailureWithoutRetryResponse(
                     holdingIdentity,
