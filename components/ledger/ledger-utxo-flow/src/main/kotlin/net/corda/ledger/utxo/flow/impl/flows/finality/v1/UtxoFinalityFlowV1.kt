@@ -7,6 +7,7 @@ import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.flows.finality.INITIAL_TRANSACTION
+import net.corda.ledger.utxo.flow.impl.flows.finality.INITIATOR
 import net.corda.ledger.utxo.flow.impl.flows.finality.NUMBER_OF_COUNTER_PARTIES
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
@@ -66,7 +67,7 @@ class UtxoFinalityFlowV1(
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
         persistTransactionWithCounterpartySignatures(transaction)
 
-        if (sessions.size > 2) {
+        if (sessions.size + INITIATOR > 2) {
             sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
         }
 
