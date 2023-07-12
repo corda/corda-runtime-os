@@ -59,7 +59,7 @@ class SerializationHelperTests {
         }
 
         assertEquals(
-            "Class \"java.lang.Object\" is not annotated with @CordaSerializable.",
+            "Class \"class java.lang.Object\" is not annotated with @CordaSerializable.",
             exception.msg
         )
     }

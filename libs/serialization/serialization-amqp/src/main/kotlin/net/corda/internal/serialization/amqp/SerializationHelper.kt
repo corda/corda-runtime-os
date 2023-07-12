@@ -121,7 +121,7 @@ fun requireCordaSerializable(type: Any?) {
             if (!hasCordaSerializable(type.asClass()) && type.asClass() != java.lang.Comparable::class.java) {
                 throw AMQPNotSerializableException(
                     type,
-                    "Class \"${type.asClass().name}\" is not annotated with @CordaSerializable.")
+                    "Class \"${type}\" is not annotated with @CordaSerializable.")
             }
         }
         is Collection<*> -> {
