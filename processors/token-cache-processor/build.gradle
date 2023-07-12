@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Flow Worker Processor'
+description 'Token Cache Processor'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
