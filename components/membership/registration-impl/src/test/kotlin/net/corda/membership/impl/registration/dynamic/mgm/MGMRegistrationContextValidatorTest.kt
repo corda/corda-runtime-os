@@ -179,9 +179,9 @@ class MGMRegistrationContextValidatorTest {
 
     @Test
     fun `context validation fails when session key ID is invalid`() {
-        val contextWithInvalidProtocol = validTestContext.plus(SESSION_KEY_IDS.format(0) to " ")
+        val contextWithInvalidSessionKey = validTestContext.plus(SESSION_KEY_IDS.format(0) to " ")
         val exception = assertThrows<MGMRegistrationContextValidationException> {
-            mgmRegistrationContextValidator.validate(contextWithInvalidProtocol)
+            mgmRegistrationContextValidator.validate(contextWithInvalidSessionKey)
         }
         assertThat(exception).hasMessageContaining("Invalid value for key ID ${SESSION_KEY_IDS.format(0)}.")
         assertThat(exception).hasMessageContaining("Hex string has length of 1 but should be 12 characters")
@@ -189,9 +189,9 @@ class MGMRegistrationContextValidatorTest {
 
     @Test
     fun `context validation fails when ECDH key ID is invalid`() {
-        val contextWithInvalidProtocol = validTestContext.plus(ECDH_KEY_ID to " ")
+        val contextWithInvalidECDHKey = validTestContext.plus(ECDH_KEY_ID to " ")
         val exception = assertThrows<MGMRegistrationContextValidationException> {
-            mgmRegistrationContextValidator.validate(contextWithInvalidProtocol)
+            mgmRegistrationContextValidator.validate(contextWithInvalidECDHKey)
         }
         assertThat(exception).hasMessageContaining("Invalid value for key ID $ECDH_KEY_ID.")
         assertThat(exception).hasMessageContaining("Hex string has length of 1 but should be 12 characters")
