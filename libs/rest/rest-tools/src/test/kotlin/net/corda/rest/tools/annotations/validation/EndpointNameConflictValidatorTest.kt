@@ -190,7 +190,11 @@ class EndpointNameConflictValidatorTest {
 
         val result = RestInterfaceValidator.validate(TestInterface::class.java)
 
-        assertThat(result.errors).hasSize(1).contains(error("null", EndpointType.GET, TestInterface::test2.javaMethod!!, TestInterface::test.javaMethod!!))
+        assertThat(result.errors)
+            .hasSize(1)
+            .contains(
+                error("null", EndpointType.GET, TestInterface::test2.javaMethod!!, TestInterface::test.javaMethod!!)
+            )
     }
 
     @Test

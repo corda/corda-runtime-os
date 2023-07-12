@@ -31,7 +31,6 @@ import net.corda.rest.tools.responseDescription
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import java.lang.reflect.Method
-import java.util.EnumSet
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.createInstance
 import kotlin.reflect.jvm.kotlinFunction
