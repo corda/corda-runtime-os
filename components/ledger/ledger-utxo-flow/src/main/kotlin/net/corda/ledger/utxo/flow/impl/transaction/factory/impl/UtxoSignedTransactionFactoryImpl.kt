@@ -19,7 +19,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInterna
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
-import net.corda.ledger.utxo.transaction.verifier.SignedGroupParametersVerifier
+import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -121,7 +121,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     @Suspendable
     private fun getAndPersistCurrentMgmGroupParameters(): SignedGroupParameters {
         val signedGroupParameters = currentGroupParametersService.get()
-        signedGroupParametersVerifier.verifySignature(signedGroupParameters, currentGroupParametersService.getMgmKeys())
+        signedGroupParametersVerifier.verifySignature(signedGroupParameters)
         utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(signedGroupParameters)
         return signedGroupParameters
     }

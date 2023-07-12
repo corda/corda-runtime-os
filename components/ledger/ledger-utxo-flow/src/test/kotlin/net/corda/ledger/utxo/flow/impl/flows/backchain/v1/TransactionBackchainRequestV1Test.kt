@@ -9,6 +9,7 @@ class TransactionBackchainRequestV1Test {
     fun testSerializable() {
         assertThat(TransactionBackchainRequestV1::class.java).hasAnnotation(CordaSerializable::class.java)
         assertThat(TransactionBackchainRequestV1.Get::class.java).hasAnnotation(CordaSerializable::class.java)
+        assertThat(TransactionBackchainRequestV1.GetSignedGroupParameters::class.java).hasAnnotation(CordaSerializable::class.java)
         assertThat(TransactionBackchainRequestV1.Stop::class.java).hasAnnotation(CordaSerializable::class.java)
     }
 }
