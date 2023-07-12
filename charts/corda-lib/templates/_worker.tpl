@@ -460,7 +460,7 @@ Worker affinity
 {{- define "corda.affinity" -}}
 {{- $ := index . 0 }}
 {{- $worker := index . 2 }}
-{{- $affinity := default $.Values.affinity dict }}
+{{- $affinity := default ( deepCopy $.Values.affinity ) dict }}
 {{- if not ($affinity.podAntiAffinity) }}
 {{- $_ := set $affinity "podAntiAffinity" dict }}
 {{- end }}

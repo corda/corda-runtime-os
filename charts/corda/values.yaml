@@ -6,17 +6,6 @@ fullnameOverride: ""
 
 # -- affinity for pod assignment
 affinity: {}
-  # podAntiAffinity:
-  #   preferredDuringSchedulingIgnoredDuringExecution:
-  #     - podAffinityTerm:
-  #         labelSelector:
-  #           matchExpressions:
-  #           - key: app.kubernetes.io/component
-  #             operator: In
-  #             values:
-  #             - jason
-  #         topologyKey: kubernetes.io/hostname
-  #       weight: 1
 
 # -- topology spread constraints
 topologySpreadConstraints: []
