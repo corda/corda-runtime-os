@@ -114,12 +114,24 @@ internal fun Type.isSubClassOf(type: Type): Boolean {
     return TypeToken.of(this).isSubtypeOf(TypeToken.of(type).rawType)
 }
 
-fun requireCordaSerializable(type: Type) {
-    // See CORDA-2782 for explanation of the special exemption made for Comparable
-    if (!hasCordaSerializable(type.asClass()) && type.asClass() != java.lang.Comparable::class.java) {
-        throw AMQPNotSerializableException(
-                type,
-                "Class \"$type\" is not annotated with @CordaSerializable.")
+fun requireCordaSerializable(type: Any?) {
+    when (type) {
+        is Type -> {
+            // See CORDA-2782 for explanation of the special exemption made for Comparable
+            if (!hasCordaSerializable(type.asClass()) && type.asClass() != java.lang.Comparable::class.java) {
+                throw AMQPNotSerializableException(
+                    type,
+                    "Class \"${type.asClass().name}\" is not annotated with @CordaSerializable.")
+            }
+        }
+        is Collection<*> -> {
+            type.forEach { requireCordaSerializable(it) }
+        }
+        else -> {
+            throw AMQPNoTypeNotSerializableException(
+                "Class is not a valid type and cannot be serialized."
+            )
+        }
     }
 }
 
