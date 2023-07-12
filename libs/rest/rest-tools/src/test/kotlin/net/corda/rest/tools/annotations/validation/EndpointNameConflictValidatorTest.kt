@@ -20,11 +20,11 @@ class EndpointNameConflictValidatorTest {
     fun `validate withEndpointNameConflictOnSamePathDifferentVersions errorListIsEmpty`() {
         @HttpRestResource
         abstract class TestInterface : RestResource {
-            @HttpGET("/test", maxVersion= RestApiVersion.C5_0)
+            @HttpGET("/test", minVersion=RestApiVersion.C5_0, maxVersion=RestApiVersion.C5_0)
             @Suppress("unused")
             abstract fun test()
 
-            @HttpGET("/test", minVersion= RestApiVersion.C5_1)
+            @HttpGET("/test", minVersion=RestApiVersion.C5_1, maxVersion=RestApiVersion.C5_2)
             @Suppress("unused")
             abstract fun test2()
         }
@@ -70,6 +70,32 @@ class EndpointNameConflictValidatorTest {
 
         val expectedError = error("/test", EndpointType.GET, TestInterface::test2.javaMethod!!, TestInterface::test.javaMethod!!)
         assertEquals(listOf(expectedError), result.errors)
+    }
+
+    @Test
+    fun `validate withEndpointNameConflictOnSamePathMultipleConflicts errorListContainsErrors`() {
+        @HttpRestResource
+        abstract class TestInterface : RestResource {
+            @HttpGET("/test", minVersion=RestApiVersion.C5_0, maxVersion=RestApiVersion.C5_0)
+            @Suppress("unused")
+            abstract fun test()
+
+            @HttpGET("/test", minVersion=RestApiVersion.C5_2, maxVersion=RestApiVersion.C5_2)
+            @Suppress("unused")
+            abstract fun test2()
+
+            @HttpGET("/test", minVersion=RestApiVersion.C5_0, maxVersion=RestApiVersion.C5_2)
+            @Suppress("unused")
+            abstract fun test3()
+        }
+
+        val result = EndpointNameConflictValidator(TestInterface::class.java).validate()
+
+        val expectedErrors = listOf(
+            error("/test", EndpointType.GET, TestInterface::test3.javaMethod!!, TestInterface::test.javaMethod!!),
+            error("/test", EndpointType.GET, TestInterface::test3.javaMethod!!, TestInterface::test2.javaMethod!!)
+        )
+        assertThat(result.errors).hasSize(2).allMatch { it in expectedErrors }
     }
 
     @Test
