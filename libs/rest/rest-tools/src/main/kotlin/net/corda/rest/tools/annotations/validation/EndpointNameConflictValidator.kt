@@ -19,7 +19,7 @@ internal class EndpointNameConflictValidator(private val clazz: Class<out RestRe
     companion object {
         fun error(path: String?, type: EndpointType, method: Method, conflictingMethod: Method): String =
             "Duplicate endpoint path '$path' with $type HTTP method in '${method.declaringClass.simpleName}.${method.name}' " +
-                    "for version range (${method.restApiVersions.minVersion} -> ${method.restApiVersions.maxVersion})." +
+                    "for version range (${method.restApiVersions.minVersion} -> ${method.restApiVersions.maxVersion}). " +
                     "Conflicting method: '${conflictingMethod.declaringClass.simpleName}.${conflictingMethod.name}' " +
                     "with versions (${conflictingMethod.restApiVersions.minVersion} -> ${conflictingMethod.restApiVersions.maxVersion})."
     }
