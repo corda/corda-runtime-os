@@ -15,6 +15,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.rest.v1.HsmRestResource
 import net.corda.membership.rest.v1.types.response.HsmAssociationInfo
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
+import net.corda.rest.exception.InvalidInputDataException
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rest.extensions.getByHoldingIdentityShortHashOrThrow
 import org.osgi.service.component.annotations.Activate
@@ -46,7 +47,7 @@ class HsmRestResourceImpl @Activate constructor(
 
         private fun String.toCategory() = this.uppercase().also {
             if (!CryptoConsts.Categories.all.contains(it)) {
-                throw ResourceNotFoundException("Invalid category: $it")
+                throw InvalidInputDataException("Invalid category: $it")
             }
         }
     }
