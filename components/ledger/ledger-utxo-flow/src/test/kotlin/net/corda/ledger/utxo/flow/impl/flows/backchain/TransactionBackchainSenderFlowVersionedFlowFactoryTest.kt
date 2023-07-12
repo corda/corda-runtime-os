@@ -23,7 +23,7 @@ class TransactionBackchainSenderFlowVersionedFlowFactoryTest {
     }
 
     @Test
-    fun `with last 5_0 platform version creates TransactionBackchainSenderFlowV1`() {
+    fun `with last potential 5_0 platform version creates TransactionBackchainSenderFlowV1`() {
         val flow = factory.create(CORDA_5_1.value - 1, listOf(mock()))
         assertThat(flow).isExactlyInstanceOf(TransactionBackchainSenderFlowV1::class.java)
         assertSame(
