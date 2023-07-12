@@ -50,7 +50,6 @@ class CryptoServiceRefUtilsTests {
         assertEquals(scheme, result.keyScheme)
         assertEquals(ref.category, result.category)
         assertEquals(ref.masterKeyAlias, result.wrappingKeyAlias)
-        assertEquals(ref.hsmId, result.hsmId)
         assertEquals(externalId, result.externalId)
     }
 }

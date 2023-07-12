@@ -136,7 +136,7 @@ class CryptoOpsBusProcessorTests {
         factory = TestServicesFactory()
         processor = CryptoOpsBusProcessor(factory.signingService, configEvent.config.toCryptoConfig().retrying())
         CryptoConsts.Categories.all.forEach {
-            factory.hsmService.assignSoftHSM(tenantId, it)
+            factory.tenantInfoService.populate(tenantId, it)
         }
     }
 
