@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.impl.token.selection.factories
 
 import java.math.BigDecimal
-import net.corda.ledger.utxo.impl.token.selection.factories.TokenBalanceFactory
 import net.corda.ledger.utxo.impl.token.selection.impl.TokenBalanceImpl
 import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 import org.osgi.service.component.annotations.Activate
