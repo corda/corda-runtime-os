@@ -85,3 +85,20 @@ CODEOWNERS         @corda/blt @corda/corda5-team-leads
 /testing/flow/                                                  @corda/flow-worker
 /testing/message-patterns/                                      @corda/flow-worker
 /applications/workers/release/flow-worker                       @corda/flow-worker
+
+# Modules to be audited by Ledger SMEs
+/components/ledger/                                             @corda/ledger
+/libs/ledger/                                                   @corda/ledger
+/testing/ledger/                                                @corda/ledger
+
+# Modules to be audited by Notary SMEs
+/components/uniqueness/                                         @corda/notaries
+/libs/uniqueness/                                               @corda/notaries
+/notary-plugins/                                                @corda/notaries
+/processors/uniqueness-processor/                               @corda/notaries
+/testing/uniqueness/                                            @corda/notaries
+
+# Ledger token selection files to be reviewed by the REST team
+# This needs to be after the ledger rules to partially override those
+/components/ledger/ledger-utxo-token-cache                      @corda/rest
+/components/ledger/ledger-utxo-flow/src/main/kotlin/net/corda/ledger/utxo/impl/token @corda/rest

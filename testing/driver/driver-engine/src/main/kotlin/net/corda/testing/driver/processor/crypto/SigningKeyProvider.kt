@@ -28,7 +28,7 @@ import net.corda.testing.driver.sandbox.CORDA_MEMBER_X500_NAME
 import net.corda.testing.driver.sandbox.CORDA_TENANT
 import net.corda.testing.driver.sandbox.CORDA_TENANT_COUNT
 import net.corda.testing.driver.sandbox.CORDA_TENANT_MEMBER
-import net.corda.testing.driver.sandbox.MASTER_KEY_ALIAS
+import net.corda.testing.driver.sandbox.WRAPPING_KEY_ALIAS
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -79,7 +79,7 @@ class SigningKeyProvider @Activate constructor(
                                 publicKey = publicKey.encoded,
                                 keyMaterial = privateKeyMaterial,
                                 schemeCodeName = keyScheme.codeName,
-                                masterKeyAlias = MASTER_KEY_ALIAS,
+                                wrappingKeyAlias = WRAPPING_KEY_ALIAS,
                                 externalId = null,
                                 encodingVersion = 1,
                                 timestamp = Instant.now(),
@@ -120,7 +120,7 @@ class SigningKeyProvider @Activate constructor(
                     publicKey = cached.publicKey,
                     keyMaterial = cached.keyMaterial,
                     schemeCodeName = cached.schemeCodeName,
-                    masterKeyAlias = cached.masterKeyAlias,
+                    wrappingKeyAlias = cached.wrappingKeyAlias,
                     externalId = cached.externalId,
                     encodingVersion = cached.encodingVersion,
                     timestamp = cached.timestamp,
@@ -142,7 +142,7 @@ class SigningKeyProvider @Activate constructor(
                     cached.hsmAlias,
                     ByteBuffer.wrap(cached.publicKey).asReadOnlyBuffer(),
                     cached.schemeCodeName,
-                    cached.masterKeyAlias,
+                    cached.wrappingKeyAlias,
                     cached.encodingVersion,
                     cached.externalId,
                     cached.timestamp

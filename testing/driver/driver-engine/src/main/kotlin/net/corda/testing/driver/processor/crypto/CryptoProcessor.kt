@@ -119,7 +119,7 @@ class CryptoProcessor private constructor(
                                 keyMaterial = requireNotNull(signingKey.keyMaterial) {
                                     "keyMaterial should not be null"
                                 },
-                                wrappingKeyAlias = signingKey.masterKeyAlias ?: "",
+                                wrappingKeyAlias = signingKey.wrappingKeyAlias,
                                 encodingVersion = requireNotNull(signingKey.encodingVersion) {
                                     "encodingVersion should not be null"
                                 }

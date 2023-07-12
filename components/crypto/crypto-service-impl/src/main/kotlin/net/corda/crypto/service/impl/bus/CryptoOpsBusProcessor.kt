@@ -258,7 +258,7 @@ fun SigningKeyInfo.toAvro(): CryptoSigningKey =
         this.hsmAlias,
         ByteBuffer.wrap(this.publicKey),
         this.schemeCodeName,
-        this.masterKeyAlias,
+        this.wrappingKeyAlias,
         this.encodingVersion,
         this.externalId,
         this.timestamp

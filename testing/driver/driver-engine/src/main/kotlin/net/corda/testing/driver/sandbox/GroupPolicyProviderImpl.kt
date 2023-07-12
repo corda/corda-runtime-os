@@ -5,7 +5,6 @@ import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CryptoService
-import net.corda.crypto.cipher.suite.GeneratedWrappedKey
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.softhsm.PrivateKeyService
@@ -41,7 +40,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val groupPolicies = ConcurrentHashMap<HoldingIdentity, GroupPolicy>()
 
     private fun getKeySpec(tenantId: String): KeyGenerationSpec {
-        return KeyGenerationSpec(keyScheme, "$tenantId-sessionInit", MASTER_KEY_ALIAS)
+        return KeyGenerationSpec(keyScheme, "$tenantId-sessionInit", WRAPPING_KEY_ALIAS)
     }
 
     override fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy {
@@ -51,7 +50,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                 CRYPTO_TENANT_ID to tenantId,
                 CRYPTO_CATEGORY to SESSION_INIT
             ))
-            privateKeyService.store(sessionKey as GeneratedWrappedKey)
+            privateKeyService.store(sessionKey)
             val sessionContext = mapOf(
                 FIRST_SESSION_KEY to schemeMetadata.encodeAsString(sessionKey.publicKey),
                 CRYPTO_TENANT_ID to tenantId

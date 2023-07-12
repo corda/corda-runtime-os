@@ -1,9 +1,10 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.data.membership.command.registration.RegistrationCommand
+import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
-import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.p2p.SetOwnRegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
+import net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
@@ -13,6 +14,12 @@ import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.membership.impl.registration.dynamic.handler.TestUtils.mockMemberInfo
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.lib.VersionedMessageBuilder
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.DECLINE_REGISTRATION
 import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -21,12 +28,16 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 class DeclineRegistrationHandlerTest {
     private companion object {
@@ -37,6 +48,7 @@ class DeclineRegistrationHandlerTest {
 
     private val mgm = createTestHoldingIdentity("C=GB, L=London, O=MGM", GROUP_ID).toAvro()
     private val member = createTestHoldingIdentity("C=GB, L=London, O=Alice", GROUP_ID).toAvro()
+    private val memberInfo = mockMemberInfo(holdingIdentity = member.toCorda(), status = MEMBER_STATUS_PENDING)
     private val command = DeclineRegistration()
     private val state = RegistrationState(
         REGISTRATION_ID,
@@ -83,11 +95,25 @@ class DeclineRegistrationHandlerTest {
             )
         } doReturn record
     }
+    private val membershipQueryClient = mock<MembershipQueryClient> {
+        on { queryMemberInfo(eq(mgm.toCorda()), eq(listOf(member.toCorda()))) } doReturn MembershipQueryResult.Success(listOf(memberInfo))
+    }
 
-    private val handler = DeclineRegistrationHandler(membershipPersistenceClient, mock(), mock(), mock(), config, p2pRecordsFactory)
+    private val handler = DeclineRegistrationHandler(
+        membershipPersistenceClient, membershipQueryClient, mock(), mock(), mock(), config, p2pRecordsFactory
+    )
 
     @Test
-    fun `handler calls persistence client and returns no output states`() {
+    fun `handler calls persistence client and returns output states`() {
+        val expectedOutputStates = listOf(
+            record,
+            Record(
+                topic = REGISTRATION_COMMAND_TOPIC,
+                key = member.toString(),
+                value = RegistrationCommand(CheckForPendingRegistration(mgm, member, 0))
+            )
+        ) + commands
+
         val result = handler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
 
         verify(membershipPersistenceClient, times(1)).setRegistrationRequestStatus(
@@ -96,15 +122,14 @@ class DeclineRegistrationHandlerTest {
             RegistrationStatus.DECLINED
         )
 
-        assertThat(result.outputStates)
-            .hasSize(2)
-            .contains(record)
-            .containsAll(commands)
-        with(result.updatedState) {
-            assertThat(this?.registeringMember).isEqualTo(member)
-            assertThat(this?.mgm).isEqualTo(mgm)
-            assertThat(this?.registrationId).isEqualTo(REGISTRATION_ID)
-        }
+        assertThat(result.updatedState).isNull()
+        assertThat(result.outputStates).containsExactlyInAnyOrderElementsOf(expectedOutputStates)
+
+        val registrationCommand = result.outputStates.single { it.topic == REGISTRATION_COMMAND_TOPIC }
+        val checkForPendingRegistration = (registrationCommand.value as? RegistrationCommand)?.command as? CheckForPendingRegistration
+        assertThat(checkForPendingRegistration?.mgm).isEqualTo(mgm)
+        assertThat(checkForPendingRegistration?.member).isEqualTo(member)
+        assertThat(checkForPendingRegistration?.numberOfRetriesSoFar).isEqualTo(0)
     }
 
     @Test
@@ -115,9 +140,36 @@ class DeclineRegistrationHandlerTest {
     }
 
     @Test
+    fun `handler does not send registration status update message when status cannot be retrieved`() {
+        val mockedBuilder = Mockito.mockStatic(VersionedMessageBuilder::class.java).also {
+            it.`when`<VersionedMessageBuilder> {
+                VersionedMessageBuilder.retrieveRegistrationStatusMessage(any(), any(), any())
+            } doReturn null
+        }
+
+        val results = handler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
+        verify(p2pRecordsFactory, never()).createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
+        assertThat(results.outputStates)
+            .hasSize(2)
+        results.outputStates.forEach { assertThat(it.value).isNotInstanceOf(AppMessage::class.java) }
+
+        mockedBuilder.close()
+    }
+
+    @Test
     fun `exception is thrown when RegistrationState is null`() {
         assertThrows<MissingRegistrationStateException> {
             handler.invoke(null, Record(TOPIC, member.toString(), RegistrationCommand(command)))
         }
+    }
+
+    @Test
+    fun `update registration status message is not sent when member's pending information cannot be found`() {
+        val activeInfo = mockMemberInfo(holdingIdentity = member.toCorda())
+        whenever(membershipQueryClient.queryMemberInfo(any(), any()))
+            .thenReturn(MembershipQueryResult.Success(listOf(activeInfo)))
+        handler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
+        verify(p2pRecordsFactory, never())
+            .createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
     }
 }

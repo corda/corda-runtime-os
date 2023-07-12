@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
+import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
@@ -7,10 +8,15 @@ import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.flows.finality.v1.FinalityNotarizationFailureType.Companion.toFinalityNotarizationFailureType
+import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersService
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.trace
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -30,6 +36,15 @@ class UtxoReceiveFinalityFlowV1(
     }
 
     override val log: Logger = UtxoReceiveFinalityFlowV1.log
+
+    @CordaInject
+    lateinit var currentGroupParametersService: CurrentGroupParametersService
+
+    @CordaInject
+    lateinit var utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService
+
+    @CordaInject
+    lateinit var signedGroupParametersVerifier: SignedGroupParametersVerifier
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
@@ -72,6 +87,8 @@ class UtxoReceiveFinalityFlowV1(
         if (log.isDebugEnabled) {
             log.debug( "Beginning receive finality for transaction: ${initialTransaction.id}")
         }
+        val currentGroupParameters = verifyLatestGroupParametersAreUsed(initialTransaction)
+        utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(currentGroupParameters)
         val transactionDependencies = initialTransaction.dependencies
         if (transactionDependencies.isNotEmpty()) {
             flowEngine.subFlow(TransactionBackchainResolutionFlow(transactionDependencies, session))
@@ -81,6 +98,23 @@ class UtxoReceiveFinalityFlowV1(
             }
         }
         return initialTransaction
+    }
+
+    @Suspendable
+    private fun verifyLatestGroupParametersAreUsed(initialTransaction: UtxoSignedTransactionInternal): SignedGroupParameters {
+        val currentGroupParameters = currentGroupParametersService.get()
+        val txGroupParametersHash =
+            (initialTransaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()
+        if (txGroupParametersHash != currentGroupParameters.hash.toString()) {
+            val message =
+                "Transactions can be created only with the latest membership group parameters. " +
+                        "Current: ${currentGroupParameters.hash} Transaction's: $txGroupParametersHash"
+            log.warn(message)
+            persistInvalidTransaction(initialTransaction)
+            throw CordaRuntimeException(message)
+        }
+        signedGroupParametersVerifier.verifySignature(currentGroupParameters)
+        return currentGroupParameters
     }
 
     @Suspendable

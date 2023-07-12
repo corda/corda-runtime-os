@@ -22,6 +22,7 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFacto
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.registration.ExpirationProcessor
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.NotReadyMembershipRegistrationException
@@ -64,6 +65,8 @@ class MGMRegistrationService @Activate constructor(
     private val groupParametersWriterService: GroupParametersWriterService,
     @Reference(service = ConfigurationGetService::class)
     private val configurationGetService: ConfigurationGetService,
+    @Reference(service = ExpirationProcessor::class)
+    private val expirationProcessor: ExpirationProcessor,
 ) : MemberRegistrationService {
 
     /**
@@ -180,6 +183,8 @@ class MGMRegistrationService @Activate constructor(
                 val groupParameters = groupParametersPersistenceResult.getOrThrow()
                 groupParametersWriterService.put(member, groupParameters)
 
+                expirationProcessor.scheduleProcessingOfExpiredRequests(member)
+
                 mgmRegistrationOutputPublisher.createRecords(mgmInfo.memberInfo)
             } catch (ex: MGMRegistrationContextValidationException) {
                 throw InvalidMembershipRegistrationException(ex.reason, ex)
@@ -214,6 +219,7 @@ class MGMRegistrationService @Activate constructor(
             setOf(
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                 LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+                LifecycleCoordinatorName.forComponent<ExpirationProcessor>(),
             )
         )
     }
