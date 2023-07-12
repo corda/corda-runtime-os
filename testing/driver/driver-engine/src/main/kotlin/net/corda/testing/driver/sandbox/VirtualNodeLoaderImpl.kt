@@ -9,8 +9,6 @@ import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.reconciliation.VersionedRecord
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE_RANKING
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo

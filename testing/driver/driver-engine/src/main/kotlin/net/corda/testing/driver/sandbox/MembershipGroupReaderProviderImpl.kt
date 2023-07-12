@@ -11,7 +11,6 @@ import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.impl.toMap
-import net.corda.crypto.softhsm.PrivateKeyService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.p2p.app.MembershipStatusFilter
@@ -45,9 +44,6 @@ import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE_FILTER
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE_RANKING
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName.SHA2_256
 import net.corda.v5.crypto.SecureHash
@@ -76,7 +72,7 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     private val groupPolicyProvider: GroupPolicyProvider,
     @Reference(target = DRIVER_SERVICE_FILTER)
     private val cryptoService: CryptoService,
-    @Reference(target = DRIVER_SERVICE_FILTER)
+    @Reference
     private val privateKeyService: PrivateKeyService,
     @Reference
     private val schemeMetadata: CipherSchemeMetadata,

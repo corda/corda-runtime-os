@@ -7,12 +7,8 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
-import net.corda.crypto.softhsm.PrivateKeyService
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.grouppolicy.GroupPolicy
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE_FILTER
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE_RANKING
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -29,7 +25,7 @@ import org.slf4j.LoggerFactory
 class GroupPolicyProviderImpl @Activate constructor(
     @Reference(target = DRIVER_SERVICE_FILTER)
     private val cryptoService: CryptoService,
-    @Reference(target = DRIVER_SERVICE_FILTER)
+    @Reference
     private val privateKeyService: PrivateKeyService,
     @Reference
     private val schemeMetadata: CipherSchemeMetadata

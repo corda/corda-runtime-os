@@ -4,8 +4,8 @@ import net.corda.orm.DatabaseType
 import net.corda.orm.DatabaseType.HSQLDB
 import net.corda.orm.DatabaseTypeProvider
 import net.corda.orm.DatabaseTypeProvider.Companion.HSQLDB_TYPE
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE_RANKING
+import net.corda.testing.driver.sandbox.DRIVER_SERVICE
+import net.corda.testing.driver.sandbox.DRIVER_SERVICE_RANKING
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
 

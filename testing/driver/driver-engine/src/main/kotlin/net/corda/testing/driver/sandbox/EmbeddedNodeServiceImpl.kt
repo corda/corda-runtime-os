@@ -19,8 +19,6 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.orm.DatabaseTypeProvider
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE_FILTER
 import net.corda.testing.driver.node.EmbeddedNodeService
 import net.corda.testing.driver.sandbox.VirtualNodeLoader.Companion.VNODE_LOADER_NAME
 import net.corda.v5.base.types.MemberX500Name
