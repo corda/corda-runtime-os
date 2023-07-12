@@ -221,7 +221,8 @@ class MemberLookupRestResourceTest {
     private val memberLookupRestResource = MemberLookupRestResourceImpl(
         lifecycleCoordinatorFactory,
         membershipGroupReaderProvider,
-        virtualNodeInfoReadService
+        virtualNodeInfoReadService,
+        mock()
     )
 
     private fun startService() {

@@ -14,7 +14,6 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.params.provider.Arguments
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -22,19 +21,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
-import java.util.stream.Stream
 
 class FlowClassRestResourceImplTest {
-
-    companion object{
-        @JvmStatic
-        fun dependants(): Stream<Arguments> {
-            return Stream.of(
-                Arguments.of(LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()),
-                Arguments.of(LifecycleCoordinatorName.forComponent<CpiInfoReadService>())
-            )
-        }
-    }
 
     private lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
     private lateinit var cpiInfoReadService: CpiInfoReadService
@@ -91,7 +79,12 @@ class FlowClassRestResourceImplTest {
     @Test
     fun `Resource not found error when no vNode exists`() {
         whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(null)
-        val flowClassRestResource = FlowClassRestResourceImpl(lifecycleCoordinatorFactory, virtualNodeInfoReadService, cpiInfoReadService)
+        val flowClassRestResource = FlowClassRestResourceImpl(
+            lifecycleCoordinatorFactory,
+            virtualNodeInfoReadService,
+            cpiInfoReadService,
+            mock()
+        )
         assertThrows<ResourceNotFoundException> {
             flowClassRestResource.getStartableFlows("1234567890ab")
         }
@@ -103,7 +96,12 @@ class FlowClassRestResourceImplTest {
     fun `Resource not found error when no CPI exists`() {
         whenever(cpiInfoReadService.get(any())).thenReturn(null)
 
-        val flowClassRestResource = FlowClassRestResourceImpl(lifecycleCoordinatorFactory, virtualNodeInfoReadService, cpiInfoReadService)
+        val flowClassRestResource = FlowClassRestResourceImpl(
+            lifecycleCoordinatorFactory,
+            virtualNodeInfoReadService,
+            cpiInfoReadService,
+            mock()
+        )
         assertThrows<ResourceNotFoundException> {
             flowClassRestResource.getStartableFlows("1234567890ab")
         }
@@ -113,7 +111,12 @@ class FlowClassRestResourceImplTest {
 
     @Test
     fun `Get flow classes executes cpi service and vnode service and returns list of strings`() {
-        val flowClassRestResource = FlowClassRestResourceImpl(lifecycleCoordinatorFactory, virtualNodeInfoReadService, cpiInfoReadService)
+        val flowClassRestResource = FlowClassRestResourceImpl(
+            lifecycleCoordinatorFactory,
+            virtualNodeInfoReadService,
+            cpiInfoReadService,
+            mock()
+        )
         flowClassRestResource.getStartableFlows("1234567890ab")
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(cpiInfoReadService, times(1)).get(any())
@@ -128,7 +131,8 @@ class FlowClassRestResourceImplTest {
             FlowClassRestResourceImpl(
                 coordinatorFactory,
                 virtualNodeInfoReadService,
-                cpiInfoReadService
+                cpiInfoReadService,
+                mock()
             )
         }
     }
