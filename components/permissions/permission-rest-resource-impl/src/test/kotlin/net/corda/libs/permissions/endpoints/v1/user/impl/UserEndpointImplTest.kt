@@ -28,6 +28,7 @@ import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
+import net.corda.libs.platform.PlatformInfoProvider
 import org.junit.jupiter.api.Assertions.assertTrue
 import java.util.UUID
 import net.corda.permissions.management.PermissionManagementService
@@ -72,7 +73,11 @@ internal class UserEndpointImplTest {
         whenever(it.permissionManager).thenReturn(permissionManager)
     }
 
-    private val endpoint = UserEndpointImpl(lifecycleCoordinatorFactory, permissionService)
+    private val platformInfoProvider = mock<PlatformInfoProvider>().also {
+        whenever(it.localWorkerPlatformVersion).thenReturn(1)
+    }
+
+    private val endpoint = UserEndpointImpl(lifecycleCoordinatorFactory, permissionService, platformInfoProvider)
 
     @BeforeEach
     fun beforeEach() {

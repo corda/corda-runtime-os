@@ -24,8 +24,8 @@ import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.TransactionIsolationLevel
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE_RANKING
+import net.corda.testing.driver.sandbox.DRIVER_SERVICE
+import net.corda.testing.driver.sandbox.DRIVER_SERVICE_RANKING
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate

@@ -18,6 +18,7 @@ import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionRespon
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.libs.permissions.manager.request.GetPermissionRequestDto
 import net.corda.libs.permissions.manager.request.QueryPermissionsRequestDto
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
@@ -25,6 +26,7 @@ import net.corda.permissions.management.PermissionManagementService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /**
@@ -37,15 +39,17 @@ class PermissionEndpointImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PermissionManagementService::class)
     private val permissionManagementService: PermissionManagementService,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : PermissionEndpoint, PluggableRestResource<PermissionEndpoint>, Lifecycle {
 
     private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val targetInterface: Class<PermissionEndpoint> = PermissionEndpoint::class.java
 
-    override val protocolVersion = 1
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     private val coordinator = coordinatorFactory.createCoordinator<PermissionEndpoint>(
         PermissionEndpointEventHandler("PermissionEndpoint")

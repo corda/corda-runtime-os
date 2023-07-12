@@ -8,8 +8,6 @@ import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.CacheControl
 import net.corda.sandboxgroupcontext.service.EvictionListener
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE_RANKING
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

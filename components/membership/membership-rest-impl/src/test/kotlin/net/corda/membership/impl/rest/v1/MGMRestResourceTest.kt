@@ -104,7 +104,8 @@ class MGMRestResourceTest {
         lifecycleCoordinatorFactory,
         mgmResourceClient,
         configurationGetService,
-        clock = MockTimeFacilitiesProvider(initialTime).clock
+        clock = MockTimeFacilitiesProvider(initialTime).clock,
+        mock()
     )
 
     private fun startService() {

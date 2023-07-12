@@ -16,9 +16,7 @@ import net.corda.crypto.core.fullId
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyStatus
-import net.corda.crypto.softhsm.PrivateKeyService
 import net.corda.data.crypto.wire.CryptoSigningKey
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE_FILTER
 import net.corda.testing.driver.sandbox.CORDA_LOCAL_IDENTITY_PID
 import net.corda.testing.driver.sandbox.CORDA_LOCAL_TENANCY_PID
 import net.corda.testing.driver.sandbox.CORDA_MEMBER_COUNT
@@ -28,6 +26,7 @@ import net.corda.testing.driver.sandbox.CORDA_MEMBER_X500_NAME
 import net.corda.testing.driver.sandbox.CORDA_TENANT
 import net.corda.testing.driver.sandbox.CORDA_TENANT_COUNT
 import net.corda.testing.driver.sandbox.CORDA_TENANT_MEMBER
+import net.corda.testing.driver.sandbox.PrivateKeyService
 import net.corda.testing.driver.sandbox.WRAPPING_KEY_ALIAS
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -45,7 +44,7 @@ import org.osgi.service.component.annotations.Reference
 class SigningKeyProvider @Activate constructor(
     @Reference
     schemeMetadata: CipherSchemeMetadata,
-    @Reference(target = DRIVER_SERVICE_FILTER)
+    @Reference
     privateKeyService: PrivateKeyService,
     properties: Map<String, Any>
 ) {

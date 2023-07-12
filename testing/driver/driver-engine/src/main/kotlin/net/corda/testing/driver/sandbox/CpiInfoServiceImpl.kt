@@ -6,8 +6,6 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.reconciliation.VersionedRecord
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE_RANKING
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

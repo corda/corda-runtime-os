@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.flows.backchain
 
 import net.corda.ledger.utxo.flow.impl.flows.backchain.v1.TransactionBackchainSenderFlowV1
+import net.corda.libs.platform.PlatformVersion.CORDA_5_1
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -22,8 +23,8 @@ class TransactionBackchainSenderFlowVersionedFlowFactoryTest {
     }
 
     @Test
-    fun `with platform version 50099 creates TransactionBackchainSenderFlowV1`() {
-        val flow = factory.create(50099, listOf(mock()))
+    fun `with last potential 5_0 platform version creates TransactionBackchainSenderFlowV1`() {
+        val flow = factory.create(CORDA_5_1.value - 1, listOf(mock()))
         assertThat(flow).isExactlyInstanceOf(TransactionBackchainSenderFlowV1::class.java)
         assertSame(
             TransactionBackChainResolutionVersion.V1,
@@ -32,8 +33,8 @@ class TransactionBackchainSenderFlowVersionedFlowFactoryTest {
     }
 
     @Test
-    fun `with platform version 50100 creates TransactionBackchainSenderFlowV2`() {
-        val flow = factory.create(50100, listOf(mock()))
+    fun `with first 5_1 platform version creates TransactionBackchainSenderFlowV2`() {
+        val flow = factory.create(CORDA_5_1.value, listOf(mock()))
         assertThat(flow).isExactlyInstanceOf(TransactionBackchainSenderFlowV1::class.java)
         assertSame(
             TransactionBackChainResolutionVersion.V2,

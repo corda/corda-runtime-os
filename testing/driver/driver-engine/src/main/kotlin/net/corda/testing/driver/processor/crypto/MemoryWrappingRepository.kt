@@ -3,8 +3,8 @@ package net.corda.testing.driver.processor.crypto
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.WrappingRepository
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE
-import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE_RANKING
+import net.corda.testing.driver.sandbox.DRIVER_SERVICE
+import net.corda.testing.driver.sandbox.DRIVER_SERVICE_RANKING
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
 

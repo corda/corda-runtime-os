@@ -63,7 +63,7 @@ class KeysRestResourceImplTest {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
 
-    private val keysOps = KeysRestResourceImpl(cryptoOpsClient, keyEncodingService, lifecycleCoordinatorFactory)
+    private val keysOps = KeysRestResourceImpl(cryptoOpsClient, keyEncodingService, lifecycleCoordinatorFactory, mock())
 
     @Nested
     inner class BasicApiTests {

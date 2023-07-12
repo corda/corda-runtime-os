@@ -47,7 +47,8 @@ class CpiUploadRestResourceImplTest {
         }
         cpiUploadService = mock()
         cpiInfoReadService = mock()
-        cpiUploadRestResourceImpl = CpiUploadRestResourceImpl(coordinatorFactory, cpiUploadService, cpiInfoReadService)
+        cpiUploadRestResourceImpl =
+            CpiUploadRestResourceImpl(coordinatorFactory, cpiUploadService, cpiInfoReadService, mock())
         cpiUploadManager = mock()
         val mockStatus = mock<UploadStatus>()
         whenever(mockStatus.message).thenReturn(EXPECTED_MESSAGE)
