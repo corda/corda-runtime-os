@@ -18,6 +18,7 @@ import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
@@ -35,7 +36,9 @@ class CpiUploadRestResourceImpl @Activate constructor(
     @Reference(service = CpiUploadService::class)
     private val cpiUploadService: CpiUploadService,
     @Reference(service = CpiInfoReadService::class)
-    private val cpiInfoReadService: CpiInfoReadService
+    private val cpiInfoReadService: CpiInfoReadService,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider
 ) : CpiUploadRestResource, PluggableRestResource<CpiUploadRestResource>, Lifecycle {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -47,7 +50,7 @@ class CpiUploadRestResourceImpl @Activate constructor(
 
     private val cpiUploadManager get() = cpiUploadService.cpiUploadManager
 
-    override val protocolVersion: Int = 1
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     override val targetInterface: Class<CpiUploadRestResource> = CpiUploadRestResource::class.java
 

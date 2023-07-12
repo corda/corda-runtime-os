@@ -55,7 +55,7 @@ class VirtualNodeMaintenanceRestResourceImplTest {
         @Test
         fun `verify coordinator is started on start`() {
             val restResource =
-                VirtualNodeMaintenanceRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock())
+                VirtualNodeMaintenanceRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock(), mock())
             restResource.start()
 
             verify(mockCoordinator).start()
@@ -64,7 +64,7 @@ class VirtualNodeMaintenanceRestResourceImplTest {
         @Test
         fun `verify coordinator is stopped on stop`() {
             val restResource =
-                VirtualNodeMaintenanceRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock())
+                VirtualNodeMaintenanceRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock(), mock())
             restResource.stop()
 
             verify(mockCoordinator).stop()
@@ -73,7 +73,7 @@ class VirtualNodeMaintenanceRestResourceImplTest {
         @Test
         fun `verify coordinator isRunning defers to the coordinator`() {
             val restResource =
-                VirtualNodeMaintenanceRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock())
+                VirtualNodeMaintenanceRestResourceImpl(mockCoordinatorFactory, mock(), mock(), mock(), mock())
             restResource.isRunning
 
             verify(mockCoordinator).isRunning
@@ -83,7 +83,7 @@ class VirtualNodeMaintenanceRestResourceImplTest {
         @Test
         fun `verify exception throw if forceCpiUpload is performed while coordinator is not running`() {
             val restResource =
-                VirtualNodeMaintenanceRestResourceImpl(mockDownCoordinatorFactory, mock(), mock(), mock())
+                VirtualNodeMaintenanceRestResourceImpl(mockDownCoordinatorFactory, mock(), mock(), mock(), mock())
             assertThrows<IllegalStateException> {
                 restResource.forceCpiUpload(mock())
             }
@@ -111,7 +111,13 @@ class VirtualNodeMaintenanceRestResourceImplTest {
         @Test
         fun `verify forceCpiUpload performs call to uploadCpi on cpiUploadManager`() {
             val restResource =
-                VirtualNodeMaintenanceRestResourceImpl(mockCoordinatorFactory, mock(), mockCpiUploadService, mock())
+                VirtualNodeMaintenanceRestResourceImpl(
+                    mockCoordinatorFactory,
+                    mock(),
+                    mockCpiUploadService,
+                    mock(),
+                    mock()
+                )
             restResource.forceCpiUpload(mockUpload)
 
             verify(mockCpiUploadService.cpiUploadManager)

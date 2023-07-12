@@ -19,7 +19,8 @@ dependencies {
     implementation project(':libs:rest:rest-common')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
-    implementation project(":libs:utilities")
+    implementation project(':libs:utilities')
+    implementation project(':libs:platform-info')
 
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
