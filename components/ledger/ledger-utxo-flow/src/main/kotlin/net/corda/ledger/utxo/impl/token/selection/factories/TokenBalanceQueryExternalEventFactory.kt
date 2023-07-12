@@ -11,7 +11,6 @@ import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.ledger.utxo.impl.token.selection.impl.TokenBalanceImpl
 import net.corda.schema.Schemas
 import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 import net.corda.v5.ledger.utxo.token.selection.TokenBalanceCriteria
@@ -22,6 +21,7 @@ import org.osgi.service.component.annotations.Component
 class TokenBalanceQueryExternalEventFactory @Activate constructor() :
     ExternalEventFactory<TokenBalanceCriteria, TokenBalanceQueryResult, TokenBalance> {
 
+    private val tokenBalanceFactoryImpl = TokenBalanceFactoryImpl()
     override val responseType = TokenBalanceQueryResult::class.java
 
     override fun createExternalEvent(
@@ -48,7 +48,7 @@ class TokenBalanceQueryExternalEventFactory @Activate constructor() :
     }
 
     override fun resumeWith(checkpoint: FlowCheckpoint, response: TokenBalanceQueryResult): TokenBalance {
-        return TokenBalanceImpl(response.availableBalance.toBigDecimal(), response.totalBalance.toBigDecimal())
+        return tokenBalanceFactoryImpl.createTokenBalance(response.availableBalance.toBigDecimal(), response.totalBalance.toBigDecimal())
     }
 
     private fun TokenAmount.toBigDecimal() =

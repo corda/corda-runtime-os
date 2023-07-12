@@ -92,7 +92,7 @@ class RecordFactoryImplTest {
             flowId,
             externalEventRequestId,
             POOL_CACHE_KEY,
-            TokenBalanceImpl(BigDecimal(1.0), BigDecimal(2.0))
+            Pair(BigDecimal(1.0), BigDecimal(2.0))
         )
 
         assertThat(result).isSameAs(response)

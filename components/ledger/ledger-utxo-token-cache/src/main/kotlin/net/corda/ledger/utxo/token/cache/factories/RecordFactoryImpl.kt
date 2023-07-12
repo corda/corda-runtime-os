@@ -58,12 +58,12 @@ class RecordFactoryImpl(private val externalEventResponseFactory: ExternalEventR
         flowId: String,
         externalEventRequestId: String,
         poolKey: TokenPoolCacheKey,
-        tokenBalance: TokenBalance
+        availableAndTotalBalancePair: Pair<BigDecimal, BigDecimal>
     ): Record<String, FlowEvent> {
         val payload = TokenBalanceQueryResult().apply {
             this.poolKey = poolKey
-            this.availableBalance = tokenBalance.availableBalance.toTokenAmount()
-            this.totalBalance = tokenBalance.totalBalance.toTokenAmount()
+            this.availableBalance = availableAndTotalBalancePair.first.toTokenAmount()
+            this.totalBalance = availableAndTotalBalancePair.second.toTokenAmount()
         }
 
         return externalEventResponseFactory.success(externalEventRequestId, flowId, payload)

@@ -28,7 +28,7 @@ class TokenCacheProcessorImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = TokenCacheComponentFactory::class)
-    private val tokenCacheComponentFactory: TokenCacheComponentFactory,
+    private val tokenCacheComponentFactory: TokenCacheComponentFactory
 ) : TokenCacheProcessor {
 
     private companion object {

@@ -2,14 +2,12 @@ package net.corda.ledger.utxo.token.cache.handlers
 
 import java.math.BigDecimal
 import net.corda.data.flow.event.FlowEvent
-import net.corda.ledger.utxo.impl.token.selection.impl.TokenBalanceImpl
 import net.corda.ledger.utxo.token.cache.entities.BalanceQuery
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
 import net.corda.messaging.api.records.Record
-import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 
 class TokenBalanceQueryEventHandler(
     private val filterStrategy: TokenFilterStrategy,
@@ -22,17 +20,17 @@ class TokenBalanceQueryEventHandler(
         event: BalanceQuery
     ): Record<String, FlowEvent> {
 
-        val tokenBalance = calculateTokenBalance(tokenCache, state, event)
+        val avaibleTotalBalancePair = calculateTokenBalance(tokenCache, state, event)
 
         return recordFactory.getBalanceResponse(
             event.flowId,
             event.externalEventRequestId,
             event.poolKey,
-            tokenBalance
+            avaibleTotalBalancePair
         )
     }
 
-    private fun calculateTokenBalance(tokenCache: TokenCache, state: PoolCacheState, event: BalanceQuery): TokenBalance {
+    private fun calculateTokenBalance(tokenCache: TokenCache, state: PoolCacheState, event: BalanceQuery): Pair<BigDecimal, BigDecimal> {
         var availableBalance = BigDecimal.ZERO
         var totalBalance = BigDecimal.ZERO
 
@@ -43,6 +41,6 @@ class TokenBalanceQueryEventHandler(
             totalBalance += token.amount
         }
 
-        return TokenBalanceImpl(availableBalance, totalBalance)
+        return Pair(availableBalance, totalBalance)
     }
 }
