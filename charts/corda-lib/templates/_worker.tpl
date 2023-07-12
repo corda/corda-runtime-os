@@ -115,8 +115,7 @@ spec:
       serviceAccountName: {{ . }}
       {{- end }}
       {{- include "corda.topologySpreadConstraints" $ | indent 6 }}
-      affinity: 
-        {{- include "corda.affinity" (list $ . $worker ) | nindent 8 }}
+      {{- include "corda.affinity" (list $ . $worker ) | nindent 6 }}
       containers:
       - name: {{ $workerName | quote }}
         image: {{ include "corda.workerImage" ( list $ . ) }}
@@ -462,7 +461,6 @@ Worker affinity
 {{- $ := index . 0 }}
 {{- $worker := index . 2 }}
 {{- $affinity := default $.Values.affinity dict }}
-
 {{- if not ($affinity.podAntiAffinity) }}
 {{- $_ := set $affinity "podAntiAffinity" dict }}
 {{- end }}
@@ -470,5 +468,6 @@ Worker affinity
 {{- $_ := set $affinity.podAntiAffinity "preferredDuringSchedulingIgnoredDuringExecution" list }}
 {{- end }}
 {{- $_ := set $affinity.podAntiAffinity "preferredDuringSchedulingIgnoredDuringExecution" ( append $affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution ( fromYaml ( include "corda.defaultAffinity" ( list ( add ( len $affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution ) 1 ) $worker ) ) ) ) }}
-{{- toYaml $affinity }}
+affinity:
+{{- toYaml $affinity | nindent 2 }}
 {{- end }}
