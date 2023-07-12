@@ -2,6 +2,7 @@ package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.core.ShortHash
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
@@ -27,8 +28,6 @@ import net.corda.virtualnode.read.rest.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 @Component(service = [PluggableRestResource::class])
 class MemberLookupRestResourceImpl @Activate constructor(
@@ -37,11 +36,10 @@ class MemberLookupRestResourceImpl @Activate constructor(
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : MemberLookupRestResource, PluggableRestResource<MemberLookupRestResource>, Lifecycle {
-    companion object {
-        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
 
     private interface InnerMemberLookupRestResource {
         @Suppress("LongParameterList")
@@ -59,9 +57,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
         fun viewGroupParameters(holdingIdentityShortHash: ShortHash): Map<String, String>
     }
 
-    override val protocolVersion = 1
-
-    private val className = this::class.java.simpleName
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     private var impl: InnerMemberLookupRestResource = InactiveImpl
 
@@ -176,10 +172,10 @@ class MemberLookupRestResourceImpl @Activate constructor(
             }
 
             return RestMemberInfoList(
-                filteredMembers.map {
+                filteredMembers.map { memberInfo ->
                     RestMemberInfo(
-                        it.memberProvidedContext.entries.associate { it.key to it.value },
-                        it.mgmProvidedContext.entries.associate { it.key to it.value }
+                        memberInfo.memberProvidedContext.entries.associate { it.key to it.value },
+                        memberInfo.mgmProvidedContext.entries.associate { it.key to it.value }
                     )
                 }
             )

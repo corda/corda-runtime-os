@@ -80,6 +80,7 @@ class CertificatesRestResourceImplTest {
         lifecycleCoordinatorFactory,
         certificatesClient,
         virtualNodeInfoReadService,
+        mock()
     )
 
     @Nested

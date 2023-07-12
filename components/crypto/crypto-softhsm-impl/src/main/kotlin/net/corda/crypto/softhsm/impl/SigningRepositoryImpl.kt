@@ -37,6 +37,7 @@ import java.time.Instant
 import java.util.*
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import net.corda.crypto.core.CryptoConsts
 
 @Suppress("LongParameterList")
 class SigningRepositoryImpl(
@@ -107,7 +108,7 @@ class SigningRepositoryImpl(
             alias = context.alias,
             hsmAlias = null,
             externalId = context.externalId,
-            hsmId = context.hsmId,
+            hsmId = CryptoConsts.SOFT_HSM_ID,
             status = SigningKeyEntityStatus.NORMAL
         )
         entityManagerFactory.createEntityManager().use {

@@ -16,6 +16,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -45,6 +46,8 @@ class KeysRestResourceImpl @Activate constructor(
     private val keyEncodingService: KeyEncodingService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : KeysRestResource, PluggableRestResource<KeysRestResource>, Lifecycle {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -222,7 +225,7 @@ class KeysRestResourceImpl @Activate constructor(
 
     override val targetInterface = KeysRestResource::class.java
 
-    override val protocolVersion = 1
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<KeysRestResource>(
         protocolVersion.toString()
