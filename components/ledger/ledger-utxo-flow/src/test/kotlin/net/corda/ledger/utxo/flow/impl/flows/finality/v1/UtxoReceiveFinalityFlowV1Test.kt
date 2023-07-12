@@ -14,8 +14,8 @@ import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
-import net.corda.ledger.utxo.flow.impl.flows.finality.INITIAL_TRANSACTION
-import net.corda.ledger.utxo.flow.impl.flows.finality.NUMBER_OF_COUNTER_PARTIES
+import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityFlowPayload.INITIAL_TRANSACTION
+import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityFlowPayload.WAIT_FOR_ADDITIONAL_SIGNATURES
 import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
@@ -114,7 +114,7 @@ class UtxoReceiveFinalityFlowV1Test {
 
         whenever(session.receive(Map::class.java)).thenReturn(receivedPayload)
         whenever(session.receive(Map::class.java)[INITIAL_TRANSACTION]).thenReturn(signedTransaction)
-        whenever(session.receive(Map::class.java)[NUMBER_OF_COUNTER_PARTIES]).thenReturn(2)
+        whenever(session.receive(Map::class.java)[WAIT_FOR_ADDITIONAL_SIGNATURES]).thenReturn(true)
 
         whenever(memberLookup.myInfo()).thenReturn(memberInfo)
 
@@ -491,7 +491,7 @@ class UtxoReceiveFinalityFlowV1Test {
 
     @Test
     fun `skip receiving and persisting signatures when there are only two parties`() {
-        whenever(session.receive(Map::class.java)[NUMBER_OF_COUNTER_PARTIES]).thenReturn(1)
+        whenever(session.receive(Map::class.java)[WAIT_FOR_ADDITIONAL_SIGNATURES]).thenReturn(false)
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1))
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature2))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
