@@ -382,6 +382,7 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `group parameters are successfully persisted on receiving membership package from MGM`() {
+        whenever(membershipPackage.memberships).doReturn(null)
         postConfigChangedEvent()
         synchronisationService.start()
 

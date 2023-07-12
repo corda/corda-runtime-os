@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.ShortHash
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.actions.request.DistributeGroupParameters
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -597,9 +598,8 @@ class MGMResourceClientImpl @Activate constructor(
             holdingIdentityShortHash: ShortHash, newGroupParameters: Map<String, String>
         ): InternalGroupParameters {
             val mgm = mgmHoldingIdentity(holdingIdentityShortHash)
-            val groupReader = membershipGroupReaderProvider.getGroupReader(mgm)
 
-            groupReader.groupParameters.let { current ->
+            membershipGroupReaderProvider.getGroupReader(mgm).groupParameters.let { current ->
                 val changeableParameters = current?.toMap()?.filterNot {
                     it.key in setOf(EPOCH_KEY, MODIFIED_TIME_KEY) || it.key.startsWith(NOTARIES_KEY)
                 }
@@ -614,22 +614,16 @@ class MGMResourceClientImpl @Activate constructor(
                 mgm, newGroupParameters
             ).getOrThrow()
 
-            createDistributionRequest(
-                mgm,
-                updatedParameters.epoch,
-                groupReader.lookup(mgm.x500Name)?.serial ?: throw CouldNotFindMemberException(holdingIdentityShortHash)
-            )
+            createDistributionRequest(mgm, updatedParameters.epoch)
 
             return updatedParameters
         }
 
-        private fun createDistributionRequest(mgm: HoldingIdentity, epoch: Int, serial: Long) {
+        private fun createDistributionRequest(mgm: HoldingIdentity, epoch: Int) {
             val distributionRequest = MembershipActionsRequest(
-                DistributeMemberInfo(
-                    mgm.toAvro(),
+                DistributeGroupParameters(
                     mgm.toAvro(),
                     epoch,
-                    serial
                 )
             )
             coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.apply {

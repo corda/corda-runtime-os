@@ -8,6 +8,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.data.membership.PersistentGroupParameters
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.actions.request.DistributeGroupParameters
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -1869,11 +1870,9 @@ class MGMResourceClientTest {
                         topic = Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC,
                         key = "${mgmX500Name}-${DEFAULT_MEMBER_GROUP_ID}",
                         value = MembershipActionsRequest(
-                            DistributeMemberInfo(
+                            DistributeGroupParameters(
                                 HoldingIdentity(mgmX500Name, DEFAULT_MEMBER_GROUP_ID).toAvro(),
-                                HoldingIdentity(mgmX500Name, DEFAULT_MEMBER_GROUP_ID).toAvro(),
-                                groupParametersEpoch,
-                                alice.serial
+                                groupParametersEpoch
                             )
                         )
                     )

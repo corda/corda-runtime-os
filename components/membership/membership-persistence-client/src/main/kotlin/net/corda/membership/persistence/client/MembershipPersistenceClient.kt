@@ -320,8 +320,9 @@ interface MembershipPersistenceClient : Lifecycle {
     ): MembershipPersistenceOperation<StaticNetworkInfo>
 
     /**
-     * TODO
-     * Updates the group parameters, and triggers their distribution to group members.
+     * Persists changes to the group parameters as submitted by the MGM. The persisted group parameters are
+     * constructed with [newGroupParameters], along with notary information and updated epoch and
+     * modified time parameters populated by the platform.
      *
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
      * @param newGroupParameters Updated version of the group parameters.

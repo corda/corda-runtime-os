@@ -17,6 +17,7 @@ import kotlin.jvm.Throws
 /**
  * The MGM ops client to perform group operations.
  */
+@Suppress("TooManyFunctions")
 interface MGMResourceClient : Lifecycle {
 
     /**

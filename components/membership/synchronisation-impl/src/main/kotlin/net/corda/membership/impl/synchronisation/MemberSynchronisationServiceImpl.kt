@@ -288,7 +288,7 @@ class MemberSynchronisationServiceImpl internal constructor(
 
             return try {
                 cancelCurrentRequestAndScheduleNewOne(viewOwningMember, mgm)
-                val updateMembersInfo = updates.membershipPackage.memberships.memberships.map { update ->
+                val updateMembersInfo = updates.membershipPackage.memberships?.memberships?.map { update ->
                     verifier.verify(
                         update.memberContext.signature,
                         update.memberContext.signatureSpec,
@@ -308,7 +308,7 @@ class MemberSynchronisationServiceImpl internal constructor(
                         memberContext.toSortedMap(),
                         mgmContext.toSortedMap()
                     )
-                }.associateBy { it.id }
+                }?.associateBy { it.id } ?: emptyMap()
 
                 val persistentMemberInfoRecords = updateMembersInfo.entries.map { (id, memberInfo) ->
                     val persistentMemberInfo = PersistentMemberInfo(
@@ -323,7 +323,7 @@ class MemberSynchronisationServiceImpl internal constructor(
                     )
                 }
 
-                val packageHash = updates.membershipPackage.memberships.hashCheck?.toCorda()
+                val packageHash = updates.membershipPackage.memberships?.hashCheck?.toCorda()
                 val groupReader = membershipGroupReaderProvider.getGroupReader(viewOwningMember)
                 val allRecords = if (packageHash == null) {
                     persistentMemberInfoRecords + createSynchronisationRequestMessage(

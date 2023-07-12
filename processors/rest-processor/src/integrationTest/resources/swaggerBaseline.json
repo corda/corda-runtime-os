@@ -2443,6 +2443,72 @@
         }
       }
     },
+    "/mgm/{holdingidentityshorthash}/group-parameters" : {
+      "post" : {
+        "tags" : [ "MGM API" ],
+        "description" : "This API allows you to make changes to the group parameters by submitting an updated version of the group parameters.",
+        "operationId" : "post_mgm__holdingidentityshorthash__group_parameters",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "newGroupParameters" : {
+                    "type" : "object",
+                    "additionalProperties" : {
+                      "type" : "string",
+                      "example" : "string"
+                    },
+                    "description" : "Updated version of the group parameters",
+                    "nullable" : false,
+                    "example" : "No example available for this type"
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "The newly updated group parameters",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "additionalProperties" : {
+                    "type" : "string",
+                    "example" : "string"
+                  },
+                  "nullable" : false,
+                  "example" : "No example available for this type"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/mgm/{holdingidentityshorthash}/info" : {
       "get" : {
         "tags" : [ "MGM API" ],
