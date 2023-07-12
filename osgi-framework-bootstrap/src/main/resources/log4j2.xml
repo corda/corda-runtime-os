@@ -50,6 +50,30 @@
                 </Delete>
             </DefaultRolloverStrategy>
         </RollingFile>
+
+        <RollingFile name="Trace-Spans"
+                     fileName="logs/corda-trace-spans.log"
+                     filePattern="logs/corda-trace-spans.%d{MM-dd-yyyy}.%i.log"
+                     ignoreExceptions="false">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} %X - %msg%n"/>
+            <Policies>
+                <OnStartupTriggeringPolicy />
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="10 MB" />
+            </Policies>
+            <DefaultRolloverStrategy>
+                <Delete basePath="logs/">
+                    <IfFileName glob="logs/corda-trace-spans.*.log">
+                        <IfAny>
+                            <IfAccumulatedFileSize exceeds="500 MB" />
+                            <IfAccumulatedFileCount exceeds="10" />
+                        </IfAny>
+                    </IfFileName>
+                    <IfLastModified age="7d" />
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
     </Appenders>
     <Loggers>
         <logger name="Console">
@@ -58,6 +82,10 @@
 
         <logger name="net.corda.ledger" level="trace">
             <AppenderRef ref="Ledger-Detailed"/>
+        </logger>
+
+        <logger name="brave.Tracer" level="info">
+            <AppenderRef ref="Trace-Spans"/>
         </logger>
 
         <!-- log warn only for these 3rd party libs -->

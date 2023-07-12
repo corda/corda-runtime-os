@@ -90,9 +90,6 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
             tracingBuilder.addSpanHandler(spanHandler)
         }
 
-
-
-
         tracingBuilder.build().also(resourcesToClose::push)
     }
 
