@@ -1,5 +1,6 @@
 package net.corda.messagebus.db.persistence
 
+import net.corda.application.dbsetup.PostgresDbSetup.Companion.defaultNumPartitions
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.db.datamodel.CommittedOffsetEntryKey
 import net.corda.messagebus.db.datamodel.CommittedPositionEntry
@@ -35,6 +36,7 @@ class DBAccess(
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         internal val ATOMIC_TRANSACTION = TransactionRecordEntry("Atomic Transaction", TransactionState.COMMITTED)
     }
+    private val autoCreate = true
 
     fun close() {
     }
@@ -120,7 +122,13 @@ class DBAccess(
             allowDuplicate = true,
         ) { entityManager ->
             entityManager.find(TopicEntry::class.java, topic)
-                ?: throw CordaMessageAPIFatalException("Cannot find topic $topic")
+                ?: if (autoCreate) {
+                    val topicEntry = TopicEntry(topic, defaultNumPartitions)
+                    entityManager.persist(topicEntry)
+                    topicEntry
+                } else {
+                    throw CordaMessageAPIFatalException("Cannot find topic $topic")
+                }
         }
         val topicPartitions = mutableSetOf<CordaTopicPartition>()
         repeat(topicEntry.numPartitions) { partition ->
