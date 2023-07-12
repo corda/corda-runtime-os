@@ -6,9 +6,8 @@ import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesExce
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
-import net.corda.ledger.utxo.flow.impl.flows.finality.INITIAL_TRANSACTION
-import net.corda.ledger.utxo.flow.impl.flows.finality.INITIATOR
-import net.corda.ledger.utxo.flow.impl.flows.finality.NUMBER_OF_COUNTER_PARTIES
+import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityFlowPayload.INITIAL_TRANSACTION
+import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityFlowPayload.WAIT_FOR_ADDITIONAL_SIGNATURES
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
@@ -46,6 +45,13 @@ class UtxoFinalityFlowV1(
 
     private val transactionId = initialTransaction.id
 
+    /*
+    * only if the number of sessions(counterparties) is more than one,
+    * it should wait for additional signatures.
+    * Otherwise, it can be skipped since there isn't unseen signatures
+    */
+    private val waitForAdditionalSignatures = sessions.size > 1
+
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
 
@@ -67,7 +73,7 @@ class UtxoFinalityFlowV1(
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
         persistTransactionWithCounterpartySignatures(transaction)
 
-        if (sessions.size + INITIATOR > 2) {
+        if (waitForAdditionalSignatures) {
             sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
         }
 
@@ -89,7 +95,7 @@ class UtxoFinalityFlowV1(
         flowMessaging.sendAll(
             mapOf(
                 INITIAL_TRANSACTION to initialTransaction,
-                NUMBER_OF_COUNTER_PARTIES to sessions.size
+                WAIT_FOR_ADDITIONAL_SIGNATURES to waitForAdditionalSignatures
             ), sessions.toSet()
         )
         sessions.forEach {

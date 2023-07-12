@@ -5,9 +5,8 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
-import net.corda.ledger.utxo.flow.impl.flows.finality.INITIAL_TRANSACTION
-import net.corda.ledger.utxo.flow.impl.flows.finality.INITIATOR
-import net.corda.ledger.utxo.flow.impl.flows.finality.NUMBER_OF_COUNTER_PARTIES
+import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityFlowPayload.INITIAL_TRANSACTION
+import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityFlowPayload.WAIT_FOR_ADDITIONAL_SIGNATURES
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.flows.finality.v1.FinalityNotarizationFailureType.Companion.toFinalityNotarizationFailureType
@@ -39,7 +38,7 @@ class UtxoReceiveFinalityFlowV1(
     }
 
     override val log: Logger = UtxoReceiveFinalityFlowV1.log
-    private var numberOfParties = 0
+    private var waitForAdditionalSignatures = true
 
     @CordaInject
     lateinit var currentGroupParametersService: CurrentGroupParametersService
@@ -78,7 +77,7 @@ class UtxoReceiveFinalityFlowV1(
             throw CordaRuntimeException(payload.message)
         }
 
-        if (numberOfParties > 2) {
+        if (waitForAdditionalSignatures) {
             transaction = receiveSignaturesAndAddToTransaction(transaction)
             verifyAllReceivedSignatures(transaction)
             persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
@@ -93,7 +92,7 @@ class UtxoReceiveFinalityFlowV1(
     private fun receiveTransactionAndBackchain(): UtxoSignedTransactionInternal {
         val payload = session.receive(Map::class.java)
         val initialTransaction = payload[INITIAL_TRANSACTION] as UtxoSignedTransactionInternal
-        numberOfParties = INITIATOR + payload[NUMBER_OF_COUNTER_PARTIES] as Int
+        waitForAdditionalSignatures = payload[WAIT_FOR_ADDITIONAL_SIGNATURES] as Boolean
 
         if (log.isDebugEnabled) {
             log.debug( "Beginning receive finality for transaction: ${initialTransaction.id}")
