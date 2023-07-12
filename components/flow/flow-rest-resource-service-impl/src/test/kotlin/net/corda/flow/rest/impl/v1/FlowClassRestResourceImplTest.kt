@@ -5,7 +5,6 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.flow.rest.v1.FlowClassRestResource
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.test.util.identity.createTestHoldingIdentity
