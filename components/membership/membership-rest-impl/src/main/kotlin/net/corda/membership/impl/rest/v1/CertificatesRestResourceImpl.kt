@@ -458,12 +458,13 @@ class CertificatesRestResourceImpl @Activate constructor(
             false
         }
 
-        val isValidClusterTenant = tenantId in allClusterTenants
-
-        if ((!isValidShortHash && !isValidClusterTenant) || ( isValidShortHash && !isValidClusterTenant && !isVirtualNodeRegisteredForTenant)) {
+        if (tenantId in allClusterTenants) return
+        if (!isValidShortHash) throw InvalidInputDataException("Provided tenantId $tenantId is not a cluster tenant " +
+                "and is not the right size of a holding ID.")
+        if (!isVirtualNodeRegisteredForTenant) {
             throw InvalidInputDataException(
-                "Provided tenantId ($tenantId) was not valid. " +
-                        "It needs to be either a cluster tenant ($P2P or $REST) or a valid holding identity ID."
+                "Provided tenantId ($tenantId) was not valid. It needs to be either a cluster tenant ($P2P or $REST) " +
+                        "or a valid virtual node holding identity ID."
             )
         }
     }

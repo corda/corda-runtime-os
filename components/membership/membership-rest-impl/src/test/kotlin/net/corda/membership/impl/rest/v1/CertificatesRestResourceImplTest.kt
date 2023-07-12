@@ -174,17 +174,7 @@ class CertificatesRestResourceImplTest {
         @Test
         fun `it throws exception if key is not available`() {
             whenever(cryptoOpsClient.lookupKeysByIds(any(), any())).doReturn(emptyList())
-            val nodeHoldingIdentity = mock<HoldingIdentity> {
-                on { x500Name } doReturn MemberX500Name.parse("O=Alice, L=LDN, C=GB")
-            }
-            val nodeInfo = mock<VirtualNodeInfo> {
-                on { holdingIdentity } doReturn nodeHoldingIdentity
-            }
-            whenever(
-                virtualNodeInfoReadService.getByHoldingIdentityShortHash(
-                    ShortHash.of(holdingIdentityShortHash)
-                )
-            ).doReturn(nodeInfo)
+            registerVirtualNodeForTenantId(holdingIdentityShortHash)
 
             assertThrows<ResourceNotFoundException> {
                 certificatesOps.generateCsr(
@@ -199,18 +189,7 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it throws ServiceUnavailableException when repartition event happens while trying to retrieve key`() {
-            val nodeHoldingIdentity = mock<HoldingIdentity> {
-                on { x500Name } doReturn MemberX500Name.parse("O=Alice, L=LDN, C=GB")
-            }
-            val nodeInfo = mock<VirtualNodeInfo> {
-                on { holdingIdentity } doReturn nodeHoldingIdentity
-            }
-            whenever(
-                virtualNodeInfoReadService.getByHoldingIdentityShortHash(
-                    ShortHash.of(holdingIdentityShortHash)
-                )
-            ).doReturn(nodeInfo)
-
+            registerVirtualNodeForTenantId(holdingIdentityShortHash)
             whenever(cryptoOpsClient.lookupKeysByIds(any(), any())).doThrow(CordaRPCAPIPartitionException("repartition event"))
 
             val details = assertThrows<ServiceUnavailableException> {
@@ -228,17 +207,7 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it sign the request`() {
-            val nodeHoldingIdentity = mock<HoldingIdentity> {
-                on { x500Name } doReturn MemberX500Name.parse("O=Alice, L=LDN, C=GB")
-            }
-            val nodeInfo = mock<VirtualNodeInfo> {
-                on { holdingIdentity } doReturn nodeHoldingIdentity
-            }
-            whenever(
-                virtualNodeInfoReadService.getByHoldingIdentityShortHash(
-                    ShortHash.of(holdingIdentityShortHash)
-                )
-            ).doReturn(nodeInfo)
+            registerVirtualNodeForTenantId(holdingIdentityShortHash)
 
             certificatesOps.generateCsr(
                 holdingIdentityShortHash,
@@ -278,17 +247,7 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it returns the correct signature`() {
-            val nodeHoldingIdentity = mock<HoldingIdentity> {
-                on { x500Name } doReturn MemberX500Name.parse("O=Alice, L=LDN, C=GB")
-            }
-            val nodeInfo = mock<VirtualNodeInfo> {
-                on { holdingIdentity } doReturn nodeHoldingIdentity
-            }
-            whenever(
-                virtualNodeInfoReadService.getByHoldingIdentityShortHash(
-                    ShortHash.of(holdingIdentityShortHash)
-                )
-            ).doReturn(nodeInfo)
+            registerVirtualNodeForTenantId(holdingIdentityShortHash)
 
             val pem = certificatesOps.generateCsr(
                 holdingIdentityShortHash,
@@ -303,17 +262,7 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it adds alternative subject names when some are provided`() {
-            val nodeHoldingIdentity = mock<HoldingIdentity> {
-                on { x500Name } doReturn MemberX500Name.parse("O=Alice, L=LDN, C=GB")
-            }
-            val nodeInfo = mock<VirtualNodeInfo> {
-                on { holdingIdentity } doReturn nodeHoldingIdentity
-            }
-            whenever(
-                virtualNodeInfoReadService.getByHoldingIdentityShortHash(
-                    ShortHash.of(holdingIdentityShortHash)
-                )
-            ).doReturn(nodeInfo)
+            registerVirtualNodeForTenantId(holdingIdentityShortHash)
 
             val pem = certificatesOps.generateCsr(
                 holdingIdentityShortHash,
@@ -346,17 +295,7 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it will not adds alternative subject names when none are provided`() {
-            val nodeHoldingIdentity = mock<HoldingIdentity> {
-                on { x500Name } doReturn MemberX500Name.parse("O=Alice, L=LDN, C=GB")
-            }
-            val nodeInfo = mock<VirtualNodeInfo> {
-                on { holdingIdentity } doReturn nodeHoldingIdentity
-            }
-            whenever(
-                virtualNodeInfoReadService.getByHoldingIdentityShortHash(
-                    ShortHash.of(holdingIdentityShortHash)
-                )
-            ).doReturn(nodeInfo)
+            registerVirtualNodeForTenantId(holdingIdentityShortHash)
 
             val pem = certificatesOps.generateCsr(
                 holdingIdentityShortHash,
@@ -414,17 +353,7 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it will use the correct x500 name`() {
-            val nodeHoldingIdentity = mock<HoldingIdentity> {
-                on { x500Name } doReturn MemberX500Name.parse("O=Alice, L=LDN, C=GB")
-            }
-            val nodeInfo = mock<VirtualNodeInfo> {
-                on { holdingIdentity } doReturn nodeHoldingIdentity
-            }
-            whenever(
-                virtualNodeInfoReadService.getByHoldingIdentityShortHash(
-                    ShortHash.of(holdingIdentityShortHash)
-                )
-            ).doReturn(nodeInfo)
+            registerVirtualNodeForTenantId(holdingIdentityShortHash)
 
             val pem = certificatesOps.generateCsr(
                 holdingIdentityShortHash,
@@ -471,17 +400,7 @@ class CertificatesRestResourceImplTest {
         @Test
         fun `it will generate a CSR for a valid member name for TLS certificate`() {
             whenever(key.category).doReturn(CryptoConsts.Categories.TLS)
-            val nodeHoldingIdentity = mock<HoldingIdentity> {
-                on { x500Name } doReturn MemberX500Name.parse("O=Alice, L=LDN, C=GB")
-            }
-            val nodeInfo = mock<VirtualNodeInfo> {
-                on { holdingIdentity } doReturn nodeHoldingIdentity
-            }
-            whenever(
-                virtualNodeInfoReadService.getByHoldingIdentityShortHash(
-                    ShortHash.of(holdingIdentityShortHash)
-                )
-            ).doReturn(nodeInfo)
+            registerVirtualNodeForTenantId(holdingIdentityShortHash)
 
             val csr = certificatesOps.generateCsr(
                 holdingIdentityShortHash,
@@ -649,17 +568,7 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it throws exception if Signature OID can not be inferred`() {
-            val nodeHoldingIdentity = mock<HoldingIdentity> {
-                on { x500Name } doReturn MemberX500Name.parse("O=Alice, L=LDN, C=GB")
-            }
-            val nodeInfo = mock<VirtualNodeInfo> {
-                on { holdingIdentity } doReturn nodeHoldingIdentity
-            }
-            whenever(
-                virtualNodeInfoReadService.getByHoldingIdentityShortHash(
-                    ShortHash.of(holdingIdentityShortHash)
-                )
-            ).doReturn(nodeInfo)
+            registerVirtualNodeForTenantId(holdingIdentityShortHash)
 
             assertThrows<ResourceNotFoundException> {
                 certificatesOps.generateCsr(
@@ -675,17 +584,7 @@ class CertificatesRestResourceImplTest {
         @Test
         fun `it throws exception if key code name is invalid`() {
             whenever(key.schemeCodeName).doReturn("Nop")
-            val nodeHoldingIdentity = mock<HoldingIdentity> {
-                on { x500Name } doReturn MemberX500Name.parse("O=Alice, L=LDN, C=GB")
-            }
-            val nodeInfo = mock<VirtualNodeInfo> {
-                on { holdingIdentity } doReturn nodeHoldingIdentity
-            }
-            whenever(
-                virtualNodeInfoReadService.getByHoldingIdentityShortHash(
-                    ShortHash.of(holdingIdentityShortHash)
-                )
-            ).doReturn(nodeInfo)
+            registerVirtualNodeForTenantId(holdingIdentityShortHash)
 
             assertThrows<ResourceNotFoundException> {
                 certificatesOps.generateCsr(
@@ -732,6 +631,20 @@ class CertificatesRestResourceImplTest {
             return PEMParser(this.reader()).use { parser ->
                 parser.readObject() as PKCS10CertificationRequest
             }
+        }
+
+        private fun registerVirtualNodeForTenantId(holdingIdentityShortHash: String) {
+            val nodeHoldingIdentity = mock<HoldingIdentity> {
+                on { x500Name } doReturn MemberX500Name.parse("O=Alice, L=LDN, C=GB")
+            }
+            val nodeInfo = mock<VirtualNodeInfo> {
+                on { holdingIdentity } doReturn nodeHoldingIdentity
+            }
+            whenever(
+                virtualNodeInfoReadService.getByHoldingIdentityShortHash(
+                    ShortHash.of(holdingIdentityShortHash)
+                )
+            ).doReturn(nodeInfo)
         }
     }
 
