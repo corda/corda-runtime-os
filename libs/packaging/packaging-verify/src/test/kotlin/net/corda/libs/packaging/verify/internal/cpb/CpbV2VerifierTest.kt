@@ -79,7 +79,8 @@ class CpbV2VerifierTest {
         val exception = assertThrows<CertPathValidatorException> {
             verify(cpb, setOf(CA1))
         }
-        assertEquals("Error validating code signer's certificate path, X.509 name: CN=Corda Dev Root CA,OU=R3,O=Corda,L=Dublin,C=IE. Path does not chain with any of the trust anchors", exception.message)
+        assertEquals("Error validating code signer's certificate path, X.509 name: CN=Corda Dev Root CA,OU=R3," +
+                "O=Corda,L=Dublin,C=IE. Path does not chain with any of the trust anchors", exception.message)
     }
 
     @Test
