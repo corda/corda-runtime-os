@@ -1,5 +1,8 @@
 package net.corda.messaging.subscription
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
@@ -48,6 +51,9 @@ import java.time.Duration
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayDeque
 
 @Suppress("LongParameterList")
@@ -139,6 +145,11 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
         VERIFICATION_LEDGER_PROCESSOR_TOPIC to RestClient<FlowEvent>("http://corda-flow-verification-worker:8080", cordaAvroSerializer, cordaAvroDeserializer)
     )
 
+    private val processingExecutor = ThreadPoolExecutor(
+        8, 8, 0L, TimeUnit.MILLISECONDS, LinkedBlockingQueue(),
+        ThreadFactoryBuilder().setNameFormat("state-and-event-processing-thread-%d").setDaemon(false).build()
+    )
+
     override val subscriptionName: LifecycleCoordinatorName
         get() = threadLooper.lifecycleCoordinatorName
 
@@ -217,7 +228,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
 //                    batchSizeHistogram.record(events.size.toDouble())
                     log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${records.size})" }
                     producer?.beginTransaction()
-                    processEvents(events)
+                    parallelProcessEvents(events)
                     producer?.sendRecordOffsetsToTransaction(consumer, events)
                     producer?.commitTransaction()
                 }
@@ -300,6 +311,17 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
 
     private fun markConsumerPoll(consumer: CordaConsumer<K, E>) {
         consumersLastPoll[consumer] = System.currentTimeMillis()
+    }
+
+    private fun parallelProcessEvents(events: List<CordaConsumerRecord<K, E>>) {
+        val groupedEvents = events.groupBy { it.key }
+        val futures = groupedEvents.values.map {
+                CompletableFuture.supplyAsync(
+                    { processEvents(it) },
+                    processingExecutor
+            )
+        }
+        CompletableFuture.allOf(*futures.toTypedArray()).join()
     }
 
     @Suppress("UNCHECKED_CAST")
