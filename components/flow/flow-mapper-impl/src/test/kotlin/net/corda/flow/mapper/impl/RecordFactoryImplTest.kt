@@ -19,24 +19,32 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 
 internal class RecordFactoryImplTest {
 
-    private lateinit var recordFactoryImpl: RecordFactoryImpl
+    private lateinit var recordFactoryImplSameCluster: RecordFactoryImpl
+    private lateinit var recordFactoryImplDifferentCluster: RecordFactoryImpl
 
     @BeforeEach
     fun setup() {
         val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
         whenever(cordaAvroSerializationFactory.createAvroSerializer<SessionEvent>(anyOrNull())).thenReturn(mock())
-        val locallyHostedIdentitiesService: LocallyHostedIdentitiesService = mock()
-        whenever(locallyHostedIdentitiesService.getIdentityInfo(any())).thenReturn(mock())
-        recordFactoryImpl = RecordFactoryImpl(cordaAvroSerializationFactory, locallyHostedIdentitiesService)
+
+        val locallyHostedIdentitiesServiceSameCluster: LocallyHostedIdentitiesService = mock()
+        whenever(locallyHostedIdentitiesServiceSameCluster.getIdentityInfo(any())).thenReturn(mock())
+
+        val locallyHostedIdentitiesServiceDifferentCluster: LocallyHostedIdentitiesService = mock()
+        whenever(locallyHostedIdentitiesServiceDifferentCluster.getIdentityInfo(any())).thenReturn(null)
+
+        recordFactoryImplSameCluster = RecordFactoryImpl(cordaAvroSerializationFactory, locallyHostedIdentitiesServiceSameCluster)
+        recordFactoryImplDifferentCluster = RecordFactoryImpl(cordaAvroSerializationFactory, locallyHostedIdentitiesServiceDifferentCluster)
     }
     private val flowConfig = SmartConfigImpl.empty().withValue(FlowConfig.SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
 
     @Test
-    fun `forwardError returns record`() {
+    fun `forwardError returns record for same cluster`() {
         val sessionEvent = SessionEvent(
             MessageDirection.OUTBOUND,
             Instant.now(), "", 1,
@@ -52,7 +60,7 @@ internal class RecordFactoryImplTest {
             )
         )
 
-        val record = recordFactoryImpl.forwardError(
+        val record = recordFactoryImplSameCluster.forwardError(
             sessionEvent,
             ExceptionEnvelope(
             "FlowMapper-SessionError",
@@ -63,12 +71,11 @@ internal class RecordFactoryImplTest {
         )
         Assertions.assertThat(record).isNotNull
         Assertions.assertThat(record.topic).isEqualTo("flow.mapper.event")
-        Assertions.assertThat(record.key).isEqualTo("-INITIATED")
         Assertions.assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
     }
 
     @Test
-    fun `forwardEvent returns record`() {
+    fun `forwardEvent returns record for same cluster`() {
         val sessionEvent = SessionEvent(
             MessageDirection.OUTBOUND,
             Instant.now(), "", 1,
@@ -79,7 +86,7 @@ internal class RecordFactoryImplTest {
             SessionData()
         )
 
-        val record = recordFactoryImpl.forwardEvent(
+        val record = recordFactoryImplSameCluster.forwardEvent(
             sessionEvent,
             Instant.now(),
             flowConfig,
@@ -87,12 +94,11 @@ internal class RecordFactoryImplTest {
         )
         Assertions.assertThat(record).isNotNull
         Assertions.assertThat(record.topic).isEqualTo("flow.mapper.event")
-        Assertions.assertThat(record.key).isEqualTo("-INITIATED")
         Assertions.assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
     }
 
     @Test
-    fun `forwardAck returns record`() {
+    fun `forwardAck returns record for same cluster`() {
         val sessionEvent = SessionEvent(
             MessageDirection.OUTBOUND,
             Instant.now(), "", 1,
@@ -103,7 +109,7 @@ internal class RecordFactoryImplTest {
             SessionData()
         )
 
-        val record = recordFactoryImpl.forwardAck(
+        val record = recordFactoryImplSameCluster.forwardAck(
             sessionEvent,
             Instant.now(),
             flowConfig,
@@ -111,12 +117,65 @@ internal class RecordFactoryImplTest {
         )
         Assertions.assertThat(record).isNotNull
         Assertions.assertThat(record.topic).isEqualTo("flow.mapper.event")
-        Assertions.assertThat(record.key).isEqualTo("-INITIATED")
         Assertions.assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
     }
 
     @Test
-    fun `getSessionEventOutputTopic returns topic`() {
+    fun `forwardError returns record for different cluster`() {
+        val sessionEvent = SessionEvent(
+            MessageDirection.OUTBOUND,
+            Instant.now(), "", 1,
+            HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1"),
+            HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1"),
+            0,
+            listOf(),
+            SessionError(
+                ExceptionEnvelope(
+                    "FlowMapper-SessionError",
+                    "Received SessionError with sessionId 1"
+                )
+            )
+        )
+
+        val record = recordFactoryImplDifferentCluster.forwardError(
+            sessionEvent,
+            ExceptionEnvelope(
+                "FlowMapper-SessionError",
+                "Received SessionError with sessionId 1"),
+            Instant.now(),
+            flowConfig,
+            sessionEvent.messageDirection
+        )
+        Assertions.assertThat(record).isNotNull
+        Assertions.assertThat(record.topic).isEqualTo("flow.mapper.event")
+        Assertions.assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
+    }
+
+    @Test
+    fun `forwardEvent returns record for different cluster`() {
+        val sessionEvent = SessionEvent(
+            MessageDirection.OUTBOUND,
+            Instant.now(), "", 1,
+            HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1"),
+            HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1"),
+            0,
+            listOf(),
+            SessionData(
+                ByteBuffer.wrap("data".toByteArray()))
+        )
+        val record = recordFactoryImplDifferentCluster.forwardEvent(
+            sessionEvent,
+            Instant.now(),
+            flowConfig,
+            sessionEvent.messageDirection
+        )
+        Assertions.assertThat(record).isNotNull
+        Assertions.assertThat(record.topic).isEqualTo("flow.mapper.event")
+        Assertions.assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
+    }
+
+    @Test
+    fun `forwardAck returns record for different cluster`() {
         val sessionEvent = SessionEvent(
             MessageDirection.OUTBOUND,
             Instant.now(), "", 1,
@@ -127,11 +186,54 @@ internal class RecordFactoryImplTest {
             SessionData()
         )
 
-        val topic = recordFactoryImpl.getSessionEventOutputTopic(
+        val record = recordFactoryImplDifferentCluster.forwardAck(
+            sessionEvent,
+            Instant.now(),
+            flowConfig,
+            sessionEvent.messageDirection
+        )
+        Assertions.assertThat(record).isNotNull
+        Assertions.assertThat(record.topic).isEqualTo("flow.mapper.event")
+        Assertions.assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
+    }
+
+    @Test
+    fun `getSessionEventOutputTopic returns topic when same cluster`() {
+        val sessionEvent = SessionEvent(
+            MessageDirection.OUTBOUND,
+            Instant.now(), "", 1,
+            HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1"),
+            HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1"),
+            0,
+            listOf(),
+            SessionData()
+        )
+
+        val topic = recordFactoryImplSameCluster.getSessionEventOutputTopic(
             sessionEvent,
             sessionEvent.messageDirection
         )
         Assertions.assertThat(topic).isNotNull
         Assertions.assertThat(topic).isEqualTo("flow.mapper.event")
+    }
+
+    @Test
+    fun `getSessionEventOutputTopic returns topic when different cluster`() {
+        val sessionEvent = SessionEvent(
+            MessageDirection.OUTBOUND,
+            Instant.now(), "", 1,
+            HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1"),
+            HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1"),
+            0,
+            listOf(),
+            SessionData()
+        )
+
+        val topic = recordFactoryImplDifferentCluster.getSessionEventOutputTopic(
+            sessionEvent,
+            sessionEvent.messageDirection
+        )
+        Assertions.assertThat(topic).isNotNull
+        Assertions.assertThat(topic).isEqualTo("p2p.out")
     }
 }
