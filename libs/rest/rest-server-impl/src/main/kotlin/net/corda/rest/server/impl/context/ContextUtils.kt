@@ -1,8 +1,8 @@
 package net.corda.rest.server.impl.context
 
-import io.javalin.core.util.Header
 import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
+import io.javalin.http.Header
 import io.javalin.http.UnauthorizedResponse
 import java.time.Duration
 import javax.security.auth.login.FailedLoginException
@@ -99,7 +99,7 @@ internal object ContextUtils {
 
     fun RouteInfo.invokeHttpMethod(): (Context) -> Unit {
         return { ctx ->
-            val ctxMethod = ctx.method()
+            val ctxMethod = ctx.method().name
             withMDC(restContext()?.principal ?: "<anonymous>", ctxMethod, ctx.path()) {
                 val methodLogger = ctxMethod.loggerFor()
                 methodLogger.info("Servicing $ctxMethod request to '${ctx.path()}'")
@@ -177,9 +177,9 @@ internal object ContextUtils {
     )
 
     private fun cleanUpMultipartRequest(ctx: Context) {
-        ctx.uploadedFiles().forEach { it.content.close() }
+        ctx.uploadedFiles().forEach { it.content().close() }
         // Remove all the parts and associated file storage once we are done with them
-        ctx.req.parts.forEach { part ->
+        ctx.req().parts.forEach { part ->
             try {
                 part.delete()
             } catch (e: Exception) {

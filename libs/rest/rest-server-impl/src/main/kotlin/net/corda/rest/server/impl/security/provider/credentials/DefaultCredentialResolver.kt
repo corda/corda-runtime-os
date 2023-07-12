@@ -1,6 +1,6 @@
 package net.corda.rest.server.impl.security.provider.credentials
 
-import io.javalin.core.util.Header.AUTHORIZATION
+import io.javalin.http.Header.AUTHORIZATION
 import net.corda.rest.server.impl.context.ClientRequestContext
 import net.corda.rest.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
 import net.corda.rest.server.impl.security.provider.credentials.tokens.UsernamePasswordAuthenticationCredentials
