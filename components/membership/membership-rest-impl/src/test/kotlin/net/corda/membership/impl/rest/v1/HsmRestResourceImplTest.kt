@@ -14,6 +14,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.rest.v1.types.response.HsmAssociationInfo
 import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
@@ -70,7 +71,7 @@ class HsmRestResourceImplTest {
 
         @Test
         fun `assignedHsm throws exception for unexpected category`() {
-            assertThrows<ResourceNotFoundException> {
+            assertThrows<InvalidInputDataException> {
                 ops.assignedHsm(tenantId, "Notary category")
             }
         }
