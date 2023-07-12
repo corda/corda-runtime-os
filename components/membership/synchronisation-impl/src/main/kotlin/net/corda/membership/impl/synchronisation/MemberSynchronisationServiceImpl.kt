@@ -11,8 +11,6 @@ import net.corda.crypto.core.toCorda
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.DistributionMetaData
@@ -284,30 +282,47 @@ class MemberSynchronisationServiceImpl internal constructor(
         override fun processMembershipUpdates(updates: ProcessMembershipUpdates): List<Record<*, *>> {
             val viewOwningMember = updates.synchronisationMetaData.member.toCorda()
             val mgm = updates.synchronisationMetaData.mgm.toCorda()
+            val groupReader = membershipGroupReaderProvider.getGroupReader(viewOwningMember)
+            val mgmInfo = groupReader.lookup().firstOrNull { it.isMgm } ?: throw CordaRuntimeException(
+                "Could not find MGM info in the member list for member ${viewOwningMember.x500Name}"
+            )
             logger.info("Member $viewOwningMember received membership updates from $mgm.")
 
             return try {
                 cancelCurrentRequestAndScheduleNewOne(viewOwningMember, mgm)
                 val updateMembersInfo = updates.membershipPackage.memberships?.memberships?.map { update ->
-                    verifier.verify(
-                        update.memberContext.signature,
-                        update.memberContext.signatureSpec,
-                        update.memberContext.data.array()
-                    )
-                    verifyMgmSignature(
-                        update.mgmContext.signature,
-                        update.mgmContext.signatureSpec,
-                        update.memberContext.data.array(),
-                        update.mgmContext.data.array(),
-                    )
                     val memberContext = deserializer.deserialize(update.memberContext.data.array())
                         ?: throw CordaRuntimeException("Invalid member context")
                     val mgmContext = deserializer.deserialize(update.mgmContext.data.array())
                         ?: throw CordaRuntimeException("Invalid MGM context")
-                    memberInfoFactory.create(
+                    val memberInfo = memberInfoFactory.create(
                         memberContext.toSortedMap(),
                         mgmContext.toSortedMap()
                     )
+
+                    verifier.verify(
+                        memberInfo.sessionInitiationKeys,
+                        update.memberContext.signature,
+                        update.memberContext.signatureSpec,
+                        update.memberContext.data.array()
+                    )
+
+                    val contextByteArray = listOf(
+                        update.memberContext.data.array(),
+                        update.mgmContext.data.array()
+                    )
+
+                    verifier.verify(
+                        mgmInfo.sessionInitiationKeys,
+                        update.mgmContext.signature,
+                        update.mgmContext.signatureSpec,
+                        merkleTreeGenerator
+                            .createTree(contextByteArray)
+                            .root
+                            .bytes
+                    )
+
+                    memberInfo
                 }?.associateBy { it.id } ?: emptyMap()
 
                 val persistentMemberInfoRecords = updateMembersInfo.entries.map { (id, memberInfo) ->
@@ -324,7 +339,6 @@ class MemberSynchronisationServiceImpl internal constructor(
                 }
 
                 val packageHash = updates.membershipPackage.memberships?.hashCheck?.toCorda()
-                val groupReader = membershipGroupReaderProvider.getGroupReader(viewOwningMember)
                 val allRecords = if (packageHash == null) {
                     persistentMemberInfoRecords + createSynchronisationRequestMessage(
                         groupReader,
@@ -335,7 +349,8 @@ class MemberSynchronisationServiceImpl internal constructor(
                     val knownMembers = groupReader.lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
                         .filter { !it.isMgm }.associateBy { it.id }
                     val viewOwnerShortHash = viewOwningMember.shortHash.value
-                    val latestViewOwnerMemberInfo = updateMembersInfo[viewOwnerShortHash] ?: knownMembers[viewOwnerShortHash]
+                    val latestViewOwnerMemberInfo =
+                        updateMembersInfo[viewOwnerShortHash] ?: knownMembers[viewOwnerShortHash]
                     val expectedHash = if (latestViewOwnerMemberInfo?.status == MEMBER_STATUS_SUSPENDED) {
                         merkleTreeGenerator.generateTree(listOf(latestViewOwnerMemberInfo)).root
                     } else {
@@ -353,23 +368,20 @@ class MemberSynchronisationServiceImpl internal constructor(
                     }
                 }
 
-
-                val persistRecords = groupReader.lookup().firstOrNull { it.isMgm }?.let {
+                val persistRecords = mgmInfo.let {
                     val groupParameters = parseGroupParameters(
                         it,
                         updates.membershipPackage
                     )
-                        membershipPersistenceClient
-                            .persistGroupParameters(viewOwningMember, groupParameters)
-                            .createAsyncCommands()
-                } ?: throw CordaRuntimeException(
-                    "Could not find MGM info in the member list for member ${viewOwningMember.x500Name}"
-                )
+                    membershipPersistenceClient
+                        .persistGroupParameters(viewOwningMember, groupParameters)
+                        .createAsyncCommands()
+                }
                 allRecords + persistRecords
             } catch (e: Exception) {
                 logger.warn(
                     "Failed to process membership updates received by ${viewOwningMember.x500Name}. " +
-                        "Will trigger a fresh sync with MGM.",
+                            "Will trigger a fresh sync with MGM.",
                     e,
                 )
                 createSynchroniseNowRequest(
@@ -382,16 +394,6 @@ class MemberSynchronisationServiceImpl internal constructor(
         override fun close() {
             publisher.close()
         }
-    }
-
-    private fun verifyMgmSignature(
-        mgmSignature: CryptoSignatureWithKey,
-        mgmSignatureSpec: CryptoSignatureSpec,
-        vararg leaves: ByteArray,
-    ) {
-        val data = merkleTreeGenerator.createTree(leaves.toList())
-            .root.bytes
-        verifier.verify(mgmSignature, mgmSignatureSpec, data)
     }
 
     private fun createSynchronisationRequestMessage(

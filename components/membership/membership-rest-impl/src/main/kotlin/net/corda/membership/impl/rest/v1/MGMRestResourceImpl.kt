@@ -647,18 +647,20 @@ class MGMRestResourceImpl internal constructor(
                 serial,
             )
 
-        private fun net.corda.data.membership.common.RegistrationStatus.fromAvro() = when (this) {
-            net.corda.data.membership.common.RegistrationStatus.NEW -> RegistrationStatus.NEW
-            net.corda.data.membership.common.RegistrationStatus.SENT_TO_MGM -> RegistrationStatus.SENT_TO_MGM
-            net.corda.data.membership.common.RegistrationStatus.RECEIVED_BY_MGM -> RegistrationStatus.RECEIVED_BY_MGM
-            net.corda.data.membership.common.RegistrationStatus.PENDING_MEMBER_VERIFICATION ->
+        private fun net.corda.data.membership.common.v2.RegistrationStatus.fromAvro() = when (this) {
+            net.corda.data.membership.common.v2.RegistrationStatus.NEW -> RegistrationStatus.NEW
+            net.corda.data.membership.common.v2.RegistrationStatus.SENT_TO_MGM -> RegistrationStatus.SENT_TO_MGM
+            net.corda.data.membership.common.v2.RegistrationStatus.RECEIVED_BY_MGM -> RegistrationStatus.RECEIVED_BY_MGM
+            net.corda.data.membership.common.v2.RegistrationStatus.STARTED_PROCESSING_BY_MGM ->
+                RegistrationStatus.STARTED_PROCESSING_BY_MGM
+            net.corda.data.membership.common.v2.RegistrationStatus.PENDING_MEMBER_VERIFICATION ->
                 RegistrationStatus.PENDING_MEMBER_VERIFICATION
-            net.corda.data.membership.common.RegistrationStatus.PENDING_MANUAL_APPROVAL -> RegistrationStatus.PENDING_MANUAL_APPROVAL
-            net.corda.data.membership.common.RegistrationStatus.PENDING_AUTO_APPROVAL -> RegistrationStatus.PENDING_AUTO_APPROVAL
-            net.corda.data.membership.common.RegistrationStatus.DECLINED -> RegistrationStatus.DECLINED
-            net.corda.data.membership.common.RegistrationStatus.INVALID -> RegistrationStatus.INVALID
-            net.corda.data.membership.common.RegistrationStatus.FAILED -> RegistrationStatus.FAILED
-            net.corda.data.membership.common.RegistrationStatus.APPROVED -> RegistrationStatus.APPROVED
+            net.corda.data.membership.common.v2.RegistrationStatus.PENDING_MANUAL_APPROVAL -> RegistrationStatus.PENDING_MANUAL_APPROVAL
+            net.corda.data.membership.common.v2.RegistrationStatus.PENDING_AUTO_APPROVAL -> RegistrationStatus.PENDING_AUTO_APPROVAL
+            net.corda.data.membership.common.v2.RegistrationStatus.DECLINED -> RegistrationStatus.DECLINED
+            net.corda.data.membership.common.v2.RegistrationStatus.INVALID -> RegistrationStatus.INVALID
+            net.corda.data.membership.common.v2.RegistrationStatus.FAILED -> RegistrationStatus.FAILED
+            net.corda.data.membership.common.v2.RegistrationStatus.APPROVED -> RegistrationStatus.APPROVED
         }
 
         private fun deleteGroupApprovalRule(
@@ -689,17 +691,6 @@ class MGMRestResourceImpl internal constructor(
                 throw InvalidInputDataException(
                     details = mapOf("preAuthTokenId" to preAuthTokenId),
                     message = "tokenId is not a valid pre auth token."
-                )
-            }
-        }
-
-        private fun parseRegistrationRequestId(requestId: String): UUID {
-            return try {
-                UUID.fromString(requestId)
-            } catch (e: IllegalArgumentException) {
-                throw InvalidInputDataException(
-                    details = mapOf("registrationRequestId" to requestId),
-                    message = "requestId is not a valid registration request ID."
                 )
             }
         }

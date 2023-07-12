@@ -14,7 +14,7 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationRequestDetails
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
@@ -39,6 +39,7 @@ import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARIES_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
@@ -109,6 +110,7 @@ class MGMResourceClientImpl @Activate constructor(
         const val FOLLOW_CHANGES_RESOURCE_NAME = "MGMResourceClient.followStatusChangesByName"
         const val WAIT_FOR_CONFIG_RESOURCE_NAME = "MGMResourceClient.registerComponentForUpdates"
         const val PUBLISHER_RESOURCE_NAME = "MGMResourceClient.publisher"
+        const val FORCE_DECLINE_MESSAGE = "Force declined by MGM"
 
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val clock = UTCClock()
@@ -165,6 +167,11 @@ class MGMResourceClientImpl @Activate constructor(
             requestId: UUID,
             approve: Boolean,
             reason: String?,
+        )
+
+        fun forceDeclineRegistrationRequest(
+            holdingIdentityShortHash: ShortHash,
+            requestId: UUID,
         )
 
         fun suspendMember(
@@ -255,6 +262,9 @@ class MGMResourceClientImpl @Activate constructor(
     override fun reviewRegistrationRequest(
         holdingIdentityShortHash: ShortHash, requestId: UUID, approve: Boolean, reason: String?
     ) = impl.reviewRegistrationRequest(holdingIdentityShortHash, requestId, approve, reason)
+
+    override fun forceDeclineRegistrationRequest(holdingIdentityShortHash: ShortHash, requestId: UUID) =
+        impl.forceDeclineRegistrationRequest(holdingIdentityShortHash, requestId)
 
     override fun suspendMember(
         holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
@@ -369,6 +379,10 @@ class MGMResourceClientImpl @Activate constructor(
 
         override fun reviewRegistrationRequest(
             holdingIdentityShortHash: ShortHash, requestId: UUID, approve: Boolean, reason: String?
+        ) = throw IllegalStateException(ERROR_MSG)
+
+        override fun forceDeclineRegistrationRequest(
+            holdingIdentityShortHash: ShortHash, requestId: UUID
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun suspendMember(
@@ -563,11 +577,32 @@ class MGMResourceClientImpl @Activate constructor(
             require(requestStatus.registrationStatus == RegistrationStatus.PENDING_MANUAL_APPROVAL) {
                 "Registration request must be in ${RegistrationStatus.PENDING_MANUAL_APPROVAL} status to perform this action."
             }
+            val memberName = requestStatus.memberProvidedContext.items.first { it.key == PARTY_NAME }.value
             if (approve) {
-                publishApprovalDecision(ApproveRegistration(), holdingIdentityShortHash, requestId.toString())
+                publishRegistrationCommand(ApproveRegistration(), memberName, mgm.groupId)
             } else {
-                publishApprovalDecision(DeclineRegistration(reason ?: ""), holdingIdentityShortHash, requestId.toString())
+                publishRegistrationCommand(DeclineRegistration(reason ?: ""), memberName, mgm.groupId)
             }
+        }
+
+        override fun forceDeclineRegistrationRequest(holdingIdentityShortHash: ShortHash, requestId: UUID) {
+            val mgm = mgmHoldingIdentity(holdingIdentityShortHash)
+            val requestStatus = membershipQueryClient.queryRegistrationRequest(
+                mgm, requestId.toString()
+            ).getOrThrow()
+                ?: throw IllegalArgumentException("No request with registration request ID '$requestId' was found.")
+
+            logger.info("Force declining registration request with ID='$requestId' and status='${requestStatus.registrationStatus}'.")
+
+            require(!setOf(RegistrationStatus.APPROVED, RegistrationStatus.DECLINED).contains(requestStatus.registrationStatus))
+            { "The registration process for request '$requestId' has been completed, so this request cannot be force " +
+                    "declined. Refer to the docs on Member Suspension to suspend approved members." }
+
+            publishRegistrationCommand(
+                DeclineRegistration(FORCE_DECLINE_MESSAGE),
+                requestStatus.memberProvidedContext.items.first { it.key == PARTY_NAME }.value,
+                mgm.groupId
+            )
         }
 
         override fun suspendMember(
@@ -691,12 +726,12 @@ class MGMResourceClientImpl @Activate constructor(
             }
         }
 
-        private fun publishApprovalDecision(command: Any, holdingIdentityShortHash: ShortHash, requestId: String) {
+        private fun publishRegistrationCommand(command: Any, memberName: String, groupId: String) {
             coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.publish(
                 listOf(
                     Record(
                         REGISTRATION_COMMAND_TOPIC,
-                        "$requestId-${holdingIdentityShortHash}",
+                        "${memberName}-${groupId}",
                         RegistrationCommand(command)
                     )
                 )

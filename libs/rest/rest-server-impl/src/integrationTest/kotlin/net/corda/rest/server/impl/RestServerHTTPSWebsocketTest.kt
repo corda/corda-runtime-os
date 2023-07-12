@@ -54,7 +54,7 @@ class RestServerHTTPSWebsocketTest : AbstractWebsocketTest() {
                 true
             ).apply { start() }
             client = TestHttpClientUnirestImpl(
-                "https://${restServerSettings.address.host}:${server.port}/${restServerSettings.context.basePath}/v${restServerSettings.context.version}/",
+                "https://${restServerSettings.address.host}:${server.port}/${restServerSettings.context.basePath}/${apiVersion.versionPath}/",
                 true
             )
         }

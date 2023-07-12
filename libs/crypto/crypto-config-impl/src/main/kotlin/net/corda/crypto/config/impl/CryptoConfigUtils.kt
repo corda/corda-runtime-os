@@ -142,14 +142,23 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 }
  */
 
-private const val HSM_ID = "hsmId"
+const val HSM_ID = "hsmId"
 const val EXPIRE_AFTER_ACCESS_MINS = "expireAfterAccessMins"
 const val MAXIMUM_SIZE = "maximumSize"
-private const val HSM_MAP = "hsmMap"
 const val DEFAULT = "default"
 const val CACHING = "caching"
 const val RETRYING = "retrying"
-private const val HSM = "hsm"
+
+const val HSM = "hsm"
+
+// fields of HSM config
+const val WRAPPING_KEYS = "wrappingKeys"
+const val DEFAULT_WRAPPING_KEY = "defaultWrappingKey"
+
+// fields of wrappingKekys objects
+const val ALIAS = "alias"
+const val SALT = "salt"
+const val PASSPHRASE = "passphrase"
 
 fun Map<String, SmartConfig>.toCryptoConfig(): SmartConfig =
     this[CRYPTO_CONFIG] ?: throw IllegalStateException(

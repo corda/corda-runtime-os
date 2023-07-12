@@ -66,7 +66,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
                 true
             ).apply { start() }
             client = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/" +
-                    "${restServerSettings.context.basePath}/v${restServerSettings.context.version}/")
+                    "${restServerSettings.context.basePath}/${apiVersion.versionPath}/")
         }
 
         @AfterAll
@@ -522,7 +522,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
         val apiSpec = client.call(GET, WebRequest<Any>("swagger"))
         assertEquals(HttpStatus.SC_OK, apiSpec.responseStatus)
         assertEquals("text/html", apiSpec.headers["Content-Type"])
-        val expected = """url: "/${context.basePath}/v${context.version}/swagger.json""""
+        val expected = """url: "/${context.basePath}/${apiVersion.versionPath}/swagger.json""""
         assertTrue(apiSpec.body!!.contains(expected))
     }
 
@@ -530,7 +530,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
     fun `GET swagger UI dependencies should return non empty result`() {
         val baseClient = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/")
         val swaggerUIversion = OptionalDependency.SWAGGERUI.version
-        val swagger = baseClient.call(GET, WebRequest<Any>("api/v1/swagger"))
+        val swagger = baseClient.call(GET, WebRequest<Any>("api/${apiVersion.versionPath}/swagger"))
         val swaggerUIBundleJS = baseClient.call(GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
         val swaggerUIcss = baseClient.call(GET, WebRequest<Any>("webjars/swagger-ui/$swaggerUIversion/swagger-ui-bundle.js"))
 

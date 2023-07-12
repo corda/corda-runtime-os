@@ -108,6 +108,14 @@ class DistributeMemberInfoActionHandlerTest {
         } doReturn MembershipQueryResult.Success(
             suspendMemberSignature
         )
+        on {
+            queryMembersSignatures(
+                mgm.holdingIdentity,
+                listOf(suspendedMemberInfo.holdingIdentity),
+            )
+        } doReturn MembershipQueryResult.Success(
+            suspendMemberSignature
+        )
     }
     private val cipherSchemeMetadata = mock<CipherSchemeMetadata>()
     private val clock = TestClock(Instant.ofEpochMilli(0))

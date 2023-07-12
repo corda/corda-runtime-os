@@ -36,6 +36,7 @@ class UtxoLedgerTransactionContractVerifierTest {
 
     private val transaction = mock<UtxoLedgerTransaction>()
     private val transactionFactory = mock<() -> UtxoLedgerTransaction>()
+    private val injectService = mock<(Contract) -> Unit>()
 
     @BeforeEach
     fun beforeEach() {
@@ -60,7 +61,7 @@ class UtxoLedgerTransactionContractVerifierTest {
             )
         )
         whenever(transaction.outputStateAndRefs).thenReturn(listOf(validContractCState2))
-        verifyContracts(transactionFactory, transaction, holdingIdentity)
+        verifyContracts(transactionFactory, transaction, holdingIdentity, injectService)
         // Called once for each of 3 contracts
         verify(transactionFactory, times(3)).invoke()
         assertThat(MyValidContractA.EXECUTION_COUNT).isEqualTo(1)
@@ -82,7 +83,7 @@ class UtxoLedgerTransactionContractVerifierTest {
             )
         )
         whenever(transaction.outputStateAndRefs).thenReturn(listOf(invalidContractBState))
-        assertThatThrownBy { verifyContracts(transactionFactory, transaction, holdingIdentity) }
+        assertThatThrownBy { verifyContracts(transactionFactory, transaction, holdingIdentity, injectService) }
             .isExactlyInstanceOf(ContractVerificationException::class.java)
             .hasMessageContainingAll("I have failed", "Something is wrong here")
         // Called once for each of 4 contracts

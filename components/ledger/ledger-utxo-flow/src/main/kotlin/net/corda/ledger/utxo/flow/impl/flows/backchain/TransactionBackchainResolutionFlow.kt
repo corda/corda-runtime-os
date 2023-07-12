@@ -54,7 +54,16 @@ class TransactionBackchainResolutionFlowVersionedFlowFactory(
 
     override fun create(version: Int, session: FlowSession): SubFlow<Unit> {
         return when {
-            version >= 1 -> TransactionBackchainResolutionFlowV1(initialTransactionIds, session)
+            version >= 50100 -> TransactionBackchainResolutionFlowV1(
+                initialTransactionIds,
+                session,
+                TransactionBackChainResolutionVersion.V2
+            )
+            version in 1..50099 -> TransactionBackchainResolutionFlowV1(
+                initialTransactionIds,
+                session,
+                TransactionBackChainResolutionVersion.V1
+            )
             else -> throw IllegalArgumentException()
         }
     }

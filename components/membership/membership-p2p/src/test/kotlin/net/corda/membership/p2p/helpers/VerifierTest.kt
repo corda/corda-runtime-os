@@ -31,6 +31,9 @@ class VerifierTest {
         ByteBuffer.wrap(rawPublicKey),
         ByteBuffer.wrap(rawSignature)
     )
+    private val publicKeys = (1..3).map {
+        mock<PublicKey>()
+    }
     private val signatureSpec = CryptoSignatureSpec(SPEC, null, null)
     private val publicKey = mock<PublicKey>()
     private val keyEncodingService = mock<KeyEncodingService> {
@@ -44,11 +47,9 @@ class VerifierTest {
     )
 
     @Test
-    fun `verify without key call the service with the correct arguments`() {
+    fun `verify with multiple keys call the service with the correct arguments`() {
         val data = byteArrayOf(44, 1)
-
-        verifier.verify(signature, signatureSpec, data)
-
+        verifier.verify(publicKeys + publicKey, signature, signatureSpec, data)
         verify(signatureVerificationService).verify(
             eq(data),
             eq(rawSignature),
@@ -76,7 +77,7 @@ class VerifierTest {
     }
 
     @Test
-    fun `verify without key fails if spec can not be found`() {
+    fun `verify with multiple keys fails if spec can not be found`() {
         val data = byteArrayOf(44, 1)
         val signature = CryptoSignatureWithKey(
             signature.publicKey,
@@ -85,7 +86,7 @@ class VerifierTest {
         val badSignatureSpec = CryptoSignatureSpec(null, null, null)
 
         assertThrows<CordaRuntimeException> {
-            verifier.verify(signature, badSignatureSpec, data)
+            verifier.verify(publicKeys + publicKey, signature, badSignatureSpec, data)
         }
     }
 
@@ -104,7 +105,7 @@ class VerifierTest {
     }
 
     @Test
-    fun `verify without key fails if signature verification service fails`() {
+    fun `verify with multiple keys fails if signature verification service fails`() {
         val data = byteArrayOf(44, 1)
         whenever(
             signatureVerificationService.verify(
@@ -116,7 +117,7 @@ class VerifierTest {
         ).doThrow(CryptoSignatureException("Not verified"))
 
         assertThrows<CryptoSignatureException> {
-            verifier.verify(signature, signatureSpec, data)
+            verifier.verify(publicKeys + publicKey, signature, signatureSpec, data)
         }
     }
 
@@ -139,10 +140,6 @@ class VerifierTest {
 
     @Test
     fun `verify fails if signature key is not part of the acceptable keys`() {
-        val publicKeys = (1..3).map {
-            mock<PublicKey>()
-        }
-
         assertThrows<IllegalArgumentException> {
             verifier.verify(publicKeys, signature, signatureSpec, byteArrayOf(44, 1))
         }
@@ -150,10 +147,6 @@ class VerifierTest {
 
     @Test
     fun `verify pass if signature key is part of the acceptable keys`() {
-        val publicKeys = (1..3).map {
-            mock<PublicKey>()
-        }
-
         assertDoesNotThrow {
             verifier.verify(publicKeys + publicKey, signature, signatureSpec, byteArrayOf(44, 1))
         }
