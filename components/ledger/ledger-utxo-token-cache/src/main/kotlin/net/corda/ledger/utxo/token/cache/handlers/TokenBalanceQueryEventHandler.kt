@@ -20,13 +20,13 @@ class TokenBalanceQueryEventHandler(
         event: BalanceQuery
     ): Record<String, FlowEvent> {
 
-        val avaibleTotalBalancePair = calculateTokenBalance(tokenCache, state, event)
+        val availableTotalBalancePair = calculateTokenBalance(tokenCache, state, event)
 
         return recordFactory.getBalanceResponse(
             event.flowId,
             event.externalEventRequestId,
             event.poolKey,
-            avaibleTotalBalancePair
+            availableTotalBalancePair
         )
     }
 
