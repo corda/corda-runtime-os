@@ -45,6 +45,8 @@ class MemberOpsAsyncProcessorTest {
     private companion object {
         const val FAILURE_REASON = "oops"
         const val SERIAL = 1L
+        const val TIMEOUT_REQUEST_FAILED_REASON =
+            "Registration request was not acknowledged as received by the MGM after many attempts to send it."
     }
 
     private val shortHash = ShortHash.of("123123123123")
@@ -242,6 +244,8 @@ class MemberOpsAsyncProcessorTest {
                         null,
                     ),
                 )
+            verify(membershipPersistenceClient)
+                .setRegistrationRequestStatus(identity, id.toString(), RegistrationStatus.FAILED, TIMEOUT_REQUEST_FAILED_REASON)
         }
 
         @Test
