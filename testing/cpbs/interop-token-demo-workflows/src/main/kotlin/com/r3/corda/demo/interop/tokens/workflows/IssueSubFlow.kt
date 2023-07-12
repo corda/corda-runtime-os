@@ -54,6 +54,9 @@ class IssueSubFlow(private val params: IssueFlowArgs) : SubFlow<IssueFlowResult>
                 participants = listOf(myInfo.ledgerKeys[0])
             )
 
+            val notaries = notaryLookup.notaryServices
+            require(notaries.isNotEmpty()) { "No notaries are available." }
+            require(notaries.size == 1) { "Too many notaries $notaries." }
             val notary = notaryLookup.notaryServices.single()
 
             val txBuilder = ledgerService.createTransactionBuilder()
