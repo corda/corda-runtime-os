@@ -15,6 +15,7 @@ dependencies {
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:db:db-core')
     implementation project(':libs:packaging:packaging-core')
+    implementation project(':libs:packaging:packaging')
 
     integrationTestImplementation project(':libs:db:db-admin')
     integrationTestImplementation project(':libs:db:db-admin-impl')

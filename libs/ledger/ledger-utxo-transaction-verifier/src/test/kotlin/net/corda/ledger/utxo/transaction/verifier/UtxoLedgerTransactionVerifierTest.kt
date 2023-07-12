@@ -38,9 +38,9 @@ class UtxoLedgerTransactionVerifierTest {
     private val inputTransactionState = mock<TransactionState<ContractState>>()
     private val referenceTransactionState = mock<TransactionState<ContractState>>()
     private val metadata = mock<TransactionMetadata>()
-    val holdingIdentity = HoldingIdentity(MemberX500Name("ALICE", "LDN", "GB"), "group")
-
-    private val verifier = UtxoLedgerTransactionVerifier( { transaction }, holdingIdentity = holdingIdentity)
+    private val holdingIdentity = HoldingIdentity(MemberX500Name("ALICE", "LDN", "GB"), "group")
+    private val injectionService = mock<(Contract) -> Unit>()
+    private val verifier = UtxoLedgerTransactionVerifier( { transaction }, transaction, holdingIdentity, injectionService)
 
     @BeforeEach
     fun beforeEach() {

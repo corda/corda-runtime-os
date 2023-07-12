@@ -4,11 +4,9 @@ import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.crypto.cipher.suite.GeneratedPublicKey
+import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
-import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
-import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
@@ -17,17 +15,17 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTE
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.crypto.core.KeyAlreadyExistsException
-import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeyStatus
-import net.corda.crypto.service.CryptoServiceFactory
-import net.corda.crypto.service.CryptoServiceRef
 import net.corda.crypto.service.KeyOrderBy
+import net.corda.crypto.service.TenantInfoService
 import net.corda.crypto.softhsm.SigningRepository
 import net.corda.crypto.testkit.SecureHashUtils
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SecureHash
@@ -43,7 +41,6 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -60,6 +57,7 @@ class SigningServiceGeneralTests {
     companion object {
         private lateinit var schemeMetadata: CipherSchemeMetadata
 
+        private val wrappingKeyAlias = "wrapping1"
         @BeforeAll
         @JvmStatic
         fun setup() {
@@ -83,6 +81,13 @@ class SigningServiceGeneralTests {
         val signingKeyInfo1 = mock<SigningKeyInfo> {
             on { fullId }.thenReturn(fullKeyId1)
             on { id }.thenReturn(shortKeyId1)
+        }
+
+        val association =  mock<HSMAssociationInfo> {
+            on { masterKeyAlias }.thenReturn(wrappingKeyAlias)
+        }
+        val mockTenantInfoService = mock<TenantInfoService> {
+            on { lookup(any(), any()) } doReturn association
         }
     }
 
@@ -192,7 +197,7 @@ class SigningServiceGeneralTests {
             hsmAlias = null,
             publicKey = UUID.randomUUID().toString().toByteArray(),
             keyMaterial = UUID.randomUUID().toString().toByteArray(),
-            masterKeyAlias = UUID.randomUUID().toString(),
+            wrappingKeyAlias = wrappingKeyAlias,
             externalId = null,
             schemeCodeName = ECDSA_SECP256R1_CODE_NAME,
             encodingVersion = 1,
@@ -328,83 +333,15 @@ class SigningServiceGeneralTests {
     private fun makeSigningServiceImpl(
         repo: SigningRepository,
         cache: Cache<CacheKey, SigningKeyInfo>? = null,
-        cryptoServiceFactory: CryptoServiceFactory = mock(),
+        cryptoService: CryptoService = mock(),
     ): SigningServiceImpl = SigningServiceImpl(
-        cryptoServiceFactory = cryptoServiceFactory,
+        cryptoService = cryptoService,
         signingRepositoryFactory = { repo },
         schemeMetadata = schemeMetadata,
         digestService = mockDigestService(),
-        cache = cache ?: makeCache()
+        cache = cache ?: makeCache(),
+        tenantInfoService = mockTenantInfoService,
     )
-
-    @Test
-    @Suppress("ComplexMethod")
-    fun `Should save generated key with alias`() {
-        val generatedKey = GeneratedPublicKey(
-            publicKey = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME).public,
-            hsmAlias = UUID.randomUUID().toString()
-        )
-        val expectedAlias = UUID.randomUUID().toString()
-        val signingKeyInfo = mock<SigningKeyInfo> { on { id } doReturn ShortHash.of("1234567890AB") }
-        val repo = mock<SigningRepository> {
-            on { savePublicKey(any()) } doReturn signingKeyInfo
-        }
-        val scheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
-        val ref = CryptoServiceRef(
-            tenantId = tenantId,
-            category = CryptoConsts.Categories.LEDGER,
-            masterKeyAlias = UUID.randomUUID().toString(),
-            hsmId = UUID.randomUUID().toString(),
-            instance = mock {
-                on { generateKeyPair(any(), any()) } doReturn generatedKey
-            }
-        )
-        val signingService = SigningServiceImpl(
-            signingRepositoryFactory = { repo },
-            cryptoServiceFactory = mock {
-                on { findInstance(tenantId, CryptoConsts.Categories.LEDGER) } doReturn ref
-            },
-            schemeMetadata = schemeMetadata,
-            digestService = mockDigestService(),
-            cache = mock(),
-        )
-        var result = signingService.generateKeyPair(
-            tenantId = tenantId,
-            category = CryptoConsts.Categories.LEDGER,
-            scheme = scheme,
-            alias = expectedAlias
-        )
-        assertThat(generatedKey.publicKey).isEqualTo(result)
-        val expectedExternalId = UUID.randomUUID().toString()
-        result = signingService.generateKeyPair(
-            tenantId = tenantId,
-            category = CryptoConsts.Categories.LEDGER,
-            externalId = expectedExternalId,
-            scheme = scheme,
-            alias = expectedAlias
-        )
-        assertThat(generatedKey.publicKey).isEqualTo(result)
-        verify(repo, times(1)).savePublicKey(
-            argThat {
-                key == generatedKey &&
-                        alias == expectedAlias &&
-                        externalId == null &&
-                        keyScheme == scheme &&
-                        hsmId == ref.hsmId &&
-                        category == ref.category
-            }
-        )
-        verify(repo, times(1)).savePublicKey(
-            argThat {
-                key == generatedKey &&
-                        alias == expectedAlias &&
-                        externalId == expectedExternalId &&
-                        keyScheme == scheme &&
-                        hsmId == ref.hsmId &&
-                        category == ref.category
-            }
-        )
-    }
 
     @Test
     fun `repository can correctly looks up a signing key by short ids`() {
@@ -419,13 +356,12 @@ class SigningServiceGeneralTests {
             )
         }
         val keyIdsCap = argumentCaptor<Set<ShortHash>>()
-        val cryptoServiceFactory = mock<CryptoServiceFactory> { }
         val signingKeyInfo = mock<SigningKeyInfo> { on { id } doReturn mock() }
         val repo = mock<SigningRepository> {
             on { lookupByPublicKeyShortHashes(keyIdsCap.capture()) } doReturn setOf(signingKeyInfo)
         }
 
-        val signingService = makeSigningServiceImpl(repo, cache, cryptoServiceFactory)
+        val signingService = makeSigningServiceImpl(repo, cache)
         signingService.lookupSigningKeysByPublicKeyShortHash("tenant", keys)
 
         val cacheKeys = setOf(CacheKey("tenant", hashA), CacheKey("tenant", hashB))
@@ -449,14 +385,13 @@ class SigningServiceGeneralTests {
                 CacheKey("tenant", shortA) to mockCachedKey
             )
         }
-        val cryptoServiceFactory = mock<CryptoServiceFactory> { }
         val fullIdsCap = argumentCaptor<Set<SecureHash>>()
         val signingKeyInfo = mock<SigningKeyInfo> { on { id } doReturn mock() }
         val repo = mock<SigningRepository> {
             on { lookupByPublicKeyHashes(fullIdsCap.capture()) } doReturn setOf(signingKeyInfo)
         }
 
-        val signingService = makeSigningServiceImpl(repo, cache, cryptoServiceFactory)
+        val signingService = makeSigningServiceImpl(repo, cache)
         signingService.lookupSigningKeysByPublicKeyHashes("tenant", keys)
 
         val cacheKeys = setOf(CacheKey("tenant", shortA), CacheKey("tenant", shortB))
@@ -489,10 +424,11 @@ class SigningServiceGeneralTests {
                 repoCount++
                 repo
             },
-            cryptoServiceFactory = mock(),
+            cryptoService = mock(),
             schemeMetadata = schemeMetadata,
             digestService = mockDigestService(),
             cache = cache,
+            tenantInfoService = mockTenantInfoService
         )
         if (keysInCache >= 1) populateCache(cache, shortKeyId0, fullKeyId0)
         if (keysInCache >= 2) populateCache(cache, shortKeyId1, fullKeyId1)
@@ -518,7 +454,6 @@ class SigningServiceGeneralTests {
         val r2 = doLookup()
         assertThat(r).isEqualTo(r2)
         assertThat(repoCount).isEqualTo(if (keysInCache == 2) 0 else 1)
-
     }
 
     @Test
@@ -537,10 +472,11 @@ class SigningServiceGeneralTests {
                 repoCount++
                 repo
             },
-            cryptoServiceFactory = mock(),
+            cryptoService = mock(),
             schemeMetadata = schemeMetadata,
             digestService = mockDigestService(),
-            cache = cache
+            cache = cache,
+            tenantInfoService = mockTenantInfoService
         )
         val lookedUpByFullKeyIdsKeys =
             signingService.lookupSigningKeysByPublicKeyHashes(tenantId, listOf(requestedFullKeyId))

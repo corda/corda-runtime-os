@@ -2,9 +2,9 @@ package net.corda.chunking.db.impl.persistence
 
 import net.corda.chunking.RequestId
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
-import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.v5.crypto.SecureHash
 
 interface CpiPersistence {
@@ -38,7 +38,7 @@ interface CpiPersistence {
         requestId: RequestId,
         groupId: String,
         changelogsExtractedFromCpi: List<CpkDbChangeLog>
-    ): CpiMetadataEntity
+    ): CpiMetadata
 
     /**
      * When CPI has previously been saved, delete all the stale data and update in place.
@@ -58,7 +58,7 @@ interface CpiPersistence {
         requestId: RequestId,
         groupId: String,
         changelogsExtractedFromCpi: Collection<CpkDbChangeLog>
-    ): CpiMetadataEntity
+    ): CpiMetadata
 
     /**
      *  Get the group id for a given CPI
@@ -81,9 +81,7 @@ interface CpiPersistence {
      */
     @Suppress("LongParameterList")
     fun validateCanUpsertCpi(
-        cpiName: String,
-        cpiSignerSummaryHash: SecureHash,
-        cpiVersion: String,
+        cpiId: CpiIdentifier,
         groupId: String,
         forceUpload: Boolean,
         requestId: String

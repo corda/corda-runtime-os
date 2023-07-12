@@ -1,17 +1,17 @@
 ## Open API compatibility testing
 
-File [swaggerBaseline.json](./swaggerBaseline.json) represents a snapshot of Open API which REST Worker currently
+File [swaggerBaseline-$version.json](./swaggerBaseline-v1.json) represents a snapshot of Open API which REST Worker currently
 provides.
 
 There is also an integration test [OpenApiCompatibilityTest](../kotlin/net/corda/processors/rest/OpenApiCompatibilityTest.kt)
 which asserts that Open API produced currently by a running HTTP Server matches to the baseline.
 
-That said, any time `PluggableRestResource` interfaces are updated and/or parameters of HTTP Endpoints modified the `swaggerBaseline.json`
-file need to be updated or else `OpenApiCompatibilityTest` will fail.
+That said, any time `PluggableRestResource` interfaces are updated and/or parameters of HTTP Endpoints 
+modified the `swaggerBaseline-$version.json` file need to be updated or else `OpenApiCompatibilityTest` will fail.
 
-To update the `swaggerBaseline.json`, please run OSGi integration test:
-`gradlew :processors:rest-processor:integrationTest` - if it fails it will report the differences detected
-as well full snapshot of current Open API produced.
+To update the `swaggerBaseline-$version.json`, please run OSGi integration test:
+`gradlew :processors:rest-processor:integrationTest --tests "net.corda.processors.rest.OpenApiCompatibilityTest"`
+- if it fails it will report the differences detected as well full snapshot of current Open API produced.
 
 An easy way to extract the current API, compare against the baseline and update if necessary is:
 
