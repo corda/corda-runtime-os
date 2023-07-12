@@ -35,6 +35,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
@@ -564,8 +565,7 @@ class FlowTests {
             .isEqualTo("${bobX500}=echo:m1; ${charlyX500}=echo:m2")
     }
 
-    @Test
-    @Disabled
+    @RepeatedTest(20)
     fun `Flow Session - Initiate multiple sessions and exercise the flow messaging apis`() {
 
         val requestBody = RpcSmokeTestInput().apply {
