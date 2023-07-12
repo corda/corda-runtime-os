@@ -136,7 +136,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             )
         }
 
-        val errorEvents = flowSessionManager.getSessionErrorEventRecords(context.checkpoint, context.config, exceptionHandlingStartTime)
+        val errorEvents = flowSessionManager.getSessionErrorEventRecords(checkpoint, context.config, exceptionHandlingStartTime)
         val cleanupEvents = createCleanupEventsForSessions(
             getScheduledCleanupExpiryTime(context, exceptionHandlingStartTime),
             checkpoint.sessions.filterNot { it.hasScheduledCleanup }
