@@ -2,6 +2,8 @@
 
 In certain cases a member may request to update its own member-provided context, for example after key rotation or after changes to its endpoint information. On the other hand, a member that previously tried to register but failed may wish to try again. Membership re-registration can be used in both these scenarios.
 
+> Note: Key rotation and changes to endpoint information are not currently supported.
+
 The instructions on this page assume you have completed the [Dynamic network member registration](https://github.com/corda/corda-runtime-os/wiki/Member-Onboarding-(Dynamic-Networks)) steps.
 
 # Updating Member-provided Context
