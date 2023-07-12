@@ -100,22 +100,25 @@ class FlowSessionImpl(
     @Suspendable
     override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): R {
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
-        requireBoxedType(receiveType)
         val request = FlowIORequest.SendAndReceive(mapOf(getSessionInfo() to serialize(payload)))
         val received = fiber.suspend(request)
+
         setSessionConfirmed()
-        return deserializeReceivedPayload(received, receiveType)
+
+        return processReceivedPayload(receiveType, received)
     }
 
     @Suspendable
     override fun <R : Any> receive(receiveType: Class<R>): R {
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
-        requireBoxedType(receiveType)
         val request = FlowIORequest.Receive(setOf(getSessionInfo()))
         val received = fiber.suspend(request)
+
         setSessionConfirmed()
-        return deserializeReceivedPayload(received, receiveType)
+
+        return processReceivedPayload(receiveType, received)
     }
+
     @Suspendable
     override fun send(payload: Any) {
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
@@ -135,15 +138,16 @@ class FlowSessionImpl(
         }
     }
 
-    /**
-     * Required to prevent class cast exceptions during AMQP serialization of primitive types.
-     */
-    private fun requireBoxedType(type: Class<*>) {
-        require(!type.isPrimitive) { "Cannot receive primitive type $type" }
-    }
-
     private fun serialize(payload: Any): ByteArray {
         return serializationService.serialize(payload).bytes
+    }
+
+    private fun <R : Any> processReceivedPayload(receiveType: Class<R>, received: Map<String, ByteArray>): R {
+        return if (receiveType.isPrimitive) {
+            deserializeReceivedPayload(received, receiveType.kotlin.javaObjectType)
+        } else {
+            deserializeReceivedPayload(received, receiveType)
+        }
     }
 
     private fun <R : Any> deserializeReceivedPayload(
