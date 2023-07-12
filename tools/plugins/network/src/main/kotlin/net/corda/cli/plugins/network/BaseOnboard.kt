@@ -1,10 +1,10 @@
-package net.corda.cli.plugins.mgm
+package net.corda.cli.plugins.network
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import kong.unirest.HttpResponse
 import kong.unirest.Unirest
-import net.corda.cli.plugins.mgm.Helpers.restPasswordFromClusterName
-import net.corda.cli.plugins.mgm.Helpers.urlFromClusterName
+import net.corda.cli.plugins.network.Helpers.restPasswordFromClusterName
+import net.corda.cli.plugins.network.Helpers.urlFromClusterName
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE

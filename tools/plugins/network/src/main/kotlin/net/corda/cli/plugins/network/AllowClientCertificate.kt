@@ -1,9 +1,9 @@
-package net.corda.cli.plugins.mgm
+package net.corda.cli.plugins.network
 
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
-import net.corda.cli.plugins.mgm.Helpers.baseUrlFromClusterName
-import net.corda.cli.plugins.mgm.Helpers.restPasswordFromClusterName
+import net.corda.cli.plugins.network.Helpers.baseUrlFromClusterName
+import net.corda.cli.plugins.network.Helpers.restPasswordFromClusterName
 import net.corda.membership.rest.v1.MGMRestResource
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option

@@ -1,4 +1,4 @@
-package net.corda.cli.plugins.mgm
+package net.corda.cli.plugins.network
 
 import kong.unirest.Unirest
 import kong.unirest.json.JSONArray

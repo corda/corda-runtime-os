@@ -1,4 +1,4 @@
-package net.corda.cli.plugins.mgm
+package net.corda.cli.plugins.network
 
 import java.net.ServerSocket
 import kotlin.concurrent.thread

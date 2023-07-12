@@ -1,4 +1,4 @@
-package net.corda.cli.plugins.mgm
+package net.corda.cli.plugins.network
 
 import picocli.CommandLine.Command
 
@@ -9,7 +9,6 @@ import picocli.CommandLine.Command
         OnBoardMember::class,
         AllowClientCertificate::class,
     ],
-    description = ["On board a member."],
-    hidden = true
+    description = ["On board a member."]
 )
 class OnBoard
