@@ -9,6 +9,7 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.crypto.core.CryptoTenants.REST
+import net.corda.crypto.core.CryptoTenants.allClusterTenants
 import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
@@ -26,6 +27,7 @@ import net.corda.membership.rest.v1.CertificatesRestResource
 import net.corda.membership.rest.v1.CertificatesRestResource.Companion.SIGNATURE_SPEC
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
@@ -120,8 +122,6 @@ class CertificatesRestResourceImpl @Activate constructor(
         contextMap: Map<String, String?>?,
     ): String {
         validateTenantId(tenantId)
-        // Check if a virtual node is registered for given tenantId
-        virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(tenantId)
 
         val key = tryWithExceptionHandling(logger, "find key with ID $keyId for $tenantId") {
             cryptoOpsClient.lookupKeysByIds(
@@ -450,9 +450,21 @@ class CertificatesRestResourceImpl @Activate constructor(
         } catch (e: ShortHashException) {
             false
         }
-        val isValidClusterTenant = (tenantId == P2P || tenantId == REST)
 
-        if (!isValidShortHash && !isValidClusterTenant) {
+        // Check if a virtual node is registered for given tenantId
+        val isVirtualNodeRegisteredForTenant = try {
+            virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(tenantId)
+            true
+        } catch(e: BadRequestException) {
+            false
+        }
+        catch (e: ResourceNotFoundException) {
+            false
+        }
+
+        val isValidClusterTenant = tenantId in allClusterTenants
+
+        if ((!isValidShortHash && !isValidClusterTenant) || ( isValidShortHash && !isValidClusterTenant && !isVirtualNodeRegisteredForTenant)) {
             throw InvalidInputDataException(
                 "Provided tenantId ($tenantId) was not valid. " +
                         "It needs to be either a cluster tenant ($P2P or $REST) or a valid holding identity ID."
