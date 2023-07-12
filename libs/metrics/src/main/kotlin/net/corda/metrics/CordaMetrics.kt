@@ -33,6 +33,8 @@ object CordaMetrics {
 
         // NOTE: please ensure the metric names adhere to the conventions described on https://micrometer.io/docs/concepts#_naming_meters
 
+        object RecordConsumed : Metric<Counter>("messaging.record.consumed", Metrics::counter)
+
         /**
          * Count the active state lock acquired
          */
