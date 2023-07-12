@@ -50,10 +50,6 @@ class TransactionBackchainReceiverFlowV1(
 
         val ledgerConfig = flowConfigService.getConfig(UTXO_LEDGER_CONFIG)
 
-        requireNotNull(ledgerConfig) {
-            "Could not find UTXO ledger config in the flow context with key: $UTXO_LEDGER_CONFIG"
-        }
-
         val batchSize = ledgerConfig.getInt(BACKCHAIN_BATCH_CONFIG_PATH)
 
         while (transactionsToRetrieve.isNotEmpty()) {

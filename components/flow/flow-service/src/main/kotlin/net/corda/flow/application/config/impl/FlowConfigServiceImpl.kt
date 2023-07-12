@@ -21,7 +21,9 @@ class FlowConfigServiceImpl @Activate constructor(
     private val flowFiberService: FlowFiberService
 ) : FlowConfigService, UsedByFlow, SingletonSerializeAsToken {
 
-    override fun getConfig(configKey: String): SmartConfig? {
-        return flowFiberService.getExecutingFiber().getExecutionContext().configs[configKey]
+    override fun getConfig(configKey: String): SmartConfig {
+        return requireNotNull(flowFiberService.getExecutingFiber().getExecutionContext().configs[configKey]) {
+            "Could not find config in the flow context with key: $configKey"
+        }
     }
 }
