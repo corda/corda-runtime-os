@@ -53,7 +53,8 @@ class MGMAdminRestResourceTest {
 
     private val mgmAdminRestResource = MGMAdminRestResourceImpl(
         lifecycleCoordinatorFactory,
-        mgmResourceClient
+        mgmResourceClient,
+        mock(),
     )
 
     private fun startService() {

@@ -14,6 +14,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -68,6 +69,7 @@ import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import javax.security.auth.x500.X500Principal
 
+@Suppress("LongParameterList")
 @Component(service = [PluggableRestResource::class])
 class CertificatesRestResourceImpl @Activate constructor(
     @Reference(service = CryptoOpsClient::class)
@@ -80,6 +82,8 @@ class CertificatesRestResourceImpl @Activate constructor(
     private val certificatesClient: CertificatesClient,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : CertificatesRestResource, PluggableRestResource<CertificatesRestResource>, Lifecycle {
 
     private companion object {
@@ -326,7 +330,7 @@ class CertificatesRestResourceImpl @Activate constructor(
 
     override val targetInterface = CertificatesRestResource::class.java
 
-    override val protocolVersion = 1
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<CertificatesRestResource>(
         protocolVersion.toString()

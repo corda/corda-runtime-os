@@ -42,7 +42,8 @@ class HsmRestResourceImplTest {
         on { getByHoldingIdentityShortHash(tenantIdShortHash) } doReturn mock()
     }
 
-    private val ops = HsmRestResourceImpl(hsmRegistrationClient, lifecycleCoordinatorFactory, virtualNodeInfoReadService)
+    private val ops = HsmRestResourceImpl(hsmRegistrationClient, lifecycleCoordinatorFactory,
+        virtualNodeInfoReadService, mock())
 
     @Nested
     inner class ApiTests {
@@ -51,7 +52,7 @@ class HsmRestResourceImplTest {
             whenever(hsmRegistrationClient.findHSM(tenantId, TLS)).doReturn(null)
 
             val e = assertThrows<ResourceNotFoundException> { ops.assignedHsm(tenantId, "tls") }
-            assertThat(e).hasMessageContaining("No association found for tenant ${tenantId} category tls")
+            assertThat(e).hasMessageContaining("No association found for tenant $tenantId category tls")
         }
 
         @Test

@@ -8,6 +8,7 @@ import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -35,6 +36,8 @@ class FlowClassRestResourceImpl @Activate constructor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : FlowClassRestResource, PluggableRestResource<FlowClassRestResource>, Lifecycle {
 
     companion object {
@@ -45,7 +48,7 @@ class FlowClassRestResourceImpl @Activate constructor(
     override fun stop() = coordinator.stop()
     override val isRunning: Boolean get() = coordinator.isRunning
     override val targetInterface: Class<FlowClassRestResource> = FlowClassRestResource::class.java
-    override val protocolVersion: Int = 1
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     private val coordinator = lifecycleCoordinatorFactory.createCoordinator<FlowClassRestResource>(::eventHandler)
     private val dependentComponents = DependentComponents.of(

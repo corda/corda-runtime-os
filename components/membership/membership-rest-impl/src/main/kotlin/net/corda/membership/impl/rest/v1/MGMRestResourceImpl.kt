@@ -8,6 +8,7 @@ import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
 import net.corda.data.membership.common.ApprovalRuleType.STANDARD
 import net.corda.data.membership.common.RegistrationRequestDetails
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InvalidInputDataException
@@ -59,6 +60,7 @@ class MGMRestResourceImpl internal constructor(
     private val mgmResourceClient: MGMResourceClient,
     private val configurationGetService: ConfigurationGetService,
     private val clock: Clock = UTCClock(),
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : MGMRestResource, PluggableRestResource<MGMRestResource>, Lifecycle {
 
     @Activate
@@ -69,11 +71,14 @@ class MGMRestResourceImpl internal constructor(
         mgmResourceClient: MGMResourceClient,
         @Reference(service = ConfigurationGetService::class)
         configurationGetService: ConfigurationGetService,
+        @Reference(service = PlatformInfoProvider::class)
+        platformInfoProvider: PlatformInfoProvider
     ) : this(
         coordinatorFactory,
         mgmResourceClient,
         configurationGetService,
-        UTCClock()
+        UTCClock(),
+        platformInfoProvider
     )
 
     private interface InnerMGMRestResource {
@@ -156,7 +161,7 @@ class MGMRestResourceImpl internal constructor(
         fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters)
     }
 
-    override val protocolVersion = 1
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     private var impl: InnerMGMRestResource = InactiveImpl
 
