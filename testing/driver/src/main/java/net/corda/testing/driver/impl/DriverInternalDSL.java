@@ -11,5 +11,5 @@ import org.jetbrains.annotations.NotNull;
  */
 interface DriverInternalDSL extends DriverDSL {
     @NotNull
-    Framework getFramework(@NotNull MemberX500Name x500Name);
+    Framework getFramework();
 }

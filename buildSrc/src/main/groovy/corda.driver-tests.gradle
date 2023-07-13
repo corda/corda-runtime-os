@@ -20,6 +20,7 @@ pluginManager.withPlugin('java') {
     dependencies {
         testImplementation project(':testing:driver')
         testImplementation files(configurations.testCpks)
+        testRuntimeOnly project(':testing:driver:driver-engine')
         testRuntimeOnly files(configurations.testCpbs)
     }
 
@@ -56,6 +57,7 @@ pluginManager.withPlugin('java') {
                     '--add-opens', 'java.base/java.util=ALL-UNNAMED'
 
             systemProperty 'co.paralleluniverse.fibers.verifyInstrumentation', true
+            systemProperty 'java.io.tmpdir', buildDir.absolutePath
         }
     }
 }

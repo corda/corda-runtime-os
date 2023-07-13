@@ -54,20 +54,17 @@ class ConsensualLedgerTests {
 
     @BeforeAll
     fun start() {
-        val virtualNodes = mutableSetOf<VirtualNodeInfo>()
         driver.run { dsl ->
-            virtualNodes += dsl.startNode(setOf(alice, bob, charlie)).onEach { vNode ->
+            dsl.startNodes(setOf(alice, bob, charlie)).onEach { vNode ->
                 logger.info("VirtualNode({}): {}", vNode.holdingIdentity.x500Name, vNode)
+            }.filter { vNode ->
+                vNode.cpiIdentifier.name == "ledger-consensual-demo-app"
+            }.associateByTo(consensualLedger) { vNode ->
+                vNode.holdingIdentity.x500Name
             }
+            assertThat(consensualLedger).hasSize(3)
         }
         logger.info("{}, {} and {} started successfully", alice.commonName, bob.commonName, charlie.commonName)
-
-        virtualNodes.filter { vNode ->
-            vNode.cpiIdentifier.name == "ledger-consensual-demo-app"
-        }.associateByTo(consensualLedger) { vNode ->
-            vNode.holdingIdentity.x500Name
-        }
-        assertThat(consensualLedger).hasSize(3)
     }
 
     @Test

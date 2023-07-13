@@ -37,7 +37,7 @@ class NotaryFlowTests {
     @BeforeAll
     fun start() {
         aliceCorDapp = driver.let { dsl ->
-            dsl.startNode(setOf(alice, bob)).onEach { vNode ->
+            dsl.startNodes(setOf(alice, bob)).onEach { vNode ->
                 logger.info("VirtualNode({}): {}", vNode.holdingIdentity.x500Name, vNode)
             }.single { vNode ->
                 vNode.cpiIdentifier.name == "test-cordapp" && vNode.holdingIdentity.x500Name == alice

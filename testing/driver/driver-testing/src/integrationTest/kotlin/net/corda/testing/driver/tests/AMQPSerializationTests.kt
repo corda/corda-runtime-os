@@ -30,7 +30,7 @@ class AMQPSerializationTests {
     @BeforeAll
     fun start() {
         driver.run { dsl ->
-            virtualNodes += dsl.startNode(setOf(alice)).onEach { vNode ->
+            virtualNodes += dsl.startNodes(setOf(alice)).onEach { vNode ->
                 logger.info("VirtualNode({}): {}", vNode.holdingIdentity.x500Name, vNode)
             }
         }

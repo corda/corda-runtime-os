@@ -1,7 +1,6 @@
 package net.corda.testing.driver.sandbox
 
 import java.time.Duration
-import java.util.Collections.unmodifiableSet
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import net.corda.sandboxgroupcontext.VirtualNodeContext
@@ -11,7 +10,6 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.ConfigurationPolicy.REQUIRE
 import org.osgi.service.component.annotations.Reference
 
 interface VirtualNodeService {
@@ -20,15 +18,11 @@ interface VirtualNodeService {
     fun unloadVirtualNode(completion: CompletableFuture<*>)
 
     fun loadSystemNodes(names: Set<MemberX500Name>, resourceName: String): List<VirtualNodeInfo>
-
-    fun getLocalMembers(): Set<MemberX500Name>
 }
 
 @Suppress("unused")
 @Component(
     service = [ VirtualNodeService::class ],
-    configurationPid = [ CORDA_LOCAL_IDENTITY_PID ],
-    configurationPolicy = REQUIRE,
     property = [ DRIVER_SERVICE ]
 )
 class VirtualNodeServiceImpl @Activate constructor(
@@ -36,41 +30,24 @@ class VirtualNodeServiceImpl @Activate constructor(
     private val virtualNodeLoader: VirtualNodeLoader,
 
     @Reference(target = DRIVER_SERVICE_FILTER)
-    private val sandboxGroupContextComponent: SandboxGroupContextComponent,
-
-    properties: Map<String, Any?>
+    private val sandboxGroupContextComponent: SandboxGroupContextComponent
 ) : VirtualNodeService {
     private companion object {
         private const val DEFAULT_SANDBOX_CACHE_SIZE = 5L
         private val ONE_SECOND = Duration.ofSeconds(1)
     }
 
-    private val localMemberNames: Set<MemberX500Name>
     private val cpiGroups = mutableMapOf<String, String>()
 
     init {
         sandboxGroupContextComponent.resizeCaches(DEFAULT_SANDBOX_CACHE_SIZE)
-
-        val members = mutableSetOf<MemberX500Name>()
-        (properties[CORDA_MEMBER_COUNT] as? Int)?.let { localCount ->
-            for (idx in 0 until localCount) {
-                (properties["$CORDA_MEMBER_X500_NAME.$idx"] as? String)
-                    ?.let(MemberX500Name::parse)
-                    ?.also(members::add)
-            }
-        }
-        localMemberNames = unmodifiableSet(members)
     }
 
     private fun generateHoldingIdentity(memberName: MemberX500Name, resourceName: String): HoldingIdentity {
         val groupId = cpiGroups.computeIfAbsent(resourceName) {
-            UUID.randomUUID().toString()
+            UUID.randomUUID().let { String.format("%016x%016x", it.mostSignificantBits, it.leastSignificantBits ) }
         }
         return HoldingIdentity(memberName, groupId)
-    }
-
-    override fun getLocalMembers(): Set<MemberX500Name> {
-        return localMemberNames
     }
 
     override fun loadSystemNodes(names: Set<MemberX500Name>, resourceName: String): List<VirtualNodeInfo> {

@@ -13,11 +13,7 @@ import java.util.IdentityHashMap
 import java.util.ServiceLoader
 import java.util.Collections.unmodifiableMap
 import java.util.Collections.unmodifiableSet
-import java.util.concurrent.ExecutorCompletionService
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeoutException
-import java.util.concurrent.TimeUnit.MILLISECONDS
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.jar.JarFile.MANIFEST_NAME
 import java.util.jar.Manifest
 import net.corda.data.KeyValuePair
@@ -123,7 +119,6 @@ internal class DriverDSLImpl(
         private val notaryPluginNames = setOf(
             "notary-plugin-non-validating-server"
         )
-        private val shutdownCounter = AtomicInteger()
         private val logger = LoggerFactory.getLogger(DriverDSLImpl::class.java)
         private val cordaBundles: Map<URI, Manifest>
         private val systemPackagesExtra: String
@@ -201,15 +196,13 @@ internal class DriverDSLImpl(
     }
 
     @Suppress("NestedBlockDepth")
-    private inner class DriverFrameworkImpl(
-        private val frameworkDirectory: Path,
+    private inner class DriverFrameworkImpl @Throws(BundleException::class) constructor(
         properties: Map<String, String>
     ): Framework, AutoCloseable {
-        private val framework = frameworkFactory.newFramework(properties)
+        private val framework = createFrameworkFactory().newFramework(properties)
         private val cleanups = IdentityHashMap<Any, Service<*>>()
 
-        @Throws(BundleException::class)
-        fun start(memberNames: Set<MemberX500Name>): List<VirtualNodeInfo> {
+        init {
             framework.start()
             try {
                 val bundles = cordaBundles.keys.map { uri ->
@@ -240,9 +233,6 @@ internal class DriverDSLImpl(
                     logger.debug("Starting: {} from {}", bundle, bundle.location)
                     bundle.start()
                 }
-
-                // Load any CPBs from the classpath into our new node.
-                return loadCordapps(memberNames)
             } catch (e: Exception) {
                 framework.stop()
                 throw e
@@ -270,6 +260,15 @@ internal class DriverDSLImpl(
         @Throws(InterruptedException::class, TimeoutException::class)
         override fun <T> getService(serviceType: Class<T>, filter: String?, timeout: Duration): Service<T> {
             val ctx = framework.bundleContext
+
+            // Show every service registered inside this framework.
+            // This can help diagnose any OSGi resolving errors.
+            if (logger.isTraceEnabled) {
+                ctx.getAllServiceReferences(null, null)?.forEach { ref ->
+                    logger.trace("Has service {},{}", ref, ref.properties)
+                }
+            }
+
             var remainingMillis = timeout.toMillis().coerceAtLeast(0)
             while (true) {
                 try {
@@ -300,25 +299,10 @@ internal class DriverDSLImpl(
             throw TimeoutException("Service $serviceDescription did not arrive in ${timeout.toMillis()} milliseconds")
         }
 
-        private fun loadCordapps(memberNames: Set<MemberX500Name>): List<VirtualNodeInfo> {
+        fun loadCordapps(memberNames: Set<MemberX500Name>): List<VirtualNodeInfo> {
             val vNodes = mutableListOf<VirtualNodeInfo>()
 
             getService(EmbeddedNodeService::class.java, null, Duration.ZERO).andAlso { ens ->
-                val network = members + notaries
-                val localNames = memberNames + notaries.keys
-                ens.setGroupParameters(groupParameters)
-                ens.setMembershipGroup(network.mapValues { it.value.public })
-                ens.setLocalIdentities(localNames, network.filterKeys(localNames::contains))
-                ens.configure(frameworkDirectory, TIMEOUT)
-
-                // Show every service registered inside this framework.
-                // This can help diagnose any OSGi resolving errors.
-                if (logger.isTraceEnabled) {
-                    framework.bundleContext.getAllServiceReferences(null, null)?.forEach { ref ->
-                        logger.trace("Has service {},{}", ref, ref.properties)
-                    }
-                }
-
                 for (testCPB in testCPBs) {
                     logger.info("Uploading CPB: {}", Path.of(testCPB).fileName)
                     vNodes += ens.loadVirtualNodes(memberNames, testCPB).map(net.corda.data.virtualnode.VirtualNodeInfo::toCorda)
@@ -327,30 +311,28 @@ internal class DriverDSLImpl(
                 if (notaries.isNotEmpty()) {
                     ens.loadSystemCpi(notaries.keys, notaryCPBs.single())
                 }
-
-                // Broadcast our (tenantId, MemberX500Name) associations to anyone listening.
-                ens.configureLocalTenants(TIMEOUT)
             }
 
             return vNodes
         }
     }
 
-    private val frameworkFactory = createFrameworkFactory()
-    private val nodes = mutableMapOf<MemberX500Name, DriverFrameworkImpl>()
+    private val driverFramework = createDriverFramework()
 
-    override fun getFramework(x500Name: MemberX500Name): Framework {
-        return nodes[x500Name] ?: throw IllegalArgumentException("No Virtual Node for '$x500Name'")
+    init {
+        driverFramework.getService(EmbeddedNodeService::class.java, null, Duration.ZERO).andAlso { ens ->
+            val network = members + notaries
+            ens.setGroupParameters(groupParameters)
+            ens.setMembershipGroup(network)
+            ens.configure(TIMEOUT)
+        }
     }
 
-    override fun startNode(memberNames: Set<MemberX500Name>): List<VirtualNodeInfo> {
-        require(memberNames.isNotEmpty()) {
-            "Each node needs at least one member."
-        }
+    private fun createDriverFramework(): DriverFrameworkImpl {
         try {
             val frameworkDirectory = Files.createTempDirectory("corda-driver-")
             val quasarCacheDirectory = Files.createDirectories(frameworkDirectory.parent.resolve("quasar-cache"))
-            val framework = DriverFrameworkImpl(frameworkDirectory, linkedMapOf(
+            return DriverFrameworkImpl(linkedMapOf(
                 "co.paralleluniverse.quasar.suspendableAnnotation" to Suspendable::class.java.name,
                 "co.paralleluniverse.quasar.cacheDirectory" to quasarCacheDirectory.toString(),
                 "co.paralleluniverse.quasar.cacheLocations" to quasarCacheLocations,
@@ -361,12 +343,23 @@ internal class DriverDSLImpl(
                 FRAMEWORK_STORAGE_CLEAN to FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT,
                 FRAMEWORK_SYSTEMPACKAGES_EXTRA to systemPackagesExtra
             ))
-            for (memberName in memberNames) {
-                if (nodes.putIfAbsent(memberName, framework) != null) {
-                    throw IllegalArgumentException("Virtual Node for '$memberName' already exists.")
-                }
-            }
-            return framework.start(memberNames)
+        } catch (e: RuntimeException) {
+            throw e
+        } catch (e: Exception) {
+            throw CordaRuntimeException(e::class.java.name, e.message, e)
+        }
+    }
+
+    override fun getFramework(): Framework {
+        return driverFramework
+    }
+
+    override fun startNodes(memberNames: Set<MemberX500Name>): List<VirtualNodeInfo> {
+        require(memberNames.isNotEmpty()) {
+            "Each node needs at least one member."
+        }
+        try {
+            return driverFramework.loadCordapps(memberNames)
         } catch (e: RuntimeException) {
             throw e
         } catch (e: Exception) {
@@ -384,29 +377,7 @@ internal class DriverDSLImpl(
 
     @Throws(InterruptedException::class)
     override fun close() {
-        if (nodes.isEmpty()) {
-            return
-        }
-
-        val shutdownTasks = Executors.newFixedThreadPool(nodes.size) { runnable ->
-            Thread(runnable, "driver-shutdown-${shutdownCounter.incrementAndGet()}")
-        }
-
-        val completion = ExecutorCompletionService<List<MemberX500Name>>(shutdownTasks)
-        val futures = nodes.entries.groupBy(
-            Map.Entry<MemberX500Name, DriverFrameworkImpl>::value,
-            Map.Entry<MemberX500Name, DriverFrameworkImpl>::key
-        ).mapTo(mutableListOf()) { (framework, names) ->
-            completion.submit(framework::close, names)
-        }
-        shutdownTasks.shutdown()
-
-        while (futures.isNotEmpty()) {
-            val result = completion.poll(PAUSE_MILLIS, MILLISECONDS) ?: continue
-            if (futures.remove(result)) {
-                logger.info("{}: shutdown complete.", result.get())
-            }
-        }
+        driverFramework.close()
     }
 }
 

@@ -8,7 +8,6 @@ import net.corda.libs.packaging.core.CpiMetadata
 interface CpiLoader {
     companion object {
         const val COMPONENT_NAME = "net.corda.testing.driver.sandbox.CpiLoader"
-        const val FRAMEWORK_DIRECTORY_KEY = "frameworkDirectory"
         const val CACHE_DIRECTORY_KEY = "cacheDirectory"
     }
 

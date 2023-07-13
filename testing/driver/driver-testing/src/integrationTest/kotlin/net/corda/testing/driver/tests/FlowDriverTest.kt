@@ -42,7 +42,7 @@ class FlowDriverTest {
         assertThat(DriverNodes::class.java.protectionDomain.codeSource.location.path).endsWith(".jar")
 
         driver.run { dsl ->
-            virtualNodes += dsl.startNode(setOf(alice, bob)).onEach { vNode ->
+            virtualNodes += dsl.startNodes(setOf(alice, bob)).onEach { vNode ->
                 logger.info("VirtualNode({}): {}", vNode.holdingIdentity.x500Name, vNode)
             }
         }

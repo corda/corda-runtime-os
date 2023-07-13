@@ -64,20 +64,17 @@ class UtxoLedgerTests {
 
     @BeforeAll
     fun start() {
-        val virtualNodes = mutableSetOf<VirtualNodeInfo>()
         driver.run { dsl ->
-            virtualNodes += dsl.startNode(setOf(alice, bob, charlie)).onEach { vNode ->
+            dsl.startNodes(setOf(alice, bob, charlie)).onEach { vNode ->
                 logger.info("VirtualNode({}): {}", vNode.holdingIdentity.x500Name, vNode)
+            }.filter { vNode ->
+                vNode.cpiIdentifier.name == "ledger-utxo-demo-app"
+            }.associateByTo(utxoLedger) { vNode ->
+                vNode.holdingIdentity.x500Name
             }
+            assertThat(utxoLedger).hasSize(3)
         }
         logger.info("{}, {} and {} started successfully", alice.commonName, bob.commonName, charlie.commonName)
-
-        virtualNodes.filter { vNode ->
-            vNode.cpiIdentifier.name == "ledger-utxo-demo-app"
-        }.associateByTo(utxoLedger) { vNode ->
-            vNode.holdingIdentity.x500Name
-        }
-        assertThat(utxoLedger).hasSize(3)
     }
 
     @Disabled("HSQLDB does not support custom query yet")

@@ -17,16 +17,13 @@ import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyStatus
 import net.corda.data.crypto.wire.CryptoSigningKey
-import net.corda.testing.driver.sandbox.CORDA_LOCAL_IDENTITY_PID
-import net.corda.testing.driver.sandbox.CORDA_LOCAL_TENANCY_PID
+import net.corda.testing.driver.sandbox.CORDA_MEMBERSHIP_PID
 import net.corda.testing.driver.sandbox.CORDA_MEMBER_COUNT
 import net.corda.testing.driver.sandbox.CORDA_MEMBER_PRIVATE_KEY
 import net.corda.testing.driver.sandbox.CORDA_MEMBER_PUBLIC_KEY
 import net.corda.testing.driver.sandbox.CORDA_MEMBER_X500_NAME
-import net.corda.testing.driver.sandbox.CORDA_TENANT
-import net.corda.testing.driver.sandbox.CORDA_TENANT_COUNT
-import net.corda.testing.driver.sandbox.CORDA_TENANT_MEMBER
 import net.corda.testing.driver.sandbox.PrivateKeyService
+import net.corda.testing.driver.sandbox.VirtualNodeLoader
 import net.corda.testing.driver.sandbox.WRAPPING_KEY_ALIAS
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -38,7 +35,7 @@ import org.osgi.service.component.annotations.Reference
 
 @Component(
     service = [ SigningKeyProvider::class ],
-    configurationPid = [ CORDA_LOCAL_IDENTITY_PID, CORDA_LOCAL_TENANCY_PID ],
+    configurationPid = [ CORDA_MEMBERSHIP_PID ],
     configurationPolicy = REQUIRE
 )
 class SigningKeyProvider @Activate constructor(
@@ -46,10 +43,11 @@ class SigningKeyProvider @Activate constructor(
     schemeMetadata: CipherSchemeMetadata,
     @Reference
     privateKeyService: PrivateKeyService,
+    @Reference
+    private val virtualNodeLoader: VirtualNodeLoader,
     properties: Map<String, Any>
 ) {
     private val cachedSigningKeys: Map<MemberX500Name, SigningKeyInfo>
-    private val tenancy: Map<String, MemberX500Name>
 
     private fun calculateHash(key: PublicKey): ShortHash {
         return ShortHash.of(SecureHashImpl(DigestAlgorithmName.SHA2_256.name, key.sha256Bytes()))
@@ -91,24 +89,12 @@ class SigningKeyProvider @Activate constructor(
             }
         }
         cachedSigningKeys = unmodifiableMap(localKeys)
-
-        val localTenancy = linkedMapOf<String, MemberX500Name>()
-        (properties[CORDA_TENANT_COUNT] as? Int)?.also { localCount ->
-            for (idx in 0 until localCount) {
-                (properties["$CORDA_TENANT.$idx"] as? String)?.also { tenantId ->
-                    (properties["$CORDA_TENANT_MEMBER.$idx"] as? String)?.let(MemberX500Name::parse)?.also { localMember ->
-                        localTenancy[tenantId] = localMember
-                    }
-                }
-            }
-        }
-        tenancy = unmodifiableMap(localTenancy)
     }
 
     @Suppress("unused_parameter")
     fun getSigningKey(tenantId: String, publicKey: PublicKey): SigningKeyInfo? {
-        return tenancy[tenantId]?.let { localMember ->
-            cachedSigningKeys[localMember]?.let { cached ->
+        return virtualNodeLoader.getMemberNameFor(tenantId)?.let { memberName ->
+            cachedSigningKeys[memberName]?.let { cached ->
                 SigningKeyInfo(
                     id = cached.id,
                     fullId = cached.fullId,
@@ -131,8 +117,8 @@ class SigningKeyProvider @Activate constructor(
     }
 
     fun getSigningKeys(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> {
-        return tenancy[tenantId]?.let { localMember ->
-            cachedSigningKeys[localMember]?.takeIf { it.fullId in fullKeyIds }?.let { cached ->
+        return virtualNodeLoader.getMemberNameFor(tenantId)?.let { memberName ->
+            cachedSigningKeys[memberName]?.takeIf { it.fullId in fullKeyIds }?.let { cached ->
                 singletonList(CryptoSigningKey(
                     cached.id.toString(),
                     tenantId,
