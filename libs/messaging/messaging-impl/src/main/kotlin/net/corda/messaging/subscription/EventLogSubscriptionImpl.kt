@@ -94,8 +94,8 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
     @Suppress("NestedBlockDepth")
     private fun runConsumeLoop() {
         var attempts = 0
-        var consumer: CordaConsumer<K, V>?
-        var producer: CordaProducer?
+        var consumer: CordaConsumer<K, V>? = null
+        var producer: CordaProducer? = null
         while (!threadLooper.loopStopped) {
             attempts++
             try {
@@ -107,6 +107,9 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                     ForwardingRebalanceListener(config.topic, config.clientId, partitionAssignmentListener)
                 }
                 val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.EVENT_LOG)
+
+                consumer?.close()
+
                 consumer = cordaConsumerBuilder.createConsumer(
                     consumerConfig,
                     config.messageBusConfig,
@@ -119,6 +122,9 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                     rebalanceListener
                 )
                 val producerConfig = ProducerConfig(config.clientId, config.instanceId, true, ProducerRoles.EVENT_LOG, false)
+
+                producer?.close()
+
                 producer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig) { data ->
                     log.warn("Failed to serialize record from ${config.topic}")
                     deadLetterRecords.add(data)
