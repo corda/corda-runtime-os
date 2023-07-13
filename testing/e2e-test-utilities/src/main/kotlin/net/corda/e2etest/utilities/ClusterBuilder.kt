@@ -357,15 +357,11 @@ class ClusterBuilder {
     fun getPermissionByQuery(
         limit: Int,
         permissionType: String,
-        groupVisibility: String? = null,
-        virtualNode: String? = null,
         permissionStringPrefix: String? = null
     ): SimpleResponse {
         val queries = mutableListOf<String>().apply {
             add("limit=$limit")
             add("permissiontype=$permissionType")
-            groupVisibility?.let { add("groupvisibility=$groupVisibility") }
-            virtualNode?.let { add("virtualnode=$virtualNode") }
             permissionStringPrefix?.let { add("permissionstringprefix=$permissionStringPrefix") }
         }
         val queryStr = if (queries.isEmpty()) {
