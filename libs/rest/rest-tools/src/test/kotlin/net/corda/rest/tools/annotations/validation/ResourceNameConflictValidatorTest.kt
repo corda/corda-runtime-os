@@ -163,7 +163,7 @@ class ResourceNameConflictValidatorTest {
             )
         ).validate()
 
-        val expectedErrors = listOf(error("test", TestInterface2::class.java, TestInterface::class.java))
+        val expectedErrors = listOf(error("testinterface", TestInterface2::class.java, TestInterface::class.java))
         assertEquals(expectedErrors, result.errors)
     }
 

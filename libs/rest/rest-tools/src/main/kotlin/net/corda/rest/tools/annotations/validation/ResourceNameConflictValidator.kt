@@ -4,6 +4,7 @@ import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.annotations.retrieveApiVersionsSet
+import net.corda.rest.tools.annotations.extensions.path
 
 /**
  * Validates that multiple classes do not have the same resource path.
@@ -34,7 +35,7 @@ internal class ResourceNameConflictValidator(private val classes: List<Class<out
         resourceClass: Class<out RestResource>,
     ): RestValidationResult {
         val resource = resourceClass.getAnnotation(HttpRestResource::class.java)
-        val path = resource.path.lowercase()
+        val path = resource.path(resourceClass).lowercase()
         val newVersions = retrieveApiVersionsSet(resource.minVersion, resource.maxVersion)
 
         val conflicts = mutableSetOf<String>()
