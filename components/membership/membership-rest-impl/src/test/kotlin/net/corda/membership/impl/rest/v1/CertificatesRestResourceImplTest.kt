@@ -71,7 +71,15 @@ class CertificatesRestResourceImplTest {
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
-    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
+    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>() {
+        val nodeHoldingIdentity = mock<HoldingIdentity> {
+            on { x500Name } doReturn MemberX500Name.parse("O=Alice, L=LDN, C=GB")
+        }
+        val nodeInfo = mock<VirtualNodeInfo> {
+            on { holdingIdentity } doReturn nodeHoldingIdentity
+        }
+        on { getByHoldingIdentityShortHash(any()) } doReturn nodeInfo
+    }
     private val certificatesClient = mock<CertificatesClient>()
 
     private val certificatesOps = CertificatesRestResourceImpl(
@@ -175,7 +183,6 @@ class CertificatesRestResourceImplTest {
         @Test
         fun `it throws exception if key is not available`() {
             whenever(cryptoOpsClient.lookupKeysByIds(any(), any())).doReturn(emptyList())
-            registerVirtualNodeForTenantId(holdingIdentityShortHash)
 
             assertThrows<ResourceNotFoundException> {
                 certificatesOps.generateCsr(
@@ -190,7 +197,6 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it throws ServiceUnavailableException when repartition event happens while trying to retrieve key`() {
-            registerVirtualNodeForTenantId(holdingIdentityShortHash)
             whenever(cryptoOpsClient.lookupKeysByIds(any(), any())).doThrow(CordaRPCAPIPartitionException("repartition event"))
 
             val details = assertThrows<ServiceUnavailableException> {
@@ -208,8 +214,6 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it sign the request`() {
-            registerVirtualNodeForTenantId(holdingIdentityShortHash)
-
             certificatesOps.generateCsr(
                 holdingIdentityShortHash,
                 keyId,
@@ -248,8 +252,6 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it returns the correct signature`() {
-            registerVirtualNodeForTenantId(holdingIdentityShortHash)
-
             val pem = certificatesOps.generateCsr(
                 holdingIdentityShortHash,
                 keyId,
@@ -263,8 +265,6 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it adds alternative subject names when some are provided`() {
-            registerVirtualNodeForTenantId(holdingIdentityShortHash)
-
             val pem = certificatesOps.generateCsr(
                 holdingIdentityShortHash,
                 keyId,
@@ -296,8 +296,6 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it will not adds alternative subject names when none are provided`() {
-            registerVirtualNodeForTenantId(holdingIdentityShortHash)
-
             val pem = certificatesOps.generateCsr(
                 holdingIdentityShortHash,
                 keyId,
@@ -315,7 +313,6 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it throw an exception if the subject alternative name is invalid`() {
-            registerVirtualNodeForTenantId(holdingIdentityShortHash)
             assertThrows<InvalidInputDataException> {
                 certificatesOps.generateCsr(
                     holdingIdentityShortHash,
@@ -329,7 +326,6 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it throw an exception if the subject alternative name is empty`() {
-            registerVirtualNodeForTenantId(holdingIdentityShortHash)
             assertThrows<InvalidInputDataException> {
                 certificatesOps.generateCsr(
                     holdingIdentityShortHash,
@@ -343,7 +339,6 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it throw an exception if the subject alternative name is not a domain name`() {
-            registerVirtualNodeForTenantId(holdingIdentityShortHash)
             assertThrows<InvalidInputDataException> {
                 certificatesOps.generateCsr(
                     holdingIdentityShortHash,
@@ -357,8 +352,6 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it will use the correct x500 name`() {
-            registerVirtualNodeForTenantId(holdingIdentityShortHash)
-
             val pem = certificatesOps.generateCsr(
                 holdingIdentityShortHash,
                 keyId,
@@ -375,7 +368,6 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it will throw an exception for invalid X500 name`() {
-            registerVirtualNodeForTenantId(holdingIdentityShortHash)
             assertThrows<InvalidInputDataException> {
                 certificatesOps.generateCsr(
                     holdingIdentityShortHash,
@@ -389,7 +381,6 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it will throw an exception for invalid member name for TLS certificate`() {
-            registerVirtualNodeForTenantId(holdingIdentityShortHash)
             whenever(key.category).doReturn(CryptoConsts.Categories.TLS)
 
             assertThrows<InvalidInputDataException> {
@@ -406,7 +397,6 @@ class CertificatesRestResourceImplTest {
         @Test
         fun `it will generate a CSR for a valid member name for TLS certificate`() {
             whenever(key.category).doReturn(CryptoConsts.Categories.TLS)
-            registerVirtualNodeForTenantId(holdingIdentityShortHash)
 
             val csr = certificatesOps.generateCsr(
                 holdingIdentityShortHash,
@@ -421,7 +411,6 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it will throw an exception for invalid name for session certificate`() {
-            registerVirtualNodeForTenantId(holdingIdentityShortHash)
             whenever(key.category).doReturn(CryptoConsts.Categories.SESSION_INIT)
 
             assertThrows<InvalidInputDataException> {
@@ -535,7 +524,6 @@ class CertificatesRestResourceImplTest {
         fun `it will throw an exception for session certificate member key where the member name is not correct`() {
             whenever(key.category).doReturn(CryptoConsts.Categories.SESSION_INIT)
             val tenantId = "123123123123"
-            registerVirtualNodeForTenantId(tenantId)
             whenever(
                 cryptoOpsClient.sign(
                     eq(tenantId),
@@ -565,8 +553,6 @@ class CertificatesRestResourceImplTest {
 
         @Test
         fun `it throws exception if Signature OID can not be inferred`() {
-            registerVirtualNodeForTenantId(holdingIdentityShortHash)
-
             assertThrows<ResourceNotFoundException> {
                 certificatesOps.generateCsr(
                     holdingIdentityShortHash,
@@ -581,7 +567,6 @@ class CertificatesRestResourceImplTest {
         @Test
         fun `it throws exception if key code name is invalid`() {
             whenever(key.schemeCodeName).doReturn("Nop")
-            registerVirtualNodeForTenantId(holdingIdentityShortHash)
 
             assertThrows<ResourceNotFoundException> {
                 certificatesOps.generateCsr(
@@ -628,20 +613,6 @@ class CertificatesRestResourceImplTest {
             return PEMParser(this.reader()).use { parser ->
                 parser.readObject() as PKCS10CertificationRequest
             }
-        }
-
-        private fun registerVirtualNodeForTenantId(holdingIdentityShortHash: String) {
-            val nodeHoldingIdentity = mock<HoldingIdentity> {
-                on { x500Name } doReturn MemberX500Name.parse("O=Alice, L=LDN, C=GB")
-            }
-            val nodeInfo = mock<VirtualNodeInfo> {
-                on { holdingIdentity } doReturn nodeHoldingIdentity
-            }
-            whenever(
-                virtualNodeInfoReadService.getByHoldingIdentityShortHash(
-                    ShortHash.of(holdingIdentityShortHash)
-                )
-            ).doReturn(nodeInfo)
         }
     }
 

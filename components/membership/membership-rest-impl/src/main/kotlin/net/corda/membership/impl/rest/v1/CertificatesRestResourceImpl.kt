@@ -447,8 +447,7 @@ class CertificatesRestResourceImpl @Activate constructor(
         try {
             ShortHash.parse(tenantId)
         } catch (e: ShortHashException) {
-            throw InvalidInputDataException("Provided tenantId $tenantId is not a cluster tenant or " +
-                    "a valid holding identity ID.")
+            throw InvalidInputDataException("Provided tenantId $tenantId is not a valid holding identity ID.")
         }
 
         // Check if a virtual node exists for given tenantId, if not, it throws ResourceNotFoundException
