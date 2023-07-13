@@ -10,6 +10,7 @@ import net.corda.crypto.core.fullId
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.membership.impl.registration.dynamic.mgm.ContextUtils.sessionKeyRegex
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -20,7 +21,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
@@ -56,7 +56,6 @@ internal class MGMRegistrationMemberInfoHandler(
         const val SERIAL_CONST = "1"
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val keyIdList = listOf(SESSION_KEYS, ECDH_KEY_ID)
-        val sessionKeyRegex = String.format("$PARTY_SESSION_KEYS.id", "[0-9]+").toRegex()
     }
 
     @Throws(MGMRegistrationMemberInfoHandlingException::class)
