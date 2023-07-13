@@ -35,8 +35,13 @@ dependencies {
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
     //to get serializzation factory impl
+    integrationTestRuntimeOnly project(":components:membership:locally-hosted-identities-service-impl")
+    integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
     integrationTestRuntimeOnly project(":libs:messaging:db-message-bus-impl")
     integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
+    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(":libs:messaging:messaging-impl")
+    integrationTestRuntimeOnly project(":libs:crypto:cipher-suite-impl")
 }
 
 description 'Flow Mapper Library Impl'
