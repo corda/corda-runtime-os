@@ -8,6 +8,7 @@ import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSende
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityFlowPayload.INITIAL_TRANSACTION
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityFlowPayload.WAIT_FOR_ADDITIONAL_SIGNATURES
+import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityVersion
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
@@ -34,7 +35,8 @@ import java.security.PrivilegedExceptionAction
 class UtxoFinalityFlowV1(
     private val initialTransaction: UtxoSignedTransactionInternal,
     private val sessions: List<FlowSession>,
-    private val pluggableNotaryClientFlow: Class<PluggableNotaryClientFlow>
+    private val pluggableNotaryClientFlow: Class<PluggableNotaryClientFlow>,
+    private val version: UtxoFinalityVersion
 ) : UtxoFinalityBaseV1() {
 
     private companion object {
@@ -50,7 +52,7 @@ class UtxoFinalityFlowV1(
     * it should wait for additional signatures.
     * Otherwise, it can be skipped since there isn't unseen signatures
     */
-    private val waitForAdditionalSignatures = sessions.size > 1
+    private val waitForAdditionalSignatures = !(version == UtxoFinalityVersion.V2 && sessions.size == 1)
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -92,12 +94,19 @@ class UtxoFinalityFlowV1(
 
     @Suspendable
     private fun sendTransactionAndBackchainToCounterparties() {
-        flowMessaging.sendAll(
-            mapOf(
-                INITIAL_TRANSACTION to initialTransaction,
-                WAIT_FOR_ADDITIONAL_SIGNATURES to waitForAdditionalSignatures
-            ), sessions.toSet()
-        )
+        if (version == UtxoFinalityVersion.V1) {
+            flowMessaging.sendAll(
+                initialTransaction, sessions.toSet()
+            )
+        } else {
+            flowMessaging.sendAll(
+                mapOf(
+                    INITIAL_TRANSACTION to initialTransaction,
+                    WAIT_FOR_ADDITIONAL_SIGNATURES to waitForAdditionalSignatures
+                ), sessions.toSet()
+            )
+        }
+
         sessions.forEach {
             if (initialTransaction.dependencies.isNotEmpty()) {
                 flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction.id, it))

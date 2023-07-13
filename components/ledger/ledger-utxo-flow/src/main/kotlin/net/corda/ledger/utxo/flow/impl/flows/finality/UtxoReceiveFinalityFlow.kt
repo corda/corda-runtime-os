@@ -37,7 +37,8 @@ class UtxoReceiveFinalityFlowVersionedFlowFactory(
 
     override fun create(version: Int, session: FlowSession): SubFlow<UtxoSignedTransaction> {
         return when {
-            version >= 1 -> UtxoReceiveFinalityFlowV1(session, validator)
+            version >= 50100 -> UtxoReceiveFinalityFlowV1(session, validator, UtxoFinalityVersion.V2)
+            version in 1..50099 -> UtxoReceiveFinalityFlowV1(session, validator, UtxoFinalityVersion.V1)
             else -> throw IllegalArgumentException()
         }
     }

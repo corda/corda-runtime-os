@@ -7,6 +7,7 @@ import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResol
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityFlowPayload.INITIAL_TRANSACTION
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityFlowPayload.WAIT_FOR_ADDITIONAL_SIGNATURES
+import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityVersion
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.flows.finality.v1.FinalityNotarizationFailureType.Companion.toFinalityNotarizationFailureType
@@ -30,7 +31,8 @@ import org.slf4j.LoggerFactory
 @CordaSystemFlow
 class UtxoReceiveFinalityFlowV1(
     private val session: FlowSession,
-    private val validator: UtxoTransactionValidator
+    private val validator: UtxoTransactionValidator,
+    private val version: UtxoFinalityVersion
 ) : UtxoFinalityBaseV1() {
 
     private companion object {
@@ -90,9 +92,15 @@ class UtxoReceiveFinalityFlowV1(
 
     @Suspendable
     private fun receiveTransactionAndBackchain(): UtxoSignedTransactionInternal {
-        val payload = session.receive(Map::class.java)
-        val initialTransaction = payload[INITIAL_TRANSACTION] as UtxoSignedTransactionInternal
-        waitForAdditionalSignatures = payload[WAIT_FOR_ADDITIONAL_SIGNATURES] as Boolean
+        lateinit var initialTransaction: UtxoSignedTransactionInternal
+
+        if (version == UtxoFinalityVersion.V1) {
+            initialTransaction = session.receive(UtxoSignedTransactionInternal::class.java)
+        } else {
+            val payload = session.receive(Map::class.java)
+            initialTransaction = payload[INITIAL_TRANSACTION] as UtxoSignedTransactionInternal
+            waitForAdditionalSignatures = payload[WAIT_FOR_ADDITIONAL_SIGNATURES] as Boolean
+        }
 
         if (log.isDebugEnabled) {
             log.debug( "Beginning receive finality for transaction: ${initialTransaction.id}")
