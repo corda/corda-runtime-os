@@ -45,7 +45,7 @@
             "type": "array",
             "default": [],
             "title": "topology spread constraints",
-            "additionalProperties": {
+            "items": {
                 "type": [
                     "string",
                     "object",
@@ -59,9 +59,7 @@
             "title": "affinity for pod assignment",
             "additionalProperties": {
                 "type": [
-                    "string",
-                    "object",
-                    "array"
+                    "object"
                 ]
             }
         },
