@@ -2,6 +2,7 @@ package net.corda.flow.mapper.impl
 
 import com.typesafe.config.ConfigValueFactory
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -9,6 +10,7 @@ import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.p2p.app.AppMessage
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.schema.configuration.FlowConfig
@@ -30,7 +32,11 @@ internal class RecordFactoryImplTest {
     @BeforeEach
     fun setup() {
         val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
-        whenever(cordaAvroSerializationFactory.createAvroSerializer<SessionEvent>(anyOrNull())).thenReturn(mock())
+        val cordaAvroSerializer: CordaAvroSerializer<SessionEvent> = mock()
+        val byteArray = "SessionEventSerialized".toByteArray()
+
+        whenever(cordaAvroSerializer.serialize(any<SessionEvent>())).thenReturn(byteArray)
+        whenever(cordaAvroSerializationFactory.createAvroSerializer<SessionEvent>(anyOrNull())).thenReturn(cordaAvroSerializer)
 
         val locallyHostedIdentitiesServiceSameCluster: LocallyHostedIdentitiesService = mock()
         whenever(locallyHostedIdentitiesServiceSameCluster.getIdentityInfo(any())).thenReturn(mock())
@@ -147,8 +153,8 @@ internal class RecordFactoryImplTest {
             sessionEvent.messageDirection
         )
         Assertions.assertThat(record).isNotNull
-        Assertions.assertThat(record.topic).isEqualTo("flow.mapper.event")
-        Assertions.assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
+        Assertions.assertThat(record.topic).isEqualTo("p2p.out")
+        Assertions.assertThat(record.value!!::class).isEqualTo(AppMessage::class)
     }
 
     @Test
@@ -170,8 +176,8 @@ internal class RecordFactoryImplTest {
             sessionEvent.messageDirection
         )
         Assertions.assertThat(record).isNotNull
-        Assertions.assertThat(record.topic).isEqualTo("flow.mapper.event")
-        Assertions.assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
+        Assertions.assertThat(record.topic).isEqualTo("p2p.out")
+        Assertions.assertThat(record.value!!::class).isEqualTo(AppMessage::class)
     }
 
     @Test
@@ -193,8 +199,8 @@ internal class RecordFactoryImplTest {
             sessionEvent.messageDirection
         )
         Assertions.assertThat(record).isNotNull
-        Assertions.assertThat(record.topic).isEqualTo("flow.mapper.event")
-        Assertions.assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
+        Assertions.assertThat(record.topic).isEqualTo("p2p.out")
+        Assertions.assertThat(record.value!!::class).isEqualTo(AppMessage::class)
     }
 
     @Test
