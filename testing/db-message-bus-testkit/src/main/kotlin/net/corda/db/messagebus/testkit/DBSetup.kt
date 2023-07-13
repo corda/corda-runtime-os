@@ -1,5 +1,6 @@
 package net.corda.db.messagebus.testkit
 
+import net.corda.application.dbsetup.DbMessageBusSetup
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
@@ -48,6 +49,7 @@ object DBSetup: BeforeAllCallback {
                 dataSource.connection.use { connection -> lbm.createUpdateSql(connection, cl, it) }
             }
             dataSource.connection.use { connection  ->  lbm.updateDb(connection, cl) }
+            DbMessageBusSetup().createTopicsOnDbMessageBus(dataSource.connection)
         }
     }
 }
