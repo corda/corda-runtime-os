@@ -23,7 +23,10 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
+import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
+import net.corda.interop.identity.cache.InteropIdentityCacheService
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
 
 @Suppress("ForbiddenComment")
@@ -34,7 +37,11 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = InteropIdentityCacheService::class)
+    private val interopIdentityCacheService: InteropIdentityCacheService,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
 ) : InteropIdentityWriteService, LifecycleEventHandler {
     companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -48,14 +55,48 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
     private var configSubscription: AutoCloseable? = null
 
     private val publisher: AtomicReference<Publisher?> = AtomicReference()
+
     private val interopIdentityProducer = InteropIdentityProducer(publisher)
     private val hostedIdentityProducer = HostedIdentityProducer(publisher)
+    private val membershipInfoProducer = MembershipInfoProducer(publisher)
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
 
     override fun addInteropIdentity(vNodeShortHash: String, identity: InteropIdentity) {
+        writeMemberInfoTopic(vNodeShortHash, identity)
+        writeInteropIdentityTopic(vNodeShortHash, identity)
+
+        // TODO: This should only be done for locally hosted identities!
+        writeHostedIdentitiesTopic(identity)
+    }
+
+    private fun writeMemberInfoTopic(vNodeShortHash: String, identity: InteropIdentity) {
+        val cacheView = interopIdentityCacheService.getHoldingIdentityCacheView(vNodeShortHash)
+        val ownedInteropIdentities = cacheView.getOwnedIdentities()
+
+        // If the new interop identity will become the owned one use that. Otherwise, retrieve an existing one from the cache.
+        val ownedInteropIdentity = if (identity.holdingIdentityShortHash == vNodeShortHash) {
+            identity
+        } else if (ownedInteropIdentities[identity.groupId] != null) {
+            ownedInteropIdentities[identity.groupId]!!
+        } else {
+            throw IllegalStateException(
+                "The interop group ${identity.groupId} does not contain an interop identity for holding identity $vNodeShortHash.")
+        }
+
+        val vNodeInfo = checkNotNull(virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(vNodeShortHash))) {
+            "No holding identity with short hash $vNodeShortHash"
+        }
+
+        membershipInfoProducer.publishMemberInfo(vNodeInfo.holdingIdentity, ownedInteropIdentity, listOf(identity))
+    }
+
+    private fun writeInteropIdentityTopic(vNodeShortHash: String, identity: InteropIdentity) {
         interopIdentityProducer.publishInteropIdentity(vNodeShortHash, identity)
+    }
+
+    private fun writeHostedIdentitiesTopic(identity: InteropIdentity) {
         hostedIdentityProducer.publishHostedInteropIdentity(identity)
     }
 

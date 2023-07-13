@@ -22,12 +22,16 @@ dependencies {
     implementation project(':libs:utilities')
     implementation project(':libs:virtual-node:virtual-node-info')
     implementation project(':libs:interop:interop-core')
+    implementation project(":libs:membership:membership-common")
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     implementation project(":components:interop:interop-identity-write-service")
+    implementation project(":components:interop:interop-identity-cache-service")
+    implementation project(":components:virtual-node:virtual-node-info-read-service")
 
     runtimeOnly project(":components:interop:interop-identity-write-service-impl")
+    runtimeOnly project(":components:interop:interop-identity-cache-service-impl")
 
     implementation project(":libs:configuration:configuration-core")
 
