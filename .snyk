@@ -12,4 +12,13 @@ ignore:
           HTTPS connections with other gateways.
         expires: 2023-10-10T12:08:30.514Z
         created: 2022-12-20T12:08:30.517Z
+
+  SNYK-JAVA-ORGECLIPSEJETTY-5769685:
+    - '*':
+        reason: >-
+          This vulnerability does not apply to C5 as we are not parsing XML configuration
+          when setting-up Jetty server. We are only using Jetty through Javalin which is
+          configuring Jetty programmatically.
+        expires: 2023-12-13T12:08:30.514Z
+        created: 2023-07-13T12:08:30.517Z
 patch: {}
