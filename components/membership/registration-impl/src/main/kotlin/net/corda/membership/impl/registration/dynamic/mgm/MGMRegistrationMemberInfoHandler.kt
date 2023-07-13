@@ -10,7 +10,7 @@ import net.corda.crypto.core.fullId
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.libs.platform.PlatformInfoProvider
-import net.corda.membership.impl.registration.dynamic.mgm.ContextUtils.Companion.sessionKeyRegex
+import net.corda.membership.impl.registration.dynamic.mgm.ContextUtils.sessionKeyRegex
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
