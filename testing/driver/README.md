@@ -82,7 +82,7 @@ public interface RunFlow {
 }
 ```
 where `flowClassName` is the fully qualified name of a flow class that extends `ClientStartableFlow`,
-and flowStartArgs` is a `String` containing a JSON document. For example:
+and `flowStartArgs` is a `String` containing a JSON document. For example:
 ```kotlin
 val inputResult = driver.let { dsl ->
     dsl.runFlow(utxoLedger[alice] ?: fail("Missing vNode for Alice"), UtxoDemoFlow::class.java) {
@@ -121,7 +121,7 @@ all instances of the Driver's OSGi framework, and may be accessed concurrently.
 
 ## Overview
 The Driver creates an embedded OSGi framework that contains Corda's Flow Messaging layer,
-but without Corda's Lifecycle or REST layers, or Kafka. It also replaces Corda's sandbox
+but without Corda's Lifecycle layer, REST layer, or Kafka. It also replaces Corda's sandbox
 components with its own so that it can load CPBs as resources from the classpath.
 
 CorDapp developers are only expected to interact with the Driver via JUnit and the `DriverDSL`:
@@ -199,7 +199,7 @@ We define our system bundle also to include these bundles:
 - `org.osgi.util.promise`
 
 Our system bundle also needs to contain the `net.corda.testing.driver.node` package,
-which is defined by the Driver's own bundle viz `net.corda.driver`.
+which is defined by the Driver's own `net.corda.driver` bundle.
 
 ### Excluded Bundles
 We explicitly exclude these bundles from being installed into the OSGi framework:
