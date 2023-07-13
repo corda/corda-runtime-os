@@ -12,7 +12,7 @@ class InteropIdentityCacheViewImpl(private val holdingIdentityShortHash: String)
 
     private val byGroupId = HashMap<String, HashSet<InteropIdentity>>()
     private val byHoldingIdentity = HashMap<String, HashSet<InteropIdentity>>()
-    private val byShortHash = HashMap<String, HashSet<InteropIdentity>>()
+    private val byShortHash = HashMap<String, InteropIdentity>()
     private val myIdentities = HashMap<String, InteropIdentity>()
 
     private fun getOrCreateByGroupIdEntry(groupId: String): HashSet<InteropIdentity> {
@@ -23,12 +23,6 @@ class InteropIdentityCacheViewImpl(private val holdingIdentityShortHash: String)
 
     private fun getOrCreateByHoldingIdentityEntry(shortHash: String): HashSet<InteropIdentity> {
         return byHoldingIdentity.computeIfAbsent(shortHash) {
-            HashSet()
-        }
-    }
-
-    private fun getOrCreateByShortHashIdentity(shortHash: String): HashSet<InteropIdentity> {
-        return byShortHash.computeIfAbsent(shortHash) {
             HashSet()
         }
     }
@@ -47,7 +41,14 @@ class InteropIdentityCacheViewImpl(private val holdingIdentityShortHash: String)
 
         getOrCreateByGroupIdEntry(identity.groupId).add(identity)
         getOrCreateByHoldingIdentityEntry(identity.holdingIdentityShortHash).add(identity)
-        getOrCreateByShortHashIdentity(identity.shortHash).add(identity)
+
+        // Safety check for short hash collisions
+        require(byShortHash[identity.shortHash] == null || byShortHash[identity.shortHash] == identity) {
+            "Unable to add identity $identity to context of holding identity $holdingIdentityShortHash, " +
+            "the identity shares a short hash with an existing identity."
+        }
+
+        byShortHash[identity.shortHash] = identity
     }
 
     fun removeInteropIdentity(identity: InteropIdentity) {
@@ -68,10 +69,7 @@ class InteropIdentityCacheViewImpl(private val holdingIdentityShortHash: String)
         }
 
         byShortHash[identity.shortHash]?.let {
-            it.remove(identity)
-            if (it.size == 0) {
-                byShortHash.remove(identity.shortHash)
-            }
+            byShortHash.remove(identity.shortHash)
         }
 
         if (identity.holdingIdentityShortHash == holdingIdentityShortHash) {
@@ -87,7 +85,7 @@ class InteropIdentityCacheViewImpl(private val holdingIdentityShortHash: String)
     override fun getIdentitiesByHoldingIdentity(): Map<String, Set<InteropIdentity>> =
         Collections.unmodifiableMap(byHoldingIdentity)
 
-    override fun getIdentitiesByShortHash(): Map<String, Set<InteropIdentity>> =
+    override fun getIdentitiesByShortHash(): Map<String, InteropIdentity> =
         Collections.unmodifiableMap(byShortHash)
 
     override fun getOwnedIdentities(): Map<String, InteropIdentity> =

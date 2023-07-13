@@ -110,13 +110,10 @@ class InteropIdentityCacheViewImplTest {
         assertThat(byShortHash).hasSize(1)
 
         val singleEntry = byShortHash.entries.single()
-
-        assertThat(singleEntry.value).hasSize(1)
-
-        val singleIdentity = singleEntry.value.single()
+        val identity = singleEntry.value
 
         assertThat(singleEntry.key).isEqualTo(testInteropIdentity.shortHash)
-        assertThat(singleIdentity).isEqualTo(testInteropIdentity)
+        assertThat(identity).isEqualTo(testInteropIdentity)
 
         testView.removeInteropIdentity(testInteropIdentity)
 
