@@ -45,7 +45,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.approval.ApprovalRuleParams
-import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toPersistentGroupParameters
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient

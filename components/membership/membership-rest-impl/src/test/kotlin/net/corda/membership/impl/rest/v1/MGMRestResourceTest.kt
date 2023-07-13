@@ -24,6 +24,7 @@ import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.rest.v1.types.RestGroupParameters
 import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
 import net.corda.rest.exception.InvalidStateChangeException
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
@@ -1383,7 +1384,9 @@ class MGMRestResourceTest {
         @AfterEach
         fun tearDown() = stopService()
 
-        private val mockUpdate = mock<Map<String, String>>()
+        private val mockUpdate = mock<RestGroupParameters> {
+            on { parameters } doReturn mapOf("ext.key" to "value")
+        }
 
         @Test
         fun `updateGroupParameters delegates correctly to mgm resource client`() {
@@ -1396,14 +1399,14 @@ class MGMRestResourceTest {
 
             verify(mgmResourceClient).updateGroupParameters(
                 (ShortHash.of(HOLDING_IDENTITY_ID)),
-                mockUpdate
+                mockUpdate.parameters
             )
         }
 
         @Test
         fun `updateGroupParameters throws resource not found for invalid member`() {
             whenever(mgmResourceClient.updateGroupParameters(
-                ShortHash.of(HOLDING_IDENTITY_ID), mockUpdate
+                ShortHash.of(HOLDING_IDENTITY_ID), mockUpdate.parameters
             )).doThrow(mock<CouldNotFindMemberException>())
 
             assertThrows<ResourceNotFoundException> {
@@ -1414,7 +1417,7 @@ class MGMRestResourceTest {
         @Test
         fun `updateGroupParameters throws invalid input for non MGM member`() {
             whenever(mgmResourceClient.updateGroupParameters(
-                ShortHash.of(HOLDING_IDENTITY_ID), mockUpdate
+                ShortHash.of(HOLDING_IDENTITY_ID), mockUpdate.parameters
             )).doThrow(mock<MemberNotAnMgmException>())
 
             assertThrows<InvalidInputDataException> {
@@ -1434,7 +1437,7 @@ class MGMRestResourceTest {
             assertThrows<BadRequestException> {
                 mgmRestResource.updateGroupParameters(
                     HOLDING_IDENTITY_ID,
-                    mapOf(EPOCH_KEY to "5")
+                    RestGroupParameters(mapOf(EPOCH_KEY to "5"))
                 )
             }
         }
@@ -1442,7 +1445,7 @@ class MGMRestResourceTest {
         @Test
         fun `updateGroupParameters throws invalid state change in case of concurrent update attempt`() {
             whenever(mgmResourceClient.updateGroupParameters(
-                ShortHash.of(HOLDING_IDENTITY_ID), mockUpdate
+                ShortHash.of(HOLDING_IDENTITY_ID), mockUpdate.parameters
             )).doThrow(mock<PessimisticLockException>())
 
             assertThrows<InvalidStateChangeException> {

@@ -1832,13 +1832,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "type" : "object",
-                  "additionalProperties" : {
-                    "type" : "string",
-                    "example" : "string"
-                  },
-                  "nullable" : false,
-                  "example" : "No example available for this type"
+                  "$ref" : "#/components/schemas/RestGroupParameters"
                 }
               }
             }
@@ -2468,19 +2462,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "type" : "object",
-                "properties" : {
-                  "newGroupParameters" : {
-                    "type" : "object",
-                    "additionalProperties" : {
-                      "type" : "string",
-                      "example" : "string"
-                    },
-                    "description" : "Updated version of the group parameters",
-                    "nullable" : false,
-                    "example" : "No example available for this type"
-                  }
-                }
+                "$ref" : "#/components/schemas/RestGroupParameters"
               }
             }
           },
@@ -2492,13 +2474,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "type" : "object",
-                  "additionalProperties" : {
-                    "type" : "string",
-                    "example" : "string"
-                  },
-                  "nullable" : false,
-                  "example" : "No example available for this type"
+                  "$ref" : "#/components/schemas/RestGroupParameters"
                 }
               }
             }
@@ -5098,6 +5074,21 @@
             "type" : "string",
             "nullable" : false,
             "example" : "string"
+          }
+        }
+      },
+      "RestGroupParameters" : {
+        "required" : [ "parameters" ],
+        "type" : "object",
+        "properties" : {
+          "parameters" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string",
+              "example" : "string"
+            },
+            "nullable" : false,
+            "example" : "No example available for this type"
           }
         }
       },

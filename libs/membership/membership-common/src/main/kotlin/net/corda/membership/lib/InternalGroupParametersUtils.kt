@@ -30,5 +30,3 @@ fun InternalGroupParameters.toPersistentGroupParameters(
         )
     )
 }
-
-fun InternalGroupParameters.toMap() = entries.associate { it.key to it.value }

@@ -1,5 +1,6 @@
 package net.corda.membership.rest.v1
 
+import net.corda.membership.rest.v1.types.RestGroupParameters
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpDELETE
 import net.corda.rest.annotations.HttpGET
@@ -498,6 +499,6 @@ interface MGMRestResource : RestResource {
         @RestPathParameter(description = "The holding identity ID of the MGM")
         holdingIdentityShortHash: String,
         @ClientRequestBodyParameter(description = "Updated version of the group parameters")
-        newGroupParameters: Map<String, String>,
-    ): Map<String, String>
+        newGroupParameters: RestGroupParameters,
+    ): RestGroupParameters
 }

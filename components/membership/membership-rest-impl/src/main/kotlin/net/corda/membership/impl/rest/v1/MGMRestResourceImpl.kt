@@ -39,6 +39,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.membership.lib.toMap
+import net.corda.membership.rest.v1.types.RestGroupParameters
 import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.rest.exception.InvalidStateChangeException
@@ -156,7 +157,7 @@ class MGMRestResourceImpl internal constructor(
 
         fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters)
 
-        fun updateGroupParameters(holdingIdentityShortHash: String, newGroupParameters: Map<String, String>): Map<String, String>
+        fun updateGroupParameters(holdingIdentityShortHash: String, newGroupParameters: RestGroupParameters): RestGroupParameters
     }
 
     override val protocolVersion = 1
@@ -252,7 +253,7 @@ class MGMRestResourceImpl internal constructor(
     override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) =
         impl.activateMember(holdingIdentityShortHash, activationParams)
 
-    override fun updateGroupParameters(holdingIdentityShortHash: String, newGroupParameters: Map<String, String>) =
+    override fun updateGroupParameters(holdingIdentityShortHash: String, newGroupParameters: RestGroupParameters) =
         impl.updateGroupParameters(holdingIdentityShortHash, newGroupParameters)
 
     fun activate(reason: String) {
@@ -359,8 +360,8 @@ class MGMRestResourceImpl internal constructor(
 
         override fun updateGroupParameters(
             holdingIdentityShortHash: String,
-            newGroupParameters: Map<String, String>,
-        ): Map<String, String> = throwNotRunningException()
+            newGroupParameters: RestGroupParameters,
+        ): RestGroupParameters = throwNotRunningException()
 
         private fun <T> throwNotRunningException(): T {
             throw ServiceUnavailableException(NOT_RUNNING_ERROR)
@@ -615,12 +616,13 @@ class MGMRestResourceImpl internal constructor(
 
         override fun updateGroupParameters(
             holdingIdentityShortHash: String,
-            newGroupParameters: Map<String, String>,
-        ): Map<String, String> {
+            newGroupParameters: RestGroupParameters,
+        ): RestGroupParameters {
             return try {
                 handleCommonErrors(holdingIdentityShortHash) {
-                    validateGroupParametersUpdate(newGroupParameters)
-                    mgmResourceClient.updateGroupParameters(it, newGroupParameters).toMap()
+                    val newParametersMap = newGroupParameters.parameters
+                    validateGroupParametersUpdate(newParametersMap)
+                    RestGroupParameters(mgmResourceClient.updateGroupParameters(it, newParametersMap).toMap())
                 }
             } catch (e: PessimisticLockException) {
                 throw InvalidStateChangeException("${e.message}")
