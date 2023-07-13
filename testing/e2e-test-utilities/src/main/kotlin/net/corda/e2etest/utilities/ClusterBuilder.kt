@@ -334,6 +334,10 @@ class ClusterBuilder {
     fun removeRoleFromUser(loginName: String, roleId: String) =
         delete("/api/$REST_API_VERSION_PATH/user/$loginName/role/$roleId")
 
+    /** Get a summary of the user's permissions */
+    fun getPermissionSummary(loginName: String) =
+        get("/api/v1/user/$loginName/permissionsummary")
+
     /** Create a new permission */
     fun createPermission(
         permissionString: String,
