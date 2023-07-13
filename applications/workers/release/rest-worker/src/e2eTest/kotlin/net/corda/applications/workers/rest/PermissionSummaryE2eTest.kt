@@ -50,11 +50,13 @@ class PermissionSummaryE2eTest {
 
         adminTestHelper.addRoleToUser(newUser, roleId)
 
-        with(adminTestHelper.getPermissionSummary(newUser)) {
-            assertEquals(1, this.permissions.size)
-            assertEquals(permissionId, this.permissions[0].id)
-            assertEquals(permissionString, this.permissions[0].permissionString)
-            assertEquals(PermissionType.ALLOW, this.permissions[0].permissionType)
+        eventually {
+            with(adminTestHelper.getPermissionSummary(newUser)) {
+                assertEquals(1, this.permissions.size)
+                assertEquals(permissionId, this.permissions[0].id)
+                assertEquals(permissionString, this.permissions[0].permissionString)
+                assertEquals(PermissionType.ALLOW, this.permissions[0].permissionType)
+            }
         }
     }
 
@@ -87,38 +89,47 @@ class PermissionSummaryE2eTest {
         adminTestHelper.addRoleToUser(newUser1, roleId)
         adminTestHelper.addRoleToUser(newUser2, roleId)
 
-        with(adminTestHelper.getPermissionSummary(newUser1)) {
-            assertEquals(1, this.permissions.size)
-            assertEquals(permissionId1, this.permissions[0].id)
-            assertEquals(permissionString1, this.permissions[0].permissionString)
-            assertEquals(PermissionType.DENY, this.permissions[0].permissionType)
+        eventually {
+            with(adminTestHelper.getPermissionSummary(newUser1)) {
+                assertEquals(1, this.permissions.size)
+                assertEquals(permissionId1, this.permissions[0].id)
+                assertEquals(permissionString1, this.permissions[0].permissionString)
+                assertEquals(PermissionType.DENY, this.permissions[0].permissionType)
+            }
         }
-        with(adminTestHelper.getPermissionSummary(newUser2)) {
-            assertEquals(1, this.permissions.size)
-            assertEquals(permissionId1, this.permissions[0].id)
-            assertEquals(permissionString1, this.permissions[0].permissionString)
-            assertEquals(PermissionType.DENY, this.permissions[0].permissionType)
+
+        eventually {
+            with(adminTestHelper.getPermissionSummary(newUser2)) {
+                assertEquals(1, this.permissions.size)
+                assertEquals(permissionId1, this.permissions[0].id)
+                assertEquals(permissionString1, this.permissions[0].permissionString)
+                assertEquals(PermissionType.DENY, this.permissions[0].permissionType)
+            }
         }
 
         adminTestHelper.addPermissionsToRole(roleId, permissionId2)
 
-        with(adminTestHelper.getPermissionSummary(newUser1)) {
-            assertEquals(2, this.permissions.size)
-            assertEquals(permissionId1, this.permissions[0].id)
-            assertEquals(permissionString1, this.permissions[0].permissionString)
-            assertEquals(PermissionType.DENY, this.permissions[0].permissionType)
-            assertEquals(permissionId2, this.permissions[1].id)
-            assertEquals(permissionString2, this.permissions[1].permissionString)
-            assertEquals(PermissionType.ALLOW, this.permissions[1].permissionType)
+        eventually {
+            with(adminTestHelper.getPermissionSummary(newUser1)) {
+                assertEquals(2, this.permissions.size)
+                assertEquals(permissionId1, this.permissions[0].id)
+                assertEquals(permissionString1, this.permissions[0].permissionString)
+                assertEquals(PermissionType.DENY, this.permissions[0].permissionType)
+                assertEquals(permissionId2, this.permissions[1].id)
+                assertEquals(permissionString2, this.permissions[1].permissionString)
+                assertEquals(PermissionType.ALLOW, this.permissions[1].permissionType)
+            }
         }
-        with(adminTestHelper.getPermissionSummary(newUser2)) {
-            assertEquals(2, this.permissions.size)
-            assertEquals(permissionId1, this.permissions[0].id)
-            assertEquals(permissionString1, this.permissions[0].permissionString)
-            assertEquals(PermissionType.DENY, this.permissions[0].permissionType)
-            assertEquals(permissionId2, this.permissions[1].id)
-            assertEquals(permissionString2, this.permissions[1].permissionString)
-            assertEquals(PermissionType.ALLOW, this.permissions[1].permissionType)
+        eventually {
+            with(adminTestHelper.getPermissionSummary(newUser2)) {
+                assertEquals(2, this.permissions.size)
+                assertEquals(permissionId1, this.permissions[0].id)
+                assertEquals(permissionString1, this.permissions[0].permissionString)
+                assertEquals(PermissionType.DENY, this.permissions[0].permissionType)
+                assertEquals(permissionId2, this.permissions[1].id)
+                assertEquals(permissionString2, this.permissions[1].permissionString)
+                assertEquals(PermissionType.ALLOW, this.permissions[1].permissionType)
+            }
         }
     }
 
@@ -129,8 +140,10 @@ class PermissionSummaryE2eTest {
 
         adminTestHelper.createUser(newUser1, newUserPassword, passwordExpiry)
 
-        with(adminTestHelper.getPermissionSummary(newUser1)) {
-            assertEquals(0, this.permissions.size, "New user should have permission summary with empty list")
+        eventually {
+            with(adminTestHelper.getPermissionSummary(newUser1)) {
+                assertEquals(0, this.permissions.size, "New user should have permission summary with empty list")
+            }
         }
 
         val permissionString1: String = "aa" + cordaCluster.uniqueName
@@ -149,30 +162,34 @@ class PermissionSummaryE2eTest {
 
         adminTestHelper.addRoleToUser(newUser1, roleId1)
 
-        with(adminTestHelper.getPermissionSummary(newUser1)) {
-            assertEquals(2, this.permissions.size)
-            assertEquals(permissionId1, this.permissions[0].id)
-            assertEquals(permissionString1, this.permissions[0].permissionString)
-            assertEquals(PermissionType.DENY, this.permissions[0].permissionType)
-            assertEquals(permissionId2, this.permissions[1].id)
-            assertEquals(permissionString2, this.permissions[1].permissionString)
-            assertEquals(PermissionType.ALLOW, this.permissions[1].permissionType)
+        eventually {
+            with(adminTestHelper.getPermissionSummary(newUser1)) {
+                assertEquals(2, this.permissions.size)
+                assertEquals(permissionId1, this.permissions[0].id)
+                assertEquals(permissionString1, this.permissions[0].permissionString)
+                assertEquals(PermissionType.DENY, this.permissions[0].permissionType)
+                assertEquals(permissionId2, this.permissions[1].id)
+                assertEquals(permissionString2, this.permissions[1].permissionString)
+                assertEquals(PermissionType.ALLOW, this.permissions[1].permissionType)
+            }
         }
 
         adminTestHelper.addRoleToUser(newUser1, roleId2)
 
-        with(adminTestHelper.getPermissionSummary(newUser1)) {
-            assertEquals(3, this.permissions.size)
-            // order guaranteed to be DENY permissions first, alphabetically ordered by permission string
-            assertEquals(permissionId1, this.permissions[0].id)
-            assertEquals(permissionString1, this.permissions[0].permissionString)
-            assertEquals(PermissionType.DENY, this.permissions[0].permissionType)
-            assertEquals(permissionId3, this.permissions[1].id)
-            assertEquals(permissionString3, this.permissions[1].permissionString)
-            assertEquals(PermissionType.DENY, this.permissions[1].permissionType)
-            assertEquals(permissionId2, this.permissions[2].id)
-            assertEquals(permissionString2, this.permissions[2].permissionString)
-            assertEquals(PermissionType.ALLOW, this.permissions[2].permissionType)
+        eventually {
+            with(adminTestHelper.getPermissionSummary(newUser1)) {
+                assertEquals(3, this.permissions.size)
+                // order guaranteed to be DENY permissions first, alphabetically ordered by permission string
+                assertEquals(permissionId1, this.permissions[0].id)
+                assertEquals(permissionString1, this.permissions[0].permissionString)
+                assertEquals(PermissionType.DENY, this.permissions[0].permissionType)
+                assertEquals(permissionId3, this.permissions[1].id)
+                assertEquals(permissionString3, this.permissions[1].permissionString)
+                assertEquals(PermissionType.DENY, this.permissions[1].permissionType)
+                assertEquals(permissionId2, this.permissions[2].id)
+                assertEquals(permissionString2, this.permissions[2].permissionString)
+                assertEquals(PermissionType.ALLOW, this.permissions[2].permissionType)
+            }
         }
     }
 
