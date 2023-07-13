@@ -12,6 +12,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.data.TopicData
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -47,8 +48,9 @@ class FlowWakeUpSchedulerImpl constructor(
     override fun onPartitionSynced(states: TopicData<String, Checkpoint>?) {
         states?.iterate { _, value ->
             val id = value.flowId
+            val holdingIdShortHash = value.flowState?.flowStartContext?.identity?.toCorda()?.shortHash?.toString()
             val scheduledWakeUp = scheduledExecutorService.schedule(
-                { publishWakeUp(id) },
+                { publishWakeUp(id, holdingIdShortHash) },
                 value.pipelineState.maxFlowSleepDuration.toLong(),
                 TimeUnit.MILLISECONDS
             )
@@ -89,6 +91,7 @@ class FlowWakeUpSchedulerImpl constructor(
 
     private fun cancelScheduledWakeUps(flowIds:Collection<String>){
         flowIds.forEach {
+            scheduledWakeUps.remove(it)?.cancel(false)
         }
     }
 
