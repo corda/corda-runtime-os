@@ -53,12 +53,12 @@ class TransactionBackchainSenderFlowVersionedFlowFactory(
 
     override fun create(version: Int, sessions: List<FlowSession>): SubFlow<Unit> {
         return when {
-            version >= 50100 -> TransactionBackchainSenderFlowV1(
+            version >= 50001 -> TransactionBackchainSenderFlowV1(
                 headTransactionIds,
                 sessions.single(),
                 TransactionBackChainResolutionVersion.V2
             )
-            version in 1..50099 -> TransactionBackchainSenderFlowV1(
+            version in 1..50000 -> TransactionBackchainSenderFlowV1(
                 headTransactionIds,
                 sessions.single(),
                 TransactionBackChainResolutionVersion.V1

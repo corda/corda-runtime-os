@@ -22,8 +22,8 @@ class TransactionBackchainResolutionFlowVersionedFlowFactoryTest {
     }
 
     @Test
-    fun `with platform version 50099 creates TransactionBackchainResolutionFlowV1`() {
-        val flow = factory.create(50099, mock())
+    fun `with platform version 50000 creates TransactionBackchainResolutionFlowV1`() {
+        val flow = factory.create(50000, mock())
         assertThat(flow).isExactlyInstanceOf(TransactionBackchainResolutionFlowV1::class.java)
         assertSame(
             TransactionBackChainResolutionVersion.V1,
@@ -32,8 +32,8 @@ class TransactionBackchainResolutionFlowVersionedFlowFactoryTest {
     }
 
     @Test
-    fun `with platform version 50100 creates TransactionBackchainResolutionFlowV2`() {
-        val flow = factory.create(50100, mock())
+    fun `with platform version 50001 creates TransactionBackchainResolutionFlowV2`() {
+        val flow = factory.create(50001, mock())
         assertThat(flow).isExactlyInstanceOf(TransactionBackchainResolutionFlowV1::class.java)
         assertSame(
             TransactionBackChainResolutionVersion.V2,
