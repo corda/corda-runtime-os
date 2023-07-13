@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory
 class UtxoReceiveFinalityFlowV1(
     private val session: FlowSession,
     private val validator: UtxoTransactionValidator,
-    private val version: UtxoFinalityVersion
+    val version: UtxoFinalityVersion
 ) : UtxoFinalityBaseV1() {
 
     private companion object {

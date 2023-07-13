@@ -36,7 +36,7 @@ class UtxoFinalityFlowV1(
     private val initialTransaction: UtxoSignedTransactionInternal,
     private val sessions: List<FlowSession>,
     private val pluggableNotaryClientFlow: Class<PluggableNotaryClientFlow>,
-    private val version: UtxoFinalityVersion
+    val version: UtxoFinalityVersion
 ) : UtxoFinalityBaseV1() {
 
     private companion object {

@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 import net.corda.flow.application.services.VersioningService
 import net.corda.flow.application.versioning.VersionedReceiveFlowFactory
 import net.corda.ledger.utxo.flow.impl.flows.finality.v1.UtxoReceiveFinalityFlowV1
+import net.corda.libs.platform.PlatformVersion.CORDA_5_1
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
@@ -37,8 +38,8 @@ class UtxoReceiveFinalityFlowVersionedFlowFactory(
 
     override fun create(version: Int, session: FlowSession): SubFlow<UtxoSignedTransaction> {
         return when {
-            version >= 50100 -> UtxoReceiveFinalityFlowV1(session, validator, UtxoFinalityVersion.V2)
-            version in 1..50099 -> UtxoReceiveFinalityFlowV1(session, validator, UtxoFinalityVersion.V1)
+            version >= CORDA_5_1.value -> UtxoReceiveFinalityFlowV1(session, validator, UtxoFinalityVersion.V2)
+            version in 1 until CORDA_5_1.value -> UtxoReceiveFinalityFlowV1(session, validator, UtxoFinalityVersion.V1)
             else -> throw IllegalArgumentException()
         }
     }
