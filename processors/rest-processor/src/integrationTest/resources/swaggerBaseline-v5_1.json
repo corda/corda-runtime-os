@@ -5186,9 +5186,33 @@
         }
       },
       "RestInteropIdentity" : {
-        "required" : [ "groupId", "x500Name" ],
+        "required" : [ "applicationName", "endpointProtocol", "endpointUrl", "facadeIds", "groupId", "x500Name" ],
         "type" : "object",
         "properties" : {
+          "applicationName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "endpointProtocol" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "endpointUrl" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "facadeIds" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          },
           "groupId" : {
             "type" : "string",
             "format" : "uuid",

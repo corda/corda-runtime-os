@@ -30,7 +30,11 @@ class InteropIdentityProducer(
         val recordValue = PersistentInteropIdentity(
             identity.groupId,
             identity.x500Name,
-            identity.holdingIdentityShortHash == holdingIdentityShortHash
+            identity.holdingIdentityShortHash == holdingIdentityShortHash,
+            identity.facadeIds,
+            identity.applicationName,
+            identity.endpointUrl,
+            identity.endpointProtocol
         )
 
         val futures = publisher.get()!!.publish(listOf(Record(INTEROP_IDENTITY_TOPIC, key, recordValue)))

@@ -10,7 +10,12 @@ import net.corda.data.interop.PersistentInteropIdentity
 data class InteropIdentity(
     val x500Name: String,
     val groupId: String,
-    val holdingIdentityShortHash: String
+    val holdingIdentityShortHash: String,
+    val facadeIds: List<String>,
+    val applicationName: String,
+    val endpointUrl: String,
+    val endpointProtocol: String
+
 ) {
     val shortHash = Utils.computeShortHash(x500Name, groupId)
 
@@ -19,7 +24,11 @@ data class InteropIdentity(
             return InteropIdentity(
                 interopIdentity.x500Name,
                 interopIdentity.groupId,
-                holdingIdentityShortHash
+                holdingIdentityShortHash,
+                interopIdentity.facadeIds,
+                interopIdentity.applicationName,
+                interopIdentity.endpointUrl,
+                interopIdentity.endpointProtocol
             )
         }
     }
