@@ -8,7 +8,6 @@ import net.corda.crypto.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
-import net.corda.crypto.core.CryptoTenants.REST
 import net.corda.crypto.core.CryptoTenants.allClusterTenants
 import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.crypto.core.ShortHash
@@ -26,7 +25,6 @@ import net.corda.membership.rest.v1.CertificatesRestResource
 import net.corda.membership.rest.v1.CertificatesRestResource.Companion.SIGNATURE_SPEC
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.PluggableRestResource
-import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
@@ -440,33 +438,17 @@ class CertificatesRestResourceImpl @Activate constructor(
     }
 
     private fun validateTenantId(tenantId: String) {
-        val isValidShortHash = try {
-            ShortHash.parse(tenantId)
-            true
-        } catch (e: ShortHashException) {
-            false
-        }
-
-        // Check if a virtual node is registered for given tenantId
-        val isVirtualNodeRegisteredForTenant = try {
-            virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(tenantId)
-            true
-        } catch(e: BadRequestException) {
-            false
-        }
-        catch (e: ResourceNotFoundException) {
-            false
-        }
-
         if (tenantId in allClusterTenants) return
-        if (!isValidShortHash) throw InvalidInputDataException("Provided tenantId $tenantId is not a cluster tenant " +
-                "and is not the right size of a holding ID.")
-        if (!isVirtualNodeRegisteredForTenant) {
-            throw InvalidInputDataException(
-                "Provided tenantId ($tenantId) was not valid. It needs to be either a cluster tenant ($P2P or $REST) " +
-                        "or a valid virtual node holding identity ID."
-            )
+
+        try {
+            ShortHash.parse(tenantId)
+        } catch (e: ShortHashException) {
+            throw InvalidInputDataException("Provided tenantId $tenantId is not a cluster tenant or " +
+                    "a valid holding identity ID.")
         }
+
+        // Check if a virtual node exists for given tenantId, if not, it throws ResourceNotFoundException
+        virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(tenantId)
     }
 
     private fun validateHostname(hostname: String): Boolean {
