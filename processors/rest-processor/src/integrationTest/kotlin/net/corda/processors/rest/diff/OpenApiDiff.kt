@@ -21,7 +21,14 @@ private fun Info.diff(baseline: Info): List<String> {
     } else emptyList()
 }
 
-private fun Paths.diff(baseline: Paths): List<String> {
+private fun Paths?.diff(baseline: Paths?): List<String> {
+
+    if (areBothEmptyOrIdentical(this?.entries, baseline?.entries)) {
+        return emptyList()
+    }
+    requireNotNull(this)
+    requireNotNull(baseline)
+
     val differences = mutableListOf<String>()
     if (size != baseline.size) {
         differences.add("Different number of paths, baseline: ${baseline.size}, current: $size")
@@ -51,7 +58,14 @@ private fun Paths.diff(baseline: Paths): List<String> {
     return differences
 }
 
-private fun List<Tag>.diff(baseline: List<Tag>): List<String> {
+private fun List<Tag>?.diff(baseline: List<Tag>?): List<String> {
+
+    if (areBothEmptyOrIdentical(this, baseline)) {
+        return emptyList()
+    }
+    requireNotNull(this)
+    requireNotNull(baseline)
+
     val differences = mutableListOf<String>()
     if (size != baseline.size) {
         differences.add("Different number of tags, baseline: ${baseline.size}, current: $size")
@@ -66,25 +80,44 @@ private fun List<Tag>.diff(baseline: List<Tag>): List<String> {
         currentSet.subtract(baselineSet).forEach {
             differences.add("Tag in current but not in baseline: $it")
         }
-    }
-
-    val currentSorted = this.sortedBy { it.name }
-    val baselineSorted = baseline.sortedBy { it.name }
-    (currentSorted.indices).forEach { i ->
-        if (currentSorted[i] != baselineSorted[i]) {
-            differences.add("Tags do not match. Current tag: ${currentSorted[i]} is different to baseline: ${baselineSorted[i]}")
+    } else {
+        val currentSorted = this.sortedBy { it.name }
+        val baselineSorted = baseline.sortedBy { it.name }
+        (currentSorted.indices).forEach { i ->
+            if (currentSorted[i] != baselineSorted[i]) {
+                differences.add("Tags do not match. Current tag: ${currentSorted[i]} is different to baseline: ${baselineSorted[i]}")
+            }
         }
     }
 
     return differences
 }
 
-private fun Components.diff(baseline: Components): List<String> {
-    return schemas.diff(baseline.schemas)
+private fun Components?.diff(baseline: Components?): List<String> {
+    return this?.schemas.diff(baseline?.schemas)
 }
 
-private fun Map<String, Schema<Any>>.diff(baseline: Map<String, Schema<Any>>): List<String> {
+private fun areBothEmptyOrIdentical(one: Collection<*>?, another: Collection<*>?): Boolean {
+    if (one == another)
+        return true
+
+    if (one == null && (another?.isEmpty() == true) ) {
+        return true
+    }
+
+    return (one?.isEmpty() == true) && another == null
+}
+
+private fun Map<String, Schema<Any>>?.diff(baseline: Map<String, Schema<Any>>?): List<String> {
+
+    if (areBothEmptyOrIdentical(this?.entries, baseline?.entries)) {
+        return emptyList()
+    }
+    requireNotNull(this)
+    requireNotNull(baseline)
+
     val differences = mutableListOf<String>()
+
     if (size != baseline.size) {
         differences.add("Different number of schemas, baseline: ${baseline.size}, current: $size")
         val currentSet = this.keys

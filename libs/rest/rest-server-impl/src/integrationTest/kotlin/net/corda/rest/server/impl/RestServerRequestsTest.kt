@@ -30,6 +30,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.time.ZonedDateTime
@@ -62,7 +63,7 @@ class RestServerRequestsTest : RestServerTestBase() {
                 true
             ).apply { start() }
             client = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/" +
-                    "${restServerSettings.context.basePath}/v${restServerSettings.context.version}/")
+                    "${restServerSettings.context.basePath}/${apiVersion.versionPath}/")
         }
 
         @AfterAll
@@ -744,5 +745,24 @@ class RestServerRequestsTest : RestServerTestBase() {
             assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus, "for $testBody")
             assertEquals(testBody, createEntityResponse.body, "for $testBody")
         }
+    }
+
+    @Test
+    fun `Call update on test entity with percentage symbol`() {
+        val createEntityResponse = client.call(
+            PUT,
+            WebRequest<Any>(
+                "testentity",
+                """{ "updateParams" : { "id": "myId", "name": "TestName%", "amount" : 20 } }"""
+            ),
+            userName,
+            password
+        )
+
+        assertEquals(HttpStatus.SC_OK, createEntityResponse.responseStatus)
+        assertEquals(
+            "Updated using params: UpdateParams(id=myId, name=TestName%, amount=20)",
+            createEntityResponse.body
+        )
     }
 }

@@ -10,6 +10,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.data.TopicData
+import net.corda.metrics.CordaMetrics
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -74,8 +75,9 @@ class FlowWakeUpSchedulerImpl constructor(
     private fun scheduleTasks(checkpoints: Collection<Checkpoint>) {
         checkpoints.forEach {
             val id = it.flowId
+            val holdingIdShortHash = it.flowState?.flowStartContext?.identity?.toCorda()?.shortHash?.toString()
             val scheduledWakeUp = scheduledExecutorService.schedule(
-                { publishWakeUp(id) },
+                { publishWakeUp(id, holdingIdShortHash) },
                 it.pipelineState.maxFlowSleepDuration.toLong(),
                 TimeUnit.MILLISECONDS
             )
@@ -90,7 +92,15 @@ class FlowWakeUpSchedulerImpl constructor(
         }
     }
 
-    private fun publishWakeUp(flowId: String) {
+    private fun publishWakeUp(flowId: String, holdingIdentity: String?) {
+        // There appears to be a condition where the flow start context is nulled out (or has some nulled fields). Check
+        // this to prevent an issue where attempting to record a metric results in taking down the state and event
+        // pattern.
+        if (holdingIdentity != null) {
+            CordaMetrics.Metric.FlowScheduledWakeupCount.builder()
+                .forVirtualNode(holdingIdentity)
+                .build().increment()
+        }
         publisher?.publish(listOf(flowRecordFactory.createFlowEventRecord(flowId, Wakeup())))
     }
 }

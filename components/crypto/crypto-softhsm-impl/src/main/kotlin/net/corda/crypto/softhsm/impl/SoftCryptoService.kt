@@ -11,7 +11,6 @@ import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.cipher.suite.SharedSecretSpec
 import net.corda.crypto.cipher.suite.SharedSecretWrappedSpec
-import net.corda.crypto.cipher.suite.SigningSpec
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.getParamsSafely
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
@@ -25,6 +24,7 @@ import net.corda.crypto.impl.getSigningData
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.crypto.softhsm.deriveSupportedSchemes
+import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
@@ -33,6 +33,7 @@ import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
+import java.time.Duration
 import javax.crypto.Cipher
 
 const val WRAPPING_KEY_ENCODING_VERSION: Int = 1
@@ -54,7 +55,6 @@ const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
  * @param wrappingKeyFactory creates a wrapping key given scheme metadata. For instance:
  *        `{ WrappingKeyImpl.generateWrappingKey(it) }`
  */
-
 
 @Suppress("LongParameterList")
 class SoftCryptoService(
@@ -176,10 +176,7 @@ class SoftCryptoService(
     private fun computeTenantId(context: Map<String, String>) =
         context.get("tenantId") ?: CryptoTenants.CRYPTO
 
-    override fun sign(spec: SigningSpec, data: ByteArray, context: Map<String, String>): ByteArray {
-        require(spec is SigningWrappedSpec) {
-            "The service supports only ${SigningWrappedSpec::class.java}"
-        }
+    override fun sign(spec: SigningWrappedSpec, data: ByteArray, context: Map<String, String>): ByteArray {
         require(data.isNotEmpty()) {
             "Signing of an empty array is not permitted."
         }
@@ -197,7 +194,8 @@ class SoftCryptoService(
         )
     }
 
-    private fun sign(spec: SigningSpec, privateKey: PrivateKey, data: ByteArray): ByteArray {
+    private fun sign(spec: SigningWrappedSpec, privateKey: PrivateKey, data: ByteArray): ByteArray {
+        val startTime = System.nanoTime()
         val signingData = spec.signatureSpec.getSigningData(digestService, data)
         val signatureBytes = if (spec.signatureSpec is CustomSignatureSpec && spec.keyScheme.algorithmName == "RSA") {
             // when the hash is precalculated and the key is RSA the actual sign operation is encryption
@@ -212,32 +210,42 @@ class SoftCryptoService(
                 signature.sign()
             }
         }
+        CordaMetrics.Metric.Crypto.SignTimer
+            .builder()
+            .withTag(CordaMetrics.Tag.SignatureSpec, spec.signatureSpec.signatureName)
+            .build()
+            .record(Duration.ofNanos(System.nanoTime() - startTime))
         return signatureBytes
     }
 
     private fun providerFor(scheme: KeyScheme): Provider = schemeMetadata.providers.getValue(scheme.providerName)
 
     private fun obtainAndStoreWrappingKey(alias: String, tenantId: String): WrappingKey =
-        wrappingKeyCache?.getIfPresent(alias) ?: run {
-            // use IllegalArgumentException instead for not found?
-            val wrappingKeyInfo = wrappingRepositoryFactory.create(tenantId).use { it.findKey(alias) }
-                ?: throw IllegalStateException("Wrapping key with alias $alias not found")
-            require(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
-                "Unknown wrapping key encoding. Expected to be $WRAPPING_KEY_ENCODING_VERSION"
-            }
-            val parentKey = unmanagedWrappingKeys.get(wrappingKeyInfo.parentKeyAlias)
-            if (parentKey == null) {
-                throw IllegalStateException("Unknown parent key ${wrappingKeyInfo.parentKeyAlias} for $alias")
-            }
-            // TODO remove this restriction? Different levels of wrapping key could sensibly use different algorithms
-            require(parentKey.algorithm == wrappingKeyInfo.algorithmName) {
-                "Expected algorithm is ${parentKey.algorithm} but was ${wrappingKeyInfo.algorithmName}"
-            }
+        CordaMetrics.Metric.Crypto.WrappingKeyCreationTimer.builder()
+            .withTag(CordaMetrics.Tag.Tenant, tenantId)
+            .build()
+            .recordCallable {
+                wrappingKeyCache?.getIfPresent(alias) ?: run {
+                    // use IllegalArgumentException instead for not found?
+                    val wrappingKeyInfo = wrappingRepositoryFactory.create(tenantId).use { it.findKey(alias) }
+                        ?: throw IllegalStateException("Wrapping key with alias $alias not found")
+                    require(wrappingKeyInfo.encodingVersion == WRAPPING_KEY_ENCODING_VERSION) {
+                        "Unknown wrapping key encoding. Expected to be $WRAPPING_KEY_ENCODING_VERSION"
+                    }
+                    val parentKey = unmanagedWrappingKeys.get(wrappingKeyInfo.parentKeyAlias)
+                    if (parentKey == null) {
+                        throw IllegalStateException("Unknown parent key ${wrappingKeyInfo.parentKeyAlias} for $alias")
+                    }
+                    // TODO remove this restriction? Different levels of wrapping key could sensibly use different algorithms
+                    require(parentKey.algorithm == wrappingKeyInfo.algorithmName) {
+                        "Expected algorithm is ${parentKey.algorithm} but was ${wrappingKeyInfo.algorithmName}"
+                    }
 
-            return parentKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial).also {
-                wrappingKeyCache?.put(alias, it)
-            }
-        }
+                    parentKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial).also {
+                        wrappingKeyCache?.put(alias, it)
+                    }
+                }
+            }!!
 
     private fun obtainAndStorePrivateKey(publicKey: PublicKey, spec: KeyMaterialSpec, tenantId: String): PrivateKey =
         privateKeyCache?.getIfPresent(publicKey) ?: obtainAndStoreWrappingKey(spec.wrappingKeyAlias, tenantId).unwrap(
@@ -245,7 +253,6 @@ class SoftCryptoService(
         ).also {
             privateKeyCache?.put(publicKey, it)
         }
-    
 
     override fun close() {
     }

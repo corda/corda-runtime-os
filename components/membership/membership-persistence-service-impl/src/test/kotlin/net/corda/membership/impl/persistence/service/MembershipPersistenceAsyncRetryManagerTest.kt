@@ -17,6 +17,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -29,12 +30,18 @@ import java.util.concurrent.ConcurrentHashMap
 
 class MembershipPersistenceAsyncRetryManagerTest {
     private val handler = argumentCaptor<LifecycleEventHandler>()
-    private val coordinator = mock<LifecycleCoordinator>()
-    private val coordinatorFactory = mock<LifecycleCoordinatorFactory>() {
-        on { createCoordinator(any(), handler.capture()) } doReturn coordinator
-    }
     private val publisher = mock<Publisher> {
         on { publish(any()) } doReturn emptyList()
+    }
+    private val coordinator = mock<LifecycleCoordinator> {
+        on { createManagedResource<Publisher>(any(), any()) } doAnswer {
+            val factory = it.getArgument<()->Publisher>(1)
+            factory()
+        }
+        on { getManagedResource<Publisher>(any()) } doReturn publisher
+    }
+    private val coordinatorFactory = mock<LifecycleCoordinatorFactory>() {
+        on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
     private val publisherFactory = mock<PublisherFactory> {
         on { createPublisher(any(), any()) } doReturn publisher
@@ -47,38 +54,45 @@ class MembershipPersistenceAsyncRetryManagerTest {
     private val manager = MembershipPersistenceAsyncRetryManager(
         coordinatorFactory,
         publisherFactory,
-        mock(),
         clock,
 
     )
 
     @Test
-    fun `constructor start the publisher`() {
+    fun `start start the publisher`() {
+        manager.start(mock())
+
         verify(publisher).start()
     }
 
     @Test
-    fun `constructor start the coordinator`() {
+    fun `start start the coordinator`() {
+        manager.start(mock())
+
         verify(coordinator).start()
     }
 
     @Test
-    fun `constructor set state to started`() {
+    fun `start set state to started`() {
+        manager.start(mock())
+
         verify(coordinator).updateStatus(LifecycleStatus.UP)
     }
 
     @Test
-    fun `close close the publisher`() {
-        manager.close()
+    fun `stop close the publisher`() {
+        manager.start(mock())
 
-        verify(publisher).close()
+        manager.stop()
+
+        verify(coordinator).closeManagedResources(argThat { size == 1 })
     }
 
     @Test
-    fun `close close the coordinator`() {
-        manager.close()
+    fun `close stop the coordinator`() {
+        manager.stop()
 
-        verify(coordinator).close()
+        verify(coordinator).stop()
     }
 
     @Test
@@ -191,6 +205,7 @@ class MembershipPersistenceAsyncRetryManagerTest {
 
     @Test
     fun `timer will republish the command`() {
+        manager.start(mock())
         val records = argumentCaptor<List<Record<String, Any>>>()
         whenever(publisher.publish(records.capture())).doReturn(emptyList())
         val eventFactory = argumentCaptor<(String) -> TimerEvent>()

@@ -6,9 +6,9 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.Resource
 import net.corda.lifecycle.TimerEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -23,11 +23,10 @@ import java.util.concurrent.TimeUnit
 
 internal class MembershipPersistenceAsyncRetryManager(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    publisherFactory: PublisherFactory,
-    messagingConfig: SmartConfig,
+    private val publisherFactory: PublisherFactory,
     private val clock: Clock,
 ) :
-    StateAndEventListener<String, MembershipPersistenceAsyncRequestState>, Resource {
+    StateAndEventListener<String, MembershipPersistenceAsyncRequestState> {
 
     private companion object {
         const val PUBLISHER_NAME = "MembershipPersistenceAsyncRetryManager"
@@ -35,18 +34,9 @@ internal class MembershipPersistenceAsyncRetryManager(
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val publisher = publisherFactory.createPublisher(
-        publisherConfig = PublisherConfig(PUBLISHER_NAME),
-        messagingConfig = messagingConfig,
-    ).also {
-        it.start()
-    }
     private val coordinator =
         coordinatorFactory.createCoordinator<MembershipPersistenceAsyncRetryManager> { event, _ ->
             eventHandler(event)
-        }.also {
-            it.start()
-            it.updateStatus(LifecycleStatus.UP)
         }
 
     private data class RetryEvent(
@@ -59,7 +49,7 @@ internal class MembershipPersistenceAsyncRetryManager(
     ) {
         if (event is RetryEvent) {
             logger.info("Retrying request ${event.key}")
-            publisher.publish(
+            coordinator.getManagedResource<Publisher>(PUBLISHER_NAME)?.publish(
                 listOf(
                     event.event,
                 )
@@ -67,9 +57,22 @@ internal class MembershipPersistenceAsyncRetryManager(
         }
     }
 
-    override fun close() {
-        publisher.close()
-        coordinator.close()
+    fun start(messagingConfig: SmartConfig) {
+        coordinator.start()
+        coordinator.createManagedResource(PUBLISHER_NAME) {
+            publisherFactory.createPublisher(
+                publisherConfig = PublisherConfig(PUBLISHER_NAME),
+                messagingConfig = messagingConfig,
+            ).also {
+                it.start()
+            }
+        }
+        coordinator.updateStatus(LifecycleStatus.UP)
+    }
+
+    fun stop() {
+        coordinator.closeManagedResources(setOf(PUBLISHER_NAME))
+        coordinator.stop()
     }
 
     override fun onPartitionSynced(states: TopicData<String, MembershipPersistenceAsyncRequestState>?) {

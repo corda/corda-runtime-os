@@ -93,7 +93,7 @@ class CryptoOperationsTests {
             tenantId = UUID.randomUUID().toString()
             category = CryptoConsts.Categories.LEDGER
             CryptoConsts.Categories.all.forEach {
-                factory.hsmService.assignSoftHSM(tenantId, it)
+                factory.tenantInfoService.populate(tenantId, it)
             }
             signingAliasedKeys = factory.cryptoService.supportedSchemes.keys.associateWith {
                 val alias = UUID.randomUUID().toString()
@@ -218,7 +218,7 @@ class CryptoOperationsTests {
                 assertEquals(category, key.category)
             }
             assertEquals(scheme.codeName, key.schemeCodeName)
-            assertThat(key.masterKeyAlias).isNotBlank
+            assertThat(key.wrappingKeyAlias).isNotBlank
             assertEquals(1, key.encodingVersion)
             assertArrayEquals(publicKey.encoded, key.publicKey)
         }

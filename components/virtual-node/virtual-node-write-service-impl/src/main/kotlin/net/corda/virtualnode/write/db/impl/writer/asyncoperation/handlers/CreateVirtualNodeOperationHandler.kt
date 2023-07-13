@@ -10,6 +10,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_OPERATION_STATUS_TOPIC
+import net.corda.tracing.trace
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.toCorda
@@ -189,11 +190,13 @@ internal class CreateVirtualNodeOperationHandler(
         private val clock: Clock = UTCClock()
     ) {
         fun <T> measureExecTime(stage: String, call: () -> T): T {
-            val start = clock.instant().toEpochMilli()
-            val result = call()
-            val end = clock.instant().toEpochMilli()
-            logger.debug("[Create ${vNodeName}] ${stage} took ${end - start}ms, elapsed ${end - creationTime}ms")
-            return result
+            return trace(stage) {
+                val start = clock.instant().toEpochMilli()
+                val result = call()
+                val end = clock.instant().toEpochMilli()
+                logger.debug("[Create ${vNodeName}] ${stage} took ${end - start}ms, elapsed ${end - creationTime}ms")
+                result
+            }
         }
     }
 }

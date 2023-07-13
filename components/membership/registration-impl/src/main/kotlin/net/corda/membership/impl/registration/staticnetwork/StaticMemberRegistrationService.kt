@@ -1,5 +1,9 @@
 package net.corda.membership.impl.registration.staticnetwork
 
+import java.nio.ByteBuffer
+import java.util.UUID
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
@@ -7,22 +11,19 @@ import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedData
 import net.corda.data.membership.StaticNetworkInfo
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.registration.KeyDetails
 import net.corda.membership.impl.registration.KeysFactory
@@ -56,6 +57,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isNotary
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.exceptions.InvalidGroupParametersUpdateException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.ProtocolParameters.SessionKeyPolicy
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -76,6 +78,7 @@ import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
 import net.corda.utilities.concurrent.SecManagerForkJoinPool
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -91,8 +94,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
@@ -102,7 +103,7 @@ class StaticMemberRegistrationService(
     internal val keyEncodingService: KeyEncodingService,
     private val cryptoOpsClient: CryptoOpsClient,
     val configurationReadService: ConfigurationReadService,
-    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    coordinatorFactory: LifecycleCoordinatorFactory,
     private val hsmRegistrationClient: HSMRegistrationClient,
     private val memberInfoFactory: MemberInfoFactory,
     private val persistenceClient: MembershipPersistenceClient,
@@ -112,7 +113,6 @@ class StaticMemberRegistrationService(
     internal val platformInfoProvider: PlatformInfoProvider,
     private val groupParametersFactory: GroupParametersFactory,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    private val groupParametersWriterService: GroupParametersWriterService,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val membershipQueryClient: MembershipQueryClient,
     private val clock: Clock
@@ -162,8 +162,6 @@ class StaticMemberRegistrationService(
         groupParametersFactory: GroupParametersFactory,
         @Reference(service = VirtualNodeInfoReadService::class)
         virtualNodeInfoReadService: VirtualNodeInfoReadService,
-        @Reference(service = GroupParametersWriterService::class)
-        groupParametersWriterService: GroupParametersWriterService,
         @Reference(service = MembershipGroupReaderProvider::class)
         membershipGroupReaderProvider: MembershipGroupReaderProvider,
         @Reference(service = MembershipQueryClient::class)
@@ -184,7 +182,6 @@ class StaticMemberRegistrationService(
         platformInfoProvider,
         groupParametersFactory,
         virtualNodeInfoReadService,
-        groupParametersWriterService,
         membershipGroupReaderProvider,
         membershipQueryClient,
         UTCClock()
@@ -236,6 +233,13 @@ class StaticMemberRegistrationService(
                 ex,
             )
         }
+        val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(member)
+        if (membershipGroupReader.lookup(member.x500Name)?.isActive == true) {
+            throw InvalidMembershipRegistrationException(
+                "The member ${member.x500Name} had been registered successfully in the group ${member.groupId}. " +
+                    "Can not re-register."
+            )
+        }
         val latestStatuses = membershipQueryClient.queryRegistrationRequests(
             member,
             member.x500Name,
@@ -258,7 +262,6 @@ class StaticMemberRegistrationService(
                 requireNotNull(this) { "Could not find static member list in group policy file." }
                 map { StaticMember(it, endpointInfoFactory::create) }
             }
-            val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(member)
             val (memberInfo, records) = parseMemberTemplate(
                 member,
                 groupPolicy,
@@ -269,7 +272,7 @@ class StaticMemberRegistrationService(
             )
             (records + createHostedIdentity(member, groupPolicy)).publish()
 
-            persistGroupParameters(memberInfo, staticMemberList)
+            persistGroupParameters(memberInfo, staticMemberList, membershipGroupReader)
 
             persistRegistrationRequest(registrationId, memberInfo)
 
@@ -283,6 +286,9 @@ class StaticMemberRegistrationService(
         } catch (e: MembershipPersistenceResult.PersistenceRequestException) {
             logger.warn("Registration failed. Reason:", e)
             throw NotReadyMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
+        } catch(e: InvalidGroupParametersUpdateException) {
+            logger.warn("Registration failed. Reason:", e)
+            throw InvalidMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
         } catch (e: Exception) {
             logger.warn("Registration failed. Reason:", e)
             throw NotReadyMembershipRegistrationException("Registration failed. Reason: ${e.message}", e)
@@ -297,9 +303,10 @@ class StaticMemberRegistrationService(
 
     private fun persistGroupParameters(
         memberInfo: MemberInfo,
-        staticMemberList: List<StaticMember>
+        staticMemberList: List<StaticMember>,
+        membershipGroupReader: MembershipGroupReader,
     ) {
-        val staticNetworkInfo = getCurrentStaticNetworkConfigWithRetry(memberInfo)
+        val staticNetworkInfo = getCurrentStaticNetworkConfigWithRetry(membershipGroupReader, memberInfo)
 
         val avroSignedGroupParameters = staticNetworkInfo.signGroupParameters(
             keyValuePairListSerializer,
@@ -311,7 +318,6 @@ class StaticMemberRegistrationService(
         val holdingIdentity = memberInfo.holdingIdentity
         // Persist group parameters for this member, and publish to Kafka.
         persistenceClient.persistGroupParameters(holdingIdentity, signedGroupParameters).getOrThrow()
-        groupParametersWriterService.put(holdingIdentity, signedGroupParameters)
 
         // If this member is a notary, persist updated group parameters for other members who have a vnode set up.
         // Also publish to Kafka.
@@ -325,17 +331,22 @@ class StaticMemberRegistrationService(
                     .filter { virtualNodeInfoReadService.get(it) != null }
                     .forEach {
                         persistenceClient.persistGroupParameters(it, signedGroupParameters).getOrThrow()
-                        groupParametersWriterService.put(it, signedGroupParameters)
                     }
             }.join()
         }
     }
 
     private fun persistRegistrationRequest(registrationId: UUID, memberInfo: MemberInfo) {
-        val memberContext = keyValuePairListSerializer.serialize(memberInfo.memberProvidedContext.toAvro())
-            ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
-        val registrationContext = keyValuePairListSerializer.serialize(KeyValuePairList(emptyList()))
-            ?: throw IllegalArgumentException("Failed to serialize the registration context for this request.")
+        val memberContext = wrapWithNullErrorHandling({
+            IllegalArgumentException("Failed to serialize the member context for this request.", it)
+        }) {
+            keyValuePairListSerializer.serialize(memberInfo.memberProvidedContext.toAvro())
+        }
+        val registrationContext = wrapWithNullErrorHandling({
+            IllegalArgumentException("Failed to serialize the registration context for this request.", it)
+        }) {
+            keyValuePairListSerializer.serialize(KeyValuePairList(emptyList()))
+        }
         persistenceClient.persistRegistrationRequest(
             viewOwningIdentity = memberInfo.holdingIdentity,
             registrationRequest = RegistrationRequest(
@@ -372,9 +383,13 @@ class StaticMemberRegistrationService(
         val serviceName = MemberX500Name.parse(
             notaryInfo.first { it.first == MemberInfoExtension.NOTARY_SERVICE_NAME }.second
         )
+        val registeringMemberName = registeringMember.name?.let {
+            MemberX500Name.parse(it)
+        }
+
         //The notary service x500 name is different from the notary virtual node being registered.
         require(
-            MemberX500Name.parse(registeringMember.name!!) != serviceName
+            registeringMemberName != serviceName
         ) {
             "Notary service name invalid: Notary service name $serviceName and virtual node name cannot be the same."
         }
@@ -386,7 +401,10 @@ class StaticMemberRegistrationService(
         }
         // Allow only a single notary virtual node under each notary service.
         require(
-            membershipGroupReader.lookup().none { it.notaryDetails?.serviceName == serviceName }
+            membershipGroupReader
+                .lookup()
+                .filter { it.name != registeringMemberName }
+                .none { it.notaryDetails?.serviceName == serviceName }
         ) {
             throw InvalidMembershipRegistrationException("Notary service '$serviceName' already exists.")
         }
@@ -574,6 +592,7 @@ class StaticMemberRegistrationService(
     }
 
     private fun getCurrentStaticNetworkConfigWithRetry(
+        membershipGroupReader: MembershipGroupReader,
         memberInfo: MemberInfo,
         attempt: Int = 0
     ): StaticNetworkInfo {
@@ -584,21 +603,24 @@ class StaticMemberRegistrationService(
 
             // If the current member is a notary then the group parameters need to be updated
             memberInfo.notaryDetails?.let { notary ->
-                val currentProtocolVersions = membershipGroupReaderProvider.getGroupReader(memberInfo.holdingIdentity)
+                val currentProtocolVersions = membershipGroupReader
                     .notaryVirtualNodeLookup
                     .getNotaryVirtualNodes(notary.serviceName)
                     .filter { it.name != memberInfo.name }
                     .map { it.notaryDetails!!.serviceProtocolVersions.toHashSet() }
                     .reduceOrNull { acc, it -> acc.apply { retainAll(it) } }
                     ?: emptySet()
+                val latestGroupParameters = currentStaticNetworkInfo.groupParameters
+                latestGroupParameters?.addNotary(
+                    memberInfo,
+                    currentProtocolVersions,
+                    keyEncodingService,
+                    clock
+                )
+            }?.let { groupParameters ->
                 StaticNetworkInfo(
                     currentStaticNetworkInfo.groupId,
-                    currentStaticNetworkInfo.groupParameters.addNotary(
-                        memberInfo,
-                        currentProtocolVersions,
-                        keyEncodingService,
-                        clock
-                    ),
+                    groupParameters,
                     currentStaticNetworkInfo.mgmPublicSigningKey,
                     currentStaticNetworkInfo.mgmPrivateSigningKey,
                     currentStaticNetworkInfo.version
@@ -608,7 +630,7 @@ class StaticMemberRegistrationService(
             } ?: currentStaticNetworkInfo
         } catch (ex: MembershipPersistenceResult.PersistenceRequestException) {
             if (attempt < MAX_PERSISTENCE_RETRIES - 1) {
-                getCurrentStaticNetworkConfigWithRetry(memberInfo, attempt + 1)
+                getCurrentStaticNetworkConfigWithRetry(membershipGroupReader, memberInfo, attempt + 1)
             } else {
                 throw ex
             }

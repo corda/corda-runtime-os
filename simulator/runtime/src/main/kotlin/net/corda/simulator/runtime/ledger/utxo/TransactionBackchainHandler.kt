@@ -123,7 +123,7 @@ class TransactionBackchainHandlerBase(
 
 
 @CordaSerializable
-sealed interface TransactionBackchainRequest {
-    data class Get(val transactionIds: Set<SecureHash>): TransactionBackchainRequest
-    object Stop: TransactionBackchainRequest
+sealed class TransactionBackchainRequest {
+    data class Get(val transactionIds: Set<SecureHash>): TransactionBackchainRequest()
+    object Stop: TransactionBackchainRequest()
 }

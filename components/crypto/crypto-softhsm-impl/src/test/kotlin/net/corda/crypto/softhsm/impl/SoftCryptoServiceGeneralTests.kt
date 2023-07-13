@@ -73,12 +73,6 @@ class SoftCryptoServiceGeneralTests {
         }
     }
 
-    @Test
-    fun `Should throw IllegalArgumentException when signing and spec is not SigningWrappedSpec`() {
-        assertThrows<IllegalArgumentException> {
-            service.sign(mock(), ByteArray(2), defaultContext)
-        }
-    }
 
     @Test
     fun `Should throw IllegalArgumentException when signing empty data array`() {

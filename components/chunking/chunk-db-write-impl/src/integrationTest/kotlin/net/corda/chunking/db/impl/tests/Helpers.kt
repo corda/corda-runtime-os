@@ -4,8 +4,8 @@ import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
-import net.corda.libs.cpi.datamodel.entities.CpiMetadataEntity
 import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import java.util.Random
@@ -24,7 +24,7 @@ fun CpiPersistence.updateMetadataAndCpksWithDefaults(
     requestId: RequestId = UUID.randomUUID().toString(),
     groupId: String = "group-a",
     cpkDbChangeLog: List<CpkDbChangeLog> = emptyList(),
-): CpiMetadataEntity = updateMetadataAndCpks(cpi, cpiFileName, cpiFileChecksum, requestId, groupId, cpkDbChangeLog)
+): CpiMetadata = updateMetadataAndCpks(cpi, cpiFileName, cpiFileChecksum, requestId, groupId, cpkDbChangeLog)
 
 @Suppress("LongParameterList")
 fun CpiPersistence.persistMetadataAndCpksWithDefaults(
@@ -34,4 +34,4 @@ fun CpiPersistence.persistMetadataAndCpksWithDefaults(
     requestId: RequestId = UUID.randomUUID().toString(),
     groupId: String = "group-a",
     cpkDbChangeLog: List<CpkDbChangeLog> = emptyList(),
-): CpiMetadataEntity = persistMetadataAndCpks(cpi, cpiFileName, cpiFileChecksum, requestId, groupId, cpkDbChangeLog)
+): CpiMetadata = persistMetadataAndCpks(cpi, cpiFileName, cpiFileChecksum, requestId, groupId, cpkDbChangeLog)

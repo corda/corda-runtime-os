@@ -8,7 +8,6 @@ import net.corda.data.messaging.ResponseStatus
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
-import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
@@ -20,15 +19,14 @@ import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.createResolvedSubscriptionConfig
 import net.corda.messaging.subscription.LifeCycleCoordinatorMockHelper
+import net.corda.messaging.utils.FutureTracker
 import net.corda.test.util.waitWhile
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNull
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
@@ -38,6 +36,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -61,6 +60,7 @@ class CordaRPCSenderImplTest {
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
     private val lifeCycleCoordinatorMockHelper = LifeCycleCoordinatorMockHelper()
     private val cordaProducer: CordaProducer = mock()
+    private val futureTracker = spy<FutureTracker<String>>()
     private val cordaConsumer = mock<CordaConsumer<String, RPCResponse>>()
     private val cordaProducerBuilder: CordaProducerBuilder = mock()
     private val cordaConsumerBuilder: CordaConsumerBuilder = mock()
@@ -81,11 +81,14 @@ class CordaRPCSenderImplTest {
             mock(),
             serializer,
             deserializer,
-            lifecycleCoordinatorFactory
+            futureTracker,
+            lifecycleCoordinatorFactory,
         )
 
         val future = cordaSenderImpl.sendRequest("test")
-        assertThrows<CordaRPCAPISenderException> { future.getOrThrow() }
+        assertThatThrownBy { future.getOrThrow() }
+            .isInstanceOf(CordaRPCAPISenderException::class.java)
+            .hasMessageContaining("No partitions assigned for topic")
     }
 
     @Test
@@ -100,6 +103,7 @@ class CordaRPCSenderImplTest {
             cordaProducerBuilder,
             serializer,
             deserializer,
+            futureTracker,
             lifecycleCoordinatorFactory
         )
         cordaSenderImpl.start()
@@ -109,16 +113,58 @@ class CordaRPCSenderImplTest {
 
         cordaSenderImpl.close()
         verify(cordaProducer, times(1)).close()
+        verify(futureTracker, times(1)).close()
+        assertThat(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows).isFalse()
+    }
 
-        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
+    @Test
+    fun `subscription fails and resources are closed when no partitions can be assigned`() {
+        doAnswer { cordaProducer }.whenever(cordaProducerBuilder).createProducer(any(), any(), anyOrNull())
+        doNothing().whenever(cordaConsumer).assign(any<Collection<CordaTopicPartition>>())
+        whenever(cordaConsumer.getPartitions(any())).thenReturn(emptyList())
+
+        doAnswer { cordaConsumer }.whenever(cordaConsumerBuilder).createConsumer(
+            any(),
+            any(),
+            eq(String::class.java),
+            eq(RPCResponse::class.java),
+            any(),
+            anyOrNull(),
+        )
+
+        val cordaSenderImpl = CordaRPCSenderImpl(
+            config,
+            cordaConsumerBuilder,
+            cordaProducerBuilder,
+            serializer,
+            deserializer,
+            futureTracker,
+            lifecycleCoordinatorFactory
+        )
+        cordaSenderImpl.start()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { cordaSenderImpl.isRunning }
+
+        verify(cordaProducerBuilder).createProducer(any(), eq(config.messageBusConfig), anyOrNull())
+        verify(cordaConsumerBuilder).createConsumer(
+            any(),
+            any(),
+            eq(String::class.java),
+            eq(RPCResponse::class.java),
+            any(),
+            anyOrNull()
+        )
+
+        cordaSenderImpl.close()
+        verify(cordaProducer, times(1)).close()
+        verify(futureTracker, times(1)).close()
+        assertThat(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows).isFalse()
     }
 
     @Test
     fun `send returns the correct reply`() {
         doAnswer { cordaProducer }.whenever(cordaProducerBuilder).createProducer(any(), any(), anyOrNull())
-        val partitionListener = argumentCaptor<CordaConsumerRebalanceListener>()
-
-        doNothing().whenever(cordaConsumer).subscribe(any<Collection<String>>(), partitionListener.capture())
+        doNothing().whenever(cordaConsumer).assign(any<Collection<CordaTopicPartition>>())
+        whenever(cordaConsumer.getPartitions(any())).thenReturn(listOf(CordaTopicPartition("", 1)))
 
         doAnswer { cordaConsumer }.whenever(cordaConsumerBuilder).createConsumer(
             any(),
@@ -147,18 +193,15 @@ class CordaRPCSenderImplTest {
             cordaProducerBuilder,
             serializer,
             deserializer,
+            futureTracker,
             lifecycleCoordinatorFactory
         )
         var future: CompletableFuture<String>? = null
-        whenever(cordaConsumer.poll(any())).thenAnswer {
-            partitionListener.firstValue.onPartitionsAssigned(
-                listOf(
-                    CordaTopicPartition("", 1)
-                )
-            )
-            future = cordaSenderImpl.sendRequest("Hello")
-            emptyList<CordaConsumerRecord<String, RPCResponse>>()
-        }
+        whenever(cordaConsumer.poll(any()))
+            .thenAnswer {
+                future = cordaSenderImpl.sendRequest("Hello")
+                emptyList<CordaConsumerRecord<String, RPCResponse>>()
+            }
             .thenAnswer {
                 val sent = sentRecords.firstValue.first()
                 val value = sent.value as RPCRequest
@@ -209,7 +252,9 @@ class CordaRPCSenderImplTest {
                     wrongSender,
                     correct,
                 )
-            }.thenThrow(CordaRuntimeException("Stop"))
+            }
+            .thenThrow(CordaRuntimeException("Stop"))
+
         cordaSenderImpl.start()
         waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { cordaSenderImpl.isRunning }
 
@@ -217,7 +262,7 @@ class CordaRPCSenderImplTest {
             .isNotNull
             .isCompletedWithValue(expectedReply)
 
-        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
+        assertThat(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows).isFalse()
     }
 
     @Test
@@ -240,16 +285,16 @@ class CordaRPCSenderImplTest {
             cordaProducerBuilder,
             serializer,
             deserializer,
+            futureTracker,
             lifecycleCoordinatorFactory
         )
         cordaSenderImpl.start()
         waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { cordaSenderImpl.isRunning }
+        assertThat(firstCall).isFalse()
 
-        assertFalse(firstCall)
         verify(cordaProducerBuilder, times(2)).createProducer(any(), any(), anyOrNull())
         verify(cordaConsumerBuilder, times(1)).createConsumer<Any, Any>(any(), any(), any(), any(), any(), anyOrNull())
-
-        assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
+        assertThat(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows).isFalse()
     }
 
     @Test
@@ -282,6 +327,7 @@ class CordaRPCSenderImplTest {
             cordaProducerBuilder,
             serializer,
             deserializer,
+            futureTracker,
             lifecycleCoordinatorFactory
         )
 
@@ -289,6 +335,6 @@ class CordaRPCSenderImplTest {
         // We must wait for the callback above in order we know what thread to join below
         waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { lock.withLock { subscriptionThread == null } }
         subscriptionThread!!.join(TEST_TIMEOUT_SECONDS * 1000)
-        assertNull(lock.withLock { uncaughtExceptionInSubscriptionThread })
+        assertThat(lock.withLock { uncaughtExceptionInSubscriptionThread }).isNull()
     }
 }

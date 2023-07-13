@@ -4,6 +4,8 @@ import net.corda.data.flow.output.FlowStates
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.schema.configuration.FlowConfig
+import net.corda.virtualnode.OperationalStatus
+import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -27,20 +29,57 @@ class StartFlowTest : FlowServiceTestBase() {
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, BOB_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitialCheckpoint)
-
-            wakeupEventReceived(FLOW_ID1)
-                .completedSuccessfullyWith("hello")
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 wakeUpEvent()
                 flowStatus(FlowStates.RUNNING)
+                flowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
+        }
 
+        `when` {
+            wakeupEventReceived(FLOW_ID1)
+                .completedSuccessfullyWith("hello")
+        }
+
+        then {
             expectOutputForFlow(FLOW_ID1) {
                 flowStatus(FlowStates.COMPLETED, result = "hello")
                 nullStateRecord()
+                flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
+            }
+        }
+    }
+
+
+    /**
+     * When a virtual node has an INACTIVE StartFlowOperationalStatus, it should throw a FlowMarkedForKillException and
+     * have a Killed status.
+     */
+    @Test
+    fun `Flow is marked as killed if startFlowOperationalStatus of vNode is INACTIVE`() {
+
+        given {
+            virtualNode(CPI1, CHARLIE_HOLDING_IDENTITY, flowStartOperationalStatus = OperationalStatus.INACTIVE)
+            cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
+            sandboxCpk(CPK1_CHECKSUM)
+            membershipGroupFor(CHARLIE_HOLDING_IDENTITY)
+        }
+
+        `when` {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, CHARLIE_HOLDING_IDENTITY, CPI1, "flow start data")
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                nullStateRecord()
+                noFlowEvents()
+                flowStatus(
+                    state = FlowStates.KILLED,
+                    flowTerminatedReason = "flowStartOperationalStatus is INACTIVE, new flows cannot be started for virtual node with shortHash ${CHARLIE_HOLDING_IDENTITY.toCorda().shortHash}"
+                )
             }
         }
     }
@@ -72,6 +111,7 @@ class StartFlowTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 noFlowEvents()
                 checkpointHasRetry(1)
+                flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
 
@@ -84,6 +124,7 @@ class StartFlowTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 noFlowEvents()
                 checkpointHasRetry(2)
+                flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
 
@@ -103,6 +144,7 @@ class StartFlowTest : FlowServiceTestBase() {
                 checkpointDoesNotHaveRetry()
                 wakeUpEvent()
                 flowStatus(FlowStates.RUNNING)
+                flowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }
@@ -124,6 +166,7 @@ class StartFlowTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 noFlowEvents()
                 checkpointHasRetry(1)
+                flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
 
@@ -137,6 +180,7 @@ class StartFlowTest : FlowServiceTestBase() {
                 nullStateRecord()
                 markedForDlq()
                 noFlowEvents()
+                flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
                 //we can't return a status record after the change to checkpoint initialization
                 // Story to deal with change in status records -> CORE-10571: Re-design how status record is published
 /*                flowStatus(

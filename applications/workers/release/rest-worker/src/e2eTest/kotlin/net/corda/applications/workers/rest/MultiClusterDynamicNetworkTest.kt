@@ -26,6 +26,7 @@ import java.nio.file.Path
 /**
  * Three clusters are required for running this test. See `resources/RunNetworkTests.md` for more details.
  */
+@Tag("MultiCluster")
 class MultiClusterDynamicNetworkTest {
     @TempDir
     lateinit var tempDir: Path
@@ -61,7 +62,6 @@ class MultiClusterDynamicNetworkTest {
         assertThat(clusterC.members).hasSize(1)
     }
 
-    @Tag("Unstable")
     @Test
     fun `Create mgm and allow members to join the group - one way TLS`() {
         onboardMultiClusterGroup(false)

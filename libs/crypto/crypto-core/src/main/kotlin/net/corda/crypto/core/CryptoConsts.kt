@@ -82,6 +82,7 @@ object CryptoConsts {
         const val SERVICE_NAME_FILTER = "serviceName"
     }
 
+    // TODO The below seems to only be relevant to hardware HSMs
     /**
      * Constants defining keys for the context in the HSM services functions.
      */

@@ -12,20 +12,6 @@ class Verifier(
     private val signatureVerificationService: SignatureVerificationService,
     private val keyEncodingService: KeyEncodingService,
 ) {
-    /**
-     * This function will be removed as part of CORE-9901 which will specify the key to verify with explicitly.
-     */
-    fun verify(
-        signature: CryptoSignatureWithKey,
-        signatureSpecAvro: CryptoSignatureSpec,
-        data: ByteArray
-    ) = verify(
-        keyEncodingService.decodePublicKey(signature.publicKey.array()),
-        signature.bytes.array(),
-        signatureSpecAvro,
-        data
-    )
-
     fun verify(
         acceptableKeys: Collection<PublicKey>,
         signature: CryptoSignatureWithKey,

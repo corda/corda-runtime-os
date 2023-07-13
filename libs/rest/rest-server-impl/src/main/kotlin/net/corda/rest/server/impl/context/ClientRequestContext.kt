@@ -52,11 +52,6 @@ interface ClientRequestContext {
     val path: String
 
     /**
-     * Gets a map with all the form param keys and values.
-     */
-    val formParams: Map<String, List<String>> get() = emptyMap()
-
-    /**
      * Gets the request body as a [String].
      */
     val body: String get() = throw UnsupportedOperationException()
@@ -70,6 +65,11 @@ interface ClientRequestContext {
      * Maps a JSON body to a Java/Kotlin class using the registered [io.javalin.plugin.json.JsonMapper]
      */
     fun <T> bodyAsClass(clazz: Class<T>): T = throw UnsupportedOperationException()
+
+    /**
+     * Gets a map with all the form param keys and values.
+     */
+    fun formParamMap(): Map<String, List<String>>
 
     /**
      * Gets a list of [UploadedFile]s for the specified name, or empty list.

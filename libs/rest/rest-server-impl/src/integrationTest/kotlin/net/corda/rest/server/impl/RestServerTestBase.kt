@@ -1,5 +1,6 @@
 package net.corda.rest.server.impl
 
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.RestServer
 import net.corda.rest.server.config.models.RestContext
 import net.corda.rest.test.utils.FakeSecurityManager
@@ -13,6 +14,7 @@ abstract class RestServerTestBase {
         const val userName = FakeSecurityManager.USERNAME
         const val password = FakeSecurityManager.PASSWORD
         val securityManager = FakeSecurityManager()
-        val context = RestContext("1", "api", "RestContext test title ", "RestContext test description")
+        val context = RestContext("api", "RestContext test title ", "RestContext test description")
+        val apiVersion = RestApiVersion.C5_0
     }
 }

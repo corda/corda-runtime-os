@@ -35,7 +35,7 @@ internal class PersistenceRequestSubscriptionFactoryImplTest {
             )
         ).thenReturn(expectedSubscription)
 
-        val target = PersistenceRequestSubscriptionFactoryImpl(subscriptionFactory, mock(), mock(), mock())
+        val target = PersistenceRequestSubscriptionFactoryImpl(mock(), subscriptionFactory, mock(), mock(), mock())
 
         val result = target.create(config)
 

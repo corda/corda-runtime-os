@@ -136,7 +136,7 @@ class ChunkSerializerServiceImpl(
         if (obj == null) return null
         return try {
             cordaAvroSerializer.serialize(obj)
-        } catch (ex: Throwable) {
+        } catch (ex: CordaRuntimeException) {
             // if serialization is going to fail, let it be handled within the kafka client logic
             return null
         }

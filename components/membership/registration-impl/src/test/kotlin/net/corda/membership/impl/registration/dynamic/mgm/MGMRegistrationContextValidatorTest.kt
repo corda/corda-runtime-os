@@ -54,10 +54,10 @@ class MGMRegistrationContextValidatorTest {
 
         private val validTestContext
             get() = mutableMapOf(
-                SESSION_KEY_IDS.format(0) to "session key",
-                ECDH_KEY_ID to "ECDH key",
-                REGISTRATION_PROTOCOL to "registration protocol",
-                SYNCHRONISATION_PROTOCOL to "synchronisation protocol",
+                SESSION_KEY_IDS.format(0) to "6819537D96BB",
+                ECDH_KEY_ID to "EB8B54665D2E",
+                REGISTRATION_PROTOCOL to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
+                SYNCHRONISATION_PROTOCOL to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
                 P2P_MODE to "P2P mode",
                 SESSION_KEY_POLICY to "session key policy",
                 PKI_SESSION to "session PKI property",
@@ -157,6 +157,44 @@ class MGMRegistrationContextValidatorTest {
         assertThrows<MGMRegistrationContextValidationException> {
             mgmRegistrationContextValidator.validate(testContext)
         }
+    }
+
+    @Test
+    fun `context validation fails when registration protocol provided is invalid`() {
+        val contextWithInvalidProtocol = validTestContext.plus("corda.group.protocol.registration" to "invalid")
+        val exception = assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationContextValidator.validate(contextWithInvalidProtocol)
+        }
+        assertThat(exception).hasMessageContaining("Invalid value for key $REGISTRATION_PROTOCOL in registration context.")
+    }
+
+    @Test
+    fun `context validation fails when sync protocol provided is invalid`() {
+        val contextWithInvalidProtocol = validTestContext.plus("corda.group.protocol.synchronisation" to "invalid")
+        val exception = assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationContextValidator.validate(contextWithInvalidProtocol)
+        }
+        assertThat(exception).hasMessageContaining("Invalid value for key $SYNCHRONISATION_PROTOCOL in registration context.")
+    }
+
+    @Test
+    fun `context validation fails when session key ID is invalid`() {
+        val contextWithInvalidSessionKey = validTestContext.plus(SESSION_KEY_IDS.format(0) to " ")
+        val exception = assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationContextValidator.validate(contextWithInvalidSessionKey)
+        }
+        assertThat(exception).hasMessageContaining("Invalid value for key ID ${SESSION_KEY_IDS.format(0)}.")
+        assertThat(exception).hasMessageContaining("Hex string has length of 1 but should be 12 characters")
+    }
+
+    @Test
+    fun `context validation fails when ECDH key ID is invalid`() {
+        val contextWithInvalidECDHKey = validTestContext.plus(ECDH_KEY_ID to " ")
+        val exception = assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationContextValidator.validate(contextWithInvalidECDHKey)
+        }
+        assertThat(exception).hasMessageContaining("Invalid value for key ID $ECDH_KEY_ID.")
+        assertThat(exception).hasMessageContaining("Hex string has length of 1 but should be 12 characters")
     }
 
     @Test

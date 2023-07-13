@@ -24,6 +24,7 @@ import net.corda.rest.server.impl.context.ContextUtils.contentTypeApplicationJso
 import net.corda.rest.server.impl.context.ContextUtils.invokeHttpMethod
 import net.corda.rest.server.impl.websocket.WebSocketCloserService
 import net.corda.rest.server.impl.websocket.mapToWsStatusCode
+import net.corda.tracing.configureJavalinForTracing
 import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.utilities.classload.OsgiClassLoader
 import net.corda.utilities.executeWithStdErrSuppressed
@@ -52,7 +53,8 @@ internal class RestServerInternal(
     private val resourceProvider: RouteProvider,
     private val restAuthProvider: RestAuthenticationProvider,
     private val configurationsProvider: RestServerSettingsProvider,
-    private val openApiInfoProvider: OpenApiInfoProvider,
+    // Different OpenAPI providers for different versions
+    private val openApiInfoProviders: List<OpenApiInfoProvider>,
     multiPartDir: Path,
     private val webSocketCloserService: WebSocketCloserService
 ) {
@@ -75,6 +77,8 @@ internal class RestServerInternal(
     private val server = Javalin.create {
         it.jsonMapper(JavalinJackson(serverJacksonObjectMapper))
         it.registerPlugin(RedirectToLowercasePathPlugin())
+        configureJavalinForTracing(it)
+
 
         val swaggerUiBundle = getSwaggerUiBundle()
         // In an OSGi context, webjars cannot be loaded automatically using `JavalinConfig.enableWebJars`.
@@ -110,7 +114,7 @@ internal class RestServerInternal(
         it.enableCorsForAllOrigins()
     }.apply {
         addRoutes()
-        addOpenApiRoute()
+        addOpenApiRoutes()
         addWsRoutes()
         // In order for multipart content to be stored onto disk, we need to override some properties
         // which are set by default by Javalin such that entire content is read into memory
@@ -243,14 +247,14 @@ internal class RestServerInternal(
         }
     }
 
-    private fun Javalin.addOpenApiRoute() {
+    private fun Javalin.addOpenApiRoutes() {
         try {
             log.trace { "Add OpenApi route." }
-            get(openApiInfoProvider.pathForOpenApiJson)
-            { ctx -> ctx.result(openApiInfoProvider.openApiString).contentType(contentTypeApplicationJson) }
-
-            get(openApiInfoProvider.pathForOpenApiUI, openApiInfoProvider.swaggerUIRenderer)
-
+            openApiInfoProviders.forEach { openApiInfoProvider ->
+                get(openApiInfoProvider.pathForOpenApiJson)
+                    { ctx -> ctx.result(openApiInfoProvider.openApiString).contentType(contentTypeApplicationJson) }
+                get(openApiInfoProvider.pathForOpenApiUI, openApiInfoProvider.swaggerUIRenderer)
+            }
             log.trace { "Add OpenApi route completed." }
         } catch (e: Exception) {
             "Error during Add OpenApi route".let {

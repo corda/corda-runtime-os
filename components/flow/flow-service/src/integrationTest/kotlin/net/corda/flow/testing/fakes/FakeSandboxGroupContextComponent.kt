@@ -4,7 +4,6 @@ import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import net.corda.flow.pipeline.events.FlowEventContext
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
 import net.corda.flow.pipeline.sessions.protocol.FlowAndProtocolVersion
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
@@ -16,7 +15,9 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.service.CacheEviction
 import net.corda.sandboxgroupcontext.service.EvictionListener
+import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.v5.application.flows.Flow
@@ -29,7 +30,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
 
 @ServiceRanking(Int.MAX_VALUE)
-@Component(service = [SandboxGroupContextComponent::class, FakeSandboxGroupContextComponent::class])
+@Component(service = [SandboxGroupContextComponent::class, FakeSandboxGroupContextComponent::class, CacheEviction::class])
 class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
 
     private val availableCpk = mutableSetOf<SecureHash>()
@@ -146,8 +147,8 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         }
     }
 
-    class FakeSandboxDependencyInjector : SandboxDependencyInjector {
-        override fun injectServices(flow: Flow) {
+    class FakeSandboxDependencyInjector : SandboxDependencyInjector<Flow> {
+        override fun injectServices(obj: Flow) {
         }
 
         override fun getRegisteredServices(): Set<SingletonSerializeAsToken> {

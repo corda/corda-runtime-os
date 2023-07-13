@@ -13,6 +13,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.app.simulator.AppSimulatorTopicCreator.Companion.APP_RECEIVED_MESSAGES_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.MessagingConfig
 import org.slf4j.LoggerFactory
 import java.io.Closeable
 import java.sql.Timestamp
@@ -35,10 +36,9 @@ class Sink(
     fun start() {
         (1..commonConfig.clients).forEach { client ->
             val subscriptionConfig = SubscriptionConfig("app-simulator-sink", APP_RECEIVED_MESSAGES_TOPIC)
-            val configWithInstanceId = commonConfig.bootConfig.withValue(
-                INSTANCE_ID,
-                ConfigValueFactory.fromAnyRef("${commonConfig.parameters.instanceId}-$client".hashCode())
-            )
+            val configWithInstanceId = commonConfig.bootConfig
+                .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("${commonConfig.parameters.instanceId}-$client".hashCode()))
+                .withValue(MessagingConfig.MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(10000000))
             val messagingConfig = configMerger.getMessagingConfig(configWithInstanceId)
             val processor = DBSinkProcessor()
             resources.add(processor)

@@ -19,6 +19,7 @@ dependencies {
     implementation project(':libs:permissions:permission-endpoint')
     implementation project(':libs:permissions:permission-manager')
     implementation project(':libs:permissions:permission-common')
+    implementation project(':libs:platform-info')
     implementation project(":libs:rest:rest-common")
     implementation project(":libs:rest:rest")
     implementation project(":libs:utilities")

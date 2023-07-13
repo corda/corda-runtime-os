@@ -87,7 +87,7 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
                 .addSignatories(output.participants)
                 .toSignedTransaction()
 
-            val sessions = members.map { flowMessaging.initiateFlow(it.name) }
+            val sessions = (members - memberLookup.myInfo()).map { flowMessaging.initiateFlow(it.name) }
 
             val finalizationResult = utxoLedgerService.finalize(
                     signedTransaction,

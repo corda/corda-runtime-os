@@ -1,12 +1,15 @@
 package net.corda.flow.testing.context
 
+import co.paralleluniverse.concurrent.util.ScheduledSingleThreadExecutor
+import co.paralleluniverse.fibers.FiberExecutorScheduler
+import co.paralleluniverse.fibers.FiberScheduler
 import com.typesafe.config.ConfigFactory
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.cpiinfo.read.fake.CpiInfoReadServiceFake
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.FlowInitiatorType
@@ -26,11 +29,17 @@ import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.fiber.ClientStartedFlow
+import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
+import net.corda.flow.testing.fakes.FakeClientRequestBody
+import net.corda.flow.testing.fakes.FakeFlow
 import net.corda.flow.testing.fakes.FakeFlowFiberFactory
 import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
+import net.corda.flow.testing.tests.ALL_TEST_VIRTUAL_NODES
 import net.corda.flow.testing.tests.FLOW_NAME
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
@@ -47,6 +56,7 @@ import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.MessagingConfig
@@ -82,6 +92,8 @@ class FlowServiceTestContext @Activate constructor(
     val sandboxGroupContextComponent: FakeSandboxGroupContextComponent,
     @Reference(service = VirtualNodeInfoReadServiceFake::class)
     val virtualNodeInfoReadService: VirtualNodeInfoReadServiceFake,
+    @Reference(service = FlowFiberCache::class)
+    val flowFiberCache: FlowFiberCache,
 ) : StepSetup, ThenSetup {
 
     private companion object {
@@ -114,6 +126,11 @@ class FlowServiceTestContext @Activate constructor(
     private var sessionInitiatingIdentity: HoldingIdentity? = null
     private var sessionInitiatedIdentity: HoldingIdentity? = null
 
+    private val currentScheduler: FiberScheduler = FiberExecutorScheduler(
+        "Same thread scheduler",
+        ScheduledSingleThreadExecutor()
+    )
+
     fun start() {
         virtualNodeInfoReadService.start()
         cpiInfoReadService.start()
@@ -125,7 +142,14 @@ class FlowServiceTestContext @Activate constructor(
     override val initiatedIdentityMemberName: MemberX500Name
         get() = MemberX500Name.parse(sessionInitiatedIdentity!!.x500Name)
 
-    override fun virtualNode(cpiId: String, holdingId: HoldingIdentity, flowOperationalStatus: OperationalStatus) {
+    override fun virtualNode(
+        cpiId: String,
+        holdingId: HoldingIdentity,
+        flowP2pOperationalStatus: OperationalStatus,
+        flowStartOperationalStatus: OperationalStatus,
+        flowOperationalStatus: OperationalStatus,
+        vaultDbOperationalStatus: OperationalStatus
+    ) {
         val emptyUUID = UUID(0, 0)
 
         virtualNodeInfoReadService.addOrUpdate(
@@ -138,8 +162,12 @@ class FlowServiceTestContext @Activate constructor(
                 emptyUUID,
                 emptyUUID,
                 emptyUUID,
-                timestamp = Instant.now(),
-                flowOperationalStatus = flowOperationalStatus
+                emptyUUID,
+                flowP2pOperationalStatus = flowP2pOperationalStatus,
+                flowStartOperationalStatus = flowStartOperationalStatus,
+                flowOperationalStatus = flowOperationalStatus,
+                vaultDbOperationalStatus = vaultDbOperationalStatus,
+                timestamp = Instant.now()
             )
         )
     }
@@ -391,10 +419,15 @@ class FlowServiceTestContext @Activate constructor(
             anyDeserializer,
             flowId,
             sessionInitiatingIdentity,
-            sessionInitiatedIdentity
+            sessionInitiatedIdentity,
+            flowFiberCache
         )
         assertions.add(assertionsCapture)
         outputAssertions(assertionsCapture)
+    }
+
+    override fun resetFlowFiberCache() {
+        ALL_TEST_VIRTUAL_NODES.forEach { flowFiberCache.remove(it.toCorda()) }
     }
 
     fun clearTestRuns() {
@@ -442,6 +475,7 @@ class FlowServiceTestContext @Activate constructor(
         cpiInfoReadService.reset()
         sandboxGroupContextComponent.reset()
         membershipGroupReaderProvider.reset()
+        resetFlowFiberCache()
     }
 
     private fun createAndAddSessionEvent(
@@ -507,7 +541,11 @@ class FlowServiceTestContext @Activate constructor(
         return object : FlowIoRequestSetup {
 
             override fun suspendsWith(flowIoRequest: FlowIORequest<*>) {
-                testRun.ioRequest = FlowIORequest.FlowSuspended(ByteBuffer.wrap(byteArrayOf()), flowIoRequest)
+                testRun.ioRequest = FlowIORequest.FlowSuspended(
+                    ByteBuffer.wrap(byteArrayOf()),
+                    flowIoRequest,
+                    FlowFiberImpl(UUID.randomUUID(), ClientStartedFlow(FakeFlow(), FakeClientRequestBody()), currentScheduler)
+                )
             }
 
             override fun completedSuccessfullyWith(result: String?) {

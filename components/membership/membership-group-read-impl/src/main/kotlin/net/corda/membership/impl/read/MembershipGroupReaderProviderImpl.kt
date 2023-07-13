@@ -41,17 +41,17 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
     @Reference(service = SubscriptionFactory::class)
-    val subscriptionFactory: SubscriptionFactory,
+    private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = MemberInfoFactory::class)
-    val memberInfoFactory: MemberInfoFactory,
+    private val memberInfoFactory: MemberInfoFactory,
     @Reference(service = GroupParametersReaderService::class)
-    val groupParametersReaderService: GroupParametersReaderService,
+    private val groupParametersReaderService: GroupParametersReaderService,
 ) : MembershipGroupReaderProvider {
 
     companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val ILLEGAL_ACCESS = "Tried to read group data before starting the component " +
                 "or while the component is down."

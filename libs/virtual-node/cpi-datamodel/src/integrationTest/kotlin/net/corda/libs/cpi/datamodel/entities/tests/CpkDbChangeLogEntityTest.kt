@@ -1,5 +1,6 @@
 package net.corda.libs.cpi.datamodel.entities.tests
 
+import java.util.*
 import net.corda.crypto.core.parseSecureHash
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -9,21 +10,20 @@ import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogAudit
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
-import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogAuditRepositoryImpl
-import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
+import net.corda.libs.cpi.datamodel.entities.tests.utils.cpi
+import net.corda.libs.cpi.datamodel.entities.tests.utils.cpk
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
+import net.corda.libs.cpi.datamodel.repository.impl.CpkDbChangeLogRepositoryImpl
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
-import net.corda.test.util.dsl.entities.cpx.cpi
-import net.corda.test.util.dsl.entities.cpx.cpk
 import net.corda.test.util.dsl.entities.cpx.cpkDbChangeLog
 import net.corda.test.util.dsl.entities.cpx.cpkDbChangeLogAudit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import java.util.*
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CpkDbChangeLogEntityTest {
@@ -36,8 +36,8 @@ class CpkDbChangeLogEntityTest {
         dbConfig
     )
 
-    private val cpkDbChangeLogRepository = CpkDbChangeLogRepositoryImpl()
-    private val cpkDbChangeLogAuditRepository = CpkDbChangeLogAuditRepositoryImpl()
+    private val cpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository()
+    private val cpkDbChangeLogAuditRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogAuditRepository()
 
     init {
         val dbChange = ClassloaderChangeLog(
