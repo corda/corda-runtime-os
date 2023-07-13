@@ -65,13 +65,21 @@ class InteropIdentityCacheServiceImplTest {
         val interopIdentity1 = InteropIdentity(
             groupId = UUID.randomUUID().toString(),
             x500Name = "C=GB, L=London, O=Alice",
-            holdingIdentityShortHash = shortHash1
+            holdingIdentityShortHash = shortHash1,
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://alice.corda5.r3.com:10000"
         )
 
         val interopIdentity2 = InteropIdentity(
             groupId = UUID.randomUUID().toString(),
             x500Name = "C=GB, L=London, O=Bob",
-            holdingIdentityShortHash = shortHash2
+            holdingIdentityShortHash = shortHash2,
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://bob.corda5.r3.com:10000"
         )
 
         cache.putInteropIdentity(shortHash1, interopIdentity1)

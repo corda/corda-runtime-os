@@ -19,7 +19,11 @@ class InteropIdentityCacheViewImplTest {
         val testInteropIdentity = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
-            holdingIdentityShortHash = "101010101010"
+            holdingIdentityShortHash = "101010101010",
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://alice.corda5.r3.com:10000"
         )
 
         testView.putInteropIdentity(testInteropIdentity)
@@ -27,7 +31,11 @@ class InteropIdentityCacheViewImplTest {
         val identicalInteropIdentity = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
-            holdingIdentityShortHash = "101010101010"
+            holdingIdentityShortHash = "101010101010",
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://alice.corda5.r3.com:10000"
         )
 
         testView.putInteropIdentity(identicalInteropIdentity)
@@ -38,7 +46,11 @@ class InteropIdentityCacheViewImplTest {
         val nonIdenticalInteropIdentity = InteropIdentity(
             x500Name = "C=GB, L=London, O=Bob",
             groupId = INTEROP_GROUP_ID,
-            holdingIdentityShortHash = "101010101010"
+            holdingIdentityShortHash = "101010101010",
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://bob.corda5.r3.com:10000"
         )
 
         testView.putInteropIdentity(nonIdenticalInteropIdentity)
@@ -52,7 +64,11 @@ class InteropIdentityCacheViewImplTest {
         val testInteropIdentity = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
-            holdingIdentityShortHash = "101010101010"
+            holdingIdentityShortHash = "101010101010",
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://alice.corda5.r3.com:10000"
         )
 
         testView.putInteropIdentity(testInteropIdentity)
@@ -63,7 +79,11 @@ class InteropIdentityCacheViewImplTest {
         val identicalInteropIdentity = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
-            holdingIdentityShortHash = "101010101010"
+            holdingIdentityShortHash = "101010101010",
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://alice.corda5.r3.com:10000"
         )
 
         testView.removeInteropIdentity(identicalInteropIdentity)
@@ -76,7 +96,11 @@ class InteropIdentityCacheViewImplTest {
         val testInteropIdentity = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
-            holdingIdentityShortHash = "101010101010"
+            holdingIdentityShortHash = "101010101010",
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://alice.corda5.r3.com:10000"
         )
 
         testView.putInteropIdentity(testInteropIdentity)
@@ -106,13 +130,21 @@ class InteropIdentityCacheViewImplTest {
         val ownedIdentity = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
-            holdingIdentityShortHash = VIEW_OWNER_SHORT_HASH
+            holdingIdentityShortHash = VIEW_OWNER_SHORT_HASH,
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://alice.corda5.r3.com:10000"
         )
 
         val notOwnedIdentity = InteropIdentity(
             x500Name = "C=GB, L=London, O=Bob",
             groupId = INTEROP_GROUP_ID,
-            holdingIdentityShortHash = "101010101010"
+            holdingIdentityShortHash = "101010101010",
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://bob.corda5.r3.com:10000"
         )
 
         testView.putInteropIdentity(ownedIdentity)
@@ -136,13 +168,21 @@ class InteropIdentityCacheViewImplTest {
         val ownedIdentity1 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice1",
             groupId = INTEROP_GROUP_ID,
-            holdingIdentityShortHash = VIEW_OWNER_SHORT_HASH
+            holdingIdentityShortHash = VIEW_OWNER_SHORT_HASH,
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://alice1.corda5.r3.com:10000"
         )
 
         val ownedIdentity2 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice2",
             groupId = INTEROP_GROUP_ID,
-            holdingIdentityShortHash = VIEW_OWNER_SHORT_HASH
+            holdingIdentityShortHash = VIEW_OWNER_SHORT_HASH,
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://alice2.corda5.r3.com:10000"
         )
 
         testView.putInteropIdentity(ownedIdentity1)

@@ -19,13 +19,21 @@ class InteropIdentityTest {
         val identity1 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_1,
-            holdingIdentityShortHash = "101010101010"
+            holdingIdentityShortHash = "101010101010",
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://alice.corda5.r3.com:10000"
         )
 
         val identity2 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_1,
-            holdingIdentityShortHash = "101010101010"
+            holdingIdentityShortHash = "101010101010",
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://alice.corda5.r3.com:10000"
         )
 
         assertThat(identity1).isEqualTo(identity2)
@@ -36,13 +44,21 @@ class InteropIdentityTest {
         val identity1 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_1,
-            holdingIdentityShortHash = "101010101010"
+            holdingIdentityShortHash = "101010101010",
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://alice.corda5.r3.com:10000"
         )
 
         val identity2 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Bob",
             groupId = GROUP_ID_1,
-            holdingIdentityShortHash = "101010101010"
+            holdingIdentityShortHash = "101010101010",
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://bob.corda5.r3.com:10000"
         )
 
         assertThat(identity1).isNotEqualTo(identity2)
@@ -53,13 +69,21 @@ class InteropIdentityTest {
         val identity1 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_1,
-            holdingIdentityShortHash = "101010101010"
+            holdingIdentityShortHash = "101010101010",
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://alice.corda5.r3.com:10000"
         )
 
         val identity2 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_2,
-            holdingIdentityShortHash = "101010101010"
+            holdingIdentityShortHash = "101010101010",
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://alice.corda5.r3.com:10000"
         )
 
         assertThat(identity1).isNotEqualTo(identity2)
@@ -70,13 +94,21 @@ class InteropIdentityTest {
         val identity1 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_1,
-            holdingIdentityShortHash = "101010101010"
+            holdingIdentityShortHash = "101010101010",
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://alice.corda5.r3.com:10000"
         )
 
         val identity2 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_1,
-            holdingIdentityShortHash = "010101010101"
+            holdingIdentityShortHash = "010101010101",
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://alice.corda5.r3.com:10000"
         )
 
         assertThat(identity1).isNotEqualTo(identity2)
