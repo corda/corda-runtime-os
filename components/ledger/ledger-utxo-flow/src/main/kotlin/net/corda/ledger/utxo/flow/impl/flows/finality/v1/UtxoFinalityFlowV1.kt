@@ -48,11 +48,11 @@ class UtxoFinalityFlowV1(
     private val transactionId = initialTransaction.id
 
     /*
-    * only if the number of sessions(counterparties) is more than one,
+    * if the number of sessions(counterparties) is more than one,
     * it should wait for additional signatures.
     * Otherwise, it can be skipped since there isn't unseen signatures
     */
-    private val waitForAdditionalSignatures = !(version == UtxoFinalityVersion.V2 && sessions.size == 1)
+    private val waitForAdditionalSignatures = (version == UtxoFinalityVersion.V1 || sessions.size > 1)
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging

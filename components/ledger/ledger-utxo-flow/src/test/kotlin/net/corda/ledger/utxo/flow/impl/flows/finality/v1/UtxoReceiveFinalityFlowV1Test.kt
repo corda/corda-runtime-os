@@ -492,10 +492,9 @@ class UtxoReceiveFinalityFlowV1Test {
     }
 
     @Test
-    fun `skip receiving and persisting signatures when there are only two parties`() {
+    fun `Finality flow V2 - skip receiving and persisting signatures when there are only two parties`() {
         whenever(session.receive(Map::class.java)).thenReturn(receivedPayloadV2ForTwoParties)
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1))
-        whenever(session.receive(List::class.java)).thenReturn(listOf(signature2))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
 
         callReceiveFinalityFlow(UtxoFinalityVersion.V2)
@@ -505,7 +504,7 @@ class UtxoReceiveFinalityFlowV1Test {
     }
 
     @Test
-    fun `receiving and persisting signatures when there are more than two parties`() {
+    fun `Finality flow V2 - receiving and persisting signatures when there are more than two parties`() {
 
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))

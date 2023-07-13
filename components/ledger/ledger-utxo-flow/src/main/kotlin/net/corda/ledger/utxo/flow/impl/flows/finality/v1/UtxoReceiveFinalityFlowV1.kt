@@ -81,7 +81,9 @@ class UtxoReceiveFinalityFlowV1(
 
         if (waitForAdditionalSignatures) {
             transaction = receiveSignaturesAndAddToTransaction(transaction)
+        }
             verifyAllReceivedSignatures(transaction)
+        if (waitForAdditionalSignatures) {
             persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
         }
 
