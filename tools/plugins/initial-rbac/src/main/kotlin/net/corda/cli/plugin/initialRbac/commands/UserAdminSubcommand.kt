@@ -24,7 +24,8 @@ class UserAdminSubcommand : RestCommand(), Callable<Int> {
     private val permissionsToCreate: Map<String, String> = listOf(
         // User manipulation permissions
         "CreateUsers" to "POST:/api/$VERSION_PATH_REGEX/user",
-        "GetUsers" to "GET:/api/$VERSION_PATH_REGEX/user\\?loginName=$USER_URL_REGEX",
+        "GetUsersV1" to "GET:/api/v1/user\\?loginName=$USER_URL_REGEX",
+        "GetUsers" to "GET:/api/$VERSION_PATH_REGEX/user/$USER_URL_REGEX",
         "AddRoleToUser" to "PUT:/api/$VERSION_PATH_REGEX/user/$USER_URL_REGEX/role/$UUID_REGEX",
         "DeleteRoleFromUser" to "DELETE:/api/$VERSION_PATH_REGEX/user/$USER_URL_REGEX/role/$UUID_REGEX",
         "GetPermissionsSummary" to "GET:/api/$VERSION_PATH_REGEX/user/$USER_URL_REGEX/permissionSummary",
