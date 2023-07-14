@@ -81,7 +81,7 @@ class KryoCheckpointSerializerBuilderImpl(
             X500Principal::class.java to X500PrincipalSerializer()
         )
 
-        val pool = object : Pool<Kryo>(true, false, 8) {
+        val pool = object : Pool<Kryo>(true, false, 4) {
            override fun create(): Kryo {
                 this.peak
                 val classResolver = CordaClassResolver(sandboxGroup)

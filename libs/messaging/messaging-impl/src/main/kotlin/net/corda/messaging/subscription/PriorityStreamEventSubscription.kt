@@ -1,8 +1,6 @@
 package net.corda.messaging.subscription
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
-import kotlinx.coroutines.async
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
@@ -21,7 +19,6 @@ import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
-import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
@@ -33,7 +30,6 @@ import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.publisher.RestClient
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toRecord
-import net.corda.messaging.utils.tryGetResult
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC
 import net.corda.schema.Schemas.Flow.*
@@ -49,11 +45,7 @@ import redis.clients.jedis.JedisCluster
 import java.security.SecureRandom
 import java.time.Duration
 import java.util.*
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Executors
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.*
 import kotlin.collections.ArrayDeque
 
 @Suppress("LongParameterList")
@@ -86,15 +78,15 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
         log.warn("Connecting to host ${it.host}, port ${it.port}")
     }
     private val jedisCluster = JedisCluster(Collections.singleton(hostAndPort), 5000, 5000, 2, null, null, GenericObjectPoolConfig(), false)
-    private val executor = Executors.newSingleThreadScheduledExecutor { runnable ->
-        val thread = Thread(runnable)
-        thread.isDaemon = true
-        thread
-    }
-    private val processingExecutor = ThreadPoolExecutor(
-        8, 8, 0L, TimeUnit.MILLISECONDS, LinkedBlockingQueue(),
-        ThreadFactoryBuilder().setNameFormat("data-sink-thread-%d").setDaemon(false).build()
-    )
+//    private val executor = Executors.newSingleThreadScheduledExecutor { runnable ->
+//        val thread = Thread(runnable)
+//        thread.isDaemon = true
+//        thread
+//    }
+//    private val processingExecutor = ThreadPoolExecutor(
+//        8, 8, 0L, TimeUnit.MILLISECONDS, LinkedBlockingQueue(),
+//        ThreadFactoryBuilder().setNameFormat("data-sink-thread-%d").setDaemon(false).build()
+//    )
     private val random = SecureRandom()
 
     private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
@@ -163,7 +155,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
     override fun close() {
         shutdownResources()
         threadLooper.close()
-        executor.shutdown()
+//        executor.shutdown()
         jedisCluster.close()
     }
 
@@ -217,6 +209,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun processEvents() {
         var attempts = 0
         while (!threadLooper.loopStopped) {
@@ -226,13 +219,16 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                 for ((_, events) in records!!) {
                     log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${records.size})" }
                     val groupedEvents = events.groupBy { it.key }
-                    val futures = groupedEvents.values.map {
-                        CompletableFuture.supplyAsync(
-                            { processEvents(it) },
-                            processingExecutor
-                        )
+                    runBlocking(Dispatchers.IO.limitedParallelism(5)) {
+                        val jobs = groupedEvents.values.map {
+                            launch {
+                                withTimeoutOrNull(30000) {
+                                    processEvents(it)
+                                }
+                            }
+                        }
+                        jobs.joinAll()
                     }
-                    CompletableFuture.allOf(*futures.toTypedArray()).join()
                 }
             } catch (ex: Exception) {
                 attempts++
@@ -263,7 +259,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                             recordsCount += records.size
                             markConsumerPoll(consumer)
                             val partitions = consumer.assignment()
-                            if (topics[priority]?.any {
+                            if (records.isNotEmpty() && topics[priority]?.any {
                                 it == FLOW_START_TOPIC ||
                                 it == FLOW_SESSION_TOPIC ||
                                 it == FLOW_MAPPER_START_EVENT_TOPIC ||
@@ -319,90 +315,88 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
     private fun processEvents(
         events: List<CordaConsumerRecord<K, E>>
     ) {
-        processorMeter.recordCallable {
-            val groupedEvents = events.groupBy { it.key }.mapValues { it.value.toMutableList() }.toMutableMap()
-            while (groupedEvents.isNotEmpty()) {
-                val currentEventsGroup = groupedEvents.entries.first()
-                if (isStateLocked(currentEventsGroup.key)) {
-                    log.info("Skipping event: ${currentEventsGroup.key} because its state is locked!")
-                    continue
-                }
-                var state = getState(currentEventsGroup.key)
-                groupedEvents.remove(currentEventsGroup.key)
-                val eventsQueue = ArrayDeque(currentEventsGroup.value)
+        val eventsQueue = ArrayDeque(events)
+        while (eventsQueue.isNotEmpty()) {
+            val currentEvent = eventsQueue.removeFirst()
+            processorMeter.recordCallable {
+                var state: S? = null
                 try {
-                    while (eventsQueue.isNotEmpty()) {
-                        val currentEvent = eventsQueue.removeFirst()
-                        log.info("Processing event: $currentEvent")
-                        val future = waitForFunctionToFinish(
-                            { processor.onNext(state, currentEvent.toRecord()) },
-                            config.processorTimeout.toMillis(),
-                            "Processing event $currentEvent timed-out!"
-                        )
-                        val currentEventUpdates = future.tryGetResult() as StateAndEventProcessor.Response<S>
-                        state = currentEventUpdates.updatedState
-                        // Get wake-up calls
-                        val (wakeups, outputEvents) = currentEventUpdates.responseEvents.partition {
-                            isWakeup(it)
-                        }
-                        // Get REST calls
-                        val (overRestEvents, overKafkaEvents) = outputEvents.partition {
-                            topicToRestClient.containsKey(it.topic)
-                        }
-                        // Execute REST calls
-                        val responseEvents = overRestEvents.mapNotNull {
-                            topicToRestClient[it.topic]?.publish(listOf(it))
-                        }.flatten()
-                        // Add subsequent events to be processed next in the queue
-                        val eventsToProcess = (wakeups + responseEvents) as List<Record<K, E>> // + restResponses
-                        eventsToProcess.forEach {
-                            val subsequentEvent = toCordaConsumerRecord(currentEvent, it)
-                            groupedEvents.computeIfAbsent(subsequentEvent.key) { mutableListOf() }.add(subsequentEvent)
-                        }
-                        recordsAvoidedCount.increment(eventsToProcess.size.toDouble())
-                        when {
-                            currentEventUpdates.markForDLQ -> {
-                                log.warn(
-                                    "Sending state and event on key ${currentEvent.key} for topic ${currentEvent.topic} to dead letter queue. " +
-                                            "Processor marked event for the dead letter queue"
-                                )
-                                state = null
+                    log.info("Processing event: $currentEvent")
+                    if (isStateLocked(currentEvent.key)) {
+                        log.info("Skipping event: ${currentEvent.key} because its state is locked!")
+                        eventsQueue.add(currentEvent)
+                        return@recordCallable
+                    }
+                    state = getState(currentEvent.key)
+//                    val future = waitForFunctionToFinish(
+//                        { processor.onNext(state, currentEvent.toRecord()) },
+//                        config.processorTimeout.toMillis(),
+//                        "Processing event $currentEvent timed-out!"
+//                    )
+//                    val currentEventUpdates = future.tryGetResult() as StateAndEventProcessor.Response<S>
+                    val currentEventUpdates = processor.onNext(state, currentEvent.toRecord())
+                    state = currentEventUpdates.updatedState
+                    // Get wake-up calls
+                    val (wakeups, outputEvents) = currentEventUpdates.responseEvents.partition {
+                        isWakeup(it)
+                    }
+                    // Get REST calls
+                    val (overRestEvents, overKafkaEvents) = outputEvents.partition {
+                        topicToRestClient.containsKey(it.topic)
+                    }
+                    // Execute REST calls
+                    val responseEvents = overRestEvents.mapNotNull {
+                        topicToRestClient[it.topic]?.publish(listOf(it))
+                    }.flatten()
+                    // Add subsequent events to be processed next in the queue
+                    val eventsToProcess = (wakeups + responseEvents) as List<Record<K, E>> // + restResponses
+                    eventsToProcess.forEach {
+                        val subsequentEvent = toCordaConsumerRecord(currentEvent, it)
+                        eventsQueue.add(subsequentEvent)
+                    }
+                    recordsAvoidedCount.increment(eventsToProcess.size.toDouble())
+                    when {
+                        currentEventUpdates.markForDLQ -> {
+                            log.warn(
+                                "Sending state and event on key ${currentEvent.key} for topic ${currentEvent.topic} to dead letter queue. " +
+                                        "Processor marked event for the dead letter queue"
+                            )
+                            state = null
 
-                                // In this case the processor may ask us to publish some output records regardless, so make sure these
-                                // are outputted.
-                                producer?.sendRecords(overKafkaEvents.toCordaProducerRecords())
-                            }
+                            // In this case the processor may ask us to publish some output records regardless, so make sure these
+                            // are outputted.
+                            producer?.sendRecords(overKafkaEvents.toCordaProducerRecords())
+                        }
 
-                            else -> {
-                                producer?.sendRecords(overKafkaEvents.toCordaProducerRecords())
-                                log.debug { "Completed event: $currentEvent" }
-                            }
+                        else -> {
+                            producer?.sendRecords(overKafkaEvents.toCordaProducerRecords())
+                            log.debug { "Completed event: $currentEvent" }
                         }
                     }
+
                 } catch (ex: Exception) {
-                    producer?.abortTransaction()
                     throw ex
                 } finally {
-                    updateState(currentEventsGroup.key, state)
+                    updateState(currentEvent.key, state)
                 }
             }
         }
     }
-
-    fun waitForFunctionToFinish(function: () -> Any, maxTimeout: Long, timeoutErrorMessage: String): CompletableFuture<Any> {
-        val future: CompletableFuture<Any> = CompletableFuture.supplyAsync(
-            function,
-            executor
-        )
-        future.tryGetResult(maxTimeout)
-
-        if (!future.isDone) {
-            future.cancel(true)
-            log.error(timeoutErrorMessage)
-        }
-
-        return future
-    }
+//
+//    fun waitForFunctionToFinish(function: () -> Any, maxTimeout: Long, timeoutErrorMessage: String): CompletableFuture<Any> {
+//        val future: CompletableFuture<Any> = CompletableFuture.supplyAsync(
+//            function,
+//            executor
+//        )
+//        future.tryGetResult(maxTimeout)
+//
+//        if (!future.isDone) {
+//            future.cancel(true)
+//            log.error(timeoutErrorMessage)
+//        }
+//
+//        return future
+//    }
 
     private fun toCordaConsumerRecord(sourceRecord: CordaConsumerRecord<K, E>, newEvent : Record<K, E>) =
         CordaConsumerRecord(
