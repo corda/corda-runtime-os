@@ -76,12 +76,9 @@ internal class DBCordaConsumerImplTest {
     }
 
     private fun getTopicRecords(
-        topic: String = defaultTopic,
         partition: CordaTopicPartition = partition0,
         startOffset: Long = 0L,
-        key: ByteArray = serializedKey,
         value: ByteArray? = serializedValue,
-        header: String = serializedHeader,
         txState: TransactionState = TransactionState.COMMITTED,
         count: Int = 1): List<TopicRecordEntry>
     {
@@ -89,12 +86,12 @@ internal class DBCordaConsumerImplTest {
 
         return (0 until count).mapIndexed { index, _ ->
             TopicRecordEntry(
-                topic,
+                defaultTopic,
                 partition.partition,
                 startOffset + index,
-                key,
+                serializedKey,
                 value,
-                header,
+                serializedHeader,
                 TransactionRecordEntry("id", txState),
                 timestamp
             )
