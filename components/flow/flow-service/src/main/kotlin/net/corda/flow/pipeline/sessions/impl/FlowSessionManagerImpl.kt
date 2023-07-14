@@ -54,6 +54,8 @@ class FlowSessionManagerImpl @Activate constructor(
             .map { event -> flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event) }
     }
 
+    // @SESSION: This is where we create a new session manager and generate a session init message. We'll need to keep
+    // the housekeeping here, but if we were to remove the init message this is where we'd take it out.
     override fun sendInitMessage(
         checkpoint: FlowCheckpoint,
         sessionId: String,
@@ -106,6 +108,7 @@ class FlowSessionManagerImpl @Activate constructor(
         )
     }
 
+    // @SESSION: We generate the actual session message here to store in the session manager.
     override fun sendDataMessages(
         checkpoint: FlowCheckpoint,
         sessionToPayload: Map<String, ByteArray>,

@@ -45,6 +45,8 @@ class CloseSessionsRequestHandler @Activate constructor(
         }
     }
 
+    // @SESSION: If the user requests a session close manually, we'll go through here to generate the close message.
+    // Note if it's closed already we'll post a wakeup here.
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.CloseSessions): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
 

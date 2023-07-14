@@ -44,6 +44,7 @@ class SubFlowFinishedRequestHandler @Activate constructor(
         }
     }
 
+    // @SESSION: If a subflow ends and sessions are outstanding, we'll close them here.
     override fun postProcess(
         context: FlowEventContext<Any>,
         request: FlowIORequest.SubFlowFinished

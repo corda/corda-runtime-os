@@ -48,6 +48,7 @@ class InitiateFlowRequestService @Activate constructor(
         }
     }
 
+    // @SESSION: Code to generate init messages here.
     @Suppress("ThrowsCount")
     private fun initiateFlows(
         context: FlowEventContext<Any>,
