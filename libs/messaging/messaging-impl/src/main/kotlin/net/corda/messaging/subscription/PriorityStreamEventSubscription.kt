@@ -91,6 +91,10 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
         thread.isDaemon = true
         thread
     }
+    private val processingExecutor = ThreadPoolExecutor(
+        8, 8, 0L, TimeUnit.MILLISECONDS, LinkedBlockingQueue(),
+        ThreadFactoryBuilder().setNameFormat("data-sink-thread-%d").setDaemon(false).build()
+    )
     private val random = SecureRandom()
 
     private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
@@ -145,11 +149,6 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
         VERIFICATION_LEDGER_PROCESSOR_TOPIC to RestClient<FlowEvent>("http://corda-flow-verification-worker:8080", cordaAvroSerializer, cordaAvroDeserializer)
     )
 
-    private val processingExecutor = ThreadPoolExecutor(
-        8, 8, 0L, TimeUnit.MILLISECONDS, LinkedBlockingQueue(),
-        ThreadFactoryBuilder().setNameFormat("state-and-event-processing-thread-%d").setDaemon(false).build()
-    )
-
     override val subscriptionName: LifecycleCoordinatorName
         get() = threadLooper.lifecycleCoordinatorName
 
@@ -169,7 +168,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
     }
 
     private fun setupResources() {
-        val producerConfig = ProducerConfig(config.clientId, random.nextInt(), true, ProducerRoles.SAE_PRODUCER, false)
+        val producerConfig = ProducerConfig(config.clientId, random.nextInt(), false, ProducerRoles.SAE_PRODUCER, false)
         producer = cordaProducerBuilder.createProducer(
             producerConfig,
             config.messageBusConfig
@@ -224,13 +223,16 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
             try {
                 log.debug { "Polling and processing events" }
                 val records = getHighestPriorityEvents()
-                for ((consumer, events) in records!!) {
-//                    batchSizeHistogram.record(events.size.toDouble())
+                for ((_, events) in records!!) {
                     log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${records.size})" }
-                    producer?.beginTransaction()
-                    parallelProcessEvents(events)
-                    producer?.sendRecordOffsetsToTransaction(consumer, events)
-                    producer?.commitTransaction()
+                    val groupedEvents = events.groupBy { it.key }
+                    val futures = groupedEvents.values.map {
+                        CompletableFuture.supplyAsync(
+                            { processEvents(it) },
+                            processingExecutor
+                        )
+                    }
+                    CompletableFuture.allOf(*futures.toTypedArray()).join()
                 }
             } catch (ex: Exception) {
                 attempts++
@@ -313,44 +315,32 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
         consumersLastPoll[consumer] = System.currentTimeMillis()
     }
 
-    private fun parallelProcessEvents(events: List<CordaConsumerRecord<K, E>>) {
-        val groupedEvents = events.groupBy { it.key }
-        val futures = groupedEvents.values.map {
-                CompletableFuture.supplyAsync(
-                    { processEvents(it) },
-                    processingExecutor
-            )
-        }
-        CompletableFuture.allOf(*futures.toTypedArray()).join()
-    }
-
     @Suppress("UNCHECKED_CAST")
     private fun processEvents(
         events: List<CordaConsumerRecord<K, E>>
     ) {
         processorMeter.recordCallable {
-            val pendingEvents = ArrayDeque(events)
-            while (pendingEvents.isNotEmpty()) {
-                val states = mutableMapOf<K, S?>()
-                val currentPendingEvent = pendingEvents.removeFirst()
-                val subsequentEvents = ArrayDeque(listOf(currentPendingEvent))
+            val groupedEvents = events.groupBy { it.key }.mapValues { it.value.toMutableList() }.toMutableMap()
+            while (groupedEvents.isNotEmpty()) {
+                val currentEventsGroup = groupedEvents.entries.first()
+                if (isStateLocked(currentEventsGroup.key)) {
+                    log.info("Skipping event: ${currentEventsGroup.key} because its state is locked!")
+                    continue
+                }
+                var state = getState(currentEventsGroup.key)
+                groupedEvents.remove(currentEventsGroup.key)
+                val eventsQueue = ArrayDeque(currentEventsGroup.value)
                 try {
-                    while (subsequentEvents.isNotEmpty()) {
-                        val currentEvent = subsequentEvents.removeFirst()
-                        if (!states.containsKey(currentEvent.key) && isStateLocked(currentEvent.key)) {
-                            log.info("Skipping event: $currentEvent because its state is locked!")
-                            pendingEvents.add(currentEvent)
-                            continue
-                        }
+                    while (eventsQueue.isNotEmpty()) {
+                        val currentEvent = eventsQueue.removeFirst()
                         log.info("Processing event: $currentEvent")
-                        val state = states.computeIfAbsent(currentEvent.key) { getState(currentEvent.key) }
                         val future = waitForFunctionToFinish(
                             { processor.onNext(state, currentEvent.toRecord()) },
                             config.processorTimeout.toMillis(),
                             "Processing event $currentEvent timed-out!"
                         )
                         val currentEventUpdates = future.tryGetResult() as StateAndEventProcessor.Response<S>
-                        states[currentEvent.key] = currentEventUpdates.updatedState
+                        state = currentEventUpdates.updatedState
                         // Get wake-up calls
                         val (wakeups, outputEvents) = currentEventUpdates.responseEvents.partition {
                             isWakeup(it)
@@ -365,18 +355,18 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                         }.flatten()
                         // Add subsequent events to be processed next in the queue
                         val eventsToProcess = (wakeups + responseEvents) as List<Record<K, E>> // + restResponses
-                        subsequentEvents.addAll(eventsToProcess.map {
-                            val ret = toCordaConsumerRecord(currentEvent, it)
-                            ret
-                        })
-//                        recordsAvoidedCount.increment(eventsToProcess.size.toDouble())
+                        eventsToProcess.forEach {
+                            val subsequentEvent = toCordaConsumerRecord(currentEvent, it)
+                            groupedEvents.computeIfAbsent(subsequentEvent.key) { mutableListOf() }.add(subsequentEvent)
+                        }
+                        recordsAvoidedCount.increment(eventsToProcess.size.toDouble())
                         when {
                             currentEventUpdates.markForDLQ -> {
                                 log.warn(
                                     "Sending state and event on key ${currentEvent.key} for topic ${currentEvent.topic} to dead letter queue. " +
                                             "Processor marked event for the dead letter queue"
                                 )
-                                states[currentEvent.key] = null
+                                state = null
 
                                 // In this case the processor may ask us to publish some output records regardless, so make sure these
                                 // are outputted.
@@ -393,41 +383,9 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                     producer?.abortTransaction()
                     throw ex
                 } finally {
-                    states.forEach {
-                        updateState(it.key, it.value)
-                    }
+                    updateState(currentEventsGroup.key, state)
                 }
             }
-        }
-    }
-
-    /**
-     * Handle retries for event processing.
-     * Reset [nullableEventConsumer] position and retry poll and process of eventRecords
-     * Retry a max of [ResolvedSubscriptionConfig.processorRetries] times.
-     * If [ResolvedSubscriptionConfig.processorRetries] is exceeded then throw a [CordaMessageAPIIntermittentException]
-     */
-    private fun handleProcessEventRetries(
-        attempts: Int,
-        ex: Exception
-    ) {
-        if (attempts <= config.processorRetries) {
-            log.warn(
-                "Failed to process record from group ${config.group}, " +
-                        "producerClientId ${config.clientId}. " +
-                        "Retrying poll and process. Attempts: $attempts."
-            )
-            consumers.forEach {
-                it.value.forEach { consumer ->
-                    consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.LATEST)
-                }
-            }
-        } else {
-            val message = "Failed to process records from group ${config.group}, " +
-                    "producerClientId ${config.clientId}. " +
-                    "Attempts: $attempts. Max reties exceeded."
-            log.warn(message, ex)
-            throw CordaMessageAPIIntermittentException(message, ex)
         }
     }
 
@@ -506,11 +464,11 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
     private fun acquireLock(key: K) {
         val lockKey = getStateLockKey(key)
         while (isStateLocked(key)) {
-//            attemptStateLockCounter.increment()
+            attemptStateLockCounter.increment()
             Thread.sleep(100)
         }
         jedisCluster.set(lockKey, byteArrayOf((1).toByte()))
-//        acquiredStateLocksCounter.increment()
+        acquiredStateLocksCounter.increment()
     }
 
     private fun isStateLocked(key: K): Boolean {
@@ -530,7 +488,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
     private fun releaseLock(key: K) {
         val lockKey = getStateLockKey(key)
         jedisCluster.set(lockKey, byteArrayOf((0).toByte()))
-//        releasedStateLocksCounter.increment()
+        releasedStateLocksCounter.increment()
     }
 
     private fun deleteLock(key: K) {

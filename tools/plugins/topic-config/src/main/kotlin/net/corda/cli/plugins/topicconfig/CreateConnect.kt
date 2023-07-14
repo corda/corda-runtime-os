@@ -39,11 +39,11 @@ class CreateConnect : Runnable {
     var delete: Boolean = false
 
     var topicPartitions: Map<String, Int> = mapOf(
-        FLOW_START_TOPIC to 500,
-        FLOW_SESSION_TOPIC to 500,
-        FLOW_MAPPER_SESSION_IN_EVENT_TOPIC to 500,
-        FLOW_MAPPER_SESSION_OUT_EVENT_TOPIC to 500,
-        FLOW_MAPPER_START_EVENT_TOPIC to 500
+        FLOW_START_TOPIC to 80,
+        FLOW_SESSION_TOPIC to 80,
+        FLOW_MAPPER_SESSION_IN_EVENT_TOPIC to 80,
+        FLOW_MAPPER_SESSION_OUT_EVENT_TOPIC to 80,
+        FLOW_MAPPER_START_EVENT_TOPIC to 80
     ).map { "traffic-congestion-poc-${it.key}" to it.value }.toMap()
 
     override fun run() {
