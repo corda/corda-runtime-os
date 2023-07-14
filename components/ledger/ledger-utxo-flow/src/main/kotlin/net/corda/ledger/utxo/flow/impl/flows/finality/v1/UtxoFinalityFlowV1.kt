@@ -46,13 +46,6 @@ class UtxoFinalityFlowV1(
 
     private val transactionId = initialTransaction.id
 
-    /*
-    * if the number of sessions(counterparties) is more than one,
-    * it should wait for additional signatures.
-    * Otherwise, it can be skipped since there isn't unseen signatures
-    */
-    private val waitForAdditionalSignatures = (version == UtxoFinalityVersion.V1 || sessions.size > 1)
-
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
 
@@ -61,6 +54,13 @@ class UtxoFinalityFlowV1(
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
+        /*
+        * if the number of sessions(counterparties) is more than one,
+        * it should wait for additional signatures.
+        * Otherwise, it can be skipped since there isn't unseen signatures
+        */
+        val shouldSendAdditionalSignatures = version == UtxoFinalityVersion.V1 || sessions.size > 1
+
         addTransactionIdToFlowContext(flowEngine, transactionId)
         log.trace("Starting finality flow for transaction: {}", transactionId)
         verifyExistingSignatures(initialTransaction)
@@ -69,14 +69,12 @@ class UtxoFinalityFlowV1(
         // Initial verifications passed, the transaction can be saved in the database.
         persistUnverifiedTransaction()
 
-        sendTransactionAndBackchainToCounterparties()
+        sendTransactionAndBackchainToCounterparties(shouldSendAdditionalSignatures)
         val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction()
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
         persistTransactionWithCounterpartySignatures(transaction)
 
-        if (waitForAdditionalSignatures) {
-            sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
-        }
+        sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions, shouldSendAdditionalSignatures)
 
         val (notarizedTransaction, notarySignatures) = notarize(transaction)
         persistNotarizedTransaction(notarizedTransaction)
@@ -92,13 +90,13 @@ class UtxoFinalityFlowV1(
     }
 
     @Suspendable
-    private fun sendTransactionAndBackchainToCounterparties() {
+    private fun sendTransactionAndBackchainToCounterparties(shouldSendAdditionalSignatures: Boolean) {
         if (version == UtxoFinalityVersion.V1) {
             flowMessaging.sendAll(
                 initialTransaction, sessions.toSet()
             )
         } else {
-            flowMessaging.sendAll(FinalityPayload(initialTransaction, waitForAdditionalSignatures), sessions.toSet())
+            flowMessaging.sendAll(FinalityPayload(initialTransaction, shouldSendAdditionalSignatures), sessions.toSet())
         }
 
         sessions.forEach {
@@ -194,8 +192,12 @@ class UtxoFinalityFlowV1(
     @Suspendable
     private fun sendUnseenSignaturesToCounterparties(
         transaction: UtxoSignedTransactionInternal,
-        signaturesReceivedFromSessions: Map<FlowSession, List<DigitalSignatureAndMetadata>>
+        signaturesReceivedFromSessions: Map<FlowSession, List<DigitalSignatureAndMetadata>>,
+        shouldSendAdditionalSignatures: Boolean
     ) {
+        if (!shouldSendAdditionalSignatures) {
+            return
+        }
         val notSeenSignaturesBySessions = signaturesReceivedFromSessions.map { (session, signatures) ->
             session to transaction.signatures.filter {
                 it !in initialTransaction.signatures &&             // These have already been distributed with the first go

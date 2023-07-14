@@ -1031,7 +1031,7 @@ class UtxoFinalityFlowV1Test {
     }
 
     @Test
-    fun `not sending unseen signatures to counterparties when there are only two parties for V2`() {
+    fun `do not send unseen signatures to counterparties when there are only two parties for V2`() {
         whenever(initialTx.getMissingSignatories()).thenReturn(
             setOf(publicKeyBob)
         )
