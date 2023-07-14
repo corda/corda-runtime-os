@@ -90,10 +90,13 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     private var rpcSubscription: RPCSubscription<MembershipPersistenceRequest, MembershipPersistenceResponse>? = null
     private var asyncSubscription:
         StateAndEventSubscription<String, MembershipPersistenceAsyncRequestState, MembershipPersistenceAsyncRequest>? = null
-    private var retryManager: MembershipPersistenceAsyncRetryManager? = null
+    private val retryManager = MembershipPersistenceAsyncRetryManager(
+        coordinatorFactory,
+        publisherFactory,
+        clock,
+    )
 
     private var dependencyServiceHandle: RegistrationHandle? = null
-    private var subHandle: RegistrationHandle? = null
     private var configHandle: AutoCloseable? = null
 
     override val isRunning: Boolean
@@ -139,34 +142,24 @@ class MembershipPersistenceServiceImpl @Activate constructor(
         )
         dependencyServiceHandle?.close()
         dependencyServiceHandle = null
-        subHandle?.close()
-        subHandle = null
         configHandle?.close()
         configHandle = null
         rpcSubscription?.close()
         rpcSubscription = null
         asyncSubscription?.close()
         asyncSubscription = null
-        retryManager?.close()
-        retryManager = null
+        retryManager.stop()
     }
 
     private fun handleRegistrationStatusChangedEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
         logger.info("Handling registration changed event.")
         when (event.status) {
             LifecycleStatus.UP -> {
-                if (event.registration == dependencyServiceHandle) {
                     configHandle?.close()
                     configHandle = configurationReadService.registerComponentForUpdates(
                         coordinator,
                         setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                     )
-                } else if (event.registration == subHandle) {
-                    coordinator.updateStatus(
-                        LifecycleStatus.UP,
-                        "Received config and started RPC topic subscription."
-                    )
-                }
             }
             else -> {
                 coordinator.updateStatus(LifecycleStatus.DOWN, "Dependencies are down.")
@@ -191,11 +184,9 @@ class MembershipPersistenceServiceImpl @Activate constructor(
 
     private fun handleConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         logger.info("Handling config changed event.")
-        subHandle?.close()
-        subHandle = null
         rpcSubscription?.close()
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-        val firstSubscription = subscriptionFactory.createRPCSubscription(
+        subscriptionFactory.createRPCSubscription(
             rpcConfig = RPCConfig(
                 groupName = GROUP_NAME,
                 clientName = CLIENT_NAME,
@@ -212,15 +203,8 @@ class MembershipPersistenceServiceImpl @Activate constructor(
             it.start()
         }
         asyncSubscription?.close()
-        retryManager?.close()
-        retryManager =
-            MembershipPersistenceAsyncRetryManager(
-                coordinatorFactory = coordinatorFactory,
-                publisherFactory = publisherFactory,
-                messagingConfig = messagingConfig,
-                clock = clock,
-            )
-        val secondSubscription = subscriptionFactory.createStateAndEventSubscription(
+        retryManager.start(messagingConfig)
+        subscriptionFactory.createStateAndEventSubscription(
             subscriptionConfig = SubscriptionConfig(
                 groupName = ASYNC_GROUP_NAME,
                 eventTopic = MEMBERSHIP_DB_ASYNC_TOPIC,
@@ -231,14 +215,13 @@ class MembershipPersistenceServiceImpl @Activate constructor(
             messagingConfig = messagingConfig,
             stateAndEventListener = retryManager
         ).also {
+            asyncSubscription = it
             it.start()
         }
-        asyncSubscription = secondSubscription
-        subHandle = coordinator.followStatusChangesByName(
-            setOf(
-                firstSubscription.subscriptionName,
-                secondSubscription.subscriptionName,
-            )
+
+        coordinator.updateStatus(
+            LifecycleStatus.UP,
+            "Received config and started Membership persistence topic subscriptions."
         )
     }
 }

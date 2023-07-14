@@ -4,7 +4,6 @@ import net.corda.crypto.core.ShortHash
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
-import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
 import net.corda.libs.external.messaging.ExternalMessagingRouteConfigGenerator
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.virtualnode.common.exception.LiquibaseDiffCheckFailedException
@@ -31,6 +30,7 @@ import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 
 @Suppress("LongParameterList")
 internal class VirtualNodeUpgradeOperationHandler(
@@ -38,7 +38,7 @@ internal class VirtualNodeUpgradeOperationHandler(
     private val oldVirtualNodeEntityRepository: VirtualNodeEntityRepository,
     private val virtualNodeInfoPublisher: Publisher,
     private val migrationUtility: MigrationUtility,
-    private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpkDbChangeLogRepositoryImpl(),
+    private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository(),
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
     private val externalMessagingRouteConfigGenerator: ExternalMessagingRouteConfigGenerator
 ) : VirtualNodeAsyncOperationHandler<VirtualNodeUpgradeRequest> {

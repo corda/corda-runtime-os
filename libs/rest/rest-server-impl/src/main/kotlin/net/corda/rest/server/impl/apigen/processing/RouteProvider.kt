@@ -1,6 +1,7 @@
 package net.corda.rest.server.impl.apigen.processing
 
 import io.javalin.websocket.WsConfig
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.impl.apigen.models.Endpoint
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
 import net.corda.rest.server.impl.apigen.models.EndpointParameter
@@ -35,7 +36,6 @@ internal interface RouteProvider {
 
 internal class JavalinRouteProviderImpl(
     private val basePath: String,
-    private val apiVersion: String,
     private val resources: List<Resource>
 ) : RouteProvider {
 
@@ -65,9 +65,23 @@ internal class JavalinRouteProviderImpl(
         log.trace { "Map resources to routes by http method." }
         return resources.flatMap { resource ->
             resource.endpoints.filter { it.method == httpMethod }
-                .map { RouteInfo(basePath, resource.path, apiVersion, it) }
+                .flatMap { endpoint ->
+                    combineResourceAndEndpointApiVersions(
+                        resource.apiVersions,
+                        endpoint.apiVersions
+                    ).map { apiVersion ->
+                        RouteInfo(basePath, resource.path, apiVersion, endpoint)
+                    }
+                }
 
         }.also { log.trace { "Map resources to routes by http method completed." } }
+    }
+
+    private fun combineResourceAndEndpointApiVersions(resourceVersions: Set<RestApiVersion>,
+                                                      endpointVersions: Set<RestApiVersion>): Set<RestApiVersion> {
+        // Returns a simple intersection, however in the future additional criteria might be necessary such as
+        // global cut-off version
+        return resourceVersions.intersect(endpointVersions)
     }
 
 }
@@ -89,7 +103,7 @@ internal data class Parameter(
 internal class RouteInfo(
     private val basePath: String,
     private val resourcePath: String,
-    private val apiVersion: String,
+    private val apiVersion: RestApiVersion,
     private val endpoint: Endpoint
 ) {
     private companion object {
@@ -126,7 +140,8 @@ internal class RouteInfo(
     }
 
     private fun generateFullPath(resourcePath: String, endpointPath: String?): String {
-        val combinedPath = joinResourceAndEndpointPaths("/${basePath}/v${apiVersion}/${resourcePath}", endpointPath)
+        val combinedPath =
+            joinResourceAndEndpointPaths("/${basePath}/${apiVersion.versionPath}/${resourcePath}", endpointPath)
         return combinedPath.lowercase().also {
             log.trace { "Full path $it generated." }
         }

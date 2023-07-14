@@ -54,7 +54,7 @@ internal class ParametersRetrieverContext(private val ctx: ClientRequestContext)
 
     fun uploadedFiles(paramName: String): List<HttpFileUpload> {
         val files = ctx.uploadedFiles(paramName)
-        return files.map { file -> HttpFileUpload(file.content, file.contentType, file.extension, file.filename, file.size) }
+        return files.map { file -> HttpFileUpload(file.content(), file.contentType(), file.extension(), file.filename(), file.size()) }
     }
 
     fun <T> fromJsonString(json: String, targetClass: Class<T>): T {

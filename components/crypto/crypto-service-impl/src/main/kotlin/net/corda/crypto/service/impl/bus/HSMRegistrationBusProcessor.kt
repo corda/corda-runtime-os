@@ -3,7 +3,7 @@ package net.corda.crypto.service.impl.bus
 import net.corda.crypto.config.impl.RetryingConfig
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
-import net.corda.crypto.service.HSMService
+import net.corda.crypto.service.TenantInfoService
 import net.corda.data.crypto.wire.CryptoNoContentValue
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
@@ -18,8 +18,9 @@ import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
+// This is separate to HSMService so that we can unit test HSMServiceImpl without dealing with RPCResponseProcess
 class HSMRegistrationBusProcessor(
-    private val hsmService: HSMService,
+    private val tenantInfoService: TenantInfoService,
     config: RetryingConfig
 ) : RPCResponderProcessor<HSMRegistrationRequest, HSMRegistrationResponse> {
     companion object {
@@ -51,8 +52,8 @@ class HSMRegistrationBusProcessor(
 
     private fun handleRequest(request: Any, context: CryptoRequestContext): Any {
         return when (request) {
-            is AssignSoftHSMCommand -> hsmService.assignSoftHSM(context.tenantId, request.category)
-            is AssignedHSMQuery -> hsmService.findAssignedHSM(context.tenantId, request.category) ?: CryptoNoContentValue()
+            is AssignSoftHSMCommand -> tenantInfoService.populate(context.tenantId, request.category)
+            is AssignedHSMQuery -> tenantInfoService.lookup(context.tenantId, request.category) ?: CryptoNoContentValue()
             else -> throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
         }
     }

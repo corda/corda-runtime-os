@@ -295,6 +295,13 @@ class ConfigRestResourceImplTests {
             whenever(createConfigValidator()).thenReturn(validator)
         }
 
-        return rpcSender to ConfigRestResourceImpl(mock(), mock(), publisherFactory, validatorFactory, configurationGetService)
+        return rpcSender to ConfigRestResourceImpl(
+            mock(),
+            mock(),
+            publisherFactory,
+            validatorFactory,
+            configurationGetService,
+            mock()
+        )
     }
 }

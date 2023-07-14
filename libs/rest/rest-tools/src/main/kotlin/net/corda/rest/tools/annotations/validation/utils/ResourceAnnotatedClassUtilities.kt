@@ -5,8 +5,10 @@ import net.corda.rest.annotations.HttpDELETE
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpPUT
+import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.HttpWS
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.annotations.isRestEndpointAnnotation
 import net.corda.rest.tools.annotations.extensions.path
 import net.corda.rest.tools.isStaticallyExposedGet
@@ -49,6 +51,26 @@ internal val Method.endpointType: EndpointType
             else -> throw IllegalArgumentException("Unknown endpoint type for: '$name'")
         }
     } ?: this.staticExposedEndpointType
+
+internal data class MinMaxRestApiVersions(val minVersion: RestApiVersion, val maxVersion: RestApiVersion)
+
+internal val Method.restApiVersions: MinMaxRestApiVersions
+    get() = this.annotations.firstOrNull { it.isRestEndpointAnnotation() }?.let {
+        when (it) {
+            is HttpGET -> MinMaxRestApiVersions(it.minVersion, it.maxVersion)
+            is HttpPOST -> MinMaxRestApiVersions(it.minVersion, it.maxVersion)
+            is HttpPUT -> MinMaxRestApiVersions(it.minVersion, it.maxVersion)
+            is HttpDELETE -> MinMaxRestApiVersions(it.minVersion, it.maxVersion)
+            is HttpWS -> MinMaxRestApiVersions(it.minVersion, it.maxVersion)
+            else -> throw IllegalArgumentException("Unknown endpoint type for: '$name'")
+        }
+    } ?: if (isStaticallyExposedGet()) {
+        HttpGET().let { MinMaxRestApiVersions(it.minVersion, it.maxVersion) }
+    } else {
+        throw IllegalArgumentException("Annotation is missing and not statically exposed")
+    }
+
+internal val HttpRestResource.versions get() = MinMaxRestApiVersions(this.minVersion, this.maxVersion)
 
 private val Method.staticExposedEndpointType: EndpointType
     get() = if (isStaticallyExposedGet()) EndpointType.GET

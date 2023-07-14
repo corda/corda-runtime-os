@@ -1,6 +1,7 @@
 package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.client.hsm.HSMRegistrationClient
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.Categories.CI
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.TLS
@@ -64,7 +65,7 @@ class HsmRestResourceImplTest {
 
         @Test
         fun `assignedHsm calls the client with upper case`() {
-            val association = HSMAssociationInfo("a", "b", "SOFT", NOTARY, "foo", 0L)
+            val association = HSMAssociationInfo("a", "b", CryptoConsts.SOFT_HSM_ID, NOTARY, "foo", 0L)
             whenever(hsmRegistrationClient.findHSM(tenantId, NOTARY)).doReturn(association)
 
             ops.assignedHsm(tenantId, "Notary")
@@ -74,7 +75,7 @@ class HsmRestResourceImplTest {
 
         @Test
         fun `assignedHsm verify the tenantId`() {
-            val association = HSMAssociationInfo("a", "b", "SOFT", CI, "foo", 0L)
+            val association = HSMAssociationInfo("a", "b", CryptoConsts.SOFT_HSM_ID, CI, "foo", 0L)
             whenever(hsmRegistrationClient.findHSM(tenantId, CI)).doReturn(association)
             ops.assignedHsm(tenantId, CI)
 
@@ -120,7 +121,7 @@ class HsmRestResourceImplTest {
                 HSMAssociationInfo(
                     "id1",
                     tenantId,
-                    "SOFT",
+                    CryptoConsts.SOFT_HSM_ID,
                     CI,
                     "master-key-alias",
                     0
@@ -133,7 +134,7 @@ class HsmRestResourceImplTest {
                 HsmAssociationInfo(
                     id = "id1",
                     category = CI,
-                    hsmId = "SOFT",
+                    hsmId = CryptoConsts.SOFT_HSM_ID,
                     masterKeyAlias = "master-key-alias",
                     deprecatedAt = 0
                 ),
@@ -146,7 +147,7 @@ class HsmRestResourceImplTest {
                 HSMAssociationInfo(
                     "id1",
                     tenantId,
-                    "SOFT",
+                    CryptoConsts.SOFT_HSM_ID,
                     CI,
                     "master-key-alias",
                     0
@@ -164,7 +165,7 @@ class HsmRestResourceImplTest {
                 HSMAssociationInfo(
                     "id1",
                     P2P,
-                    "SOFT",
+                    CryptoConsts.SOFT_HSM_ID,
                     CI,
                     "master-key-alias",
                     0

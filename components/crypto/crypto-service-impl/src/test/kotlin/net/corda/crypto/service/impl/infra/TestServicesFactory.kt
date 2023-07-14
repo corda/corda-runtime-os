@@ -1,9 +1,8 @@
 package net.corda.crypto.service.impl.infra
 
+import com.github.benmanes.caffeine.cache.Caffeine
 import com.typesafe.config.ConfigFactory
-import java.security.KeyPairGenerator
-import java.security.Provider
-import java.util.concurrent.ConcurrentHashMap
+import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
@@ -11,11 +10,11 @@ import net.corda.cipher.suite.impl.SignatureVerificationServiceImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.CryptoServiceExtensions
-import net.corda.crypto.cipher.suite.GeneratedKey
+import net.corda.crypto.cipher.suite.GeneratedWrappedKey
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.SharedSecretSpec
 import net.corda.crypto.cipher.suite.SignatureVerificationService
-import net.corda.crypto.cipher.suite.SigningSpec
+import net.corda.crypto.cipher.suite.SigningWrappedSpec
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
@@ -24,10 +23,7 @@ import net.corda.crypto.config.impl.signingService
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.service.SigningService
-import net.corda.crypto.service.impl.CryptoServiceFactoryImpl
-import net.corda.crypto.service.impl.HSMServiceImpl
 import net.corda.crypto.service.impl.SigningServiceImpl
-import net.corda.crypto.softhsm.CryptoServiceProvider
 import net.corda.crypto.softhsm.impl.SoftCryptoService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -36,6 +32,10 @@ import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
 import net.corda.v5.crypto.SignatureSpec
+import java.security.KeyPairGenerator
+import java.security.Provider
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 
 
@@ -145,44 +145,12 @@ class TestServicesFactory {
         }
     }
 
-    val signingRepository: TestSigningRepository by lazy {
-        TestSigningRepository()
-    }
+    val signingRepository: TestSigningRepository by lazy { TestSigningRepository() }
 
-    val hsmStore: TestHSMStore by lazy {
-        TestHSMStore(coordinatorFactory).also {
-            it.start()
-            eventually {
-                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
-            }
-        }
-    }
+    val tenantInfoService: TestTenantInfoService by lazy { TestTenantInfoService(cryptoService) }
 
     val cryptoWrappingRepository = TestWrappingRepository()
-    val signingService: SigningService by lazy {
-        SigningServiceImpl(
-            cryptoServiceFactory = cryptoServiceFactory,
-            signingRepositoryFactory = { signingRepository },
-            digestService = PlatformDigestServiceImpl(schemeMetadata),
-            schemeMetadata = schemeMetadata,
-            config = cryptoConfig.signingService(),
-        )
-    }
-
-    val hsmService: HSMServiceImpl by lazy {
-        HSMServiceImpl(
-            coordinatorFactory,
-            configurationReadService,
-            hsmStore,
-            cryptoServiceFactory = cryptoServiceFactory
-        ).also {
-            it.start()
-            eventually {
-                assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
-            }
-        }
-    }
-
+    
     val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
 
     val cryptoService: CryptoService by lazy {
@@ -200,27 +168,27 @@ class TestServicesFactory {
                 },
                 wrappingKeyFactory = {
                     WrappingKeyImpl.generateWrappingKey(it)
-                },
+                }
             ),
             recordedCryptoContexts
         )
     }
 
-    // this MUST return cryptoService at the end of the day, rather than make its own,
-    // or else we'll end up multiple instances of the crypto service with different second level wrapping keys
-    val cryptoServiceFactory: CryptoServiceFactoryImpl = CryptoServiceFactoryImpl(
-        coordinatorFactory,
-        configurationReadService,
-        hsmStore,
-        object : CryptoServiceProvider {
-            override fun getInstance(config: SmartConfig): CryptoService = cryptoService
-        }
-    ).also {
-        it.start()
-        it.bootstrapConfig(bootstrapConfig)
-        eventually {
-            assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
-        }
+    val signingConfig = cryptoConfig.signingService()
+    val signingService: SigningService by lazy {
+        SigningServiceImpl(
+            cryptoService = cryptoService,
+            signingRepositoryFactory = { signingRepository },
+            digestService = PlatformDigestServiceImpl(schemeMetadata),
+            schemeMetadata = schemeMetadata,
+            cache = CacheFactoryImpl().build(
+                "Signing-Key-Cache",
+                Caffeine.newBuilder()
+                    .expireAfterAccess(signingConfig.cache.expireAfterAccessMins, TimeUnit.MINUTES)
+                    .maximumSize(signingConfig.cache.maximumSize)
+            ),
+            tenantInfoService = tenantInfoService
+        )
     }
 
     private class CryptoServiceWrapper(
@@ -238,14 +206,14 @@ class TestServicesFactory {
             impl.createWrappingKey(wrappingKeyAlias, failIfExists, context)
         }
 
-        override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedKey {
+        override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedWrappedKey {
             if (context.containsKey("ctxTrackingId")) {
                 recordedCryptoContexts[context.getValue("ctxTrackingId")] = context
             }
             return impl.generateKeyPair(spec, context)
         }
 
-        override fun sign(spec: SigningSpec, data: ByteArray, context: Map<String, String>): ByteArray {
+        override fun sign(spec: SigningWrappedSpec, data: ByteArray, context: Map<String, String>): ByteArray {
             if (context.containsKey("ctxTrackingId")) {
                 recordedCryptoContexts[context.getValue("ctxTrackingId")] = context
             }

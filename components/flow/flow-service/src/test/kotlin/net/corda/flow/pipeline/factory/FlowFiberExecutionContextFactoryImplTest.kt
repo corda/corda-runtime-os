@@ -7,12 +7,13 @@ import net.corda.flow.BOB_X500_NAME
 import net.corda.flow.pipeline.factory.impl.FlowFiberExecutionContextFactoryImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 import net.corda.serialization.checkpoint.CheckpointSerializer
+import net.corda.v5.application.flows.Flow
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -27,7 +28,7 @@ class FlowFiberExecutionContextFactoryImplTest {
     private val flowSandboxService = mock<FlowSandboxService>()
     private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
     private val checkpointSerializer = mock<CheckpointSerializer>()
-    private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
+    private val sandboxDependencyInjector = mock<SandboxDependencyInjector<Flow>>()
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
     private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider>()
     private val membershipGroupReader = mock<MembershipGroupReader>()
