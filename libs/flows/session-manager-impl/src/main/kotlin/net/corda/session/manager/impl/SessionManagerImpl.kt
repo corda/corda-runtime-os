@@ -108,10 +108,10 @@ class SessionManagerImpl @Activate constructor(
         identity: HoldingIdentity,
     ): Pair<SessionState,
             List<SessionEvent>> {
-        var messagesToReturn = getMessagesToSendAndUpdateSendState(sessionState, instant, config)
+        val messagesToReturn = getMessagesToSendAndUpdateSendState(sessionState, instant)/*, config)*/
 
         //add heartbeat if no messages sent recently, add ack if needs to be sent, error session if no heartbeat received within timeout
-        messagesToReturn = handleHeartbeatAndAcknowledgements(sessionState, config, instant, messagesToReturn, identity)
+//        messagesToReturn = handleHeartbeatAndAcknowledgements(sessionState, config, instant, messagesToReturn, identity)
 
         if (messagesToReturn.isNotEmpty()) {
             sessionState.sendAck = false
@@ -140,7 +140,7 @@ class SessionManagerImpl @Activate constructor(
      */
     // @SESSION: This function works out if no message has been received in the timeout window and if so sends a
     // heartbeat. If a message has been received, then an ack is generated if required.
-    private fun handleHeartbeatAndAcknowledgements(
+  /*  private fun handleHeartbeatAndAcknowledgements(
         sessionState: SessionState,
         config: SmartConfig,
         instant: Instant,
@@ -176,7 +176,7 @@ class SessionManagerImpl @Activate constructor(
         } else {
             messagesToReturn
         }
-    }
+    }*/
 
     /**
      * Get any new messages to send from the sendEvents state within [sessionState].
@@ -194,7 +194,7 @@ class SessionManagerImpl @Activate constructor(
     private fun getMessagesToSendAndUpdateSendState(
         sessionState: SessionState,
         instant: Instant,
-        config: SmartConfig,
+//        config: SmartConfig,
     ): List<SessionEvent> {
         val sessionEvents = filterSessionEvents(sessionState, instant)
         if (sessionEvents.isEmpty()) return emptyList()
@@ -206,8 +206,8 @@ class SessionManagerImpl @Activate constructor(
         }
 
         //remove SessionAcks/SessionErrors and increase timestamp of messages to be sent that are awaiting acknowledgement
-        val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
-        updateSessionStateSendEvents(sessionState, instant, messageResendWindow, sessionEvents)
+//        val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
+        updateSessionStateSendEvents(sessionState) /*, instant, messageResendWindow, sessionEvents)*/
 
         logger.debug {
             "Dispatching events for session [${sessionState.sessionId}]: " +
@@ -258,17 +258,18 @@ class SessionManagerImpl @Activate constructor(
      */
     private fun updateSessionStateSendEvents(
         sessionState: SessionState,
-        instant: Instant,
-        messageResendWindow: Long,
-        dispatchedEvents: List<SessionEvent>,
+//        instant: Instant,
+//        messageResendWindow: Long,
+//        dispatchedEvents: List<SessionEvent>,
     ) {
-        sessionState.sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages
-            .filter { it.payload !is SessionError }
-            .onEach { message ->
-                if (message in dispatchedEvents) {
-                    message.timestamp = instant.plusMillis(messageResendWindow)
-                }
-            }
+        sessionState.sendEventsState.undeliveredMessages = mutableListOf()
+//        sessionState.sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages
+//            .filter { it.payload !is SessionError }
+//            .onEach { message ->
+//                if (message in dispatchedEvents) {
+//                    message.timestamp = instant.plusMillis(messageResendWindow)
+//                }
+//            }
     }
 
     /**
