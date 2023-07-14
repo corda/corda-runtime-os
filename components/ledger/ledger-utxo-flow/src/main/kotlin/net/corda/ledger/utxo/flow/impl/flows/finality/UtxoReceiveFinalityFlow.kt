@@ -37,10 +37,11 @@ class UtxoReceiveFinalityFlowVersionedFlowFactory(
     override val versionedInstanceOf: Class<UtxoReceiveFinalityFlow> = UtxoReceiveFinalityFlow::class.java
 
     override fun create(version: Int, session: FlowSession): SubFlow<UtxoSignedTransaction> {
-        return when {
-            version >= CORDA_5_1.value -> UtxoReceiveFinalityFlowV1(session, validator, UtxoFinalityVersion.V2)
-            version in 1 until CORDA_5_1.value -> UtxoReceiveFinalityFlowV1(session, validator, UtxoFinalityVersion.V1)
+        val finalityVersion = when {
+            version >= CORDA_5_1.value -> UtxoFinalityVersion.V2
+            version in 1 until CORDA_5_1.value -> UtxoFinalityVersion.V1
             else -> throw IllegalArgumentException()
         }
+        return UtxoReceiveFinalityFlowV1(session, validator, finalityVersion)
     }
 }

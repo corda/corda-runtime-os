@@ -40,15 +40,11 @@ class UtxoFinalityFlowVersionedFlowFactory(
     override val versionedInstanceOf: Class<UtxoFinalityFlow> = UtxoFinalityFlow::class.java
 
     override fun create(version: Int, sessions: List<FlowSession>): SubFlow<UtxoSignedTransaction> {
-        return when {
-            version >= CORDA_5_1.value -> UtxoFinalityFlowV1(transaction, sessions, pluggableNotaryClientFlow, UtxoFinalityVersion.V2)
-            version in 1 until CORDA_5_1.value -> UtxoFinalityFlowV1(
-                transaction,
-                sessions,
-                pluggableNotaryClientFlow,
-                UtxoFinalityVersion.V1
-            )
+        val finalityVersion = when {
+            version >= CORDA_5_1.value -> UtxoFinalityVersion.V2
+            version in 1 until CORDA_5_1.value -> UtxoFinalityVersion.V1
             else -> throw IllegalArgumentException()
         }
+        return UtxoFinalityFlowV1(transaction, sessions, pluggableNotaryClientFlow, finalityVersion)
     }
 }
