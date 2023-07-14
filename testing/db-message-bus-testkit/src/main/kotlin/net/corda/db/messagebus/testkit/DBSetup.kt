@@ -12,6 +12,7 @@ import org.osgi.framework.FrameworkUtil
 import java.io.StringWriter
 
 object DBSetup: BeforeAllCallback {
+    var topicsCreated = false
 
     var isDB = false
         private set
@@ -49,7 +50,10 @@ object DBSetup: BeforeAllCallback {
                 dataSource.connection.use { connection -> lbm.createUpdateSql(connection, cl, it) }
             }
             dataSource.connection.use { connection  ->  lbm.updateDb(connection, cl) }
-            DbMessageBusSetup().createTopicsOnDbMessageBus(dataSource.connection)
+            if(!topicsCreated) {
+                DbMessageBusSetup().createTopicsOnDbMessageBus(dataSource.connection)
+                topicsCreated = true
+            }
         }
     }
 }

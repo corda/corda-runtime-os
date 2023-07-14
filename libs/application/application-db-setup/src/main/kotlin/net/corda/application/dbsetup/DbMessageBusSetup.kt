@@ -11,7 +11,6 @@ import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
 import java.nio.charset.Charset
 import java.sql.Connection
-import java.sql.SQLIntegrityConstraintViolationException
 
 class DbMessageBusSetup {
     companion object{
@@ -44,13 +43,9 @@ class DbMessageBusSetup {
         log.debug { "Mapping topicDefinitions to topicConfigs, topicDefinitions = $topicDefinitions \ntopicConfigs = $topicDefinitions" }
         messageBusConnection.use { connection ->
             topicConfigs.map {
-                try {
-                    connection.createStatement().execute(
-                        TopicEntry(it.name, defaultNumPartitions).toInsertStatement()
-                    )
-                } catch (e: SQLIntegrityConstraintViolationException){
-                    { log.info ("Attempt at duplicate topic insertion for ${it.name}") }
-                }
+                connection.createStatement().execute(
+                    TopicEntry(it.name, defaultNumPartitions).toInsertStatement()
+                )
             }
             if (!connection.autoCommit) {
                 connection.commit()
