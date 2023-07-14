@@ -1,6 +1,5 @@
 package net.corda.rest.server.impl.internal
 
-import io.javalin.http.util.ContextUtil
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.server.impl.context.ClientRequestContext
 import org.slf4j.LoggerFactory
@@ -44,7 +43,7 @@ internal class ParametersRetrieverContext(private val ctx: ClientRequestContext)
     fun formParamMap(): Map<String, List<String>> = ctx.formParamMap()
 
     fun pathParam(key: String): String {
-        return ContextUtil.pathParamOrThrow(pathParamsMap, key.lowercase(), ctx.matchedPath)
+        return pathParamsMap[key.lowercase()] ?: throw IllegalArgumentException("Path parameter '$key' not found in path '${ctx.matchedPath}'")
     }
 
     fun queryParams(key: String): List<String> = queryParamsMap[key.lowercase()] ?: emptyList()

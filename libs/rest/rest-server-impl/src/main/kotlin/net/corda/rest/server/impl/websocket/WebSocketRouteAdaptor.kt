@@ -21,6 +21,7 @@ import net.corda.rest.ws.DuplexChannel
 import org.slf4j.LoggerFactory
 import org.eclipse.jetty.websocket.api.CloseStatus
 import org.eclipse.jetty.websocket.api.StatusCode.POLICY_VIOLATION
+import java.time.Duration
 
 typealias SessionId = String
 
@@ -59,7 +60,7 @@ internal class WebSocketRouteAdaptor(
             ServerDuplexChannel(ctx, webSocketCloserService, ctx.sessionId).let { newChannel ->
                 channelsBySessionId[ctx.sessionId] = newChannel
 
-                ctx.session.idleTimeout = webSocketIdleTimeoutMs
+                ctx.session.idleTimeout = Duration.ofMillis(webSocketIdleTimeoutMs)
                 val clientWsRequestContext = ClientWsRequestContext(ctx)
 
                 try {
