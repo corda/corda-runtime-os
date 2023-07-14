@@ -130,7 +130,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
     @Input
     final Property<String> baseImageTag =
-            getObjects().property(String).convention('11.0.16.1-11.58.23')
+            getObjects().property(String).convention('17.0.4.1-17.36.17')
 
     @Input
     final Property<String> subDir =
@@ -272,6 +272,9 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         List<String> javaArgs = new ArrayList<String>(arguments.get())
         javaArgs.add("-Dlog4j2.debug=\${ENABLE_LOG4J2_DEBUG:-false}")
         javaArgs.add("-Dlog4j.configurationFile=\${LOG4J_CONFIG_FILE}")
+
+        // allow deprecated security manager
+        javaArgs.add("-Djava.security.manager=allow")
 
         if (setEntry.get()) {
             def entryName = overrideEntryName.get().empty ? projectName : overrideEntryName.get()
