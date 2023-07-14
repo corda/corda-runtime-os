@@ -20,6 +20,12 @@ postgresql:
     password:
   # primary (read/write instance) configuration.
   primary:
+    nodeSelector:
+      node: "prereqs"
+    tolerations:
+      - effect: "NoSchedule"
+        key: "node"
+        value: "prereqs"
     # Custom init configuration..
     initdb:
       # -- ConfigMap-like object containing scripts to be executed on startup.

@@ -1,0 +1,5 @@
+nodeSelector: { node: "prereqs" }
+tolerations:
+  - effect: "NoSchedule"
+    key: "node"
+    value: "prereqs"
