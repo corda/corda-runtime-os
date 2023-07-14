@@ -14,8 +14,7 @@ import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
-import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityFlowPayload.INITIAL_TRANSACTION
-import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityFlowPayload.WAIT_FOR_ADDITIONAL_SIGNATURES
+import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityVersion
 import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
@@ -107,15 +106,15 @@ class UtxoReceiveFinalityFlowV1Test {
     private val signedTransaction = mock<UtxoSignedTransactionInternal>()
     private val signedTransactionWithOwnKeys = mock<UtxoSignedTransactionInternal>()
     private val notarizedTransaction = mock<UtxoSignedTransactionInternal>()
-    private val receivedPayloadV2 = mapOf(INITIAL_TRANSACTION to signedTransaction, WAIT_FOR_ADDITIONAL_SIGNATURES to true)
-    private val receivedPayloadV2ForTwoParties = mapOf(INITIAL_TRANSACTION to signedTransaction, WAIT_FOR_ADDITIONAL_SIGNATURES to false)
+    private val receivedPayloadV2 = FinalityPayload(signedTransaction, true)
+    private val receivedPayloadV2ForTwoParties = FinalityPayload(signedTransaction, false)
 
     @BeforeEach
     fun beforeEach() {
         whenever(session.counterparty).thenReturn(MEMBER)
 
         whenever(session.receive(UtxoSignedTransactionInternal::class.java)).thenReturn(signedTransaction)
-        whenever(session.receive(Map::class.java)).thenReturn(receivedPayloadV2)
+        whenever(session.receive(FinalityPayload::class.java)).thenReturn(receivedPayloadV2)
 
         whenever(memberLookup.myInfo()).thenReturn(memberInfo)
 
@@ -493,7 +492,7 @@ class UtxoReceiveFinalityFlowV1Test {
 
     @Test
     fun `Finality flow V2 - skip receiving and persisting signatures when there are only two parties`() {
-        whenever(session.receive(Map::class.java)).thenReturn(receivedPayloadV2ForTwoParties)
+        whenever(session.receive(FinalityPayload::class.java)).thenReturn(receivedPayloadV2ForTwoParties)
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
 

@@ -6,8 +6,7 @@ import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesExce
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
-import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityFlowPayload.INITIAL_TRANSACTION
-import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityFlowPayload.WAIT_FOR_ADDITIONAL_SIGNATURES
+import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityVersion
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
@@ -99,12 +98,7 @@ class UtxoFinalityFlowV1(
                 initialTransaction, sessions.toSet()
             )
         } else {
-            flowMessaging.sendAll(
-                mapOf(
-                    INITIAL_TRANSACTION to initialTransaction,
-                    WAIT_FOR_ADDITIONAL_SIGNATURES to waitForAdditionalSignatures
-                ), sessions.toSet()
-            )
+            flowMessaging.sendAll(FinalityPayload(initialTransaction, waitForAdditionalSignatures), sessions.toSet())
         }
 
         sessions.forEach {

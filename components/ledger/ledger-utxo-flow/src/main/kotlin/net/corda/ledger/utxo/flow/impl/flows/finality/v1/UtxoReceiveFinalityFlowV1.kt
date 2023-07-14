@@ -5,8 +5,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
-import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityFlowPayload.INITIAL_TRANSACTION
-import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityFlowPayload.WAIT_FOR_ADDITIONAL_SIGNATURES
+import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityVersion
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
@@ -99,9 +98,9 @@ class UtxoReceiveFinalityFlowV1(
         if (version == UtxoFinalityVersion.V1) {
             initialTransaction = session.receive(UtxoSignedTransactionInternal::class.java)
         } else {
-            val payload = session.receive(Map::class.java)
-            initialTransaction = payload[INITIAL_TRANSACTION] as UtxoSignedTransactionInternal
-            waitForAdditionalSignatures = payload[WAIT_FOR_ADDITIONAL_SIGNATURES] as Boolean
+            val payload = session.receive(FinalityPayload::class.java)
+            initialTransaction = payload.initialTransaction as UtxoSignedTransactionInternal
+            waitForAdditionalSignatures = payload.waitForAdditionalSignatures as Boolean
         }
 
         if (log.isDebugEnabled) {
