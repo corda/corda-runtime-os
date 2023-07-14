@@ -210,6 +210,33 @@ class ClusterBuilder {
         return body.joinToString(prefix = "{", postfix = "}")
     }
 
+    private fun createBulkPermissionsBody(
+        permissionsToCreate: Set<Pair<String, String>>,
+        roleIds: Set<String>
+    ): String {
+        val body1 = mutableListOf<String>().apply {
+            permissionsToCreate.forEach {
+                add(createPermissionBody(it.second, it.first, null, null))
+            }
+        }
+        val bodyStr1 = if (body1.isEmpty()) {
+            ""
+        } else {
+            body1.joinToString(prefix = """"permissionsToCreate": [""", postfix = "]")
+        }
+        val body2 = mutableListOf<String>().apply {
+            roleIds.forEach {
+                add(""""$it"""")
+            }
+        }
+        val bodyStr2 = if (body2.isEmpty()) {
+            ""
+        } else {
+            body2.joinToString(prefix = """, "roleIds": [""", postfix = "]")
+        }
+        return "{$bodyStr1$bodyStr2}"
+    }
+
     /** Create a virtual node */
     fun vNodeCreate(cpiHash: String, x500Name: String) =
         post("/api/$REST_API_VERSION_PATH/virtualnode", vNodeBody(cpiHash, x500Name))
@@ -348,6 +375,13 @@ class ClusterBuilder {
         post("/api/$REST_API_VERSION_PATH/permission",
             createPermissionBody(permissionString, permissionType, groupVisibility, virtualNode)
         )
+
+    /** Create a set of permissions and optionally assigns them to existing roles */
+    fun createBulkPermissions(
+        permissionsToCreate: Set<Pair<String, String>>,
+        roleIds: Set<String>
+    ) =
+        post("/api/v1/permission/bulk", createBulkPermissionsBody(permissionsToCreate, roleIds))
 
     /** Get the permissions which satisfy the query */
     fun getPermissionByQuery(
