@@ -219,7 +219,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                 for ((_, events) in records!!) {
                     log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${records.size})" }
                     val groupedEvents = events.groupBy { it.key }
-                    runBlocking(Dispatchers.IO.limitedParallelism(5)) {
+                    runBlocking(Dispatchers.IO.limitedParallelism(10)) {
                         val jobs = groupedEvents.values.map {
                             launch {
                                 withTimeoutOrNull(30000) {
