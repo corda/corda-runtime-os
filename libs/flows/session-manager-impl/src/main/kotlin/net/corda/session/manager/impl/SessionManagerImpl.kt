@@ -207,7 +207,7 @@ class SessionManagerImpl @Activate constructor(
 
         //remove SessionAcks/SessionErrors and increase timestamp of messages to be sent that are awaiting acknowledgement
 //        val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
-        updateSessionStateSendEvents(sessionState) /*, instant, messageResendWindow, sessionEvents)*/
+        updateSessionStateSendEvents(sessionState, sessionEvents) /*, instant, messageResendWindow, sessionEvents)*/
 
         logger.debug {
             "Dispatching events for session [${sessionState.sessionId}]: " +
@@ -260,9 +260,11 @@ class SessionManagerImpl @Activate constructor(
         sessionState: SessionState,
 //        instant: Instant,
 //        messageResendWindow: Long,
-//        dispatchedEvents: List<SessionEvent>,
+        dispatchedEvents: List<SessionEvent>,
     ) {
-        sessionState.sendEventsState.undeliveredMessages = mutableListOf()
+        sessionState.sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.filter {
+            it !in dispatchedEvents
+        }
 //        sessionState.sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages
 //            .filter { it.payload !is SessionError }
 //            .onEach { message ->
