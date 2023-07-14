@@ -60,23 +60,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-
-        val fatalExceptions: Set<Class<out Throwable>> = setOf(
-            AuthorizationException::class.java,
-            AuthenticationException::class.java,
-            IllegalArgumentException::class.java,
-            IllegalStateException::class.java,
-            ArithmeticException::class.java,
-            FencedInstanceIdException::class.java,
-            InconsistentGroupProtocolException::class.java,
-            InvalidOffsetException::class.java
-        )
-
-        val transientExceptions: Set<Class<out Throwable>> = setOf(
-            WakeupException::class.java,
-            InterruptException::class.java,
-            KafkaException::class.java
-        )
     }
 
     override fun close() {
@@ -95,16 +78,27 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             val polledRecords = try {
                 consumer.poll(timeout)
             } catch (ex: Exception) {
-                when (ex::class.java) {
-                    in fatalExceptions -> {
+                when (ex) {
+                    is AuthorizationException,
+                    is AuthenticationException,
+                    is IllegalArgumentException,
+                    is IllegalStateException,
+                    is ArithmeticException,
+                    is FencedInstanceIdException,
+                    is InconsistentGroupProtocolException,
+                    is InvalidOffsetException,
+                    -> {
                         logErrorAndThrowFatalException("Error attempting to poll.", ex)
                     }
-                    in transientExceptions -> {
+
+                    is WakeupException,
+                    is InterruptException,
+                    is KafkaException,
+                    -> {
                         logWarningAndThrowIntermittentException("Error attempting to poll.", ex)
                     }
-                    else -> {
-                        logErrorAndThrowFatalException("Unexpected error attempting to poll.", ex)
-                    }
+
+                    else -> logErrorAndThrowFatalException("Unexpected error attempting to poll.", ex)
                 }
             }
 
