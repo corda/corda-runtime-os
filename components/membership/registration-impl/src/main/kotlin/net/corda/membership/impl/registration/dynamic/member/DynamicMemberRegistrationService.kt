@@ -48,9 +48,9 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.impl.registration.KeyDetails
 import net.corda.membership.impl.registration.MemberRole
 import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
-import net.corda.membership.impl.registration.dynamic.verifiers.OrderVerifier
-import net.corda.membership.impl.registration.dynamic.verifiers.P2pEndpointVerifier
-import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
+import net.corda.membership.impl.registration.verifiers.OrderVerifier
+import net.corda.membership.impl.registration.verifiers.P2pEndpointVerifier
+import net.corda.membership.impl.registration.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS

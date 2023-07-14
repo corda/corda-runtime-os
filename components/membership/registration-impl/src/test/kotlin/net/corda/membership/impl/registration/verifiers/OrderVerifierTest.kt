@@ -1,5 +1,6 @@
-package net.corda.membership.impl.registration.dynamic.verifiers
+package net.corda.membership.impl.registration.verifiers
 
+import net.corda.membership.impl.registration.verifiers.OrderVerifier
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
