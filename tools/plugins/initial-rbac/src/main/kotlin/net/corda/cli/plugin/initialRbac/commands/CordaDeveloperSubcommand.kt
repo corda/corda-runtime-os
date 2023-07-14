@@ -20,7 +20,8 @@ class CordaDeveloperSubcommand : RestCommand(), Callable<Int> {
 
     private val permissionsToCreate: Map<String, String> = listOf(
         "Force CPI upload" to "POST:/api/$VERSION_PATH_REGEX/maintenance/virtualnode/forcecpiupload",
-        "Resync the virtual node vault" to "POST:/api/$VERSION_PATH_REGEX/maintenance/virtualnode/$VNODE_SHORT_HASH_REGEX/vault-schema/force-resync",
+        "Resync the virtual node vault" to
+                "POST:/api/$VERSION_PATH_REGEX/maintenance/virtualnode/$VNODE_SHORT_HASH_REGEX/vault-schema/force-resync",
     ).toMap()
 
     override fun call(): Int {
