@@ -214,21 +214,16 @@ class ClusterBuilder {
         permissionsToCreate: Set<Pair<String, String>>,
         roleIds: Set<String>
     ): String {
-        val body1 = mutableListOf<String>().apply {
-            permissionsToCreate.forEach {
-                add(createPermissionBody(it.second, it.first, null, null))
-            }
-        }
+
+        val body1 = permissionsToCreate.map { createPermissionBody(it.second, it.first, null, null) }
+        
         val bodyStr1 = if (body1.isEmpty()) {
             ""
         } else {
             body1.joinToString(prefix = """"permissionsToCreate": [""", postfix = "]")
         }
-        val body2 = mutableListOf<String>().apply {
-            roleIds.forEach {
-                add(""""$it"""")
-            }
-        }
+
+        val body2 = roleIds.map { """"$it"""" }
         val bodyStr2 = if (body2.isEmpty()) {
             ""
         } else {
