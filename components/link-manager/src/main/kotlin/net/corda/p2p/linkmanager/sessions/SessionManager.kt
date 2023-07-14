@@ -15,6 +15,7 @@ internal interface SessionManager : LifecycleWithDominoTile {
     fun processSessionMessage(message: LinkInMessage): LinkOutMessage?
     fun inboundSessionEstablished(sessionId: String)
     fun messageAcknowledged(sessionId: String)
+    fun dataMessageReceived(sessionId: String)
 
     fun recordsForSessionEstablished(
         session: Session,

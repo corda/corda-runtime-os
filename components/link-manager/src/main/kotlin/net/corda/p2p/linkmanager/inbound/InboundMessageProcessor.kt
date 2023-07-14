@@ -148,6 +148,7 @@ internal class InboundMessageProcessor(
                             message
                         )
                     )
+                    sessionManager.dataMessageReceived(sessionId)
                 }
             }
             is SessionManager.SessionDirection.Outbound -> {
