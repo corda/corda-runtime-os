@@ -156,18 +156,18 @@ internal class VirtualNodeDbFactoryImpl(
             val user = createUsername(dbPrivilege, holdingIdentityShortHash)
             val password = generatePassword()
 
+            // Add reWriteBatchedInserts JDBC parameter for uniqueness db to enable Hibernate batching
+            var jdbcUrl = virtualNodesDbAdmin.createJdbcUrl(getSchemaName(holdingIdentityShortHash))
+            if (dbType == UNIQUENESS && jdbcUrl.startsWith("jdbc:postgresql")) {
+                jdbcUrl += "&reWriteBatchedInserts=true"
+            }
+
             val virtualNodePoolConfig = smartConfigFactory.create(
                 when (dbPrivilege) {
                     DDL -> virtualNodesDdlPoolConfig
                     DML -> virtualNodesDmlPoolConfig
                 }
             )
-
-            // Add reWriteBatchedInserts JDBC parameter for uniqueness db to enable Hibernate batching
-            var jdbcUrl = virtualNodesDbAdmin.createJdbcUrl(getSchemaName(holdingIdentityShortHash))
-            if (dbType == UNIQUENESS && jdbcUrl.startsWith("jdbc:postgresql")) {
-                jdbcUrl += "&reWriteBatchedInserts=true"
-            }
 
             // TODO support for CharArray passwords in SmartConfig
             val config = createVirtualNodeDbConfig(
