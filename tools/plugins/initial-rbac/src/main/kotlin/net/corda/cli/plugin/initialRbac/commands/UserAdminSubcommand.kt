@@ -1,5 +1,6 @@
 package net.corda.cli.plugin.initialRbac.commands
 
+import net.corda.cli.plugin.initialRbac.commands.RestApiVersionUtils.VERSION_PATH_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.checkOrCreateRole
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.rbac.schema.RbacKeys.USER_URL_REGEX
@@ -22,24 +23,24 @@ class UserAdminSubcommand : RestCommand(), Callable<Int> {
 
     private val permissionsToCreate: Map<String, String> = listOf(
         // User manipulation permissions
-        "CreateUsers" to "POST:/api/v1/user",
-        "GetUsers" to "GET:/api/v1/user\\?loginName=$USER_URL_REGEX",
-        "AddRoleToUser" to "PUT:/api/v1/user/$USER_URL_REGEX/role/$UUID_REGEX",
-        "DeleteRoleFromUser" to "DELETE:/api/v1/user/$USER_URL_REGEX/role/$UUID_REGEX",
-        "GetPermissionsSummary" to "GET:/api/v1/user/$USER_URL_REGEX/permissionSummary",
+        "CreateUsers" to "POST:/api/$VERSION_PATH_REGEX/user",
+        "GetUsers" to "GET:/api/$VERSION_PATH_REGEX/user\\?loginName=$USER_URL_REGEX",
+        "AddRoleToUser" to "PUT:/api/$VERSION_PATH_REGEX/user/$USER_URL_REGEX/role/$UUID_REGEX",
+        "DeleteRoleFromUser" to "DELETE:/api/$VERSION_PATH_REGEX/user/$USER_URL_REGEX/role/$UUID_REGEX",
+        "GetPermissionsSummary" to "GET:/api/$VERSION_PATH_REGEX/user/$USER_URL_REGEX/permissionSummary",
 
         // Permission manipulation permissions ;-)
-        "CreatePermission" to "POST:/api/v1/permission",
-        "BulkCreatePermissions" to "POST:/api/v1/permission/bulk",
-        "QueryPermissions" to "GET:/api/v1/permission\\?.*",
-        "GetPermission" to "GET:/api/v1/permission/$UUID_REGEX",
+        "CreatePermission" to "POST:/api/$VERSION_PATH_REGEX/permission",
+        "BulkCreatePermissions" to "POST:/api/$VERSION_PATH_REGEX/permission/bulk",
+        "QueryPermissions" to "GET:/api/$VERSION_PATH_REGEX/permission\\?.*",
+        "GetPermission" to "GET:/api/$VERSION_PATH_REGEX/permission/$UUID_REGEX",
 
         // Role manipulation permissions
-        "GetRoles" to "GET:/api/v1/role",
-        "CreateRole" to "POST:/api/v1/role",
-        "GetRole" to "GET:/api/v1/role/$UUID_REGEX",
-        "AddPermissionToRole" to "PUT:/api/v1/role/$UUID_REGEX/permission/$UUID_REGEX",
-        "DeletePermissionFromRole" to "DELETE:/api/v1/role/$UUID_REGEX/permission/$UUID_REGEX"
+        "GetRoles" to "GET:/api/$VERSION_PATH_REGEX/role",
+        "CreateRole" to "POST:/api/$VERSION_PATH_REGEX/role",
+        "GetRole" to "GET:/api/$VERSION_PATH_REGEX/role/$UUID_REGEX",
+        "AddPermissionToRole" to "PUT:/api/$VERSION_PATH_REGEX/role/$UUID_REGEX/permission/$UUID_REGEX",
+        "DeletePermissionFromRole" to "DELETE:/api/$VERSION_PATH_REGEX/role/$UUID_REGEX/permission/$UUID_REGEX"
     ).toMap()
 
     override fun call(): Int {
