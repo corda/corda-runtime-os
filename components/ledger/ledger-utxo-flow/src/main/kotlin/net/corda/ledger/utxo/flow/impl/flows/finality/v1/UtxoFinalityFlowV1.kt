@@ -74,7 +74,9 @@ class UtxoFinalityFlowV1(
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
         persistTransactionWithCounterpartySignatures(transaction)
 
-        sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions, shouldSendAdditionalSignatures)
+        if (shouldSendAdditionalSignatures) {
+            sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
+        }
 
         val (notarizedTransaction, notarySignatures) = notarize(transaction)
         persistNotarizedTransaction(notarizedTransaction)
@@ -193,11 +195,7 @@ class UtxoFinalityFlowV1(
     private fun sendUnseenSignaturesToCounterparties(
         transaction: UtxoSignedTransactionInternal,
         signaturesReceivedFromSessions: Map<FlowSession, List<DigitalSignatureAndMetadata>>,
-        shouldSendAdditionalSignatures: Boolean
     ) {
-        if (!shouldSendAdditionalSignatures) {
-            return
-        }
         val notSeenSignaturesBySessions = signaturesReceivedFromSessions.map { (session, signatures) ->
             session to transaction.signatures.filter {
                 it !in initialTransaction.signatures &&             // These have already been distributed with the first go
