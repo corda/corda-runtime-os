@@ -1,5 +1,6 @@
 package net.corda.e2etest.utilities
 
+import net.corda.rest.annotations.RestApiVersion
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.InputStream
@@ -15,6 +16,11 @@ import java.time.Instant
  */
 @Suppress("TooManyFunctions")
 class ClusterBuilder {
+    
+    private companion object {
+        val REST_API_VERSION_PATH = RestApiVersion.C5_1.versionPath
+    }
+    
     private var client: HttpsClient? = null
 
     private fun endpoint(uri: URI, username: String, password: String) {
@@ -82,16 +88,16 @@ class ClusterBuilder {
             ?: throw FileNotFoundException("No such resource: '$resourceName'")
 
     fun importCertificate(resourceName: String, usage: String, alias: String) =
-        uploadCertificateResource("/api/v1/certificates/cluster/$usage", resourceName, alias)
+        uploadCertificateResource("/api/$REST_API_VERSION_PATH/certificates/cluster/$usage", resourceName, alias)
 
     fun importCertificate(file: File, usage: String, alias: String) =
-        uploadCertificateFile("/api/v1/certificates/cluster/$usage", file, alias)
+        uploadCertificateFile("/api/$REST_API_VERSION_PATH/certificates/cluster/$usage", file, alias)
 
     fun getCertificateChain(usage: String, alias: String) =
-        client!!.get("/api/v1/certificates/cluster/$usage/$alias")
+        client!!.get("/api/$REST_API_VERSION_PATH/certificates/cluster/$usage/$alias")
 
     /** Assumes the resource *is* a CPB */
-    fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/v1/cpi/", resourceName)
+    fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/$REST_API_VERSION_PATH/cpi/", resourceName)
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
     fun cpiUpload(
@@ -112,10 +118,10 @@ class ClusterBuilder {
         groupPolicy: String,
         cpiName: String,
         cpiVersion: String = "1.0.0.0-SNAPSHOT"
-    ) = uploadCpiResource("/api/v1/cpi/", cpbResourceName, groupPolicy, cpiName, cpiVersion)
+    ) = uploadCpiResource("/api/$REST_API_VERSION_PATH/cpi/", cpbResourceName, groupPolicy, cpiName, cpiVersion)
 
     fun updateVirtualNodeState(holdingIdHash: String, newState: String) =
-        put("/api/v1/virtualnode/$holdingIdHash/state/$newState", "")
+        put("/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdHash/state/$newState", "")
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
     fun forceCpiUpload(
@@ -126,7 +132,7 @@ class ClusterBuilder {
         cpiVersion: String = "1.0.0.0-SNAPSHOT"
     ) =
         uploadCpiResource(
-            "/api/v1/maintenance/virtualnode/forcecpiupload/",
+            "/api/$REST_API_VERSION_PATH/maintenance/virtualnode/forcecpiupload/",
             cpbResourceName,
             getDefaultStaticNetworkGroupPolicy(groupId, staticMemberNames),
             cpiName,
@@ -135,13 +141,13 @@ class ClusterBuilder {
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
     fun syncVirtualNode(virtualNodeShortId: String) =
-        post("/api/v1/maintenance/virtualnode/$virtualNodeShortId/vault-schema/force-resync", "")
+        post("/api/$REST_API_VERSION_PATH/maintenance/virtualnode/$virtualNodeShortId/vault-schema/force-resync", "")
 
     /** Return the status for the given request id */
-    fun cpiStatus(id: String) = client!!.get("/api/v1/cpi/status/$id")
+    fun cpiStatus(id: String) = client!!.get("/api/$REST_API_VERSION_PATH/cpi/status/$id")
 
     /** List all CPIs in the system */
-    fun cpiList() = client!!.get("/api/v1/cpi")
+    fun cpiList() = client!!.get("/api/$REST_API_VERSION_PATH/cpi")
 
     private fun vNodeBody(cpiHash: String, x500Name: String) =
         """{ "cpiFileChecksum" : "$cpiHash", "x500Name" : "$x500Name"}"""
@@ -161,16 +167,10 @@ class ClusterBuilder {
             | }""".trimMargin()
 
     private fun createRbacRoleBody(roleName: String, groupVisibility: String?): String {
-        val body = mutableListOf<String>().apply {
+        val body: List<String> = mutableListOf(""""roleName": "$roleName"""").apply {
             groupVisibility?.let { add(""""groupVisibility": "$groupVisibility"""") }
-            add(""""roleName": "$roleName"""")
         }
-        val bodyStr = if (body.isEmpty()) {
-            ""
-        } else {
-            body.joinToString(prefix = "{", postfix = "}")
-        }
-        return bodyStr
+        return body.joinToString(prefix = "{", postfix = "}")
     }
 
     @Suppress("LongParameterList")
@@ -182,20 +182,16 @@ class ClusterBuilder {
         parentGroup: String?,
         passwordExpiry: Instant?
     ): String {
-        val body = mutableListOf<String>().apply {
-            add(""""enabled": "$enabled"""")
-            add(""""fullName": "$fullName"""")
-            add(""""initialPassword": "$password"""")
-            add(""""loginName": "$loginName"""")
+        val body: List<String> = mutableListOf(
+            """"enabled": "$enabled"""",
+            """"fullName": "$fullName"""",
+            """"initialPassword": "$password"""",
+            """"loginName": "$loginName""""
+        ).apply {
             parentGroup?.let { add(""""parentGroup": "$parentGroup"""") }
             passwordExpiry?.let { add(""""passwordExpiry": "$passwordExpiry"""") }
-            }
-            val bodyStr = if (body.isEmpty()) {
-                ""
-            } else {
-                body.joinToString(prefix = "{", postfix = "}")
-            }
-            return bodyStr
+        }
+        return body.joinToString(prefix = "{", postfix = "}")
     }
 
     private fun createPermissionBody(
@@ -204,38 +200,34 @@ class ClusterBuilder {
         groupVisibility: String?,
         virtualNode: String?
     ): String {
-        val body = mutableListOf<String>().apply {
+        val body: List<String> = mutableListOf(
+            """"permissionString": "$permissionString"""",
+            """"permissionType": "$permissionType""""
+        ).apply {
             groupVisibility?.let { add(""""groupVisibility": "$groupVisibility"""") }
-            add(""""permissionString": "$permissionString"""")
-            add(""""permissionType": "$permissionType"""")
             virtualNode?.let { add(""""virtualNode": "$virtualNode"""") }
         }
-        val bodyStr = if (body.isEmpty()) {
-            ""
-        } else {
-            body.joinToString(prefix = "{", postfix = "}")
-        }
-        return bodyStr
+        return body.joinToString(prefix = "{", postfix = "}")
     }
 
     /** Create a virtual node */
     fun vNodeCreate(cpiHash: String, x500Name: String) =
-        post("/api/v1/virtualnode", vNodeBody(cpiHash, x500Name))
+        post("/api/$REST_API_VERSION_PATH/virtualnode", vNodeBody(cpiHash, x500Name))
 
     /** Trigger upgrade of a virtual node's CPI to the given  */
     fun vNodeUpgrade(virtualNodeShortHash: String, targetCpiFileChecksum: String) =
-        put("/api/v1/virtualnode/$virtualNodeShortHash/cpi/$targetCpiFileChecksum", "")
+        put("/api/$REST_API_VERSION_PATH/virtualnode/$virtualNodeShortHash/cpi/$targetCpiFileChecksum", "")
 
     fun getVNodeOperationStatus(requestId: String) =
-        get("/api/v1/virtualnode/status/$requestId")
+        get("/api/$REST_API_VERSION_PATH/virtualnode/status/$requestId")
 
     /** List all virtual nodes */
-    fun vNodeList() = client!!.get("/api/v1/virtualnode")
+    fun vNodeList() = client!!.get("/api/$REST_API_VERSION_PATH/virtualnode")
 
     /** List all virtual nodes */
-    fun getVNode(holdingIdentityShortHash: String) = client!!.get("/api/v1/virtualnode/$holdingIdentityShortHash")
+    fun getVNode(holdingIdentityShortHash: String) = client!!.get("/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdentityShortHash")
 
-    fun getVNodeStatus(requestId: String) = client!!.get("/api/v1/virtualnode/status/$requestId")
+    fun getVNodeStatus(requestId: String) = client!!.get("/api/$REST_API_VERSION_PATH/virtualnode/status/$requestId")
 
     /**
      * Register a member to the network.
@@ -252,24 +244,24 @@ class ClusterBuilder {
 
     fun register(holdingIdShortHash: String, registrationContext: String) =
         post(
-            "/api/v1/membership/$holdingIdShortHash",
+            "/api/$REST_API_VERSION_PATH/membership/$holdingIdShortHash",
             registrationContext
         )
 
     fun getRegistrationStatus(holdingIdShortHash: String) =
-        get("/api/v1/membership/$holdingIdShortHash")
+        get("/api/$REST_API_VERSION_PATH/membership/$holdingIdShortHash")
 
     fun getRegistrationStatus(holdingIdShortHash: String, registrationId: String) =
-        get("/api/v1/membership/$holdingIdShortHash/$registrationId")
+        get("/api/$REST_API_VERSION_PATH/membership/$holdingIdShortHash/$registrationId")
 
     fun addSoftHsmToVNode(holdingIdentityShortHash: String, category: String) =
-        post("/api/v1/hsm/soft/$holdingIdentityShortHash/$category", body = "")
+        post("/api/$REST_API_VERSION_PATH/hsm/soft/$holdingIdentityShortHash/$category", body = "")
 
     fun createKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
-        post("/api/v1/keys/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme", body = "")
+        post("/api/$REST_API_VERSION_PATH/keys/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme", body = "")
 
     fun getKey(tenantId: String, keyId: String) =
-        get("/api/v1/keys/$tenantId/$keyId")
+        get("/api/$REST_API_VERSION_PATH/keys/$tenantId/$keyId")
 
     fun getKey(
         tenantId: String,
@@ -287,34 +279,34 @@ class ClusterBuilder {
         } else {
             queries.joinToString(prefix = "?", separator = "&")
         }
-        return get("/api/v1/keys/$tenantId$queryStr")
+        return get("/api/$REST_API_VERSION_PATH/keys/$tenantId$queryStr")
     }
 
     /** Get status of a flow */
     fun flowStatus(holdingIdentityShortHash: String, clientRequestId: String) =
-        get("/api/v1/flow/$holdingIdentityShortHash/$clientRequestId")
+        get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash/$clientRequestId")
 
     /** Get status of multiple flows */
     fun multipleFlowStatus(holdingIdentityShortHash: String) =
-        get("/api/v1/flow/$holdingIdentityShortHash")
+        get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash")
 
     /** Get result of a flow execution */
     fun flowResult(holdingIdentityShortHash: String, clientRequestId: String) =
-        get("/api/v1/flow/$holdingIdentityShortHash/$clientRequestId/result")
+        get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash/$clientRequestId/result")
 
     /** Get status of multiple flows */
     fun runnableFlowClasses(holdingIdentityShortHash: String) =
-        get("/api/v1/flowclass/$holdingIdentityShortHash")
+        get("/api/$REST_API_VERSION_PATH/flowclass/$holdingIdentityShortHash")
 
     /** Create a new RBAC role */
     fun createRbacRole(roleName: String, groupVisibility: String? = null) =
-        post("/api/v1/role", createRbacRoleBody(roleName, groupVisibility))
+        post("/api/$REST_API_VERSION_PATH/role", createRbacRoleBody(roleName, groupVisibility))
 
     /** Get all RBAC roles */
-    fun getRbacRoles() = get("/api/v1/role")
+    fun getRbacRoles() = get("/api/$REST_API_VERSION_PATH/role")
 
     /** Get a role for a specified ID */
-    fun getRole(roleId: String) = get("/api/v1/role/$roleId")
+    fun getRole(roleId: String) = get("/api/$REST_API_VERSION_PATH/role/$roleId")
 
     /** Create new RBAC user */
     @Suppress("LongParameterList")
@@ -326,21 +318,21 @@ class ClusterBuilder {
         parentGroup: String? = null,
         passwordExpiry: Instant? = null
     ) =
-        post("/api/v1/user",
+        post("/api/$REST_API_VERSION_PATH/user",
             createRbacUserBody(enabled, fullName, password, loginName, parentGroup, passwordExpiry)
         )
 
     /** Get an RBAC user for a specific login name */
     fun getRbacUser(loginName: String) =
-        get("/api/v1/user?loginname=$loginName")
+        get("/api/$REST_API_VERSION_PATH/user/$loginName")
 
     /** Assign a specified role to a specified user */
     fun assignRoleToUser(loginName: String, roleId: String) =
-        put("/api/v1/user/$loginName/role/$roleId", "")
+        put("/api/$REST_API_VERSION_PATH/user/$loginName/role/$roleId", "")
 
     /** Remove the specified role from a specified user */
     fun removeRoleFromUser(loginName: String, roleId: String) =
-        delete("/api/v1/user/$loginName/role/$roleId")
+        delete("/api/$REST_API_VERSION_PATH/user/$loginName/role/$roleId")
 
     /** Create a new permission */
     fun createPermission(
@@ -349,7 +341,7 @@ class ClusterBuilder {
         groupVisibility: String? = null,
         virtualNode: String? = null
     ) =
-        post("/api/v1/permission",
+        post("/api/$REST_API_VERSION_PATH/permission",
             createPermissionBody(permissionString, permissionType, groupVisibility, virtualNode)
         )
 
@@ -359,30 +351,24 @@ class ClusterBuilder {
         permissionType: String,
         permissionStringPrefix: String? = null
     ): SimpleResponse {
-        val queries = mutableListOf<String>().apply {
-            add("limit=$limit")
-            add("permissiontype=$permissionType")
+        val queries: List<String> = mutableListOf("limit=$limit", "permissiontype=$permissionType").apply {
             permissionStringPrefix?.let { add("permissionstringprefix=$permissionStringPrefix") }
         }
-        val queryStr = if (queries.isEmpty()) {
-            ""
-        } else {
-            queries.joinToString(prefix = "?", separator = "&")
-        }
-        return get("/api/v1/permission$queryStr")
+        val queryStr = queries.joinToString(prefix = "?", separator = "&")
+        return get("/api/$REST_API_VERSION_PATH/permission$queryStr")
     }
 
     /** Get the permission associated with a specific ID */
     fun getPermissionById(permissionId: String) =
-        get("/api/v1/permission/$permissionId")
+        get("/api/$REST_API_VERSION_PATH/permission/$permissionId")
 
     /** Add the specified permission to the specified role */
     fun assignPermissionToRole(roleId: String, permissionId: String) =
-        put("/api/v1/role/$roleId/permission/$permissionId", "")
+        put("/api/$REST_API_VERSION_PATH/role/$roleId/permission/$permissionId", "")
 
     /** Remove the specified permission from the specified role */
     fun removePermissionFromRole(roleId: String, permissionId: String) =
-        delete("/api/v1/role/$roleId/permission/$permissionId")
+        delete("/api/$REST_API_VERSION_PATH/role/$roleId/permission/$permissionId")
 
     /** Start a flow */
     fun flowStart(
@@ -392,7 +378,7 @@ class ClusterBuilder {
         requestData: String
     ): SimpleResponse {
         return post(
-            "/api/v1/flow/$holdingIdentityShortHash",
+            "/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash",
             flowStartBody(clientRequestId, flowClassName, requestData)
         )
     }
@@ -403,7 +389,7 @@ class ClusterBuilder {
         """.trimMargin()
 
     /** Get cluster configuration for the specified section */
-    fun getConfig(section: String) = get("/api/v1/config/$section")
+    fun getConfig(section: String) = get("/api/$REST_API_VERSION_PATH/config/$section")
 
     /** Update the cluster configuration for the specified section and versions with unescaped Json */
     fun putConfig(
@@ -425,7 +411,7 @@ class ClusterBuilder {
             }
         """.trimIndent()
 
-        return put("/api/v1/config", payload)
+        return put("/api/$REST_API_VERSION_PATH/config", payload)
     }
 
     fun configureNetworkParticipant(
@@ -433,7 +419,7 @@ class ClusterBuilder {
         sessionKeyId: String
     ) =
         put(
-            "/api/v1/network/setup/$holdingIdentityShortHash",
+            "/api/$REST_API_VERSION_PATH/network/setup/$holdingIdentityShortHash",
             body = """
                 {
                     "p2pTlsCertificateChainAlias": "$CERT_ALIAS_P2P",

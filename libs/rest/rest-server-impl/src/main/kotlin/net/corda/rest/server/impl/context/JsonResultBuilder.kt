@@ -11,6 +11,11 @@ fun Context.buildJsonResult(result: Any?, returnType: Class<*>) {
             // if the responseBody is null, we return null in json
             ctx.json(result.responseBody ?: "null")
                 .status(result.responseCode.statusCode)
+
+            // Add optional headers
+            result.headers.forEach {
+                ctx.header(it.key, it.value)
+            }
         }
         (result as? String) != null ->
             ctx.contentType(ContextUtils.contentTypeApplicationJson).result(result).status(ResponseCode.OK.statusCode)
