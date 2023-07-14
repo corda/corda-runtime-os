@@ -210,6 +210,28 @@ class ClusterBuilder {
         return body.joinToString(prefix = "{", postfix = "}")
     }
 
+    private fun createBulkPermissionsBody(
+        permissionsToCreate: Set<Pair<String, String>>,
+        roleIds: Set<String>
+    ): String {
+
+        val body1 = permissionsToCreate.map { createPermissionBody(it.second, it.first, null, null) }
+        
+        val bodyStr1 = if (body1.isEmpty()) {
+            ""
+        } else {
+            body1.joinToString(prefix = """"permissionsToCreate": [""", postfix = "]")
+        }
+
+        val body2 = roleIds.map { """"$it"""" }
+        val bodyStr2 = if (body2.isEmpty()) {
+            ""
+        } else {
+            body2.joinToString(prefix = """, "roleIds": [""", postfix = "]")
+        }
+        return "{$bodyStr1$bodyStr2}"
+    }
+
     /** Create a virtual node */
     fun vNodeCreate(cpiHash: String, x500Name: String) =
         post("/api/$REST_API_VERSION_PATH/virtualnode", vNodeBody(cpiHash, x500Name))
@@ -334,6 +356,10 @@ class ClusterBuilder {
     fun removeRoleFromUser(loginName: String, roleId: String) =
         delete("/api/$REST_API_VERSION_PATH/user/$loginName/role/$roleId")
 
+    /** Get a summary of the user's permissions */
+    fun getPermissionSummary(loginName: String) =
+        get("/api/$REST_API_VERSION_PATH/user/$loginName/permissionsummary")
+
     /** Create a new permission */
     fun createPermission(
         permissionString: String,
@@ -344,6 +370,13 @@ class ClusterBuilder {
         post("/api/$REST_API_VERSION_PATH/permission",
             createPermissionBody(permissionString, permissionType, groupVisibility, virtualNode)
         )
+
+    /** Create a set of permissions and optionally assigns them to existing roles */
+    fun createBulkPermissions(
+        permissionsToCreate: Set<Pair<String, String>>,
+        roleIds: Set<String>
+    ) =
+        post("/api/$REST_API_VERSION_PATH/permission/bulk", createBulkPermissionsBody(permissionsToCreate, roleIds))
 
     /** Get the permissions which satisfy the query */
     fun getPermissionByQuery(
