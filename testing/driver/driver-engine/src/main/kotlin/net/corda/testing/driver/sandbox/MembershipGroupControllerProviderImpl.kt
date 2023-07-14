@@ -2,7 +2,9 @@ package net.corda.testing.driver.sandbox
 
 import java.nio.ByteBuffer
 import java.security.PublicKey
+import java.util.SortedMap
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentMap
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.CryptoService
@@ -23,6 +25,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_STATIC_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
@@ -38,10 +42,14 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.ledgerKeyHashes
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
+import net.corda.membership.lib.MemberInfoExtension.Companion.sessionKeyHashes
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedGroupParameters
-import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.lib.toSortedMap
+import net.corda.membership.lib.toWire
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.v5.base.types.MemberX500Name
@@ -59,13 +67,13 @@ import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList", "unused")
 @Component(
-    service = [ MembershipGroupReaderProvider::class ],
+    service = [ MembershipGroupControllerProvider::class, MembershipGroupReaderProvider::class ],
     configurationPid = [ CORDA_MEMBERSHIP_PID, CORDA_GROUP_PID ],
     configurationPolicy = REQUIRE,
     property = [ DRIVER_SERVICE ]
 )
 @ServiceRanking(DRIVER_SERVICE_RANKING)
-class MembershipGroupReaderProviderImpl @Activate constructor(
+class MembershipGroupControllerProviderImpl @Activate constructor(
     @Reference
     platformInfo: PlatformInfoProvider,
     @Reference(target = DRIVER_SERVICE_FILTER)
@@ -85,7 +93,7 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     @Reference
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     properties: Map<String, Any?>
-) : MembershipGroupReaderProvider {
+) : MembershipGroupControllerProvider {
     private val logger = LoggerFactory.getLogger(this::class.java)
 
     private val baseMemberContext = sortedMapOf<String, String?>(
@@ -109,7 +117,8 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
         .parseList("corda.notary.service.", NotaryInfo::class.java)
         .associateBy(NotaryInfo::getName)
 
-    private val groupReaders = ConcurrentHashMap<HoldingIdentity, MembershipGroupReader>()
+    private val membershipInfo = ConcurrentHashMap<HoldingIdentity, MemberInfo>()
+    private val groupControllers = ConcurrentHashMap<HoldingIdentity, MembershipGroupController?>()
 
     private fun getSigningSpecFor(publicKey: PublicKey): SigningWrappedSpec {
         val wrappedKey = requireNotNull(privateKeyService.fetchFor(publicKey)) {
@@ -170,27 +179,38 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
         }
     }
 
-    override fun getGroupReader(holdingIdentity: HoldingIdentity): MembershipGroupReader {
-        return groupReaders.computeIfAbsent(holdingIdentity) { hid ->
-            val membershipInfo = membership.mapValues { member ->
+    private fun populateMembershipGroup(groupId: String) {
+       for ((name, publicKey) in membership) {
+            membershipInfo.computeIfAbsent(HoldingIdentity(name, groupId)) { hid ->
                 val memberContext = sortedMapOf<String, String?>().apply {
-                    this[PARTY_NAME] = member.key.toString()
+                    this[PARTY_NAME] = hid.x500Name.toString()
                     this[GROUP_ID] = hid.groupId
-                    this[LEDGER_KEYS_KEY.format(0)] = schemeMetadata.encodeAsString(member.value)
+                    this[LEDGER_KEYS_KEY.format(0)] = schemeMetadata.encodeAsString(publicKey)
                     this += baseMemberContext
 
-                    notaries[member.key]?.also { notary ->
+                    notaries[hid.x500Name]?.also { notary ->
                         this += parseNotaryInfo(notary)
                     }
                 }
                 memberInfoFactory.create(memberContext, mgmContext)
             }
-            MembershipGroupReaderImpl(
-                createSignedGroupParameters(hid),
-                hid,
-                membershipInfo
-            )
         }
+    }
+
+    override fun getGroupReader(holdingIdentity: HoldingIdentity): MembershipGroupController {
+        return groupControllers.computeIfAbsent(holdingIdentity) { hid ->
+            populateMembershipGroup(hid.groupId)
+            if (hid in membershipInfo.keys) {
+                MembershipGroupControllerImpl(
+                    membershipInfo,
+                    memberInfoFactory,
+                    createSignedGroupParameters(hid),
+                    hid
+                )
+            } else {
+                null
+            }
+        } ?: throw AssertionError("${holdingIdentity.x500Name} does not belong to group ${holdingIdentity.groupId}")
     }
 
     override val isRunning: Boolean
@@ -227,11 +247,12 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
         }
     }
 
-    private class MembershipGroupReaderImpl(
+    private class MembershipGroupControllerImpl(
+        private val membershipInfo: ConcurrentMap<HoldingIdentity, MemberInfo>,
+        private val memberInfoFactory: MemberInfoFactory,
         override val groupParameters: InternalGroupParameters?,
-        holdingIdentity: HoldingIdentity,
-        private val membershipInfo: Map<MemberX500Name, MemberInfo>
-    ) : MembershipGroupReader {
+        holdingIdentity: HoldingIdentity
+    ) : MembershipGroupController {
         override val groupId: String = holdingIdentity.groupId
 
         override val owningMember: MemberX500Name = holdingIdentity.x500Name
@@ -239,27 +260,71 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
         override val signedGroupParameters: SignedGroupParameters?
             get() = groupParameters as? SignedGroupParameters
 
-        override fun lookup(filter: MembershipStatusFilter): Collection<MemberInfo> {
-            return membershipInfo.values
-        }
+        private val groupMembershipInfo: Map<HoldingIdentity, MemberInfo>
+            get() = membershipInfo.filterKeys { it.groupId == groupId }
 
-        override fun lookupByLedgerKey(ledgerKeyHash: SecureHash, filter: MembershipStatusFilter): MemberInfo? {
-            return null
+        override fun lookup(filter: MembershipStatusFilter): Collection<MemberInfo> {
+            return groupMembershipInfo.values.filterBy(filter)
         }
 
         override fun lookup(name: MemberX500Name, filter: MembershipStatusFilter): MemberInfo? {
-            return membershipInfo[name]
+            return membershipInfo[HoldingIdentity(name, groupId)]?.takeIf { it.filterBy(filter) }
+        }
+
+        override fun lookupByLedgerKey(ledgerKeyHash: SecureHash, filter: MembershipStatusFilter): MemberInfo? {
+            return lookup(filter).singleOrNull { ledgerKeyHash in it.ledgerKeyHashes }
         }
 
         override fun lookupBySessionKey(sessionKeyHash: SecureHash, filter: MembershipStatusFilter): MemberInfo? {
-            return null
+            return lookup(filter).singleOrNull { sessionKeyHash in it.sessionKeyHashes }
         }
 
         override val notaryVirtualNodeLookup: NotaryVirtualNodeLookup = NotaryVirtualNodeLookupImpl()
 
+        override val membership: Set<MemberInfo>
+            get() = java.util.Set.copyOf(groupMembershipInfo.values)
+
+        override fun updateMembership(memberInfo: MemberInfo, mgmContext: SortedMap<String, String?>) {
+            membershipInfo[HoldingIdentity(memberInfo.name, groupId)] =
+                memberInfoFactory.create(memberInfo.memberProvidedContext.toWire().toSortedMap(), mgmContext)
+        }
+
+        private fun MemberInfo.filterBy(filter: MembershipStatusFilter): Boolean {
+            return when(status) {
+                MEMBER_STATUS_ACTIVE ->
+                    filter != MembershipStatusFilter.PENDING
+
+                MEMBER_STATUS_PENDING ->
+                    filter != MembershipStatusFilter.ACTIVE && filter != MembershipStatusFilter.ACTIVE_OR_SUSPENDED
+
+                MEMBER_STATUS_SUSPENDED ->
+                    filter == MembershipStatusFilter.ACTIVE_OR_SUSPENDED
+                        || filter == MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING
+
+                else -> false
+            }
+        }
+
+        private fun Collection<MemberInfo>.filterBy(filter: MembershipStatusFilter): Collection<MemberInfo> {
+            val candidates = filterTo(mutableListOf()) { it.filterBy(filter) }
+            val pending = candidates.extractAllTo(mutableListOf()) { it.status == MEMBER_STATUS_PENDING }
+            return when(filter) {
+                MembershipStatusFilter.ACTIVE,
+                MembershipStatusFilter.ACTIVE_OR_SUSPENDED ->
+                    candidates
+
+                MembershipStatusFilter.PENDING ->
+                    pending
+
+                MembershipStatusFilter.ACTIVE_IF_PRESENT_OR_PENDING,
+                MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING ->
+                    candidates.ifEmpty { pending }
+            }
+        }
+
         private inner class NotaryVirtualNodeLookupImpl: NotaryVirtualNodeLookup {
             override fun getNotaryVirtualNodes(notaryServiceName: MemberX500Name): List<MemberInfo> {
-                return lookup().filter { memberInfo ->
+                return lookup(MembershipStatusFilter.ACTIVE).filter { memberInfo ->
                     memberInfo.notaryDetails?.serviceName == notaryServiceName
                 }.sortedBy(MemberInfo::getName)
             }

@@ -21,9 +21,12 @@ import net.corda.libs.packaging.PackagingConstants.CPB_FORMAT_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPB_NAME_ATTRIBUTE
 import net.corda.libs.packaging.PackagingConstants.CPK_FORMAT_ATTRIBUTE
 import net.corda.testing.driver.Framework
+import net.corda.testing.driver.MembershipGroupDSL
 import net.corda.testing.driver.Service
+import net.corda.testing.driver.function.ThrowingConsumer
 import net.corda.testing.driver.function.ThrowingSupplier
 import net.corda.testing.driver.node.EmbeddedNodeService
+import net.corda.testing.driver.node.Member
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -313,7 +316,7 @@ internal class DriverDSLImpl(
                 }
             }
 
-            return vNodes
+            return java.util.List.copyOf(vNodes)
         }
     }
 
@@ -373,6 +376,14 @@ internal class DriverDSLImpl(
         flowArgMapper: ThrowingSupplier<String>
     ): String? {
         return FlowRunner(this).runFlow(virtualNodeInfo, flowClass, flowArgMapper, TIMEOUT)
+    }
+
+    override fun member(virtualNodeInfo: VirtualNodeInfo, action: ThrowingConsumer<Member>) {
+        MembershipGroupManager(this).forVirtualNode(virtualNodeInfo.holdingIdentity, TIMEOUT, action)
+    }
+
+    override fun groupOf(virtualNodeInfo: VirtualNodeInfo, action: ThrowingConsumer<MembershipGroupDSL>) {
+        MembershipGroupManager(this).forMembershipGroup(virtualNodeInfo.holdingIdentity, TIMEOUT, action)
     }
 
     @Throws(InterruptedException::class)
