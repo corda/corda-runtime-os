@@ -11,12 +11,12 @@ data class FinalityPayload @ConstructorForDeserialization constructor(val map: M
         const val INITIAL_TRANSACTION = "INITIAL_TRANSACTION"
         const val TRANSFER_ADDITIONAL_SIGNATURES = "TRANSFER_ADDITIONAL_SIGNATURES"
     }
-    constructor(initialTransaction: UtxoSignedTransaction, waitForAdditionalSignatures: Boolean) : this(
+    constructor(initialTransaction: UtxoSignedTransaction, transferAdditionalSignatures: Boolean) : this(
         mapOf(
             INITIAL_TRANSACTION to initialTransaction,
-            TRANSFER_ADDITIONAL_SIGNATURES to waitForAdditionalSignatures
+            TRANSFER_ADDITIONAL_SIGNATURES to transferAdditionalSignatures
         )
     )
     val initialTransaction get() = map[INITIAL_TRANSACTION] as UtxoSignedTransactionInternal
-    val waitForAdditionalSignatures get() = map[TRANSFER_ADDITIONAL_SIGNATURES] as Boolean
+    val transferAdditionalSignatures get() = map[TRANSFER_ADDITIONAL_SIGNATURES] as Boolean
 }

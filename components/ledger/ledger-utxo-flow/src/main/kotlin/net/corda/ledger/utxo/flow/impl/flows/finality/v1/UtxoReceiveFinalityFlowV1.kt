@@ -51,7 +51,7 @@ class UtxoReceiveFinalityFlowV1(
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
-        val (initialTransaction, shouldWaitForAdditionalSignatures) = receiveTransactionAndBackchain()
+        val (initialTransaction, transferAdditionalSignatures) = receiveTransactionAndBackchain()
         val transactionId = initialTransaction.id
         addTransactionIdToFlowContext(flowEngine, transactionId)
         verifyExistingSignatures(initialTransaction, session)
@@ -77,7 +77,7 @@ class UtxoReceiveFinalityFlowV1(
             throw CordaRuntimeException(payload.message)
         }
 
-        transaction = receiveAndPersistSignaturesOrSkip(transaction, shouldWaitForAdditionalSignatures)
+        transaction = receiveAndPersistSignaturesOrSkip(transaction, transferAdditionalSignatures)
         transaction = receiveNotarySignaturesAndAddToTransaction(transaction)
         persistNotarizedTransaction(transaction)
         return transaction
@@ -86,9 +86,9 @@ class UtxoReceiveFinalityFlowV1(
     @Suspendable
     private fun receiveAndPersistSignaturesOrSkip(
         transaction: UtxoSignedTransactionInternal,
-        shouldWaitForAdditionalSignatures: Boolean
+        transferAdditionalSignatures: Boolean
     ): UtxoSignedTransactionInternal {
-        return if (shouldWaitForAdditionalSignatures) {
+        return if (transferAdditionalSignatures) {
             receiveSignaturesAndAddToTransaction(transaction).also {
                 verifyAllReceivedSignatures(it)
                 persistenceService.persist(it, TransactionStatus.UNVERIFIED)
@@ -101,11 +101,11 @@ class UtxoReceiveFinalityFlowV1(
 
     @Suspendable
     private fun receiveTransactionAndBackchain(): Pair<UtxoSignedTransactionInternal, Boolean> {
-        val (initialTransaction, shouldWaitForAdditionalSignatures) = if (version == UtxoFinalityVersion.V1) {
+        val (initialTransaction, transferAdditionalSignatures) = if (version == UtxoFinalityVersion.V1) {
             session.receive(UtxoSignedTransactionInternal::class.java) to true
         } else {
             val payload = session.receive(FinalityPayload::class.java)
-            payload.initialTransaction to payload.waitForAdditionalSignatures
+            payload.initialTransaction to payload.transferAdditionalSignatures
         }
 
         if (log.isDebugEnabled) {
@@ -121,7 +121,7 @@ class UtxoReceiveFinalityFlowV1(
                 "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
             }
         }
-        return Pair(initialTransaction, shouldWaitForAdditionalSignatures)
+        return Pair(initialTransaction, transferAdditionalSignatures)
     }
 
     @Suspendable

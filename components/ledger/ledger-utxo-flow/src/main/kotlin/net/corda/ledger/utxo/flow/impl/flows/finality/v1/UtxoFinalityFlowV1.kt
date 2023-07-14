@@ -59,7 +59,7 @@ class UtxoFinalityFlowV1(
         * it should wait for additional signatures.
         * Otherwise, it can be skipped since there isn't unseen signatures
         */
-        val shouldSendAdditionalSignatures = version == UtxoFinalityVersion.V1 || sessions.size > 1
+        val transferAdditionalSignatures = version == UtxoFinalityVersion.V1 || sessions.size > 1
 
         addTransactionIdToFlowContext(flowEngine, transactionId)
         log.trace("Starting finality flow for transaction: {}", transactionId)
@@ -69,12 +69,12 @@ class UtxoFinalityFlowV1(
         // Initial verifications passed, the transaction can be saved in the database.
         persistUnverifiedTransaction()
 
-        sendTransactionAndBackchainToCounterparties(shouldSendAdditionalSignatures)
+        sendTransactionAndBackchainToCounterparties(transferAdditionalSignatures)
         val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction()
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
         persistTransactionWithCounterpartySignatures(transaction)
 
-        if (shouldSendAdditionalSignatures) {
+        if (transferAdditionalSignatures) {
             sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
         }
 
@@ -92,13 +92,13 @@ class UtxoFinalityFlowV1(
     }
 
     @Suspendable
-    private fun sendTransactionAndBackchainToCounterparties(shouldSendAdditionalSignatures: Boolean) {
+    private fun sendTransactionAndBackchainToCounterparties(transferAdditionalSignatures: Boolean) {
         if (version == UtxoFinalityVersion.V1) {
             flowMessaging.sendAll(
                 initialTransaction, sessions.toSet()
             )
         } else {
-            flowMessaging.sendAll(FinalityPayload(initialTransaction, shouldSendAdditionalSignatures), sessions.toSet())
+            flowMessaging.sendAll(FinalityPayload(initialTransaction, transferAdditionalSignatures), sessions.toSet())
         }
 
         sessions.forEach {
