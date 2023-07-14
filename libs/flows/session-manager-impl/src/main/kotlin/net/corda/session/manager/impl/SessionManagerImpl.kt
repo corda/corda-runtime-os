@@ -64,6 +64,7 @@ class SessionManagerImpl @Activate constructor(
         return sessionEventProcessorFactory.createEventToSendProcessor(key, event, sessionState, instant, maxMsgSize).execute()
     }
 
+    // @SESSION: This retrieves the next event to deliver to the flow
     override fun getNextReceivedEvent(sessionState: SessionState): SessionEvent? {
         val receivedEvents = sessionState.receivedEventsState ?: return null
         val undeliveredMessages = receivedEvents.undeliveredMessages

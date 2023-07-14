@@ -59,6 +59,7 @@ class SessionEventHandler @Activate constructor(
 
         val now = Instant.now()
         val sessionId = sessionEvent.sessionId
+        // @SESSION: This is where we receive a session event and start processing it.
         val updatedSessionState = sessionManager.processMessageReceived(
             sessionId,
             if (checkpoint.doesExist) checkpoint.getSessionState(sessionId) else null,
@@ -70,6 +71,7 @@ class SessionEventHandler @Activate constructor(
         val nextSessionEvent = sessionManager.getNextReceivedEvent(updatedSessionState)
         val nextSessionPayload = nextSessionEvent?.payload
 
+        // @SESSION: This block is about creating a new flow if the received session message is a session init.
         if (!checkpoint.doesExist) {
             if (nextSessionPayload is SessionInit) {
                 createInitiatedFlowCheckpoint(context, nextSessionPayload, nextSessionEvent, updatedSessionState)
