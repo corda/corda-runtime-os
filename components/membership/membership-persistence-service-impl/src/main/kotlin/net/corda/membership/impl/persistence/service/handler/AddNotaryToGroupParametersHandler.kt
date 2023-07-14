@@ -20,7 +20,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
-import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
 
@@ -47,14 +46,6 @@ internal class AddNotaryToGroupParametersHandler(
     }
 
     private val notaryUpdater = GroupParametersNotaryUpdater(keyEncodingService, clock)
-
-    private fun serializeProperties(context: KeyValuePairList): ByteArray {
-        return wrapWithNullErrorHandling(onErrorOrNull = {
-            MembershipPersistenceException("Failed to serialize key value pair list.", it)
-        }) {
-            keyValuePairListSerializer.serialize(context)
-        }
-    }
 
     private fun getLatestMemberList(entityManager: EntityManager, notary: MemberInfo): Collection<MemberInfo> {
         val criteriaBuilder = entityManager.criteriaBuilder
@@ -155,7 +146,7 @@ internal class AddNotaryToGroupParametersHandler(
         // distributed.
         return GroupParametersEntity(
             epoch = epoch!!,
-            parameters = serializeProperties(groupParameters!!),
+            parameters = keyValuePairListSerializer.serializeKeyValuePairList(groupParameters!!),
             signaturePublicKey = null,
             signatureContent = null,
             signatureSpec = null
