@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality
 
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.v5.base.annotations.ConstructorForDeserialization
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -8,14 +9,14 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 data class FinalityPayload @ConstructorForDeserialization constructor(val map: Map<String, Any?>) {
     private companion object {
         const val INITIAL_TRANSACTION = "INITIAL_TRANSACTION"
-        const val WAIT_FOR_ADDITIONAL_SIGNATURES = "WAIT_FOR_ADDITIONAL_SIGNATURES"
+        const val TRANSFER_ADDITIONAL_SIGNATURES = "TRANSFER_ADDITIONAL_SIGNATURES"
     }
     constructor(initialTransaction: UtxoSignedTransaction, waitForAdditionalSignatures: Boolean) : this(
         mapOf(
             INITIAL_TRANSACTION to initialTransaction,
-            WAIT_FOR_ADDITIONAL_SIGNATURES to waitForAdditionalSignatures
+            TRANSFER_ADDITIONAL_SIGNATURES to waitForAdditionalSignatures
         )
     )
-    val initialTransaction get() = map[INITIAL_TRANSACTION]
-    val waitForAdditionalSignatures get() = map[WAIT_FOR_ADDITIONAL_SIGNATURES]
+    val initialTransaction get() = map[INITIAL_TRANSACTION] as UtxoSignedTransactionInternal
+    val waitForAdditionalSignatures get() = map[TRANSFER_ADDITIONAL_SIGNATURES] as Boolean
 }

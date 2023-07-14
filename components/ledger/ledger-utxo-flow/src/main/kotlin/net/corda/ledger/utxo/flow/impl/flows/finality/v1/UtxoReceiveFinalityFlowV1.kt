@@ -88,16 +88,15 @@ class UtxoReceiveFinalityFlowV1(
         transaction: UtxoSignedTransactionInternal,
         shouldWaitForAdditionalSignatures: Boolean
     ): UtxoSignedTransactionInternal {
-        var verifiedTransaction = transaction
-        if (shouldWaitForAdditionalSignatures) {
-            verifiedTransaction = receiveSignaturesAndAddToTransaction(verifiedTransaction)
-            verifyAllReceivedSignatures(verifiedTransaction)
-            persistenceService.persist(verifiedTransaction, TransactionStatus.UNVERIFIED)
+        return if (shouldWaitForAdditionalSignatures) {
+            receiveSignaturesAndAddToTransaction(transaction).also {
+                verifyAllReceivedSignatures(it)
+                persistenceService.persist(it, TransactionStatus.UNVERIFIED)
+            }
         } else {
-            verifyAllReceivedSignatures(verifiedTransaction)
+            verifyAllReceivedSignatures(transaction)
+            transaction
         }
-
-        return verifiedTransaction
     }
 
     @Suspendable
@@ -106,7 +105,7 @@ class UtxoReceiveFinalityFlowV1(
             session.receive(UtxoSignedTransactionInternal::class.java) to true
         } else {
             val payload = session.receive(FinalityPayload::class.java)
-            payload.initialTransaction as UtxoSignedTransactionInternal to payload.waitForAdditionalSignatures as Boolean
+            payload.initialTransaction to payload.waitForAdditionalSignatures
         }
 
         if (log.isDebugEnabled) {
