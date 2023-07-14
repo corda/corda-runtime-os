@@ -28,7 +28,7 @@ import java.time.Instant
 internal class DBCordaConsumerImplTest {
 
     companion object {
-        private const val topic = "topic"
+        private const val defaultTopic = "topic"
         private val defaultConfig = ResolvedConsumerConfig(
             "group",
             "client",
@@ -46,9 +46,9 @@ internal class DBCordaConsumerImplTest {
         // Null inputs to deserializer are converted to "" by the @NotNull decorator
         private val nullValue = "".toByteArray()
 
-        private val partition0 = CordaTopicPartition(topic, 0)
-        private val partition1 = CordaTopicPartition(topic, 1)
-        private val partition2 = CordaTopicPartition(topic, 2)
+        private val partition0 = CordaTopicPartition(defaultTopic, 0)
+        private val partition1 = CordaTopicPartition(defaultTopic, 1)
+        private val partition2 = CordaTopicPartition(defaultTopic, 2)
     }
 
     @Mock
@@ -75,6 +75,32 @@ internal class DBCordaConsumerImplTest {
         )
     }
 
+    private fun getTopicRecords(
+        topic: String = defaultTopic,
+        partition: CordaTopicPartition = partition0,
+        startOffset: Long = 0L,
+        key: ByteArray = serializedKey,
+        value: ByteArray? = serializedValue,
+        header: String = serializedHeader,
+        txState: TransactionState = TransactionState.COMMITTED,
+        count: Int = 1): List<TopicRecordEntry>
+    {
+        val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
+
+        return (0 until count).mapIndexed { index, _ ->
+            TopicRecordEntry(
+                topic,
+                partition.partition,
+                startOffset + index,
+                key,
+                value,
+                header,
+                TransactionRecordEntry("id", txState),
+                timestamp
+            )
+        }
+    }
+
     @Test
     fun `consumer correctly assigns topic partitions`() {
         val consumer = makeConsumer()
@@ -92,7 +118,7 @@ internal class DBCordaConsumerImplTest {
         consumer.assign(topicPartitions)
 
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            consumer.subscribe(topic, null)
+            consumer.subscribe(defaultTopic, null)
         }
     }
 
@@ -101,7 +127,7 @@ internal class DBCordaConsumerImplTest {
         val consumer = makeConsumer()
         val topicPartitions = setOf(partition0, partition1, partition2)
 
-        consumer.subscribe(topic, null)
+        consumer.subscribe(defaultTopic, null)
 
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
             consumer.assign(topicPartitions)
@@ -112,20 +138,10 @@ internal class DBCordaConsumerImplTest {
     fun `consumer poll returns the correct record`() {
         val fromOffset = ArgumentCaptor.forClass(Long::class.java)
         val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
-        val pollResult = listOf(
-            TopicRecordEntry(
-                topic,
-                0,
-                0,
-                serializedKey,
-                serializedValue,
-                serializedHeader,
-                TransactionRecordEntry("id", TransactionState.COMMITTED),
-                timestamp
-            )
-        )
+        val pollResult = getTopicRecords(partition = partition0, startOffset = 0L)
+
         val expectedRecord = CordaConsumerRecord(
-            topic,
+            defaultTopic,
             0,
             0,
             "key",
@@ -147,137 +163,47 @@ internal class DBCordaConsumerImplTest {
 
     @Test
     fun `consumer poll correctly increases offset for multiple records`() {
+        val pollResult = getTopicRecords(partition = partition0, startOffset = 0, count = 4)
+
         val fromOffset = ArgumentCaptor.forClass(Long::class.java)
-        val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
-        val transactionRecord1 = TransactionRecordEntry("id", TransactionState.COMMITTED)
-
-        val pollResult = listOf(
-            TopicRecordEntry(
-                topic,
-                0,
-                0,
-                serializedKey,
-                serializedValue,
-                serializedHeader,
-                transactionRecord1,
-                timestamp
-            ),
-            TopicRecordEntry(
-                topic,
-                0,
-                2,
-                serializedKey,
-                serializedValue,
-                serializedHeader,
-                transactionRecord1,
-                timestamp
-            ),
-            TopicRecordEntry(
-                topic,
-                0,
-                5,
-                serializedKey,
-                serializedValue,
-                serializedHeader,
-                transactionRecord1,
-                timestamp
-            ),
-            TopicRecordEntry(
-                topic,
-                0,
-                7,
-                serializedKey,
-                serializedValue,
-                serializedHeader,
-                transactionRecord1,
-                timestamp
-            ),
-        )
-
         whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
-        whenever(dbAccess.getLatestRecordOffsets()).thenAnswer { mapOf(partition0 to 7L) }
+        whenever(dbAccess.getLatestRecordOffsets()).thenAnswer { mapOf(partition0 to 4L) }
         whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer { pollResult }
         whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
 
         val consumer = makeConsumer()
         consumer.poll(Duration.ZERO)
-        assertThat(consumer.position(partition0)).isEqualTo(8)
+        assertThat(consumer.position(partition0)).isEqualTo(4)
     }
 
     @Test
     fun `consumer poll correctly increases offset`() {
-        val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
+        val partitions = listOf(partition0, partition1, partition2)
+        val offsets = mutableListOf(0L, 5L, 10L)
 
-        var partition0Offset = 0L
-        var partition1Offset = 5L
-        var partition2Offset = 10L
+        whenever(consumerGroup.getTopicPartitionsFor((any()))).thenAnswer { partitions.toSet() }
 
-        fun nextRecord(partition: CordaTopicPartition, offset: Long) = listOf(
-            TopicRecordEntry(
-                topic,
-                partition.partition,
-                offset,
-                serializedKey,
-                serializedValue,
-                serializedHeader,
-                TransactionRecordEntry("id", TransactionState.COMMITTED),
-                timestamp
-            )
-        )
+        partitions.forEachIndexed { index, partition ->
+            whenever(dbAccess.readRecords(any(), eq(partition), any())).thenAnswer {
+                getTopicRecords(partition = partition, startOffset = offsets[index]).also {
+                    offsets[index] = offsets[index] + 1 // Increase offset on successive calls to dbAccess.readRecords()
+                }
+            }
+        }
 
-        whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0, partition1, partition2) }
-        whenever(dbAccess.readRecords(any(), eq(partition0), any())).thenAnswer {
-            nextRecord(
-                partition0,
-                partition0Offset++
-            )
-        }
-        whenever(dbAccess.readRecords(any(), eq(partition1), any())).thenAnswer {
-            nextRecord(
-                partition1,
-                partition1Offset++
-            )
-        }
-        whenever(dbAccess.readRecords(any(), eq(partition2), any())).thenAnswer {
-            nextRecord(
-                partition2,
-                partition2Offset++
-            )
-        }
-        whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer {
-            mapOf(
-                partition0 to 0L,
-                partition1 to 0L,
-                partition2 to 0L,
-            )
-        }
-        whenever(dbAccess.getLatestRecordOffset(any())).thenAnswer {
-            mapOf(
-                partition0 to partition0Offset,
-                partition1 to partition1Offset,
-                partition2 to partition2Offset,
-            )
-        }
-        whenever(dbAccess.getLatestRecordOffsets()).thenAnswer {
-            mapOf(
-                partition0 to Long.MAX_VALUE,
-                partition1 to Long.MAX_VALUE,
-                partition2 to Long.MAX_VALUE,
-            )
-        }
+        whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer { partitions.zip(offsets).toMap() }
+        whenever(dbAccess.getLatestRecordOffset(any())).thenAnswer { partitions.zip(offsets).toMap() }
+        whenever(dbAccess.getLatestRecordOffsets()).thenAnswer { partitions.associateWith { Long.MAX_VALUE } }
 
         val consumer = makeConsumer()
-        consumer.poll(Duration.ZERO)
-        consumer.poll(Duration.ZERO)
-        consumer.poll(Duration.ZERO)
+
+        repeat(3) { consumer.poll(Duration.ZERO) }
 
         assertThat(consumer.position(partition0)).isEqualTo(1)
         assertThat(consumer.position(partition1)).isEqualTo(6)
         assertThat(consumer.position(partition2)).isEqualTo(11)
 
-        consumer.poll(Duration.ZERO)
-        consumer.poll(Duration.ZERO)
-        consumer.poll(Duration.ZERO)
+        repeat(3) { consumer.poll(Duration.ZERO) }
 
         assertThat(consumer.position(partition0)).isEqualTo(2)
         assertThat(consumer.position(partition1)).isEqualTo(7)
@@ -289,60 +215,68 @@ internal class DBCordaConsumerImplTest {
         val fromOffset = ArgumentCaptor.forClass(Long::class.java)
         val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
 
-        val transactionRecord1 = TransactionRecordEntry("id", TransactionState.COMMITTED)
-        val transactionRecord2 = TransactionRecordEntry("id2", TransactionState.PENDING)
-
-        val pollResult = listOf(
-            TopicRecordEntry(
-                topic,
-                0,
-                0,
-                serializedKey,
-                serializedValue,
-                serializedHeader,
-                transactionRecord1,
-                timestamp
-            ),
-            TopicRecordEntry(
-                topic,
-                0,
-                2,
-                serializedKey,
-                serializedValue,
-                serializedHeader,
-                transactionRecord1,
-                timestamp
-            ),
-            TopicRecordEntry(
-                topic,
-                0,
-                5,
-                serializedKey,
-                serializedValue,
-                serializedHeader,
-                transactionRecord2,
-                timestamp
-            ),
-            TopicRecordEntry(
-                topic,
-                0,
-                7,
-                serializedKey,
-                serializedValue,
-                serializedHeader,
-                transactionRecord2,
-                timestamp
-            ),
+        val committedRecords = getTopicRecords(
+            startOffset = 0,
+            txState = TransactionState.COMMITTED,
+            count = 2
         )
+
+        val pendingRecords = getTopicRecords(
+            startOffset = 2,
+            txState = TransactionState.PENDING,
+            count = 2
+        )
+
         val expectedRecords = listOf(
-            CordaConsumerRecord(topic, 0, 0, "key", "value", timestamp.toEpochMilli()),
-            CordaConsumerRecord(topic, 0, 2, "key", "value", timestamp.toEpochMilli()),
+            CordaConsumerRecord(defaultTopic, 0, 0, "key", "value", timestamp.toEpochMilli()),
+            CordaConsumerRecord(defaultTopic, 0, 1, "key", "value", timestamp.toEpochMilli()),
         )
 
         whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
-        whenever(dbAccess.getLatestRecordOffsets()).thenAnswer { mapOf(partition0 to 7L) }
-        whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer { pollResult }
+        whenever(dbAccess.getLatestRecordOffsets()).thenAnswer { mapOf(partition0 to 3L) }
+        whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer { committedRecords + pendingRecords }
         whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
+
+        val consumer = makeConsumer()
+        val test = consumer.poll(Duration.ZERO)
+        assertThat(test.size).isEqualTo(2)
+        assertThat(test).isEqualTo(expectedRecords)
+    }
+
+    @Test
+    fun `consumer poll does not skip over uncommitted records`() {
+        val fromOffset = ArgumentCaptor.forClass(Long::class.java)
+        val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
+
+        val startCommittedRecords = getTopicRecords(
+            startOffset = 0,
+            txState = TransactionState.COMMITTED,
+            count = 2
+        )
+
+        val pendingRecords = getTopicRecords(
+            startOffset = 2,
+            txState = TransactionState.PENDING,
+            count = 2
+        )
+
+        val finalCommittedRecords = getTopicRecords(
+            startOffset = 4,
+            txState = TransactionState.COMMITTED,
+            count = 2
+        )
+
+        val expectedRecords = listOf(
+            CordaConsumerRecord(defaultTopic, 0, 0, "key", "value", timestamp.toEpochMilli()),
+            CordaConsumerRecord(defaultTopic, 0, 1, "key", "value", timestamp.toEpochMilli()),
+        )
+
+        whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
+        whenever(dbAccess.getLatestRecordOffsets()).thenAnswer { mapOf(partition0 to 3L) }
+        whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
+        whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer {
+            startCommittedRecords + pendingRecords + finalCommittedRecords
+        }
 
         val consumer = makeConsumer()
         val test = consumer.poll(Duration.ZERO)
@@ -355,58 +289,25 @@ internal class DBCordaConsumerImplTest {
         val fromOffset = ArgumentCaptor.forClass(Long::class.java)
         val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
 
-        val transactionRecord1 = TransactionRecordEntry("id", TransactionState.COMMITTED)
-
-        val pollResult = listOf(
-            TopicRecordEntry(
-                topic,
-                0,
-                0,
-                serializedKey,
-                serializedValue,
-                serializedHeader,
-                transactionRecord1,
-                timestamp)
-            ,
-            TopicRecordEntry(
-                topic,
-                0,
-                2,
-                serializedKey,
-                serializedValue,
-                serializedHeader,
-                transactionRecord1,
-                timestamp
-            ),
-            TopicRecordEntry(
-                topic,
-                0,
-                5,
-                serializedKey,
-                invalidSerializedValue,
-                serializedHeader,
-                transactionRecord1,
-                timestamp
-            ),
-            TopicRecordEntry(
-                topic,
-                0,
-                7,
-                serializedKey,
-                invalidSerializedValue,
-                serializedHeader,
-                transactionRecord1,
-                timestamp
-            ),
+        val validRecords = getTopicRecords(
+            startOffset = 0,
+            count = 2
         )
+
+        val invalidRecords = getTopicRecords(
+            startOffset = 2,
+            value = invalidSerializedValue,
+            count = 2
+        )
+
         val expectedRecords = listOf(
-            CordaConsumerRecord(topic, 0, 0, "key", "value", timestamp.toEpochMilli()),
-            CordaConsumerRecord(topic, 0, 2, "key", "value", timestamp.toEpochMilli()),
+            CordaConsumerRecord(defaultTopic, 0, 0, "key", "value", timestamp.toEpochMilli()),
+            CordaConsumerRecord(defaultTopic, 0, 1, "key", "value", timestamp.toEpochMilli()),
         )
 
         whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
-        whenever(dbAccess.getLatestRecordOffsets()).thenAnswer { mapOf(partition0 to 7L) }
-        whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer { pollResult }
+        whenever(dbAccess.getLatestRecordOffsets()).thenAnswer { mapOf(partition0 to 3L) }
+        whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer { validRecords + invalidRecords }
         whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
 
         val consumer = makeConsumer()
@@ -420,60 +321,19 @@ internal class DBCordaConsumerImplTest {
         val fromOffset = ArgumentCaptor.forClass(Long::class.java)
         val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
 
-        val transactionRecord1 = TransactionRecordEntry("id", TransactionState.COMMITTED)
+        val validRecords = getTopicRecords(startOffset = 0, count = 2)
+        val nullRecords = getTopicRecords(startOffset = 2, value = null, count = 2)
 
-        val pollResult = listOf(
-            TopicRecordEntry(
-                topic,
-                0,
-                0,
-                serializedKey,
-                serializedValue,
-                serializedHeader,
-                transactionRecord1,
-                timestamp
-            ),
-            TopicRecordEntry(
-                topic,
-                0,
-                2,
-                serializedKey,
-                serializedValue,
-                serializedHeader,
-                transactionRecord1,
-                timestamp
-            ),
-            TopicRecordEntry(
-                topic,
-                0,
-                5,
-                serializedKey,
-                value=null,
-                serializedHeader,
-                transactionRecord1,
-                timestamp
-            ),
-            TopicRecordEntry(
-                topic,
-                0,
-                7,
-                serializedKey,
-                value=null,
-                serializedHeader,
-                transactionRecord1,
-                timestamp
-            ),
-        )
         val expectedRecords = listOf(
-            CordaConsumerRecord(topic, 0, 0, "key", "value", timestamp.toEpochMilli()),
-            CordaConsumerRecord(topic, 0, 2, "key", "value", timestamp.toEpochMilli()),
-            CordaConsumerRecord(topic, 0, 5, "key", value=null, timestamp.toEpochMilli()),
-            CordaConsumerRecord(topic, 0, 7, "key", value=null, timestamp.toEpochMilli()),
+            CordaConsumerRecord(defaultTopic, 0, 0, "key", "value", timestamp.toEpochMilli()),
+            CordaConsumerRecord(defaultTopic, 0, 1, "key", "value", timestamp.toEpochMilli()),
+            CordaConsumerRecord(defaultTopic, 0, 2, "key", value=null, timestamp.toEpochMilli()),
+            CordaConsumerRecord(defaultTopic, 0, 3, "key", value=null, timestamp.toEpochMilli()),
         )
 
         whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
-        whenever(dbAccess.getLatestRecordOffsets()).thenAnswer { mapOf(partition0 to 7L) }
-        whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer { pollResult }
+        whenever(dbAccess.getLatestRecordOffsets()).thenAnswer { mapOf(partition0 to 3L) }
+        whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer { validRecords + nullRecords }
         whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
 
         val consumer = makeConsumer()
@@ -528,18 +388,7 @@ internal class DBCordaConsumerImplTest {
     @Test
     fun `consumer returns empty list when no partitions are given`() {
         // Something to return.  But we don't expect to actually see it.
-        val pollResult = listOf(
-            TopicRecordEntry(
-                topic,
-                0,
-                0,
-                serializedKey,
-                serializedValue,
-                serializedHeader,
-                TransactionRecordEntry("id", TransactionState.COMMITTED),
-                Instant.parse("2022-01-01T00:00:00.00Z")
-            )
-        )
+        val pollResult = getTopicRecords()
 
         whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
         whenever(dbAccess.readRecords(any(), any(), any())).thenAnswer { pollResult }
