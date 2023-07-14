@@ -273,9 +273,6 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         javaArgs.add("-Dlog4j2.debug=\${ENABLE_LOG4J2_DEBUG:-false}")
         javaArgs.add("-Dlog4j.configurationFile=\${LOG4J_CONFIG_FILE}")
 
-        // allow deprecated security manager
-        javaArgs.add("-Djava.security.manager=allow")
-
         if (setEntry.get()) {
             def entryName = overrideEntryName.get().empty ? projectName : overrideEntryName.get()
             builder.setEntrypoint(
