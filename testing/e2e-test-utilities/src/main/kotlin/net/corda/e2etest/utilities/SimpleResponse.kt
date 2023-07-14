@@ -3,7 +3,7 @@ package net.corda.e2etest.utilities
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 
-/** Needs to handle duplicates in keys, hence cannot */
+/** Needs to handle duplicates in keys, hence cannot use `Map` */
 typealias Headers = List<Pair<String, String>>
 
 /** Simplified response in case we switch underlying web clients, again */
