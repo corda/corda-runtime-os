@@ -363,7 +363,7 @@ class ClusterBuilder {
 
     /** Get a summary of the user's permissions */
     fun getPermissionSummary(loginName: String) =
-        get("/api/v1/user/$loginName/permissionsummary")
+        get("/api/$REST_API_VERSION_PATH/user/$loginName/permissionsummary")
 
     /** Create a new permission */
     fun createPermission(
@@ -381,7 +381,7 @@ class ClusterBuilder {
         permissionsToCreate: Set<Pair<String, String>>,
         roleIds: Set<String>
     ) =
-        post("/api/v1/permission/bulk", createBulkPermissionsBody(permissionsToCreate, roleIds))
+        post("/api/$REST_API_VERSION_PATH/permission/bulk", createBulkPermissionsBody(permissionsToCreate, roleIds))
 
     /** Get the permissions which satisfy the query */
     fun getPermissionByQuery(
