@@ -28,6 +28,8 @@ class FlowRecordFactoryImpl : FlowRecordFactory {
         )
     }
 
+    // @SESSION: This is where we decide where to send a session event. We may want to inspect the payload here and
+    // decide where to send the message.
     override fun createFlowMapperEventRecord(key: String, payload: Any): Record<*, FlowMapperEvent> {
         return Record(
             topic = FLOW_MAPPER_SESSION_OUT_EVENT_TOPIC,

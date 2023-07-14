@@ -60,6 +60,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         )
     }
 
+    // @SESSION: This function return a set of session events to send
     private fun getSessionEvents(context: FlowEventContext<Any>, now: Instant): List<Record<*, FlowMapperEvent>> {
         val checkpoint = context.checkpoint
         val doesCheckpointExist = checkpoint.doesExist
@@ -84,6 +85,8 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             .flatMap { (_, events) -> events }
             .map { event ->
                 context.flowMetrics.flowSessionMessageSent(event.payload::class.java.name)
+                // @SESSION: Here we create Kafka records from session events. We need to switch on payload type here
+                // and get it to send the required payload type to the right topic.
                 flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event)
             }
     }

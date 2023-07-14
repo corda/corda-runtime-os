@@ -98,6 +98,9 @@ class SessionManagerImpl @Activate constructor(
         }
     }
 
+    // @SESSION: This is where we retrieve the messages to send for a session. It'll look for messages that haven't been
+    // acked and were sent more than the interval ago (or not sent yet at all) and send them. It'll also generate
+    // heartbeats if required, as well as acks if these are required.
     override fun getMessagesToSend(
         sessionState: SessionState,
         instant: Instant,
@@ -135,6 +138,8 @@ class SessionManagerImpl @Activate constructor(
      * @param identity identity of the party sending messages
      * @return Messages to send to the counterparty
      */
+    // @SESSION: This function works out if no message has been received in the timeout window and if so sends a
+    // heartbeat. If a message has been received, then an ack is generated if required.
     private fun handleHeartbeatAndAcknowledgements(
         sessionState: SessionState,
         config: SmartConfig,
@@ -185,6 +190,7 @@ class SessionManagerImpl @Activate constructor(
      * @param config config to get resend values from
      * @return Messages to send
      */
+    // @SESSION: This function is responsible for figuring out new messages to send and messages to retry.
     private fun getMessagesToSendAndUpdateSendState(
         sessionState: SessionState,
         instant: Instant,
