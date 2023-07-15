@@ -10,7 +10,6 @@ import net.corda.testing.driver.node.MemberStatus.SUSPENDED
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.fail
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.BeforeAll
@@ -41,7 +40,7 @@ class DriverTest {
         assertThat(DriverNodes::class.java.protectionDomain.codeSource.location.path).endsWith(".jar")
     }
 
-    private fun DriverDSL.testNodesFor(member: MemberX500Name): Map<String, VirtualNodeInfo> {
+    private fun DriverDSL.startTestNodesFor(member: MemberX500Name): Map<String, VirtualNodeInfo> {
         return startNodes(setOf(member)).onEach { vNode ->
             logger.info("VirtualNode({}): {}", vNode.holdingIdentity.x500Name, vNode)
         }.associateBy { vNode ->
@@ -55,13 +54,19 @@ class DriverTest {
     @Test
     fun testNodesAndStatus() {
         driver.run { dsl ->
-            dsl.testNodesFor(alice).values.forEach { aliceNode ->
-                dsl.groupOf(aliceNode) { group ->
-                    assertThat(group.members())
-                        .containsExactlyInAnyOrder(alice, bob, lucy)
+            val bobNodes = dsl.startTestNodesFor(bob).onEach { (_, bobNode) ->
+                dsl.groupFor(bobNode) { group ->
+                    assertThat(group.members()).containsExactlyInAnyOrder(bob, lucy)
+                }
+            }
+
+            dsl.startTestNodesFor(alice).forEach { (_, aliceNode) ->
+                dsl.groupFor(aliceNode) { group ->
+                    assertThat(group.members()).containsExactlyInAnyOrder(alice, bob, lucy)
 
                     // Suspend Lucy's notary.
                     group.member(lucy) { notary ->
+                        assertEquals(lucy, notary.name)
                         assertEquals(ACTIVE, notary.status)
 
                         notary.status = SUSPENDED
@@ -69,23 +74,25 @@ class DriverTest {
                     }
 
                     // Set Bob to pending...
-                    group.member(bob) {
-                        it.status = PENDING
+                    group.member(bob) { member ->
+                        assertEquals(bob, member.name)
+                        member.status = PENDING
                     }
 
                     // Group membership is unaffected by these status changes.
-                    assertThat(group.members())
-                        .containsExactlyInAnyOrder(alice, bob, lucy)
+                    assertThat(group.members()).containsExactlyInAnyOrder(alice, bob, lucy)
                 }
             }
 
             // Check Bob knows he is now pending.
-            dsl.testNodesFor(bob).values.forEach { bobNode ->
-                dsl.member(bobNode) { node ->
+            bobNodes.forEach { (_, bobNode) ->
+                dsl.node(bobNode) { node ->
                     assertEquals(PENDING, node.status)
                 }
 
-                dsl.groupOf(bobNode) { group ->
+                dsl.groupFor(bobNode) { group ->
+                    assertThat(group.members()).containsExactlyInAnyOrder(alice, bob, lucy)
+
                     // Check Bob knows that Lucy's notary is also suspended.
                     group.member(lucy) { notary ->
                         assertEquals(SUSPENDED, notary.status)
@@ -100,20 +107,22 @@ class DriverTest {
         }
     }
 
-    private fun DriverDSL.assertGroupMemberStatus(vNode: VirtualNodeInfo, expectedStatus: MemberStatus) {
-        groupOf(vNode) { group ->
+    private fun DriverDSL.assertGroupMemberStatus(groupName: String, expectedStatus: MemberStatus) {
+        group(groupName) { group ->
+            assertThat(group.name).isEqualTo(groupName)
             assertThat(group.members()).containsExactlyInAnyOrder(alice, bob, lucy)
 
             group.members().forEach { x500 ->
-                group.member(x500) {
-                    assertEquals(expectedStatus, it.status)
+                group.member(x500) { member ->
+                    assertEquals(expectedStatus, member.status)
                 }
             }
         }
     }
 
-    private fun DriverDSL.setGroupMemberStatus(vNode: VirtualNodeInfo, newStatus: MemberStatus) {
-        groupOf(vNode) { group ->
+    private fun DriverDSL.setGroupMemberStatus(groupName: String, newStatus: MemberStatus) {
+        group(groupName) { group ->
+            assertThat(group.name).isEqualTo(groupName)
             assertThat(group.members()).containsExactlyInAnyOrder(alice, bob, lucy)
 
             group.members().forEach { x500 ->
@@ -128,8 +137,8 @@ class DriverTest {
     @Test
     fun testGroupsAreIndependent() {
         driver.run { dsl ->
-            val aliceNodes = dsl.testNodesFor(alice)
-            val bobNodes = dsl.testNodesFor(bob)
+            val aliceNodes = dsl.startTestNodesFor(alice)
+            val bobNodes = dsl.startTestNodesFor(bob)
 
             val cordappNames = ArrayList(aliceNodes.keys)
             assertThat(bobNodes.keys)
@@ -137,18 +146,11 @@ class DriverTest {
                 .hasSizeGreaterThanOrEqualTo(2)
 
             val firstCordapp = cordappNames[0]
-            val firstAliceNode = aliceNodes[firstCordapp] ?: fail("Unknown CorDapp $firstCordapp for Alice")
-            dsl.setGroupMemberStatus(firstAliceNode, SUSPENDED)
-
-            val firstBobNode = bobNodes[firstCordapp] ?: fail("Unknown CorDapp $firstCordapp for Bob")
-            dsl.assertGroupMemberStatus(firstBobNode, SUSPENDED)
+            dsl.setGroupMemberStatus(firstCordapp, SUSPENDED)
+            dsl.assertGroupMemberStatus(firstCordapp, SUSPENDED)
 
             val secondCordapp = cordappNames[1]
-            val secondAliceNode = aliceNodes[secondCordapp] ?: fail("Unknown CorDapp $secondCordapp for Alice")
-            dsl.assertGroupMemberStatus(secondAliceNode, ACTIVE)
-
-            val secondBobNode = bobNodes[secondCordapp] ?: fail("Unknown CorDapp $secondCordapp for Bob")
-            dsl.assertGroupMemberStatus(secondBobNode, ACTIVE)
+            dsl.assertGroupMemberStatus(secondCordapp, ACTIVE)
         }
     }
 }

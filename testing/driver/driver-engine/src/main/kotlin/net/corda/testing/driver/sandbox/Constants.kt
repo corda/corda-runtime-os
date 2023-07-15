@@ -22,18 +22,3 @@ const val DEFAULT_KEY_SCHEME = ECDSA_SECP256R1_CODE_NAME
 const val WRAPPING_KEY_ALIAS = "master"
 
 const val WAIT_MILLIS = 100L
-
-inline fun <T> MutableCollection<T>.extractAllTo(
-    destination: MutableCollection<T>,
-    predicate: (T) -> Boolean
-): MutableCollection<T> {
-    val iterator = iterator()
-    while (iterator.hasNext()) {
-        val item = iterator.next()
-        if (predicate(item)) {
-            destination += item
-            iterator.remove()
-        }
-    }
-    return destination
-}

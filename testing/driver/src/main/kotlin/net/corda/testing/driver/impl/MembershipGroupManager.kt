@@ -1,6 +1,7 @@
 package net.corda.testing.driver.impl
 
 import java.time.Duration
+import net.corda.data.identity.HoldingIdentity as AvroHoldingIdentity
 import net.corda.testing.driver.MembershipGroupDSL
 import net.corda.testing.driver.function.ThrowingConsumer
 import net.corda.testing.driver.node.MembershipGroup
@@ -29,16 +30,28 @@ internal class MembershipGroupManager(private val dsl: DriverInternalDSL) {
 
     fun forMembershipGroup(holdingIdentity: HoldingIdentity, timeout: Duration, action: ThrowingConsumer<MembershipGroupDSL>) {
         doMembershipGroupService(timeout) { group ->
-            action.acceptThrowing(MembershipGroupDSLImpl(group, holdingIdentity))
+            action.acceptThrowing(MembershipGroupDSLImpl(group, holdingIdentity.toAvro()))
         }
     }
 
-    private class MembershipGroupDSLImpl(private val group: MembershipGroup, private val id: HoldingIdentity) :
-        MembershipGroupDSL {
-        private fun getHoldingIdentity(name: MemberX500Name) = HoldingIdentity(name, id.groupId).toAvro()
+    fun forMembershipGroup(groupName: String, timeout: Duration, action: ThrowingConsumer<MembershipGroupDSL>) {
+        doMembershipGroupService(timeout) { group ->
+            action.acceptThrowing(MembershipGroupDSLImpl(group, group.getAnyMemberOf(groupName)))
+        }
+    }
+
+    private class MembershipGroupDSLImpl(
+        private val group: MembershipGroup,
+        private val id: AvroHoldingIdentity
+    ) : MembershipGroupDSL {
+        private fun getHoldingIdentity(name: MemberX500Name) = AvroHoldingIdentity(name.toString(), id.groupId)
+
+        override fun getName(): String {
+            return group.getName(id)
+        }
 
         override fun members(): Set<MemberX500Name> {
-            return group.getMembers(id.toAvro())
+            return group.getMembers(id)
         }
 
         override fun member(name: MemberX500Name, action: ThrowingConsumer<Member>) {

@@ -11,6 +11,9 @@ import org.jetbrains.annotations.Unmodifiable;
 @DoNotImplement
 public interface MembershipGroupDSL {
     @NotNull
+    String getName();
+
+    @NotNull
     @Unmodifiable
     Set<MemberX500Name> members();
 

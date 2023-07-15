@@ -11,6 +11,12 @@ import org.jetbrains.annotations.Unmodifiable;
 @DoNotImplement
 public interface MembershipGroup {
     @NotNull
+    String getName(@NotNull HoldingIdentity holdingIdentity);
+
+    @NotNull
+    HoldingIdentity getAnyMemberOf(@NotNull String groupName);
+
+    @NotNull
     @Unmodifiable
     Set<MemberX500Name> getMembers(@NotNull HoldingIdentity holdingIdentity);
 

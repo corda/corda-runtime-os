@@ -378,12 +378,16 @@ internal class DriverDSLImpl(
         return FlowRunner(this).runFlow(virtualNodeInfo, flowClass, flowArgMapper, TIMEOUT)
     }
 
-    override fun member(virtualNodeInfo: VirtualNodeInfo, action: ThrowingConsumer<Member>) {
+    override fun node(virtualNodeInfo: VirtualNodeInfo, action: ThrowingConsumer<Member>) {
         MembershipGroupManager(this).forVirtualNode(virtualNodeInfo.holdingIdentity, TIMEOUT, action)
     }
 
-    override fun groupOf(virtualNodeInfo: VirtualNodeInfo, action: ThrowingConsumer<MembershipGroupDSL>) {
+    override fun groupFor(virtualNodeInfo: VirtualNodeInfo, action: ThrowingConsumer<MembershipGroupDSL>) {
         MembershipGroupManager(this).forMembershipGroup(virtualNodeInfo.holdingIdentity, TIMEOUT, action)
+    }
+
+    override fun group(groupName: String, action: ThrowingConsumer<MembershipGroupDSL>) {
+        MembershipGroupManager(this).forMembershipGroup(groupName, TIMEOUT, action)
     }
 
     @Throws(InterruptedException::class)

@@ -1,8 +1,7 @@
 package net.corda.testing.driver.node;
 
 import org.jetbrains.annotations.NotNull;
-
-import static java.util.Objects.requireNonNull;
+import org.jetbrains.annotations.Nullable;
 
 public enum MemberStatus {
     ACTIVE,
@@ -10,8 +9,7 @@ public enum MemberStatus {
     SUSPENDED;
 
     @NotNull
-    public static MemberStatus fromString(@NotNull String value) {
-        requireNonNull(value, "value must not be null");
+    public static MemberStatus fromString(@Nullable String value) {
         for (MemberStatus status : values()) {
             if (status.toString().equals(value)) {
                 return status;

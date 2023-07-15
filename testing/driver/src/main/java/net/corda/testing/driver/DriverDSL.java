@@ -26,13 +26,18 @@ public interface DriverDSL {
         @NotNull ThrowingSupplier<String> flowArgMapper
     );
 
-    void member(
-        @NotNull VirtualNodeInfo vNode,
+    void node(
+        @NotNull VirtualNodeInfo virtualNodeInfo,
         @NotNull ThrowingConsumer<Member> action
     );
 
-    void groupOf(
-        @NotNull VirtualNodeInfo vNode,
+    void groupFor(
+        @NotNull VirtualNodeInfo virtualNodeInfo,
+        @NotNull ThrowingConsumer<MembershipGroupDSL> action
+    );
+
+    void group(
+        @NotNull String groupName,
         @NotNull ThrowingConsumer<MembershipGroupDSL> action
     );
 }

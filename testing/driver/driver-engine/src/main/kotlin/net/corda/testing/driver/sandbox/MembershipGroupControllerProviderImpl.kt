@@ -118,7 +118,7 @@ class MembershipGroupControllerProviderImpl @Activate constructor(
         .associateBy(NotaryInfo::getName)
 
     private val membershipInfo = ConcurrentHashMap<HoldingIdentity, MemberInfo>()
-    private val groupControllers = ConcurrentHashMap<HoldingIdentity, MembershipGroupController?>()
+    private val groupControllers = ConcurrentHashMap<HoldingIdentity, MembershipGroupController>()
 
     private fun getSigningSpecFor(publicKey: PublicKey): SigningWrappedSpec {
         val wrappedKey = requireNotNull(privateKeyService.fetchFor(publicKey)) {
@@ -179,38 +179,45 @@ class MembershipGroupControllerProviderImpl @Activate constructor(
         }
     }
 
-    private fun populateMembershipGroup(groupId: String) {
-       for ((name, publicKey) in membership) {
-            membershipInfo.computeIfAbsent(HoldingIdentity(name, groupId)) { hid ->
-                val memberContext = sortedMapOf<String, String?>().apply {
-                    this[PARTY_NAME] = hid.x500Name.toString()
-                    this[GROUP_ID] = hid.groupId
-                    this[LEDGER_KEYS_KEY.format(0)] = schemeMetadata.encodeAsString(publicKey)
-                    this += baseMemberContext
+    override fun getMemberNameFor(tenantId: String): MemberX500Name? {
+        return membershipInfo.keys.firstOrNull { it.shortHash.value == tenantId }?.x500Name
+    }
 
-                    notaries[hid.x500Name]?.also { notary ->
-                        this += parseNotaryInfo(notary)
-                    }
+    override fun register(holdingIdentity: HoldingIdentity) {
+        membershipInfo.computeIfAbsent(holdingIdentity) { hid ->
+            val memberContext = sortedMapOf<String, String?>().apply {
+                val x500Name = hid.x500Name
+                this[PARTY_NAME] = x500Name.toString()
+                this[GROUP_ID] = hid.groupId
+                membership[x500Name]?.also { publicKey ->
+                    this[LEDGER_KEYS_KEY.format(0)] = schemeMetadata.encodeAsString(publicKey)
                 }
-                memberInfoFactory.create(memberContext, mgmContext)
+                this += baseMemberContext
+
+                notaries[x500Name]?.also { notary ->
+                    this += parseNotaryInfo(notary)
+                }
             }
+            memberInfoFactory.create(memberContext, mgmContext)
         }
     }
 
+    override fun unregister(holdingIdentity: HoldingIdentity) {
+        membershipInfo.remove(holdingIdentity)
+    }
+
     override fun getGroupReader(holdingIdentity: HoldingIdentity): MembershipGroupController {
+        if (!membershipInfo.containsKey(holdingIdentity)) {
+            throw AssertionError("${holdingIdentity.x500Name} does not belong to group ${holdingIdentity.groupId}")
+        }
         return groupControllers.computeIfAbsent(holdingIdentity) { hid ->
-            populateMembershipGroup(hid.groupId)
-            if (hid in membershipInfo.keys) {
-                MembershipGroupControllerImpl(
-                    membershipInfo,
-                    memberInfoFactory,
-                    createSignedGroupParameters(hid),
-                    hid
-                )
-            } else {
-                null
-            }
-        } ?: throw AssertionError("${holdingIdentity.x500Name} does not belong to group ${holdingIdentity.groupId}")
+            MembershipGroupControllerImpl(
+                membershipInfo,
+                memberInfoFactory,
+                createSignedGroupParameters(hid),
+                hid
+            )
+        }
     }
 
     override val isRunning: Boolean

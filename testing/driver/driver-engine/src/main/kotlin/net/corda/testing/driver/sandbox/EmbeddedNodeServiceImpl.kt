@@ -21,6 +21,7 @@ import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.testing.driver.node.EmbeddedNodeService
 import net.corda.testing.driver.sandbox.VirtualNodeLoader.Companion.VNODE_LOADER_NAME
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.osgi.framework.Constants.FRAMEWORK_STORAGE
 import org.osgi.service.cm.ConfigurationAdmin
@@ -95,6 +96,7 @@ class EmbeddedNodeServiceImpl @Activate constructor(
             GroupPolicyProvider::class.java,
             MembershipGroupReaderProvider::class.java,
             SandboxGroupContextComponent::class.java,
+            VirtualNodeInfoReadService::class.java,
             WrappingRepository::class.java
         ))
     }
