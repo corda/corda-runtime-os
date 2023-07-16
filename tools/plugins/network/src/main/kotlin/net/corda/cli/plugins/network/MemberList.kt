@@ -8,34 +8,6 @@ import picocli.CommandLine
 
 @CommandLine.Command(name = "members-list", description = ["Shows the list of members on the network."])
 class MemberList : RestCommand(), Runnable {
-    override fun run() {
-        performMembersLookup()
-    }
-    private fun performMembersLookup() {
-        require(holdingIdentityShortHash != null) { "Holding identity short hash was not provided." }
-        var result: List<RestMemberInfo>
-        createRestClient(MemberLookupRestResource::class).use { restClient ->
-            val connection = restClient.start()
-            with(connection.proxy) {
-                try {
-                    result = lookup(
-                        holdingIdentityShortHash.toString(),
-                        commonName,
-                        organization,
-                        organizationUnit,
-                        locality,
-                        state,
-                        country
-                    ).members
-                } catch (e: Exception) {
-                    println(e.message)
-                    NetworkPluginWrapper.logger.error(e.stackTrace.toString())
-                    return
-                }
-            }
-        }
-        println(result)
-    }
 
     @CommandLine.Option(
         names = ["-h", "--holding-identity-short-hash"],
@@ -85,4 +57,36 @@ class MemberList : RestCommand(), Runnable {
         description = ["Optional. Country (C) attribute of the X.500 name to filter members by."]
     )
     var country: String? = null
+    private fun performMembersLookup() {
+        requireNotNull(holdingIdentityShortHash) { "Holding identity short hash was not provided." }
+
+        val restClient = createRestClient(MemberLookupRestResource::class)
+
+        val result: List<RestMemberInfo> = restClient.use { client ->
+            val connection = client.start()
+            val memberLookupProxy = connection.proxy
+
+            try {
+                memberLookupProxy.lookup(
+                    holdingIdentityShortHash.toString(),
+                    commonName,
+                    organization,
+                    organizationUnit,
+                    locality,
+                    state,
+                    country
+                ).members
+            } catch (e: Exception) {
+                println(e.message)
+                NetworkPluginWrapper.logger.error(e.stackTraceToString())
+                return
+            }
+        }
+
+        println(result)
+    }
+
+    override fun run() {
+        performMembersLookup()
+    }
 }

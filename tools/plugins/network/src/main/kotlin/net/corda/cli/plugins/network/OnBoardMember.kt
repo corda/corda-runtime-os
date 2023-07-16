@@ -1,8 +1,7 @@
 package net.corda.cli.plugins.network
 
-import kong.unirest.Unirest
-import kong.unirest.json.JSONArray
-import kong.unirest.json.JSONObject
+import net.corda.cli.plugins.common.RestClientUtils.createRestClient
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.v5.base.util.EncodingUtils.toBase64
 import picocli.CommandLine.Command
@@ -44,7 +43,8 @@ class OnBoardMember : Runnable, BaseOnboard() {
             "Relevant only if cpb-file is used"
         ]
     )
-    var groupPolicyFile: File = File(File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json")
+    var groupPolicyFile: File =
+        File(File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json")
 
     @Option(
         names = ["--cpi-hash"],
@@ -99,29 +99,26 @@ class OnBoardMember : Runnable, BaseOnboard() {
     }
 
     private fun checkIfCpiWasUploaded(cpiFileChecksum: String): Boolean {
-        val currentCpis = Unirest.get("/cpi")
-            .asJson()
-            .bodyOrThrow()
-            .`object`
-            .get("cpis") as JSONArray
-        return currentCpis.filterIsInstance<JSONObject>()
-            .mapNotNull {
-                it.get("cpiFileChecksum") as? String
-            }.any {
-                it == cpiFileChecksum
+        val currentCpis = createRestClient(CpiUploadRestResource::class)
+            .use { client ->
+                client.start().proxy.getAllCpis().cpis
             }
+
+        return currentCpis.any { it.cpiFileChecksum == cpiFileChecksum }
     }
 
     private fun uploadCpi(cpiFile: File): String {
         val hash = listOf(cpiFile).hash()
         val cpiHashesFile = File(cpisRoot, "$hash.shortHash")
+
         if (cpiHashesFile.canRead()) {
             val cpiFileChecksum = cpiHashesFile.readText()
             if (checkIfCpiWasUploaded(cpiFileChecksum)) {
-                println("CPI was uploaded and it's hash checksum is $cpiFileChecksum")
+                println("CPI was uploaded and its hash checksum is $cpiFileChecksum")
                 return cpiFileChecksum
             }
         }
+
         return uploadCpi(cpiFile.inputStream(), cpiFile.name).also {
             cpiHashesFile.writeText(it)
             println("CPI hash checksum is $it")
@@ -140,17 +137,11 @@ class OnBoardMember : Runnable, BaseOnboard() {
         val cpiHashesFile = File(cpiRoot, "$baseNetworkName.shortHash")
         if (cpiHashesFile.canRead()) {
             val cpiFileChecksum = cpiHashesFile.readText()
-            val currentCpis = Unirest.get("/cpi")
-                .asJson()
-                .bodyOrThrow()
-                .`object`
-                .get("cpis") as JSONArray
-            val exists = currentCpis.filterIsInstance<JSONObject>()
-                .mapNotNull {
-                    it.get("cpiFileChecksum") as? String
-                }.any {
-                    it == cpiFileChecksum
-                }
+            val restClient = createRestClient(CpiUploadRestResource::class)
+            val currentCpis = restClient.use { client ->
+                client.start().proxy.getAllCpis().cpis
+            }
+            val exists = currentCpis.any { it.cpiFileChecksum == cpiFileChecksum }
             if (exists) {
                 println("CPI was already uploaded in $cpiFile. CPI hash checksum is $cpiFileChecksum")
                 return cpiFileChecksum
@@ -181,10 +172,11 @@ class OnBoardMember : Runnable, BaseOnboard() {
             .replace('+', '-')
             .replace('=', '_')
     }
+
     private fun createCpi(cpbFile: File, cpiFile: File) {
         println(
             "Using the cpb file is not recommended." +
-                " It is advised to create CPI using the package create-cpi command."
+                    " It is advised to create CPI using the package create-cpi command."
         )
         cpiFile.parentFile.mkdirs()
         val creator = CreateCpiV2()
@@ -213,11 +205,10 @@ class OnBoardMember : Runnable, BaseOnboard() {
             "corda.endpoints.0.protocolVersion" to "1"
         ) + preAuth
     }
+
     override fun run() {
         println("This sub command should only be used in for internal development")
         println("On-boarding member $x500Name")
-
-        setupClient()
 
         configureGateway()
 
@@ -226,8 +217,8 @@ class OnBoardMember : Runnable, BaseOnboard() {
         if (mtls) {
             println(
                 "Using $certificateSubject as client certificate. " +
-                    "The onboarding will fail until the the subject is added to the MGM's allow list. " +
-                    "You can do that using the allowClientCertificate command."
+                        "The onboarding will fail until the the subject is added to the MGM's allow list. " +
+                        "You can do that using the allowClientCertificate command."
             )
         }
 
@@ -243,7 +234,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
         } else {
             println(
                 "Registration request has been submitted. Wait for MGM approval to finalize registration. " +
-                    "MGM may need to approve your request manually."
+                        "MGM may need to approve your request manually."
             )
         }
     }

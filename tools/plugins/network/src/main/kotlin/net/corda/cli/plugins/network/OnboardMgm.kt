@@ -1,10 +1,10 @@
 package net.corda.cli.plugins.network
 
-import kong.unirest.Unirest
-import kong.unirest.json.JSONArray
-import kong.unirest.json.JSONObject
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.cli.plugins.packaging.CreateCpiV2
+import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.crypto.test.certificates.generation.toPem
+import net.corda.membership.rest.v1.MGMRestResource
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.ByteArrayOutputStream
@@ -35,7 +35,8 @@ class OnboardMgm : Runnable, BaseOnboard() {
         names = ["--save-group-policy-as", "-s"],
         description = ["Location to save the group policy file (default to ~/.corda/gp/groupPolicy.json)"]
     )
-    var groupPolicyFile: File = File(File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json")
+    var groupPolicyFile: File =
+        File(File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json")
 
     @Option(
         names = ["--cpi-file"],
@@ -64,15 +65,21 @@ class OnboardMgm : Runnable, BaseOnboard() {
     private fun saveGroupPolicy() {
         repeat(10) {
             try {
-                val response = Unirest.get("/mgm/$holdingId/info").asString()
-                groupPolicyFile.parentFile.mkdirs()
-                json.writerWithDefaultPrettyPrinter()
-                    .writeValue(
-                        groupPolicyFile,
-                        json.readTree(response.bodyOrThrow())
-                    )
-                println("Group policy file created at $groupPolicyFile")
-                return@saveGroupPolicy
+                val restClient = createRestClient(MGMRestResource::class)
+                restClient.use { client ->
+                    client.start().also { connection ->
+                        val resource = connection.proxy
+                        val response = resource.generateGroupPolicy(holdingId)
+                        groupPolicyFile.parentFile.mkdirs()
+                        json.writerWithDefaultPrettyPrinter()
+                            .writeValue(
+                                groupPolicyFile,
+                                json.readTree(response)
+                            )
+                        println("Group policy file created at $groupPolicyFile")
+                        return@saveGroupPolicy
+                    }
+                }
             } catch (e: Exception) {
                 Thread.sleep(300)
             }
@@ -93,9 +100,9 @@ class OnboardMgm : Runnable, BaseOnboard() {
             "corda.session.keys.0.id" to sessionKeyId,
             "corda.ecdh.key.id" to ecdhKeyId,
             "corda.group.protocol.registration"
-                to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
+                    to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
             "corda.group.protocol.synchronisation"
-                to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
+                    to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
             "corda.group.protocol.p2p.mode" to "Authenticated_Encryption",
             "corda.group.key.session.policy" to "Distinct",
             "corda.group.tls.type" to tlsType,
@@ -110,7 +117,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
 
     private val cpi by lazy {
         val parametersCpiFile = cpiFile
-        if(parametersCpiFile != null) {
+        if (parametersCpiFile != null) {
             return@lazy parametersCpiFile
         }
         val mgmGroupPolicyFile = File.createTempFile("mgm.groupPolicy.", ".json").also {
@@ -121,8 +128,10 @@ class OnboardMgm : Runnable, BaseOnboard() {
             it.deleteOnExit()
             it.delete()
         }
-        println("Using the cpi file is recommended." +
-                " It is advised to create CPI using the package create-cpi command.")
+        println(
+            "Using the cpi file is recommended." +
+                    " It is advised to create CPI using the package create-cpi command."
+        )
         cpiFile.parentFile.mkdirs()
         val creator = CreateCpiV2()
         creator.groupPolicyFileName = mgmGroupPolicyFile.absolutePath
@@ -136,27 +145,24 @@ class OnboardMgm : Runnable, BaseOnboard() {
         cpiFile
     }
 
-    override val cpiFileChecksum by lazy {
-        val existingHash = Unirest.get("/cpi")
-            .asJson()
-            .bodyOrThrow()
-            .let {
-                val cpis = it.`object`.get("cpis") as JSONArray
-                cpis
-                    .filterIsInstance<JSONObject>()
-                    .firstOrNull { cpi ->
-                        cpi.get("groupPolicy").toString().contains("CREATE_ID")
-                    }?.get("cpiFileChecksum")
-            }
-        if (existingHash is String) return@lazy existingHash
+    override val cpiFileChecksum: String by lazy {
+        val existingHash = createRestClient(CpiUploadRestResource::class).use { client ->
+            val response = client.start().proxy.getAllCpis()
+            response.cpis
+                .filter { it.groupPolicy?.contains("CREATE_ID") ?: false }
+                .map { it.cpiFileChecksum }
+                .firstOrNull()
+        }
+        if (existingHash != null) {
+            return@lazy existingHash
+        }
 
         uploadCpi(cpi.inputStream(), cpbName)
     }
+
     override fun run() {
         println("This sub command should only be used in for internal development")
         println("On-boarding MGM member $x500Name")
-
-        setupClient()
 
         configureGateway()
 
@@ -173,7 +179,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
         if (mtls) {
             println(
                 "To onboard members to this group on other clusters, please add those members' " +
-                    "client certificates subjects to this MGM's allow list. You can do that using the allowClientCertificate command."
+                        "client certificates subjects to this MGM's allow list. You can do that using the allowClientCertificate command."
             )
         }
     }
