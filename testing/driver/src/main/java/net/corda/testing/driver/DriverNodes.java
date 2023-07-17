@@ -7,6 +7,7 @@ import net.corda.data.KeyValuePair;
 import net.corda.v5.base.types.MemberX500Name;
 import net.corda.v5.crypto.KeySchemeCodes;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyPair;
@@ -36,6 +37,7 @@ public final class DriverNodes {
 
     @SafeVarargs
     @NotNull
+    @Unmodifiable
     private static <T> Set<T> setOf(@NotNull T item, T... others) {
         Set<T> items = new LinkedHashSet<>();
         items.add(item);
@@ -44,6 +46,7 @@ public final class DriverNodes {
     }
 
     @NotNull
+    @Unmodifiable
     private static Set<Integer> setOf(int value, int @NotNull... otherValues) {
         final Set<Integer> items = new LinkedHashSet<>();
         items.add(value);
@@ -85,7 +88,7 @@ public final class DriverNodes {
     }
 
     public DriverNodes(@NotNull Set<MemberX500Name> members) {
-        requireNonNull(members);
+        requireNonNull(members, "members must not be null");
         this.members = members;
         notaries = new LinkedHashMap<>();
         schemeName = DEFAULT_SCHEME_NAME;
@@ -98,7 +101,7 @@ public final class DriverNodes {
     @SuppressWarnings("unused")
     @NotNull
     public DriverNodes withSchemeName(@NotNull String schemeName) {
-        requireNonNull(schemeName);
+        requireNonNull(schemeName, "schemeName must not be null");
         this.schemeName = schemeName;
         return this;
     }
@@ -106,6 +109,7 @@ public final class DriverNodes {
     // Only non-validating notaries are supported.
     @NotNull
     public DriverNodes withNotary(@NotNull MemberX500Name notary, int protocolVersion, int... otherVersions) {
+        requireNonNull(notary, "notary must not be null");
         notaries.put(notary, setOf(protocolVersion, otherVersions));
         return this;
     }
@@ -199,6 +203,7 @@ public final class DriverNodes {
         }
 
         @NotNull
+        @Unmodifiable
         Set<KeyValuePair> build() {
             for (Map.Entry<MemberX500Name, Set<Integer>> notary : notaries.entrySet()) {
                 final MemberX500Name notaryName = notary.getKey();

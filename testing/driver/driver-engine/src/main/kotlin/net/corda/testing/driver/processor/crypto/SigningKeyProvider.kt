@@ -22,8 +22,8 @@ import net.corda.testing.driver.sandbox.CORDA_MEMBER_COUNT
 import net.corda.testing.driver.sandbox.CORDA_MEMBER_PRIVATE_KEY
 import net.corda.testing.driver.sandbox.CORDA_MEMBER_PUBLIC_KEY
 import net.corda.testing.driver.sandbox.CORDA_MEMBER_X500_NAME
+import net.corda.testing.driver.sandbox.MembershipGroupControllerProvider
 import net.corda.testing.driver.sandbox.PrivateKeyService
-import net.corda.testing.driver.sandbox.VirtualNodeLoader
 import net.corda.testing.driver.sandbox.WRAPPING_KEY_ALIAS
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -44,7 +44,7 @@ class SigningKeyProvider @Activate constructor(
     @Reference
     privateKeyService: PrivateKeyService,
     @Reference
-    private val virtualNodeLoader: VirtualNodeLoader,
+    private val membershipGroupControllerProvider: MembershipGroupControllerProvider,
     properties: Map<String, Any>
 ) {
     private val cachedSigningKeys: Map<MemberX500Name, SigningKeyInfo>
@@ -93,7 +93,7 @@ class SigningKeyProvider @Activate constructor(
 
     @Suppress("unused_parameter")
     fun getSigningKey(tenantId: String, publicKey: PublicKey): SigningKeyInfo? {
-        return virtualNodeLoader.getMemberNameFor(tenantId)?.let { memberName ->
+        return membershipGroupControllerProvider.getMemberNameFor(tenantId)?.let { memberName ->
             cachedSigningKeys[memberName]?.let { cached ->
                 SigningKeyInfo(
                     id = cached.id,
@@ -117,7 +117,7 @@ class SigningKeyProvider @Activate constructor(
     }
 
     fun getSigningKeys(tenantId: String, fullKeyIds: List<SecureHash>): List<CryptoSigningKey> {
-        return virtualNodeLoader.getMemberNameFor(tenantId)?.let { memberName ->
+        return membershipGroupControllerProvider.getMemberNameFor(tenantId)?.let { memberName ->
             cachedSigningKeys[memberName]?.takeIf { it.fullId in fullKeyIds }?.let { cached ->
                 singletonList(CryptoSigningKey(
                     cached.id.toString(),
