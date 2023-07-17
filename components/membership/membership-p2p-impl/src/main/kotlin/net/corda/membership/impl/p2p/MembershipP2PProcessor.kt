@@ -18,6 +18,7 @@ import net.corda.membership.impl.p2p.handler.RegistrationRequestHandler
 import net.corda.membership.impl.p2p.handler.SetOwnRegistrationStatusHandler
 import net.corda.membership.impl.p2p.handler.VerificationRequestHandler
 import net.corda.membership.impl.p2p.handler.VerificationResponseHandler
+import net.corda.membership.lib.SetOwnRegistrationStatusV2
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
@@ -54,7 +55,8 @@ class MembershipP2PProcessor(
         VerificationResponse::class.java to { VerificationResponseHandler(avroSchemaRegistry) },
         MembershipPackage::class.java to { MembershipPackageHandler(avroSchemaRegistry) },
         MembershipSyncRequest::class.java to { MembershipSyncRequestHandler(avroSchemaRegistry) },
-        SetOwnRegistrationStatus::class.java to { SetOwnRegistrationStatusHandler(avroSchemaRegistry) }
+        SetOwnRegistrationStatus::class.java to { SetOwnRegistrationStatusHandler(avroSchemaRegistry) },
+        SetOwnRegistrationStatusV2::class.java to { SetOwnRegistrationStatusHandler(avroSchemaRegistry) }
     )
 
     override fun onNext(events: List<Record<String, AppMessage>>): List<Record<*, *>> {

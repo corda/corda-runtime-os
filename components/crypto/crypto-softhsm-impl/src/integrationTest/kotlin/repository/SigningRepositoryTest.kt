@@ -34,7 +34,6 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import java.lang.IllegalArgumentException
 import java.security.PublicKey
 import java.security.spec.AlgorithmParameterSpec
 import java.time.Instant
@@ -43,6 +42,7 @@ import java.time.ZoneOffset
 import java.util.*
 import javax.persistence.EntityManagerFactory
 import javax.persistence.PersistenceException
+import net.corda.crypto.core.CryptoConsts
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SigningRepositoryTest : CryptoRepositoryTest() {
@@ -69,7 +69,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             schemeCodeName = "FOO",
             externalId = "e-$unique",
             timestamp = Instant.now().toSafeWindowsPrecision(),
-            hsmId = "hi-$unique".take(36),
+            hsmId = CryptoConsts.SOFT_HSM_ID,
             status = SigningKeyStatus.NORMAL,
             keyMaterial = privKey,
             encodingVersion = 1,
@@ -158,8 +158,7 @@ class SigningRepositoryTest : CryptoRepositoryTest() {
             externalId = info.externalId,
             alias = info.alias,
             category = info.category,
-            keyScheme = createKeyScheme(info),
-            hsmId = info.hsmId,
+            keyScheme = createKeyScheme(info)
         )
     }
 

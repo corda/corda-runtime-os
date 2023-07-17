@@ -1,14 +1,14 @@
 package net.corda.membership.impl.persistence.service
 
 import com.typesafe.config.ConfigFactory
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecs.RSA_SHA256
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.fullIdHash
-import net.corda.avro.serialization.CordaAvroDeserializer
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
@@ -19,7 +19,7 @@ import net.corda.data.membership.SignedData
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
@@ -52,6 +52,7 @@ import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.datamodel.StaticNetworkInfoEntity
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MPV_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_KEYS_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_PROTOCOL_KEY
@@ -76,6 +77,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedGroupParameters
@@ -120,6 +122,7 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -376,6 +379,12 @@ class MembershipPersistenceTest {
                 info: StaticNetworkInfo
             ) = safeCall {
                 membershipPersistenceClient.updateStaticNetworkInfo(info)
+            }
+
+            override fun updateGroupParameters(
+                viewOwningIdentity: HoldingIdentity, newGroupParameters: Map<String, String>
+            ) = safeCall {
+                membershipPersistenceClient.updateGroupParameters(viewOwningIdentity, newGroupParameters)
             }
 
             fun <T> safeCall(func: () -> T): T {
@@ -854,13 +863,38 @@ class MembershipPersistenceTest {
         val mgmContext = KeyValuePairList(
             listOf(
                 KeyValuePair(STATUS, MEMBER_STATUS_ACTIVE),
-                KeyValuePair(SERIAL, "1"),
+                KeyValuePair(SERIAL, "2"),
+                KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
             ).sorted()
         )
         val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
-        val oldNotaryKey = with(keyGenerator) {
-            keyEncodingService.encodeAsString(generateKeyPair().public)
-        }
+        val oldNotaryKey = keyGenerator.genKeyPair().public
+        val oldNotaryKeyAsString = keyEncodingService.encodeAsString(oldNotaryKey)
+        val oldNotaryMemberContext = KeyValuePairList((memberContext.items.filterNot {
+            it.key.startsWith("corda.notary.keys")
+        } + listOf(
+            KeyValuePair(String.format(NOTARY_KEY_PEM, 0), oldNotaryKeyAsString),
+            KeyValuePair(String.format(NOTARY_KEY_SPEC, 0), "SHA512withECDSA"),
+            KeyValuePair(String.format(NOTARY_KEY_HASH, 0), oldNotaryKey.fullIdHash().toString()),
+        )).sorted())
+        val oldNotaryMgmContext = KeyValuePairList((memberContext.items.filterNot {
+            it.key == SERIAL
+        } + listOf(
+            KeyValuePair(SERIAL, "1"),
+        )).sorted())
+        val oldNotaryEntity = MemberInfoEntity(
+            notary.groupId,
+            notary.name.toString(),
+            false,
+            notary.status,
+            notary.modifiedTime!!,
+            cordaAvroSerializer.serialize(oldNotaryMemberContext)!!,
+            keyEncodingService.encodeAsByteArray(oldNotaryKey),
+            byteArrayOf(1),
+            RSA_SHA256.signatureName,
+            cordaAvroSerializer.serialize(oldNotaryMgmContext)!!,
+            1L
+        )
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
             val entity = GroupParametersEntity(
@@ -873,7 +907,7 @@ class MembershipPersistenceTest {
                             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
                             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
                             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
-                            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), oldNotaryKey)
+                            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), oldNotaryKeyAsString)
                         )
                     )
                 )!!,
@@ -882,13 +916,14 @@ class MembershipPersistenceTest {
                 signatureSpec = RSA_SHA256.signatureName
             )
             it.persist(entity)
+            it.persist(oldNotaryEntity)
         }
         val expectedGroupParameters = listOf(
             KeyValuePair(EPOCH_KEY, "151"),
             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), notaryServiceName),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), notaryServicePlugin),
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
-            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), oldNotaryKey),
+            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), oldNotaryKeyAsString),
             KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 1), notaryKeyAsString),
         )
 
@@ -1704,6 +1739,67 @@ class MembershipPersistenceTest {
             assertThat(persisted.mgmPublicKey).isEqualTo(pubKey)
             assertThat(persisted.mgmPrivateKey).isEqualTo(privateKey)
             assertThat(persisted.version).isEqualTo(initialVersion + 1)
+        }
+    }
+
+    @Test
+    fun `can persist updated group parameters`() {
+        val generator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
+        val notaryPublicKey = generator.generateKeyPair().public
+        val notaryParameters = listOf(
+            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), "O=New Service, L=London, C=GB"),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), "Notary Plugin"),
+            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), keyEncodingService.encodeAsString(notaryPublicKey))
+        ) + listOf("1").mapIndexed {
+                i, version -> KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, i), version)
+        }
+        
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
+            val entity = GroupParametersEntity(
+                epoch = 50,
+                parameters = cordaAvroSerializer.serialize(
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(EPOCH_KEY, "50"),
+                            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
+                        ) + notaryParameters
+                    )
+                )!!,
+                signaturePublicKey = keyEncodingService.encodeAsByteArray(generator.genKeyPair().public),
+                signatureContent = byteArrayOf(1),
+                signatureSpec = RSA_SHA256.signatureName
+            )
+            it.persist(entity)
+        }
+
+        val updatedGroupParameters = membershipPersistenceClientWrapper.updateGroupParameters(
+            viewOwningHoldingIdentity, mapOf(MPV_KEY to "5000", "ext.key" to "value")
+        ).getOrThrow()
+
+        val updatedEpoch = 51
+        val expectedGroupParameters = listOf(
+            KeyValuePair(EPOCH_KEY, updatedEpoch.toString()),
+            KeyValuePair(MPV_KEY, "5000"),
+            KeyValuePair("ext.key", "value")
+        ) + notaryParameters
+        assertThat(updatedGroupParameters.entries.filterNot { it.key == MODIFIED_TIME_KEY })
+            .containsExactlyInAnyOrderElementsOf(expectedGroupParameters.associate { it.key to it.value }.entries)
+
+        val persistedGroupParametersEntity = vnodeEmf.createEntityManager().use {
+            it.find(
+                GroupParametersEntity::class.java,
+                updatedEpoch
+            )
+        }
+        assertThat(persistedGroupParametersEntity).isNotNull
+        with(persistedGroupParametersEntity.parameters) {
+            val deserialized = cordaAvroDeserializer.deserialize(this)!!
+            val deserializedList = deserialized.items
+            assertThat(deserializedList).anyMatch { it.key == MODIFIED_TIME_KEY }
+            assertThat(deserializedList.filterNot { it.key == MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters)
+            assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
         }
     }
 

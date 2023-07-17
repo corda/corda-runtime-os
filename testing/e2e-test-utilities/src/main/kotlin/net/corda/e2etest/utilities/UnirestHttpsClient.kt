@@ -1,5 +1,6 @@
 package net.corda.e2etest.utilities
 
+import kong.unirest.Headers
 import kong.unirest.MultipartBody
 import kong.unirest.Unirest
 import kong.unirest.apache.ApacheClient
@@ -12,6 +13,12 @@ import javax.net.ssl.SSLContext
 
 class UnirestHttpsClient(private val endpoint: URI, private val username: String, private val password: String)  :
     HttpsClient {
+    private companion object {
+        fun Headers.toInternal(): List<Pair<String, String>> {
+            return all().map { it.name to it.value }
+        }
+    }
+
     init {
         addSslParams()
     }
@@ -26,7 +33,7 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
             .files(files)
             .asString()
 
-        return SimpleResponse(response.status, response.body, url)
+        return SimpleResponse(response.status, response.body, url, response.headers.toInternal())
     }
 
     override fun post(cmd: String, body: String): SimpleResponse {
@@ -36,7 +43,7 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
             .body(body)
             .asString()
 
-        return SimpleResponse(response.status, response.body, url)
+        return SimpleResponse(response.status, response.body, url, response.headers.toInternal())
     }
 
     override fun put(cmd: String, body: String): SimpleResponse {
@@ -46,7 +53,7 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
             .body(body)
             .asString()
 
-        return SimpleResponse(response.status, response.body, url)
+        return SimpleResponse(response.status, response.body, url, response.headers.toInternal())
     }
 
     override fun putMultiPart(cmd: String, fields: Map<String, String>, files: Map<String, HttpsClientFileUpload>): SimpleResponse {
@@ -59,21 +66,21 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
             .files(files)
             .asString()
 
-        return SimpleResponse(response.status, response.body, url)
+        return SimpleResponse(response.status, response.body, url, response.headers.toInternal())
     }
 
     override fun get(cmd: String): SimpleResponse {
         val url = endpoint.resolve(cmd).toURL().toString()
 
         val response = Unirest.get(url).basicAuth(username, password).asString()
-        return SimpleResponse(response.status, response.body, url)
+        return SimpleResponse(response.status, response.body, url, response.headers.toInternal())
     }
 
     override fun delete(cmd: String): SimpleResponse {
         val url = endpoint.resolve(cmd).toURL().toString()
 
         val response = Unirest.delete(url).basicAuth(username, password).asString()
-        return SimpleResponse(response.status, response.body, url)
+        return SimpleResponse(response.status, response.body, url, response.headers.toInternal())
     }
 
     private fun addSslParams() {

@@ -5,7 +5,6 @@ import net.corda.applications.workers.rest.utils.E2eCluster
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsRequestType
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
-import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
@@ -13,7 +12,6 @@ import net.corda.libs.permissions.endpoints.v1.role.types.RoleResponseType
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryResponseType
-import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.test.util.eventually
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -42,7 +40,7 @@ class RbacE2eClientRequestHelper(
     private fun verifyUserCreationPersisted(proxy: UserEndpoint, userName: String, passwordExpirySet: Instant) {
         eventually {
             assertDoesNotThrow {
-                with(proxy.getUser(userName)) {
+                with(proxy.getUserPath(userName)) {
                     SoftAssertions.assertSoftly {
                         it.assertThat(loginName).isEqualToIgnoringCase(userName)
                         it.assertThat(passwordExpiry).isEqualTo(passwordExpirySet)
@@ -115,46 +113,12 @@ class RbacE2eClientRequestHelper(
         }
     }
 
-    fun removeRoleFromUser(userName: String, roleId: String) {
-        val client = cluster.clusterHttpClientFor(UserEndpoint::class.java, requestUserName, requestUserPassword)
-        val proxy = client.start().proxy
-        with(proxy.removeRole(userName, roleId)) {
-            SoftAssertions.assertSoftly {
-                it.assertThat(this.responseCode.statusCode).isEqualTo(200)
-                it.assertThat(this.responseBody).isNotNull
-                it.assertThat(this.responseBody.roleAssociations.map { role -> role.roleId }).contains(roleId)
-            }
-        }
-    }
-
-    fun getUser(userLogin: String): UserResponseType {
-        val client = cluster.clusterHttpClientFor(UserEndpoint::class.java, requestUserName, requestUserPassword)
-        val proxy = client.start().proxy
-        return with(proxy.getUser(userLogin)) {
-            SoftAssertions.assertSoftly {
-                it.assertThat(this.loginName).isEqualToIgnoringCase(userLogin)
-            }
-            this
-        }
-    }
-
     fun getRole(roleId: String): RoleResponseType {
         val client = cluster.clusterHttpClientFor(RoleEndpoint::class.java, requestUserName, requestUserPassword)
         val proxy = client.start().proxy
         return with(proxy.getRole(roleId)) {
             SoftAssertions.assertSoftly {
                 it.assertThat(this.id).isEqualTo(roleId)
-            }
-            this
-        }
-    }
-
-    fun getPermission(permissionId: String): PermissionResponseType {
-        val client = cluster.clusterHttpClientFor(PermissionEndpoint::class.java, requestUserName, requestUserPassword)
-        val proxy = client.start().proxy
-        return with(proxy.getPermission(permissionId)) {
-            SoftAssertions.assertSoftly {
-                it.assertThat(this.id).isEqualTo(permissionId)
             }
             this
         }

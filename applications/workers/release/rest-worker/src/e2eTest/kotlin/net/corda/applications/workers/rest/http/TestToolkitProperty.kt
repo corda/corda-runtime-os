@@ -1,5 +1,6 @@
 package net.corda.applications.workers.rest.http
 
+import net.corda.rest.annotations.RestApiVersion
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
@@ -14,14 +15,17 @@ import kotlin.reflect.KProperty
  * Rather than using this class, please consider using [net.corda.applications.workers.rest.utils.E2eCluster] to gain
  * access to multi-cluster deployment as well as other functions available.
  */
-class TestToolkitProperty(private val host: String, private val port: Int) :
-    ReadOnlyProperty<Any, TestToolkit> {
+class TestToolkitProperty(private val host: String, private val port: Int) : ReadOnlyProperty<Any, TestToolkit> {
+
+    private companion object {
+        val REST_API_VERSION_PATH = RestApiVersion.C5_1.versionPath
+    }
 
     private lateinit var impl: TestToolkit
 
     override fun getValue(thisRef: Any, property: KProperty<*>): TestToolkit {
         if (!this::impl.isInitialized) {
-            impl = TestToolkitImpl(thisRef.javaClass, "https://$host:$port/api/v1/")
+            impl = TestToolkitImpl(thisRef.javaClass, "https://$host:$port/api/$REST_API_VERSION_PATH/")
         }
 
         return impl

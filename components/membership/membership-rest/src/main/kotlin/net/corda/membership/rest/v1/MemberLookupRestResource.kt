@@ -1,6 +1,7 @@
 package net.corda.membership.rest.v1
 
 import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.rest.v1.types.RestGroupParameters
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.RestPathParameter
@@ -109,7 +110,7 @@ interface MemberLookupRestResource : RestResource {
      * @param holdingIdentityShortHash Holding identity ID of the requesting member, which uniquely identifies the member
      * and its group.
      *
-     * @return The group parameters of the membership group as a [Map].
+     * @return The group parameters of the membership group.
      */
     @HttpGET(
         path = "{holdingIdentityShortHash}/group-parameters",
@@ -120,5 +121,5 @@ interface MemberLookupRestResource : RestResource {
         @RestPathParameter(description = "Holding identity ID of the requesting member. The result contains group " +
                 "parameters visible to this member.")
         holdingIdentityShortHash: String
-    ): Map<String, String>
+    ): RestGroupParameters
 }
