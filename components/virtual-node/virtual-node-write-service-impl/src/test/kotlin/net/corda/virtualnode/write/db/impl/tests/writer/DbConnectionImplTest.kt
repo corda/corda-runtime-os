@@ -63,7 +63,7 @@ class DbConnectionImplTest {
             "name",
             DbPrivilege.DDL,
             config,
-            null,
+            datasourceOverrides = null,
             "description"
         )
 
