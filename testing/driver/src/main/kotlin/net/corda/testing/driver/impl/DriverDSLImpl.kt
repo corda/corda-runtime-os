@@ -111,6 +111,8 @@ internal class DriverDSLImpl(
             "slf4j.api"
         )
         private val forbiddenSymbolicNames = setOf(
+            "net.corda.configuration-read-service-impl",
+            "net.corda.lifecycle-impl",
             "org.apache.commons.logging",
             "org.apache.felix.framework",
             "org.osgi.namespace.extender",
