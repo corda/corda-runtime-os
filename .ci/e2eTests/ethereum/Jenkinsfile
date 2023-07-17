@@ -1,3 +1,5 @@
 @Library('corda-shared-build-pipeline-steps@ES-829/build-eth-pipeline') _
 
-ethereumInterop()
+ethereumInterop(
+    deployEthereum: true,
+)
