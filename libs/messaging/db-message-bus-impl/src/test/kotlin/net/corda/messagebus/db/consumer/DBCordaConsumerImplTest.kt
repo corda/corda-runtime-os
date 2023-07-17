@@ -269,7 +269,7 @@ internal class DBCordaConsumerImplTest {
         )
 
         whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
-        whenever(dbAccess.getLatestRecordOffsets()).thenAnswer { mapOf(partition0 to 3L) }
+        whenever(dbAccess.getLatestRecordOffsets()).thenAnswer { mapOf(partition0 to 5L) }
         whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
         whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer {
             startCommittedRecords + pendingRecords + finalCommittedRecords
@@ -331,6 +331,33 @@ internal class DBCordaConsumerImplTest {
         whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
         whenever(dbAccess.getLatestRecordOffsets()).thenAnswer { mapOf(partition0 to 3L) }
         whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer { validRecords + nullRecords }
+        whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
+
+        val consumer = makeConsumer()
+        val test = consumer.poll(Duration.ZERO)
+        assertThat(test.size).isEqualTo(4)
+        assertThat(test).isEqualTo(expectedRecords)
+    }
+
+    @Test
+    fun `consumer poll skips over transactions which have been marked as aborted`() {
+        val fromOffset = ArgumentCaptor.forClass(Long::class.java)
+        val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
+
+        val recordsToReturn = getTopicRecords(startOffset = 0, count = 2) +
+                            getTopicRecords(startOffset = 2, txState = TransactionState.ABORTED, count = 2) +
+                            getTopicRecords(startOffset = 4, count = 2)
+
+        val expectedRecords = listOf(
+            CordaConsumerRecord(defaultTopic, 0, 0, "key", "value", timestamp.toEpochMilli()),
+            CordaConsumerRecord(defaultTopic, 0, 1, "key", "value", timestamp.toEpochMilli()),
+            CordaConsumerRecord(defaultTopic, 0, 4, "key", "value", timestamp.toEpochMilli()),
+            CordaConsumerRecord(defaultTopic, 0, 5, "key", "value", timestamp.toEpochMilli())
+        )
+
+        whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
+        whenever(dbAccess.getLatestRecordOffsets()).thenAnswer { mapOf(partition0 to 5L) }
+        whenever(dbAccess.readRecords(fromOffset.capture(), any(), any())).thenAnswer { recordsToReturn }
         whenever(consumerGroup.getTopicPartitionsFor(any())).thenAnswer { setOf(partition0) }
 
         val consumer = makeConsumer()
