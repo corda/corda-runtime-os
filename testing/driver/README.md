@@ -137,6 +137,21 @@ public interface DriverDSL {
         @NotNull Class<?> flowClass,
         @NotNull ThrowingSupplier<String> flowArgMapper
     );
+
+    void node(
+        @NotNull VirtualNodeInfo virtualNodeInfo,
+        @NotNull ThrowingConsumer<Member> action
+    );
+
+    void groupFor(
+        @NotNull VirtualNodeInfo virtualNodeInfo,
+        @NotNull ThrowingConsumer<MembershipGroupDSL> action
+    );
+
+    void group(
+        @NotNull String groupName,
+        @NotNull ThrowingConsumer<MembershipGroupDSL> action
+    );
 }
 ```
 It should _not_ be necessary for CorDapp developers to understand OSGi in order to use the Driver.
@@ -156,7 +171,10 @@ The Driver's Corda network consists of the members declared via `DriverNodes(...
 notaries. Each member is assigned its own key pair, which by default is generated using the
 `CORDA.ECDSA.SECP256R1` key scheme.
 
-A virtual node is uniquely identified by its `HoldingIdentity(X500Name, groupId)`.
+A virtual node is uniquely identified by its `HoldingIdentity(X500Name, groupId)`, and always
+starts with `ACTIVE` status.
+
+You can change a virtual node's status to either `SUSPENDED` or `PENDING` via `DriverDSL`.
 
 A flow may only communicate with another virtual node whose `HoldingIdentity` has a matching
 `groupId` value.
@@ -198,8 +216,9 @@ We define our system bundle also to include these bundles:
 - `org.osgi.util.function`
 - `org.osgi.util.promise`
 
-Our system bundle also needs to contain the `net.corda.testing.driver.node` package,
-which is defined by the Driver's own `net.corda.driver` bundle.
+Our system bundle also needs to contain the `net.corda.testing.driver.node` and
+`net.corda.testing.driver.function` packages, which are defined by the Driver's
+own `net.corda.driver` bundle.
 
 ### Excluded Bundles
 We explicitly exclude these bundles from being installed into the OSGi framework:

@@ -1,8 +1,8 @@
 package net.corda.testing.driver.impl
 
 import java.time.Duration
-import net.corda.testing.driver.node.RunFlow
 import net.corda.testing.driver.function.ThrowingSupplier
+import net.corda.testing.driver.node.RunFlow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro

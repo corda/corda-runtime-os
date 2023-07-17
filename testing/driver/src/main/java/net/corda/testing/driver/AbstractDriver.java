@@ -28,9 +28,9 @@ abstract class AbstractDriver {
         @NotNull Map<MemberX500Name, KeyPair> notaries,
         @NotNull Set<KeyValuePair> groupParameters
     ) {
-        requireNonNull(members);
-        requireNonNull(notaries);
-        requireNonNull(groupParameters);
+        requireNonNull(members, "members must not be null");
+        requireNonNull(notaries, "notaries must not be null");
+        requireNonNull(groupParameters, "groupParameters must not be null");
 
         this.members = members;
         this.notaries = notaries;
