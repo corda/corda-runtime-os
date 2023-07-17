@@ -100,7 +100,7 @@ class SessionDataProcessorSend(
         val sessionInit = sendEventsState.undeliveredMessages.find { it.payload is SessionInit }
         if (sessionInit != null) {
             val dataPayload = sessionEvent.payload as SessionData
-            dataPayload.sessionInit = sessionEvent.payload as SessionInit
+            dataPayload.sessionInit = sessionInit.payload as SessionInit
         }
         sendEventsState.undeliveredMessages = sendEventsState.undeliveredMessages.plus(sessionEvent)
     }
