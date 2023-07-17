@@ -11,17 +11,19 @@ import net.corda.v5.application.messaging.FlowSession
  * ```kotlin
  * class UtxoFinalityFlowVersionedFlowFactory(
  *     private val transaction: UtxoSignedTransactionInternal,
- *     private val pluggableNotaryClientFlow: Class<PluggableNotaryClientFlow>
+ *     private val pluggableNotaryClientFlow: Class<PluggableNotaryClientFlow>,
+ *     private val serializationService: SerializationService
  * ) : VersionedSendFlowFactory<UtxoSignedTransaction> {
  *
  *     override val versionedInstanceOf: Class<UtxoFinalityFlow> = UtxoFinalityFlow::class.java
  *
  *     override fun create(version: Int, sessions: List<FlowSession>): SubFlow<UtxoSignedTransaction> {
- *         return when {
- *             version >= 10 -> UtxoFinalityFlowV2(transaction, sessions, pluggableNotaryClientFlow)
- *             version >= 1 -> UtxoFinalityFlowV1(transaction, sessions, pluggableNotaryClientFlow)
+ *         val finalityVersion = when {
+ *             version >= CORDA_5_1.value -> UtxoFinalityVersion.V2
+ *             version in 1 until CORDA_5_1.value -> UtxoFinalityVersion.V1
  *             else -> throw IllegalArgumentException()
  *         }
+ *         return UtxoFinalityFlowV1(transaction, sessions, pluggableNotaryClientFlow, serializationService, finalityVersion)
  *     }
  * }
  * ```

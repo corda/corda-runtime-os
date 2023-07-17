@@ -121,7 +121,7 @@ class UtxoReceiveFinalityFlowV1(
                 "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
             }
         }
-        return Pair(initialTransaction, transferAdditionalSignatures)
+        return initialTransaction to transferAdditionalSignatures
     }
 
     @Suspendable
