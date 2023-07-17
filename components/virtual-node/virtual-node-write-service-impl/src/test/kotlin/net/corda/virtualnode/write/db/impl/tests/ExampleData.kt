@@ -4,6 +4,7 @@ import java.time.Instant
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
+import net.corda.db.connection.manager.DatasourceConfigOverrides
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
@@ -70,10 +71,16 @@ internal fun getVNodeDb(
     }
 }
 
-internal fun getDbConnection(name: String, description: String, config: SmartConfig = mock()): DbConnection {
+internal fun getDbConnection(
+    name: String,
+    description: String,
+    config: SmartConfig = mock(),
+    datasourceOverrides: DatasourceConfigOverrides = mock()
+): DbConnection {
     return mock<DbConnection>().apply {
         whenever(this.name).thenReturn(name)
         whenever(this.description).thenReturn(description)
         whenever(this.config).thenReturn(config)
+        whenever(this.datasourceOverrides).thenReturn(datasourceOverrides)
     }
 }

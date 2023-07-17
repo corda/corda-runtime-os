@@ -173,67 +173,49 @@ class CreateVirtualNodeServiceImplTest {
         val uniquenessDmlDbConnectionDetailsId = UUID.randomUUID()
 
         whenever(
-            dbConnectionManager.putConnection(
+            vaultPlatformManagedVirtualNodeDb.persistConnection(
                 entityManager,
-                vaultDdlDbConnectionDetails.name,
                 DDL,
-                vaultDdlDbConnectionDetails.config,
-                vaultDdlDbConnectionDetails.description,
                 updateActor
             )
         ).thenReturn(vaultDdlDbConnectionDetailsId)
 
         whenever(
-            dbConnectionManager.putConnection(
+            vaultPlatformManagedVirtualNodeDb.persistConnection(
                 entityManager,
-                vaultDmlDbConnectionDetails.name,
                 DML,
-                vaultDmlDbConnectionDetails.config,
-                vaultDmlDbConnectionDetails.description,
                 updateActor
             )
         ).thenReturn(vaultDmlDbConnectionDetailsId)
 
         whenever(
-            dbConnectionManager.putConnection(
+            cryptoUserManagedVirtualNodeDb.persistConnection(
                 entityManager,
-                cryptoDdlDbConnectionDetails.name,
                 DDL,
-                cryptoDdlDbConnectionDetails.config,
-                cryptoDdlDbConnectionDetails.description,
                 updateActor
             )
         ).thenReturn(cryptoDdlDbConnectionDetailsId)
 
         whenever(
-            dbConnectionManager.putConnection(
+            cryptoUserManagedVirtualNodeDb.persistConnection(
                 entityManager,
-                cryptoDmlDbConnectionDetails.name,
                 DML,
-                cryptoDmlDbConnectionDetails.config,
-                cryptoDmlDbConnectionDetails.description,
                 updateActor
             )
         ).thenReturn(cryptoDmlDbConnectionDetailsId)
 
         whenever(
-            dbConnectionManager.putConnection(
+            uniquenessPlatformManagedVirtualNodeDb.persistConnection(
                 entityManager,
-                uniquenessDdlDbConnectionDetails.name,
                 DDL,
-                uniquenessDdlDbConnectionDetails.config,
-                uniquenessDdlDbConnectionDetails.description,
                 updateActor
             )
         ).thenReturn(uniquenessDdlDbConnectionDetailsId)
 
         whenever(
-            dbConnectionManager.putConnection(
+            uniquenessPlatformManagedVirtualNodeDb.persistConnection(
                 entityManager,
-                uniquenessDmlDbConnectionDetails.name,
                 DML,
-                uniquenessDmlDbConnectionDetails.config,
-                uniquenessDmlDbConnectionDetails.description,
                 updateActor
             )
         ).thenReturn(uniquenessDmlDbConnectionDetailsId)
