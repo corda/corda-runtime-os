@@ -1,7 +1,5 @@
 package net.corda.membership.impl.registration.verifiers
 
-import net.corda.membership.impl.registration.verifiers.OrderVerifier
-import net.corda.membership.impl.registration.verifiers.P2pEndpointVerifier
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any

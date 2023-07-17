@@ -1,8 +1,8 @@
-package net.corda.membership.impl.rest.v1.verifiers
+package net.corda.membership.lib.impl.verifiers
 
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MPV_KEY
 
-internal class GroupParametersUpdateVerifier {
+class GroupParametersUpdateVerifier {
 
     private companion object {
         const val CUSTOM_KEY_PREFIX = "ext."

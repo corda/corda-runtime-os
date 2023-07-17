@@ -43,6 +43,7 @@ import net.corda.membership.lib.impl.grouppolicy.getOptionalString
 import net.corda.membership.lib.impl.grouppolicy.getOptionalStringList
 import net.corda.membership.lib.impl.grouppolicy.getOptionalStringMap
 import net.corda.membership.lib.impl.grouppolicy.validatePemCert
+import net.corda.membership.lib.impl.verifiers.GroupParametersUpdateVerifier
 import net.corda.v5.base.types.MemberX500Name
 
 class MemberGroupPolicyImpl(rootNode: JsonNode) : MemberGroupPolicy {
@@ -107,7 +108,15 @@ class MemberGroupPolicyImpl(rootNode: JsonNode) : MemberGroupPolicy {
             output.toList()
         }
 
-        override val staticNetworkGroupParameters: Map<String, String>? = staticNetwork?.getOptionalStringMap(GROUP_PARAMETERS)
+        override val staticNetworkGroupParameters: Map<String, String>? =
+            staticNetwork?.getOptionalStringMap(GROUP_PARAMETERS)?.apply {
+                val verifierResult = GroupParametersUpdateVerifier().verify(this)
+                if (verifierResult is GroupParametersUpdateVerifier.Result.Failure) {
+                    with(verifierResult.reason) {
+                        throw BadGroupPolicyException(this)
+                    }
+                }
+            }
     }
 
     internal inner class P2PParametersImpl(rootNode: JsonNode) : GroupPolicy.P2PParameters {

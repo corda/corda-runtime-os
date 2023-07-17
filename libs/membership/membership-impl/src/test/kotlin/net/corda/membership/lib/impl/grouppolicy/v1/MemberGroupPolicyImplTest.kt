@@ -1,5 +1,6 @@
 package net.corda.membership.lib.impl.grouppolicy.v1
 
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MPV_KEY
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
@@ -736,6 +737,27 @@ class MemberGroupPolicyImplTest {
                 MemberGroupPolicyImpl(buildGroupPolicyNode(cipherSuiteOverride = null))
             }
             assertThat(ex.message).isEqualTo(getMissingKeyError(CIPHER_SUITE))
+        }
+
+        @Test
+        fun `group parameters may only contain MPV or custom parameters`() {
+            val ex = assertThrows<BadGroupPolicyException> {
+                MemberGroupPolicyImpl(
+                    buildGroupPolicyNode(
+                        protocolParametersOverride = buildProtocolParameters(
+                            staticNetworkOverride = buildStaticMemberTemplate(
+                                listOf(
+                                    mapOf(TEST_STATIC_MEMBER_KEY to TEST_STATIC_MEMBER_VALUE)
+                                ),
+                                mapOf(
+                                    EPOCH_KEY to "5"
+                                )
+                            )
+                        )
+                    )
+                )
+            }
+            assertThat(ex.message).contains("Failed to validate the group parameters")
         }
     }
 }

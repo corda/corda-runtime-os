@@ -14,7 +14,8 @@ internal class RegistrationContextCustomFieldsVerifier {
         val customFields = context.filter { it.key.startsWith(CUSTOM_KEY_PREFIX) }
         if (customFields.size > MAX_CUSTOM_FIELDS ) {
             return Result.Failure(
-                "The number of custom fields (${customFields.size}) in the registration context is larger than " + "the maximum allowed ($MAX_CUSTOM_FIELDS)."
+                "The number of custom fields (${customFields.size}) in the registration context is larger than " +
+                        "the maximum allowed ($MAX_CUSTOM_FIELDS)."
             )
         }
 
