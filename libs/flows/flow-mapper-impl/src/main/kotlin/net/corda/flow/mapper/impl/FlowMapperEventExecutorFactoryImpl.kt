@@ -6,6 +6,7 @@ import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
@@ -65,15 +66,26 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                         )
                     }
                     else -> {
-                        SessionEventExecutor(
-                            eventKey,
-                            flowMapperEventPayload,
-                            state,
-                            instant,
-                            sessionEventSerializer,
-                            ::generateAppMessage,
-                            flowConfig
-                        )
+                        if ((sessionPayload as SessionData).sessionInit != null) {
+                            SessionInitExecutor(
+                                eventKey,
+                                flowMapperEventPayload,
+                                sessionPayload.sessionInit,
+                                state,
+                                sessionEventSerializer,
+                                flowConfig
+                            )
+                        } else {
+                            SessionEventExecutor(
+                                eventKey,
+                                flowMapperEventPayload,
+                                state,
+                                instant,
+                                sessionEventSerializer,
+                                ::generateAppMessage,
+                                flowConfig
+                            )
+                        }
                     }
                 }
             }
