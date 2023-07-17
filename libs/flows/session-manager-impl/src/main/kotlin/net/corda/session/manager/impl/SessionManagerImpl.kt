@@ -77,6 +77,8 @@ class SessionManagerImpl @Activate constructor(
         instant: Instant,
         maxMsgSize: Long,
     ): SessionState {
+        logger.info("Lorcan: sending mess ${event::class.java}")
+
         return sessionEventProcessorFactory.createEventToSendProcessor(key, event, sessionState, instant, maxMsgSize).execute()
     }
 
