@@ -48,16 +48,22 @@ class SessionManagerImpl @Activate constructor(
             processAcks(event, it)
         }
 
+        logger.info("Lorcan: processing to send ${event.payload::class.java}")
+
         val eventPayload = event.payload
         if (eventPayload is SessionData) {
             //execute init block first as seq num 1
             if (eventPayload.sessionInit != null) {
+                logger.info("Lorcan: handling data init")
+
                 val sessionInitEvent = SessionEvent.newBuilder(event)
                     .setSequenceNum(1)
                     .setPayload(eventPayload.sessionInit)
                     .build()
                 updatedSessionState =
                     sessionEventProcessorFactory.createEventReceivedProcessor(key, sessionInitEvent, updatedSessionState, instant).execute()
+
+                logger.info("Lorcan: handling data init, session state $sessionState")
             }
         }
 
@@ -208,6 +214,8 @@ class SessionManagerImpl @Activate constructor(
 //        config: SmartConfig,
     ): List<SessionEvent> {
         val sessionEvents = filterSessionEvents(sessionState, instant)
+        logger.info("Lorcan: filtered session event: $sessionEvents")
+
         if (sessionEvents.isEmpty()) return emptyList()
 
         //update events with the latest ack info from the current state
@@ -229,6 +237,8 @@ class SessionManagerImpl @Activate constructor(
 
         //assume guaranteed delivery
         sessionState.sendEventsState.undeliveredMessages = emptyList()
+
+        logger.info("Lorcan: session event to send: ${sessionEvents.filter { it.payload is SessionData }}")
 
         //only send data msgs
         return sessionEvents.filter { it.payload is SessionData }
