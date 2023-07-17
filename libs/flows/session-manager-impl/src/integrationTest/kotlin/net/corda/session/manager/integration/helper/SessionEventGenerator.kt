@@ -42,7 +42,7 @@ fun generateInit(instant: Instant, messageDirection: MessageDirection = MessageD
 }
 
 fun generateData(instant: Instant, messageDirection: MessageDirection): SessionEvent {
-    return generateSessionEvent(SessionData(ByteBuffer.wrap("bytes".toByteArray())), instant, messageDirection)
+    return generateSessionEvent(SessionData(ByteBuffer.wrap("bytes".toByteArray()), null), instant, messageDirection)
 }
 
 fun generateAck(instant: Instant, messageDirection: MessageDirection = MessageDirection.OUTBOUND): SessionEvent {

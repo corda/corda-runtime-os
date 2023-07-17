@@ -106,7 +106,7 @@ class InMemSubscriptionFactory @Activate constructor(
 
     override fun <K : Any, S : Any, E : Any> createPriorityStreamSubscription(
         subscriptionConfig: SubscriptionConfig,
-        topics: Map<Int, String>,
+        topics: Map<Int, List<String>>,
         processor: StateAndEventProcessor<K, S, E>,
         messagingConfig: SmartConfig
     ): StateAndEventSubscription<K, S, E> {

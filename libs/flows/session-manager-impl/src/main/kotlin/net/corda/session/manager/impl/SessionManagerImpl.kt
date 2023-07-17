@@ -13,12 +13,9 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.chunking.MessagingChunkFactory
-import net.corda.schema.configuration.FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW
-import net.corda.schema.configuration.FlowConfig.SESSION_MESSAGE_RESEND_WINDOW
 import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
 import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
-import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.setErrorState
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
@@ -46,9 +43,22 @@ class SessionManagerImpl @Activate constructor(
 
     override fun processMessageReceived(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant):
             SessionState {
-        val updatedSessionState = sessionState?.let {
+        var updatedSessionState = sessionState?.let {
             it.lastReceivedMessageTime = instant
             processAcks(event, it)
+        }
+
+        val eventPayload = event.payload
+        if (eventPayload is SessionData) {
+            //execute init block first as seq num 1
+            if (eventPayload.sessionInit != null) {
+                val sessionInitEvent = SessionEvent.newBuilder(event)
+                    .setSequenceNum(1)
+                    .setPayload(eventPayload.sessionInit)
+                    .build()
+                updatedSessionState =
+                    sessionEventProcessorFactory.createEventReceivedProcessor(key, sessionInitEvent, updatedSessionState, instant).execute()
+            }
         }
 
         return sessionEventProcessorFactory.createEventReceivedProcessor(key, event, updatedSessionState, instant).execute()
@@ -217,7 +227,11 @@ class SessionManagerImpl @Activate constructor(
             }
         }
 
-        return sessionEvents
+        //assume guaranteed delivery
+        sessionState.sendEventsState.undeliveredMessages = emptyList()
+
+        //only send data msgs
+        return sessionEvents.filter { it.payload is SessionData }
     }
 
     /**
