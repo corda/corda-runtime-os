@@ -63,8 +63,6 @@ internal class CreateVirtualNodeOperationHandler(
                 createVirtualNodeService.ensureHoldingIdentityIsUnique(request)
             }
 
-            // jdbc stuff nullable
-
             val vNodeDbs = execLog.measureExecTime("get virtual node databases") {
                 virtualNodeDbFactory.createVNodeDbs(holdingId.shortHash, request)
             }
