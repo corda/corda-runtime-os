@@ -22,8 +22,9 @@ import zipkin2.reporter.AsyncReporter
 import zipkin2.reporter.Reporter
 import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.urlconnection.URLConnectionSender
-import java.util.Stack
+import java.util.*
 import java.util.concurrent.ExecutorService
+import java.util.logging.Logger
 import javax.servlet.Filter
 
 internal sealed interface SampleRate
@@ -70,27 +71,43 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
                     .build()
             )
 
-        //Establish zipkin connection iff url host is provided
+
+        val reporters = mutableListOf<Reporter<Span>>()
+
+        // The console reporter is useful when debugging test runs on the combined worker.
+        // uncomment it to enable it.
+//        reporters.add(Reporter.CONSOLE)
+
+        //Establish zipkin connection iff url host is provided and create respective reporter
         if (zipkinHost != null){
-
-            // The console reporter is useful when debugging test runs on the combined worker.
-            // uncomment it to enable it.
-            val reporters = mutableListOf<Reporter<Span>>(/*Reporter.CONSOLE*/)
-            val reporter = CombinedSpanReporter(reporters)
-
             val zipkinUrl = "$zipkinHost/api/v2/spans"
             val spanAsyncReporter =
                 AsyncReporter.create(URLConnectionSender.create(zipkinUrl))
                     .also(resourcesToClose::push)
-
             reporters.add(spanAsyncReporter)
-
-            val spanHandler = ZipkinSpanHandler.create(reporter)
-
-            tracingBuilder.addSpanHandler(spanHandler)
         }
 
+        // LogReporter will report trace spans to local log files, uncomment to enable
+//        val logReporter = LogReporter()
+//        reporters.add(logReporter)
+
+
+        val reporter = CombinedSpanReporter(reporters)
+        val spanHandler = ZipkinSpanHandler.create(reporter)
+        tracingBuilder.addSpanHandler(spanHandler)
         tracingBuilder.build().also(resourcesToClose::push)
+    }
+
+    private class LogReporter : Reporter<Span> {
+        private val logger: Logger = Logger.getLogger(LogReporter::class.java.name)
+
+        override fun report(span: Span) {
+                logger.info(span.toString())
+        }
+
+        override fun toString(): String {
+            return "LogReporter{name=${logger.name}}"
+        }
     }
 
     private val tracer: Tracer by lazy {

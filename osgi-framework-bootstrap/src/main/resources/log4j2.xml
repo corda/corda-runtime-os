@@ -87,7 +87,7 @@
             <AppenderRef ref="Ledger-Detailed"/>
         </logger>
 
-        <logger name="brave.Tracer" additivity="false" level="off">
+        <logger name="net.corda.tracing" additivity="false" level="trace">
             <AppenderRef ref="Trace-Spans"/>
         </logger>
 
