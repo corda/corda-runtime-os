@@ -76,10 +76,10 @@ class PersistenceRequestProcessor(
                             delegatedRequestHandlerSelector.selectHandler(sandbox, request).execute()
                         } catch (e: Exception) {
                             listOf(
-                                when (e) {
-                                    is UnsupportedLedgerTypeException,
-                                    is UnsupportedRequestTypeException,
-                                    is InconsistentLedgerStateException -> {
+                                when (e::class.java) {
+                                    in setOf(UnsupportedLedgerTypeException::class.java,
+                                    UnsupportedRequestTypeException::class.java,
+                                    InconsistentLedgerStateException::class.java) -> {
                                         responseFactory.fatalErrorResponse(request.flowExternalEventContext, e)
                                     }
 

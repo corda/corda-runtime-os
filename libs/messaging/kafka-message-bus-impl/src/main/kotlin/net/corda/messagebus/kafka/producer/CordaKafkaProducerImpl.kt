@@ -13,6 +13,7 @@ import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
+import net.corda.messaging.utils.ExceptionUtils
 import net.corda.metrics.CordaMetrics
 import net.corda.tracing.TraceContext
 import net.corda.tracing.addTraceContextToRecord
@@ -63,6 +64,25 @@ class CordaKafkaProducerImpl(
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val asyncChunkErrorMessage = "Tried to send record which requires chunking using an asynchronous producer"
+
+        val fatalExceptions: Set<Class<out Throwable>> = setOf(
+            ProducerFencedException::class.java,
+            UnsupportedVersionException::class.java,
+            UnsupportedForMessageFormatException::class.java,
+            AuthorizationException::class.java,
+            FencedInstanceIdException::class.java
+        )
+        val transientException: Set<Class<out Throwable>> = setOf(
+            TimeoutException::class.java,
+            InterruptException::class.java,
+            // Failure to commit here might be due to consumer kicked from group.
+            // Return as intermittent to trigger retry
+            InvalidProducerEpochException::class.java,
+            // See https://cwiki.apache.org/confluence/display/KAFKA/KIP-588%3A+Allow+producers+to+recover+gracefully+from+transaction+timeouts
+            // This exception means the coordinator has bumped the producer epoch because of a timeout of this producer.
+            // There is no other producer, we are not a zombie, and so don't need to be fenced, we can simply abort and retry.
+            KafkaException::class.java
+        )
     }
 
     private fun toTraceKafkaCallback(callback: CordaProducer.Callback, ctx: TraceContext): Callback {
@@ -357,37 +377,24 @@ class CordaKafkaProducerImpl(
     @Suppress("ThrowsCount")
     private fun handleException(ex: Exception, operation: String, abortTransaction: Boolean) {
         val errorString = "$operation for CordaKafkaProducer with clientId ${config.clientId}"
-        when (ex) {
-            is ProducerFencedException,
-            is UnsupportedVersionException,
-            is UnsupportedForMessageFormatException,
-            is AuthorizationException,
-            is FencedInstanceIdException -> {
+        when (ex::class.java) {
+            in fatalExceptions -> {
                 throw CordaMessageAPIFatalException("FatalError occurred $errorString", ex)
             }
 
-            is IllegalStateException -> {
+            in setOf(IllegalStateException::class.java) -> {
                 // It's not clear whether the producer is ok to abort and continue or not in this case, so play it safe
                 // and let the client know to create a new one.
                 throw CordaMessageAPIProducerRequiresReset("Error occurred $errorString", ex)
             }
 
-            is TimeoutException,
-            is InterruptException,
-                // Failure to commit here might be due to consumer kicked from group.
-                // Return as intermittent to trigger retry
-            is InvalidProducerEpochException,
-                // See https://cwiki.apache.org/confluence/display/KAFKA/KIP-588%3A+Allow+producers+to+recover+gracefully+from+transaction+timeouts
-                // This exception means the coordinator has bumped the producer epoch because of a timeout of this producer.
-                // There is no other producer, we are not a zombie, and so don't need to be fenced, we can simply abort and retry.
-            is KafkaException -> {
+           in transientException -> {
                 if (abortTransaction) {
                     abortTransaction()
                 }
                 throw CordaMessageAPIIntermittentException("Error occurred $errorString", ex)
             }
-            is CordaMessageAPIFatalException,
-            is CordaMessageAPIIntermittentException -> { throw ex }
+            in ExceptionUtils.CordaMessageAPIException -> { throw ex }
 
             else -> {
                 // Here we do not know what the exact cause of the exception is, but we do know Kafka has not told us we
