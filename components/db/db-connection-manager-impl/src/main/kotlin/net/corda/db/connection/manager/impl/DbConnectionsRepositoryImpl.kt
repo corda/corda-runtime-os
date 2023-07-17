@@ -80,6 +80,32 @@ class DbConnectionsRepositoryImpl(
         return existingConfig.id
     }
 
+    override fun put(
+        entityManager: EntityManager,
+        name: String,
+        privilege: DbPrivilege,
+        datasourceConfigOverrides: DatasourceConfigOverrides,
+        description: String?,
+        updateActor: String
+    ): UUID {
+        val dbConfig = entityManagerFactory.createEntityManager().use {
+            // TODO cache the DDL and DML pool configs
+            val dbConnectionConfig = checkNotNull(it.findDbConnectionByNameAndPrivilege(name, privilege))
+            ConfigFactory.parseString(dbConnectionConfig.config)
+        }
+
+        val configFromOverrides = datasourceConfigOverrides.toConfig(dbConfigFactory)
+        val config = configFromOverrides.withFallback(dbConfig)
+        return put(
+            entityManager,
+            name,
+            privilege,
+            config,
+            description,
+            updateActor
+        )
+    }
+
     override fun create(name: String, privilege: DbPrivilege): CloseableDataSource? {
         logger.debug("Fetching DB connection for $name")
         entityManagerFactory.createEntityManager().use {

@@ -3,6 +3,8 @@ package net.corda.virtualnode.write.db.impl.writer
 import net.corda.db.admin.DbChange
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
+import java.util.UUID
+import javax.persistence.EntityManager
 
 /**
  * Represents a Virtual Node Database
@@ -40,4 +42,10 @@ internal interface VirtualNodeDb {
      * @param migrationTagToApply
      */
     fun runCpiMigrations(dbChange: DbChange, migrationTagToApply: String)
+
+    fun persistConnection(
+        entityManager: EntityManager,
+        dbPrivilege: DbPrivilege,
+        updateActor: String
+    ): UUID?
 }

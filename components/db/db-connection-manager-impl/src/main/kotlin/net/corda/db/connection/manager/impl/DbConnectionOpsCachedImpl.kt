@@ -1,6 +1,7 @@
 package net.corda.db.connection.manager.impl
 
 import net.corda.db.connection.manager.DBConfigurationException
+import net.corda.db.connection.manager.DatasourceConfigOverrides
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
@@ -35,6 +36,19 @@ class DbConnectionOpsCachedImpl(
                                description: String?, updateActor: String): UUID {
         return delegate.putConnection(entityManager, name, privilege, config, description, updateActor)
             .apply { removeFromCache(name, privilege) }
+    }
+
+    override fun putConnection(
+        entityManager: EntityManager,
+        name: String,
+        privilege: DbPrivilege,
+        datasourceConfigOverrides: DatasourceConfigOverrides,
+        description: String?,
+        updateActor: String
+    ): UUID {
+        return delegate.putConnection(
+            entityManager, name, privilege, datasourceConfigOverrides, description, updateActor
+        ).apply { removeFromCache(name, privilege) }
     }
 
     override fun getOrCreateEntityManagerFactory(db: CordaDb, privilege: DbPrivilege): EntityManagerFactory {

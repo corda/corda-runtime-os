@@ -43,6 +43,14 @@ interface DbConnectionsRepository {
             description: String?,
             updateActor: String): UUID
 
+    @Suppress("LongParameterList")
+    fun put(entityManager: EntityManager,
+            name: String,
+            privilege: DbPrivilege,
+            datasourceConfigOverrides: DatasourceConfigOverrides,
+            description: String?,
+            updateActor: String): UUID
+
     /**
      * Creates [CloseableDataSource] for given [name].
      *

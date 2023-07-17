@@ -14,6 +14,8 @@ import net.corda.db.core.DbPrivilege.DML
 import net.corda.db.schema.DbSchema
 import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import org.slf4j.LoggerFactory
+import java.util.UUID
+import javax.persistence.EntityManager
 
 /**
  * Encapsulates access to a single database, either of type VAULT or CONFIG, at multiple different privilege levels
@@ -123,6 +125,29 @@ internal class VirtualNodeDbImpl(
             }
         }
     }
+
+    override fun persistConnection(entityManager: EntityManager, dbPrivilege: DbPrivilege, updateActor: String): UUID? =
+        dbConnections[dbPrivilege]?.let { dbConnection ->
+            if (isPlatformManagedDb) {
+                dbConnectionManager.putConnection(
+                    entityManager,
+                    dbConnection.name,
+                    dbPrivilege,
+                    dbConnection.datasourceOverrides!!,
+                    dbConnection.description,
+                    updateActor
+                )
+            } else {
+                dbConnectionManager.putConnection(
+                    entityManager,
+                    dbConnection.name,
+                    dbPrivilege,
+                    dbConnection.config,
+                    dbConnection.description,
+                    updateActor
+                )
+            }
+        }
 
     private fun getDataSource(dbConnection: DbConnection): CloseableDataSource =
         if (isPlatformManagedDb) {

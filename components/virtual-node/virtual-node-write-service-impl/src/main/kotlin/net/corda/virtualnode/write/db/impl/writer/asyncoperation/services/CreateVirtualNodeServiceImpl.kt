@@ -181,17 +181,6 @@ internal class CreateVirtualNodeServiceImpl(
         dbPrivilege: DbPrivilege,
         updateActor: String
     ): UUID? {
-        return vNodeDbs[dbType]?.let { vNodeDb ->
-            vNodeDb.dbConnections[dbPrivilege]?.let { dbConnection ->
-                dbConnectionManager.putConnection(
-                    entityManager,
-                    dbConnection.name,
-                    dbPrivilege,
-                    dbConnection.config,
-                    dbConnection.description,
-                    updateActor
-                )
-            }
-        }
+        return vNodeDbs[dbType]?.persistConnection(entityManager, dbPrivilege, updateActor)
     }
 }

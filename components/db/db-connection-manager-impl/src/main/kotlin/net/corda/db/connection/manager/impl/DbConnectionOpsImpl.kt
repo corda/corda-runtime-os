@@ -60,6 +60,17 @@ class DbConnectionOpsImpl(
                                description: String?, updateActor: String): UUID =
         dbConnectionsRepository.put(entityManager, name, privilege, config, description, updateActor)
 
+    override fun putConnection(
+        entityManager: EntityManager,
+        name: String,
+        privilege: DbPrivilege,
+        datasourceConfigOverrides: DatasourceConfigOverrides,
+        description: String?,
+        updateActor: String
+    ): UUID {
+        TODO("Not yet implemented")
+    }
+
     override fun getClusterEntityManagerFactory(): EntityManagerFactory = clusterEntityManagerFactory
 
     override fun getOrCreateEntityManagerFactory(db: CordaDb, privilege: DbPrivilege): EntityManagerFactory {

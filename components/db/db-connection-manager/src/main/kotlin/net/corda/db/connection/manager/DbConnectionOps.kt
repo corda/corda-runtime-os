@@ -65,6 +65,15 @@ interface DbConnectionOps {
                       description: String?,
                       updateActor: String): UUID
 
+    @Suppress("LongParameterList")
+    fun putConnection(entityManager: EntityManager,
+                      name: String,
+                      privilege: DbPrivilege,
+                      datasourceConfigOverrides: DatasourceConfigOverrides,
+                      description: String?,
+                      updateActor: String
+                      ): UUID
+
     /**
      * Get cluster DB [DataSource]
      *

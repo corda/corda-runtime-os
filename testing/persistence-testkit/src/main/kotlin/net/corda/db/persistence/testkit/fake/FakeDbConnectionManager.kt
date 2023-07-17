@@ -110,6 +110,17 @@ class FakeDbConnectionManager(
         TODO("Not yet implemented")
     }
 
+    override fun putConnection(
+        entityManager: EntityManager,
+        name: String,
+        privilege: DbPrivilege,
+        datasourceConfigOverrides: DatasourceConfigOverrides,
+        description: String?,
+        updateActor: String
+    ): UUID {
+        TODO("Not yet implemented")
+    }
+
     override fun getClusterDataSource(): DataSource {
         TODO("Not yet implemented")
     }
