@@ -87,4 +87,11 @@ class NoOpCordaConsumer<K : Any, V : Any>(
         // NoOp Implementation
     }
 
+    override fun commitSync() {
+        // Nothing
+    }
+
+    override fun commitAsync() {
+        // Nothing
+    }
 }

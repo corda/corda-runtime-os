@@ -216,6 +216,14 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
         )
     }
 
+    override fun commitSync() {
+        // Nothing
+    }
+
+    override fun commitAsync() {
+        // Nothing
+    }
+
     override fun getPartitions(topic: String): List<CordaTopicPartition> {
         return dbAccess.getTopicPartitionMapFor(topic).toList()
     }

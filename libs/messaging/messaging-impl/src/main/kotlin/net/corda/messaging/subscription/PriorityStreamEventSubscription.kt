@@ -4,7 +4,10 @@ import kotlinx.coroutines.*
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.MessageDirection
+import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -209,17 +212,16 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     private fun processEvents() {
         var attempts = 0
         while (!threadLooper.loopStopped) {
             try {
                 log.debug { "Polling and processing events" }
                 val records = getHighestPriorityEvents()
-                for ((_, events) in records!!) {
+                for ((consumer, events) in records!!) {
                     log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${records.size})" }
                     val groupedEvents = events.groupBy { it.key }
-                    runBlocking(Dispatchers.IO.limitedParallelism(10)) {
+                    runBlocking(Dispatchers.IO) {
                         val jobs = groupedEvents.values.map {
                             launch {
                                 withTimeoutOrNull(30000) {
@@ -229,6 +231,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                         }
                         jobs.joinAll()
                     }
+                    consumer.commitSync()
                 }
             } catch (ex: Exception) {
                 attempts++
@@ -328,12 +331,6 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                         return@recordCallable
                     }
                     state = getState(currentEvent.key)
-//                    val future = waitForFunctionToFinish(
-//                        { processor.onNext(state, currentEvent.toRecord()) },
-//                        config.processorTimeout.toMillis(),
-//                        "Processing event $currentEvent timed-out!"
-//                    )
-//                    val currentEventUpdates = future.tryGetResult() as StateAndEventProcessor.Response<S>
                     val currentEventUpdates = processor.onNext(state, currentEvent.toRecord())
                     state = currentEventUpdates.updatedState
                     // Get wake-up calls
@@ -348,8 +345,16 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                     val responseEvents = overRestEvents.mapNotNull {
                         topicToRestClient[it.topic]?.publish(listOf(it))
                     }.flatten()
+                    // Add session events to subsequent events
+                    val (outboundSessionEvents, otherKafkaEvents) = overKafkaEvents.partition {
+                        it.topic == FLOW_MAPPER_SESSION_OUT_EVENT_TOPIC
+                    }
+                    // Convert session events to inbound messages
+                    val inboundSessionEvents = outboundSessionEvents.filterIsInstance(FlowMapperEvent::class.java).map {
+
+                    }
                     // Add subsequent events to be processed next in the queue
-                    val eventsToProcess = (wakeups + responseEvents) as List<Record<K, E>> // + restResponses
+                    val eventsToProcess = (wakeups + responseEvents + inboundSessionEvents) as List<Record<K, E>> // + restResponses
                     eventsToProcess.forEach {
                         val subsequentEvent = toCordaConsumerRecord(currentEvent, it)
                         eventsQueue.add(subsequentEvent)
@@ -365,11 +370,11 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
 
                             // In this case the processor may ask us to publish some output records regardless, so make sure these
                             // are outputted.
-                            producer?.sendRecords(overKafkaEvents.toCordaProducerRecords())
+                            producer?.sendRecords(otherKafkaEvents.toCordaProducerRecords())
                         }
 
                         else -> {
-                            producer?.sendRecords(overKafkaEvents.toCordaProducerRecords())
+                            producer?.sendRecords(otherKafkaEvents.toCordaProducerRecords())
                             log.debug { "Completed event: $currentEvent" }
                         }
                     }
