@@ -5,6 +5,7 @@ import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.ConstructorForDeserialization
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 
 @CordaSerializable
 data class FinalityPayload @ConstructorForDeserialization constructor(
@@ -28,15 +29,19 @@ data class FinalityPayload @ConstructorForDeserialization constructor(
     )
 
     val initialTransaction by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        requireNotNull(map[INITIAL_TRANSACTION]) {
-            "initialTransaction is null"
+        try {
+            serializationService.deserialize<UtxoSignedTransactionInternal>(map[INITIAL_TRANSACTION]!!)
+        } catch (e: Exception) {
+            throw CordaRuntimeException(
+                "Deserialization of ${map[INITIAL_TRANSACTION]} into UtxoSignedTransactionInternal failed.", e)
         }
-        serializationService.deserialize<UtxoSignedTransactionInternal>(map[INITIAL_TRANSACTION]!!)
     }
     val transferAdditionalSignatures by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        requireNotNull(map[TRANSFER_ADDITIONAL_SIGNATURES]) {
-            "transferAdditionalSignatures is null"
+        try {
+            serializationService.deserialize<Boolean>(map[TRANSFER_ADDITIONAL_SIGNATURES]!!)
+        } catch (e: Exception) {
+            throw CordaRuntimeException(
+                "Deserialization of ${map[INITIAL_TRANSACTION]} into UtxoSignedTransactionInternal failed.", e)
         }
-        serializationService.deserialize<Boolean>(map[TRANSFER_ADDITIONAL_SIGNATURES]!!)
     }
 }

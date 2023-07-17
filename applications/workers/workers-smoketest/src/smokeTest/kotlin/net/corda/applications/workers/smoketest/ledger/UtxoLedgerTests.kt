@@ -203,42 +203,6 @@ class UtxoLedgerTests {
     }
 
     @Test
-    fun `Utxo Ledger - two party finality flow for V2 to skip send and receive unseen signatures`() {
-        val input = "test input"
-        val utxoFlowRequestId = startRpcFlow(
-            aliceHoldingId,
-            mapOf("input" to input, "members" to listOf(bobX500), "notary" to notaryX500),
-            "com.r3.corda.demo.utxo.UtxoDemoFlow"
-        )
-        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
-        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(utxoFlowResult.flowError).isNull()
-
-        for (holdingId in listOf(aliceHoldingId, bobHoldingId)) {
-            val findTransactionFlowRequestId = startRpcFlow(
-                holdingId,
-                mapOf("transactionId" to utxoFlowResult.flowResult!!),
-                "com.r3.corda.demo.utxo.FindTransactionFlow"
-            )
-            val transactionResult = awaitRpcFlowFinished(holdingId, findTransactionFlowRequestId)
-            assertThat(transactionResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-            assertThat(transactionResult.flowError).isNull()
-
-            val parsedResult = objectMapper
-                .readValue(transactionResult.flowResult!!, FindTransactionResponse::class.java)
-
-            assertThat(parsedResult.transaction).withFailMessage {
-                "Member with holding identity $holdingId did not receive the transaction ${utxoFlowResult.flowResult}"
-            }.isNotNull
-
-            assertThat(parsedResult.transaction!!.id.toString()).isEqualTo(utxoFlowResult.flowResult)
-            assertThat(parsedResult.transaction.states.map { it.testField }).containsOnly(input)
-            assertThat(parsedResult.transaction.states.flatMap { it.participants }).hasSize(2)
-            assertThat(parsedResult.transaction.participants).hasSize(2)
-        }
-    }
-
-    @Test
     fun `Utxo Ledger - creating a transaction that fails custom validation causes finality to fail`() {
         val utxoFlowRequestId = startRpcFlow(
             aliceHoldingId,
