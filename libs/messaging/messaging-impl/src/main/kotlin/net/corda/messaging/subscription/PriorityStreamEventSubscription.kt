@@ -345,16 +345,8 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                     val responseEvents = overRestEvents.mapNotNull {
                         topicToRestClient[it.topic]?.publish(listOf(it))
                     }.flatten()
-                    // Add session events to subsequent events
-                    val (outboundSessionEvents, otherKafkaEvents) = overKafkaEvents.partition {
-                        it.topic == FLOW_MAPPER_SESSION_OUT_EVENT_TOPIC
-                    }
-                    // Convert session events to inbound messages
-                    val inboundSessionEvents = outboundSessionEvents.filterIsInstance(FlowMapperEvent::class.java).map {
-
-                    }
                     // Add subsequent events to be processed next in the queue
-                    val eventsToProcess = (wakeups + responseEvents + inboundSessionEvents) as List<Record<K, E>> // + restResponses
+                    val eventsToProcess = (wakeups + responseEvents) as List<Record<K, E>> // + restResponses
                     eventsToProcess.forEach {
                         val subsequentEvent = toCordaConsumerRecord(currentEvent, it)
                         eventsQueue.add(subsequentEvent)
@@ -370,11 +362,11 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
 
                             // In this case the processor may ask us to publish some output records regardless, so make sure these
                             // are outputted.
-                            producer?.sendRecords(otherKafkaEvents.toCordaProducerRecords())
+                            producer?.sendRecords(overKafkaEvents.toCordaProducerRecords())
                         }
 
                         else -> {
-                            producer?.sendRecords(otherKafkaEvents.toCordaProducerRecords())
+                            producer?.sendRecords(overKafkaEvents.toCordaProducerRecords())
                             log.debug { "Completed event: $currentEvent" }
                         }
                     }
