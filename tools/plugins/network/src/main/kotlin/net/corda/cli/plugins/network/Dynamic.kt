@@ -3,7 +3,7 @@ package net.corda.cli.plugins.network
 import picocli.CommandLine.Command
 
 @Command(
-    name = "onboard",
+    name = "dynamic",
     subcommands = [
         OnboardMgm::class,
         OnBoardMember::class,
@@ -11,4 +11,4 @@ import picocli.CommandLine.Command
     ],
     description = ["On board a member."]
 )
-class OnBoard
+class Dynamic

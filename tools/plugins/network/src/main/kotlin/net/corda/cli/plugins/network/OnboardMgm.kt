@@ -12,7 +12,7 @@ import java.io.File
 import java.util.UUID
 
 @Command(
-    name = "mgm",
+    name = "onboard-mgm",
     description = [
         "Onboard MGM member.",
         "This sub command should only be used in for internal development",
@@ -48,6 +48,8 @@ class OnboardMgm : Runnable, BaseOnboard() {
     )
     var cpiFile: File? = null
 
+    private var groupIdFile: File = File("groupId.txt")
+
     private val groupPolicy by lazy {
         mapOf(
             "fileFormatVersion" to 1,
@@ -77,6 +79,13 @@ class OnboardMgm : Runnable, BaseOnboard() {
                                 json.readTree(response)
                             )
                         println("Group policy file created at $groupPolicyFile")
+
+                        // extract the groupId from the response
+                        val groupId = json.readTree(response).get("groupId").asText()
+
+                        // write the groupId to the file
+                        groupIdFile.writeText(groupId)
+
                         return@saveGroupPolicy
                     }
                 }

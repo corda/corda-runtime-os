@@ -27,7 +27,7 @@ class NetworkPluginWrapper : Plugin() {
         subcommands = [
             MemberList::class,
             GenerateGroupPolicy::class,
-            OnBoard::class
+            Dynamic::class
         ],
         hidden = true,
         mixinStandardHelpOptions = true,
