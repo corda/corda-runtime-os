@@ -262,7 +262,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
                 SendReceivePrimitiveMessagingFlow(MemberX500Name.parse(x500))
             )
 
-            outputs.add("${x500}=${response}")
+            outputs.add(response)
         }
 
         return outputs.joinToString("; ")
