@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.token.cache.factories
 
-import java.math.BigDecimal
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
