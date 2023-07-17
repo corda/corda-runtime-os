@@ -1,8 +1,9 @@
 package net.corda.db.connection.manager.impl
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
+import com.typesafe.config.ConfigValueFactory
+import net.corda.db.connection.manager.DatasourceConfigOverrides
 import net.corda.db.connection.manager.DbConnectionsRepository
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DataSourceFactory
@@ -14,6 +15,7 @@ import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.datamodel.findDbConnectionByNameAndPrivilege
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
+import net.corda.schema.configuration.DatabaseConfig
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
@@ -107,13 +109,34 @@ class DbConnectionsRepositoryImpl(
         return dataSourceFactory.createFromConfig(dbConfigFactory.create(config))
     }
 
-    override fun getClusterDataSource(): CloseableDataSource = clusterDataSource
-
-    override fun getDataSourceConfig(name: String, privilege: DbPrivilege): Config? {
-        entityManagerFactory.createEntityManager().use {
-            val dbConfig = it.findDbConnectionByNameAndPrivilege(name, privilege) ?: return null
-
-            return ConfigFactory.parseString(dbConfig.config)!!
+    override fun create(
+        name: String,
+        privilege: DbPrivilege,
+        datasourceConfigOverrides: DatasourceConfigOverrides
+    ): CloseableDataSource {
+        logger.debug("Fetching DB connection for $name and overriding with datasource config overrides: $datasourceConfigOverrides")
+        val dbConfig = entityManagerFactory.createEntityManager().use {
+            // TODO cache the DDL and DML pool configs
+            val dbConnectionConfig = checkNotNull(it.findDbConnectionByNameAndPrivilege(name, privilege))
+            ConfigFactory.parseString(dbConnectionConfig.config)
         }
+
+        val configFromOverrides = datasourceConfigOverrides.toConfig(dbConfigFactory)
+        return dataSourceFactory.createFromConfig(dbConfigFactory.create(configFromOverrides.withFallback(dbConfig)))
     }
+
+    override fun getClusterDataSource(): CloseableDataSource = clusterDataSource
+}
+
+@Suppress("LongParameterList")
+private fun DatasourceConfigOverrides.toConfig(smartConfigFactory: SmartConfigFactory): SmartConfig {
+    var config =
+        smartConfigFactory.makeSecret(password, passwordKey).atPath(DatabaseConfig.DB_PASS)
+            .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(username))
+
+    if (jdbcDriver != null)
+        config = config.withValue(DatabaseConfig.JDBC_DRIVER, ConfigValueFactory.fromAnyRef(jdbcDriver))
+    config = config.withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
+
+    return config
 }

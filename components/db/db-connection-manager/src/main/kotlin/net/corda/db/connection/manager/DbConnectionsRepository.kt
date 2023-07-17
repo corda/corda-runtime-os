@@ -1,10 +1,9 @@
 package net.corda.db.connection.manager
 
-import com.typesafe.config.Config
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.sql.DataSource
 
@@ -70,12 +69,16 @@ interface DbConnectionsRepository {
      */
     fun create(config: SmartConfig): CloseableDataSource
 
+    fun create(
+        name: String,
+        privilege: DbPrivilege,
+        datasourceConfigOverrides: DatasourceConfigOverrides
+    ): CloseableDataSource
+
     /**
      * Get cluster DB [DataSource]
      *
      * @return The cluster DB [DataSource]
      */
     fun getClusterDataSource(): CloseableDataSource
-
-    fun getDataSourceConfig(name: String, privilege: DbPrivilege): Config?
 }

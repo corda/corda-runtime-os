@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer
 
+import net.corda.db.connection.manager.DatasourceConfigOverrides
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
 
@@ -11,11 +12,11 @@ import net.corda.libs.configuration.SmartConfig
  * @property config Connection configuration
  * @property description Connection's description
  */
-
 internal interface DbConnection {
     val name: String
     val privilege: DbPrivilege
     val config: SmartConfig
+    val datasourceOverrides: DatasourceConfigOverrides?
     val description: String
 
     /**

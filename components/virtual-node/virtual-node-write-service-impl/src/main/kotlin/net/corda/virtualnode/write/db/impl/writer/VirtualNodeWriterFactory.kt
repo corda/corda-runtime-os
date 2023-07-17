@@ -7,7 +7,6 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepositoryImpl
@@ -56,8 +55,6 @@ internal class VirtualNodeWriterFactory(
     private companion object {
         const val ASYNC_OPERATION_GROUP = "virtual.node.async.operation.group"
 
-        const val VIRTUAL_NODES_DDL = "corda-virtual-nodes-ddl"
-        const val VIRTUAL_NODES_DML = "corda-virtual-nodes-dml"
     }
 
     /**
@@ -101,23 +98,11 @@ internal class VirtualNodeWriterFactory(
             publisher
         )
 
-        val virtualNodesDdlPoolConfig =
-            checkNotNull(dbConnectionManager.getDataSourceConfig(VIRTUAL_NODES_DDL, DbPrivilege.DDL)) {
-                "\"$VIRTUAL_NODES_DDL\" config not found in DB table: \"config.db_connection\""
-            }
-
-        val virtualNodesDmlPoolConfig =
-            checkNotNull(dbConnectionManager.getDataSourceConfig(VIRTUAL_NODES_DML, DbPrivilege.DML)) {
-                "\"$VIRTUAL_NODES_DML\" config not found in DB table: \"config.db_connection\""
-            }
-
         val virtualNodeDbFactory =
             VirtualNodeDbFactoryImpl(
                 dbConnectionManager,
                 virtualNodeDbAdmin,
-                schemaMigrator,
-                virtualNodesDdlPoolConfig,
-                virtualNodesDmlPoolConfig
+                schemaMigrator
             )
 
         val recordFactory = RecordFactoryImpl(UTCClock())

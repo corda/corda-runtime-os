@@ -18,6 +18,7 @@ class DbConnectionImplTest {
             "name",
             DbPrivilege.DDL,
             config,
+            datasourceOverrides = null,
             "description"
         )
 
@@ -32,6 +33,7 @@ class DbConnectionImplTest {
             "name",
             DbPrivilege.DDL,
             config,
+            datasourceOverrides = null,
             "description"
         )
 
@@ -46,6 +48,7 @@ class DbConnectionImplTest {
             "name",
             DbPrivilege.DDL,
             config,
+            datasourceOverrides = null,
             "description"
         )
 
@@ -60,6 +63,7 @@ class DbConnectionImplTest {
             "name",
             DbPrivilege.DDL,
             config,
+            null,
             "description"
         )
 

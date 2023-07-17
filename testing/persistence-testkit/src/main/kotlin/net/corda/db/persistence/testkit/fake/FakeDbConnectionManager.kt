@@ -1,6 +1,6 @@
 package net.corda.db.persistence.testkit.fake
 
-import com.typesafe.config.Config
+import net.corda.db.connection.manager.DatasourceConfigOverrides
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.core.CloseableDataSource
@@ -126,7 +126,11 @@ class FakeDbConnectionManager(
         TODO("Not yet implemented")
     }
 
-    override fun getDataSourceConfig(name: String, privilege: DbPrivilege): Config? {
+    override fun getDataSource(
+        name: String,
+        privilege: DbPrivilege,
+        datasourceConfigOverrides: DatasourceConfigOverrides
+    ): CloseableDataSource {
         TODO("Not yet implemented")
     }
 

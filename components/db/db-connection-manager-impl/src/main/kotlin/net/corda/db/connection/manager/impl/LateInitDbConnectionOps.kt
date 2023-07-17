@@ -1,6 +1,6 @@
 package net.corda.db.connection.manager.impl
 
-import com.typesafe.config.Config
+import net.corda.db.connection.manager.DatasourceConfigOverrides
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
@@ -50,8 +50,12 @@ class LateInitDbConnectionOps: DbConnectionOps {
     override fun getDataSource(config: SmartConfig): CloseableDataSource =
         delegate.getDataSource(config)
 
-    override fun getDataSourceConfig(name: String, privilege: DbPrivilege): Config? =
-        delegate.getDataSourceConfig(name, privilege)
+    override fun getDataSource(
+        name: String,
+        privilege: DbPrivilege,
+        datasourceConfigOverrides: DatasourceConfigOverrides
+    ): CloseableDataSource =
+        delegate.getDataSource(name, privilege, datasourceConfigOverrides)
 
     override fun getClusterEntityManagerFactory(): EntityManagerFactory =
         delegate.getClusterEntityManagerFactory()

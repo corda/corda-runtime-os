@@ -7,6 +7,7 @@ import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
+import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
@@ -33,6 +34,9 @@ internal class VirtualNodeDbImpl(
 
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        const val VIRTUAL_NODES_DDL = "corda-virtual-nodes-ddl"
+//        const val VIRTUAL_NODES_DML = "corda-virtual-nodes-dml"
     }
 
     /**
@@ -77,7 +81,10 @@ internal class VirtualNodeDbImpl(
     override fun runDbMigration(migrationTagToApply: String?) {
         val dbConnection = dbConnections[DDL]
             ?: throw VirtualNodeDbException("No DDL database connection when due to apply system migrations")
-        dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
+
+        val ds = getDataSource(dbConnection)
+
+        ds.use { dataSource ->
             val dbChangeFiles = dbType.dbChangeFiles
             val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
                 ClassloaderChangeLog.ChangeLogResourceFiles(klass.packageName, dbChangeFiles, klass.classLoader)
@@ -107,10 +114,24 @@ internal class VirtualNodeDbImpl(
     override fun runCpiMigrations(dbChange: DbChange, migrationTagToApply: String) {
         val dbConnection = dbConnections[DDL]
             ?: throw VirtualNodeDbException("No DDL database connection when due to apply CPI migrations")
-        dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
+
+        val ds = getDataSource(dbConnection)
+
+        ds.use { dataSource ->
             dataSource.connection.use { connection ->
                 schemaMigrator.updateDb(connection, dbChange, tag = migrationTagToApply)
             }
         }
     }
+
+    private fun getDataSource(dbConnection: DbConnection): CloseableDataSource =
+        if (isPlatformManagedDb) {
+            dbConnectionManager.getDataSource(
+                VIRTUAL_NODES_DDL,
+                DDL,
+                dbConnection.datasourceOverrides!!
+            )
+        } else {
+            dbConnectionManager.getDataSource(dbConnection.config)
+        }
 }

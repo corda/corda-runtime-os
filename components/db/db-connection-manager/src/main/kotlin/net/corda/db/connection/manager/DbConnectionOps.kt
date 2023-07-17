@@ -1,6 +1,5 @@
 package net.corda.db.connection.manager
 
-import com.typesafe.config.Config
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
@@ -98,7 +97,14 @@ interface DbConnectionOps {
      */
     fun getDataSource(config: SmartConfig): CloseableDataSource
 
-    fun getDataSourceConfig(name: String, privilege: DbPrivilege): Config?
+    /**
+     * Get DB connection for given DB config overrides.
+     */
+    fun getDataSource(
+        name: String,
+        privilege: DbPrivilege,
+        datasourceConfigOverrides: DatasourceConfigOverrides
+    ): CloseableDataSource
 
     /**
      * Get cluster DB [EntityManagerFactory]
@@ -144,3 +150,11 @@ interface DbConnectionOps {
      */
     fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory
 }
+
+data class DatasourceConfigOverrides(
+    val username: String,
+    val password: String,
+    val passwordKey: String,
+    val jdbcDriver: String?,
+    val jdbcUrl: String
+)

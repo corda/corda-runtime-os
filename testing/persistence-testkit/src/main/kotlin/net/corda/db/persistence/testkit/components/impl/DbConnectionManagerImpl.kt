@@ -1,6 +1,6 @@
 package net.corda.db.persistence.testkit.components.impl
 
-import com.typesafe.config.Config
+import net.corda.db.connection.manager.DatasourceConfigOverrides
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
@@ -123,7 +123,11 @@ class DbConnectionManagerImpl @Activate constructor(
         TODO("Not yet implemented")
     }
 
-    override fun getDataSourceConfig(name: String, privilege: DbPrivilege): Config? {
+    override fun getDataSource(
+        name: String,
+        privilege: DbPrivilege,
+        datasourceConfigOverrides: DatasourceConfigOverrides
+    ): CloseableDataSource {
         TODO("Not yet implemented")
     }
 
