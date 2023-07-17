@@ -45,7 +45,9 @@ fi
 if [ -z $WORKER_REPLICAS ]; then
   WORKER_REPLICAS=1
 fi
-
+if [ -z $CORDA_EKS_FILE ]; then
+  CORDA_EKS_FILE="$SCRIPT_DIR/corda-eks-small.yaml"
+fi
 
 # RPC PORTS
 A_RPC_PORT=8888

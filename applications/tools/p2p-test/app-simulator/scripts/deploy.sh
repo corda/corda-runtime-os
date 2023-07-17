@@ -23,7 +23,7 @@ deploy() {
               --set image.registry=corda-os-docker.software.r3.com --values $REPO_TOP_LEVEL_DIR/values.yaml \
               --set bootstrap.kafka.partitions=$KAFKA_PARTITION_COUNT \
               --set bootstrap.kafka.replicas=$KAFKA_REPLICATION_FACTOR \
-              -f \"$SCRIPT_DIR/corda-eks.yaml\" \
+              -f \"$CORDA_EKS_FILE\" \
               --set workers.p2pGateway.replicaCount=$WORKER_REPLICAS \
               --set workers.p2pLinkManager.replicaCount=$WORKER_REPLICAS \
               --values $REPO_TOP_LEVEL_DIR/debug.yaml --wait --version $CORDA_CHART_VERSION"
@@ -44,6 +44,7 @@ helm registry login corda-os-docker-unstable.software.r3.com -u $CORDA_ARTIFACTO
 
 if [ $# -eq 0 ]
 then
+  # Deploy a smaller cluster for the MGM
   WORKER_REPLICAS=1 KAFKA_REPLICATION_FACTOR=1 KAFKA_REPLICAS=1 KAFKA_ZOOKEEPER_REPLICAS=1 KAFKA_PARTITION_COUNT=10 deploy $MGM_CLUSTER_NAMESPACE &
   declare -a namespaces=($A_CLUSTER_NAMESPACE $B_CLUSTER_NAMESPACE)
 else
