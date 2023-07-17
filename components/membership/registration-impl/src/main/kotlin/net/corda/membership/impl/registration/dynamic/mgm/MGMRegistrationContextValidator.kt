@@ -1,6 +1,9 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
 import net.corda.configuration.read.ConfigurationGetService
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.ShortHashException
+import net.corda.membership.impl.registration.dynamic.mgm.ContextUtils.sessionKeyRegex
 import net.corda.membership.impl.registration.dynamic.verifiers.OrderVerifier
 import net.corda.membership.impl.registration.dynamic.verifiers.P2pEndpointVerifier
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
@@ -93,6 +96,7 @@ internal class MGMRegistrationContextValidator(
             context[key] ?: throw IllegalArgumentException(errorMessageMap[key])
         }
         validateProtocols(context)
+        validateKeys(context)
         p2pEndpointVerifier.verifyContext(context)
         if (context[PKI_SESSION] != NO_PKI.toString()) {
             context.keys.filter { TRUSTSTORE_SESSION.format("[0-9]+").toRegex().matches(it) }.apply {
@@ -135,6 +139,26 @@ internal class MGMRegistrationContextValidator(
         if (context[SYNCHRONISATION_PROTOCOL] !in SUPPORTED_SYNC_PROTOCOLS) {
             throw MGMRegistrationContextValidationException("Invalid value for key $SYNCHRONISATION_PROTOCOL in registration context. " +
                     "It should be one of the following values: $SUPPORTED_SYNC_PROTOCOLS.", null)
+        }
+    }
+
+    private fun validateKeys(context: Map<String, String>) {
+        val ecdhKeyId = context[ECDH_KEY_ID]
+        require(ecdhKeyId != null) { "No ECDH key ID was provided under $ECDH_KEY_ID." }
+        validateKey(ECDH_KEY_ID, ecdhKeyId)
+
+        context.filterKeys { key ->
+            sessionKeyRegex.matches(key)
+        }.forEach {
+            validateKey(it.key, it.value)
+        }
+    }
+
+    private fun validateKey(contextKey: String, keyId: String) {
+        try {
+            ShortHash.parse(keyId)
+        } catch (e: ShortHashException) {
+            throw MGMRegistrationContextValidationException("Invalid value for key ID $contextKey. ${e.message}", e)
         }
     }
 

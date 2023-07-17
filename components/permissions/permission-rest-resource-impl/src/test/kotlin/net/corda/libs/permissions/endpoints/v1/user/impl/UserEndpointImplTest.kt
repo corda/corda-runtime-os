@@ -123,7 +123,7 @@ internal class UserEndpointImplTest {
         whenever(permissionManager.getUser(getUserRequestDtoCapture.capture())).thenReturn(userResponseDto)
 
         endpoint.start()
-        val responseType = endpoint.getUser("loginName1")
+        val responseType = endpoint.getUserPath("loginName1")
 
         assertNotNull(responseType)
         assertEquals("uuid", responseType.id)
@@ -144,7 +144,7 @@ internal class UserEndpointImplTest {
         whenever(permissionService.isRunning).thenReturn(true)
 
         val e = assertThrows<ResourceNotFoundException> {
-            endpoint.getUser("abc")
+            endpoint.getUserPath("abc")
         }
         assertEquals(ResponseCode.RESOURCE_NOT_FOUND, e.responseCode, "Resource not found exception should have correct response code.")
         assertEquals("User 'abc' not found.", e.message)

@@ -52,6 +52,7 @@ import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.datamodel.StaticNetworkInfoEntity
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MPV_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_KEYS_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_PROTOCOL_KEY
@@ -378,6 +379,12 @@ class MembershipPersistenceTest {
                 info: StaticNetworkInfo
             ) = safeCall {
                 membershipPersistenceClient.updateStaticNetworkInfo(info)
+            }
+
+            override fun updateGroupParameters(
+                viewOwningIdentity: HoldingIdentity, newGroupParameters: Map<String, String>
+            ) = safeCall {
+                membershipPersistenceClient.updateGroupParameters(viewOwningIdentity, newGroupParameters)
             }
 
             fun <T> safeCall(func: () -> T): T {
@@ -1732,6 +1739,67 @@ class MembershipPersistenceTest {
             assertThat(persisted.mgmPublicKey).isEqualTo(pubKey)
             assertThat(persisted.mgmPrivateKey).isEqualTo(privateKey)
             assertThat(persisted.version).isEqualTo(initialVersion + 1)
+        }
+    }
+
+    @Test
+    fun `can persist updated group parameters`() {
+        val generator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())
+        val notaryPublicKey = generator.generateKeyPair().public
+        val notaryParameters = listOf(
+            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), "O=New Service, L=London, C=GB"),
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), "Notary Plugin"),
+            KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), keyEncodingService.encodeAsString(notaryPublicKey))
+        ) + listOf("1").mapIndexed {
+                i, version -> KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, i), version)
+        }
+        
+        vnodeEmf.transaction {
+            it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
+            val entity = GroupParametersEntity(
+                epoch = 50,
+                parameters = cordaAvroSerializer.serialize(
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(EPOCH_KEY, "50"),
+                            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
+                        ) + notaryParameters
+                    )
+                )!!,
+                signaturePublicKey = keyEncodingService.encodeAsByteArray(generator.genKeyPair().public),
+                signatureContent = byteArrayOf(1),
+                signatureSpec = RSA_SHA256.signatureName
+            )
+            it.persist(entity)
+        }
+
+        val updatedGroupParameters = membershipPersistenceClientWrapper.updateGroupParameters(
+            viewOwningHoldingIdentity, mapOf(MPV_KEY to "5000", "ext.key" to "value")
+        ).getOrThrow()
+
+        val updatedEpoch = 51
+        val expectedGroupParameters = listOf(
+            KeyValuePair(EPOCH_KEY, updatedEpoch.toString()),
+            KeyValuePair(MPV_KEY, "5000"),
+            KeyValuePair("ext.key", "value")
+        ) + notaryParameters
+        assertThat(updatedGroupParameters.entries.filterNot { it.key == MODIFIED_TIME_KEY })
+            .containsExactlyInAnyOrderElementsOf(expectedGroupParameters.associate { it.key to it.value }.entries)
+
+        val persistedGroupParametersEntity = vnodeEmf.createEntityManager().use {
+            it.find(
+                GroupParametersEntity::class.java,
+                updatedEpoch
+            )
+        }
+        assertThat(persistedGroupParametersEntity).isNotNull
+        with(persistedGroupParametersEntity.parameters) {
+            val deserialized = cordaAvroDeserializer.deserialize(this)!!
+            val deserializedList = deserialized.items
+            assertThat(deserializedList).anyMatch { it.key == MODIFIED_TIME_KEY }
+            assertThat(deserializedList.filterNot { it.key == MODIFIED_TIME_KEY })
+                .containsExactlyInAnyOrderElementsOf(expectedGroupParameters)
+            assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
         }
     }
 

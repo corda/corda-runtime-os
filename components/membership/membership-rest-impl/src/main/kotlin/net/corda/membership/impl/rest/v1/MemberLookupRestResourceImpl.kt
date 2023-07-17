@@ -14,13 +14,13 @@ import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfo
 import net.corda.membership.rest.v1.types.response.RestMemberInfoList
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
-import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.rest.v1.types.RestGroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rest.extensions.getByHoldingIdentityShortHashOrThrow
@@ -54,7 +54,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
             statuses: Set<String>,
         ): RestMemberInfoList
 
-        fun viewGroupParameters(holdingIdentityShortHash: ShortHash): Map<String, String>
+        fun viewGroupParameters(holdingIdentityShortHash: ShortHash): RestGroupParameters
     }
 
     override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
@@ -109,7 +109,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
         statuses.toSet(),
     )
 
-    override fun viewGroupParameters(holdingIdentityShortHash: String): Map<String, String> =
+    override fun viewGroupParameters(holdingIdentityShortHash: String): RestGroupParameters =
         impl.viewGroupParameters(ShortHash.parseOrThrow(holdingIdentityShortHash))
 
     fun activate(reason: String) {
@@ -136,7 +136,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
             "${MemberLookupRestResourceImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
         )
 
-        override fun viewGroupParameters(holdingIdentityShortHash: ShortHash): Map<String, String> =
+        override fun viewGroupParameters(holdingIdentityShortHash: ShortHash): RestGroupParameters =
             throw ServiceUnavailableException(
                 "${MemberLookupRestResourceImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
@@ -181,19 +181,18 @@ class MemberLookupRestResourceImpl @Activate constructor(
             )
         }
 
-        override fun viewGroupParameters(holdingIdentityShortHash: ShortHash): Map<String, String> {
+        override fun viewGroupParameters(holdingIdentityShortHash: ShortHash): RestGroupParameters {
             val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
                 holdingIdentityShortHash
             ) { "Could not find holding identity '$holdingIdentityShortHash' associated with member." }.holdingIdentity
 
-            return membershipGroupReaderProvider
+            val parameters = membershipGroupReaderProvider
                 .getGroupReader(holdingIdentity)
                 .groupParameters
                 ?.toMap() ?: throw ResourceNotFoundException("Could not find group parameters for holding identity " +
                     "'$holdingIdentityShortHash'.")
+            return RestGroupParameters(parameters)
         }
-
-        private fun InternalGroupParameters.toMap() = entries.associate { it.key to it.value }
 
         private fun Set<String>.getStatusFilter(isMgm: Boolean): Set<String> {
             val filter = this.mapTo(mutableSetOf()) {

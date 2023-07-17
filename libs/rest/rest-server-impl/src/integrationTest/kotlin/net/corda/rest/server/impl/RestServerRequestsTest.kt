@@ -30,7 +30,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.time.ZonedDateTime
@@ -214,7 +213,7 @@ class RestServerRequestsTest : RestServerTestBase() {
 
         // Check full URL received by the Security Manager
         assertThat(securityManager.checksExecuted.map { it.action }).hasSize(1)
-            .allMatch { it == "GET:/api/v1/$fullUrlWithoutSlash" }
+            .allMatch { it == "GET:/api/${apiVersion.versionPath}/$fullUrlWithoutSlash" }
     }
 
     @Test

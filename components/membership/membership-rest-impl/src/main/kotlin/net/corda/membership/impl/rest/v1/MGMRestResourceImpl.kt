@@ -29,6 +29,7 @@ import net.corda.membership.rest.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.rest.v1.types.response.PreAuthToken
 import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
+import net.corda.membership.impl.rest.v1.verifiers.GroupParametersUpdateVerifier
 import net.corda.membership.rest.v1.types.response.MemberInfoSubmitted
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.membership.rest.v1.types.response.RegistrationStatus
@@ -39,6 +40,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.membership.lib.toMap
+import net.corda.membership.rest.v1.types.RestGroupParameters
 import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.rest.exception.InvalidStateChangeException
@@ -159,6 +161,8 @@ class MGMRestResourceImpl internal constructor(
         fun suspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters)
 
         fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters)
+
+        fun updateGroupParameters(holdingIdentityShortHash: String, newGroupParameters: RestGroupParameters): RestGroupParameters
     }
 
     override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
@@ -253,6 +257,9 @@ class MGMRestResourceImpl internal constructor(
 
     override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) =
         impl.activateMember(holdingIdentityShortHash, activationParams)
+
+    override fun updateGroupParameters(holdingIdentityShortHash: String, newGroupParameters: RestGroupParameters) =
+        impl.updateGroupParameters(holdingIdentityShortHash, newGroupParameters)
 
     fun activate(reason: String) {
         impl = ActiveImpl()
@@ -355,6 +362,11 @@ class MGMRestResourceImpl internal constructor(
             holdingIdentityShortHash: String,
             activationParams: SuspensionActivationParameters
         ): Unit = throwNotRunningException()
+
+        override fun updateGroupParameters(
+            holdingIdentityShortHash: String,
+            newGroupParameters: RestGroupParameters,
+        ): RestGroupParameters = throwNotRunningException()
 
         private fun <T> throwNotRunningException(): T {
             throw ServiceUnavailableException(NOT_RUNNING_ERROR)
@@ -604,6 +616,30 @@ class MGMRestResourceImpl internal constructor(
                 throw InvalidStateChangeException("${e.message}")
             } catch (e: InvalidEntityUpdateException) {
                 throw InvalidStateChangeException("${e.message}")
+            }
+        }
+
+        override fun updateGroupParameters(
+            holdingIdentityShortHash: String,
+            newGroupParameters: RestGroupParameters,
+        ): RestGroupParameters {
+            return try {
+                handleCommonErrors(holdingIdentityShortHash) {
+                    val newParametersMap = newGroupParameters.parameters
+                    validateGroupParametersUpdate(newParametersMap)
+                    RestGroupParameters(mgmResourceClient.updateGroupParameters(it, newParametersMap).toMap())
+                }
+            } catch (e: PessimisticLockException) {
+                throw InvalidStateChangeException("${e.message}")
+            }
+        }
+
+        private fun validateGroupParametersUpdate(parameters: Map<String, String>) {
+            val verifierResult = GroupParametersUpdateVerifier().verify(parameters)
+            if (verifierResult is GroupParametersUpdateVerifier.Result.Failure) {
+                with(verifierResult.reason) {
+                    throw BadRequestException(this)
+                }
             }
         }
 
