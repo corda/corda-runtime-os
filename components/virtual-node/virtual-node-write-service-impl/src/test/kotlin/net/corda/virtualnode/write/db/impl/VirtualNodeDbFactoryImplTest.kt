@@ -64,7 +64,6 @@ class VirtualNodeDbFactoryImplTest {
         val vaultDmlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DML)?.datasourceOverrides
         assertNull(vaultDmlConfig!!.jdbcDriver)
         assertEquals(JDBC_URL, vaultDmlConfig.jdbcUrl)
-//        assertEquals(10, vaultDmlConfig.)
 
         val vaultDdlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DDL)?.datasourceOverrides
         assertNull(vaultDdlConfig!!.jdbcDriver)
