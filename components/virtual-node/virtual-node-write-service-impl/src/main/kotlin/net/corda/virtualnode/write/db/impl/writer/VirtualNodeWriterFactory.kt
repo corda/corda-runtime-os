@@ -54,7 +54,6 @@ internal class VirtualNodeWriterFactory(
 
     private companion object {
         const val ASYNC_OPERATION_GROUP = "virtual.node.async.operation.group"
-
     }
 
     /**
