@@ -128,7 +128,6 @@ class DbConnectionsRepositoryImpl(
     override fun getClusterDataSource(): CloseableDataSource = clusterDataSource
 }
 
-@Suppress("LongParameterList")
 private fun DatasourceConfigOverrides.toConfig(smartConfigFactory: SmartConfigFactory): SmartConfig {
     var config =
         smartConfigFactory.makeSecret(password, passwordKey).atPath(DatabaseConfig.DB_PASS)
