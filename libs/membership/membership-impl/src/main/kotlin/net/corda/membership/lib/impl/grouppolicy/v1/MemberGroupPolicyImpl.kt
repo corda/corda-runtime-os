@@ -13,6 +13,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PP
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_TYPE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.SESSION_KEY_POLICY
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.STATIC_NETWORK
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.StaticNetwork.GROUP_PARAMETERS
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.StaticNetwork.MEMBERS
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.CIPHER_SUITE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.FILE_FORMAT_VERSION
@@ -105,6 +106,8 @@ class MemberGroupPolicyImpl(rootNode: JsonNode) : MemberGroupPolicy {
             }
             output.toList()
         }
+
+        override val staticNetworkGroupParameters: Map<String, String>? = staticNetwork?.getOptionalStringMap(GROUP_PARAMETERS)
     }
 
     internal inner class P2PParametersImpl(rootNode: JsonNode) : GroupPolicy.P2PParameters {

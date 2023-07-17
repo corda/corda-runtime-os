@@ -27,7 +27,12 @@
           "endpointUrl-2": "https://charlie-dr.corda5.r3.com:10001",
           "endpointProtocol-2": 1
         }
-      ]
+      ],
+      "groupParameters": {
+        "corda.minimum.platform.version": "5000",
+        "ext.key1": "value1",
+        "ext.key2": "value2"
+      }
     }
   },
   "p2pParameters": {

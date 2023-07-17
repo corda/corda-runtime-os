@@ -102,6 +102,15 @@ interface GroupPolicy {
          */
         @get:Throws(BadGroupPolicyException::class)
         val staticNetworkMembers: List<Map<String, Any>>?
+
+        /**
+         * Static network group parameters. Only present for static networks.
+         * May include minimum platform version and custom parameters (with "ext." prefix).
+         *
+         * @throws [BadGroupPolicyException] if the data is unavailable or cannot be parsed.
+         */
+        @get:Throws(BadGroupPolicyException::class)
+        val staticNetworkGroupParameters: Map<String, String>?
     }
 
     interface P2PParameters {

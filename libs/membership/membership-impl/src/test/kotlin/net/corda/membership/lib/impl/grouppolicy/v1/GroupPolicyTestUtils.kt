@@ -3,6 +3,7 @@ package net.corda.membership.lib.impl.grouppolicy.v1
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MPV_KEY
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.MGM_CLIENT_CERTIFICATE_SUBJECT
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.PROTOCOL_MODE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_PKI
@@ -13,6 +14,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PP
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_VERSION
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.SESSION_KEY_POLICY
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.STATIC_NETWORK
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.StaticNetwork.GROUP_PARAMETERS
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.StaticNetwork.MEMBERS
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.CIPHER_SUITE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.FILE_FORMAT_VERSION
@@ -56,13 +58,22 @@ const val TEST_MGM_INFO_INT_VAL = 1
 const val TEST_CIPHER_SUITE_KEY = "foo"
 const val TEST_CIPHER_SUITE_VAL = "bar"
 
+const val CUSTOM_PARAMETER_KEY = "ext.key"
+const val CUSTOM_PARAMETER_VALUE = "value"
+const val MPV = "5000"
+
 fun buildStaticMemberTemplate(
     members: List<Map<String, String>>? = listOf(
         mapOf(TEST_STATIC_MEMBER_KEY to TEST_STATIC_MEMBER_VALUE),
         mapOf(TEST_STATIC_MEMBER_KEY to TEST_STATIC_MEMBER_VALUE)
+    ),
+    groupParameters: Map<String, String>? = mapOf(
+        MPV_KEY to MPV,
+        CUSTOM_PARAMETER_KEY to CUSTOM_PARAMETER_VALUE
     )
 ) = mutableMapOf<String, Any>().apply {
     members?.let { put(MEMBERS, members) }
+    groupParameters?.let { put(GROUP_PARAMETERS, it) }
 }
 
 fun buildProtocolParameters(
