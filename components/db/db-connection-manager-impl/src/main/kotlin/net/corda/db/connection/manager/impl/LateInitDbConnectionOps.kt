@@ -47,7 +47,14 @@ class LateInitDbConnectionOps: DbConnectionOps {
         description: String?,
         updateActor: String
     ): UUID {
-        TODO("Not yet implemented")
+        return delegate.putConnection(
+            entityManager,
+            name,
+            privilege,
+            datasourceConfigOverrides,
+            description,
+            updateActor
+        )
     }
 
     override fun getClusterDataSource(): DataSource = delegate.getClusterDataSource()

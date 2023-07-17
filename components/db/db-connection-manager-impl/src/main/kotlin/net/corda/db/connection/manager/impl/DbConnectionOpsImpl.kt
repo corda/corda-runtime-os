@@ -67,9 +67,9 @@ class DbConnectionOpsImpl(
         datasourceConfigOverrides: DatasourceConfigOverrides,
         description: String?,
         updateActor: String
-    ): UUID {
-        TODO("Not yet implemented")
-    }
+    ): UUID =
+        dbConnectionsRepository.put(entityManager, name, privilege, datasourceConfigOverrides, description, updateActor)
+
 
     override fun getClusterEntityManagerFactory(): EntityManagerFactory = clusterEntityManagerFactory
 
