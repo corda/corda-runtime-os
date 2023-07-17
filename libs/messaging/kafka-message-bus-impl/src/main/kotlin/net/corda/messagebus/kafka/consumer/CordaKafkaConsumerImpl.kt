@@ -277,6 +277,14 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
+    override fun commitSync() {
+        consumer.commitSync()
+    }
+
+    override fun commitAsync() {
+        consumer.commitAsync()
+    }
+
     override fun commitSyncOffsets(event: CordaConsumerRecord<K, V>, metaData: String?) {
         val offsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
         val topicPartition = TopicPartition(config.topicPrefix + event.topic, event.partition)
