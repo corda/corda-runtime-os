@@ -6,6 +6,7 @@ import java.security.KeyPair
 import java.time.Duration
 import java.util.Collections.unmodifiableSet
 import java.util.Hashtable
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpk.read.CpkReadService
 import net.corda.crypto.softhsm.WrappingRepository
@@ -15,6 +16,9 @@ import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.messagebus.api.admin.builder.AdminBuilder
+import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
+import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.orm.DatabaseTypeProvider
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
@@ -89,6 +93,10 @@ class EmbeddedNodeServiceImpl @Activate constructor(
         ))
 
         private val REPLACEMENT_SERVICES = unmodifiableSet(setOf(
+            AdminBuilder::class.java,
+            CordaAvroSerializationFactory::class.java,
+            CordaConsumerBuilder::class.java,
+            CordaProducerBuilder::class.java,
             CpiInfoReadService::class.java,
             CpkReadService::class.java,
             DatabaseTypeProvider::class.java,
