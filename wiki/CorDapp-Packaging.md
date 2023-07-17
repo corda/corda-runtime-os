@@ -14,7 +14,7 @@ This describes how to convert an existing CorDapp project to the new Gradle plug
  
 1. Add a new version number to `gradle.properties`:
     ```groovy
-    cordaGradlePluginsVersion2=7.0.2
+    cordaGradlePluginsVersion2=7.0.3
     ```
 1. Add this repository to pluginManagement/repositories in `settings.gradle`:
     ```groovy
@@ -91,63 +91,10 @@ If we are using the default signing key, we need to import it into our key store
     keytool -importcert -keystore signingkeys.pfx -storepass "keystore password" -noprompt -alias gradle-plugin-default-key -file gradle-plugin-default-key.pem
     ```
 
-### Trust the beta signing key
+### Trust the signing key
 
-The notary CPB was signed with a test signing key for the beta builds up to Beta3 (Hawk).
+The notary CPB is signed with a production signing key.
 To use it import this certificate.
-
-1. Save the following text into a file named `beta-ca-root.pem`
-    ```text
-    -----BEGIN CERTIFICATE-----
-    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
-    0OXjjmtQ
-    -----END CERTIFICATE-----
-    ```
-1. Import `beta-ca-root.pem` into the keystore
-    ```shell
-    keytool -importcert -keystore signingkeys.pfx -storepass "keystore password" -noprompt -alias beta-ca-root -file beta-ca-root.pem
-    ```
-
-### Trust the preview and GA signing keys
-
-We use two separate certificates signed by Digicert for the purpose of signing binaries.
-
-The notary CPB is signed with a preview signing key for beta builds
-(from Iguana onwards) and preview builds.
-
-The notary CPB is signed with a production signing key for GA releases.
-
-To use either of them import this certificate.
 
 1. Save the following text into a file named `digicert-ca.pem`
     ```text
@@ -226,15 +173,7 @@ The gradle plugin will build the CPB. Run this command to turn a CPB into a CPI:
 
 Corda will validate that uploaded CPIs are signed with a trusted key. To trust your signing keys, upload them with these commands.
 
-1. Import the gradle plugin default key into Corda
-    ```shell
-    curl --insecure -u admin:admin -X PUT -F alias="gradle-plugin-default-key" -F certificate=@gradle-plugin-default-key.pem https://localhost:8888/api/v1/certificates/cluster/code-signer
-    ```
-1. For Betas up to Hawk, import the beta signing key into Corda
-   ```shell
-   curl --insecure -u admin:admin -X PUT -F alias="beta-ca-root" -F certificate=@beta-ca-root.pem https://localhost:8888/api/v1/certificates/cluster/code-signer
-   ```
-1. For Betas from Iguana onwards, or for previews, or for GA releases, import the Digicert signing key into Corda
+1. Import the Digicert signing key into Corda
    ```shell
    curl --insecure -u admin:admin -X PUT -F alias="digicert-ca" -F certificate=@digicert-ca.pem https://localhost:8888/api/v1/certificates/cluster/code-signer
    ```
