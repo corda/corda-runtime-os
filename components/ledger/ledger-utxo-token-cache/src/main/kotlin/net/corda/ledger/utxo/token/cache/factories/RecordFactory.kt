@@ -4,6 +4,7 @@ import java.math.BigDecimal
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
+import net.corda.ledger.utxo.token.cache.entities.TokenBalance
 import net.corda.messaging.api.records.Record
 
 /**
@@ -70,7 +71,7 @@ interface RecordFactory {
         flowId: String,
         externalEventRequestId: String,
         poolKey: TokenPoolCacheKey,
-        availableAndTotalBalancePair: Pair<BigDecimal, BigDecimal>
+        tokenBalance: TokenBalance
     ): Record<String, FlowEvent>
 }
 
