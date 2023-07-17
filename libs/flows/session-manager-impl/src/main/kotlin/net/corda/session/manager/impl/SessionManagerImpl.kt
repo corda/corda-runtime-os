@@ -48,7 +48,7 @@ class SessionManagerImpl @Activate constructor(
             processAcks(event, it)
         }
 
-        logger.info("Lorcan: processing to send ${event.payload::class.java}")
+        logger.info("Lorcan: processing received ${event.payload::class.java}")
 
         val eventPayload = event.payload
         if (eventPayload is SessionData) {
@@ -77,7 +77,7 @@ class SessionManagerImpl @Activate constructor(
         instant: Instant,
         maxMsgSize: Long,
     ): SessionState {
-        logger.info("Lorcan: sending mess ${event::class.java}")
+        logger.info("Lorcan: sending mess ${event.payload::class.java}")
 
         return sessionEventProcessorFactory.createEventToSendProcessor(key, event, sessionState, instant, maxMsgSize).execute()
     }
