@@ -180,7 +180,7 @@ class MemberLookupRestResourceTest {
         MODIFIED_TIME_KEY to clock.instant().toString(),
     )
     private val mockGroupParameters = mock<InternalGroupParameters> {
-        on { entries } doReturn testEntries.entries
+        on { toMap() } doReturn testEntries
     }
     private val groupReader: MembershipGroupReader = mock {
         on { lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED) } doReturn memberInfoList
@@ -490,7 +490,7 @@ class MemberLookupRestResourceTest {
 
             val result = memberLookupRestResource.viewGroupParameters(HOLDING_IDENTITY_STRING)
 
-            assertThat(result).containsExactlyEntriesOf(expectedGroupParamsMap)
+            assertThat(result.parameters).containsExactlyEntriesOf(expectedGroupParamsMap)
         }
     }
 }

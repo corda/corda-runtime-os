@@ -488,17 +488,26 @@ class DynamicMemberRegistrationService @Activate constructor(
             context.keys.filter { sessionKeyIdRegex.matches(it) }.apply {
                 require(isNotEmpty()) { "No session key ID was provided." }
                 require(orderVerifier.isOrdered(this, 3)) { "Provided session key IDs are incorrectly numbered." }
+                this.forEach {
+                    validateKey(it, context[it]!!)
+                }
             }
             p2pEndpointVerifier.verifyContext(context)
             val isNotary = context.entries.any { it.key.startsWith(ROLES_PREFIX) && it.value == NOTARY_ROLE }
             context.keys.filter { ledgerIdRegex.matches(it) }.apply {
                 if (!isNotary) require(isNotEmpty()) { "No ledger key ID was provided." }
                 require(orderVerifier.isOrdered(this, 3)) { "Provided ledger key IDs are incorrectly numbered." }
+                this.forEach {
+                    validateKey(it, context[it]!!)
+                }
             }
             if (isNotary) {
                 context.keys.filter { notaryIdRegex.matches(it) }.apply {
                     require(isNotEmpty()) { "No notary key ID was provided." }
                     require(orderVerifier.isOrdered(this, 3)) { "Provided notary key IDs are incorrectly numbered." }
+                    this.forEach {
+                        validateKey(it, context[it]!!)
+                    }
                 }
                 context.keys.filter { notaryProtocolVersionsRegex.matches(it) }.apply {
                     require(
@@ -508,6 +517,14 @@ class DynamicMemberRegistrationService @Activate constructor(
                         )
                     ) { "Provided notary protocol versions are incorrectly numbered." }
                 }
+            }
+        }
+
+        private fun validateKey(contextKey: String, keyId: String) {
+            try {
+                ShortHash.parse(keyId)
+            } catch (e: ShortHashException) {
+                throw IllegalArgumentException("Invalid value for key ID $contextKey. ${e.message}", e)
             }
         }
 

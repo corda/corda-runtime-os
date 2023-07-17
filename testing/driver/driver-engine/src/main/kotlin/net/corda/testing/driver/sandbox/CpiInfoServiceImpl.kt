@@ -24,12 +24,12 @@ class CpiInfoServiceImpl @Activate constructor(
     override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<CpiInfoReadService>()
 
     override fun getAllVersionedRecords(): Stream<VersionedRecord<CpiIdentifier, CpiMetadata>> =
-        getAll().stream().map {
+        getAll().stream().map { cpi ->
             object : VersionedRecord<CpiIdentifier, CpiMetadata> {
-                override val version = it.version
-                override val isDeleted = false
-                override val key = it.cpiId
-                override val value = it
+                override val version get() = cpi.version
+                override val isDeleted get() = false
+                override val key get() = cpi.cpiId
+                override val value get() = cpi
             }
         }
 

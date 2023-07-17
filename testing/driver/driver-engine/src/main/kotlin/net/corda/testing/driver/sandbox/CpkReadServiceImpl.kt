@@ -44,10 +44,6 @@ class CpkReadServiceImpl @Activate constructor(
     override val isRunning: Boolean
         get() = true
 
-    init {
-        logger.info("Activated")
-    }
-
     private fun getInputStream(resourceName: String): InputStream {
         val fileUri = URI.create(resourceName)
         if (fileUri.scheme != "file") {
