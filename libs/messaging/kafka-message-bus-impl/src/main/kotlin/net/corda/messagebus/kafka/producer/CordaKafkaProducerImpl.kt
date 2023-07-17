@@ -13,7 +13,6 @@ import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
-import net.corda.messaging.utils.ExceptionUtils
 import net.corda.metrics.CordaMetrics
 import net.corda.tracing.TraceContext
 import net.corda.tracing.addTraceContextToRecord
@@ -394,7 +393,8 @@ class CordaKafkaProducerImpl(
                 }
                 throw CordaMessageAPIIntermittentException("Error occurred $errorString", ex)
             }
-            in ExceptionUtils.CordaMessageAPIException -> { throw ex }
+            in setOf(CordaMessageAPIFatalException::class.java,
+                CordaMessageAPIIntermittentException::class.java) -> { throw ex }
 
             else -> {
                 // Here we do not know what the exact cause of the exception is, but we do know Kafka has not told us we
