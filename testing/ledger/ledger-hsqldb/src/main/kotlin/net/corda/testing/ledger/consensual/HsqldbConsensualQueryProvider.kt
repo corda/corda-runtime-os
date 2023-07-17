@@ -1,5 +1,6 @@
-package net.corda.ledger.persistence.consensual.impl
+package net.corda.testing.ledger.consensual
 
+import net.corda.ledger.persistence.consensual.impl.ConsensualQueryProvider
 import net.corda.ledger.persistence.consensual.impl.ConsensualQueryProvider.Companion.UNVERIFIED
 import net.corda.orm.DatabaseTypeProvider
 import net.corda.orm.DatabaseTypeProvider.Companion.HSQLDB_TYPE_FILTER

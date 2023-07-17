@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.slf4j.LoggerFactory
 
-@Suppress("FunctionName", "JUnitMalformedDeclaration")
+@Suppress("FunctionName")
 @Timeout(5, unit = MINUTES)
 @TestInstance(PER_CLASS)
 class FlowTests {
@@ -30,6 +30,7 @@ class FlowTests {
     private val bob = MemberX500Name.parse("CN=Bob, OU=Testing, O=R3, L=San Francisco, C=US")
     private val jsonMapper = ObjectMapper()
 
+    @Suppress("JUnitMalformedDeclaration")
     @RegisterExtension
     private val driver = DriverNodes(alice, bob).forAllTests()
 

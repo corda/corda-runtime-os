@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.slf4j.LoggerFactory
 
-@Suppress("FunctionName", "JUnitMalformedDeclaration")
+@Suppress("FunctionName")
 @Timeout(5, unit = MINUTES)
 @TestInstance(PER_CLASS)
 class AMQPSerializationTests {
@@ -25,6 +25,7 @@ class AMQPSerializationTests {
     private val alice = MemberX500Name.parse("CN=Alice, OU=Testing, O=R3, L=London, C=GB")
     private val virtualNodes = mutableSetOf<VirtualNodeInfo>()
 
+    @Suppress("JUnitMalformedDeclaration")
     @RegisterExtension
     private val driver = DriverNodes(alice).forAllTests()
 

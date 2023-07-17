@@ -136,6 +136,9 @@ internal class DriverDSLImpl(
             SLF4JBridgeHandler.removeHandlersForRootLogger()
             SLF4JBridgeHandler.install()
 
+            // HSQLDB refuses to use Java functions unless this system property is set correctly.
+            System.setProperty("hsqldb.method_class_names", "net.corda.db.hsqldb.json.HsqldbJsonExtension.*")
+
             val systemPackages = linkedSetOf<String>()
             val bundles = mutableMapOf<URI, Manifest>()
             val notaryPlugins = linkedSetOf<URI>()

@@ -58,7 +58,9 @@ dependencies {
     implementation project(':libs:schema-registry:schema-registry')
     implementation project(':libs:serialization:serialization-avro')
     implementation project(':libs:virtual-node:sandbox-group-context')
+    implementation project(':testing:db-hsqldb-json')
     implementation project(':testing:packaging-test-utilities')
+    implementation "org.hibernate:hibernate-core:$hibernateVersion"
 
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
     runtimeOnly project(':components:ledger:ledger-consensual-flow')
@@ -77,6 +79,7 @@ dependencies {
     runtimeOnly project(':libs:sandbox-internal')
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
     runtimeOnly project(':libs:serialization:serialization-kryo')
+    runtimeOnly project(':testing:ledger:ledger-hsqldb')
 
     cpbs project(path: ':notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-server', configuration: 'cordaCPB')
     runtimeOnly files(configurations.cpbs)

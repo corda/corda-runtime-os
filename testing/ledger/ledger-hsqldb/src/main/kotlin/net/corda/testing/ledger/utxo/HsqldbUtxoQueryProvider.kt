@@ -1,5 +1,6 @@
-package net.corda.ledger.persistence.utxo.impl
+package net.corda.testing.ledger.utxo
 
+import net.corda.ledger.persistence.utxo.impl.UtxoQueryProvider
 import net.corda.ledger.persistence.utxo.impl.UtxoQueryProvider.Companion.UNVERIFIED
 import net.corda.orm.DatabaseTypeProvider
 import net.corda.orm.DatabaseTypeProvider.Companion.HSQLDB_TYPE_FILTER

@@ -26,7 +26,6 @@ import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
@@ -34,7 +33,7 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.slf4j.LoggerFactory
 
-@Suppress("FunctionName", "JUnitMalformedDeclaration")
+@Suppress("FunctionName")
 @Timeout(5, unit = MINUTES)
 @TestInstance(PER_CLASS)
 class UtxoLedgerTests {
@@ -61,6 +60,7 @@ class UtxoLedgerTests {
         registerModule(module)
     }
 
+    @Suppress("JUnitMalformedDeclaration")
     @RegisterExtension
     private val driver = DriverNodes(alice, bob, charlie).withNotary(notary, 1).forAllTests()
 
@@ -79,7 +79,6 @@ class UtxoLedgerTests {
         logger.info("{}, {} and {} started successfully", alice.commonName, bob.commonName, charlie.commonName)
     }
 
-    @Disabled("HSQLDB does not support custom query yet")
     @Test
     fun `custom query can be executed and results are returned if no offset is provided and limit is maximized`() {
         // Issue some states and consume them

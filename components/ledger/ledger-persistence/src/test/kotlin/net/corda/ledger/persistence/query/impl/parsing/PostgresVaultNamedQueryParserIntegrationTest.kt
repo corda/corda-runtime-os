@@ -1,9 +1,8 @@
 package net.corda.ledger.persistence.query.impl.parsing
 
-import net.corda.ledger.persistence.query.parsing.VaultNamedQueryParserImpl
-import net.corda.ledger.persistence.query.parsing.converters.PostgresVaultNamedQueryConverter
-import net.corda.ledger.persistence.query.parsing.expressions.PostgresVaultNamedQueryExpressionParser
-import net.corda.ledger.persistence.query.parsing.expressions.VaultNamedQueryExpressionValidatorImpl
+import net.corda.ledger.persistence.query.parsing.PostgresVaultNamedQueryParserImpl
+import net.corda.orm.DatabaseType
+import net.corda.orm.DatabaseTypeProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -15,11 +14,11 @@ import java.util.stream.Stream
 @Suppress("MaxLineLength")
 class PostgresVaultNamedQueryParserIntegrationTest {
 
-    private val vaultNamedQueryParser = VaultNamedQueryParserImpl(
-        PostgresVaultNamedQueryExpressionParser(),
-        VaultNamedQueryExpressionValidatorImpl(),
-        PostgresVaultNamedQueryConverter()
-    )
+    private val databaseTypeProvider = object : DatabaseTypeProvider {
+        override val databaseType: DatabaseType
+            get() = DatabaseType.POSTGRES
+    }
+    private val vaultNamedQueryParser = PostgresVaultNamedQueryParserImpl(databaseTypeProvider)
 
     private companion object {
         @JvmStatic

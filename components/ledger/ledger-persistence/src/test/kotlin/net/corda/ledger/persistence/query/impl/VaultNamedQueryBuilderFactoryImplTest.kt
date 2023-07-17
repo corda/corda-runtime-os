@@ -76,7 +76,7 @@ class VaultNamedQueryBuilderFactoryImplTest {
     @Test
     fun `builder will not register a query that only has a name`() {
         assertThatThrownBy {
-            VaultNamedQueryBuilderFactoryImpl(mockRegistry)
+            VaultNamedQueryBuilderFactoryImpl(mockRegistry, vaultNamedQueryParser)
                 .create(DUMMY_QUERY_NAME)
                 .register()
         }.isExactlyInstanceOf(IllegalArgumentException::class.java)

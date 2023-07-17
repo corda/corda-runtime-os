@@ -12,6 +12,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    implementation "org.hibernate:hibernate-core:$hibernateVersion"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'net.corda:corda-config-schema'
     implementation "net.corda:corda-db-schema"
@@ -21,6 +22,7 @@ dependencies {
     implementation project(":libs:db:db-admin-impl")
     implementation project(":libs:db:db-core")
     implementation project(":libs:db:db-orm")
+    implementation project(':testing:db-hsqldb-json')
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 }

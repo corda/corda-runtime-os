@@ -1,0 +1,22 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.common-publishing'
+    id 'corda.java-only'
+}
+
+description 'Basic JSON parsing for HSQLDB'
+
+dependencies {
+    compileOnly platform("net.corda:corda-api:$cordaApiVersion")
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+}
+
+tasks.named('jar', Jar) {
+    bundle {
+        bnd '''\
+Fragment-Host: org.hsqldb.hsqldb
+'''
+    }
+}

@@ -19,7 +19,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.slf4j.LoggerFactory
 
-@Suppress("FunctionName", "JUnitMalformedDeclaration")
+@Suppress("FunctionName")
 @Timeout(5, unit = MINUTES)
 @TestInstance(PER_CLASS)
 class NotaryFlowTests {
@@ -30,6 +30,7 @@ class NotaryFlowTests {
     private val notary = MemberX500Name.parse("CN=Notary, OU=Testing, O=R3, L=Rome, C=IT")
     private val jsonMapper = ObjectMapper()
 
+    @Suppress("JUnitMalformedDeclaration")
     @RegisterExtension
     private val driver = DriverNodes(alice, bob).withNotary(notary, 1, 2).forAllTests()
 

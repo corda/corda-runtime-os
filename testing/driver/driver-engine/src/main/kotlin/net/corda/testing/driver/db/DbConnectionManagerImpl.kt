@@ -16,6 +16,7 @@ import net.corda.db.core.DataSourceFactory
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.HikariDataSourceFactory
 import net.corda.db.core.InMemoryDataSourceFactory
+import net.corda.db.hsqldb.json.HsqldbJsonExtension
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.SmartConfig
@@ -26,6 +27,7 @@ import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.TransactionIsolationLevel
 import net.corda.testing.driver.sandbox.DRIVER_SERVICE
 import net.corda.testing.driver.sandbox.DRIVER_SERVICE_RANKING
+import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl.METADATA_BUILDER_CONTRIBUTOR
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
@@ -93,6 +95,7 @@ class DbConnectionManagerImpl private constructor(
     private val dataSource = DriverDataSource(InMemoryDataSourceFactory(dataSourceFactory).create(DRIVER_DB_NAME).also { db ->
         db.connection.use { connection ->
             liquibaseSchemaMigrator.updateDb(connection, loadVaultSchema())
+            HsqldbJsonExtension.setup(connection)
         }
     })
 
@@ -204,7 +207,8 @@ class DbConnectionManagerImpl private constructor(
                 formatSql = true,
                 jdbcTimezone = "UTC",
                 ddlManage = DdlManage.UPDATE,
-                transactionIsolationLevel = TransactionIsolationLevel.SERIALIZABLE
+                transactionIsolationLevel = TransactionIsolationLevel.SERIALIZABLE,
+                extraProperties = mapOf(METADATA_BUILDER_CONTRIBUTOR to HsqldbJsonMetadataContributor())
             )
         )
     }

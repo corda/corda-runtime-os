@@ -2,10 +2,6 @@ package net.corda.ledger.persistence.query.registration.impl
 
 import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.ledger.persistence.query.parsing.VaultNamedQueryParser
-import net.corda.ledger.persistence.query.parsing.VaultNamedQueryParserImpl
-import net.corda.ledger.persistence.query.parsing.converters.PostgresVaultNamedQueryConverter
-import net.corda.ledger.persistence.query.parsing.expressions.PostgresVaultNamedQueryExpressionParser
-import net.corda.ledger.persistence.query.parsing.expressions.VaultNamedQueryExpressionValidatorImpl
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.utilities.debug
 import net.corda.v5.ledger.utxo.query.registration.VaultNamedQueryBuilder
@@ -24,27 +20,16 @@ import org.slf4j.LoggerFactory
     ],
     scope = ServiceScope.PROTOTYPE
 )
-class VaultNamedQueryBuilderFactoryImpl constructor(
+class VaultNamedQueryBuilderFactoryImpl @Activate constructor(
+    @Reference
     private val vaultNamedQueryRegistry: VaultNamedQueryRegistry,
+    @Reference
     private val vaultNamedQueryParser: VaultNamedQueryParser
 ) : VaultNamedQueryBuilderFactory, UsedByPersistence {
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
-
-    @Activate
-    constructor(
-        @Reference(service = VaultNamedQueryRegistry::class)
-        vaultNamedQueryRegistry: VaultNamedQueryRegistry
-    ) : this(
-        vaultNamedQueryRegistry,
-        VaultNamedQueryParserImpl(
-            PostgresVaultNamedQueryExpressionParser(),
-            VaultNamedQueryExpressionValidatorImpl(),
-            PostgresVaultNamedQueryConverter()
-        )
-    )
 
     override fun create(queryName: String): VaultNamedQueryBuilder {
         logger.debug { "Creating vault named query with name: $queryName" }
