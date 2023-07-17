@@ -99,6 +99,7 @@ class SessionDataProcessorSend(
 
         val sessionInit = sendEventsState.undeliveredMessages.find { it.payload is SessionInit }
         if (sessionInit != null) {
+            logger.info("Setting SessionInit as payload of data message")
             val dataPayload = sessionEvent.payload as SessionData
             dataPayload.sessionInit = sessionInit.payload as SessionInit
         }

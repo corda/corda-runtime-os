@@ -48,7 +48,7 @@ class SessionManagerImpl @Activate constructor(
             processAcks(event, it)
         }
 
-        logger.info("Lorcan: processing received ${event.payload::class.java}")
+        logger.info("Lorcan: processing received ${event.payload::class.java}: $event")
 
         val eventPayload = event.payload
         if (eventPayload is SessionData) {
