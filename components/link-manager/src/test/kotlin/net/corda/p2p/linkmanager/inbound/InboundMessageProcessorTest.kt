@@ -202,6 +202,7 @@ class InboundMessageProcessorTest {
                 }
                 false
             }
+            verify(sessionManager).dataMessageReceived(SESSION_ID)
         }
 
         @Test
@@ -335,6 +336,7 @@ class InboundMessageProcessorTest {
                 .anySatisfy {
                     assertThat(it).matches("Could not deserialize message for session Session\\..* Cannot resolve schema for fingerprint.*")
                 }
+            verify(sessionManager).dataMessageReceived(SESSION_ID)
         }
 
         @Test
@@ -398,6 +400,7 @@ class InboundMessageProcessorTest {
 
             assertThat(records).isEmpty()
             verify(networkMessagingValidator).invokeIfValidInbound<Unit>(eq(myIdentity), eq(remoteIdentity), any())
+            verify(sessionManager).dataMessageReceived(SESSION_ID)
         }
 
         @Test
@@ -499,6 +502,7 @@ class InboundMessageProcessorTest {
                 false
             }
             verify(sessionManager).inboundSessionEstablished(anyOrNull())
+            verify(sessionManager).dataMessageReceived(SESSION_ID)
         }
 
         @Test
@@ -670,6 +674,7 @@ class InboundMessageProcessorTest {
                 }
                 false
             }
+            verify(sessionManager).dataMessageReceived(SESSION_ID)
         }
 
         @Test
@@ -700,6 +705,7 @@ class InboundMessageProcessorTest {
             assertThat(records).isEmpty()
             verify(sessionManager, never()).inboundSessionEstablished(anyOrNull())
             verify(networkMessagingValidator).invokeIfValidInbound<Unit>(eq(myIdentity), eq(remoteIdentity), any())
+            verify(sessionManager).dataMessageReceived(SESSION_ID)
         }
 
         @Test

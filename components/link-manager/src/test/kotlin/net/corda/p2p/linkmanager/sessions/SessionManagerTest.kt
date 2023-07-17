@@ -102,6 +102,8 @@ import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
 import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
 import net.corda.p2p.crypto.protocol.api.NoCommonModeError
 import net.corda.p2p.linkmanager.grouppolicy.protocolModes
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 class SessionManagerTest {
 
@@ -2076,5 +2078,70 @@ class SessionManagerTest {
                 assertThat(record.key).isEqualTo("messageId")
                 assertThat(record.value).isInstanceOf(AppMessageMarker::class.java)
             }
+    }
+
+    @Test
+    fun `first dataMessageReceived call schedules a timeout on the inbound session`() {
+        val sessionId = UUID(0, 1).toString()
+        sessionManager.dataMessageReceived(sessionId)
+
+        verify(mockTimeFacilitiesProvider.mockScheduledExecutor).schedule(
+            any(),
+            eq(sixDaysInMillis),
+            eq(TimeUnit.MILLISECONDS)
+        )
+    }
+
+    @Test
+    fun `dataMessageReceived calls after the first do not schedule a timeout on the inbound session`() {
+        val sessionId = UUID(0, 1).toString()
+
+        // call twice
+        sessionManager.dataMessageReceived(sessionId)
+        sessionManager.dataMessageReceived(sessionId)
+
+        // verify schedule called only once
+        verify(mockTimeFacilitiesProvider.mockScheduledExecutor).schedule(
+            any(),
+            eq(sixDaysInMillis),
+            eq(TimeUnit.MILLISECONDS)
+        )
+    }
+
+    @Test
+    fun `inbound session timeout is not rescheduled if session has timed out`() {
+        val sessionId = UUID(0, 1).toString()
+        sessionManager.dataMessageReceived(sessionId)
+
+        mockTimeFacilitiesProvider.advanceTime(Duration.ofMillis(sixDaysInMillis))
+
+        loggingInterceptor.assertInfoContains("Inbound session $sessionId timed out due to " +
+                "inactivity and it will be cleaned up.")
+
+        // Check timeout was not rescheduled (only scheduled once initially but not again after session timeout)
+        verify(mockTimeFacilitiesProvider.mockScheduledExecutor).schedule(
+            any(),
+            eq(sixDaysInMillis),
+            eq(TimeUnit.MILLISECONDS)
+        )
+    }
+
+    @Test
+    fun `inbound session timeout is rescheduled if session has not timed out`() {
+        val sessionId = UUID(0, 1).toString()
+        sessionManager.dataMessageReceived(sessionId)
+
+        mockTimeFacilitiesProvider.advanceTime(Duration.ofMillis(sixDaysInMillis / 2))
+
+        sessionManager.dataMessageReceived(sessionId)
+
+        mockTimeFacilitiesProvider.advanceTime(Duration.ofMillis(sixDaysInMillis / 2))
+
+        // Check timeout was rescheduled
+        verify(mockTimeFacilitiesProvider.mockScheduledExecutor).schedule(
+            any(),
+            eq(sixDaysInMillis / 2),
+            eq(TimeUnit.MILLISECONDS)
+        )
     }
 }

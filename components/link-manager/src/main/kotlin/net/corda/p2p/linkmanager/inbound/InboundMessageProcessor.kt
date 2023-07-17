@@ -139,6 +139,7 @@ internal class InboundMessageProcessor(
         val messages = mutableListOf<Record<*, *>>()
         when (val sessionDirection = sessionManager.getSessionById(sessionId)) {
             is SessionManager.SessionDirection.Inbound -> {
+                sessionManager.dataMessageReceived(sessionId)
                 checkAllowedCommunication(sessionDirection.counterparties) {
                     messages.addAll(
                         processLinkManagerPayload(
@@ -148,7 +149,6 @@ internal class InboundMessageProcessor(
                             message
                         )
                     )
-                    sessionManager.dataMessageReceived(sessionId)
                 }
             }
             is SessionManager.SessionDirection.Outbound -> {
