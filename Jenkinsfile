@@ -15,4 +15,7 @@ cordaPipeline(
     publishToMavenS3Repository: true,
     // allow publishing an installer to a download site
     publishToDownloadSiteTask: ':tools:plugins:publish',
+    // TODO - remove this when J17 is the default in the pipeline
+    // publish J17 docker images
+    workerBaseImageTag: '17.0.4.1-17.36.17',
     )
