@@ -40,15 +40,16 @@ class DbConnectionOpsCachedImpl(
 
     override fun putConnection(
         entityManager: EntityManager,
-        name: String,
+        connectionName: String,
+        configConnectionName: String,
         privilege: DbPrivilege,
         datasourceConfigOverrides: DatasourceConfigOverrides,
         description: String?,
         updateActor: String
     ): UUID {
         return delegate.putConnection(
-            entityManager, name, privilege, datasourceConfigOverrides, description, updateActor
-        ).apply { removeFromCache(name, privilege) }
+            entityManager, connectionName, configConnectionName, privilege, datasourceConfigOverrides, description, updateActor
+        ).apply { removeFromCache(connectionName, privilege) }
     }
 
     override fun getOrCreateEntityManagerFactory(db: CordaDb, privilege: DbPrivilege): EntityManagerFactory {

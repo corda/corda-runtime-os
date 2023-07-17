@@ -109,7 +109,8 @@ class DbConnectionManagerImpl @Activate constructor(
 
     override fun putConnection(
         entityManager: EntityManager,
-        name: String,
+        connectionName: String,
+        configConnectionName: String,
         privilege: DbPrivilege,
         datasourceConfigOverrides: DatasourceConfigOverrides,
         description: String?,

@@ -45,7 +45,8 @@ interface DbConnectionsRepository {
 
     @Suppress("LongParameterList")
     fun put(entityManager: EntityManager,
-            name: String,
+            connectionName: String,
+            configConnectionName: String,
             privilege: DbPrivilege,
             datasourceConfigOverrides: DatasourceConfigOverrides,
             description: String?,

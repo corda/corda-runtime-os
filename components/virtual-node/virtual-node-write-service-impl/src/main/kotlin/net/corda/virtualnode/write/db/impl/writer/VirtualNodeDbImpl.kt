@@ -38,7 +38,7 @@ internal class VirtualNodeDbImpl(
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val VIRTUAL_NODES_DDL = "corda-virtual-nodes-ddl"
-//        const val VIRTUAL_NODES_DML = "corda-virtual-nodes-dml"
+        const val VIRTUAL_NODES_DML = "corda-virtual-nodes-dml"
     }
 
     /**
@@ -129,9 +129,16 @@ internal class VirtualNodeDbImpl(
     override fun persistConnection(entityManager: EntityManager, dbPrivilege: DbPrivilege, updateActor: String): UUID? =
         dbConnections[dbPrivilege]?.let { dbConnection ->
             if (isPlatformManagedDb) {
+
+                val configConnectionName = when (dbConnection.privilege) {
+                    DDL -> VIRTUAL_NODES_DDL
+                    DML -> VIRTUAL_NODES_DML
+                }
+
                 dbConnectionManager.putConnection(
                     entityManager,
                     dbConnection.name,
+                    configConnectionName,
                     dbPrivilege,
                     dbConnection.datasourceOverrides!!,
                     dbConnection.description,

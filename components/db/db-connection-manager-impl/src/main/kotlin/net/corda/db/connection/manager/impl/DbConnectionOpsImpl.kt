@@ -62,13 +62,22 @@ class DbConnectionOpsImpl(
 
     override fun putConnection(
         entityManager: EntityManager,
-        name: String,
+        connectionName: String,
+        configConnectionName: String,
         privilege: DbPrivilege,
         datasourceConfigOverrides: DatasourceConfigOverrides,
         description: String?,
         updateActor: String
     ): UUID =
-        dbConnectionsRepository.put(entityManager, name, privilege, datasourceConfigOverrides, description, updateActor)
+        dbConnectionsRepository.put(
+            entityManager,
+            connectionName,
+            configConnectionName,
+            privilege,
+            datasourceConfigOverrides,
+            description,
+            updateActor
+        )
 
 
     override fun getClusterEntityManagerFactory(): EntityManagerFactory = clusterEntityManagerFactory

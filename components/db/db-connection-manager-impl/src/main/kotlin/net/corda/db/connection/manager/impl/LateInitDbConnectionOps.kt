@@ -41,7 +41,8 @@ class LateInitDbConnectionOps: DbConnectionOps {
 
     override fun putConnection(
         entityManager: EntityManager,
-        name: String,
+        connectionName: String,
+        configConnectionName: String,
         privilege: DbPrivilege,
         datasourceConfigOverrides: DatasourceConfigOverrides,
         description: String?,
@@ -49,7 +50,8 @@ class LateInitDbConnectionOps: DbConnectionOps {
     ): UUID {
         return delegate.putConnection(
             entityManager,
-            name,
+            connectionName,
+            configConnectionName,
             privilege,
             datasourceConfigOverrides,
             description,

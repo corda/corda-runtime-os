@@ -82,7 +82,8 @@ class DbConnectionsRepositoryImpl(
 
     override fun put(
         entityManager: EntityManager,
-        name: String,
+        connectionName: String,
+        configConnectionName: String,
         privilege: DbPrivilege,
         datasourceConfigOverrides: DatasourceConfigOverrides,
         description: String?,
@@ -90,7 +91,7 @@ class DbConnectionsRepositoryImpl(
     ): UUID {
         val dbConfig = entityManagerFactory.createEntityManager().use {
             // TODO cache the DDL and DML pool configs
-            val dbConnectionConfig = checkNotNull(it.findDbConnectionByNameAndPrivilege(name, privilege))
+            val dbConnectionConfig = checkNotNull(it.findDbConnectionByNameAndPrivilege(configConnectionName, privilege))
             ConfigFactory.parseString(dbConnectionConfig.config)
         }
 
@@ -98,7 +99,7 @@ class DbConnectionsRepositoryImpl(
         val config = configFromOverrides.withFallback(dbConfig)
         return put(
             entityManager,
-            name,
+            connectionName,
             privilege,
             config,
             description,
