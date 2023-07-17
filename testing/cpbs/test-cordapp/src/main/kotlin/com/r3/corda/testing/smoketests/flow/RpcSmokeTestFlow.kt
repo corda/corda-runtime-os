@@ -56,6 +56,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         "persistence_find_bulk" to this::persistenceFindDogs,
         "persistence_findall" to { persistenceFindAllDogs() },
         "persistence_query" to { persistenceQueryDogs() },
+        "flow_session_primitives" to this::sendPrimitiveValuesAcrossFlowSession,
         "crypto_sign_and_verify" to this::signAndVerify,
         "crypto_verify_invalid_signature" to this::verifyInvalidSignature,
         "crypto_get_default_signature_spec" to this::getDefaultSignatureSpec,
@@ -244,6 +245,24 @@ class RpcSmokeTestFlow : ClientStartableFlow {
             log.info("Received response from session '${session}'.")
 
             outputs.add("${x500}=${response.message}")
+        }
+
+        return outputs.joinToString("; ")
+    }
+
+    @Suspendable
+    private fun sendPrimitiveValuesAcrossFlowSession(
+        input: RpcSmokeTestInput
+    ): String {
+        val sessions = input.getValue("sessions").split(";")
+        log.info("Session Primitives - Starting sessions for '${input.getValue("sessions")}'")
+        val outputs = mutableListOf<String>()
+        sessions.forEachIndexed { _, x500 ->
+            val response = flowEngine.subFlow(
+                SendReceivePrimitiveMessagingFlow(MemberX500Name.parse(x500))
+            )
+
+            outputs.add("${x500}=${response}")
         }
 
         return outputs.joinToString("; ")
