@@ -42,6 +42,7 @@ class VirtualNodeDbImplTest {
         whenever(getUser()).thenReturn(ddlUuser)
         whenever(getPassword()).thenReturn(password)
         whenever(config).thenReturn(ddlConfig)
+        whenever(datasourceOverrides).thenReturn(mock())
     }
     private val dmlConnection = mock<DbConnection>().apply {
         whenever(privilege).thenReturn(DbPrivilege.DML)
@@ -161,7 +162,13 @@ class VirtualNodeDbImplTest {
             whenever(connection).thenReturn(sqlConnection)
         }
 
-        whenever(dbConnectionManager.getDataSource(ddlConfig)).thenReturn(dataSource)
+        whenever(
+            dbConnectionManager.getDataSource(
+                eq(VirtualNodeDbImpl.VIRTUAL_NODES_DDL),
+                eq(DbPrivilege.DDL),
+                any()
+            )
+        ).thenReturn(dataSource)
 
         val target = createVirtualNodeDb(isPlatformManagedDb = true)
         target.runCpiMigrations(dbChange, "tag")
@@ -187,7 +194,13 @@ class VirtualNodeDbImplTest {
             whenever(connection).thenReturn(sqlConnection)
         }
 
-        whenever(dbConnectionManager.getDataSource(ddlConfig)).thenReturn(dataSource)
+        whenever(
+            dbConnectionManager.getDataSource(
+                eq(VirtualNodeDbImpl.VIRTUAL_NODES_DDL),
+                eq(DbPrivilege.DDL),
+                any()
+            )
+        ).thenReturn(dataSource)
 
         val target = createVirtualNodeDb(isPlatformManagedDb = true)
         target.runDbMigration("tag")
