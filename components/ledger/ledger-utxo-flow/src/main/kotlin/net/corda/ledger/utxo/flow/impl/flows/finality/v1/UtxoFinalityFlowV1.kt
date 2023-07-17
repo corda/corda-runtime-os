@@ -18,6 +18,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -35,6 +36,7 @@ class UtxoFinalityFlowV1(
     private val initialTransaction: UtxoSignedTransactionInternal,
     private val sessions: List<FlowSession>,
     private val pluggableNotaryClientFlow: Class<PluggableNotaryClientFlow>,
+    private val serializationService: SerializationService,
     val version: UtxoFinalityVersion
 ) : UtxoFinalityBaseV1() {
 
@@ -98,7 +100,13 @@ class UtxoFinalityFlowV1(
                 initialTransaction, sessions.toSet()
             )
         } else {
-            flowMessaging.sendAll(FinalityPayload(initialTransaction, transferAdditionalSignatures), sessions.toSet())
+            flowMessaging.sendAll(
+                FinalityPayload(
+                    initialTransaction,
+                    transferAdditionalSignatures,
+                    serializationService
+                ), sessions.toSet()
+            )
         }
 
         sessions.forEach {
@@ -294,9 +302,10 @@ class UtxoFinalityFlowV1(
         transaction: UtxoSignedTransactionInternal
     ): PluggableNotaryClientFlow {
         return AccessController.doPrivileged(PrivilegedExceptionAction {
-            pluggableNotaryClientFlow.getConstructor(UtxoSignedTransaction::class.java, MemberX500Name::class.java).newInstance(
-                transaction, virtualNodeSelectorService.selectVirtualNode(transaction.notaryName)
-            )
+            pluggableNotaryClientFlow.getConstructor(UtxoSignedTransaction::class.java, MemberX500Name::class.java)
+                .newInstance(
+                    transaction, virtualNodeSelectorService.selectVirtualNode(transaction.notaryName)
+                )
         })
     }
 

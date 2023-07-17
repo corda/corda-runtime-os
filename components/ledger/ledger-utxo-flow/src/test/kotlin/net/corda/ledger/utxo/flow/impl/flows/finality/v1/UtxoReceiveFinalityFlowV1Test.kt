@@ -33,6 +33,7 @@ import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
@@ -66,6 +67,7 @@ class UtxoReceiveFinalityFlowV1Test {
 
     private val memberLookup = mock<MemberLookup>()
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
+    private val serializationService = mock<SerializationService>()
     private val currentGroupParametersService = mock<CurrentGroupParametersService>()
     private val utxoLedgerGroupParametersPersistenceService = mock<UtxoLedgerGroupParametersPersistenceService>()
     private val transactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
@@ -106,8 +108,8 @@ class UtxoReceiveFinalityFlowV1Test {
     private val signedTransaction = mock<UtxoSignedTransactionInternal>()
     private val signedTransactionWithOwnKeys = mock<UtxoSignedTransactionInternal>()
     private val notarizedTransaction = mock<UtxoSignedTransactionInternal>()
-    private val receivedPayloadV2 = FinalityPayload(signedTransaction, true)
-    private val receivedPayloadV2ForTwoParties = FinalityPayload(signedTransaction, false)
+    private val receivedPayloadV2 = FinalityPayload(signedTransaction, true, serializationService)
+    private val receivedPayloadV2ForTwoParties = FinalityPayload(signedTransaction, false, serializationService)
 
     @BeforeEach
     fun beforeEach() {

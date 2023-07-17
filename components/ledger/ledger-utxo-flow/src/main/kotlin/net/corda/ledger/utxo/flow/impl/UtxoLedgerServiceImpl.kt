@@ -24,6 +24,7 @@ import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -59,6 +60,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Reference(service = FlowEngine::class) private val flowEngine: FlowEngine,
     @Reference(service = UtxoLedgerPersistenceService::class) private val utxoLedgerPersistenceService: UtxoLedgerPersistenceService,
     @Reference(service = UtxoLedgerStateQueryService::class) private val utxoLedgerStateQueryService: UtxoLedgerStateQueryService,
+    @Reference(service = SerializationService::class) private val serializationService: SerializationService,
     @Reference(service = CurrentSandboxGroupContext::class) private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = NotaryLookup::class) private val notaryLookup: NotaryLookup,
     @Reference(service = ExternalEventExecutor::class) private val externalEventExecutor: ExternalEventExecutor,
@@ -120,7 +122,8 @@ class UtxoLedgerServiceImpl @Activate constructor(
                 UtxoFinalityFlow(
                     signedTransaction as UtxoSignedTransactionInternal,
                     sessions,
-                    getPluggableNotaryClientFlow(signedTransaction.notaryName)
+                    getPluggableNotaryClientFlow(signedTransaction.notaryName),
+                    serializationService
                 )
             })
         } catch (e: PrivilegedActionException) {
