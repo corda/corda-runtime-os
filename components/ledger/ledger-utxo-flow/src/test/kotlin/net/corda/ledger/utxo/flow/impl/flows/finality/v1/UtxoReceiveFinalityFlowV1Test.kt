@@ -6,7 +6,6 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.fullIdHash
 import net.corda.flow.state.ContextPlatformProperties
 import net.corda.flow.state.FlowContext
-
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
@@ -29,7 +28,6 @@ import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.membership.lib.SignedGroupParameters
-import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.flows.FlowEngine
@@ -48,7 +46,6 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -67,8 +64,6 @@ class UtxoReceiveFinalityFlowV1Test {
         val ID = SecureHashImpl("algo", byteArrayOf(1, 2, 3))
         val transactionGroupParametersHash = SecureHashImpl("algo", byteArrayOf(10, 0, 0))
         val anotherGroupParametersHash = SecureHashImpl("algo", byteArrayOf(11, 0, 0))
-        const val INITIAL_TRANSACTION = "INITIAL_TRANSACTION"
-        const val TRANSFER_ADDITIONAL_SIGNATURES = "TRANSFER_ADDITIONAL_SIGNATURES"
     }
 
     private val memberLookup = mock<MemberLookup>()
@@ -115,11 +110,6 @@ class UtxoReceiveFinalityFlowV1Test {
     private val signedTransactionWithOwnKeys = mock<UtxoSignedTransactionInternal>()
     private val notarizedTransaction = mock<UtxoSignedTransactionInternal>()
 
-//    private lateinit var receivedPayloadV2 = FinalityPayload(signedTransaction, true, serializationService)
-//    private lateinit var receivedPayloadV2ForTwoParties = FinalityPayload(signedTransaction, false, serializationService)
-
-//    private lateinit var receivedPayloadV2: FinalityPayload
-    private lateinit var receivedPayloadV2ForTwoParties: FinalityPayload
     private val finalityPayload = mock<FinalityPayload>()
     private val transferAdditionalSignatures = true
 
@@ -127,32 +117,20 @@ class UtxoReceiveFinalityFlowV1Test {
     fun beforeEach() {
         whenever(session.counterparty).thenReturn(MEMBER)
 
-        val serializedInitTx = mock<SerializedBytes<UtxoSignedTransactionInternal>> {
-            on { bytes } doReturn ByteArray(0)
-        }
-        val serializedAdditionalSignature = mock<SerializedBytes<Boolean>>() {
-            on { bytes } doReturn ByteArray(0)
-        }
-
-//        whenever(serializationService.serialize<UtxoSignedTransactionInternal>(any())).thenReturn(serializedInitTx)
-//        whenever(serializationService.serialize<Boolean>(any())).thenReturn(serializedAdditionalSignature)
-
-//        receivedPayloadV2 = FinalityPayload(mapOf(
-//            INITIAL_TRANSACTION to serializedInitTx.bytes,
-//            TRANSFER_ADDITIONAL_SIGNATURES to serializedAdditionalSignature.bytes
-//        ), serializationService)
-//        receivedPayloadV2ForTwoParties = FinalityPayload(mapOf(
-//            INITIAL_TRANSACTION to serializedInitTx.bytes,
-//            TRANSFER_ADDITIONAL_SIGNATURES to serializedAdditionalSignature.bytes
-//        ), serializationService)
-
         whenever(session.receive(UtxoSignedTransactionInternal::class.java)).thenReturn(signedTransaction)
         whenever(session.receive(FinalityPayload::class.java)).thenReturn(finalityPayload)
 
-        whenever(serializationService.deserialize<UtxoSignedTransactionInternal>(mock<SerializedBytes<UtxoSignedTransactionInternal>>())).thenReturn(
+        whenever(
+            serializationService.deserialize(
+                mock<SerializedBytes<UtxoSignedTransactionInternal>>(),
+                UtxoSignedTransactionInternal::class.java
+            )
+        ).thenReturn(
             signedTransaction
         )
-        whenever(serializationService.deserialize<Boolean>(mock<SerializedBytes<Boolean>>())).thenReturn(transferAdditionalSignatures)
+        whenever(serializationService.deserialize(mock<SerializedBytes<Boolean>>(), Boolean::class.java)).thenReturn(
+            transferAdditionalSignatures
+        )
 
         whenever(finalityPayload.initialTransaction).thenReturn(signedTransaction)
         whenever(finalityPayload.transferAdditionalSignatures).thenReturn(transferAdditionalSignatures)
@@ -579,10 +557,9 @@ class UtxoReceiveFinalityFlowV1Test {
 
     @Test
     fun `Finality flow V2 - skip receiving and persisting signatures when there are only two parties`() {
-        whenever(session.receive(FinalityPayload::class.java)).thenReturn(receivedPayloadV2ForTwoParties)
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
-
+        whenever(finalityPayload.transferAdditionalSignatures).thenReturn(false)
         callReceiveFinalityFlow(UtxoFinalityVersion.V2)
 
         verify(session, never()).receive(List::class.java)
