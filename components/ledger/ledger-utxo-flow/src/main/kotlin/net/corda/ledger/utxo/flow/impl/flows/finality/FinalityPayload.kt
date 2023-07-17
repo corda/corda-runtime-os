@@ -5,19 +5,7 @@ import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.ConstructorForDeserialization
 import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.base.exceptions.CordaRuntimeException
 
-/**
- * Payload for V2 for [UtxoFinalityFlowV1] and [UtxoReceiveFinalityFlowV1] on the first interaction.
- * It is to
- * - serialize and deserialize on the interaction
- * - safely add more field into the payload in the future
- * - deserialize only required field
- *
- * @constructor Creates a new instance of [FinalityPayload] data class
- * @property initialTransaction [UtxoSignedTransactionInternal]
- * @property transferAdditionalSignatures [Boolean]
-*/
 @CordaSerializable
 data class FinalityPayload @ConstructorForDeserialization constructor(
     val map: Map<String, ByteArray>,
@@ -39,20 +27,10 @@ data class FinalityPayload @ConstructorForDeserialization constructor(
         ), serializationService
     )
 
-    val initialTransaction by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        try {
-            serializationService.deserialize<UtxoSignedTransactionInternal>(map[INITIAL_TRANSACTION]!!)
-        } catch (e: Exception) {
-            throw CordaRuntimeException(
-                "Deserialization of ${map[INITIAL_TRANSACTION]} into UtxoSignedTransactionInternal failed.", e)
-        }
-    }
-    val transferAdditionalSignatures by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        try {
-            serializationService.deserialize<Boolean>(map[TRANSFER_ADDITIONAL_SIGNATURES]!!)
-        } catch (e: Exception) {
-            throw CordaRuntimeException(
-                "Deserialization of ${map[TRANSFER_ADDITIONAL_SIGNATURES]} into Boolean failed.", e)
-        }
-    }
+    val payload: Map<String, ByteArray>
+        get() = map
+    val initialTransaction: UtxoSignedTransactionInternal
+        get() = serializationService.deserialize<UtxoSignedTransactionInternal>(map[INITIAL_TRANSACTION]!!)
+    val transferAdditionalSignatures: Boolean
+        get() = serializationService.deserialize<Boolean>(map[TRANSFER_ADDITIONAL_SIGNATURES]!!)
 }

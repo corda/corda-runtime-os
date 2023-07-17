@@ -36,7 +36,6 @@ class UtxoFinalityFlowV1(
     private val initialTransaction: UtxoSignedTransactionInternal,
     private val sessions: List<FlowSession>,
     private val pluggableNotaryClientFlow: Class<PluggableNotaryClientFlow>,
-    private val serializationService: SerializationService,
     val version: UtxoFinalityVersion
 ) : UtxoFinalityBaseV1() {
 
@@ -53,6 +52,9 @@ class UtxoFinalityFlowV1(
 
     @CordaInject
     lateinit var virtualNodeSelectorService: NotaryVirtualNodeSelectorService
+
+    @CordaInject
+    lateinit var serializationService: SerializationService
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
@@ -302,10 +304,9 @@ class UtxoFinalityFlowV1(
         transaction: UtxoSignedTransactionInternal
     ): PluggableNotaryClientFlow {
         return AccessController.doPrivileged(PrivilegedExceptionAction {
-            pluggableNotaryClientFlow.getConstructor(UtxoSignedTransaction::class.java, MemberX500Name::class.java)
-                .newInstance(
-                    transaction, virtualNodeSelectorService.selectVirtualNode(transaction.notaryName)
-                )
+            pluggableNotaryClientFlow.getConstructor(UtxoSignedTransaction::class.java, MemberX500Name::class.java).newInstance(
+                transaction, virtualNodeSelectorService.selectVirtualNode(transaction.notaryName)
+            )
         })
     }
 

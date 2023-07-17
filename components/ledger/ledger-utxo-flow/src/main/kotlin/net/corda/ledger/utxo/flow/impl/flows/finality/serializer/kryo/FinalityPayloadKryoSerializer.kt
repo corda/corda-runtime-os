@@ -26,8 +26,7 @@ class FinalityPayloadKryoSerializer @Activate constructor(
     override val type: Class<FinalityPayload> get() = FinalityPayload::class.java
 
     override fun write(output: CheckpointOutput, obj: FinalityPayload) {
-        output.writeClassAndObject(obj.transferAdditionalSignatures)
-        output.writeClassAndObject(obj.initialTransaction)
+        output.writeClassAndObject(obj.payload)
     }
 
     override fun read(input: CheckpointInput, type: Class<out FinalityPayload>): FinalityPayload {

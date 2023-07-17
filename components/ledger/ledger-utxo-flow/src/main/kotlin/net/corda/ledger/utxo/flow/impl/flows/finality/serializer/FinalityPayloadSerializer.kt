@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality.serializer
 
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
@@ -35,15 +34,14 @@ class FinalityPayloadSerializer @Activate constructor(
         get() = false
 
     override fun toProxy(obj: FinalityPayload): FinalityPayloadProxy {
-        return FinalityPayloadProxy(obj.initialTransaction, obj.transferAdditionalSignatures)
+        return FinalityPayloadProxy(obj.payload)
     }
 
     override fun fromProxy(proxy: FinalityPayloadProxy): FinalityPayload {
-        return FinalityPayload(proxy.initialTransaction, proxy.transferAdditionalSignatures, serializationService)
+        return FinalityPayload(proxy.payload, serializationService)
     }
 }
 
 data class FinalityPayloadProxy(
-    val initialTransaction: UtxoSignedTransactionInternal,
-    val transferAdditionalSignatures: Boolean
+    val payload: Map<String, ByteArray>
 )

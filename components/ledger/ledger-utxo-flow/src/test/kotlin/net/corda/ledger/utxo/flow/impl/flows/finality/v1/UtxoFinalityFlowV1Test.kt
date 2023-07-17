@@ -1119,7 +1119,7 @@ class UtxoFinalityFlowV1Test {
         val serializedInitTx = mock<SerializedBytes<UtxoSignedTransactionInternal>> {
             on { bytes } doReturn ByteArray(0)
         }
-        val serializedAdditionalSignature = mock<SerializedBytes<Boolean>>() {
+        val serializedAdditionalSignature = mock<SerializedBytes<Boolean>> {
             on { bytes } doReturn ByteArray(0)
         }
 
@@ -1184,7 +1184,7 @@ class UtxoFinalityFlowV1Test {
         val serializedInitTx = mock<SerializedBytes<UtxoSignedTransactionInternal>> {
             on { bytes } doReturn ByteArray(0)
         }
-        val serializedAdditionalSignature = mock<SerializedBytes<Boolean>>() {
+        val serializedAdditionalSignature = mock<SerializedBytes<Boolean>> {
             on { bytes } doReturn ByteArray(0)
         }
 
@@ -1259,7 +1259,6 @@ class UtxoFinalityFlowV1Test {
                 signedTransaction,
                 sessions,
                 pluggableNotaryClientFlow.javaClass,
-                serializationService,
                 version
             )
         )
@@ -1273,6 +1272,7 @@ class UtxoFinalityFlowV1Test {
         flow.transactionVerificationService = transactionVerificationService
         flow.virtualNodeSelectorService = virtualNodeSelectorService
         flow.visibilityChecker = visibilityChecker
+        flow.serializationService = serializationService
         flow.call()
     }
 
