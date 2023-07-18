@@ -4,6 +4,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
@@ -57,8 +58,8 @@ class FlowRunnerImpl @Activate constructor(
             is StartFlow -> startFlow(context, receivedEvent)
             is SessionEvent -> {
                 val payload = receivedEvent.payload
-                if (payload is SessionInit) {
-                    startInitiatedFlow(context, payload)
+                if (payload is SessionData && payload.sessionInit != null) {
+                    startInitiatedFlow(context, payload.sessionInit)
                 } else {
                     resumeFlow(context, flowContinuation)
                 }

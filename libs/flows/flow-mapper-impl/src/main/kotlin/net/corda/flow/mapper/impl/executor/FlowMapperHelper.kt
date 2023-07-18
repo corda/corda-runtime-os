@@ -35,7 +35,7 @@ fun getSessionEventOutputTopic(messageDirection: MessageDirection): String {
     return if (messageDirection == MessageDirection.INBOUND) {
         Schemas.Flow.FLOW_EVENT_TOPIC
     } else {
-        Schemas.P2P.P2P_OUT_TOPIC
+        Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
     }
 }
 
@@ -115,4 +115,12 @@ fun createP2PRecord(
             flowConfig
         )
     )
+}
+
+internal fun toggleSessionId(sessionId: String): String {
+    return if (sessionId.endsWith(INITIATED_SESSION_ID_SUFFIX)) {
+        sessionId.removeSuffix(INITIATED_SESSION_ID_SUFFIX)
+    } else {
+        "$sessionId${INITIATED_SESSION_ID_SUFFIX}"
+    }
 }

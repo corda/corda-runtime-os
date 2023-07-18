@@ -31,12 +31,13 @@ class SendRequestHandler @Activate constructor(
     override val type = FlowIORequest.Send::class.java
 
     override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.Send): WaitingFor {
-        val sessionsNotInitiated = initiateFlowRequestService.getSessionsNotInitiated(context, request.sessionPayloads.keys)
-        return if (sessionsNotInitiated.isNotEmpty()) {
+        //val sessionsNotInitiated = initiateFlowRequestService.getSessionsNotInitiated(context, request.sessionPayloads.keys)
+        /*return if (sessionsNotInitiated.isNotEmpty()) {
             return WaitingFor(SessionConfirmation(sessionsNotInitiated.map { it.sessionId }, SessionConfirmationType.INITIATE))
         } else {
             WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
-        }
+        }*/
+        return WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.Send): FlowEventContext<Any> {

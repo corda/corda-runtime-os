@@ -6,6 +6,7 @@ import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
@@ -19,10 +20,11 @@ import net.corda.flow.mapper.impl.executor.SessionInitExecutor
 import net.corda.flow.mapper.impl.executor.StartFlowExecutor
 import net.corda.flow.mapper.impl.executor.generateAppMessage
 import net.corda.libs.configuration.SmartConfig
-import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.*
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.time.Instant
 
 @Component(service = [FlowMapperEventExecutorFactory::class])
@@ -33,6 +35,9 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
 
     private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
 
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java)
+    }
     override fun create(
         eventKey: String,
         flowMapperEvent: FlowMapperEvent,
@@ -42,6 +47,8 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
     ): FlowMapperEventExecutor {
         return when (val flowMapperEventPayload = flowMapperEvent.payload) {
             is SessionEvent -> {
+                logger.info("Processing ${(flowMapperEvent.payload as SessionEvent).messageDirection} session event: ${flowMapperEventPayload.payload::class.java}...")
+
                 when (val sessionPayload = flowMapperEventPayload.payload) {
                     is SessionInit -> {
                         SessionInitExecutor(
@@ -65,15 +72,27 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                         )
                     }
                     else -> {
-                        SessionEventExecutor(
-                            eventKey,
-                            flowMapperEventPayload,
-                            state,
-                            instant,
-                            sessionEventSerializer,
-                            ::generateAppMessage,
-                            flowConfig
-                        )
+                        if ((sessionPayload as SessionData).sessionInit != null) {
+                            logger.info("handling data init")
+                            SessionInitExecutor(
+                                eventKey,
+                                flowMapperEventPayload,
+                                sessionPayload.sessionInit,
+                                state,
+                                sessionEventSerializer,
+                                flowConfig
+                            )
+                        } else {
+                            SessionEventExecutor(
+                                eventKey,
+                                flowMapperEventPayload,
+                                state,
+                                instant,
+                                sessionEventSerializer,
+                                ::generateAppMessage,
+                                flowConfig
+                            )
+                        }
                     }
                 }
             }

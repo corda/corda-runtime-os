@@ -5,6 +5,7 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionError
@@ -34,7 +35,9 @@ class SessionEventExecutor(
     }
 
     private val messageDirection = sessionEvent.messageDirection
-    private val outputTopic = getSessionEventOutputTopic(messageDirection)
+    private val outputTopic = getSessionEventOutputTopic(
+        messageDirection
+    )
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
@@ -53,22 +56,25 @@ class SessionEventExecutor(
                         "counterparty. Key: $eventKey, Event: class ${sessionEvent.payload::class.java}, $sessionEvent"
             )
             val sessionId = sessionEvent.sessionId
+            val errEvent = SessionEvent(
+                MessageDirection.INBOUND,
+                instant,
+                toggleSessionId(sessionEvent.sessionId),
+                null,
+                sessionEvent.initiatingIdentity,
+                sessionEvent.initiatedIdentity,
+                0,
+                emptyList(),
+                SessionError(
+                    ExceptionEnvelope(
+                        "FlowMapper-SessionExpired",
+                        "Tried to process session event for expired session with sessionId $sessionId"
+                    )
+                )
+            )
             FlowMapperResult(
                 null, listOf(
-                    createP2PRecord(
-                        sessionEvent,
-                        SessionError(
-                            ExceptionEnvelope(
-                                "FlowMapper-SessionExpired",
-                                "Tried to process session event for expired session with sessionId $sessionId"
-                            )
-                        ),
-                        instant,
-                        sessionEventSerializer,
-                        appMessageFactory,
-                        flowConfig,
-                        0
-                    )
+                    Record(outputTopic, errEvent.sessionId, FlowMapperEvent(errEvent))
                 )
             )
         } else {
@@ -98,16 +104,18 @@ class SessionEventExecutor(
                     FlowMapperResult(flowMapperState, listOf())
                 } else {
                     if (sessionEvent.payload is SessionClose) {
-                        val outputRecord =
-                            createP2PRecord(
-                                sessionEvent,
-                                SessionAck(),
-                                instant,
-                                sessionEventSerializer,
-                                appMessageFactory,
-                                flowConfig
-                            )
-                        FlowMapperResult(flowMapperState, listOf(outputRecord))
+                        val ackEvent = SessionEvent(
+                            MessageDirection.INBOUND,
+                            instant,
+                            toggleSessionId(sessionEvent.sessionId),
+                            null,
+                            sessionEvent.initiatingIdentity,
+                            sessionEvent.initiatedIdentity,
+                            sessionEvent.sequenceNum,
+                            emptyList(),
+                            SessionAck()
+                        )
+                        FlowMapperResult(flowMapperState, listOf(Record(outputTopic, ackEvent.sessionId, FlowMapperEvent(ackEvent))))
                     } else {
                         FlowMapperResult(flowMapperState, listOf())
                     }
@@ -115,10 +123,12 @@ class SessionEventExecutor(
             }
             FlowMapperStateType.OPEN -> {
                 val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
+                    sessionEvent.messageDirection = MessageDirection.INBOUND
+                    sessionEvent.sessionId = toggleSessionId(sessionEvent.sessionId)
                     Record(
                         outputTopic,
                         sessionEvent.sessionId,
-                        appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig)
+                        FlowMapperEvent(sessionEvent)
                     )
                 } else {
                     Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))

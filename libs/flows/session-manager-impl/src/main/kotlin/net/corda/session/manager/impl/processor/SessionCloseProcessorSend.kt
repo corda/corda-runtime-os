@@ -108,7 +108,7 @@ class SessionCloseProcessorSend(
             sessionState.apply {
                 logger.trace { "Currently in CONFIRMED. Changing to CLOSING. nextSeqNum: $nextSeqNum, adding this event to send " +
                         "${sessionEvent.sequenceNum}, $sessionId" }
-                status = SessionStateType.CLOSING
+                status = SessionStateType.CLOSED
                 sendEventsState.lastProcessedSequenceNum = nextSeqNum
                 sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(sessionEvent)
             }

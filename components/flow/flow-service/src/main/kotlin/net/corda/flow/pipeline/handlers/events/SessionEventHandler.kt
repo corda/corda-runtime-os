@@ -5,6 +5,7 @@ import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
@@ -13,6 +14,7 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
+import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
@@ -58,21 +60,52 @@ class SessionEventHandler @Activate constructor(
         log.trace { "Session event in handler: ${sessionEvent.payload}" }
 
         val now = Instant.now()
+        val sessionInitPayload = sessionEvent.payload is SessionData && (sessionEvent.payload as SessionData).sessionInit != null
+        var sessionInitEvent: SessionEvent? = null
         val sessionId = sessionEvent.sessionId
-        val updatedSessionState = sessionManager.processMessageReceived(
-            sessionId,
-            if (checkpoint.doesExist) checkpoint.getSessionState(sessionId) else null,
-            sessionEvent,
-            now
-        )
+        // @SESSION: This is where we receive a session event and start processing it.
+        var updatedSessionState: SessionState
+        if (sessionInitPayload) {
+            log.info("handling new init")
+            sessionInitEvent = SessionEvent.newBuilder(sessionEvent)
+                .setSequenceNum(1)
+                .setPayload((sessionEvent.payload as SessionData).sessionInit)
+                .build()
+            updatedSessionState = sessionManager.processMessageReceived(
+                sessionId,
+                null,
+                sessionInitEvent,
+                now
+            )
+            log.info("handling data after init")
 
+            updatedSessionState = sessionManager.processMessageReceived(
+                sessionId,
+                updatedSessionState,
+                sessionEvent,
+                now
+            )
+            log.info("handled data after init")
+
+        } else {
+            log.info("handled data without an init")
+
+            updatedSessionState = sessionManager.processMessageReceived(
+                sessionId,
+                if (checkpoint.doesExist) checkpoint.getSessionState(sessionId) else null,
+                sessionEvent,
+                now
+            )
+        }
         // Null is returned if duplicate [SessionInit]s are received
         val nextSessionEvent = sessionManager.getNextReceivedEvent(updatedSessionState)
-        val nextSessionPayload = nextSessionEvent?.payload
 
+
+
+        // @SESSION: This block is about creating a new flow if the received session message is a session init.
         if (!checkpoint.doesExist) {
-            if (nextSessionPayload is SessionInit) {
-                createInitiatedFlowCheckpoint(context, nextSessionPayload, nextSessionEvent, updatedSessionState)
+            if (sessionInitEvent != null && sessionInitPayload) {
+                createInitiatedFlowCheckpoint(context, (sessionEvent.payload as SessionData).sessionInit, sessionInitEvent, updatedSessionState)
             } else {
                 discardSessionEvent(context, sessionEvent)
             }
@@ -83,6 +116,7 @@ class SessionEventHandler @Activate constructor(
         context.flowMetrics.flowSessionMessageReceived(sessionEvent.payload::class.java.name)
 
         return context
+
     }
 
     private fun getContextSessionProperties(protocolVersion: FlowAndProtocolVersion): KeyValuePairList {
@@ -143,7 +177,7 @@ class SessionEventHandler @Activate constructor(
         context.checkpoint.putSessionState(initialSessionState)
         context.flowMetrics.flowStarted()
 
-        sendConfirmMessage(initiatedFlowNameAndProtocol, requestedProtocolName, initiatorVersionsSupported, context, sessionId)
+       // sendConfirmMessage(initiatedFlowNameAndProtocol, requestedProtocolName, initiatorVersionsSupported, context, sessionId)
     }
 
     private fun getProtocolInfo(
@@ -161,6 +195,7 @@ class SessionEventHandler @Activate constructor(
         }
         return Pair(requestedProtocolName, initiatorVersionsSupportedProp.split(",").map { it.trim().toInt() })
     }
+
 
     private fun sendConfirmMessage(
         initiatedFlowNameAndProtocol: FlowAndProtocolVersion?,

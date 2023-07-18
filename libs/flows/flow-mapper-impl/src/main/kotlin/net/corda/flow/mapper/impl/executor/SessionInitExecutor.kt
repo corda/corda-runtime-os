@@ -4,6 +4,8 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.mapper.FlowMapperEvent
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
@@ -30,33 +32,41 @@ class SessionInitExecutor(
     }
 
     private val messageDirection = sessionEvent.messageDirection
-    private val outputTopic = getSessionEventOutputTopic(messageDirection)
+    private val outputTopic = getSessionEventOutputTopic(
+        messageDirection
+    )
+
+    private val deduplicationCount = CordaMetrics.Metric.FlowMapperDeduplicationCount.builder()
+        .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)
+        .build()
+
+    private val creationCount = CordaMetrics.Metric.FlowMapperCreationCount.builder()
+        .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)
+        .build()
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
-            CordaMetrics.Metric.FlowMapperCreationCount.builder()
-                .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)
-                .build().increment()
+            creationCount.increment()
             processSessionInit(sessionEvent, sessionInit)
         } else {
             //duplicate
-            log.debug { "Duplicate SessionInit event received. Key: $eventKey, Event: $sessionEvent" }
+            log.info("Duplicate SessionInit event received. Key: $eventKey, Event: $sessionEvent")
             if (messageDirection == MessageDirection.OUTBOUND) {
+                sessionEvent.messageDirection = MessageDirection.INBOUND
+                sessionEvent.sessionId = toggleSessionId(sessionEvent.sessionId)
                 sessionInit.flowId = null
                 FlowMapperResult(
                     flowMapperState,
                     listOf(
                         Record(
                             outputTopic,
-                            eventKey,
-                            generateAppMessage(sessionEvent, sessionEventSerializer, flowConfig)
+                            sessionEvent.sessionId,
+                            FlowMapperEvent(sessionEvent)
                         )
                     )
                 )
             } else {
-                CordaMetrics.Metric.FlowMapperDeduplicationCount.builder()
-                    .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)
-                    .build().increment()
+                deduplicationCount.increment()
                 FlowMapperResult(flowMapperState, emptyList())
             }
         }
@@ -96,12 +106,13 @@ class SessionInitExecutor(
             //with an extra field of flowKey. set flowkey to null to not expose it on outbound messages
             val tmpFLowEventKey = sessionInit.flowId
             sessionInit.flowId = null
-            sessionEvent.payload = sessionInit
+            sessionEvent.messageDirection = MessageDirection.INBOUND
+            sessionEvent.sessionId = toggleSessionId(sessionEvent.sessionId)
 
             SessionInitOutputs(
                 tmpFLowEventKey,
                 sessionEvent.sessionId,
-                generateAppMessage(sessionEvent, sessionEventSerializer, flowConfig)
+                FlowMapperEvent(sessionEvent)
             )
         }
     }
