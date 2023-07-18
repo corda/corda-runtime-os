@@ -5,6 +5,7 @@ import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
@@ -13,6 +14,7 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
+import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
@@ -43,6 +45,8 @@ class SessionEventHandler @Activate constructor(
     private val checkpointInitializer: CheckpointInitializer,
     @Reference(service = FlowSessionManager::class)
     private val flowSessionManager: FlowSessionManager,
+    @Reference(service = FlowRecordFactory::class)
+    private val flowRecordFactory: FlowRecordFactory
 ) : FlowEventHandler<SessionEvent> {
 
     private companion object {
@@ -58,9 +62,23 @@ class SessionEventHandler @Activate constructor(
         log.trace { "Session event in handler: ${sessionEvent.payload}" }
 
         val now = Instant.now()
+        val sessionInit = sessionEvent.payload is SessionData && (sessionEvent.payload as SessionData).sessionInit != null
         val sessionId = sessionEvent.sessionId
         // @SESSION: This is where we receive a session event and start processing it.
-        val updatedSessionState = sessionManager.processMessageReceived(
+        var updatedSessionState: SessionState
+        if (sessionInit) {
+            updatedSessionState = sessionManager.processMessageReceived(
+                sessionId,
+                if (checkpoint.doesExist) checkpoint.getSessionState(sessionId) else null,
+                SessionEvent.newBuilder(sessionEvent)
+                    .setSequenceNum(1)
+                    .setPayload((sessionEvent.payload as SessionData).sessionInit)
+                    .build(),
+                now
+            )
+            checkpoint.putSessionState(updatedSessionState)
+        }
+        updatedSessionState = sessionManager.processMessageReceived(
             sessionId,
             if (checkpoint.doesExist) checkpoint.getSessionState(sessionId) else null,
             sessionEvent,
@@ -71,10 +89,11 @@ class SessionEventHandler @Activate constructor(
         val nextSessionEvent = sessionManager.getNextReceivedEvent(updatedSessionState)
         val nextSessionPayload = nextSessionEvent?.payload
 
+
         // @SESSION: This block is about creating a new flow if the received session message is a session init.
         if (!checkpoint.doesExist) {
-            if (nextSessionPayload is SessionInit) {
-                createInitiatedFlowCheckpoint(context, nextSessionPayload, nextSessionEvent, updatedSessionState)
+            if (nextSessionPayload is SessionData && nextSessionPayload.sessionInit != null) {
+                createInitiatedFlowCheckpoint(context, nextSessionPayload.sessionInit, nextSessionEvent, updatedSessionState)
             } else {
                 discardSessionEvent(context, sessionEvent)
             }
@@ -84,7 +103,13 @@ class SessionEventHandler @Activate constructor(
         //do this last because the Holding Identity won't be available until after the checkpoint has been initiated
         context.flowMetrics.flowSessionMessageReceived(sessionEvent.payload::class.java.name)
 
-        return context
+        return if (sessionInit) {
+            val wakeup = listOf(
+                flowRecordFactory.createFlowEventRecord(checkpoint.flowId,net.corda.data.flow.event.Wakeup()),
+            )
+            context.copy(outputRecords = context.outputRecords + wakeup)
+        } else context
+
     }
 
     private fun getContextSessionProperties(protocolVersion: FlowAndProtocolVersion): KeyValuePairList {
