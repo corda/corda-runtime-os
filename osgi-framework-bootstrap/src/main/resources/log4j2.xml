@@ -87,7 +87,8 @@
             <AppenderRef ref="Ledger-Detailed"/>
         </logger>
 
-        <logger name="net.corda.tracing" additivity="false" level="trace">
+        <!-- set logger level to trace to enable -->
+        <logger name="net.corda.tracing" additivity="false" level="off">
             <AppenderRef ref="Trace-Spans"/>
         </logger>
 

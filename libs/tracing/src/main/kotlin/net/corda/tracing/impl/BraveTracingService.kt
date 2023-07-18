@@ -74,10 +74,6 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
 
         val reporters = mutableListOf<Reporter<Span>>()
 
-        // The console reporter is useful when debugging test runs on the combined worker.
-        // uncomment it to enable it.
-//        reporters.add(Reporter.CONSOLE)
-
         //Establish zipkin connection iff url host is provided and create respective reporter
         if (zipkinHost != null){
             val zipkinUrl = "$zipkinHost/api/v2/spans"
@@ -87,10 +83,9 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
             reporters.add(spanAsyncReporter)
         }
 
-        // LogReporter will report trace spans to local log files, uncomment to enable
-//        val logReporter = LogReporter()
-//        reporters.add(logReporter)
-
+        // LogReporter will report trace spans to local log files
+        val logReporter = LogReporter()
+        reporters.add(logReporter)
 
         val reporter = CombinedSpanReporter(reporters)
         val spanHandler = ZipkinSpanHandler.create(reporter)
