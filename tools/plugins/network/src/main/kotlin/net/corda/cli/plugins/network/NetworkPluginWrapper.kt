@@ -27,7 +27,8 @@ class NetworkPluginWrapper : Plugin() {
         subcommands = [
             MemberList::class,
             GenerateGroupPolicy::class,
-            OnBoard::class
+            OnBoard::class,
+            CheckRegistrationStatus::class
         ],
         hidden = true,
         mixinStandardHelpOptions = true,
