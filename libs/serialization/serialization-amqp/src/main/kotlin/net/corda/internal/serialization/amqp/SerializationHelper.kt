@@ -115,8 +115,8 @@ internal fun Type.isSubClassOf(type: Type): Boolean {
 }
 
 /**
- * Checks if the given [type] is Corda serializable (if it has or inherits the [CordaSerializable] annotation),
- * or if it's an instance of the [java.lang.Comparable] interface.
+ * Enforces that the given [type] is Corda serializable (if it has or inherits the [CordaSerializable] annotation),
+ * or if it's an instance of the [java.lang.Comparable] interface. If not, an exception will be thrown.
  * If the passed [type] is a [Collection], this function will be recursively called for each item.
  *
  * @param type The type to be checked for Corda serializability.

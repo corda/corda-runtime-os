@@ -105,7 +105,7 @@ class FlowSessionImpl(
 
         setSessionConfirmed()
 
-        return processReceivedPayload(receiveType, received)
+        return processReceivedPayload(received, receiveType)
     }
 
     @Suspendable
@@ -116,7 +116,7 @@ class FlowSessionImpl(
 
         setSessionConfirmed()
 
-        return processReceivedPayload(receiveType, received)
+        return processReceivedPayload(received, receiveType)
     }
 
     @Suspendable
@@ -142,7 +142,7 @@ class FlowSessionImpl(
         return serializationService.serialize(payload).bytes
     }
 
-    private fun <R : Any> processReceivedPayload(receiveType: Class<R>, received: Map<String, ByteArray>): R {
+    private fun <R : Any> processReceivedPayload(received: Map<String, ByteArray>, receiveType: Class<R>): R {
         return if (receiveType.isPrimitive) {
             deserializeReceivedPayload(received, receiveType.kotlin.javaObjectType)
         } else {
