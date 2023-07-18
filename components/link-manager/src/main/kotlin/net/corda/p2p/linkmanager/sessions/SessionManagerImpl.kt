@@ -1102,7 +1102,7 @@ internal class SessionManagerImpl(
         fun dataMessageReceived(sessionId: String) {
             dominoTile.withLifecycleLock {
                 if (!isRunning) {
-                    throw IllegalStateException("A session message was received before the HeartbeatManager was started.")
+                    throw IllegalStateException("A data message was received before the HeartbeatManager was started.")
                 }
                 trackedInboundSessions.compute(sessionId) { _, initialTrackedSession ->
                     if (initialTrackedSession != null) {
