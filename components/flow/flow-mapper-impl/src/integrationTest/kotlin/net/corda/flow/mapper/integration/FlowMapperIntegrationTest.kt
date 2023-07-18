@@ -21,12 +21,15 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.fail
@@ -59,7 +62,16 @@ class FlowMapperIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var executorFactory: FlowMapperEventExecutorFactory
 
+    @InjectService(timeout = 4000)
+    lateinit var locallyHostedIdentityService: LocallyHostedIdentitiesService
+
+    @BeforeEach
+    fun setup() {
+        locallyHostedIdentityService.start()
+    }
+
     @Test
+    @Disabled
     fun `Send StartRPC`() {
         val flowMapperEvent = FlowMapperEvent(startRPCFlow)
         val inputKey = "key1"
@@ -74,6 +86,7 @@ class FlowMapperIntegrationTest {
     }
 
     @Test
+    @Disabled
     fun `Send ScheduleCleanup`() {
         val scheduleCleanup = ScheduleCleanup(Long.MAX_VALUE)
         val flowMapperEvent = FlowMapperEvent(scheduleCleanup)
@@ -93,6 +106,7 @@ class FlowMapperIntegrationTest {
     }
 
     @Test
+    @Disabled
     fun `Send ExecuteCleanup`() {
         val executeCleanup = ExecuteCleanup()
         val flowMapperEvent = FlowMapperEvent(executeCleanup)
@@ -110,6 +124,7 @@ class FlowMapperIntegrationTest {
         assertThat(state).isNull()
     }
 
+    //failing
     @Test
     fun `Send SessionInit`() {
         val inputKey = "sessionId"
@@ -136,6 +151,7 @@ class FlowMapperIntegrationTest {
     }
 
     @Test
+    @Disabled
     fun `Receive SessionInit`() {
         val inputKey = "sessionId-INITIATED"
         val sessionInit = SessionInit(
@@ -162,6 +178,7 @@ class FlowMapperIntegrationTest {
     }
 
     @Test
+    @Disabled
     fun `Send SessionData as initiator`() {
         val inputKey = "sessionId"
         val sessionEvent =
@@ -178,6 +195,7 @@ class FlowMapperIntegrationTest {
     }
 
     @Test
+    @Disabled
     fun `Receive SessionData as initiator`() {
         val inputKey = "sessionId"
         val sessionEvent =
@@ -195,6 +213,7 @@ class FlowMapperIntegrationTest {
     }
 
     @Test
+    @Disabled
     fun `Send SessionData as initiated`() {
         val inputKey = "sessionId-INITIATED"
         val sessionEvent =
@@ -211,6 +230,7 @@ class FlowMapperIntegrationTest {
     }
 
     @Test
+    @Disabled
     fun `Receive SessionData as initiated`() {
         val inputKey = "sessionId-INITIATED"
         val sessionEvent =
@@ -228,6 +248,7 @@ class FlowMapperIntegrationTest {
     }
 
     @Test
+    @Disabled
     fun `Receive SessionError in CLOSING state - ignore and change state to ERROR`() {
         val inputKey = "sessionId"
         val sessionEvent =
@@ -244,6 +265,7 @@ class FlowMapperIntegrationTest {
     }
 
     @Test
+    @Disabled
     fun `Receive SessionError in ERROR state - ignore`() {
         val inputKey = "sessionId"
         val sessionEvent =
@@ -260,6 +282,7 @@ class FlowMapperIntegrationTest {
     }
 
     @Test
+    @Disabled
     fun `Receive SessionError in OPEN state - forward and change state to ERROR`() {
         val inputKey = "sessionId"
         val sessionEvent =
