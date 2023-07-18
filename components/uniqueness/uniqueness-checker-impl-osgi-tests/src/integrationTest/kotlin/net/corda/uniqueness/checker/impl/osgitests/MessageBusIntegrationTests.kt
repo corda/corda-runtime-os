@@ -5,7 +5,8 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.util.*
+import java.util.LinkedList
+import java.util.UUID
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.avro.serialization.CordaAvroSerializationFactory
@@ -41,9 +42,12 @@ import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.backingstore.BackingStore
+import net.corda.uniqueness.backingstore.BackingStoreLifecycle
 import net.corda.uniqueness.backingstore.impl.fake.BackingStoreImplFake
 import net.corda.uniqueness.checker.UniquenessChecker
+import net.corda.uniqueness.checker.UniquenessCheckerLifecycle
 import net.corda.uniqueness.checker.impl.BatchedUniquenessCheckerImpl
+import net.corda.uniqueness.checker.impl.BatchedUniquenessCheckerLifecycleImpl
 import net.corda.uniqueness.utils.UniquenessAssertions
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownInputStateResponse
 import net.corda.utilities.seconds
@@ -134,7 +138,7 @@ class MessageBusIntegrationTests {
 
     private lateinit var externalEventResponseMonitor: TestExternalEventResponseMonitor
     private lateinit var publisher: Publisher
-    private lateinit var uniquenessChecker: UniquenessChecker
+    private lateinit var uniquenessCheckerLifecycle: UniquenessCheckerLifecycle
 
     /**
      * Behaves like [BackingStoreImplFake], but allows us to selectively force exceptions to be
@@ -274,13 +278,13 @@ class MessageBusIntegrationTests {
         backingStore = ThrowableBackingStoreImplFake(lifecycleCoordinatorFactory)
             .also { it.start() }
 
-        uniquenessChecker = BatchedUniquenessCheckerImpl(
+        uniquenessCheckerLifecycle = BatchedUniquenessCheckerLifecycleImpl(
             lifecycleCoordinatorFactory,
             configurationReadService,
             subscriptionFactory,
             externalEventResponseFactory,
-            testClock,
-            backingStore
+            backingStore,
+            BatchedUniquenessCheckerImpl(backingStore, testClock)
         ).also { it.start() }
 
         publisher = publisherFactory.createPublisher(
@@ -312,9 +316,9 @@ class MessageBusIntegrationTests {
                 logger.info("Starting test coordinator")
                 c.followStatusChangesByName(
                     setOf(
-                        LifecycleCoordinatorName.forComponent<BackingStore>(),
+                        LifecycleCoordinatorName.forComponent<BackingStoreLifecycle>(),
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                        LifecycleCoordinatorName.forComponent<UniquenessChecker>()
+                        LifecycleCoordinatorName.forComponent<UniquenessCheckerLifecycle>()
                     )
                 )
             } else if (e is RegistrationStatusChangeEvent) {
