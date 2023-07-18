@@ -5,7 +5,10 @@ import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerMetricRecorder
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TopologicalSort
+import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackChainResolutionVersion
+import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.ledger.utxo.flow.impl.persistence.TransactionExistenceStatus
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.crypto.SecureHash
@@ -43,6 +46,9 @@ class TransactionBackchainReceiverFlowV1Test {
 
     private val utxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
     private val utxoLedgerMetricRecorder = mock<UtxoLedgerMetricRecorder>()
+    private val utxoLedgerGroupParametersPersistenceService = mock<UtxoLedgerGroupParametersPersistenceService>()
+    private val signedGroupParametersVerifier = mock<SignedGroupParametersVerifier>()
+
     private val session = mock<FlowSession>()
 
     private val retrievedTransaction1 = mock<UtxoSignedTransaction>()
@@ -83,6 +89,11 @@ class TransactionBackchainReceiverFlowV1Test {
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction1, UNVERIFIED)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction2, UNVERIFIED)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction3, UNVERIFIED)
+
+        verifyNoInteractions(
+            utxoLedgerGroupParametersPersistenceService,
+            signedGroupParametersVerifier
+        )
     }
 
     @Test
@@ -91,6 +102,10 @@ class TransactionBackchainReceiverFlowV1Test {
 
         verifyNoInteractions(session)
         verifyNoInteractions(utxoLedgerPersistenceService)
+        verifyNoInteractions(
+            utxoLedgerGroupParametersPersistenceService,
+            signedGroupParametersVerifier
+        )
     }
 
     @Test
@@ -126,6 +141,10 @@ class TransactionBackchainReceiverFlowV1Test {
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction1, UNVERIFIED)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction2, UNVERIFIED)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction3, UNVERIFIED)
+        verifyNoInteractions(
+            utxoLedgerGroupParametersPersistenceService,
+            signedGroupParametersVerifier
+        )
     }
 
     @Test
@@ -159,6 +178,10 @@ class TransactionBackchainReceiverFlowV1Test {
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction1, UNVERIFIED)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction2, UNVERIFIED)
         verify(utxoLedgerPersistenceService, never()).persistIfDoesNotExist(retrievedTransaction3, UNVERIFIED)
+        verifyNoInteractions(
+            utxoLedgerGroupParametersPersistenceService,
+            signedGroupParametersVerifier
+        )
     }
 
     @Test
@@ -185,6 +208,10 @@ class TransactionBackchainReceiverFlowV1Test {
         verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_1)))
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction1, UNVERIFIED)
         verify(utxoLedgerPersistenceService, never()).persistIfDoesNotExist(retrievedTransaction2, UNVERIFIED)
+        verifyNoInteractions(
+            utxoLedgerGroupParametersPersistenceService,
+            signedGroupParametersVerifier
+        )
     }
 
     @Test
@@ -273,15 +300,22 @@ class TransactionBackchainReceiverFlowV1Test {
             verify().persistIfDoesNotExist(transaction2, UNVERIFIED)
             Unit
         }
+        verifyNoInteractions(
+            utxoLedgerGroupParametersPersistenceService,
+            signedGroupParametersVerifier
+        )
     }
 
     private fun callTransactionBackchainReceiverFlow(originalTransactionsToRetrieve: Set<SecureHash>): TopologicalSort {
         return TransactionBackchainReceiverFlowV1(
             setOf(SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))),
-            originalTransactionsToRetrieve, session
+            originalTransactionsToRetrieve, session,
+            TransactionBackChainResolutionVersion.V1
         ).apply {
             utxoLedgerPersistenceService = this@TransactionBackchainReceiverFlowV1Test.utxoLedgerPersistenceService
             utxoLedgerMetricRecorder = this@TransactionBackchainReceiverFlowV1Test.utxoLedgerMetricRecorder
+            utxoLedgerGroupParametersPersistenceService = this@TransactionBackchainReceiverFlowV1Test.utxoLedgerGroupParametersPersistenceService
+            signedGroupParametersVerifier = this@TransactionBackchainReceiverFlowV1Test.signedGroupParametersVerifier
         }.call()
     }
 }

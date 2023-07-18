@@ -12,7 +12,7 @@ import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersSer
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationParameters
-import net.corda.ledger.utxo.transaction.verifier.SignedGroupParametersVerifier
+import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
@@ -77,11 +77,7 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
 
     @Suspendable
     private fun fetchAndVerifySignedGroupParameters(transaction: UtxoLedgerTransaction): SignedGroupParameters {
-        val membershipGroupParametersHashString =
-            (transaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()
-        requireNotNull(membershipGroupParametersHashString) {
-            "Membership group parameters hash cannot be found in the transaction metadata."
-        }
+        val membershipGroupParametersHashString = transaction.getMembershipGroupParametersHash()
 
         val currentGroupParameters = currentGroupParametersService.get()
         val signedGroupParameters =
@@ -96,8 +92,7 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
         }
         signedGroupParametersVerifier.verify(
             transaction,
-            signedGroupParameters,
-            currentGroupParametersService.getMgmKeys()
+            signedGroupParameters
         )
         return signedGroupParameters
     }
@@ -113,6 +108,12 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
         }
 
     private fun serialize(payload: Any) = ByteBuffer.wrap(serializationService.serialize(payload).bytes)
+
+    private fun UtxoLedgerTransaction.getMembershipGroupParametersHash(): String {
+        return requireNotNull((metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()) {
+            "Membership group parameters hash cannot be found in the transaction metadata."
+        }
+    }
 
     private fun transactionVerificationFlowTimer(): Timer {
         return CordaMetrics.Metric.Ledger.TransactionVerificationFlowTime

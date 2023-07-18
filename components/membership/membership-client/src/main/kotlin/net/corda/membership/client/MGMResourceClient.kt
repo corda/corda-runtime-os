@@ -6,6 +6,7 @@ import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.Lifecycle
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.v5.base.types.MemberX500Name
@@ -16,6 +17,7 @@ import kotlin.jvm.Throws
 /**
  * The MGM ops client to perform group operations.
  */
+@Suppress("TooManyFunctions")
 interface MGMResourceClient : Lifecycle {
 
     /**
@@ -177,6 +179,23 @@ interface MGMResourceClient : Lifecycle {
     )
 
     /**
+     * Force decline an in-progress registration request that may be stuck or displaying some other unexpected
+     * behaviour. This method should only be used under exceptional circumstances.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param requestId ID of the registration request.
+     *
+     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
+     * @throws [IllegalArgumentException] If the request is not found, or has already been approved/declined.
+     */
+    @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class, IllegalArgumentException::class)
+    fun forceDeclineRegistrationRequest(
+        holdingIdentityShortHash: ShortHash,
+        requestId: UUID,
+    )
+
+    /**
      * Suspends a member.
      *
      * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
@@ -228,4 +247,21 @@ interface MGMResourceClient : Lifecycle {
         reason: String? = null,
     )
 
+    /**
+     * Updates the group parameters.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param newGroupParameters Updated version of the group parameters.
+     *
+     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
+     */
+    @Throws(
+        CouldNotFindMemberException::class,
+        MemberNotAnMgmException::class,
+    )
+    fun updateGroupParameters(
+        holdingIdentityShortHash: ShortHash,
+        newGroupParameters: Map<String, String>
+    ): InternalGroupParameters
 }

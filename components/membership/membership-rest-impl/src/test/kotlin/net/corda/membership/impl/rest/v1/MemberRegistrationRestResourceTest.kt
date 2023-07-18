@@ -69,6 +69,7 @@ class MemberRegistrationRestResourceTest {
     private val memberRegistrationRestResource = MemberRegistrationRestResourceImpl(
         lifecycleCoordinatorFactory,
         memberResourceClient,
+        mock(),
     )
 
     @Test

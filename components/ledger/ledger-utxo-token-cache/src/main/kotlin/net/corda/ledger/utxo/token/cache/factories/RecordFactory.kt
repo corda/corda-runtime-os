@@ -2,8 +2,9 @@ package net.corda.ledger.utxo.token.cache.factories
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
-import net.corda.messaging.api.records.Record
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
+import net.corda.messaging.api.records.Record
+import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 
 /**
  * The [RecordFactory] creates instances of [Record]
@@ -53,6 +54,23 @@ interface RecordFactory {
     fun getClaimReleaseAck(
         flowId: String,
         externalEventRequestId: String
+    ): Record<String, FlowEvent>
+
+    /**
+     * Creates a balance response record
+     *
+     * @param flowId The unique identifier of the flow that requested the balance
+     * @param externalEventRequestId The unique ID of the flow request event of the balance query
+     * @param poolKey The unique key of the pool of tokens which the balance was calculated from
+     * @param tokenBalance The balance of the pool of tokens
+     *
+     * @return A [FlowEvent] response record for a balance query
+     */
+    fun getBalanceResponse(
+        flowId: String,
+        externalEventRequestId: String,
+        poolKey: TokenPoolCacheKey,
+        tokenBalance: TokenBalance
     ): Record<String, FlowEvent>
 }
 

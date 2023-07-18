@@ -20,7 +20,6 @@ import java.nio.file.Path
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-@Disabled("CORE-13288: Tests are disabled until there is a solution in place")
 class StaticNetworkTest {
     @TempDir
     lateinit var tempDir: Path

@@ -21,7 +21,9 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.impl.persistence.service.handler.HandlerFactories
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.service.MembershipPersistenceService
@@ -38,7 +40,6 @@ import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -63,14 +64,16 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     memberInfoFactory: MemberInfoFactory,
     @Reference(service = CordaAvroSerializationFactory::class)
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    @Reference(service = VirtualNodeInfoReadService::class)
-    virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = KeyEncodingService::class)
     keyEncodingService: KeyEncodingService,
     @Reference(service = PlatformInfoProvider::class)
     platformInfoProvider: PlatformInfoProvider,
     @Reference(service = AllowedCertificatesReaderWriterService::class)
     allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
+    @Reference(service = GroupParametersWriterService::class)
+    groupParametersWriterService: GroupParametersWriterService,
+    @Reference(service = GroupParametersFactory::class)
+    groupParametersFactory: GroupParametersFactory,
 ) : MembershipPersistenceService {
 
     private companion object {
@@ -87,10 +90,13 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     private var rpcSubscription: RPCSubscription<MembershipPersistenceRequest, MembershipPersistenceResponse>? = null
     private var asyncSubscription:
         StateAndEventSubscription<String, MembershipPersistenceAsyncRequestState, MembershipPersistenceAsyncRequest>? = null
-    private var retryManager: MembershipPersistenceAsyncRetryManager? = null
+    private val retryManager = MembershipPersistenceAsyncRetryManager(
+        coordinatorFactory,
+        publisherFactory,
+        clock,
+    )
 
     private var dependencyServiceHandle: RegistrationHandle? = null
-    private var subHandle: RegistrationHandle? = null
     private var configHandle: AutoCloseable? = null
 
     override val isRunning: Boolean
@@ -123,7 +129,6 @@ class MembershipPersistenceServiceImpl @Activate constructor(
             setOf(
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                 LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
-                LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                 LifecycleCoordinatorName.forComponent<AllowedCertificatesReaderWriterService>(),
             )
         )
@@ -137,34 +142,24 @@ class MembershipPersistenceServiceImpl @Activate constructor(
         )
         dependencyServiceHandle?.close()
         dependencyServiceHandle = null
-        subHandle?.close()
-        subHandle = null
         configHandle?.close()
         configHandle = null
         rpcSubscription?.close()
         rpcSubscription = null
         asyncSubscription?.close()
         asyncSubscription = null
-        retryManager?.close()
-        retryManager = null
+        retryManager.stop()
     }
 
     private fun handleRegistrationStatusChangedEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
         logger.info("Handling registration changed event.")
         when (event.status) {
             LifecycleStatus.UP -> {
-                if (event.registration == dependencyServiceHandle) {
                     configHandle?.close()
                     configHandle = configurationReadService.registerComponentForUpdates(
                         coordinator,
                         setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                     )
-                } else if (event.registration == subHandle) {
-                    coordinator.updateStatus(
-                        LifecycleStatus.UP,
-                        "Received config and started RPC topic subscription."
-                    )
-                }
             }
             else -> {
                 coordinator.updateStatus(LifecycleStatus.DOWN, "Dependencies are down.")
@@ -179,20 +174,19 @@ class MembershipPersistenceServiceImpl @Activate constructor(
             jpaEntitiesRegistry,
             memberInfoFactory,
             cordaAvroSerializationFactory,
-            virtualNodeInfoReadService,
             keyEncodingService,
             platformInfoProvider,
+            groupParametersWriterService,
+            groupParametersFactory,
             allowedCertificatesReaderWriterService,
         )
     }
 
     private fun handleConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         logger.info("Handling config changed event.")
-        subHandle?.close()
-        subHandle = null
         rpcSubscription?.close()
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-        val firstSubscription = subscriptionFactory.createRPCSubscription(
+        subscriptionFactory.createRPCSubscription(
             rpcConfig = RPCConfig(
                 groupName = GROUP_NAME,
                 clientName = CLIENT_NAME,
@@ -209,15 +203,8 @@ class MembershipPersistenceServiceImpl @Activate constructor(
             it.start()
         }
         asyncSubscription?.close()
-        retryManager?.close()
-        retryManager =
-            MembershipPersistenceAsyncRetryManager(
-                coordinatorFactory = coordinatorFactory,
-                publisherFactory = publisherFactory,
-                messagingConfig = messagingConfig,
-                clock = clock,
-            )
-        val secondSubscription = subscriptionFactory.createStateAndEventSubscription(
+        retryManager.start(messagingConfig)
+        subscriptionFactory.createStateAndEventSubscription(
             subscriptionConfig = SubscriptionConfig(
                 groupName = ASYNC_GROUP_NAME,
                 eventTopic = MEMBERSHIP_DB_ASYNC_TOPIC,
@@ -228,14 +215,13 @@ class MembershipPersistenceServiceImpl @Activate constructor(
             messagingConfig = messagingConfig,
             stateAndEventListener = retryManager
         ).also {
+            asyncSubscription = it
             it.start()
         }
-        asyncSubscription = secondSubscription
-        subHandle = coordinator.followStatusChangesByName(
-            setOf(
-                firstSubscription.subscriptionName,
-                secondSubscription.subscriptionName,
-            )
+
+        coordinator.updateStatus(
+            LifecycleStatus.UP,
+            "Received config and started Membership persistence topic subscriptions."
         )
     }
 }

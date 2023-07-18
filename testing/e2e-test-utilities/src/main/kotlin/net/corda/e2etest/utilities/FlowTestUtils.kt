@@ -1,7 +1,9 @@
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.NullNode
 import org.apache.commons.text.StringEscapeUtils.escapeJson
 import java.time.Duration
 import java.util.UUID
@@ -9,9 +11,6 @@ import java.util.UUID
 const val SMOKE_TEST_CLASS_NAME = "com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow"
 const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
 const val RPC_FLOW_STATUS_FAILED = "FAILED"
-
-fun FlowStatus.getRpcFlowResult(): RpcSmokeTestOutput =
-    ObjectMapper().readValue(this.flowResult!!, RpcSmokeTestOutput::class.java)
 
 fun startRpcFlow(
     holdingId: String,
@@ -86,6 +85,38 @@ fun ClusterInfo.awaitRpcFlowFinished(holdingId: String, requestId: String): Flow
     }
 }
 
+fun awaitRestFlowResult(
+    holdingId: String,
+    requestId: String
+) = DEFAULT_CLUSTER.awaitRestFlowResult(holdingId, requestId)
+fun ClusterInfo.awaitRestFlowResult(holdingId: String, requestId: String): FlowResult {
+    return cluster {
+        val jsonNode = ObjectMapper().readTree(
+            assertWithRetry {
+                command { flowResult(holdingId, requestId) }
+                timeout(Duration.ofMinutes(6))
+                condition {
+                    it.code == 200 &&
+                            (it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
+                                    it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_FAILED)
+                }
+            }.body)
+
+        FlowResult(
+            jsonNode[FlowResult::flowStatus.name]?.textValue(),
+            jsonNode[FlowResult::json.name]?.handlingNulls(),
+            jsonNode[FlowResult::flowError.name]?.handlingNulls()?.asFlowError()
+        )
+    }
+}
+
+private fun JsonNode.handlingNulls(): JsonNode? {
+    return when(this) {
+        is NullNode -> null
+        else -> this
+    }
+}
+
 fun getFlowStatus(
     holdingId: String,
     requestId: String,
@@ -106,6 +137,13 @@ fun ClusterInfo.getFlowStatus(holdingId: String, requestId: String, expectedCode
     }
 }
 
+private fun JsonNode.asFlowError(): FlowError {
+    val flowError = FlowError()
+    flowError.type = this["type"]?.textValue()
+    flowError.message = this["message"]?.textValue()
+    return flowError
+}
+
 fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
     return DEFAULT_CLUSTER.cluster {
         assertWithRetry {
@@ -124,8 +162,12 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
     }
 }
 
-fun getFlowClasses(holdingId: String): List<String> {
-    return DEFAULT_CLUSTER.cluster {
+fun getFlowClasses(
+    holdingId: String
+) = DEFAULT_CLUSTER.getFlowClasses(holdingId)
+
+fun ClusterInfo.getFlowClasses(holdingId: String): List<String> {
+    return cluster {
         val vNodeJson = assertWithRetry {
             command { runnableFlowClasses(holdingId) }
             condition { it.code == 200 }
@@ -141,11 +183,6 @@ class RpcSmokeTestInput {
     var data: Map<String, String>? = null
 }
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-class RpcSmokeTestOutput {
-    var command: String? = null
-    var result: String? = null
-}
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 class FlowStatus {
@@ -159,3 +196,9 @@ class FlowError {
     var type: String? = null
     var message: String? = null
 }
+
+data class FlowResult (
+    val flowStatus: String?,
+    val json: JsonNode?,
+    val flowError: FlowError?
+)

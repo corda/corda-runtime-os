@@ -10,7 +10,7 @@ import net.corda.data.membership.PersistentSignedMemberInfo
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.ActivateMember
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
@@ -27,6 +27,7 @@ import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
 import net.corda.data.membership.db.request.command.SuspendMember
+import net.corda.data.membership.db.request.command.UpdateGroupParameters
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
@@ -169,9 +170,9 @@ class MembershipPersistenceClientImpl(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             PersistGroupParameters(
                 AvroGroupParameters(
-                    ByteBuffer.wrap(groupParameters.bytes),
-                    (groupParameters as? SignedGroupParameters)?.signature?.toAvro(),
-                    (groupParameters as? SignedGroupParameters)?.signatureSpec?.toAvro()
+                    ByteBuffer.wrap(groupParameters.groupParameters),
+                    (groupParameters as? SignedGroupParameters)?.mgmSignature?.toAvro(),
+                    (groupParameters as? SignedGroupParameters)?.mgmSignatureSpec?.toAvro()
                 )
             )
         )
@@ -428,6 +429,22 @@ class MembershipPersistenceClientImpl(
         return request.operation { payload ->
             dataToResultConvertor<StaticNetworkInfoQueryResponse, StaticNetworkInfo>(payload) {
                 it.info
+            }
+        }
+    }
+
+    override fun updateGroupParameters(
+        viewOwningIdentity: HoldingIdentity, newGroupParameters: Map<String, String>
+    ): MembershipPersistenceOperation<InternalGroupParameters> {
+        logger.info("Updating group parameters for group '${viewOwningIdentity.groupId}'.")
+        val request = MembershipPersistenceRequest(
+            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
+            UpdateGroupParameters(newGroupParameters)
+        )
+
+        return request.operation { payload ->
+            dataToResultConvertor<PersistGroupParametersResponse, InternalGroupParameters>(payload) { response ->
+                groupParametersFactory.create(response.groupParameters)
             }
         }
     }

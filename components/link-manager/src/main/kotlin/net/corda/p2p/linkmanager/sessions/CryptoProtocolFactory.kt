@@ -12,8 +12,7 @@ internal class CryptoProtocolFactory: ProtocolFactory {
         return AuthenticationProtocolInitiator(sessionId, supportedModes, ourMaxMessageSize, ourPublicKey, groupId, mode)
     }
 
-    override fun createResponder(sessionId: String, supportedModes: Set<ProtocolMode>, ourMaxMessageSize: Int,
-                                 mode: CertificateCheckMode): AuthenticationProtocolResponder {
-        return AuthenticationProtocolResponder(sessionId, supportedModes, ourMaxMessageSize, mode)
+    override fun createResponder(sessionId: String, ourMaxMessageSize: Int): AuthenticationProtocolResponder {
+        return AuthenticationProtocolResponder(sessionId, ourMaxMessageSize)
     }
 }

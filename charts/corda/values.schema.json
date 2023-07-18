@@ -41,6 +41,39 @@
             "title": "override chart name",
             "examples": [""]
         },
+        "topologySpreadConstraints": {
+            "type": "array",
+            "default": [],
+            "title": "topology spread constraints",
+            "items": {
+                "type": [
+                    "string",
+                    "object",
+                    "array"
+                ]
+            }
+        },
+        "affinity": {
+            "type": "object",
+            "default": {},
+            "title": "affinity for pod assignment",
+            "additionalProperties": {
+                "type": [
+                    "object"
+                ]
+            }
+        },
+        "commonLabels": {
+            "type": "object",
+            "default": {},
+            "title": "extra labels to add to all deployed objects",
+            "additionalProperties": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            }
+        },
         "image": {
             "type": "object",
             "default": {},
@@ -239,11 +272,25 @@
                     "examples": [
                         "http://tempo:9411"
                     ]
+                },
+                "samplesPerSecond": {
+                    "type": "string",
+                    "default": "1",
+                    "title": "Number of request traces to sample per second, defaults to 1 sample per second. Set to 'unlimited' to record all traces, but in this case amount of tracing data produced can be quite vast.",
+                    "examples": [
+                        "10",
+                        "unlimited"
+                    ]
                 }
             },
             "examples": [
                 {
-                    "endpoint": "http://tempo:9411"
+                    "endpoint": "http://tempo:9411",
+                    "samplesPerSecond": "10"
+                },
+                {
+                    "endpoint": "http://tempo:9411",
+                    "samplesPerSecond": "unlimited"
                 }
             ]
         },
@@ -606,6 +653,7 @@
             "default": {},
             "title": "configuration for cluster bootstrap",
             "required": [
+                "preinstallCheck",
                 "restApiAdmin",
                 "db",
                 "kafka",
@@ -615,6 +663,26 @@
             ],
             "additionalProperties": false,
             "properties": {
+                "preinstallCheck": {
+                    "type": "object",
+                    "default": {},
+                    "title": "configuration for the preinstall check",
+                    "required": [
+                        "enabled"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": true,
+                            "title": "indicates whether the preinstall check is enabled",
+                            "examples": [
+                                true,
+                                false
+                            ]
+                        }
+                    }
+                },
                 "restApiAdmin": {
                     "type": "object",
                     "default": {},
@@ -706,7 +774,11 @@
                                     "default": {},
                                     "title": "JDBC connection pool configuration for crypto DB",
                                     "required": [
-                                        "maxSize"
+                                        "maxSize",
+                                        "idleTimeoutSeconds",
+                                        "maxLifetimeSeconds",
+                                        "keepaliveTimeSeconds",
+                                        "validationTimeoutSeconds"
                                     ],
                                     "additionalProperties": false,
                                     "properties": {
@@ -717,6 +789,43 @@
                                             "examples": [
                                                 5
                                             ]
+                                        },
+                                        "minSize": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                },
+                                                {
+                                                    "type": "null"
+                                                }
+                                            ],
+                                            "default": null,
+                                            "title": "minimum JDBC connection pool size for crypto DB; null value means pool's min size will default to pool's max size value"
+                                        },
+                                        "idleTimeoutSeconds": {
+                                            "type": "integer",
+                                            "default": 120,
+                                            "minimum": 0,
+                                            "title": "maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
+                                        },
+                                        "maxLifetimeSeconds": {
+                                            "type": "integer",
+                                            "default": 1800,
+                                            "minimum": 1,
+                                            "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
+                                        },
+                                        "keepaliveTimeSeconds": {
+                                            "type": "integer",
+                                            "default": 0,
+                                            "minimum": 0,
+                                            "title": "interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
+                                        },
+                                        "validationTimeoutSeconds": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "default": 5,
+                                            "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
                                         }
                                     },
                                     "examples": [{
@@ -766,7 +875,11 @@
                                     "default": {},
                                     "title": "JDBC connection pool configuration for RBAC DB",
                                     "required": [
-                                        "maxSize"
+                                        "maxSize",
+                                        "idleTimeoutSeconds",
+                                        "maxLifetimeSeconds",
+                                        "keepaliveTimeSeconds",
+                                        "validationTimeoutSeconds"
                                     ],
                                     "properties": {
                                         "maxSize": {
@@ -776,6 +889,43 @@
                                             "examples": [
                                                 5
                                             ]
+                                        },
+                                        "minSize": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                },
+                                                {
+                                                    "type": "null"
+                                                }
+                                            ],
+                                            "default": null,
+                                            "title": "minimum JDBC connection pool size for RBAC DB; null value means pool's min size will default to pool's max size value"
+                                        },
+                                        "idleTimeoutSeconds": {
+                                            "type": "integer",
+                                            "default": 120,
+                                            "minimum": 0,
+                                            "title": "maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
+                                        },
+                                        "maxLifetimeSeconds": {
+                                            "type": "integer",
+                                            "default": 1800,
+                                            "minimum": 1,
+                                            "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
+                                        },
+                                        "keepaliveTimeSeconds": {
+                                            "type": "integer",
+                                            "default": 0,
+                                            "minimum": 0,
+                                            "title": "interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
+                                        },
+                                        "validationTimeoutSeconds": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "default": 5,
+                                            "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
                                         }
                                     },
                                     "examples": [{
@@ -1146,8 +1296,13 @@
                                     "default": {},
                                     "title": "crypto worker JDBC connection pool configuration for cluster DB",
                                     "required": [
-                                        "maxSize"
+                                        "maxSize",
+                                        "idleTimeoutSeconds",
+                                        "maxLifetimeSeconds",
+                                        "keepaliveTimeSeconds",
+                                        "validationTimeoutSeconds"
                                     ],
+                                    "additionalProperties": false,
                                     "properties": {
                                         "maxSize": {
                                             "type": "integer",
@@ -1156,6 +1311,43 @@
                                             "examples": [
                                                 5
                                             ]
+                                        },
+                                        "minSize": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                },
+                                                {
+                                                    "type": "null"
+                                                }
+                                            ],
+                                            "default": null,
+                                            "title": "crypto worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value"
+                                        },
+                                        "idleTimeoutSeconds": {
+                                            "type": "integer",
+                                            "default": 120,
+                                            "minimum": 0,
+                                            "title": "maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
+                                        },
+                                        "maxLifetimeSeconds": {
+                                            "type": "integer",
+                                            "default": 1800,
+                                            "minimum": 1,
+                                            "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
+                                        },
+                                        "keepaliveTimeSeconds": {
+                                            "type": "integer",
+                                            "default": 0,
+                                            "minimum": 0,
+                                            "title": "interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
+                                        },
+                                        "validationTimeoutSeconds": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "default": 5,
+                                            "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
                                         }
                                     }
                                 }
@@ -1185,8 +1377,13 @@
                                     "default": {},
                                     "title": "DB worker JDBC connection pool configuration for cluster DB",
                                     "required": [
-                                        "maxSize"
+                                        "maxSize",
+                                        "idleTimeoutSeconds",
+                                        "maxLifetimeSeconds",
+                                        "keepaliveTimeSeconds",
+                                        "validationTimeoutSeconds"
                                     ],
+                                    "additionalProperties": false,
                                     "properties": {
                                         "maxSize": {
                                             "type": "integer",
@@ -1195,6 +1392,43 @@
                                             "examples": [
                                                 5
                                             ]
+                                        },
+                                        "minSize": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                },
+                                                {
+                                                    "type": "null"
+                                                }
+                                            ],
+                                            "default": null,
+                                            "title": "DB worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value"
+                                        },
+                                        "idleTimeoutSeconds": {
+                                            "type": "integer",
+                                            "default": 120,
+                                            "minimum": 0,
+                                            "title": "maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
+                                        },
+                                        "maxLifetimeSeconds": {
+                                            "type": "integer",
+                                            "default": 1800,
+                                            "minimum": 1,
+                                            "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
+                                        },
+                                        "keepaliveTimeSeconds": {
+                                            "type": "integer",
+                                            "default": 0,
+                                            "minimum": 0,
+                                            "title": "interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
+                                        },
+                                        "validationTimeoutSeconds": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "default": 5,
+                                            "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
                                         }
                                     }
                                 }

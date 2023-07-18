@@ -8,6 +8,7 @@ import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
 import net.corda.data.membership.common.ApprovalRuleType.STANDARD
 import net.corda.data.membership.common.RegistrationRequestDetails
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InvalidInputDataException
@@ -28,6 +29,7 @@ import net.corda.membership.rest.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.rest.v1.types.response.PreAuthToken
 import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
+import net.corda.membership.impl.rest.v1.verifiers.GroupParametersUpdateVerifier
 import net.corda.membership.rest.v1.types.response.MemberInfoSubmitted
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.membership.rest.v1.types.response.RegistrationStatus
@@ -38,6 +40,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.membership.lib.toMap
+import net.corda.membership.rest.v1.types.RestGroupParameters
 import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.rest.exception.InvalidStateChangeException
@@ -59,6 +62,7 @@ class MGMRestResourceImpl internal constructor(
     private val mgmResourceClient: MGMResourceClient,
     private val configurationGetService: ConfigurationGetService,
     private val clock: Clock = UTCClock(),
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : MGMRestResource, PluggableRestResource<MGMRestResource>, Lifecycle {
 
     @Activate
@@ -69,11 +73,14 @@ class MGMRestResourceImpl internal constructor(
         mgmResourceClient: MGMResourceClient,
         @Reference(service = ConfigurationGetService::class)
         configurationGetService: ConfigurationGetService,
+        @Reference(service = PlatformInfoProvider::class)
+        platformInfoProvider: PlatformInfoProvider
     ) : this(
         coordinatorFactory,
         mgmResourceClient,
         configurationGetService,
-        UTCClock()
+        UTCClock(),
+        platformInfoProvider
     )
 
     private interface InnerMGMRestResource {
@@ -154,9 +161,11 @@ class MGMRestResourceImpl internal constructor(
         fun suspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters)
 
         fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters)
+
+        fun updateGroupParameters(holdingIdentityShortHash: String, newGroupParameters: RestGroupParameters): RestGroupParameters
     }
 
-    override val protocolVersion = 1
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     private var impl: InnerMGMRestResource = InactiveImpl
 
@@ -248,6 +257,9 @@ class MGMRestResourceImpl internal constructor(
 
     override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) =
         impl.activateMember(holdingIdentityShortHash, activationParams)
+
+    override fun updateGroupParameters(holdingIdentityShortHash: String, newGroupParameters: RestGroupParameters) =
+        impl.updateGroupParameters(holdingIdentityShortHash, newGroupParameters)
 
     fun activate(reason: String) {
         impl = ActiveImpl()
@@ -350,6 +362,11 @@ class MGMRestResourceImpl internal constructor(
             holdingIdentityShortHash: String,
             activationParams: SuspensionActivationParameters
         ): Unit = throwNotRunningException()
+
+        override fun updateGroupParameters(
+            holdingIdentityShortHash: String,
+            newGroupParameters: RestGroupParameters,
+        ): RestGroupParameters = throwNotRunningException()
 
         private fun <T> throwNotRunningException(): T {
             throw ServiceUnavailableException(NOT_RUNNING_ERROR)
@@ -602,6 +619,30 @@ class MGMRestResourceImpl internal constructor(
             }
         }
 
+        override fun updateGroupParameters(
+            holdingIdentityShortHash: String,
+            newGroupParameters: RestGroupParameters,
+        ): RestGroupParameters {
+            return try {
+                handleCommonErrors(holdingIdentityShortHash) {
+                    val newParametersMap = newGroupParameters.parameters
+                    validateGroupParametersUpdate(newParametersMap)
+                    RestGroupParameters(mgmResourceClient.updateGroupParameters(it, newParametersMap).toMap())
+                }
+            } catch (e: PessimisticLockException) {
+                throw InvalidStateChangeException("${e.message}")
+            }
+        }
+
+        private fun validateGroupParametersUpdate(parameters: Map<String, String>) {
+            val verifierResult = GroupParametersUpdateVerifier().verify(parameters)
+            if (verifierResult is GroupParametersUpdateVerifier.Result.Failure) {
+                with(verifierResult.reason) {
+                    throw BadRequestException(this)
+                }
+            }
+        }
+
         private fun RegistrationRequestDetails.toRest() =
             RestRegistrationRequestStatus(
                 registrationId,
@@ -613,18 +654,20 @@ class MGMRestResourceImpl internal constructor(
                 serial,
             )
 
-        private fun net.corda.data.membership.common.RegistrationStatus.fromAvro() = when (this) {
-            net.corda.data.membership.common.RegistrationStatus.NEW -> RegistrationStatus.NEW
-            net.corda.data.membership.common.RegistrationStatus.SENT_TO_MGM -> RegistrationStatus.SENT_TO_MGM
-            net.corda.data.membership.common.RegistrationStatus.RECEIVED_BY_MGM -> RegistrationStatus.RECEIVED_BY_MGM
-            net.corda.data.membership.common.RegistrationStatus.PENDING_MEMBER_VERIFICATION ->
+        private fun net.corda.data.membership.common.v2.RegistrationStatus.fromAvro() = when (this) {
+            net.corda.data.membership.common.v2.RegistrationStatus.NEW -> RegistrationStatus.NEW
+            net.corda.data.membership.common.v2.RegistrationStatus.SENT_TO_MGM -> RegistrationStatus.SENT_TO_MGM
+            net.corda.data.membership.common.v2.RegistrationStatus.RECEIVED_BY_MGM -> RegistrationStatus.RECEIVED_BY_MGM
+            net.corda.data.membership.common.v2.RegistrationStatus.STARTED_PROCESSING_BY_MGM ->
+                RegistrationStatus.STARTED_PROCESSING_BY_MGM
+            net.corda.data.membership.common.v2.RegistrationStatus.PENDING_MEMBER_VERIFICATION ->
                 RegistrationStatus.PENDING_MEMBER_VERIFICATION
-            net.corda.data.membership.common.RegistrationStatus.PENDING_MANUAL_APPROVAL -> RegistrationStatus.PENDING_MANUAL_APPROVAL
-            net.corda.data.membership.common.RegistrationStatus.PENDING_AUTO_APPROVAL -> RegistrationStatus.PENDING_AUTO_APPROVAL
-            net.corda.data.membership.common.RegistrationStatus.DECLINED -> RegistrationStatus.DECLINED
-            net.corda.data.membership.common.RegistrationStatus.INVALID -> RegistrationStatus.INVALID
-            net.corda.data.membership.common.RegistrationStatus.FAILED -> RegistrationStatus.FAILED
-            net.corda.data.membership.common.RegistrationStatus.APPROVED -> RegistrationStatus.APPROVED
+            net.corda.data.membership.common.v2.RegistrationStatus.PENDING_MANUAL_APPROVAL -> RegistrationStatus.PENDING_MANUAL_APPROVAL
+            net.corda.data.membership.common.v2.RegistrationStatus.PENDING_AUTO_APPROVAL -> RegistrationStatus.PENDING_AUTO_APPROVAL
+            net.corda.data.membership.common.v2.RegistrationStatus.DECLINED -> RegistrationStatus.DECLINED
+            net.corda.data.membership.common.v2.RegistrationStatus.INVALID -> RegistrationStatus.INVALID
+            net.corda.data.membership.common.v2.RegistrationStatus.FAILED -> RegistrationStatus.FAILED
+            net.corda.data.membership.common.v2.RegistrationStatus.APPROVED -> RegistrationStatus.APPROVED
         }
 
         private fun deleteGroupApprovalRule(
@@ -655,17 +698,6 @@ class MGMRestResourceImpl internal constructor(
                 throw InvalidInputDataException(
                     details = mapOf("preAuthTokenId" to preAuthTokenId),
                     message = "tokenId is not a valid pre auth token."
-                )
-            }
-        }
-
-        private fun parseRegistrationRequestId(requestId: String): UUID {
-            return try {
-                UUID.fromString(requestId)
-            } catch (e: IllegalArgumentException) {
-                throw InvalidInputDataException(
-                    details = mapOf("registrationRequestId" to requestId),
-                    message = "requestId is not a valid registration request ID."
                 )
             }
         }

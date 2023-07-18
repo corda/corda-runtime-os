@@ -3,7 +3,6 @@ package net.corda.membership.impl.read.cache
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.Tag as micrometerTag
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_2
 import net.corda.membership.impl.read.TestProperties.Companion.aliceName
@@ -14,6 +13,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PEND
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.metrics.CordaMetrics
+import net.corda.test.util.metrics.CORDA_METRICS_LOCK
+import net.corda.test.util.metrics.EachTestCordaMetrics
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -22,12 +23,19 @@ import org.assertj.core.api.Condition
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.RegisterExtension
+import org.junit.jupiter.api.parallel.ResourceLock
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import kotlin.math.roundToLong
 
+@ResourceLock(CORDA_METRICS_LOCK)
 class MemberListCacheImplTest {
     private lateinit var memberListCache: MemberListCache
+
+    @Suppress("unused")
+    @RegisterExtension
+    private val metrics = EachTestCordaMetrics("MemberList Testing")
 
     private val alice = aliceName
     private val bob = bobName
@@ -72,8 +80,6 @@ class MemberListCacheImplTest {
 
     @BeforeEach
     fun setUp() {
-        CordaMetrics.registry.clear()
-        CordaMetrics.configure("MemberList Testing", SimpleMeterRegistry())
         memberListCache = MemberListCache.Impl()
     }
 

@@ -24,7 +24,7 @@ class NamedParameterizedQuery<R : Any>(
 ) : ParameterizedQuery<R> {
 
     override fun setLimit(limit: Int): ParameterizedQuery<R> {
-        require (limit >= 0) { "Limit cannot be negative" }
+        require (limit > 0) { "Limit cannot be negative or zero" }
         this.limit = limit
         return this
     }

@@ -8,6 +8,7 @@ import net.corda.crypto.test.certificates.generation.KeysFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.rest.ResponseCode
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
+import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
@@ -56,6 +57,7 @@ fun ClusterInfo.generateCsr(
     }
 
     assertWithRetry {
+        interval(1.seconds)
         command { post("/api/v1/certificates/$tenantId/$keyId", ObjectMapper().writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
     }.body
@@ -71,6 +73,7 @@ fun ClusterInfo.importCertificate(
 ) {
     cluster {
         assertWithRetry {
+            interval(1.seconds)
             command { importCertificate(file, usage, alias) }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
         }

@@ -9,10 +9,12 @@ import net.corda.flow.rest.impl.FlowRestExceptionConstants
 import net.corda.flow.rest.impl.flowstatus.websocket.WebSocketFlowStatusUpdateListener
 import net.corda.flow.rest.v1.FlowRestResource
 import net.corda.flow.rest.v1.types.request.StartFlowParameters
+import net.corda.flow.rest.v1.types.response.FlowResultResponse
 import net.corda.flow.rest.v1.types.response.FlowStatusResponse
 import net.corda.flow.rest.v1.types.response.FlowStatusResponses
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.publisher.Publisher
@@ -68,7 +70,9 @@ class FlowRestResourceImpl @Activate constructor(
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService,
     @Reference(service = PermissionValidationService::class)
-    private val permissionValidationService: PermissionValidationService
+    private val permissionValidationService: PermissionValidationService,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : FlowRestResource, PluggableRestResource<FlowRestResource>, Lifecycle {
 
     private companion object {
@@ -79,7 +83,7 @@ class FlowRestResourceImpl @Activate constructor(
     override val isRunning: Boolean get() = publisher != null
 
     override val targetInterface: Class<FlowRestResource> = FlowRestResource::class.java
-    override val protocolVersion: Int = 1
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     private var publisher: Publisher? = null
     private var fatalErrorOccurred = false
@@ -258,6 +262,20 @@ class FlowRestResourceImpl @Activate constructor(
         val vNode = getVirtualNode(holdingIdentityShortHash)
         val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
         return FlowStatusResponses(flowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
+    }
+
+    override fun getFlowResult(
+        holdingIdentityShortHash: String,
+        clientRequestId: String
+    ): ResponseEntity<FlowResultResponse> {
+        val vNode = getVirtualNode(holdingIdentityShortHash)
+        val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
+            ?: throw ResourceNotFoundException(
+                FlowRestExceptionConstants.FLOW_STATUS_NOT_FOUND.format(
+                    holdingIdentityShortHash, clientRequestId
+                )
+            )
+        return messageFactory.createFlowResultResponse(flowStatus)
     }
 
     override fun registerFlowStatusUpdatesFeed(

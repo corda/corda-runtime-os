@@ -42,7 +42,8 @@ abstract class CommonLedgerTest {
     val serializationServiceNullCfg = TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
     val transactionMetadataFactory = TransactionMetadataFactoryImpl(
         currentSandboxGroupContext,
-        fakePlatformInfoProvider()
+        fakePlatformInfoProvider(),
+        mockFlowEngine()
     )
 
     val wireTransactionKryoSerializer = WireTransactionKryoSerializer(wireTransactionFactory)

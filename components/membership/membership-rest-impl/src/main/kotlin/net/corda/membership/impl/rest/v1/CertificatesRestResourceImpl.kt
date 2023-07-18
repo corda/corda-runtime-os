@@ -8,12 +8,13 @@ import net.corda.crypto.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
-import net.corda.crypto.core.CryptoTenants.REST
+import net.corda.crypto.core.CryptoTenants.allClusterTenants
 import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
 import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -68,6 +69,7 @@ import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import javax.security.auth.x500.X500Principal
 
+@Suppress("LongParameterList")
 @Component(service = [PluggableRestResource::class])
 class CertificatesRestResourceImpl @Activate constructor(
     @Reference(service = CryptoOpsClient::class)
@@ -80,6 +82,8 @@ class CertificatesRestResourceImpl @Activate constructor(
     private val certificatesClient: CertificatesClient,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : CertificatesRestResource, PluggableRestResource<CertificatesRestResource>, Lifecycle {
 
     private companion object {
@@ -326,7 +330,7 @@ class CertificatesRestResourceImpl @Activate constructor(
 
     override val targetInterface = CertificatesRestResource::class.java
 
-    override val protocolVersion = 1
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<CertificatesRestResource>(
         protocolVersion.toString()
@@ -438,20 +442,16 @@ class CertificatesRestResourceImpl @Activate constructor(
     }
 
     private fun validateTenantId(tenantId: String) {
-        val isValidShortHash = try {
-            ShortHash.parse(tenantId)
-            true
-        } catch (e: ShortHashException) {
-            false
-        }
-        val isValidClusterTenant = (tenantId == P2P || tenantId == REST)
+        if (tenantId in allClusterTenants) return
 
-        if (!isValidShortHash && !isValidClusterTenant) {
-            throw InvalidInputDataException(
-                "Provided tenantId ($tenantId) was not valid. " +
-                        "It needs to be either a cluster tenant ($P2P or $REST) or a valid holding identity ID."
-            )
+        try {
+            ShortHash.parse(tenantId)
+        } catch (e: ShortHashException) {
+            throw InvalidInputDataException("Provided tenantId $tenantId is not a valid holding identity ID.")
         }
+
+        // Check if a virtual node exists for given tenantId, if not, it throws ResourceNotFoundException
+        virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(tenantId)
     }
 
     private fun validateHostname(hostname: String): Boolean {

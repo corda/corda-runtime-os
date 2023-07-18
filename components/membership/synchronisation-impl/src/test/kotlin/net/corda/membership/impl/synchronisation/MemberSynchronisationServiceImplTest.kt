@@ -34,9 +34,9 @@ import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
-import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
-import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
@@ -51,6 +51,7 @@ import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
@@ -282,20 +283,17 @@ class MemberSynchronisationServiceImplTest {
     }
     private val clock = TestClock(Instant.ofEpochSecond(100))
     private val verifier = mock<Verifier>()
+    private val persistGroupParametersRecords = listOf(mock<Record<*, *>>())
+    private val persistGroupParametersOperation = mock<MembershipPersistenceOperation<InternalGroupParameters>> {
+        on { createAsyncCommands() } doReturn persistGroupParametersRecords
+    }
     private val persistenceClient = mock<MembershipPersistenceClient> {
-        on { persistGroupParameters(any(), any()) } doAnswer { invocation ->
-            mock {
-                on {
-                    getOrThrow()
-                } doReturn invocation.getArgument(1)
-            }
-        }
+        on { persistGroupParameters(any(), any()) } doReturn persistGroupParametersOperation
     }
     private val groupParameters = mock<SignedGroupParameters>()
     private val groupParametersFactory = mock<GroupParametersFactory> {
         on { create(any<AvroGroupParameters>()) } doReturn groupParameters
     }
-    private val groupParametersWriterService = mock<GroupParametersWriterService>()
     private val synchronisationService = MemberSynchronisationServiceImpl(
         publisherFactory,
         configurationReadService,
@@ -310,7 +308,6 @@ class MemberSynchronisationServiceImplTest {
         clock,
         persistenceClient,
         groupParametersFactory,
-        groupParametersWriterService,
     )
 
     private fun postStartEvent() {
@@ -367,22 +364,13 @@ class MemberSynchronisationServiceImplTest {
     fun `member list is successfully published on receiving membership package from MGM`() {
         postConfigChangedEvent()
         synchronisationService.start()
-        val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-        whenever(mockPublisher.publish(capturedPublishedList.capture())).thenReturn(
-            listOf(
-                CompletableFuture.completedFuture(
-                    Unit
-                )
-            )
-        )
 
-        synchronisationService.processMembershipUpdates(updates)
+        val producedRecords = synchronisationService.processMembershipUpdates(updates)
 
-        val publishedMemberList = capturedPublishedList.firstValue
         assertSoftly {
-            it.assertThat(publishedMemberList).hasSize(1)
+            it.assertThat(producedRecords).hasSize(2)
 
-            val publishedMember = publishedMemberList.first()
+            val publishedMember = producedRecords.first()
             it.assertThat(publishedMember.topic).isEqualTo(MEMBER_LIST_TOPIC)
             it.assertThat(publishedMember.key).isEqualTo("${member.shortHash}-${participant.id}")
             it.assertThat(publishedMember.value).isInstanceOf(PersistentMemberInfo::class.java)
@@ -395,59 +383,77 @@ class MemberSynchronisationServiceImplTest {
 
     @Test
     fun `group parameters are successfully persisted on receiving membership package from MGM`() {
+        whenever(membershipPackage.memberships).doReturn(null)
         postConfigChangedEvent()
         synchronisationService.start()
-        val capturedPersistedGroupParameters = argumentCaptor<SignedGroupParameters>()
-        whenever(
-            persistenceClient.persistGroupParameters(
-                any(),
-                capturedPersistedGroupParameters.capture()
-            )
-        ).thenReturn(mock())
 
-        synchronisationService.processMembershipUpdates(updates)
+        val records = synchronisationService.processMembershipUpdates(updates)
 
-        val persistedGroupParameters = capturedPersistedGroupParameters.firstValue
-        assertSoftly {
-            it.assertThat(persistedGroupParameters).isEqualTo(groupParameters)
-        }
+        assertThat(records).containsAll(persistGroupParametersRecords)
     }
 
     @Test
-    fun `group parameters are successfully published to kafka on receiving membership package from MGM`() {
+    fun `failed member signature verification will ask for sync again`() {
+        whenever(verifier.verify(
+            eq(memberInfo.sessionInitiationKeys),
+            eq(memberSignature),
+            any(),
+            any())).thenThrow(CordaRuntimeException("Mock failure"))
         postConfigChangedEvent()
         synchronisationService.start()
-        val capturedPersistedGroupParameters = argumentCaptor<SignedGroupParameters>()
-        doNothing().whenever(groupParametersWriterService).put(any(), capturedPersistedGroupParameters.capture())
 
-        synchronisationService.processMembershipUpdates(updates)
+        val records = synchronisationService.processMembershipUpdates(updates)
 
-        val publishedGroupParameters = capturedPersistedGroupParameters.firstValue
-        assertSoftly {
-            it.assertThat(publishedGroupParameters).isEqualTo(groupParameters)
-        }
+        assertThat(records).containsExactly(synchronisationRequest)
     }
 
     @Test
-    fun `failed member signature verification will not persist the member`() {
-        whenever(verifier.verify(eq(memberSignature), any(), any())).thenThrow(CordaRuntimeException("Mock failure"))
+    fun `failed MGM signature verification will ask for sync again`() {
+        whenever(verifier.verify(
+            eq(mgmInfo.sessionInitiationKeys),
+            eq(mgmSignature),
+            any(),
+            any())).thenThrow(CordaRuntimeException("Mock failure"))
         postConfigChangedEvent()
         synchronisationService.start()
 
-        synchronisationService.processMembershipUpdates(updates)
+        val records = synchronisationService.processMembershipUpdates(updates)
 
-        verify(mockPublisher, never()).publish(any())
+        assertThat(records).containsExactly(synchronisationRequest)
     }
 
     @Test
-    fun `failed MGM signature verification will not persist the member`() {
-        whenever(verifier.verify(eq(mgmSignature), any(), any())).thenThrow(CordaRuntimeException("Mock failure"))
+    fun `failed MGM signature verification and create sync request will not return anything`() {
+        whenever(verifier.verify(
+            eq(mgmInfo.sessionInitiationKeys),
+            eq(mgmSignature),
+            any(),
+            any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(groupReader.lookup(any(), any())).doReturn(null)
+        postConfigChangedEvent()
+        synchronisationService.start()
+
+        val records = synchronisationService.processMembershipUpdates(updates)
+
+        assertThat(records).isEmpty()
+    }
+
+    @Test
+    fun `failed MGM signature verification and create sync request will schedule another request`() {
+        val captureDelay = argumentCaptor<Long>()
+        doNothing().whenever(coordinator).setTimer(any(), captureDelay.capture(), any())
+        whenever(verifier.verify(
+            eq(mgmInfo.sessionInitiationKeys),
+            eq(mgmSignature),
+            any(),
+            any())).thenThrow(CordaRuntimeException("Mock failure"))
+        whenever(groupReader.lookup(any(), any())).doReturn(null)
         postConfigChangedEvent()
         synchronisationService.start()
 
         synchronisationService.processMembershipUpdates(updates)
 
-        verify(mockPublisher, never()).publish(any())
+        assertThat(captureDelay.lastValue).isEqualTo(5 * 1000 * 60)
     }
 
     @Test
@@ -469,54 +475,27 @@ class MemberSynchronisationServiceImplTest {
     }
 
     @Test
-    fun `failed MGM signature verification will not publish the group parameters to Kafka`() {
-        whenever(
-            verifier.verify(
-                any(),
-                eq(mgmSignatureGroupParameters),
-                any(),
-                any()
-            )
-        ).thenThrow(CordaRuntimeException("Mock failure"))
-        postConfigChangedEvent()
-        synchronisationService.start()
-
-        synchronisationService.processMembershipUpdates(updates)
-
-        verify(groupParametersWriterService, never()).put(any(), any())
-    }
-
-    @Test
     fun `verification is called with the correct data on receiving membership package from MGM`() {
         postConfigChangedEvent()
         synchronisationService.start()
 
         synchronisationService.processMembershipUpdates(updates)
 
-        verify(verifier).verify(memberSignature, memberSignatureSpec, MEMBER_CONTEXT_BYTES)
-        verify(verifier).verify(mgmSignature, mgmSignatureSpec, byteArrayOf(1, 2, 3))
+        verify(verifier).verify(memberInfo.sessionInitiationKeys, memberSignature, memberSignatureSpec, MEMBER_CONTEXT_BYTES)
+        verify(verifier).verify(mgmInfo.sessionInitiationKeys, mgmSignature, mgmSignatureSpec, byteArrayOf(1, 2, 3))
     }
 
     @Test
     fun `processMembershipUpdates asks for synchronization if hash is empty`() {
         postConfigChangedEvent()
         synchronisationService.start()
-        val capturedPublishedList = argumentCaptor<List<Record<String, *>>>()
-        whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(
-            listOf(
-                CompletableFuture.completedFuture(
-                    Unit
-                )
-            )
-        )
         whenever(signedMemberships.hashCheck) doReturn null
 
-        synchronisationService.processMembershipUpdates(updates)
+        val producedRecords = synchronisationService.processMembershipUpdates(updates)
 
-        val publishedMemberList = capturedPublishedList.firstValue
         assertSoftly {
-            it.assertThat(publishedMemberList)
-                .hasSize(2)
+            it.assertThat(producedRecords)
+                .hasSize(3)
                 .anySatisfy {
                     assertThat(it.topic).isEqualTo(MEMBER_LIST_TOPIC)
                 }
@@ -528,22 +507,13 @@ class MemberSynchronisationServiceImplTest {
     fun `processMembershipUpdates asks for synchronization when hashes are misaligned`() {
         postConfigChangedEvent()
         synchronisationService.start()
-        val capturedPublishedList = argumentCaptor<List<Record<String, *>>>()
-        whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(
-            listOf(
-                CompletableFuture.completedFuture(
-                    Unit
-                )
-            )
-        )
         whenever(signedMemberships.hashCheck) doReturn SecureHash("algo", ByteBuffer.wrap(byteArrayOf(4, 5, 6)))
 
-        synchronisationService.processMembershipUpdates(updates)
+        val published = synchronisationService.processMembershipUpdates(updates)
 
-        val publishedMemberList = capturedPublishedList.firstValue
         assertSoftly {
-            it.assertThat(publishedMemberList)
-                .hasSize(2)
+            it.assertThat(published)
+                .hasSize(3)
                 .anySatisfy {
                     assertThat(it.topic).isEqualTo(MEMBER_LIST_TOPIC)
                 }
@@ -555,14 +525,6 @@ class MemberSynchronisationServiceImplTest {
     fun `processMembershipUpdates create the correct sync request when hashes are misaligned`() {
         postConfigChangedEvent()
         synchronisationService.start()
-        val capturedPublishedList = argumentCaptor<List<Record<String, *>>>()
-        whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(
-            listOf(
-                CompletableFuture.completedFuture(
-                    Unit
-                )
-            )
-        )
         whenever(signedMemberships.hashCheck) doReturn SecureHash("algo", ByteBuffer.wrap(byteArrayOf(4, 5, 6)))
 
         synchronisationService.processMembershipUpdates(updates)
@@ -610,7 +572,7 @@ class MemberSynchronisationServiceImplTest {
         val mgmContextMgm = mock<MGMContext> {
             on {
                 parseOrNull(
-                    MemberInfoExtension.IS_MGM,
+                    IS_MGM,
                     Boolean::class.javaObjectType
                 )
             } doReturn true
@@ -619,7 +581,7 @@ class MemberSynchronisationServiceImplTest {
             on { mgmProvidedContext } doReturn mgmContextMgm
         }
         val memberContext = mock<MemberContext> {
-            on { parse(MemberInfoExtension.GROUP_ID, String::class.java) } doReturn GROUP_NAME
+            on { parse(GROUP_ID, String::class.java) } doReturn GROUP_NAME
         }
         val memberInfo = mock<MemberInfo> {
             on { mgmProvidedContext } doReturn mgmProvidedContext

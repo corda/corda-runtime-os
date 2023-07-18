@@ -53,13 +53,8 @@ import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.persistence.client.MembershipQueryResult.QueryException
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
-import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -84,21 +79,13 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
-import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFailsWith
 
 class MgmSynchronisationServiceImplTest {
     private companion object {
         const val GROUP = "dummy_group"
-        const val PUBLISHER_CLIENT_ID = "mgm-synchronisation-service"
         const val PERSISTENCE_EXCEPTION = "Persistence exception happened."
         val clock = TestClock(Instant.ofEpochSecond(100))
-    }
-    private val mockPublisher = mock<Publisher>().apply {
-        whenever(publish(any())).thenReturn(listOf(CompletableFuture.completedFuture(Unit)))
-    }
-    private val publisherFactory: PublisherFactory = mock {
-        on { createPublisher(any(), any()) } doReturn mockPublisher
     }
 
     private val componentHandle: RegistrationHandle = mock()
@@ -300,7 +287,6 @@ class MgmSynchronisationServiceImplTest {
         } doReturn simonMembershipPackageRecord
     }
     private val services = mock<MgmSynchronisationServiceImpl.InjectedServices> {
-        on { publisherFactory } doReturn publisherFactory
         on { coordinatorFactory } doReturn coordinatorFactory
         on { configurationReadService } doReturn configurationReadService
         on { membershipGroupReaderProvider } doReturn groupReaderProvider
@@ -379,10 +365,8 @@ class MgmSynchronisationServiceImplTest {
     private fun postConfigChangedEvent() {
         lifecycleHandlerCaptor.firstValue.processEvent(
             ConfigChangedEvent(
-                setOf(BOOT_CONFIG, MESSAGING_CONFIG, MEMBERSHIP_CONFIG),
+                setOf(MEMBERSHIP_CONFIG),
                 mapOf(
-                    BOOT_CONFIG to testConfig,
-                    MESSAGING_CONFIG to testConfig,
                     MEMBERSHIP_CONFIG to membershipConfig,
                 )
             ), coordinator
@@ -427,7 +411,6 @@ class MgmSynchronisationServiceImplTest {
         verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
         verify(componentHandle, never()).close()
         verify(configHandle, never()).close()
-        verify(mockPublisher, never()).close()
     }
 
     @Test
@@ -442,7 +425,7 @@ class MgmSynchronisationServiceImplTest {
             configArgs.capture()
         )
         assertThat(configArgs.firstValue)
-            .isEqualTo(setOf(BOOT_CONFIG, MESSAGING_CONFIG, MEMBERSHIP_CONFIG))
+            .isEqualTo(setOf(MEMBERSHIP_CONFIG))
 
         postRegistrationStatusChangeEvent(LifecycleStatus.UP)
         verify(configHandle).close()
@@ -467,36 +450,6 @@ class MgmSynchronisationServiceImplTest {
     }
 
     @Test
-    fun `config changed event creates publisher`() {
-        postConfigChangedEvent()
-
-        val configCaptor = argumentCaptor<PublisherConfig>()
-        verify(mockPublisher, never()).close()
-        verify(publisherFactory).createPublisher(
-            configCaptor.capture(),
-            any()
-        )
-        verify(mockPublisher).start()
-        verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
-
-        with(configCaptor.firstValue) {
-            assertThat(clientId).isEqualTo(PUBLISHER_CLIENT_ID)
-        }
-
-        postConfigChangedEvent()
-        verify(mockPublisher).close()
-        verify(publisherFactory, times(2)).createPublisher(
-            configCaptor.capture(),
-            any()
-        )
-        verify(mockPublisher, times(2)).start()
-        verify(coordinator, times(2)).updateStatus(eq(LifecycleStatus.UP), any())
-
-        postStopEvent()
-        verify(mockPublisher, times(3)).close()
-    }
-
-    @Test
     fun `processing requests fails when component is not running`() {
         val ex = assertFailsWith<IllegalStateException> { synchronisationService.processSyncRequest(mock()) }
         assertThat(ex.message).isEqualTo("MgmSynchronisationService is currently inactive.")
@@ -508,7 +461,7 @@ class MgmSynchronisationServiceImplTest {
         synchronisationService.start()
         val capturedList = argumentCaptor<List<MemberInfo>>()
         val request = createRequest(alice)
-        synchronisationService.processSyncRequest(request)
+        val records = synchronisationService.processSyncRequest(request)
         verify(membershipPackageFactory, times(1)).createMembershipPackage(
             any(),
             any(),
@@ -516,7 +469,7 @@ class MgmSynchronisationServiceImplTest {
             any(),
             eq(groupParameters)
         )
-        verify(mockPublisher, times(1)).publish(eq(listOf(allMembershipPackageRecord)))
+        assertThat(records).containsExactly(allMembershipPackageRecord)
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(3)
         assertThat(membersPublished).isEqualTo(listOf(aliceInfo, bobInfo, daisyInfo))
@@ -529,7 +482,7 @@ class MgmSynchronisationServiceImplTest {
         synchronisationService.start()
         val capturedList = argumentCaptor<List<MemberInfo>>()
         val request = createRequest(bob)
-        synchronisationService.processSyncRequest(request)
+        val records = synchronisationService.processSyncRequest(request)
         verify(membershipPackageFactory, times(1)).createMembershipPackage(
             any(),
             any(),
@@ -537,7 +490,7 @@ class MgmSynchronisationServiceImplTest {
             any(),
             eq(groupParameters)
         )
-        verify(mockPublisher, times(1)).publish(eq(listOf(bobMembershipPackageRecord)))
+        assertThat(records).containsExactly(bobMembershipPackageRecord)
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(1)
         assertThat(membersPublished).isEqualTo(listOf(bobInfo))
@@ -550,7 +503,7 @@ class MgmSynchronisationServiceImplTest {
         synchronisationService.start()
         val capturedList = argumentCaptor<List<MemberInfo>>()
         val request = createRequest(simon)
-        synchronisationService.processSyncRequest(request)
+        val records = synchronisationService.processSyncRequest(request)
         verify(membershipPackageFactory, times(1)).createMembershipPackage(
             any(),
             any(),
@@ -558,7 +511,7 @@ class MgmSynchronisationServiceImplTest {
             any(),
             eq(groupParameters)
         )
-        verify(mockPublisher, times(1)).publish(eq(listOf(simonMembershipPackageRecord)))
+        assertThat(records).containsExactly(simonMembershipPackageRecord)
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(1)
         assertThat(membersPublished).isEqualTo(listOf(simonInfo))

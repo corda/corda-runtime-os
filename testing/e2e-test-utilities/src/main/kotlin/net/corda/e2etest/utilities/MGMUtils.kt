@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
 import net.corda.rest.ResponseCode
+import net.corda.utilities.minutes
 import net.corda.utilities.seconds
 import java.io.File
 import java.net.URLEncoder.encode
@@ -64,6 +65,8 @@ fun ClusterInfo.exportGroupPolicy(
     mgmHoldingId: String
 ) = cluster {
     assertWithRetry {
+        interval(2.seconds)
+        timeout(30.seconds)
         command { get("/api/v1/mgm/$mgmHoldingId/info") }
         condition { it.code == ResponseCode.OK.statusCode }
     }.body
@@ -101,6 +104,7 @@ private fun ClusterInfo.createApprovalRuleCommon(
     )
 
     assertWithRetry {
+        interval(1.seconds)
         command { post(url, ObjectMapper().writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()["ruleId"].textValue()
@@ -129,6 +133,7 @@ private fun ClusterInfo.delete(
     url: String
 ) = cluster {
     assertWithRetry {
+        interval(1.seconds)
         command { delete(url) }
         condition { it.code == ResponseCode.NO_CONTENT.statusCode }
     }
@@ -151,6 +156,7 @@ fun ClusterInfo.createPreAuthToken(
     }
 
     assertWithRetry {
+        interval(1.seconds)
         command { post("/api/v1/mgm/$mgmHoldingId/preauthtoken", ObjectMapper().writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()["id"].textValue()
@@ -166,6 +172,7 @@ fun ClusterInfo.revokePreAuthToken(
 ) {
     cluster {
         assertWithRetry {
+            interval(1.seconds)
             command { put("/api/v1/mgm/$mgmHoldingId/preauthtoken/revoke/$tokenId", "{\"remarks\": \"$remark\"}") }
             condition { it.code == ResponseCode.OK.statusCode }
         }
@@ -189,6 +196,7 @@ fun ClusterInfo.getPreAuthTokens(
     }
     val query = queries.joinToString(prefix = "?", separator = "&")
     assertWithRetry {
+        interval(1.seconds)
         command { get("/api/v1/mgm/$mgmHoldingId/preauthtoken$query") }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()
@@ -208,7 +216,8 @@ fun ClusterInfo.waitForPendingRegistrationReviews(
             "?requestsubjectx500name=${encode(memberX500Name.toString(), defaultCharset())}"
         } ?: ""
         assertWithRetry {
-            timeout(60.seconds)
+            timeout(2.minutes)
+            interval(3.seconds)
             command { get("/api/v1/mgm/$mgmHoldingId/registrations$query") }
             condition {
                 val json = it.toJson().firstOrNull()
@@ -229,6 +238,7 @@ fun ClusterInfo.approveRegistration(
 ) {
     cluster {
         assertWithRetry {
+            interval(1.seconds)
             command { post("/api/v1/mgm/$mgmHoldingId/approve/$registrationId", "") }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
         }
@@ -244,6 +254,7 @@ fun ClusterInfo.declineRegistration(
 ) {
     cluster {
         assertWithRetry {
+            interval(1.seconds)
             command { post(
                 "/api/v1/mgm/$mgmHoldingId/decline/$registrationId",
                 "{\"reason\": \"Declined by automated test with runId $testRunUniqueId.\"}")
@@ -298,7 +309,8 @@ private fun ClusterInfo.createMgmRegistrationContext(
  */
 fun ClusterInfo.suspendMember(
     mgmHoldingId: String,
-    x500Name: String
+    x500Name: String,
+    serialNumber: Int? = null,
 ) = cluster {
     assertWithRetry {
         timeout(15.seconds)
@@ -306,10 +318,10 @@ fun ClusterInfo.suspendMember(
         command {
             post(
                 "/api/v1/mgm/$mgmHoldingId/suspend",
-                "{ \"x500Name\": \"$x500Name\" }"
+                "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
             )
         }
-        condition { it.code == ResponseCode.NO_CONTENT.statusCode }
+        condition { it.code == ResponseCode.NO_CONTENT.statusCode || it.code == ResponseCode.CONFLICT.statusCode }
     }
 }
 
@@ -319,7 +331,8 @@ fun ClusterInfo.suspendMember(
  */
 fun ClusterInfo.activateMember(
     mgmHoldingId: String,
-    x500Name: String
+    x500Name: String,
+    serialNumber: Int? = null,
 ) = cluster {
     assertWithRetry {
         timeout(15.seconds)
@@ -327,9 +340,9 @@ fun ClusterInfo.activateMember(
         command {
             post(
                 "/api/v1/mgm/$mgmHoldingId/activate",
-                "{ \"x500Name\": \"$x500Name\" }"
+                "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
             )
         }
-        condition { it.code == ResponseCode.NO_CONTENT.statusCode }
+        condition { it.code == ResponseCode.NO_CONTENT.statusCode || it.code == ResponseCode.CONFLICT.statusCode }
     }
 }

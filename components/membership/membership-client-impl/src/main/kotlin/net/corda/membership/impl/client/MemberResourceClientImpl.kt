@@ -12,7 +12,7 @@ import net.corda.data.membership.SignedData
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.common.RegistrationRequestDetails
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -402,6 +402,7 @@ class MemberResourceClientImpl @Activate constructor(
             RegistrationStatus.NEW -> RegistrationStatusDto.NEW
             RegistrationStatus.SENT_TO_MGM -> RegistrationStatusDto.SENT_TO_MGM
             RegistrationStatus.RECEIVED_BY_MGM -> RegistrationStatusDto.RECEIVED_BY_MGM
+            RegistrationStatus.STARTED_PROCESSING_BY_MGM -> RegistrationStatusDto.STARTED_PROCESSING_BY_MGM
             RegistrationStatus.PENDING_MEMBER_VERIFICATION -> RegistrationStatusDto.PENDING_MEMBER_VERIFICATION
             RegistrationStatus.PENDING_MANUAL_APPROVAL -> RegistrationStatusDto.PENDING_MANUAL_APPROVAL
             RegistrationStatus.PENDING_AUTO_APPROVAL -> RegistrationStatusDto.PENDING_AUTO_APPROVAL

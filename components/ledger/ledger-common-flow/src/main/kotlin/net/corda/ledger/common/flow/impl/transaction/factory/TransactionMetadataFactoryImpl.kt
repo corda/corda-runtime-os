@@ -1,6 +1,5 @@
 package net.corda.ledger.common.flow.impl.transaction.factory
 
-import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
@@ -8,6 +7,9 @@ import net.corda.ledger.common.flow.transaction.factory.TransactionMetadataFacto
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.v5.application.flows.FlowContextPropertyKeys
+import net.corda.v5.application.flows.FlowEngine
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -24,7 +26,9 @@ class TransactionMetadataFactoryImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class)
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = PlatformInfoProvider::class)
-    private val platformInfoProvider: PlatformInfoProvider
+    private val platformInfoProvider: PlatformInfoProvider,
+    @Reference(service = FlowEngine::class)
+    private val flowEngine: FlowEngine
 ) : TransactionMetadataFactory, UsedByFlow, SingletonSerializeAsToken {
     override fun create(ledgerSpecificMetadata: Map<String, Any>): TransactionMetadata {
         val metadata = mapOf(
@@ -51,15 +55,18 @@ class TransactionMetadataFactoryImpl @Activate constructor(
                 fileChecksum = cpk.fileChecksum.toString()
             )
         }
-}
 
-/**
- * TODO [CORE-7126] Fake values until we can get CPI information properly
- */
-private fun getCpiSummary(): CordaPackageSummary =
-    CordaPackageSummaryImpl(
-        name = "CPI name",
-        version = "CPI version",
-        signerSummaryHash = SecureHashImpl("SHA-256", "Fake-value".toByteArray()).toHexString(),
-        fileChecksum = SecureHashImpl("SHA-256", "Another-Fake-value".toByteArray()).toHexString()
-    )
+    private fun getCpiSummary(): CordaPackageSummary =
+        with(flowEngine) {
+            CordaPackageSummaryImpl(
+                name = flowContextProperties[FlowContextPropertyKeys.CPI_NAME]
+                    ?: throw CordaRuntimeException("CPI name is not accessible"),
+                version = flowContextProperties[FlowContextPropertyKeys.CPI_VERSION]
+                    ?: throw CordaRuntimeException("CPI version is not accessible"),
+                signerSummaryHash = flowContextProperties[FlowContextPropertyKeys.CPI_SIGNER_SUMMARY_HASH]
+                    ?: throw CordaRuntimeException("CPI signer summary hash is not accessible"),
+                fileChecksum = flowContextProperties[FlowContextPropertyKeys.CPI_FILE_CHECKSUM]
+                    ?: throw CordaRuntimeException("CPI file checksum is not accessible"),
+            )
+        }
+}

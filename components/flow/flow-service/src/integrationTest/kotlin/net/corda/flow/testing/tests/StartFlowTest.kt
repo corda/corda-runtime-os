@@ -4,6 +4,8 @@ import net.corda.data.flow.output.FlowStates
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.schema.configuration.FlowConfig
+import net.corda.virtualnode.OperationalStatus
+import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -47,6 +49,37 @@ class StartFlowTest : FlowServiceTestBase() {
                 flowStatus(FlowStates.COMPLETED, result = "hello")
                 nullStateRecord()
                 flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
+            }
+        }
+    }
+
+
+    /**
+     * When a virtual node has an INACTIVE StartFlowOperationalStatus, it should throw a FlowMarkedForKillException and
+     * have a Killed status.
+     */
+    @Test
+    fun `Flow is marked as killed if startFlowOperationalStatus of vNode is INACTIVE`() {
+
+        given {
+            virtualNode(CPI1, CHARLIE_HOLDING_IDENTITY, flowStartOperationalStatus = OperationalStatus.INACTIVE)
+            cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
+            sandboxCpk(CPK1_CHECKSUM)
+            membershipGroupFor(CHARLIE_HOLDING_IDENTITY)
+        }
+
+        `when` {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, CHARLIE_HOLDING_IDENTITY, CPI1, "flow start data")
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                nullStateRecord()
+                noFlowEvents()
+                flowStatus(
+                    state = FlowStates.KILLED,
+                    flowTerminatedReason = "flowStartOperationalStatus is INACTIVE, new flows cannot be started for virtual node with shortHash ${CHARLIE_HOLDING_IDENTITY.toCorda().shortHash}"
+                )
             }
         }
     }

@@ -18,6 +18,7 @@ import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.external.messaging.serialization.ExternalMessagingRouteConfigSerializerImpl
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.libs.virtualnode.common.constant.VirtualNodeStateTransitions
 import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
 import net.corda.libs.virtualnode.common.exception.LiquibaseDiffCheckFailedException
@@ -92,7 +93,8 @@ internal class VirtualNodeRestResourceImpl(
     private val clock: Clock,
     private val virtualNodeValidationService: VirtualNodeValidationService,
     private val restContextProvider: RestContextProvider,
-    private val messageConverter: MessageConverter
+    private val messageConverter: MessageConverter,
+    private val platformInfoProvider: PlatformInfoProvider
 ) : VirtualNodeRestResource, PluggableRestResource<VirtualNodeRestResource>, Lifecycle {
 
     @Suppress("Unused")
@@ -109,7 +111,9 @@ internal class VirtualNodeRestResourceImpl(
         @Reference(service = CpiInfoReadService::class)
         cpiInfoReadService: CpiInfoReadService,
         @Reference(service = VirtualNodeStatusCacheService::class)
-        virtualNodeStatusCacheService: VirtualNodeStatusCacheService
+        virtualNodeStatusCacheService: VirtualNodeStatusCacheService,
+        @Reference(service = PlatformInfoProvider::class)
+        platformInfoProvider: PlatformInfoProvider
     ) : this(
         coordinatorFactory,
         configurationReadService,
@@ -124,7 +128,8 @@ internal class VirtualNodeRestResourceImpl(
         UTCClock(),
         VirtualNodeValidationServiceImpl(virtualNodeInfoReadService, cpiInfoReadService),
         RestContextProviderImpl(),
-        MessageConverterImpl(ExternalMessagingRouteConfigSerializerImpl())
+        MessageConverterImpl(ExternalMessagingRouteConfigSerializerImpl()),
+        platformInfoProvider
     )
 
     private companion object {
@@ -138,7 +143,7 @@ internal class VirtualNodeRestResourceImpl(
 
     // RestResource values
     override val targetInterface: Class<VirtualNodeRestResource> = VirtualNodeRestResource::class.java
-    override val protocolVersion = 1
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     // Lifecycle
     private val dependentComponents = DependentComponents.of(
@@ -264,6 +269,12 @@ internal class VirtualNodeRestResourceImpl(
         val currentCpi = requireNotNull(cpiInfoReadService.get(currentVirtualNode.cpiIdentifier)) {
             "Current CPI ${currentVirtualNode.cpiIdentifier} associated with virtual node $virtualNodeShortId was not found."
         }
+
+        if (currentCpi.fileChecksum.toHexString().slice(targetCpiFileChecksum.indices) == targetCpiFileChecksum) {
+            throw InvalidStateChangeException("Virtual Node with shorthash $virtualNodeShortId already has " +
+                    "CPI with file checksum $targetCpiFileChecksum")
+        }
+        
         val targetCpi = virtualNodeValidationService.validateAndGetCpiByChecksum(targetCpiFileChecksum)
         virtualNodeValidationService.validateCpiUpgradePrerequisites(currentCpi, targetCpi)
 
@@ -441,7 +452,13 @@ internal class VirtualNodeRestResourceImpl(
         } catch (e: IllegalArgumentException) {
             throw InvalidInputDataException(details = mapOf("newState" to "must be one of ACTIVE, MAINTENANCE"))
         }
-        getVirtualNode(virtualNodeShortId)
+        val virtualNode = getVirtualNode(virtualNodeShortId)
+
+        if (state == VirtualNodeStateTransitions.ACTIVE && virtualNode.operationInProgress != null) {
+            throw BadRequestException("The Virtual Node with shortHash ${virtualNode.holdingIdentity.shortHash} " +
+                    "has an operation in progress and cannot be set to Active")
+        }
+
         return state
     }
 

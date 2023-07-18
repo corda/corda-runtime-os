@@ -7,10 +7,6 @@ import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.DbUtils
 import net.corda.db.testkit.TestDbInfo
-import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -29,6 +25,7 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateCon
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.uniqueness.utils.UniquenessAssertions
+import net.corda.utilities.rootCause
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
@@ -44,6 +41,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito
@@ -60,7 +58,10 @@ import java.time.LocalDateTime
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.Duration
-import java.util.*
+import java.util.UUID
+import java.util.concurrent.Callable
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.Executors
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityExistsException
 import javax.persistence.RollbackException
@@ -77,11 +78,10 @@ import kotlin.reflect.full.createInstance
  *  - org.hibernate.hql.internal.antlr.SqlTokenTypes
  *  - org.hibernate.sql.ordering.antlr.GeneratedOrderByFragmentRendererTokenTypes
  */
+@Suppress("FunctionName")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JPABackingStoreImplIntegrationTests {
     private lateinit var backingStoreImpl: JPABackingStoreImpl
-    private lateinit var lifecycleCoordinator: LifecycleCoordinator
-    private lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
     private lateinit var testClock: AutoTickTestClock
     private val baseTime = Instant.EPOCH
     private val defaultTimeWindowUpperBound = LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
@@ -123,24 +123,18 @@ class JPABackingStoreImplIntegrationTests {
 
     @BeforeEach
     fun init() {
-        lifecycleCoordinator = mock<LifecycleCoordinator>()
-        lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
-            whenever(createCoordinator(any(), any())) doReturn lifecycleCoordinator
-        }
-
         backingStoreImpl = createBackingStoreImpl(notaryVNodeEmFactory)
-        backingStoreImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
 
         testClock = AutoTickTestClock(baseTime, Duration.ofSeconds(1))
     }
 
     private fun createBackingStoreImpl(emFactory: EntityManagerFactory): JPABackingStoreImpl {
-        return JPABackingStoreImpl(lifecycleCoordinatorFactory,
-            JpaEntitiesRegistryImpl(),
-            mock<DbConnectionManager>().apply {
-                whenever(getOrCreateEntityManagerFactory(any(), any(), any())) doReturn emFactory
-                whenever(getClusterDataSource()) doReturn dbConfig.dataSource
-            })
+        val jpaEntitiesRegistry = JpaEntitiesRegistryImpl()
+        val dbConnectionManager = mock<DbConnectionManager>().apply {
+            whenever(getOrCreateEntityManagerFactory(any(), any(), any())) doReturn emFactory
+            whenever(getClusterDataSource()) doReturn dbConfig.dataSource
+        }
+        return JPABackingStoreImpl(jpaEntitiesRegistry, dbConnectionManager)
     }
 
     private fun createEntityManagerFactory(persistenceUnitName: String = "uniqueness"): EntityManagerFactory {
@@ -573,6 +567,53 @@ class JPABackingStoreImplIntegrationTests {
             }
         }
 
+        // This test is repeated a number of times due to in-flight double spends being a timing
+        // issue that can be difficult to reproduce reliably
+        @RepeatedTest(10)
+        fun `In-flight double spend is prevented using separate backing store instances executing in parallel`() {
+            val numExecutors = 4
+            val stateRefs = List(5) { UniquenessCheckStateRefImpl(SecureHashUtils.randomSecureHash(), it) }
+
+            // Generate an unconsumed state in DB.
+            backingStoreImpl.transactionSession(notaryVNodeIdentity) { _, txnOps ->
+                txnOps.createUnconsumedStates(stateRefs)
+            }
+
+            // Use an additional backing store for each thread to guarantee no interference from
+            // shared state etc.
+            val additionalBackingStores = List(numExecutors) {
+                createBackingStoreImpl(notaryVNodeEmFactory)
+            }
+
+            val spendTasks = List(numExecutors) {
+                Callable {
+                    additionalBackingStores[it].transactionSession(notaryVNodeIdentity) { _, txnOps ->
+                        txnOps.consumeStates(SecureHashUtils.randomSecureHash(), stateRefs.shuffled())
+                    }
+                }
+            }
+
+            with (Executors.newFixedThreadPool(numExecutors)) {
+                val exceptions = invokeAll(spendTasks).map { task ->
+                    try {
+                        task.get()
+                        null
+                    } catch (e: ExecutionException) {
+                        e.rootCause
+                    } finally {
+                        shutdownNow()
+                    }
+                }
+
+                // All but one should fail
+                assertThat(exceptions)
+                    .hasSize(numExecutors)
+                    .containsOnlyOnce(null)
+                assertThat(exceptions.filterNotNull().map { it.message })
+                    .containsOnly("No states were consumed, this might be an in-flight double spend")
+            }
+        }
+
         @Test
         fun `Attempt to consume an unknown state fails with an exception`() {
             val consumingTxId = SecureHashUtils.randomSecureHash()
@@ -604,7 +645,6 @@ class JPABackingStoreImplIntegrationTests {
             Mockito.doReturn(mockSession).whenever(spyEm).unwrap(eq(Session::class.java))
 
             val storeImpl = createBackingStoreImpl(spyEmFactory)
-            storeImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
 
             assertThrows<EntityExistsException> {
                 storeImpl.session(notaryVNodeIdentity) { session ->
@@ -624,7 +664,6 @@ class JPABackingStoreImplIntegrationTests {
             Mockito.doReturn(spyEm).whenever(spyEmFactory).createEntityManager()
 
             val storeImpl = createBackingStoreImpl(spyEmFactory)
-            storeImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
 
             val secureHashes = listOf(SecureHashUtils.randomSecureHash())
             val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0) }
@@ -645,7 +684,6 @@ class JPABackingStoreImplIntegrationTests {
             Mockito.doReturn(spyEmTransaction).whenever(spyEm).transaction
 
             val storeImpl = createBackingStoreImpl(spyEmFactory)
-            storeImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
 
             assertThrows<DummyException> {
                 storeImpl.session(notaryVNodeIdentity) { session ->
@@ -663,7 +701,6 @@ class JPABackingStoreImplIntegrationTests {
     fun `Session always creates a new entity manager`() {
         val spyEmFactory = Mockito.spy(createEntityManagerFactory())
         val storeImpl = createBackingStoreImpl(spyEmFactory)
-        storeImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
 
         val sessionInvokeCnt = 3
         repeat(sessionInvokeCnt) {
@@ -687,7 +724,6 @@ class JPABackingStoreImplIntegrationTests {
             .create("testunit", JPABackingStoreEntities.classes.toList(), dbConfig)
 
         val storeImpl = createBackingStoreImpl(noDbEmFactory)
-        storeImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
 
         try {
             val stateRefs = List(1) { UniquenessCheckStateRefImpl(SecureHashUtils.randomSecureHash(), 0) }

@@ -38,7 +38,7 @@ class HikariDataSourceFactory(
         isAutoCommit: Boolean,
         isReadOnly: Boolean,
         maximumPoolSize: Int,
-        minimumPoolSize: Int,
+        minimumPoolSize: Int?,
         idleTimeout: Duration,
         maxLifetime: Duration,
         keepaliveTime: Duration,
@@ -66,14 +66,16 @@ class HikariDataSourceFactory(
         conf.isAutoCommit = isAutoCommit
         conf.isReadOnly = isReadOnly
         conf.maximumPoolSize = maximumPoolSize
-        conf.minimumIdle = minimumPoolSize
-        // Do not set idle timeout when minimumIdle == maximumPoolSize as it will have no effect and
-        // will emit a warning like:
-        // " idleTimeout has been set but has no effect because the pool is operating as a fixed size pool"
-        if (maximumPoolSize > minimumPoolSize) {
-            conf.idleTimeout = idleTimeout.toMillis()
+        if (minimumPoolSize != null) {
+            conf.minimumIdle = minimumPoolSize
+        } else {
+            conf.minimumIdle = maximumPoolSize
         }
-
+        if (conf.minimumIdle != conf.maximumPoolSize) {
+            conf.idleTimeout = idleTimeout.toMillis()
+        } else {
+            conf.idleTimeout = 0
+        }
         conf.maxLifetime = maxLifetime.toMillis()
         if(Duration.ZERO != keepaliveTime)
             conf.keepaliveTime = keepaliveTime.toMillis()

@@ -142,7 +142,14 @@ class FlowServiceTestContext @Activate constructor(
     override val initiatedIdentityMemberName: MemberX500Name
         get() = MemberX500Name.parse(sessionInitiatedIdentity!!.x500Name)
 
-    override fun virtualNode(cpiId: String, holdingId: HoldingIdentity, flowOperationalStatus: OperationalStatus) {
+    override fun virtualNode(
+        cpiId: String,
+        holdingId: HoldingIdentity,
+        flowP2pOperationalStatus: OperationalStatus,
+        flowStartOperationalStatus: OperationalStatus,
+        flowOperationalStatus: OperationalStatus,
+        vaultDbOperationalStatus: OperationalStatus
+    ) {
         val emptyUUID = UUID(0, 0)
 
         virtualNodeInfoReadService.addOrUpdate(
@@ -155,8 +162,12 @@ class FlowServiceTestContext @Activate constructor(
                 emptyUUID,
                 emptyUUID,
                 emptyUUID,
-                timestamp = Instant.now(),
-                flowOperationalStatus = flowOperationalStatus
+                emptyUUID,
+                flowP2pOperationalStatus = flowP2pOperationalStatus,
+                flowStartOperationalStatus = flowStartOperationalStatus,
+                flowOperationalStatus = flowOperationalStatus,
+                vaultDbOperationalStatus = vaultDbOperationalStatus,
+                timestamp = Instant.now()
             )
         )
     }

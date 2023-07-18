@@ -1,5 +1,6 @@
 package net.corda.messaging.subscription.consumer
 
+import io.micrometer.core.instrument.Gauge
 import net.corda.lifecycle.Resource
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -14,6 +15,7 @@ import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.tracing.wrapWithTracingExecutor
 import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.Duration
@@ -59,18 +61,20 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val partitionsToSync = ConcurrentHashMap.newKeySet<CordaTopicPartition>()
     private val inSyncPartitions = ConcurrentHashMap.newKeySet<CordaTopicPartition>()
 
-    private val statePollTimer = CordaMetrics.Metric.MessagePollTime.builder()
-        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
-        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.STATE_POLL_OPERATION)
-        .build()
-
-    private val eventPollTimer = CordaMetrics.Metric.MessagePollTime.builder()
-        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
-        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.EVENT_POLL_OPERATION)
-        .build()
-
+    // a map of gauges, each one recording the number of states currently in memory for each partition
+    private val inMemoryStatesPerPartitionGaugeCache = ConcurrentHashMap<Int, Gauge>()
+    private fun createGaugesForInMemoryStates(partitions: List<Int>) {
+        partitions.forEach { partition ->
+            inMemoryStatesPerPartitionGaugeCache.computeIfAbsent(partition) {
+                CordaMetrics.Metric.Messaging.PartitionedConsumerInMemoryStore { currentStates[partition]?.size ?: 0 }
+                    .builder()
+                    .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
+                    .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+                    .withTag(CordaMetrics.Tag.Partition, "$partition")
+                    .build()
+            }
+        }
+    }
 
     private var pollIntervalCutoff = 0L
 
@@ -103,6 +107,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                 listener.onPartitionSynced(getStatesForPartition(partition.partition))
             }
         }
+        createGaugesForInMemoryStates(partitions.map { it.partition })
     }
 
     private fun onPartitionsSynchronized(partitions: Set<CordaTopicPartition>) {
@@ -171,15 +176,12 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
     override fun pollAndUpdateStates(syncPartitions: Boolean) {
         if (stateConsumer.assignment().isEmpty()) {
-            log.debug { "State consumer has no partitions assigned." }
             return
         }
 
-        val states = statePollTimer.recordCallable {
-            stateConsumer.poll(STATE_POLL_TIMEOUT)
-        }
-        states?.forEach { state ->
-            log.debug { "Processing state: $state" }
+        val states = stateConsumer.poll(STATE_POLL_TIMEOUT)
+        states.forEach { state ->
+            log.trace { "Processing state: $state" }
             // This condition should always be true. This can however guard against a potential race where the partition
             // is revoked while states are being processed, resulting in the partition no longer being required to sync.
             val partition = CordaTopicPartition(state.topic.removeSuffix(STATE_TOPIC_SUFFIX), state.partition)
@@ -201,6 +203,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         eventConsumer.close()
         stateConsumer.close()
         executor.shutdown()
+        inMemoryStatesPerPartitionGaugeCache.values.forEach { CordaMetrics.registry.remove(it) }
     }
 
     private fun removeAndReturnSyncedPartitions(): Set<CordaTopicPartition> {
@@ -217,11 +220,9 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     override fun pollEvents(): List<CordaConsumerRecord<K, E>> {
         return when {
             inSyncPartitions.isNotEmpty() -> {
-                eventPollTimer.recordCallable {
-                    eventConsumer.poll(EVENT_POLL_TIMEOUT).also {
-                        log.debug { "Received ${it.size} events on keys ${it.joinToString { it.key.toString() }}" }
-                    }
-                }!!
+                eventConsumer.poll(EVENT_POLL_TIMEOUT).also {
+                    log.debug { "Received ${it.size} events on keys ${it.joinToString { it.key.toString() }}" }
+                }
             }
             partitionsToSync.isEmpty() -> {
                 // Call poll more frequently to trigger a rebalance of the event consumer.

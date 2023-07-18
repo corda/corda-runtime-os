@@ -1,0 +1,43 @@
+plugins {
+    id 'distribution'
+    id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.kotlin.kapt'
+    id 'corda.cli-plugin-packager'
+    id 'corda.common-publishing'
+}
+
+
+group 'net.corda.cli.deployment'
+
+dependencies {
+    compileOnly "org.pf4j:pf4j:$pf4jVersion"
+    compileOnly "net.corda.cli.host:api:$pluginHostVersion"
+
+    kapt "org.pf4j:pf4j:$pf4jVersion"
+    kapt "info.picocli:picocli:$picocliVersion"
+
+    testImplementation "org.pf4j:pf4j:$pf4jVersion"
+    testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
+    testImplementation "com.github.stefanbirkner:system-lambda:$systemLambdaVersion"
+    testImplementation "info.picocli:picocli:$picocliVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation "io.fabric8:kubernetes-client:$kubernetesClientVersion"
+
+    implementation "org.postgresql:postgresql:$postgresDriverVersion"
+    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    constraints {
+        implementation("org.xerial.snappy:snappy-java:$xerialSnappyVersion") {
+            because 'Kafka Client uses an older version of Snappy library which is exposed to CVE-2023-34455. ' +
+                    'This might be resolved in the future versions of Kafka Client.'
+        }
+    }
+}
+
+cliPlugin {
+    cliPluginClass = 'net.corda.cli.plugins.preinstall.PreInstallPlugin'
+    cliPluginDescription = 'Plugin for pre-install checks.'
+}

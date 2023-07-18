@@ -50,6 +50,7 @@ pluginManagement {
         id "com.jfrog.artifactory" version artifactoryPluginVersion
         id 'io.snyk.gradle.plugin.snykplugin' version snykVersion
         id 'org.jetbrains.dokka' version dokkaVersion
+        id "org.cyclonedx.bom" version cyclonedxVersion
     }
 }
 
@@ -439,13 +440,14 @@ include 'testing:uniqueness:backing-store-fake'
 include 'testing:uniqueness:uniqueness-utilities'
 include 'testing:cpi-info-read-service-fake'
 include 'testing:virtual-node-info-read-service-fake'
+include 'testing:group-policy-test-common'
 include 'tools:plugins:plugins-rest'
 include 'tools:plugins:db-config'
 include 'tools:plugins:initial-config'
 include 'tools:plugins:initial-rbac'
-include 'tools:plugins:mgm'
 include 'tools:plugins:network'
 include 'tools:plugins:package'
+include 'tools:plugins:preinstall'
 include 'tools:plugins:secret-config'
 include 'tools:plugins:topic-config'
 include 'tools:plugins:virtual-node'

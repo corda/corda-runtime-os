@@ -28,6 +28,7 @@ import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.permissions.manager.response.RoleAssociationResponseDto
 import net.corda.libs.permissions.manager.response.RoleResponseDto
+import net.corda.libs.platform.PlatformInfoProvider
 import org.junit.jupiter.api.Assertions.assertTrue
 import java.util.UUID
 import net.corda.permissions.management.PermissionManagementService
@@ -72,7 +73,11 @@ internal class UserEndpointImplTest {
         whenever(it.permissionManager).thenReturn(permissionManager)
     }
 
-    private val endpoint = UserEndpointImpl(lifecycleCoordinatorFactory, permissionService)
+    private val platformInfoProvider = mock<PlatformInfoProvider>().also {
+        whenever(it.localWorkerPlatformVersion).thenReturn(1)
+    }
+
+    private val endpoint = UserEndpointImpl(lifecycleCoordinatorFactory, permissionService, platformInfoProvider)
 
     @BeforeEach
     fun beforeEach() {
@@ -118,7 +123,7 @@ internal class UserEndpointImplTest {
         whenever(permissionManager.getUser(getUserRequestDtoCapture.capture())).thenReturn(userResponseDto)
 
         endpoint.start()
-        val responseType = endpoint.getUser("loginName1")
+        val responseType = endpoint.getUserPath("loginName1")
 
         assertNotNull(responseType)
         assertEquals("uuid", responseType.id)
@@ -139,7 +144,7 @@ internal class UserEndpointImplTest {
         whenever(permissionService.isRunning).thenReturn(true)
 
         val e = assertThrows<ResourceNotFoundException> {
-            endpoint.getUser("abc")
+            endpoint.getUserPath("abc")
         }
         assertEquals(ResponseCode.RESOURCE_NOT_FOUND, e.responseCode, "Resource not found exception should have correct response code.")
         assertEquals("User 'abc' not found.", e.message)

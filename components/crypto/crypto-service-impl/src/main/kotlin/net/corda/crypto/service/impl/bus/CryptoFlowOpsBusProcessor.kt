@@ -1,5 +1,6 @@
 package net.corda.crypto.service.impl.bus
 
+import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.config.impl.RetryingConfig
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
@@ -30,13 +31,16 @@ import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.MDC_FLOW_ID
 import net.corda.utilities.trace
+import net.corda.utilities.translateFlowContextToMDC
 import net.corda.utilities.withMDC
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
 
+@Suppress("Unused")
 class CryptoFlowOpsBusProcessor(
+    private val cryptoService: CryptoService,
     private val signingService: SigningService,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     config: RetryingConfig,
@@ -72,7 +76,7 @@ class CryptoFlowOpsBusProcessor(
                 MDC_FLOW_ID to request.flowExternalEventContext.flowId,
                 MDC_CLIENT_ID to clientRequestId,
                 MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
-            )
+            ) + translateFlowContextToMDC(request.flowExternalEventContext.contextProperties.toMap())
 
             withMDC(mdc) {
                 val requestPayload = request.request

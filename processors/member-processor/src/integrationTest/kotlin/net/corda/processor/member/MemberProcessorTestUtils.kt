@@ -26,6 +26,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.MembershipConfig.EXPIRATION_DATE_FOR_REGISTRATION_REQUESTS
+import net.corda.schema.configuration.MembershipConfig.MAX_DURATION_BETWEEN_EXPIRED_REGISTRATION_REQUESTS_POLLS
 import net.corda.schema.configuration.MembershipConfig.MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES
 import net.corda.test.util.eventually
 import net.corda.test.util.time.TestClock
@@ -84,6 +86,10 @@ class MemberProcessorTestUtils {
                 ConfigFactory.empty()
                     .withValue(MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES,
                         ConfigValueFactory.fromAnyRef(100L))
+                    .withValue(MAX_DURATION_BETWEEN_EXPIRED_REGISTRATION_REQUESTS_POLLS,
+                        ConfigValueFactory.fromAnyRef(300L))
+                    .withValue(EXPIRATION_DATE_FOR_REGISTRATION_REQUESTS,
+                        ConfigValueFactory.fromAnyRef(180L))
             )
 
         private val smartConfigFactory: SmartConfigFactory = SmartConfigFactory.createWith(

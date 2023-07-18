@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.flow.impl.flows.backchain
 import net.corda.flow.application.services.VersioningService
 import net.corda.flow.application.versioning.VersionedSendFlowFactory
 import net.corda.ledger.utxo.flow.impl.flows.backchain.v1.TransactionBackchainSenderFlowV1
+import net.corda.libs.platform.PlatformVersion.CORDA_5_1
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
@@ -53,7 +54,16 @@ class TransactionBackchainSenderFlowVersionedFlowFactory(
 
     override fun create(version: Int, sessions: List<FlowSession>): SubFlow<Unit> {
         return when {
-            version >= 1 -> TransactionBackchainSenderFlowV1(headTransactionIds, sessions.single())
+            version >= CORDA_5_1.value -> TransactionBackchainSenderFlowV1(
+                headTransactionIds,
+                sessions.single(),
+                TransactionBackChainResolutionVersion.V2
+            )
+            version in 1 until CORDA_5_1.value -> TransactionBackchainSenderFlowV1(
+                headTransactionIds,
+                sessions.single(),
+                TransactionBackChainResolutionVersion.V1
+            )
             else -> throw IllegalArgumentException()
         }
     }

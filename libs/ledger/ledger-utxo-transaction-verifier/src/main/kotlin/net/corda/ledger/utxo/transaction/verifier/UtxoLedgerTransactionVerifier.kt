@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.transaction.verifier
 
 import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
+import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.virtualnode.HoldingIdentity
 
@@ -14,7 +15,8 @@ import net.corda.virtualnode.HoldingIdentity
 class UtxoLedgerTransactionVerifier(
     private val transactionFactory: () -> UtxoLedgerTransaction,
     private val transaction: UtxoLedgerTransaction = transactionFactory.invoke(),
-    private val holdingIdentity: HoldingIdentity
+    private val holdingIdentity: HoldingIdentity,
+    private val injectService: (Contract) -> Unit
 ) : UtxoTransactionVerifier() {
 
     override val subjectClass: String = UtxoLedgerTransaction::class.simpleName!!
@@ -22,7 +24,7 @@ class UtxoLedgerTransactionVerifier(
     fun verify() {
         verifyMetadata(transaction.metadata)
         verifyPlatformChecks()
-        verifyContracts(transactionFactory, transaction, holdingIdentity)
+        verifyContracts(transactionFactory, transaction, holdingIdentity, injectService)
     }
 
     private fun verifyPlatformChecks() {

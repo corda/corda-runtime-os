@@ -17,13 +17,15 @@ quasar {
         'com.networknt.schema**',
         'com.typesafe.**',
         'de.javakaffee.kryoserializers**',
-        'net.corda.micrometer.**',
+        'io.micrometer.**',
         'javax.**',
         'kotlin**',
         'org.apache.**',
         'org.objectweb.asm',
         'org.objenesis**',
-        'org.osgi.**'
+        'org.osgi.**',
+        'io.zipkin.**',
+        'io.micrometer.**',
     ]
 }
 

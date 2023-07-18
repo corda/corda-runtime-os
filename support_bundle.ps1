@@ -2,6 +2,12 @@
 
 param ($namespace=$(kubectl config view --minify -o jsonpath='{..namespace}'))
 
+if ([string]::IsNullOrEmpty($namespace))
+{
+    Write-Output "No namespace has been provided.`nPlease set one by either doing:`n  .\support_bundle.ps1 <namespace>`nor`n  kubectl config set-context --current --namespace=<namespace>"
+    Exit 1
+}
+
 $parent = [System.IO.Path]::GetTempPath()
 [string] $name = [System.Guid]::NewGuid()
 $workDir = Join-Path $parent $name

@@ -3,26 +3,24 @@ package net.corda.membership.certificate.service.impl
 import net.corda.crypto.core.ShortHash
 import net.corda.data.certificates.CertificateUsage
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.VirtualNodeDbType
+import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.certificates.datamodel.Certificate
 import net.corda.membership.certificates.datamodel.ClusterCertificate
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
-import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
@@ -46,27 +44,20 @@ class DbClientImplTest {
         on { get(CordaDb.Vault.persistenceUnitName) } doReturn registry
     }
     private val nodeTenantId = ShortHash.of("1234567890ab")
-    private val dmlConnectionId = UUID(10, 30)
     private val dbConnectionManager = mock<DbConnectionManager> {
         on { getClusterEntityManagerFactory() } doReturn clusterFactory
         on {
-            createEntityManagerFactory(
-                eq(dmlConnectionId),
-                eq(registry)
+            getOrCreateEntityManagerFactory(
+                name = VirtualNodeDbType.VAULT.getConnectionName(nodeTenantId),
+                privilege = DbPrivilege.DML,
+                entitiesSet = registry,
             )
         } doReturn nodeFactory
-    }
-    private val nodeInfo = mock<VirtualNodeInfo> {
-        on { vaultDmlConnectionId } doReturn dmlConnectionId
-    }
-    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
-        on { getByHoldingIdentityShortHash(nodeTenantId) } doReturn nodeInfo
     }
 
     private val client = DbClientImpl(
         dbConnectionManager,
         jpaEntitiesRegistry,
-        virtualNodeInfoReadService
     )
 
     @Test
@@ -99,18 +90,6 @@ class DbClientImplTest {
                 "certificate"
             )
         )
-    }
-
-    @Test
-    fun `importCertificates with invalid node throw an exception`() {
-        assertThrows<NoSuchNode> {
-            client.importCertificates(
-                CertificateUsage.REST_TLS,
-                ShortHash.Companion.of("123456789011"),
-                "alias",
-                "certificate"
-            )
-        }
     }
 
     @Test
@@ -156,18 +135,18 @@ class DbClientImplTest {
     }
 
     @Test
-    fun `retrieveCertificates will close the node factory`() {
+    fun `retrieveCertificates will not close the node factory`() {
         client.retrieveCertificates(
             nodeTenantId,
             CertificateUsage.P2P_TLS,
             "alias"
         )
 
-        verify(nodeFactory).close()
+        verify(nodeFactory, never()).close()
     }
 
     @Test
-    fun `retrieveCertificates will not close the node factory`() {
+    fun `retrieveCertificates will not close the cluster factory`() {
         client.retrieveCertificates(
             null,
             CertificateUsage.P2P_TLS,

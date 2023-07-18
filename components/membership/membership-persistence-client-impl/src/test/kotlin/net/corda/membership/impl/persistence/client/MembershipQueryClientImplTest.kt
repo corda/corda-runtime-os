@@ -11,7 +11,7 @@ import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationRequestDetails
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificates
 import net.corda.data.membership.db.request.query.QueryMemberInfo
@@ -593,6 +593,7 @@ class MembershipQueryClientImplTest {
                     clock.instant(),
                     RegistrationStatus.PENDING_AUTO_APPROVAL,
                     "id",
+                    "holdingId1",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key", "value"))),
                     CryptoSignatureWithKey(
@@ -740,6 +741,7 @@ class MembershipQueryClientImplTest {
                     clock.instant(),
                     RegistrationStatus.PENDING_MANUAL_APPROVAL,
                     "id 1",
+                    "holdingId1",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key", "value"))),
                     CryptoSignatureWithKey(
@@ -761,6 +763,7 @@ class MembershipQueryClientImplTest {
                     clock.instant(),
                     RegistrationStatus.PENDING_AUTO_APPROVAL,
                     "id 2",
+                    "holdingId2",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
                     CryptoSignatureWithKey(
