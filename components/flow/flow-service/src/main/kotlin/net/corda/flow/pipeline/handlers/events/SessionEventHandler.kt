@@ -98,10 +98,6 @@ class SessionEventHandler @Activate constructor(
             )
         }
         // Null is returned if duplicate [SessionInit]s are received
-        val nextSessionEvent = sessionManager.getNextReceivedEvent(updatedSessionState)
-
-
-
         // @SESSION: This block is about creating a new flow if the received session message is a session init.
         if (!checkpoint.doesExist) {
             if (sessionInitEvent != null && sessionInitPayload) {
@@ -139,7 +135,6 @@ class SessionEventHandler @Activate constructor(
         val initiatedIdentity = sessionEvent.initiatedIdentity
         val holdingIdentity = initiatedIdentity.toCorda()
         val (requestedProtocolName, initiatorVersionsSupported) = getProtocolInfo(sessionInit, sessionEvent)
-        var initiatedFlowNameAndProtocol: FlowAndProtocolVersion? = null
 
         checkpointInitializer.initialize(
             context.checkpoint,
@@ -159,7 +154,6 @@ class SessionEventHandler @Activate constructor(
             }
 
             val flowAndProtocolVersion = protocolStore.responderForProtocol(requestedProtocolName, initiatorVersionsSupported, context)
-            initiatedFlowNameAndProtocol = flowAndProtocolVersion
             FlowStartContext.newBuilder()
                 .setStatusKey(FlowKey(sessionId, initiatedIdentity))
                 .setInitiatorType(FlowInitiatorType.P2P)
