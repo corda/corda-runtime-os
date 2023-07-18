@@ -140,9 +140,9 @@ class CombinedWorker @Activate constructor(
         // default passphrase and salt but instead require them to be specified.
 
         /**
-         * dbBusType is used to tell which Bus type we are using, so we know whether to use DATABASE specific methods
+         * isDbBusType is used to tell which Bus type we are using, so we know whether to use DATABASE specific methods
          */
-        val dbBusType = params.defaultParams.messaging[BUS_TYPE] == BusType.DATABASE.name
+        val isDbBusType: Boolean = params.defaultParams.messaging[BUS_TYPE] == BusType.DATABASE.name
 
         PostgresDbSetup(
             dbUrl,
@@ -151,7 +151,7 @@ class CombinedWorker @Activate constructor(
             dbAdmin,
             dbAdminPassword,
             dbName,
-            dbBusType,
+            isDbBusType,
             config.factory,
         ).run()
 

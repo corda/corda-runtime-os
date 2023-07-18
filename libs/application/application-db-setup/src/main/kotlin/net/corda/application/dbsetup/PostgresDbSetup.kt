@@ -22,7 +22,7 @@ class PostgresDbSetup(
     private val dbAdmin: String,
     private val dbAdminPassword: String,
     private val dbName: String,
-    private val dbBusType: Boolean,
+    private val isDbBusType: Boolean,
     smartConfigFactory: SmartConfigFactory
 ) : DbSetup {
 
@@ -59,7 +59,7 @@ class PostgresDbSetup(
             populateConfigDb()
             createUserConfig("admin", "admin")
             createDbUsersAndGrants()
-            if (dbBusType) {
+            if (isDbBusType) {
                 DbMessageBusSetup().createTopicsOnDbMessageBus(messageBusConnection())
             }
         } else {
