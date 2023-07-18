@@ -82,6 +82,10 @@ class CordaKafkaProducerImpl(
             // There is no other producer, we are not a zombie, and so don't need to be fenced, we can simply abort and retry.
             KafkaException::class.java
         )
+        val ApiExceptions: Set<Class<out Throwable>> = setOf(
+            CordaMessageAPIFatalException::class.java,
+            CordaMessageAPIIntermittentException::class.java
+        )
     }
 
     private fun toTraceKafkaCallback(callback: CordaProducer.Callback, ctx: TraceContext): Callback {
@@ -381,7 +385,7 @@ class CordaKafkaProducerImpl(
                 throw CordaMessageAPIFatalException("FatalError occurred $errorString", ex)
             }
 
-            in setOf(IllegalStateException::class.java) -> {
+            IllegalStateException::class.java -> {
                 // It's not clear whether the producer is ok to abort and continue or not in this case, so play it safe
                 // and let the client know to create a new one.
                 throw CordaMessageAPIProducerRequiresReset("Error occurred $errorString", ex)
@@ -393,8 +397,7 @@ class CordaKafkaProducerImpl(
                 }
                 throw CordaMessageAPIIntermittentException("Error occurred $errorString", ex)
             }
-            in setOf(CordaMessageAPIFatalException::class.java,
-                CordaMessageAPIIntermittentException::class.java) -> { throw ex }
+            in ApiExceptions -> { throw ex }
 
             else -> {
                 // Here we do not know what the exact cause of the exception is, but we do know Kafka has not told us we

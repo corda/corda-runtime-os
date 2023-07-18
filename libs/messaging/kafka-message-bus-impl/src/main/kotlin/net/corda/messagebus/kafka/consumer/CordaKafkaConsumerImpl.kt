@@ -316,14 +316,14 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 attemptCommit = false
             } catch (ex: Exception) {
                 when (ex::class.java) {
-                    in transientExceptions -> {
-                        logWarningAndThrowIntermittentException("Failed to commitSync offsets for record $event.", ex)
-                    }
                     in fatalExceptions -> {
                         logErrorAndThrowFatalException(
                             "Error attempting to commitSync offsets for record $event.",
                             ex
                         )
+                    }
+                    in transientExceptions -> {
+                        logWarningAndThrowIntermittentException("Failed to commitSync offsets for record $event.", ex)
                     }
                     else -> {
                         logErrorAndThrowFatalException(
@@ -451,16 +451,15 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             consumer.assign(partitions.toTopicPartitions(config.topicPrefix))
         } catch (ex: Exception) {
             when (ex::class.java) {
+                in fatalExceptions -> {
+                    logErrorAndThrowFatalException("Fatal error attempting to assign.", ex)
+                }
                 in transientExceptions -> {
                     logWarningAndThrowIntermittentException(
                         "Intermittent error attempting to assign.",
                         ex
                     )
                 }
-                in fatalExceptions -> {
-                    logErrorAndThrowFatalException("Fatal error attempting to assign.", ex)
-                }
-
                 else -> {
                     logErrorAndThrowFatalException("Unexpected error attempting to resume.", ex)
                 }
