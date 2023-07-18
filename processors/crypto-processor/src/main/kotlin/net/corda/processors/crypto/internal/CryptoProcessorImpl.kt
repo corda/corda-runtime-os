@@ -182,6 +182,7 @@ class CryptoProcessorImpl @Activate constructor(
                         coordinator.postEvent(AssociateHSM())
                     }
                 } else {
+                    coordinator.closeManagedResources(setOf(FLOW_OPS_SUBSCRIPTION, RPC_OPS_SUBSCRIPTION, HSM_REG_SUBSCRIPTION))
                     dependenciesUp = false
                     setStatus(event.status, coordinator)
                 }

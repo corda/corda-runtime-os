@@ -159,6 +159,19 @@ class CryptoProcessorImplTest {
             verify(flowOpsSubscription, times(2)).start()
             verify(rpcOpsSubscription, times(2)).start()
             verify(hsmRegSubscription, times(2)).start()
+
+
+            bringDependencyDown<CryptoServiceFactory>()
+            verify(flowOpsSubscription, times(2)).close()
+            verify(rpcOpsSubscription, times(2)).close()
+            verify(hsmRegSubscription, times(2)).close()
+
+            bringDependencyUp<CryptoServiceFactory>()
+            verifyIsUp<CryptoProcessor>()
+            sendConfigUpdate<CryptoProcessor>(mapOf(CRYPTO_CONFIG to cryptoConfig, MESSAGING_CONFIG to mock()))
+            verify(flowOpsSubscription, times(3)).start()
+            verify(rpcOpsSubscription, times(3)).start()
+            verify(hsmRegSubscription, times(3)).start()
         }
     }
 }
