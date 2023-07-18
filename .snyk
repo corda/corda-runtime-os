@@ -12,7 +12,7 @@ ignore:
           HTTPS connections with other gateways.
         expires: 2023-12-13T12:08:30.514Z
         created: 2022-12-20T12:08:30.517Z
-  SNYK-JAVA-ORGBOUNCYCASTLE-5771340:
+SNYK-JAVA-ORGBOUNCYCASTLE-5771340:
     - '*':
         reason: >-
           C5 Is not using LDAP directory for storing trusted certificates and
