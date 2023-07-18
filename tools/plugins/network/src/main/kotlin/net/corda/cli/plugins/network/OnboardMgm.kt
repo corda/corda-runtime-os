@@ -20,10 +20,10 @@ import java.util.UUID
 )
 class OnboardMgm : Runnable, BaseOnboard() {
     @Option(
-        names = ["--cpb-name"],
-        description = ["The name of the CPB. Default to random UUID"]
+        names = ["--cpi-hash", "-c"],
+        description = ["The CPI hash of a previously uploaded CPI. If not specified, an auto-generated MGM CPI will be used."]
     )
-    var cpbName: String = UUID.randomUUID().toString()
+    var cpiHash: String? = null
 
     @Option(
         names = ["--x500-name"],
@@ -37,16 +37,6 @@ class OnboardMgm : Runnable, BaseOnboard() {
     )
     var groupPolicyFile: File =
         File(File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json")
-
-    @Option(
-        names = ["--cpi-file"],
-        description = [
-            "Location of the MGM CPI file.",
-            "To create the CPI use the package create-cpi command.",
-            "Leave empty to auto generate CPI file (not recommended)."
-        ]
-    )
-    var cpiFile: File? = null
 
     private var groupIdFile: File = File("groupId.txt")
 
@@ -125,9 +115,12 @@ class OnboardMgm : Runnable, BaseOnboard() {
     }
 
     private val cpi by lazy {
-        val parametersCpiFile = cpiFile
+        val parametersCpiFile = cpiHash
         if (parametersCpiFile != null) {
-            return@lazy parametersCpiFile
+            val file = File(parametersCpiFile)
+            if (file.exists()) {
+                return@lazy file
+            }
         }
         val mgmGroupPolicyFile = File.createTempFile("mgm.groupPolicy.", ".json").also {
             it.deleteOnExit()
@@ -144,7 +137,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
         cpiFile.parentFile.mkdirs()
         val creator = CreateCpiV2()
         creator.groupPolicyFileName = mgmGroupPolicyFile.absolutePath
-        creator.cpiName = cpbName
+        creator.cpiName = x500Name
         creator.cpiVersion = "1.0"
         creator.cpiUpgrade = false
         creator.outputFileName = cpiFile.absolutePath
@@ -166,7 +159,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
             return@lazy existingHash
         }
 
-        uploadCpi(cpi.inputStream(), cpbName)
+        uploadCpi(cpi.inputStream(), x500Name)
     }
 
     override fun run() {

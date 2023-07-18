@@ -115,7 +115,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         names = ["--mtls", "--mutual-tls", "-m"],
         description = ["Enable mutual TLS"]
     )
-    var mtls: Boolean = false
+    open var mtls: Boolean = false
 
     @Option(
         names = ["--tls-certificate-subject"],
@@ -124,7 +124,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                     "Will only be used on the first onboard to the cluster."
         ]
     )
-    var tlsCertificateSubject: String? = null
+    open var tlsCertificateSubject: String? = null
 
     protected val json by lazy {
         ObjectMapper()
@@ -267,7 +267,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         tlsCertificateSubject ?: "O=P2P Certificate, OU=$p2pHost, L=London, C=GB"
     }
 
-    protected val p2pUrl by lazy {
+    protected open val p2pUrl by lazy {
         "https://$p2pHost:8080"
     }
     protected val ca by lazy {
