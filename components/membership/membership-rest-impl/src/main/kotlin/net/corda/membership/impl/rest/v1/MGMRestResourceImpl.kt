@@ -36,7 +36,7 @@ import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
-import net.corda.membership.lib.impl.verifiers.GroupParametersUpdateVerifier
+import net.corda.membership.lib.verifiers.GroupParametersUpdateVerifier
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.membership.lib.toMap

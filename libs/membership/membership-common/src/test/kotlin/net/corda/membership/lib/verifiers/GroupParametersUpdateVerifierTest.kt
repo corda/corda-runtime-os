@@ -1,4 +1,4 @@
-package net.corda.membership.lib.impl.verifiers
+package net.corda.membership.lib.verifiers
 
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MPV_KEY

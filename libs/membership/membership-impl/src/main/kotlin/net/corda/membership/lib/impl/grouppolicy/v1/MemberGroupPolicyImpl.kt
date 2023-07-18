@@ -43,7 +43,7 @@ import net.corda.membership.lib.impl.grouppolicy.getOptionalString
 import net.corda.membership.lib.impl.grouppolicy.getOptionalStringList
 import net.corda.membership.lib.impl.grouppolicy.getOptionalStringMap
 import net.corda.membership.lib.impl.grouppolicy.validatePemCert
-import net.corda.membership.lib.impl.verifiers.GroupParametersUpdateVerifier
+import net.corda.membership.lib.verifiers.GroupParametersUpdateVerifier
 import net.corda.v5.base.types.MemberX500Name
 
 class MemberGroupPolicyImpl(rootNode: JsonNode) : MemberGroupPolicy {
