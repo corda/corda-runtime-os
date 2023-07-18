@@ -76,15 +76,20 @@ class SessionEventHandler @Activate constructor(
                     .build(),
                 now
             )
-            checkpoint.putSessionState(updatedSessionState)
+            updatedSessionState = sessionManager.processMessageReceived(
+                sessionId,
+                updatedSessionState,
+                sessionEvent,
+                now
+            )
+        } else {
+            updatedSessionState = sessionManager.processMessageReceived(
+                sessionId,
+                if (checkpoint.doesExist) checkpoint.getSessionState(sessionId) else null,
+                sessionEvent,
+                now
+            )
         }
-        updatedSessionState = sessionManager.processMessageReceived(
-            sessionId,
-            if (checkpoint.doesExist) checkpoint.getSessionState(sessionId) else null,
-            sessionEvent,
-            now
-        )
-
         // Null is returned if duplicate [SessionInit]s are received
         val nextSessionEvent = sessionManager.getNextReceivedEvent(updatedSessionState)
         val nextSessionPayload = nextSessionEvent?.payload
