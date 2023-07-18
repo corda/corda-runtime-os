@@ -225,7 +225,8 @@ class CryptoProcessorImpl @Activate constructor(
 
         // first make the signing service object, which both processors will consume
         val signingService = SigningServiceImpl(
-            cryptoServiceFactory, SigningRepositoryFactoryImpl(
+            cryptoServiceFactory,
+            SigningRepositoryFactoryImpl(
                 dbConnectionManager,
                 virtualNodeInfoReadService,
                 jpaEntitiesRegistry,
