@@ -3,5 +3,6 @@
 windowsCompatibility(
     runIntegrationTests: true,
     createPostgresDb: true,
-    dailyBuildCron: 'H 03 * * *'
+    dailyBuildCron: 'H 03 * * *',
+    runCombinedWorker: true
     )
