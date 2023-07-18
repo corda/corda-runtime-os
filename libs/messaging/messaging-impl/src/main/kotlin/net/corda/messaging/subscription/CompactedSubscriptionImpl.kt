@@ -15,6 +15,7 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.subscription.factory.MapFactory
+import net.corda.messaging.utils.ExceptionUtils
 import net.corda.messaging.utils.toRecord
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
@@ -165,9 +166,8 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
             try {
                 processCompactedRecords(consumerRecords)
             } catch (ex: Exception) {
-                when (ex) {
-                    is CordaMessageAPIFatalException,
-                    is CordaMessageAPIIntermittentException -> {
+                when (ex::class.java) {
+                    in ExceptionUtils.CordaMessageAPIException -> {
                         throw ex
                     }
 
