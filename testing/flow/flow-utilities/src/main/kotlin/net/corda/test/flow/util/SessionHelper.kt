@@ -1,6 +1,5 @@
 package net.corda.test.flow.util
 
-import java.time.Instant
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -8,6 +7,7 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
+import java.time.Instant
 
 @Suppress("LongParameterList")
 fun buildSessionState(
@@ -45,8 +45,8 @@ fun buildSessionEvent(
     receivedSequenceNum: Int = 0,
     outOfOrderSeqNums: List<Int> = listOf(0),
     timestamp: Instant = Instant.now(),
-    initiatingIdentity: HoldingIdentity = HoldingIdentity("alice", "group1"),
-    initiatedIdentity: HoldingIdentity = HoldingIdentity("bob", "group1"),
+    initiatingIdentity: HoldingIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group1"),
+    initiatedIdentity: HoldingIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group1"),
 ): SessionEvent {
     return SessionEvent.newBuilder()
         .setSessionId(sessionId)
