@@ -219,6 +219,10 @@ internal class OutboundMessageHandler(
     }
 
     private fun shouldRetry(statusCode: HttpResponseStatus): Boolean {
+        if (statusCode.code() == HttpResponseStatus.GONE.code()) {
+            logger.info("QQQ Got 410, will retry anyway!")
+            return true
+        }
         return statusCode.code() >= 500
     }
 
