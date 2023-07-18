@@ -1,8 +1,13 @@
 package net.corda.applications.workers.smoketest.ledger
 
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import net.corda.crypto.core.parseSecureHash
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
@@ -227,4 +232,16 @@ class UtxoLedgerTests {
     )
 
     data class CustomQueryFlowResponse(val results: List<String>)
+
+    internal object SecureHashSerializer : com.fasterxml.jackson.databind.JsonSerializer<SecureHash>() {
+        override fun serialize(obj: SecureHash, generator: JsonGenerator, provider: SerializerProvider) {
+            generator.writeString(obj.toString())
+        }
+    }
+
+    internal object SecureHashDeserializer : com.fasterxml.jackson.databind.JsonDeserializer<SecureHash>() {
+        override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): SecureHash {
+            return parseSecureHash(parser.text)
+        }
+    }
 }
