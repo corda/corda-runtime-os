@@ -47,7 +47,7 @@ class SessionManagerImpl @Activate constructor(
             it.lastReceivedMessageTime = instant
             processAcks(event, it)
         }
-        logger.info("Lorcan: processing received ${event.payload::class.java}: $event")
+        logger.info("Lorcan: processing received ${event.payload::class.java}: ${event.sequenceNum}")
 
         return sessionEventProcessorFactory.createEventReceivedProcessor(key, event, updatedSessionState, instant).execute()
     }
@@ -59,7 +59,7 @@ class SessionManagerImpl @Activate constructor(
         instant: Instant,
         maxMsgSize: Long,
     ): SessionState {
-        logger.info("Lorcan: sending mess ${event.payload::class.java}")
+        logger.info("Lorcan: sending mess ${event.payload::class.java}, ${event.sequenceNum}")
 
         return sessionEventProcessorFactory.createEventToSendProcessor(key, event, sessionState, instant, maxMsgSize).execute()
     }
