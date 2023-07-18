@@ -172,9 +172,9 @@ class CryptoProcessorImpl @Activate constructor(
             }
             is RegistrationStatusChangeEvent -> {
                 logger.trace("Registering for configuration updates.")
-                configurationReadService.registerComponentForUpdates(coordinator, configKeys)
                 if (event.status == LifecycleStatus.UP) {
                     dependenciesUp = true
+                    configurationReadService.registerComponentForUpdates(coordinator, configKeys)
                     // TODO only do setStatus once the config is in in ConfigChangedEvent
                     if (hsmAssociated) {
                         setStatus(event.status, coordinator)
