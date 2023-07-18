@@ -103,12 +103,7 @@ class SessionEventHandler @Activate constructor(
         //do this last because the Holding Identity won't be available until after the checkpoint has been initiated
         context.flowMetrics.flowSessionMessageReceived(sessionEvent.payload::class.java.name)
 
-        return if (sessionInit) {
-            val wakeup = listOf(
-                flowRecordFactory.createFlowEventRecord(checkpoint.flowId,net.corda.data.flow.event.Wakeup()),
-            )
-            context.copy(outputRecords = context.outputRecords + wakeup)
-        } else context
+        return context
 
     }
 
