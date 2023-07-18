@@ -24,6 +24,7 @@ import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.urlconnection.URLConnectionSender
 import java.util.*
 import java.util.concurrent.ExecutorService
+import java.util.logging.Level
 import java.util.logging.Logger
 import javax.servlet.Filter
 
@@ -97,7 +98,9 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         private val logger: Logger = Logger.getLogger(LogReporter::class.java.name)
 
         override fun report(span: Span) {
+            if (logger.isLoggable(Level.INFO)) {
                 logger.info(span.toString())
+            }
         }
 
         override fun toString(): String {

@@ -10,9 +10,6 @@
                      filePattern="logs/corda.%d{yyyy-MM-dd}.%i.log"
                      ignoreExceptions="false">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} %X - %msg%n"/>
-            <Filters>
-                <RegexFilter regex=".*brave\.Tracer.*" onMatch="DENY" onMismatch="NEUTRAL"/>
-            </Filters>
             <Policies>
                 <OnStartupTriggeringPolicy />
                 <TimeBasedTriggeringPolicy />
