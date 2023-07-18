@@ -10,6 +10,9 @@ import picocli.CommandLine.Option
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.UUID
+import net.corda.cli.plugins.common.RestClientUtils.executeWithRetry
+import java.time.Duration
+import java.time.temporal.ChronoUnit
 
 @Command(
     name = "mgm",
@@ -62,26 +65,20 @@ class OnboardMgm : Runnable, BaseOnboard() {
         }
     }
 
+    private val waitDuration: Duration = Duration.of(300, ChronoUnit.SECONDS)
+
     private fun saveGroupPolicy() {
-        repeat(10) {
-            try {
-                val restClient = createRestClient(MGMRestResource::class)
-                restClient.use { client ->
-                    client.start().also { connection ->
-                        val resource = connection.proxy
-                        val response = resource.generateGroupPolicy(holdingId)
-                        groupPolicyFile.parentFile.mkdirs()
-                        json.writerWithDefaultPrettyPrinter()
-                            .writeValue(
-                                groupPolicyFile,
-                                json.readTree(response)
-                            )
-                        println("Group policy file created at $groupPolicyFile")
-                        return@saveGroupPolicy
-                    }
-                }
-            } catch (e: Exception) {
-                Thread.sleep(300)
+        createRestClient(MGMRestResource::class).use { client ->
+            executeWithRetry(waitDuration, "Save group policy") {
+                val resource = client.start().proxy
+                val response = resource.generateGroupPolicy(holdingId)
+                groupPolicyFile.parentFile.mkdirs()
+                json.writerWithDefaultPrettyPrinter()
+                    .writeValue(
+                        groupPolicyFile,
+                        json.readTree(response)
+                    )
+                println("Group policy file created at $groupPolicyFile")
             }
         }
     }

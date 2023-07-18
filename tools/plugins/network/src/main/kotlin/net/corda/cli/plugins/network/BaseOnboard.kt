@@ -32,6 +32,7 @@ import net.corda.membership.rest.v1.types.response.RegistrationStatus
 import com.fasterxml.jackson.databind.JsonNode
 import net.corda.rest.JsonObject
 import org.bouncycastle.asn1.x500.X500Name
+import net.corda.cli.plugins.common.RestClientUtils.executeWithRetry
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
 import org.bouncycastle.crypto.util.PrivateKeyFactory
@@ -47,6 +48,8 @@ import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.util.Date
+import java.time.Duration
+import java.time.temporal.ChronoUnit
 
 abstract class BaseOnboard : Runnable, RestCommand() {
     private companion object {
@@ -55,6 +58,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         const val SIGNING_KEY_ALIAS = "signing key 1"
         const val SIGNING_KEY_STORE_PASSWORD = "keystore password"
         const val GRADLE_PLUGIN_DEFAULT_KEY_ALIAS = "gradle-plugin-default-key"
+        val WAIT_DURATION: Duration = Duration.of(300, ChronoUnit.SECONDS)
 
         fun createKeyStoreFile(keyStoreFile: File) {
             val keyPair = KeyPairGenerator.getInstance("RSA").genKeyPair()
@@ -133,51 +137,33 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     internal class OnboardException(message: String) : Exception(message)
 
     protected fun uploadCpi(cpi: InputStream, name: String): String {
-        createRestClient(CpiUploadRestResource::class).use { client ->
+        return createRestClient(CpiUploadRestResource::class).use { client ->
             cpi.use { jarInputStream ->
-                client.start().also { connection ->
-                    val resource = connection.proxy
-                    val upload = HttpFileUpload(content = jarInputStream, fileName = "$name.cpi")
-                    val id = resource.cpi(upload).id
-
-                    // Wait for some time before checking the status of the CPI upload.
-                    Thread.sleep(2000)  // You can adjust this delay as per your requirements.
-
-                    // Retry for a certain number of times if the check fails
-                    var retryCount = 0
-                    val maxRetryCount = 3
-
-                    while (retryCount < maxRetryCount) {
-                        try {
-                            return checkCpiStatus(id)
-                        } catch (e: OnboardException) {
-                            println("Check CPI status failed for id: $id, retrying...")
-                            retryCount++
-                        }
-                    }
-
-                    // If all retries failed, throw the exception
-                    throw OnboardException("CPI request $id had failed after $maxRetryCount attempts!")
+                executeWithRetry(WAIT_DURATION, "Check CPI status") {
+                    checkCpiStatus(
+                        client.start().proxy.cpi(
+                            HttpFileUpload(
+                                content = jarInputStream,
+                                fileName = "$name.cpi"
+                            )
+                        ).id
+                    )
                 }
             }
-
         }
     }
 
     private fun checkCpiStatus(id: String): String {
-        val end = System.currentTimeMillis() + 5 * 60 * 1000
-        while (System.currentTimeMillis() < end) {
-            createRestClient(CpiUploadRestResource::class).use { client ->
-                client.start().also { connection ->
-                    val resource = connection.proxy
-                    val status = resource.status(id)
-                    if (status.status == "OK") {
-                        return status.cpiFileChecksum
-                    }
+        return createRestClient(CpiUploadRestResource::class).use { client ->
+            executeWithRetry(WAIT_DURATION, "Check CPI status") {
+                val status = client.start().proxy.status(id)
+                if (status.status == "OK") {
+                    status.cpiFileChecksum
+                } else {
+                    null
                 }
-            }
+            } ?: throw OnboardException("CPI request $id had failed after all attempts!")
         }
-        throw OnboardException("CPI request $id had failed!")
     }
 
     protected abstract val cpiFileChecksum: String
@@ -187,20 +173,14 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     protected abstract val registrationContext: Map<String, Any?>
 
     private fun waitForVirtualNode(shortHashId: String) {
-        repeat(10) {
-            try {
-                val response = createRestClient(VirtualNodeRestResource::class).use { client ->
-                    client.start().proxy.getVirtualNode(shortHashId)
-                }
+        createRestClient(VirtualNodeRestResource::class).use { client ->
+            executeWithRetry(WAIT_DURATION, "Virtual Node status check") {
+                val response = client.start().proxy.getVirtualNode(shortHashId)
                 if (response.flowP2pOperationalStatus == OperationalStatus.ACTIVE) {
-                    return@waitForVirtualNode
+                    return@executeWithRetry
                 }
-            } catch (e: Exception) {
-                // Do nothing...
             }
-            Thread.sleep(300)
         }
-        throw OnboardException("Virtual node $shortHashId cannot be created")
     }
 
     protected val holdingId: String by lazy {
@@ -228,26 +208,23 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     protected fun assignSoftHsmAndGenerateKey(category: String): String {
-        repeat(10) {
-            val hsmAssociation = createRestClient(HsmRestResource::class).use { client ->
-                client.start().proxy.assignSoftHsm(holdingId, category)
+        return createRestClient(HsmRestResource::class).use { client ->
+            executeWithRetry(WAIT_DURATION, "Assign Soft HSM") {
+                val hsmAssociation = client.start().proxy.assignSoftHsm(holdingId, category)
+                if (hsmAssociation.hsmId.isNotEmpty()) {
+                    hsmAssociation.hsmId
+                } else {
+                    null
+                }
+            } ?: run {
+                val response = createRestClient(KeysRestResource::class).use { keyClient ->
+                    keyClient.start().proxy.generateKeyPair(
+                        holdingId, "$holdingId-$category", category, "CORDA.ECDSA.SECP256R1"
+                    )
+                }
+                response.id
             }
-
-            if (!hsmAssociation.hsmId.isEmpty()) {
-                return@repeat
-            }
-
-            println("Could not assign HSM key, will retry in a while")
-            Thread.sleep(300)
         }
-
-        val response = createRestClient(KeysRestResource::class).use { client ->
-            client.start().proxy.generateKeyPair(
-                holdingId, "$holdingId-$category", category, "CORDA.ECDSA.SECP256R1"
-            )
-        }
-
-        return response.id
     }
 
     protected val sessionKeyId by lazy {
@@ -280,41 +257,40 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     protected fun createTlsKeyIdNeeded() {
-        val keys = createRestClient(KeysRestResource::class).use { client ->
-            client.start().proxy.listKeys(
-                tenantId = "p2p",
-                skip = 0,
-                take = 20,
-                orderBy = "NONE",
-                category = "TLS",
-                schemeCodeName = null,
-                alias = P2P_TLS_KEY_ALIAS,
-                masterKeyAlias = null,
-                createdAfter = null,
-                createdBefore = null,
-                ids = null,
-            )
+        val hasKeys = createRestClient(KeysRestResource::class).use { client ->
+            executeWithRetry(WAIT_DURATION, "List Keys") {
+                client.start().proxy.listKeys(
+                    tenantId = "p2p",
+                    skip = 0,
+                    take = 20,
+                    orderBy = "NONE",
+                    category = "TLS",
+                    schemeCodeName = null,
+                    alias = P2P_TLS_KEY_ALIAS,
+                    masterKeyAlias = null,
+                    createdAfter = null,
+                    createdBefore = null,
+                    ids = null,
+                ).isNotEmpty()
+            }
         }
 
-        if (keys.isNotEmpty()) {
-            return
-        }
+        if (hasKeys) return
 
-        val generateKeyPairResponse = createRestClient(KeysRestResource::class).use { client ->
-            client.start().proxy.generateKeyPair(
-                tenantId = "p2p",
-                alias = P2P_TLS_KEY_ALIAS,
-                hsmCategory = "TLS",
-                scheme = "CORDA.ECDSA.SECP256R1"
-            )
+        val tlsKeyId = createRestClient(KeysRestResource::class).use { client ->
+            executeWithRetry(WAIT_DURATION, "Generate Key Pair") {
+                client.start().proxy.generateKeyPair(
+                    tenantId = "p2p",
+                    alias = P2P_TLS_KEY_ALIAS,
+                    hsmCategory = "TLS",
+                    scheme = "CORDA.ECDSA.SECP256R1"
+                ).id
+            }
         }
-
-        val tlsKeyId = generateKeyPairResponse.id
 
         createRestClient(CertificatesRestResource::class).use { client ->
-            client.start().also { connection ->
-                val resource = connection.proxy
-                val csr = resource.generateCsr(
+            executeWithRetry(WAIT_DURATION, "Generate CSR") {
+                val csr = client.start().proxy.generateCsr(
                     tenantId = "p2p",
                     keyId = tlsKeyId,
                     x500Name = certificateSubject,
@@ -328,7 +304,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                     }
                 } as? PKCS10CertificationRequest ?: throw OnboardException("CSR is not a valid CSR: $csr")
                 ca.signCsr(csrCertRequest).toPem().byteInputStream().use { certificate ->
-                    resource.importCertificateChain(
+                    client.start().proxy.importCertificateChain(
                         usage = "p2p-tls",
                         alias = P2P_TLS_CERTIFICATE_ALIAS,
                         certificates = listOf(
@@ -356,7 +332,9 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         )
 
         createRestClient(NetworkRestResource::class).use { client ->
-            client.start().proxy.setupHostedIdentities(holdingId, request)
+            executeWithRetry(WAIT_DURATION, "Setup Network") {
+                client.start().proxy.setupHostedIdentities(holdingId, request)
+            }
         }
     }
 
@@ -388,26 +366,20 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     private fun waitForFinalStatus(registrationId: String) {
-        val end = System.currentTimeMillis() + 5 * 60 * 1000
+        createRestClient(MemberRegistrationRestResource::class).use { client ->
+            executeWithRetry(WAIT_DURATION, "Check Registration Progress") {
+                val status = client.start().proxy.checkSpecificRegistrationProgress(holdingId, registrationId)
 
-        while (System.currentTimeMillis() < end) {
-            Thread.sleep(400)
-            val restClient = createRestClient(MemberRegistrationRestResource::class)
-            val status = restClient.use { client ->
-                client.start().proxy.checkSpecificRegistrationProgress(holdingId, registrationId)
-            }
+                when (val registrationStatus = status.registrationStatus) {
+                    RegistrationStatus.APPROVED -> return@executeWithRetry
+                    RegistrationStatus.DECLINED,
+                    RegistrationStatus.INVALID,
+                    RegistrationStatus.FAILED -> throw OnboardException("Status of registration is $registrationStatus.")
 
-            when (val registrationStatus = status.registrationStatus) {
-                RegistrationStatus.APPROVED -> return
-                RegistrationStatus.DECLINED,
-                RegistrationStatus.INVALID,
-                RegistrationStatus.FAILED -> throw OnboardException("Status of registration is $registrationStatus.")
-
-                else -> println("Status of $x500Name registration is $registrationStatus")
+                    else -> println("Status of registration is $registrationStatus")
+                }
             }
         }
-
-        throw OnboardException("Registration has failed!")
     }
 
     data class ConcreteJsonObject(override val escapedJson: String) : JsonObject

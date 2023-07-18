@@ -5,6 +5,9 @@ import net.corda.cli.plugins.common.RestCommand
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfo
 import picocli.CommandLine
+import net.corda.cli.plugins.common.RestClientUtils.executeWithRetry
+import java.time.Duration
+import java.time.temporal.ChronoUnit
 
 @CommandLine.Command(name = "members-list", description = ["Shows the list of members on the network."])
 class MemberList : RestCommand(), Runnable {
@@ -57,16 +60,15 @@ class MemberList : RestCommand(), Runnable {
         description = ["Optional. Country (C) attribute of the X.500 name to filter members by."]
     )
     var country: String? = null
+
+    private val waitDuration: Duration = Duration.of(300, ChronoUnit.SECONDS)
+
     private fun performMembersLookup() {
         requireNotNull(holdingIdentityShortHash) { "Holding identity short hash was not provided." }
 
-        val restClient = createRestClient(MemberLookupRestResource::class)
-
-        val result: List<RestMemberInfo> = restClient.use { client ->
-            val connection = client.start()
-            val memberLookupProxy = connection.proxy
-
-            try {
+        val result: List<RestMemberInfo> = createRestClient(MemberLookupRestResource::class).use { client ->
+            executeWithRetry(waitDuration, "Members lookup") {
+                val memberLookupProxy = client.start().proxy
                 memberLookupProxy.lookup(
                     holdingIdentityShortHash.toString(),
                     commonName,
@@ -76,10 +78,6 @@ class MemberList : RestCommand(), Runnable {
                     state,
                     country
                 ).members
-            } catch (e: Exception) {
-                println(e.message)
-                NetworkPluginWrapper.logger.error(e.stackTraceToString())
-                return
             }
         }
 
