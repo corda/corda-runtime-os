@@ -2,6 +2,8 @@ package net.corda.interop.rest.impl.v1
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.ShortHashException
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.interop.identity.cache.InteropIdentityCacheService
 import net.corda.interop.identity.write.InteropIdentityWriteService
@@ -30,6 +32,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
 import net.corda.interop.core.InteropIdentity
+import net.corda.rest.exception.BadRequestException
 
 @Component(service = [PluggableRestResource::class])
 internal class InteropRestResourceImpl @Activate constructor(
@@ -101,6 +104,11 @@ internal class InteropRestResourceImpl @Activate constructor(
                 "X500 name \"${restInteropIdentity.x500Name}\" could not be parsed. Cause: ${e.message}"
             )
         }
+        try {
+            ShortHash.parse(vnodeshorthash)
+        } catch (e: ShortHashException) {
+            throw BadRequestException("Invalid holding identity short hash${e.message?.let { ": $it" }}")
+        }
 
         interopIdentityWriteService.addInteropIdentity(
             vnodeshorthash,
@@ -129,7 +137,7 @@ internal class InteropRestResourceImpl @Activate constructor(
                 UUID.fromString(it.groupId),
                 HoldingIdentity(MemberX500Name.parse(it.x500Name), it.groupId).shortHash.toString(),
                 it.facadeIds,
-                it.applicationName,
+                MemberX500Name.parse(it.x500Name).organization,
                 it.endpointProtocol,
                 it.endpointUrl
             )
@@ -148,6 +156,35 @@ internal class InteropRestResourceImpl @Activate constructor(
         val interopIdentityJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(interopIdentity)
         val groupPolicy = getGroupPolicy()
         return interopIdentityJson + "\n" + groupPolicy
+    }
+
+    override fun importInterOpIdentity(
+        restInteropIdentity: RestInteropIdentity,
+        vnodeshorthash: String,
+        interopIdentityShortHash: String
+    ): ResponseEntity<String> {
+        try {
+            MemberX500Name.parse(restInteropIdentity.x500Name)
+        } catch (e: Exception) {
+            throw InvalidInputDataException(
+                "X500 name \"${restInteropIdentity.x500Name}\" could not be parsed. Cause: ${e.message}"
+            )
+        }
+
+        interopIdentityWriteService.addInteropIdentity(
+            vnodeshorthash,
+            InteropIdentity(
+                groupId = restInteropIdentity.groupId.toString(),
+                x500Name = restInteropIdentity.x500Name,
+                holdingIdentityShortHash = vnodeshorthash,
+                facadeIds = restInteropIdentity.facadeIds,
+                applicationName = restInteropIdentity.applicationName,
+                endpointProtocol = restInteropIdentity.endpointProtocol,
+                endpointUrl = restInteropIdentity.endpointUrl
+            )
+        )
+        logger.info("Interop identity imported.")
+        return ResponseEntity.ok("OK")
     }
 
     private fun getGroupPolicy(): String {
