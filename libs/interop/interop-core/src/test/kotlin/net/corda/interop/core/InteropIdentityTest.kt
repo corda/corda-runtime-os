@@ -111,6 +111,8 @@ class InteropIdentityTest {
             endpointProtocol = "https://alice.corda5.r3.com:10000"
         )
 
-        assertThat(identity1).isNotEqualTo(identity2)
+        // Because each holding identity is expected to have only one identity in any given interop group
+        // we don't expect changes to the holding identity to affect equality
+        assertThat(identity1).isEqualTo(identity2)
     }
 }
