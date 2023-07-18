@@ -72,7 +72,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             InvalidOffsetException::class.java,
             CommitFailedException::class.java
         )
-        val transientException: Set<Class<out Throwable>> = setOf(
+        val transientExceptions: Set<Class<out Throwable>> = setOf(
             TimeoutException::class.java,
             WakeupException::class.java,
             InterruptException::class.java,
@@ -101,7 +101,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                     in fatalExceptions -> {
                         logErrorAndThrowFatalException("Error attempting to poll.", ex)
                     }
-                    in transientException -> {
+                    in transientExceptions -> {
                         logWarningAndThrowIntermittentException("Error attempting to poll.", ex)
                     }
                     else -> logErrorAndThrowFatalException("Unexpected error attempting to poll.", ex)
@@ -316,7 +316,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 attemptCommit = false
             } catch (ex: Exception) {
                 when (ex::class.java) {
-                    in transientException -> {
+                    in transientExceptions -> {
                         logWarningAndThrowIntermittentException("Failed to commitSync offsets for record $event.", ex)
                     }
                     in fatalExceptions -> {
@@ -406,7 +406,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 in fatalExceptions -> {
                     logErrorAndThrowFatalException("Fatal error attempting to get partitions on topic $topic", ex)
                 }
-                in transientException -> {
+                in transientExceptions -> {
                     logWarningAndThrowIntermittentException(
                         "Intermittent error attempting to get partitions on topic $topic",
                         ex
@@ -451,7 +451,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             consumer.assign(partitions.toTopicPartitions(config.topicPrefix))
         } catch (ex: Exception) {
             when (ex::class.java) {
-                in transientException -> {
+                in transientExceptions -> {
                     logWarningAndThrowIntermittentException(
                         "Intermittent error attempting to assign.",
                         ex
@@ -476,7 +476,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 in fatalExceptions -> {
                     logErrorAndThrowFatalException("Fatal error attempting to get assignment.", ex)
                 }
-                in transientException -> {
+                in transientExceptions -> {
                     logWarningAndThrowIntermittentException(
                         "Intermittent error attempting to get assignment.",
                         ex
@@ -497,7 +497,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 in fatalExceptions -> {
                     logErrorAndThrowFatalException("Fatal error attempting to get position.", ex)
                 }
-                in transientException -> {
+                in transientExceptions -> {
                     logWarningAndThrowIntermittentException(
                         "Intermittent error attempting to get position.",
                         ex
@@ -518,7 +518,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 in fatalExceptions -> {
                     logErrorAndThrowFatalException("Fatal error attempting to get the first offset.", ex)
                 }
-                in transientException -> {
+                in transientExceptions -> {
                     logWarningAndThrowIntermittentException(
                         "Intermittent error attempting to get the first offset.",
                         ex
@@ -544,7 +544,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                     logErrorAndThrowFatalException("Fatal error attempting to get the first offset.", ex)
                 }
 
-                in transientException -> {
+                in transientExceptions -> {
                     logWarningAndThrowIntermittentException(
                         "Intermittent error attempting to get the first offset.",
                         ex
@@ -570,7 +570,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                     logErrorAndThrowFatalException("Fatal error attempting to get the first offset.", ex)
                 }
 
-                in transientException -> {
+                in transientExceptions -> {
                     logWarningAndThrowIntermittentException(
                         "Intermittent error attempting to get the first offset.",
                         ex
@@ -599,7 +599,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                     logErrorAndThrowFatalException("Fatal error attempting to get end offsets.", ex)
                 }
 
-                in transientException -> {
+                in transientExceptions -> {
                     logWarningAndThrowIntermittentException(
                         "Intermittent error attempting to get end offsets.",
                         ex
@@ -626,7 +626,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                     logErrorAndThrowFatalException("Fatal error attempting to get end offsets.", ex)
                 }
 
-                in transientException -> {
+                in transientExceptions -> {
                     logWarningAndThrowIntermittentException(
                         "Intermittent error attempting to get end offsets.",
                         ex
@@ -681,7 +681,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                     logErrorAndThrowFatalException("Fatal error attempting to get paused.", ex)
                 }
 
-                in transientException -> {
+                in transientExceptions -> {
                     logWarningAndThrowIntermittentException(
                         "Intermittent error attempting to get paused.",
                         ex

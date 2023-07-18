@@ -71,7 +71,7 @@ class CordaKafkaProducerImpl(
             AuthorizationException::class.java,
             FencedInstanceIdException::class.java
         )
-        val transientException: Set<Class<out Throwable>> = setOf(
+        val transientExceptions: Set<Class<out Throwable>> = setOf(
             TimeoutException::class.java,
             InterruptException::class.java,
             // Failure to commit here might be due to consumer kicked from group.
@@ -387,7 +387,7 @@ class CordaKafkaProducerImpl(
                 throw CordaMessageAPIProducerRequiresReset("Error occurred $errorString", ex)
             }
 
-           in transientException -> {
+           in transientExceptions -> {
                 if (abortTransaction) {
                     abortTransaction()
                 }

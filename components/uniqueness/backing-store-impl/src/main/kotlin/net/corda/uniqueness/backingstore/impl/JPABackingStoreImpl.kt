@@ -130,10 +130,10 @@ open class JPABackingStoreImpl @Activate constructor(
 
                         return
                     } catch (e: Exception) {
-                        when (e::class.java) {
-                            in setOf(EntityExistsException::class.java,
-                            RollbackException::class.java,
-                            OptimisticLockException::class.java) -> {
+                        when (e) {
+                            is EntityExistsException,
+                            is RollbackException,
+                            is OptimisticLockException -> {
                                 // [EntityExistsException] Occurs when another worker committed a
                                 // request with conflicting input states. Retry (by not re-throwing the
                                 // exception), because the requests with conflicts are removed from the
