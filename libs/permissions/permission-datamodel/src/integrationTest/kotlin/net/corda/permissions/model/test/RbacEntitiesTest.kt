@@ -9,10 +9,12 @@ import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
+import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.RbacEntities
+import net.corda.permissions.model.RestPermissionOperation
 import net.corda.permissions.model.User
 import net.corda.test.util.LoggingUtils.emphasise
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -97,9 +99,23 @@ class RbacEntitiesTest {
             null
         )
         emf.transaction { em -> em.persist(user) }
+
+        val actorUserLongId = "RbacEntitiesTest" + UUID.randomUUID().toString()
+        val auditLog = ChangeAudit(
+            id = UUID.randomUUID().toString(),
+            updateTimestamp = Instant.now(),
+            actorUser = actorUserLongId,
+            changeType = RestPermissionOperation.USER_INSERT,
+            details = "User '${user.loginName}' created by '$actorUserLongId'."
+        )
+        emf.transaction { em -> em.persist(auditLog) }
+
         emf.createEntityManager().use { em ->
             val retrievedUser = em.createQuery("from User where id = '$id'", user.javaClass).singleResult
-            Assertions.assertThat(retrievedUser).isEqualTo(user)
+            assertThat(retrievedUser).isEqualTo(user)
+
+            val retrievedAudit = em.createQuery("from ChangeAudit where actorUser = '$actorUserLongId'", auditLog.javaClass).singleResult
+            assertThat(retrievedAudit).isEqualTo(auditLog)
         }
     }
 }
