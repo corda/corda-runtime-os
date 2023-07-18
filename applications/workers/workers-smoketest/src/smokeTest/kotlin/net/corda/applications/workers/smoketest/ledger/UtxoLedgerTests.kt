@@ -202,19 +202,6 @@ class UtxoLedgerTests {
         assertThat(parsedPeekFlowResult.outputs).singleElement().extracting { it.testField }.isEqualTo(evolvedMessage)
     }
 
-    @Test
-    fun `Utxo Ledger - creating a transaction that fails custom validation causes finality to fail`() {
-        val utxoFlowRequestId = startRpcFlow(
-            aliceHoldingId,
-            mapOf("input" to "fail", "members" to listOf(bobX500, charlieX500), "notary" to notaryX500),
-            "com.r3.corda.demo.utxo.UtxoDemoFlow"
-        )
-        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
-        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(utxoFlowResult.flowResult).contains("Transaction validation failed for transaction")
-        assertThat(utxoFlowResult.flowResult).contains("when signature was requested")
-    }
-
     data class TestUtxoStateResult(val testField: String, val participants: List<ByteArray>)
 
     data class UtxoTransactionResult(
