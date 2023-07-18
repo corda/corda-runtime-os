@@ -45,8 +45,6 @@ class SessionEventHandler @Activate constructor(
     private val checkpointInitializer: CheckpointInitializer,
     @Reference(service = FlowSessionManager::class)
     private val flowSessionManager: FlowSessionManager,
-    @Reference(service = FlowRecordFactory::class)
-    private val flowRecordFactory: FlowRecordFactory
 ) : FlowEventHandler<SessionEvent> {
 
     private companion object {
@@ -62,27 +60,36 @@ class SessionEventHandler @Activate constructor(
         log.trace { "Session event in handler: ${sessionEvent.payload}" }
 
         val now = Instant.now()
-        val sessionInit = sessionEvent.payload is SessionData && (sessionEvent.payload as SessionData).sessionInit != null
+        val sessionInitPayload = sessionEvent.payload is SessionData && (sessionEvent.payload as SessionData).sessionInit != null
+        var sessionInitEvent: SessionEvent? = null
         val sessionId = sessionEvent.sessionId
         // @SESSION: This is where we receive a session event and start processing it.
         var updatedSessionState: SessionState
-        if (sessionInit) {
+        if (sessionInitPayload) {
+            log.info("handling new init")
+            sessionInitEvent = SessionEvent.newBuilder(sessionEvent)
+                .setSequenceNum(1)
+                .setPayload((sessionEvent.payload as SessionData).sessionInit)
+                .build()
             updatedSessionState = sessionManager.processMessageReceived(
                 sessionId,
-                if (checkpoint.doesExist) checkpoint.getSessionState(sessionId) else null,
-                SessionEvent.newBuilder(sessionEvent)
-                    .setSequenceNum(1)
-                    .setPayload((sessionEvent.payload as SessionData).sessionInit)
-                    .build(),
+                null,
+                sessionInitEvent,
                 now
             )
+            log.info("handling data after init")
+
             updatedSessionState = sessionManager.processMessageReceived(
                 sessionId,
                 updatedSessionState,
                 sessionEvent,
                 now
             )
+            log.info("handled data after init")
+
         } else {
+            log.info("handled data without an init")
+
             updatedSessionState = sessionManager.processMessageReceived(
                 sessionId,
                 if (checkpoint.doesExist) checkpoint.getSessionState(sessionId) else null,
@@ -92,13 +99,13 @@ class SessionEventHandler @Activate constructor(
         }
         // Null is returned if duplicate [SessionInit]s are received
         val nextSessionEvent = sessionManager.getNextReceivedEvent(updatedSessionState)
-        val nextSessionPayload = nextSessionEvent?.payload
+
 
 
         // @SESSION: This block is about creating a new flow if the received session message is a session init.
         if (!checkpoint.doesExist) {
-            if (nextSessionPayload is SessionData && nextSessionPayload.sessionInit != null) {
-                createInitiatedFlowCheckpoint(context, nextSessionPayload.sessionInit, nextSessionEvent, updatedSessionState)
+            if (sessionInitEvent != null && sessionInitPayload) {
+                createInitiatedFlowCheckpoint(context, (sessionEvent.payload as SessionData).sessionInit, sessionInitEvent, updatedSessionState)
             } else {
                 discardSessionEvent(context, sessionEvent)
             }
@@ -170,7 +177,7 @@ class SessionEventHandler @Activate constructor(
         context.checkpoint.putSessionState(initialSessionState)
         context.flowMetrics.flowStarted()
 
-        sendConfirmMessage(initiatedFlowNameAndProtocol, requestedProtocolName, initiatorVersionsSupported, context, sessionId)
+        // sendConfirmMessage(initiatedFlowNameAndProtocol, requestedProtocolName, initiatorVersionsSupported, context, sessionId)
     }
 
     private fun getProtocolInfo(
@@ -188,6 +195,7 @@ class SessionEventHandler @Activate constructor(
         }
         return Pair(requestedProtocolName, initiatorVersionsSupportedProp.split(",").map { it.trim().toInt() })
     }
+
 
     private fun sendConfirmMessage(
         initiatedFlowNameAndProtocol: FlowAndProtocolVersion?,

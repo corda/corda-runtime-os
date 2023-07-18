@@ -24,6 +24,7 @@ import net.corda.schema.Schemas.Flow.*
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.time.Instant
 
 @Component(service = [FlowMapperEventExecutorFactory::class])
@@ -34,6 +35,10 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
 
     private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
 
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java)
+    }
+
     override fun create(
         eventKey: String,
         flowMapperEvent: FlowMapperEvent,
@@ -43,6 +48,8 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
     ): FlowMapperEventExecutor {
         return when (val flowMapperEventPayload = flowMapperEvent.payload) {
             is SessionEvent -> {
+                logger.info("Processing ${(flowMapperEvent.payload as SessionEvent).messageDirection} session event: ${flowMapperEventPayload.payload::class.java}...")
+
                 when (val sessionPayload = flowMapperEventPayload.payload) {
                     is SessionInit -> {
                         SessionInitExecutor(
@@ -67,6 +74,7 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                     }
                     else -> {
                         if ((sessionPayload as SessionData).sessionInit != null) {
+                            logger.info("handling data init")
                             SessionInitExecutor(
                                 eventKey,
                                 flowMapperEventPayload,
