@@ -4,14 +4,15 @@
 # Deploy a cluster with a given number of instances and start sending more and more messages until it reaches a
 # latency larger than one.
 # To run use:
-# DOCKER_IMAGE_VERSION<IMAGE_TAG>.  ./applications/tools/p2p-test/app-simulator/scripts/runScenario.sh
+# DOCKER_IMAGE_VERSION<IMAGE_TAG>.  ./applications/tools/p2p-test/app-simulator/scripts/horizontal-scaling-testing/runScenario.sh
 
 set -e
-SCRIPT_DIR=$(dirname ${BASH_SOURCE[0]})
+TESTING_DIR=$(dirname ${BASH_SOURCE[0]})
+SCRIPT_DIR="$TESTING_DIR/.."
 
 
 if [ -z $1 ]; then
-  scenario_file="$SCRIPT_DIR"/scenarios/a.json
+  scenario_file="$TESTING_DIR"/scenarios/a.json
 else
   scenario_file=$1
 fi
@@ -44,6 +45,7 @@ echo "1 PostgreSQL instance" >> "$reportFile"
 echo "$KAFKA_PARTITION_COUNT partitions per topic (replication factor = $KAFKA_REPLICATION_FACTOR)" >> "$reportFile"
 
 export CORDA_EKS_FILE="$SCRIPT_DIR/corda-eks-large.yaml"
+export PREREQS_EKS_FILE="$SCRIPT_DIR/prereqs-eks-large.yaml"
 source "$SCRIPT_DIR/settings.sh"
 
 echo "Tearing down previous clusters"
@@ -108,7 +110,7 @@ batchSize=40
 stop="no"
 latency="0.22"
 until (( $(echo "$latency > 1.0" |bc -l) ));  do
-  echo 'Waiting a minutes before starting sender'
+  echo 'Waiting a minute before starting sender'
   sleep 60
   run_sender
   batchSize=$((batchSize + 10))

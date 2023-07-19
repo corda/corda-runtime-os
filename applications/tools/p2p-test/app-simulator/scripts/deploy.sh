@@ -14,7 +14,7 @@ deploy() {
                 oci://corda-os-docker.software.r3.com/helm-charts/corda-dev  \
                 --set image.registry=\"corda-os-docker.software.r3.com\"  \
                 --set kafka.replicaCount=$KAFKA_REPLICAS,kafka.zookeeper.replicaCount=$KAFKA_ZOOKEEPER_REPLICAS  \
-                -f \"$SCRIPT_DIR/prereqs-eks.yaml\"  \
+                -f \"$PREREQS_EKS_FILE\"  \
                 --render-subchart-notes  \
                 --timeout 10m  \
                 --wait"

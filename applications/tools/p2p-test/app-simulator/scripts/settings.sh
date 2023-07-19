@@ -48,6 +48,9 @@ fi
 if [ -z $CORDA_EKS_FILE ]; then
   CORDA_EKS_FILE="$SCRIPT_DIR/corda-eks-small.yaml"
 fi
+if [ -z $PREREQS_EKS_FILE ]; then
+  PREREQS_EKS_FILE="$SCRIPT_DIR/prereqs-eks-small.yaml"
+fi
 
 # RPC PORTS
 A_RPC_PORT=8888
