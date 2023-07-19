@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.test.assertNotEquals
 
 class SerializationHelperTests {
     @Test
@@ -23,6 +24,21 @@ class SerializationHelperTests {
         val listType = object : TypeToken<List<String>>() {}.type
 
         val isArray = arrayType.isArray()
+        val isNotArray = listType.isArray()
+
+        assertTrue(isArray)
+        assertTrue(!isNotArray)
+    }
+
+    @Test
+    fun `isArray should correctly determine if type is an array type for c-style arrays`() {
+        val defaultArrayType = object : TypeToken<Array<Int>>() {}.type
+        val cStyleArrayType = intArrayOf(1, 2, 3).javaClass
+        val listType = object : TypeToken<List<String>>() {}.type
+
+        assertNotEquals(defaultArrayType, cStyleArrayType)
+
+        val isArray = cStyleArrayType.isArray()
         val isNotArray = listType.isArray()
 
         assertTrue(isArray)
