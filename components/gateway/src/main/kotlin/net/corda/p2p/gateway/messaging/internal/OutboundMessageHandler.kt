@@ -15,7 +15,6 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.NetworkType
-import net.corda.data.p2p.app.InboundUnauthenticatedMessage
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
