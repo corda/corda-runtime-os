@@ -1,6 +1,5 @@
 package net.corda.db.connection.manager.impl
 
-import com.typesafe.config.Config
 import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.connection.manager.DbConnectionsRepository
@@ -44,9 +43,6 @@ class DbConnectionOpsImpl(
 
     override fun getDataSource(config: SmartConfig): CloseableDataSource =
         dbConnectionsRepository.create(config)
-
-    override fun getDataSourceConfig(name: String, privilege: DbPrivilege): Config? =
-        dbConnectionsRepository.getDataSourceConfig(name, privilege)
 
     override fun putConnection(name: String, privilege: DbPrivilege, config: SmartConfig,
                                description: String?, updateActor: String): UUID =

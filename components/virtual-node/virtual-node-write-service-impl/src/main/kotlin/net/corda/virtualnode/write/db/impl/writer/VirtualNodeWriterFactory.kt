@@ -105,15 +105,8 @@ internal class VirtualNodeWriterFactory(
             publisher
         )
 
-        val virtualNodesDdlPoolConfig =
-            checkNotNull(dbConnectionManager.getDataSourceConfig(VIRTUAL_NODES_DDL, DbPrivilege.DDL)) {
-                "\"$VIRTUAL_NODES_DDL\" config not found in DB table: \"config.db_connection\""
-            }
-
-        val virtualNodesDmlPoolConfig =
-            checkNotNull(dbConnectionManager.getDataSourceConfig(VIRTUAL_NODES_DML, DbPrivilege.DML)) {
-                "\"$VIRTUAL_NODES_DML\" config not found in DB table: \"config.db_connection\""
-            }
+//        val virtualNodesDdlPoolConfig =
+//        val virtualNodesDmlPoolConfig =
 
         val virtualNodeDbFactory =
             VirtualNodeDbFactoryImpl(

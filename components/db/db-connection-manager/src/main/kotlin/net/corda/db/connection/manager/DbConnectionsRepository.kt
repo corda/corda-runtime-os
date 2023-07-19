@@ -1,6 +1,5 @@
 package net.corda.db.connection.manager
 
-import com.typesafe.config.Config
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
@@ -76,6 +75,4 @@ interface DbConnectionsRepository {
      * @return The cluster DB [DataSource]
      */
     fun getClusterDataSource(): CloseableDataSource
-
-    fun getDataSourceConfig(name: String, privilege: DbPrivilege): Config?
 }

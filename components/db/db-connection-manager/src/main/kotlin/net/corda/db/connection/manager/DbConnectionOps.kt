@@ -1,6 +1,5 @@
 package net.corda.db.connection.manager
 
-import com.typesafe.config.Config
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
@@ -97,8 +96,6 @@ interface DbConnectionOps {
      * @param config DB config
      */
     fun getDataSource(config: SmartConfig): CloseableDataSource
-
-    fun getDataSourceConfig(name: String, privilege: DbPrivilege): Config?
 
     /**
      * Get cluster DB [EntityManagerFactory]

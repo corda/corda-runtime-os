@@ -1,6 +1,5 @@
 package net.corda.db.connection.manager.impl
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import net.corda.db.connection.manager.DbConnectionsRepository
@@ -108,12 +107,4 @@ class DbConnectionsRepositoryImpl(
     }
 
     override fun getClusterDataSource(): CloseableDataSource = clusterDataSource
-
-    override fun getDataSourceConfig(name: String, privilege: DbPrivilege): Config? {
-        entityManagerFactory.createEntityManager().use {
-            val dbConfig = it.findDbConnectionByNameAndPrivilege(name, privilege) ?: return null
-
-            return ConfigFactory.parseString(dbConfig.config)!!
-        }
-    }
 }
