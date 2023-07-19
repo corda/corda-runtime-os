@@ -117,33 +117,19 @@ internal fun Type.isSubClassOf(type: Type): Boolean {
 /**
  * Enforces that the given [type] is Corda serializable (if it has or inherits the [CordaSerializable] annotation),
  * or if it's an instance of the [java.lang.Comparable] interface. If not, an exception will be thrown.
- * If the passed [type] is a [Collection], this function will be recursively called for each item.
  *
  * @param type The type to be checked for Corda serializability.
  * @throws AMQPNotSerializableException if [type] is not annotated with [CordaSerializable]
  *                                      and is not an instance of [java.lang.Comparable].
- * @throws AMQPNoTypeNotSerializableException if [type] is not a valid type, or null, and cannot be serialized.
  *
  * @see [CORDA-2782] for the special exemption made for `Comparable`.
  */
-fun requireCordaSerializable(type: Any?) {
-    when (type) {
-        is Type -> {
-            // See CORDA-2782 for explanation of the special exemption made for Comparable
-            if (!hasCordaSerializable(type.asClass()) && type.asClass() != java.lang.Comparable::class.java) {
-                throw AMQPNotSerializableException(
-                    type,
-                    "Class \"${type}\" is not annotated with @CordaSerializable.")
-            }
-        }
-        is Collection<*> -> {
-            type.forEach { requireCordaSerializable(it) }
-        }
-        else -> {
-            throw AMQPNoTypeNotSerializableException(
-                "Class is not a valid type and cannot be serialized."
-            )
-        }
+fun requireCordaSerializable(type: Type) {
+    // See CORDA-2782 for explanation of the special exemption made for Comparable
+    if (!hasCordaSerializable(type.asClass()) && type.asClass() != java.lang.Comparable::class.java) {
+        throw AMQPNotSerializableException(
+            type,
+            "Class \"$type\" is not annotated with @CordaSerializable.")
     }
 }
 

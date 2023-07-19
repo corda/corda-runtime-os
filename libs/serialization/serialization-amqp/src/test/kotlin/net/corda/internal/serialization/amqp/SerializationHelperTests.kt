@@ -81,33 +81,6 @@ class SerializationHelperTests {
     }
 
     @Test
-    fun `requireCordaSerializable should throw an exception for null values`() {
-        val exception = assertThrows(AMQPNotSerializableException::class.java) {
-            requireCordaSerializable(null)
-        }
-
-        assertEquals(
-            "Class is not a valid type and cannot be serialized.",
-            exception.msg
-        )
-    }
-
-    @Test
-    fun `requireCordaSerializable should throw an exception for null values within a collection`() {
-        @CordaSerializable
-        class TestCordaSerializableType
-
-        val exception = assertThrows(AMQPNotSerializableException::class.java) {
-            requireCordaSerializable(listOf(TestCordaSerializableType::class.java, null))
-        }
-
-        assertEquals(
-            "Class is not a valid type and cannot be serialized.",
-            exception.msg
-        )
-    }
-
-    @Test
     fun `hasCordaSerializable should correctly determine if a type is CordaSerializable`() {
         @CordaSerializable
         class TestCordaSerializableType
