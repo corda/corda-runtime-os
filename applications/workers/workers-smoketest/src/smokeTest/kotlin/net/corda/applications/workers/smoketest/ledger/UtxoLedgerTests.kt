@@ -52,7 +52,7 @@ class UtxoLedgerTests {
     private val charlieHoldingId: String = getHoldingIdShortHash(charlieX500, groupId)
     private val notaryHoldingId: String = getHoldingIdShortHash(notaryX500, groupId)
 
-    private val notaryServiceX500 = "O=MyNotaryService-${notaryHoldingId}, L=London, C=GB"
+    private val notaryServiceX500 = "O=MyNotaryService, L=London, C=GB"
 
     private val staticMemberList = listOf(
         aliceX500,

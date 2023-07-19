@@ -27,7 +27,7 @@ import java.time.Instant
 
 @InitiatingFlow(protocol = "utxo-flow-protocol")
 class UtxoDemoFlow : ClientStartableFlow {
-    data class InputMessage(val input: String, val members: List<String>, val notary: String)
+    data class InputMessage(val input: String, val members: List<String>, val notary: String?)
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -65,8 +65,13 @@ class UtxoDemoFlow : ClientStartableFlow {
                 request.members + listOf(myInfo.name.toString())
             )
 
-            val notary = notaryLookup.lookup(MemberX500Name.parse(request.notary))?: notaryLookup.notaryServices.single()
-
+            val notary = if (request.notary == null) {
+                notaryLookup.notaryServices.single()
+            } else {
+                requireNotNull(notaryLookup.lookup(MemberX500Name.parse(request.notary))) {
+                    "Given notary ${request.notary} is invalid"
+                }
+            }
             val txBuilder = utxoLedgerService.createTransactionBuilder()
 
             val signedTransaction = txBuilder

@@ -68,7 +68,7 @@ class FlowTests {
             davidX500,
             notaryX500
         )
-        private val notaryServiceX500 = "O=MyNotaryService-${notaryHoldingId}, L=London, C=GB"
+        private const val NOTARY_SERVICE_X500 = "O=MyNotaryService, L=London, C=GB"
 
         val invalidConstructorFlowNames = listOf(
             "com.r3.corda.testing.smoketests.flow.errors.PrivateConstructorFlow",
@@ -127,7 +127,7 @@ class FlowTests {
 
             registerStaticMember(bobHoldingId)
             registerStaticMember(charlieHoldingId)
-            registerStaticMember(notaryHoldingId, notaryServiceX500)
+            registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
         }
 
         private val JsonNode?.command: String
