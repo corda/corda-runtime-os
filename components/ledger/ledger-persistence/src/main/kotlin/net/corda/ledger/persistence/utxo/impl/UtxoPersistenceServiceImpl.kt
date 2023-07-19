@@ -171,7 +171,7 @@ class UtxoPersistenceServiceImpl(
                 stateAndRef.state.notaryName.toString(),
                 utxoToken?.poolKey?.symbol,
                 utxoToken?.filterFields?.tag,
-                utxoToken?.filterFields?.ownerHash.toString(),
+                utxoToken?.filterFields?.ownerHash?.toString(),
                 utxoToken?.amount,
                 nowUtc
             )
