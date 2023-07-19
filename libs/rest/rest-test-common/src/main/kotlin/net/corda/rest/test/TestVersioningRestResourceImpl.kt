@@ -2,7 +2,9 @@ package net.corda.rest.test
 
 import net.corda.rest.PluggableRestResource
 
-class TestEndpointVersioningRestResourceImpl : TestEndpointVersioningRestResource, PluggableRestResource<TestEndpointVersioningRestResource> {
+class TestEndpointVersioningRestResourceImpl :
+    TestEndpointVersioningRestResource,
+    PluggableRestResource<TestEndpointVersioningRestResource> {
     override val protocolVersion: Int
         get() = 3
 
@@ -19,7 +21,9 @@ class TestEndpointVersioningRestResourceImpl : TestEndpointVersioningRestResourc
     }
 }
 
-class TestResourceVersioningRestResourceImpl : TestResourceVersioningRestResource, PluggableRestResource<TestResourceVersioningRestResource> {
+class TestResourceVersioningRestResourceImpl :
+    TestResourceVersioningRestResource,
+    PluggableRestResource<TestResourceVersioningRestResource> {
     override val protocolVersion: Int
         get() = 3
 
