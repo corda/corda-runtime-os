@@ -52,6 +52,8 @@ class UtxoLedgerTests {
     private val charlieHoldingId: String = getHoldingIdShortHash(charlieX500, groupId)
     private val notaryHoldingId: String = getHoldingIdShortHash(notaryX500, groupId)
 
+    private val notaryServiceX500 = "O=NotaryService-${notaryHoldingId}, L=London, C=GB"
+
     private val staticMemberList = listOf(
         aliceX500,
         bobX500,
@@ -88,7 +90,7 @@ class UtxoLedgerTests {
         registerStaticMember(bobHoldingId)
         registerStaticMember(charlieHoldingId)
 
-        registerStaticMember(notaryHoldingId, true)
+        registerStaticMember(notaryHoldingId, true, notaryServiceX500)
     }
 
     @Test
@@ -101,7 +103,7 @@ class UtxoLedgerTests {
             // Issue state
             val flowId = startRpcFlow(
                 aliceHoldingId,
-                mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to notaryX500),
+                mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to notaryServiceX500),
                 "com.r3.corda.demo.utxo.UtxoDemoFlow"
             )
 
@@ -139,7 +141,7 @@ class UtxoLedgerTests {
         val input = "test input"
         val utxoFlowRequestId = startRpcFlow(
             aliceHoldingId,
-            mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to notaryX500),
+            mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to notaryServiceX500),
             "com.r3.corda.demo.utxo.UtxoDemoFlow"
         )
         val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
@@ -206,7 +208,7 @@ class UtxoLedgerTests {
     fun `Utxo Ledger - creating a transaction that fails custom validation causes finality to fail`() {
         val utxoFlowRequestId = startRpcFlow(
             aliceHoldingId,
-            mapOf("input" to "fail", "members" to listOf(bobX500, charlieX500), "notary" to notaryX500),
+            mapOf("input" to "fail", "members" to listOf(bobX500, charlieX500), "notary" to notaryServiceX500),
             "com.r3.corda.demo.utxo.UtxoDemoFlow"
         )
         val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)

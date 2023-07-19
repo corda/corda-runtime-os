@@ -53,7 +53,6 @@ class UtxoDemoFlow : ClientStartableFlow {
         log.info("Utxo flow demo starting...")
         try {
             val request = requestBody.getRequestBodyAs(jsonMarshallingService, InputMessage::class.java)
-
             val myInfo = memberLookup.myInfo()
             val members = request.members.map { x500 ->
                 requireNotNull(memberLookup.lookup(MemberX500Name.parse(x500))) {
@@ -66,7 +65,10 @@ class UtxoDemoFlow : ClientStartableFlow {
                 request.members + listOf(myInfo.name.toString())
             )
 
-            val notary = notaryLookup.notaryServices.single()
+            val notary = requireNotNull(notaryLookup.lookup(MemberX500Name.parse(request.notary))) {
+                "notary ${request.notary} is null"
+            }
+
             val txBuilder = utxoLedgerService.createTransactionBuilder()
 
             val signedTransaction = txBuilder
