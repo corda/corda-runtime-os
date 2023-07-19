@@ -7,11 +7,11 @@ import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.ByteArrays.toHexString
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
-import java.lang.Exception
 
 /**
  * Lazy [StateRef]. It stores initially the serialized form of the represented state and ref.
@@ -73,7 +73,7 @@ private fun <T : ContractState> UtxoTransactionOutputDto.deserializeToStateAndRe
     val info = try{
         serializationService.deserialize<UtxoOutputInfoComponent>(info)
     } catch (e: Exception){
-        throw CordaRuntimeException("Deserialization of $info into UtxoOutputInfoComponent failed.", e)
+        throw CordaRuntimeException("Deserialization of \"${toHexString(info)}\" into UtxoOutputInfoComponent failed.", e)
     }
     val contractState = try{
         serializationService.deserialize<ContractState>(data)
