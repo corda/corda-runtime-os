@@ -112,9 +112,7 @@ class MemberGroupPolicyImpl(rootNode: JsonNode) : MemberGroupPolicy {
             staticNetwork?.getOptionalStringMap(GROUP_PARAMETERS)?.apply {
                 val verifierResult = GroupParametersUpdateVerifier().verify(this)
                 if (verifierResult is GroupParametersUpdateVerifier.Result.Failure) {
-                    with(verifierResult.reason) {
-                        throw BadGroupPolicyException(this)
-                    }
+                    throw BadGroupPolicyException(verifierResult.reason)
                 }
             }
     }
