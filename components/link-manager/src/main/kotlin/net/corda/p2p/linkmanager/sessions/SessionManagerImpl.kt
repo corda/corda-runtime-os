@@ -336,6 +336,12 @@ internal class SessionManagerImpl(
         }
     }
 
+    override fun sessionMessageReceived(sessionId: String) {
+        dominoTile.withLifecycleLock {
+            heartbeatManager.sessionMessageReceived(sessionId)
+        }
+    }
+
     override fun dataMessageReceived(sessionId: String) {
         dominoTile.withLifecycleLock {
             heartbeatManager.dataMessageReceived(sessionId)
@@ -714,7 +720,7 @@ internal class SessionManagerImpl(
                     "out to refresh ephemeral keys and it will be cleaned up."
         )
         refreshOutboundSession(sessionCounterparties, sessionId) 
-        heartbeatManager.stopTrackingSpecifiedSession(sessionId)
+        heartbeatManager.stopTrackingSpecifiedOutboundSession(sessionId)
     }
 
     private fun processInitiatorHello(message: InitiatorHelloMessage): LinkOutMessage? {
@@ -862,7 +868,6 @@ internal class SessionManagerImpl(
             SessionManager.Counterparties(ourIdentityInfo.holdingIdentity, peer.holdingIdentity),
             session.getSession()
         )
-        inboundSessionEstablished(message.header.sessionId)
         logger.info(
             "Inbound session ${message.header.sessionId} established " +
                 "(local=${ourIdentityInfo.holdingIdentity}, remote=${peer.holdingIdentity})."
@@ -1030,9 +1035,10 @@ internal class SessionManagerImpl(
 
         fun stopTrackingAllSessions() {
             trackedOutboundSessions.clear()
+            trackedInboundSessions.clear()
         }
 
-        fun stopTrackingSpecifiedSession(sessionId: String) {
+        fun stopTrackingSpecifiedOutboundSession(sessionId: String) {
             trackedOutboundSessions.remove(sessionId)
         }
 
@@ -1099,23 +1105,32 @@ internal class SessionManagerImpl(
             }
         }
 
+        fun sessionMessageReceived(sessionId: String) {
+            dominoTile.withLifecycleLock {
+                check(isRunning) { "A session message was received before the HeartbeatManager was started." }
+                messageReceived(sessionId)
+            }
+        }
+
         fun dataMessageReceived(sessionId: String) {
             dominoTile.withLifecycleLock {
-                if (!isRunning) {
-                    throw IllegalStateException("A data message was received before the HeartbeatManager was started.")
-                }
-                trackedInboundSessions.compute(sessionId) { _, initialTrackedSession ->
-                    if (initialTrackedSession != null) {
-                        initialTrackedSession.lastReceivedTimestamp = timeStamp()
-                        initialTrackedSession
-                    } else {
-                        executorService.schedule(
-                            { inboundSessionTimeout(sessionId) },
-                            config.get().sessionTimeout.toMillis(),
-                            TimeUnit.MILLISECONDS
-                        )
-                        TrackedInboundSession(timeStamp())
-                    }
+                check(isRunning) { "A data message was received before the HeartbeatManager was started." }
+                messageReceived(sessionId)
+            }
+        }
+
+        private fun messageReceived(sessionId: String) {
+            trackedInboundSessions.compute(sessionId) { _, initialTrackedSession ->
+                if (initialTrackedSession != null) {
+                    initialTrackedSession.lastReceivedTimestamp = timeStamp()
+                    initialTrackedSession
+                } else {
+                    executorService.schedule(
+                        { inboundSessionTimeout(sessionId) },
+                        config.get().sessionTimeout.toMillis(),
+                        TimeUnit.MILLISECONDS
+                    )
+                    TrackedInboundSession(timeStamp())
                 }
             }
         }
@@ -1145,7 +1160,8 @@ internal class SessionManagerImpl(
             val timeSinceLastReceived = timeStamp() - sessionInfo.lastReceivedTimestamp
             if (timeSinceLastReceived >= config.get().sessionTimeout.toMillis()) {
                 logger.info(
-                    "Inbound session $sessionId timed out due to inactivity and it will be cleaned up."
+                    "Inbound session $sessionId has not received any messages for the configured timeout " +
+                            "threshold (${config.get().sessionTimeout.toMillis()} ms) so it will be cleaned up."
                 )
                 destroyInboundSession(sessionId)
                 trackedInboundSessions.remove(sessionId)
