@@ -23,6 +23,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 internal class QueueRegistrationHandler(
     private val clock: Clock,
@@ -102,6 +103,7 @@ internal class QueueRegistrationHandler(
         val statusUpdateRecord = statusUpdateMessage?.let {
             p2pRecordsFactory.createAuthenticatedMessageRecord(
                 source = command.mgm,
+                id = "${UUID.randomUUID()}:${command.memberRegistrationRequest.registrationId}",
                 destination = command.member,
                 content = statusUpdateMessage,
                 minutesToWait = 5,

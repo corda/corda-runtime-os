@@ -243,7 +243,11 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
             replayInfo?.future?.cancel(false)
             val firstReplayPeriod = replayCalculator.get().calculateReplayInterval()
             val delay = firstReplayPeriod.toMillis() + originalAttemptTimestamp - clock.instant().toEpochMilli()
-            val future = executorService.schedule({ replay(message, messageId) }, delay, TimeUnit.MILLISECONDS)
+            logger.info("YYY scheduleForReplay($messageId, $delay)")
+            val future = executorService.schedule({
+                logger.info("YYY replay($messageId)")
+                replay(message, messageId)
+                                                  }, delay, TimeUnit.MILLISECONDS)
             ReplayInfo(firstReplayPeriod, future)
         }
     }
@@ -311,9 +315,13 @@ internal class ReplayScheduler<K: SessionManager.BaseCounterparties, M>(
             } else {
                 oldReplayInfo.currentReplayPeriod
             }
+            logger.info("YYY reschedule($messageId)")
             ReplayInfo(
                 delay,
-                executorService.schedule({ replay(message, messageId) }, delay.toMillis(), TimeUnit.MILLISECONDS)
+                executorService.schedule({
+                    logger.info("YYY replay from reschedule $messageId")
+                    replay(message, messageId)
+                                         }, delay.toMillis(), TimeUnit.MILLISECONDS)
             )
         }
     }

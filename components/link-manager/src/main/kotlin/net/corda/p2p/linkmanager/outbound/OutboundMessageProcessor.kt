@@ -243,6 +243,7 @@ internal class OutboundMessageProcessor(
             "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
                 "to ${messageAndKey.message.header.destination}."
         }
+        logger.info("FFF processAuthenticatedMessage(${messageAndKey.message.header.messageId})")
 
         val discardReason = checkSourceAndDestinationValid(
             messageAndKey.message.header.source, messageAndKey.message.header.destination
@@ -255,6 +256,7 @@ internal class OutboundMessageProcessor(
         }
 
         if (ttlExpired(messageAndKey.message.header.ttl)) {
+            logger.info("FFF message expire - ${messageAndKey.message.header.messageId}")
             val expiryMarker = recordForTTLExpiredMarker(messageAndKey.message.header.messageId)
             return if (isReplay) {
                 listOf(expiryMarker)
