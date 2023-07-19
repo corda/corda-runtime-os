@@ -60,7 +60,7 @@ const val TEST_CIPHER_SUITE_VAL = "bar"
 
 const val CUSTOM_PARAMETER_KEY = "ext.key"
 const val CUSTOM_PARAMETER_VALUE = "value"
-const val MPV = "5000"
+const val MPV = "50000"
 
 fun buildStaticMemberTemplate(
     members: List<Map<String, String>>? = listOf(

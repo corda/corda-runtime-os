@@ -142,7 +142,7 @@ class GroupPolicyParserImplTest {
                 .isNotNull
                 .containsExactlyInAnyOrderEntriesOf(
                     mapOf(
-                        MPV_KEY to "5000",
+                        MPV_KEY to "50000",
                         "ext.key1" to "value1",
                         "ext.key2" to "value2"
                     )

@@ -239,8 +239,9 @@ class StaticMemberRegistrationService(
         }
         val customFieldsValid = customFieldsVerifier.verify(context)
         if (customFieldsValid is RegistrationContextCustomFieldsVerifier.Result.Failure) {
-            logger.info(customFieldsValid.reason)
-            throw InvalidMembershipRegistrationException("Registration failed. ${customFieldsValid.reason}")
+            val errorMessage = "Registration failed for ID '$registrationId'. ${customFieldsValid.reason}"
+            logger.warn(errorMessage)
+            throw InvalidMembershipRegistrationException(errorMessage)
         }
         val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(member)
         if (membershipGroupReader.lookup(member.x500Name)?.isActive == true) {

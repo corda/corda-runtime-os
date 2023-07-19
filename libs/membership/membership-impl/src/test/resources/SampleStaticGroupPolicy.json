@@ -29,7 +29,7 @@
         }
       ],
       "groupParameters": {
-        "corda.minimum.platform.version": "5000",
+        "corda.minimum.platform.version": "50000",
         "ext.key1": "value1",
         "ext.key2": "value2"
       }

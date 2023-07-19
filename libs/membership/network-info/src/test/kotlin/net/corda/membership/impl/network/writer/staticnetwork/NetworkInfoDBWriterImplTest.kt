@@ -57,7 +57,7 @@ class NetworkInfoDBWriterImplTest {
     private companion object {
         const val CUSTOM_KEY = "ext.key"
         const val CUSTOM_VALUE = "value"
-        const val MPV = "5000"
+        const val MPV = "50000"
     }
 
     private val groupId = UUID(0, 1).toString()
