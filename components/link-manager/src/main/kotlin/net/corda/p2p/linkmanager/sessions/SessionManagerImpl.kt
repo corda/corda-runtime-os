@@ -218,7 +218,9 @@ internal class SessionManagerImpl(
                     val tombstoneRecords = (
                         outboundSessionPool.getAllSessionIds() + activeInboundSessions.keys +
                             pendingInboundSessions.keys
-                        ).map { Record(SESSION_OUT_PARTITIONS, it, null) }
+                        ).map { Record(SESSION_OUT_PARTITIONS, it, null) }.also {
+                            logger.info("QQQ applyNewConfiguration clean ${it.map { it.key }}")
+                        }
                     outboundSessionPool.clearPool()
                     activeInboundSessions.clear()
                     pendingInboundSessions.clear()
@@ -364,6 +366,8 @@ internal class SessionManagerImpl(
             val sessionIds = outboundSessionPool.getAllSessionIds() + pendingInboundSessions.keys + activeInboundSessions.keys
             val records = sessionIds.map { sessionId ->
                 Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(partitions.toList()))
+            }.onEach {
+                logger.info("QQQ onTileStart ${it.key} -> ${it.value?.partitions}")
             }
             if (records.isNotEmpty()) publisher.publish(records)
         }
@@ -397,6 +401,7 @@ internal class SessionManagerImpl(
                     logger
                 ) + listOf(Record(SESSION_OUT_PARTITIONS, sessionId, null))
             }
+            logger.info("QQQ refreshOutboundSession $sessionId")
             records?.let { publisher.publish(records) }
         }
     }

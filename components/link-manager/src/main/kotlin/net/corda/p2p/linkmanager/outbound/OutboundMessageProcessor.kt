@@ -77,7 +77,9 @@ internal class OutboundMessageProcessor(
                     listOf(
                         Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), it.second),
                         Record(Schemas.P2P.SESSION_OUT_PARTITIONS, it.first, SessionPartitions(partitions.toList()))
-                    )
+                    ).also {  _ ->
+                        logger.info("QQQ recordsForNewSessions ${it.first} -> ${partitions.toList()}")
+                    }
                 }
             }
         }

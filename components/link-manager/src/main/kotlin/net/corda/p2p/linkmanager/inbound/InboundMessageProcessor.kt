@@ -116,7 +116,9 @@ internal class InboundMessageProcessor(
                                 payload.header.sessionId,
                                 SessionPartitions(partitionsAssigned.toList())
                             )
-                        )
+                        ).also {
+                            logger.info("QQQ processSessionMessage ${payload.header.sessionId} -> ${partitionsAssigned.toList()}")
+                        }
                     } else {
                         logger.warn(
                             "No partitions from topic ${Schemas.P2P.LINK_IN_TOPIC} are currently assigned to " +

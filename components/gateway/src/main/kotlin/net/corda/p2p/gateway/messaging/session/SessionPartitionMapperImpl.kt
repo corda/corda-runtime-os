@@ -13,6 +13,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.SessionPartitions
 import net.corda.schema.Schemas.P2P.SESSION_OUT_PARTITIONS
 import net.corda.utilities.VisibleForTesting
+import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
@@ -24,6 +25,7 @@ class SessionPartitionMapperImpl(
 
     companion object {
         private const val CONSUMER_GROUP_ID = "session_partitions_mapper"
+        private val logger = LoggerFactory.getLogger(SessionPartitionMapperImpl::class.java)
     }
 
     private val sessionPartitionsMapping = ConcurrentHashMap<String, List<Int>>()
@@ -70,6 +72,10 @@ class SessionPartitionMapperImpl(
 
         override fun onSnapshot(currentData: Map<String, SessionPartitions>) {
             sessionPartitionsMapping.putAll(currentData.map { it.key to it.value.partitions })
+            logger.info("QQQ onSnapshot A...")
+            sessionPartitionsMapping.forEach { (k, v) ->
+                logger.info("QQQ onSnapshot $k -> $v")
+            }
             future.complete(Unit)
         }
 
@@ -78,6 +84,7 @@ class SessionPartitionMapperImpl(
             oldValue: SessionPartitions?,
             currentData: Map<String, SessionPartitions>
         ) {
+            logger.info("QQQ onNext ${newRecord.key} -> ${newRecord.value?.partitions}")
             if (newRecord.value == null) {
                 sessionPartitionsMapping.remove(newRecord.key)
             } else {
