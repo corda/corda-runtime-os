@@ -16,7 +16,10 @@ import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
 @Suppress("unused")
-@Component(service = [ SandboxGroupContextComponent::class ])
+@Component(
+    service = [ SandboxGroupContextComponent::class ],
+    property = [ SandboxSetup.SANDBOX_SERVICE ]
+)
 @ServiceRanking(SandboxSetup.SANDBOX_SERVICE_RANKING)
 class SandboxGroupContextComponentImpl @Activate constructor(
     @Reference
