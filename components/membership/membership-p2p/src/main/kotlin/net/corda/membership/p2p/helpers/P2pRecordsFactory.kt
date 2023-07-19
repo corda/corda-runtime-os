@@ -67,6 +67,7 @@ class P2pRecordsFactory(
                 logger.warn("Serialization failed")
             }.serialize(content)
         }
+        logger.info("PPP Sending message ID $id from $source to $destination with ${content.javaClass.simpleName}")
         val header = AuthenticatedMessageHeader.newBuilder()
             .setDestination(destination)
             .setSource(source)

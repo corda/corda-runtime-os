@@ -148,7 +148,7 @@ internal class OutboundMessageHandler(
         }
 
 
-        val messageId = "${UUID.randomUUID()}<>{$peerMessage.sessionId()}"
+        val messageId = "${UUID.randomUUID()}<>${peerMessage.sessionId()}"
         val gatewayMessage = GatewayMessage(messageId, peerMessage.payload)
         logger.info("RRR WWW messageId: $messageId -> for sessionId: ${peerMessage.sessionId()}")
         val expectedX500Name = if (NetworkType.CORDA_4 == peerMessage.header.destinationNetworkType) {

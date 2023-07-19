@@ -108,6 +108,7 @@ internal class QueueRegistrationHandler(
                 filter = MembershipStatusFilter.PENDING
             )
         }
+        logger.info("RRR in QueueRegistrationHandler queueRequest for $registrationId record: ${statusUpdateRecord?.key}")
 
         logger.info(
             "MGM queueing registration request for ${command.member.x500Name} from group `${command.member.groupId}` " +
