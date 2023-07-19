@@ -4,7 +4,8 @@ import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.test.CustomNonSerializableString
 import net.corda.rest.test.CustomUnsafeString
-import net.corda.rest.test.TestVersioningRestResourceImpl
+import net.corda.rest.test.TestEndpointVersioningRestResourceImpl
+import net.corda.rest.test.TestResourceVersioningRestResourceImpl
 import net.corda.rest.test.utils.TestHttpClientUnirestImpl
 import net.corda.rest.test.utils.WebRequest
 import net.corda.rest.test.utils.multipartDir
@@ -32,7 +33,8 @@ class RestServerApiVersioningTest : RestServerTestBase() {
             )
             server = RestServerImpl(
                 listOf(
-                    TestVersioningRestResourceImpl()
+                    TestEndpointVersioningRestResourceImpl(),
+                    TestResourceVersioningRestResourceImpl()
                 ),
                 RestServerTestBase.Companion::securityManager,
                 restServerSettings,
@@ -63,50 +65,15 @@ class RestServerApiVersioningTest : RestServerTestBase() {
     }
 
     @Test
-    fun `calling path in non supported version fails`() {
-
-        val response = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_0.versionPath}/testEntity/1234"),
-            userName,
-            password
-        )
-        assertEquals(HttpStatus.SC_NOT_FOUND, response.responseStatus)
-    }
-
-    @Test
-    fun `calling path in supported version`() {
-
-        val response = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_2.versionPath}/testEntity/1234"),
-            userName,
-            password
-        )
-        assertEquals(HttpStatus.SC_OK, response.responseStatus)
-        assertEquals("Retrieved using path id: 1234", response.body)
-    }
-
-    @Test
-    fun `endpoint returns ResponseEntity with null responseBody returns null in json with given status code2`() {
-
-        val response = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_0.versionPath}/testEntity?id=1234"),
-            userName,
-            password
-        )
-        assertEquals(HttpStatus.SC_OK, response.responseStatus)
-        assertEquals("Retrieved using query: 1234", response.body)
-    }
-
-    @Test
     fun `same endpoint available in multiple versions`() {
         val response = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_1.versionPath}/testEntity/1234"),
+            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_1.versionPath}/testEndpointVersion/1234"),
             userName,
             password
         )
 
         val response2 = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_2.versionPath}/testEntity/1234"),
+            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_2.versionPath}/testEndpointVersion/1234"),
             userName,
             password
         )
@@ -117,14 +84,14 @@ class RestServerApiVersioningTest : RestServerTestBase() {
     @Test
     fun `endpoint added at a particular version`() {
         val response = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_0.versionPath}/testEntity/1234"),
+            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_0.versionPath}/testEndpointVersion/1234"),
             userName,
             password
         )
         assertEquals(HttpStatus.SC_NOT_FOUND, response.responseStatus)
 
         val response2 = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_2.versionPath}/testEntity/1234"),
+            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_2.versionPath}/testEndpointVersion/1234"),
             userName,
             password
         )
@@ -134,20 +101,37 @@ class RestServerApiVersioningTest : RestServerTestBase() {
     @Test
     fun `endpoint removed at a particular version`() {
         val response = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_0.versionPath}/testEntity?id=1234"),
+            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_0.versionPath}/testEndpointVersion?id=1234"),
             userName,
             password
         )
         assertEquals(HttpStatus.SC_OK, response.responseStatus)
 
         val response2 = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_0.versionPath}/testEntity?id=1234"),
+            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_1.versionPath}/testEndpointVersion?id=1234"),
             userName,
             password
         )
         assertEquals(HttpStatus.SC_NOT_FOUND, response2.responseStatus)
     }
 
+    @Test
+    fun `endpoint with version below resource limits isnt supported`() {
+        val response = client.call(
+            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_0.versionPath}/testResourceVersion?id=1234"),
+            userName,
+            password
+        )
+        assertEquals(HttpStatus.SC_NOT_FOUND, response.responseStatus)
+    }
 
-
+    @Test
+    fun `endpoint without specified maxVersion supported up to Resource maxVersion`() {
+        val response = client.call(
+            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_2.versionPath}/testEndpointVersion/1234"),
+            userName,
+            password
+        )
+        assertEquals(HttpStatus.SC_OK, response.responseStatus)
+    }
 }

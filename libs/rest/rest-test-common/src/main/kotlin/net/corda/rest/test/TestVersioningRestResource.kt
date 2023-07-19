@@ -1,53 +1,38 @@
 package net.corda.rest.test
 
-import net.corda.rest.JsonObject
 import net.corda.rest.RestResource
-import net.corda.rest.annotations.ClientRequestBodyParameter
-import net.corda.rest.annotations.HttpDELETE
 import net.corda.rest.annotations.HttpGET
-import net.corda.rest.annotations.HttpPOST
-import net.corda.rest.annotations.HttpPUT
 import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.RestQueryParameter
-import net.corda.rest.response.ResponseEntity
 
 @HttpRestResource(
-    name = "TestEntity",
+    name = "TestEndpointVersioning",
     description = "RESTful operations on Test Entity",
-    path = "testEntity/",
+    path = "testEndpointVersion/",
     minVersion = RestApiVersion.C5_0,
     maxVersion = RestApiVersion.C5_2)
-interface TestVersioningRestResource : RestResource {
-
-    data class CreationParams(val name: String, val amount: Int)
-
-    @HttpPOST
-    fun create(@ClientRequestBodyParameter creationParams: CreationParams): String
-
+interface TestEndpointVersioningRestResource : RestResource {
     @Deprecated("Deprecated in favour of `getUsingPath()`")
     @HttpGET(minVersion = RestApiVersion.C5_0, maxVersion = RestApiVersion.C5_0)
     fun getUsingQuery(@RestQueryParameter id: String): String
 
     @HttpGET(path = "{id}", minVersion=RestApiVersion.C5_1, maxVersion=RestApiVersion.C5_2)
     fun getUsingPath(@RestPathParameter id: String): String
+}
 
-    data class UpdateParams(val id: String, val name: String, val amount: Int)
+@HttpRestResource(
+    name = "TestResourceVersioning",
+    description = "RESTful operations on Test Entity",
+    path = "testResourceVersion/",
+    minVersion = RestApiVersion.C5_1,
+    maxVersion = RestApiVersion.C5_2)
+interface TestResourceVersioningRestResource : RestResource {
+    @Deprecated("Deprecated in favour of `getUsingPath()`")
+    @HttpGET(maxVersion = RestApiVersion.C5_2)
+    fun getUsingQuery(@RestQueryParameter id: String): String
 
-    @HttpPUT
-    fun update(@ClientRequestBodyParameter updateParams: UpdateParams): String
-
-    @HttpDELETE(path = "{id}")
-    fun deleteUsingPath(@RestPathParameter id: String): String
-
-    @HttpDELETE
-    fun deleteUsingQuery(@RestQueryParameter query: String): String
-
-    data class EchoParams(val content: JsonObject)
-
-    data class EchoResponse(val content: JsonObject)
-
-    @HttpPUT(path = "inputEcho")
-    fun putInputEcho(@ClientRequestBodyParameter echoParams: EchoParams): EchoResponse
+    @HttpGET(path = "{id}", minVersion=RestApiVersion.C5_1)
+    fun getUsingPath(@RestPathParameter id: String): String
 }
