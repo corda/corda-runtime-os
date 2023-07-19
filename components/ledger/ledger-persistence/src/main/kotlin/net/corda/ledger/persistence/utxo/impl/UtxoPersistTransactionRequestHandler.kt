@@ -50,28 +50,30 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
         return outputTokenRecords + utxoOutputRecordFactory.getPersistTransactionSuccessRecord(externalEventContext)
     }
 
-    private fun List<StateAndRef<ContractState>>.toTokens(
-        tokenObservers: UtxoTokenObserverMap
-    ): List<Pair<StateAndRef<*>, UtxoToken>> = flatMap { stateAndRef ->
-        tokenObservers.getObserversFor(stateAndRef.state.contractStateType).mapNotNull { observer ->
-            try {
-                val token = observer.onCommit(stateAndRef.state.contractState, digestService).let { token ->
-                    token.poolKey.tokenType?.let { token } ?: UtxoToken(
-                        UtxoTokenPoolKey(
-                            stateAndRef.state.contractStateType.name,
-                            token.poolKey.issuerHash,
-                            token.poolKey.symbol
-                        ),
-                        token.amount,
-                        token.filterFields
-                    )
+    private fun List<StateAndRef<ContractState>>.toTokens(tokenObservers: UtxoTokenObserverMap): List<Pair<StateAndRef<*>, UtxoToken>> =
+        flatMap { stateAndRef ->
+            tokenObservers.getObserversFor(stateAndRef.state.contractStateType).let { observer ->
+                if(observer == null) {
+                    emptyList()
+                } else {
+                    try {
+                        val token = observer.onCommit(stateAndRef.state.contractState, digestService).let { token ->
+                            token.poolKey.tokenType?.let { token } ?: UtxoToken(
+                                UtxoTokenPoolKey(
+                                    stateAndRef.state.contractStateType.name,
+                                    token.poolKey.issuerHash,
+                                    token.poolKey.symbol
+                                ),
+                                token.amount,
+                                token.filterFields
+                            )
+                        }
+                        listOf(Pair(stateAndRef, token))
+                    } catch (e: Exception) {
+                        log.error("Failed while trying call '${this.javaClass}'.onCommit() with '${stateAndRef.state.contractStateType}'")
+                        emptyList()
+                    }
                 }
-
-                stateAndRef to token
-            } catch (e: Exception) {
-                log.error("Failed while trying call '${this.javaClass}'.onCommit() with '${stateAndRef.state.contractStateType}'")
-                null
             }
         }
-    }
 }

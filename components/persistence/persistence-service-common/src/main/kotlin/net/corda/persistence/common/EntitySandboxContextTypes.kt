@@ -32,7 +32,7 @@ fun SandboxGroupContext.getEntityManagerFactory(): EntityManagerFactory =
         )
 
 fun SandboxGroupContext.getTokenStateObservers()
-        : Map<Class<out ContractState>, List<UtxoLedgerTokenStateObserver<ContractState>>> = getObjectByKey(
+        : Map<Class<out ContractState>, UtxoLedgerTokenStateObserver<ContractState>> = getObjectByKey(
     EntitySandboxContextTypes.SANDBOX_TOKEN_STATE_OBSERVERS
 ) ?: throw CordaRuntimeException(
     "Token State Observers not found within the sandbox for identity: ${virtualNodeContext.holdingIdentity}"
