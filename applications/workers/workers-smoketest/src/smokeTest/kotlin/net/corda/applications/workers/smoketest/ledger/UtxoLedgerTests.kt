@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
+import org.junit.jupiter.api.Order
 
 @Suppress("Unused", "FunctionName")
 @TestInstance(PER_CLASS)
@@ -46,14 +47,14 @@ class UtxoLedgerTests {
     }
 
     private val testRunUniqueId = UUID.randomUUID()
-    private val groupId = UUID.randomUUID().toString()
-    private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
-    private val notaryCpiName = "${TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
+    private val groupId = "affd0fc8-2614-11ee-be56-0242ac120002"//UUID.randomUUID().toString()
+    private val cpiName = "${TEST_CPI_NAME}"
+    private val notaryCpiName = "${TEST_NOTARY_CPI_NAME}"
 
-    private val aliceX500 = "CN=Alice-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-    private val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-    private val charlieX500 = "CN=Charlie-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-    private val notaryX500 = "CN=Notary-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
+    private val aliceX500 = "CN=Alice, OU=Application, O=R3, L=London, C=GB"
+    private val bobX500 = "CN=Bob, OU=Application, O=R3, L=London, C=GB"
+    private val charlieX500 = "CN=Charlie, OU=Application, O=R3, L=London, C=GB"
+    private val notaryX500 = "CN=Notary-, OU=Application, O=R3, L=London, C=GB"
 
     private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
     private val bobHoldingId: String = getHoldingIdShortHash(bobX500, groupId)
@@ -180,6 +181,93 @@ class UtxoLedgerTests {
         assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(utxoFlowResult.flowResult).contains("Transaction validation failed for transaction")
         assertThat(utxoFlowResult.flowResult).contains("when signature was requested")
+    }
+
+    @Test
+    @Order(100)
+    fun `Utxo Token - Create 10 Coins`() {
+        val rpcStartArgs = mapOf(
+            "issuerBankX500" to charlieX500,
+            "currency" to "USD",
+            "numberOfCoins" to 10,
+            "valueOfCoin" to 5,
+            "tag" to "simple coin"
+        )
+
+        val utxoFlowRequestId = startRpcFlow(
+            aliceHoldingId,
+            rpcStartArgs,
+            "com.r3.corda.demo.utxo.token.selection.CreateCoinFlow"
+        )
+
+        println("creating coins for bank = ${charlieX500} vnode = ${aliceHoldingId}")
+
+        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
+        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+    }
+
+    @Test
+    fun `Utxo Token - Do nothing prerequsits `(){
+        println("Alice: '${aliceX500}' '${aliceHoldingId}'")
+        println("Bob: '${bobX500}' '${bobHoldingId}'")
+        println("Charlie: '${charlieX500}' '${charlieHoldingId}'")
+        println("Notary: '${notaryX500}' '${notaryHoldingId}'")
+    }
+
+    @Test
+    @Order(101)
+    fun `Utxo Token - Spend Coins`() {
+
+        val rpcStartArgs = mapOf(
+            "issuerBankX500" to charlieX500,
+            "currency" to "USD",
+            "maxCoinsToUse" to 2,
+            "targetAmount" to 5,
+        )
+
+        val utxoFlowRequestId = startRpcFlow(
+            aliceHoldingId,
+            rpcStartArgs,
+            "com.r3.corda.demo.utxo.token.selection.SpendCoinFlow"
+        )
+
+        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
+        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+    }
+
+
+    fun `Utxo Ledger - create a transaction containing states and finalize it`() {
+        val input = "test input"
+        val utxoFlowRequestId = startRpcFlow(
+            aliceHoldingId,
+            mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to notaryX500),
+            "net.cordapp.demo.utxo.UtxoDemoFlow"
+        )
+        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
+        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(utxoFlowResult.flowError).isNull()
+
+        for (holdingId in listOf(aliceHoldingId, bobHoldingId, charlieHoldingId)) {
+            val findTransactionFlowRequestId = startRpcFlow(
+                holdingId,
+                mapOf("transactionId" to utxoFlowResult.flowResult!!),
+                "net.cordapp.demo.utxo.FindTransactionFlow"
+            )
+            val transactionResult = awaitRpcFlowFinished(holdingId, findTransactionFlowRequestId)
+            assertThat(transactionResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+            assertThat(transactionResult.flowError).isNull()
+
+            val parsedResult = objectMapper
+                .readValue(transactionResult.flowResult!!, FindTransactionResponse::class.java)
+
+            assertThat(parsedResult.transaction).withFailMessage {
+                "Member with holding identity $holdingId did not receive the transaction ${utxoFlowResult.flowResult}"
+            }.isNotNull
+            assertThat(parsedResult.transaction!!.id.toString()).isEqualTo(utxoFlowResult.flowResult)
+            assertThat(parsedResult.transaction.states.map { it.testField }).containsOnly(input)
+            assertThat(parsedResult.transaction.states.flatMap { it.participants }).hasSize(3)
+            assertThat(parsedResult.transaction.participants).hasSize(3)
+        }
     }
 
     data class TestUtxoStateResult(val testField: String, val participants: List<ByteArray>)
