@@ -258,10 +258,10 @@ class ClusterBuilder {
      * notary service. This is fine for now as we only support a 1-1 mapping from notary service to
      * notary vnode. It will need revisiting when 1-* is supported.
      */
-    fun registerStaticMember(holdingIdShortHash: String, isNotary:Boolean = false, notaryServiceName: String) =
+    fun registerStaticMember(holdingIdShortHash: String, notaryServiceName: String? = null) =
         register(
             holdingIdShortHash,
-            if (isNotary) registerNotaryBody(notaryServiceName) else registerMemberBody()
+            if (notaryServiceName != null) registerNotaryBody(notaryServiceName) else registerMemberBody()
         )
 
     fun register(holdingIdShortHash: String, registrationContext: String) =

@@ -48,6 +48,7 @@ class TokenBalanceQueryTests {
         val objectMapper = ObjectMapper().apply {
             registerModule(KotlinModule.Builder().build())
         }
+        private val notaryServiceX500 = "O=MyNotaryService-${notaryHoldingId}, L=London, C=GB"
     }
 
     private fun convertToTokenBalanceQueryResponseMsg(tokenBalanceQueryResponseMsgStr: String) =
@@ -100,7 +101,7 @@ class TokenBalanceQueryTests {
         registerStaticMember(aliceHoldingId)
         registerStaticMember(bobHoldingId)
 
-        registerStaticMember(notaryHoldingId, true)
+        registerStaticMember(notaryHoldingId, notaryServiceX500)
     }
 
     @Test

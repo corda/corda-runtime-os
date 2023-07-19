@@ -65,9 +65,7 @@ class UtxoDemoFlow : ClientStartableFlow {
                 request.members + listOf(myInfo.name.toString())
             )
 
-            val notary = requireNotNull(notaryLookup.lookup(MemberX500Name.parse(request.notary))) {
-                "notary ${request.notary} is null"
-            }
+            val notary = notaryLookup.lookup(MemberX500Name.parse(request.notary))?: notaryLookup.notaryServices.single()
 
             val txBuilder = utxoLedgerService.createTransactionBuilder()
 
