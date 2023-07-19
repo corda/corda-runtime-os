@@ -13,6 +13,7 @@ dependencies {
     implementation project(':components:interop:interop-identity-cache-service')
     implementation project(':components:interop:interop-identity-write-service')
     implementation project(':components:virtual-node:cpi-info-read-service')
+    implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:external-messaging')
     implementation project(':libs:interop:interop-rest')

@@ -79,7 +79,7 @@ interface InteropRestResource : RestResource {
      * Import the details of my interop identity into the system of another interop identity.
      */
     @HttpPUT(
-        path = "{vnodeshorthash}/import/identity/{interopIdentityShortHash}",
+        path = "{vnodeshorthash}/import/identity",
         title = "Imports the interop identity details into the system of another interop identity",
         description = "This method imports the interop identity.",
         responseDescription = "Response entity with the status of the request."
@@ -87,8 +87,6 @@ interface InteropRestResource : RestResource {
     fun importInterOpIdentity(
         restInteropIdentity: RestInteropIdentity,
         @RestPathParameter(description = "ID of the holding identity which interop identity is to be returned.")
-        vnodeshorthash: String,
-        @RestPathParameter(description = "ShortHash of the interop identity")
-        interopIdentityShortHash: String
+        vnodeshorthash: String
     ): ResponseEntity<String>
 }

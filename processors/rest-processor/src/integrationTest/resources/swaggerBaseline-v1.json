@@ -1320,11 +1320,11 @@
         }
       }
     },
-    "/interop/{vnodeshorthash}/import/identity/{interopidentityshorthash}" : {
+    "/interop/{vnodeshorthash}/import/identity" : {
       "put" : {
         "tags" : [ "Interop API" ],
         "description" : "This method imports the interop identity.",
-        "operationId" : "put_interop__vnodeshorthash__import_identity__interopidentityshorthash_",
+        "operationId" : "put_interop__vnodeshorthash__import_identity",
         "parameters" : [ {
           "name" : "vnodeshorthash",
           "in" : "path",
@@ -1333,17 +1333,6 @@
           "schema" : {
             "type" : "string",
             "description" : "ID of the holding identity which interop identity is to be returned.",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }, {
-          "name" : "interopidentityshorthash",
-          "in" : "path",
-          "description" : "ShortHash of the interop identity",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "ShortHash of the interop identity",
             "nullable" : false,
             "example" : "string"
           }

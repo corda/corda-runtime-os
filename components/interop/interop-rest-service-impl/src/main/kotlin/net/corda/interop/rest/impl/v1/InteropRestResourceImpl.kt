@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.interop.identity.cache.InteropIdentityCacheService
 import net.corda.interop.identity.write.InteropIdentityWriteService
 import net.corda.libs.interop.endpoints.v1.InteropRestResource
@@ -33,6 +32,7 @@ import org.slf4j.LoggerFactory
 import java.util.*
 import net.corda.interop.core.InteropIdentity
 import net.corda.rest.exception.BadRequestException
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
 @Component(service = [PluggableRestResource::class])
 internal class InteropRestResourceImpl @Activate constructor(
@@ -43,7 +43,9 @@ internal class InteropRestResourceImpl @Activate constructor(
     @Reference(service = InteropIdentityCacheService::class)
     private val interopIdentityCacheService: InteropIdentityCacheService,
     @Reference(service = InteropIdentityWriteService::class)
-    private val interopIdentityWriteService: InteropIdentityWriteService
+    private val interopIdentityWriteService: InteropIdentityWriteService,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
 ) : InteropRestResource, PluggableRestResource<InteropRestResource>, Lifecycle {
 
     private companion object {
@@ -129,13 +131,14 @@ internal class InteropRestResourceImpl @Activate constructor(
     }
 
     override fun getInterOpIdentities(vnodeshorthash: String): List<RestInteropIdentity> {
+        val vNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(vnodeshorthash))
         val cacheView = interopIdentityCacheService.getHoldingIdentityCacheView(vnodeshorthash)
         val interopIdentities = cacheView.getIdentities()
         return interopIdentities.map {
             RestInteropIdentity(
                 it.x500Name,
                 UUID.fromString(it.groupId),
-                HoldingIdentity(MemberX500Name.parse(it.x500Name), it.groupId).shortHash.toString(),
+                vNodeInfo?.holdingIdentity?.shortHash.toString(),
                 it.facadeIds,
                 MemberX500Name.parse(it.x500Name).organization,
                 it.endpointProtocol,
@@ -146,22 +149,28 @@ internal class InteropRestResourceImpl @Activate constructor(
 
     override fun exportInterOpIdentity(vnodeshorthash: String, interopIdentityShortHash: String): String {
         val cacheView = interopIdentityCacheService.getHoldingIdentityCacheView(vnodeshorthash)
-        val interopIdentity = cacheView.getIdentitiesByShortHash()
-        if (interopIdentity.isEmpty()) {
+        val interopIdentityMap = cacheView.getIdentitiesByShortHash()
+        val interopIdentityToExport = if (interopIdentityMap.containsKey(interopIdentityShortHash)) {
+            interopIdentityMap[interopIdentityShortHash]!!
+        } else {
             throw InvalidInputDataException(
-                "Interop identity value '$interopIdentity' is invalid, no interop identity found"
+                "No interop identity identity found with short hash '$interopIdentityShortHash' exists."
+            )
+        }
+        if (vnodeshorthash != interopIdentityToExport.shortHash) {
+            throw InvalidInputDataException(
+                "Cannot export interop identity imported from another node."
             )
         }
         val mapper = ObjectMapper()
-        val interopIdentityJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(interopIdentity)
+        val interopIdentityJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(interopIdentityToExport)
         val groupPolicy = getGroupPolicy()
         return interopIdentityJson + "\n" + groupPolicy
     }
 
     override fun importInterOpIdentity(
         restInteropIdentity: RestInteropIdentity,
-        vnodeshorthash: String,
-        interopIdentityShortHash: String
+        vnodeshorthash: String
     ): ResponseEntity<String> {
         try {
             MemberX500Name.parse(restInteropIdentity.x500Name)
