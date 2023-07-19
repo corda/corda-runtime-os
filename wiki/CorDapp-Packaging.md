@@ -186,3 +186,8 @@ Corda will validate that uploaded CPIs are signed with a trusted key. To trust y
     curl --insecure -u admin:admin -X PUT -F alias="signingkey1-2022" -F certificate=@signingkey1.pem https://localhost:8888/api/v1/certificates/cluster/code-signer
     ```
     _Use an alias that will be unique over time. Consider how certificate expiry will require new certificates with the same x500 name as existing certificates and define a naming convention that covers that use case._
+1. Import the gradle plugin default key into Corda
+    ```shell
+    curl --insecure -u admin:admin -X PUT -F alias="gradle-plugin-default-key" -F certificate=@gradle-plugin-default-key.pem https://localhost:8888/api/v1/certificates/cluster/code-signer
+    ```
+   **Note:** Do not import the gradle plugin key into the Corda in production. This should only be used in development.
