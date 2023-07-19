@@ -163,6 +163,7 @@ internal class InboundMessageHandler(
         val partitions = sessionPartitionMapper.getPartitions(sessionId)
         return if (partitions == null) {
             logger.warn("No mapping for session ($sessionId), discarding the message and returning an error.")
+            logger.info("QQQ TTT Missing $sessionId")
             HttpResponseStatus.GONE
         } else if (partitions.isEmpty()) {
             logger.warn("No partitions exist for session ($sessionId), discarding the message and returning an error.")

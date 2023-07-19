@@ -15,6 +15,13 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.NetworkType
+import net.corda.data.p2p.app.InboundUnauthenticatedMessage
+import net.corda.data.p2p.crypto.AuthenticatedDataMessage
+import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
+import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
+import net.corda.data.p2p.crypto.InitiatorHelloMessage
+import net.corda.data.p2p.crypto.ResponderHandshakeMessage
+import net.corda.data.p2p.crypto.ResponderHelloMessage
 import net.corda.metrics.CordaMetrics
 import net.corda.p2p.gateway.messaging.ReconfigurableConnectionManager
 import net.corda.p2p.gateway.messaging.TlsType
@@ -142,8 +149,9 @@ internal class OutboundMessageHandler(
         }
 
 
-        val messageId = UUID.randomUUID().toString()
+        val messageId = "${UUID.randomUUID()}<>{$peerMessage.sessionId()}"
         val gatewayMessage = GatewayMessage(messageId, peerMessage.payload)
+        logger.info("RRR WWW messageId: $messageId -> for sessionId: ${peerMessage.sessionId()}")
         val expectedX500Name = if (NetworkType.CORDA_4 == peerMessage.header.destinationNetworkType) {
             X500Name(peerMessage.header.destinationIdentity.x500Name)
         } else {
@@ -186,6 +194,7 @@ internal class OutboundMessageHandler(
 
     private fun scheduleMessageReplay(destinationInfo: DestinationInfo, gatewayMessage: GatewayMessage, remainingAttempts: Int) {
         retryThreadPool.schedule({
+            logger.info("WWW retrying ${gatewayMessage.id}")
             val future = sendMessage(destinationInfo, gatewayMessage)
             val pendingRequest = PendingRequest(gatewayMessage, destinationInfo, future)
             future.orTimeout(connectionConfig().responseTimeout.toMillis(), TimeUnit.MILLISECONDS)
@@ -196,6 +205,7 @@ internal class OutboundMessageHandler(
     }
 
     private fun handleResponse(pendingRequest: PendingRequest, response: HttpResponse?, error: Throwable?, remainingAttempts: Int) {
+        logger.info("WWW handleResponse from ${pendingRequest.gatewayMessage.id}")
         if (error != null) {
             if (remainingAttempts > 0) {
                 logger.warn("Request (${pendingRequest.gatewayMessage.id}) failed, it will be retried later.", error)
@@ -205,6 +215,7 @@ internal class OutboundMessageHandler(
             }
         } else if (response != null) {
             if (response.statusCode != HttpResponseStatus.OK) {
+                logger.info("QQQ TTT statusCode: ${response.statusCode}, ${pendingRequest.gatewayMessage.id}")
                 if (shouldRetry(response.statusCode) && remainingAttempts > 0) {
                     logger.warn(
                         "Request (${pendingRequest.gatewayMessage.id}) failed with status code ${response.statusCode}, " +
@@ -254,4 +265,18 @@ internal class OutboundMessageHandler(
         val destinationInfo: DestinationInfo,
         val future: CompletableFuture<HttpResponse>
     )
+
+    private fun LinkOutMessage.sessionId() : String? {
+        return when (val payload = this.payload) {
+            is AuthenticatedDataMessage -> payload.header.sessionId
+            is AuthenticatedEncryptedDataMessage -> payload.header.sessionId
+            is InitiatorHelloMessage -> payload.header.sessionId
+            is InitiatorHandshakeMessage -> payload.header.sessionId
+            is ResponderHelloMessage -> payload.header.sessionId
+            is ResponderHandshakeMessage -> payload.header.sessionId
+            else -> {
+                null
+            }
+        }
+    }
 }

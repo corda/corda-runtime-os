@@ -18,3 +18,5 @@ postgresql:
       limits:  
         memory: 8192Mi
         cpu: 4000m
+    extendedConfiguration: |
+      max_connections = 400
