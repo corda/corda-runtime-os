@@ -211,7 +211,9 @@ class FlowTests {
         assertThat(flowResult.flowError).isNull()
         assertThat(flowResult.json.command).isEqualTo("flow_session_primitives")
         assertThat(flowResult.json.result)
-            .isEqualTo("${bobX500}=Successfully received 8 items.")
+            .isEqualTo("Successfully received 8 items.\n" +
+                    "Successfully received 8 items from receiveAll.\n" +
+                    "Successfully received 8 items from receiveAllMap.\n")
     }
 
     @Test
