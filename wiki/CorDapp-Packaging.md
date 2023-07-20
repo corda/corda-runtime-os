@@ -94,7 +94,7 @@ If we are using the default signing key, we need to import it into our key store
 ### Trust the R3 signing key
 
 The notary CPB is signed with an R3 production code signing certificate issued by the DigiCert.
-To use it import this certificate.
+To use it import DigiCert certificate.
 
 1. Save the following text into a file named `digicert-ca.pem`
     ```text
@@ -173,7 +173,7 @@ The gradle plugin will build the CPB. Run this command to turn a CPB into a CPI:
 
 Corda will validate that uploaded CPIs are signed with a trusted key. To trust your signing keys, upload them with these commands.
 
-1. Import the Digicert signing key into Corda
+1. Import the DigiCert certificate into Corda
    ```shell
    curl --insecure -u admin:admin -X PUT -F alias="digicert-ca" -F certificate=@digicert-ca.pem https://localhost:8888/api/v1/certificates/cluster/code-signer
    ```
