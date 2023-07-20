@@ -106,7 +106,7 @@ internal class QueueRegistrationHandler(
                 id = "${UUID.randomUUID()}:${command.memberRegistrationRequest.registrationId}",
                 destination = command.member,
                 content = statusUpdateMessage,
-                minutesToWait = 5,
+                minutesToWait = 25,
                 filter = MembershipStatusFilter.PENDING
             )
         }

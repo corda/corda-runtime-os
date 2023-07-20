@@ -342,6 +342,7 @@ internal class SessionManagerImpl(
         messageAndKey: AuthenticatedMessageAndKey,
         serial: Long,
     ): List<Record<String, *>> {
+        logger.info("FFF recordsForSessionEstablished for ${messageAndKey.key}")
         return MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(
             messageAndKey,
             session,
@@ -349,11 +350,14 @@ internal class SessionManagerImpl(
             membershipGroupReaderProvider,
             serial
         )?.let { message ->
-            val key = LinkManager.generateKey()
+            logger.info("FFF recordsForSessionEstablished for ${messageAndKey.key} II message ${message.header.address}")
+            val key = "${LinkManager.generateKey()}<>${messageAndKey.key}"
             val messageRecord = Record(LINK_OUT_TOPIC, key, message)
+            logger.info("FFF recordsForSessionEstablished for ${messageAndKey.key} III messageRecord ${messageRecord.key}")
             val marker = AppMessageMarker(LinkManagerSentMarker(), clock.instant().toEpochMilli())
             val markerRecord = Record(P2P_OUT_MARKERS, messageAndKey.message.header.messageId, marker)
             dataMessageSent(session)
+            logger.info("FFF recordsForSessionEstablished for ${messageAndKey.key} IV sent")
             listOf(
                 messageRecord,
                 markerRecord,
