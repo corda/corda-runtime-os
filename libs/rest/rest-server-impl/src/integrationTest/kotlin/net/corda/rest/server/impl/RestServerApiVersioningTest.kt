@@ -59,13 +59,6 @@ class RestServerApiVersioningTest : RestServerTestBase() {
         }
     }
 
-    @AfterEach
-    fun reset() {
-        CustomUnsafeString.flag = false
-        CustomNonSerializableString.flag = false
-        securityManager.forgetChecks()
-    }
-
     @Test
     fun `same endpoint available in multiple versions`() {
         val response = client.call(
