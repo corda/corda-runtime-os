@@ -57,11 +57,11 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
             if (observer == null) {
                 emptyList()
             } else {
-                commit(observer, stateAndRef)
+                onCommit(observer, stateAndRef)
             }
         }
 
-    private fun commit(
+    private fun onCommit(
         observer: UtxoLedgerTokenStateObserver<ContractState>,
         stateAndRef: StateAndRef<ContractState>
     ): List<Pair<StateAndRef<*>, UtxoToken>> {
