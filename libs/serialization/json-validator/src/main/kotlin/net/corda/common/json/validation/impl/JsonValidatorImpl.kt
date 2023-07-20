@@ -33,7 +33,7 @@ class JsonValidatorImpl: JsonValidator,
 
     override fun parseSchema(schema: InputStream): WrappedJsonSchema =
         WrappedJsonSchema(JsonSchemaFactory
-            .getInstance(SpecVersion.VersionFlag.V202012)
+            .getInstance(SpecVersion.VersionFlag.V201909)
             .getSchema(schema))
 
     private fun validateSchema(json: String, schemaWrapper: WrappedJsonSchema): Set<ValidationMessage> {
