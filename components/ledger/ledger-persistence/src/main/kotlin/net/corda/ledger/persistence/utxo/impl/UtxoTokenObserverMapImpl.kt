@@ -11,6 +11,6 @@ class UtxoTokenObserverMapImpl(private val sandboxGroupContext: SandboxGroupCont
     UtxoTokenObserverMap {
 
     override fun getObserversFor(contactStateType: Class<*>): UtxoLedgerTokenStateObserver<ContractState>? {
-        return sandboxGroupContext.getTokenStateObservers()[contactStateType]
+        return sandboxGroupContext.getTokenStateObservers()[contactStateType]?.firstOrNull()
     }
 }
