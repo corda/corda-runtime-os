@@ -243,20 +243,21 @@ internal class OutboundMessageProcessor(
             "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
                 "to ${messageAndKey.message.header.destination}."
         }
-        logger.info("FFF processAuthenticatedMessage(${messageAndKey.message.header.messageId})")
+        logger.info("FFF processAuthenticatedMessage(${messageAndKey.message.header.messageId}) I")
 
         val discardReason = checkSourceAndDestinationValid(
             messageAndKey.message.header.source, messageAndKey.message.header.destination
         )
 
         if (discardReason != null) {
+            logger.info("FFF processAuthenticatedMessage(${messageAndKey.message.header.messageId}) II discardReason=$discardReason")
             logger.warn("Dropping outbound authenticated message ${messageAndKey.message.header.messageId}" +
                     " from ${messageAndKey.message.header.source} to ${messageAndKey.message.header.destination} as the $discardReason")
             return listOf(recordForLMDiscardedMarker(messageAndKey, discardReason))
         }
 
         if (ttlExpired(messageAndKey.message.header.ttl)) {
-            logger.info("FFF message expire - ${messageAndKey.message.header.messageId}")
+            logger.info("FFF processAuthenticatedMessage message expire - ${messageAndKey.message.header.messageId}")
             val expiryMarker = recordForTTLExpiredMarker(messageAndKey.message.header.messageId)
             return if (isReplay) {
                 listOf(expiryMarker)
@@ -270,7 +271,9 @@ internal class OutboundMessageProcessor(
 
         val source = messageAndKey.message.header.source.toCorda()
         val destination = messageAndKey.message.header.destination.toCorda()
+        logger.info("FFF processAuthenticatedMessage message expire - ${messageAndKey.message.header.messageId} III")
         if (linkManagerHostingMap.isHostedLocally(destination)) {
+            logger.info("FFF processAuthenticatedMessage message expire - ${messageAndKey.message.header.messageId} IV isHostedLocally")
             recordInboundMessagesMetric(messageAndKey.message)
             return if (isReplay) {
                 listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
@@ -294,8 +297,10 @@ internal class OutboundMessageProcessor(
             } else {
                 listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId))
             }
+            logger.info("FFF processAuthenticatedMessage message expire - ${messageAndKey.message.header.messageId} IV lookup!=null")
             return processNoTtlRemoteAuthenticatedMessage(messageAndKey, isReplay) + markers
         } else {
+            logger.info("FFF processAuthenticatedMessage message expire - ${messageAndKey.message.header.messageId} IV lookup=null")
             logger.warn("Trying to send authenticated message (${messageAndKey.message.header.messageId}) from $source to $destination, " +
                     "but the destination is not part of the network. Filter was " +
                     "${messageAndKey.message.header.statusFilter} Message will be retried later.")
@@ -310,7 +315,7 @@ internal class OutboundMessageProcessor(
         messageAndKey: AuthenticatedMessageAndKey,
         isReplay: Boolean = false
     ): List<Record<String, *>> {
-
+        logger.info("FFF processNoTtlRemoteAuthenticatedMessage message expire - ${messageAndKey.message.header.messageId} I")
         return when (val state = sessionManager.processOutboundMessage(messageAndKey)) {
             is SessionManager.SessionState.NewSessionsNeeded -> {
                 logger.trace {
@@ -318,6 +323,7 @@ internal class OutboundMessageProcessor(
                         "Initiating a new one.."
                 }
                 if (!isReplay) messagesPendingSession.queueMessage(messageAndKey, state.sessionCounterparties)
+                logger.info("FFF processNoTtlRemoteAuthenticatedMessage message expire - ${messageAndKey.message.header.messageId} II NewSessionsNeeded")
                 recordsForNewSessions(state)
             }
             is SessionManager.SessionState.SessionEstablished -> {
@@ -325,6 +331,7 @@ internal class OutboundMessageProcessor(
                     "Session already established with ${messageAndKey.message.header.destination}." +
                         " Using this to send outbound message."
                 }
+                logger.info("FFF processNoTtlRemoteAuthenticatedMessage message expire - ${messageAndKey.message.header.messageId} II SessionEstablished")
                 recordsForSessionEstablished(state, messageAndKey)
             }
             is SessionManager.SessionState.SessionAlreadyPending -> {
@@ -332,6 +339,7 @@ internal class OutboundMessageProcessor(
                     "Session already pending with ${messageAndKey.message.header.destination}. " +
                         "Message queued until session is established."
                 }
+                logger.info("FFF processNoTtlRemoteAuthenticatedMessage message expire - ${messageAndKey.message.header.messageId} II SessionAlreadyPending")
                 if (!isReplay) messagesPendingSession.queueMessage(messageAndKey, state.sessionCounterparties)
                 emptyList()
             }

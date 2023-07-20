@@ -105,6 +105,7 @@ internal class OutboundMessageHandler(
                 throw IllegalStateException("Can not handle events")
             }
 
+            logger.info("FFF onNext session ${event.key}")
             val peerMessage = event.value
             try {
                 sendMessage(peerMessage)
@@ -120,6 +121,7 @@ internal class OutboundMessageHandler(
             logger.warn("Received a null message from topic $LINK_OUT_TOPIC. The message was discarded.")
             return CompletableFuture.completedFuture(Unit)
         }
+        logger.info("FFF sendMessage session ${peerMessage.sessionId()}")
         val (uri, sni, trustStore) = try {
             val uri = URI.create(peerMessage.header.address)
             val trustStore = commonComponents.trustStoresMap.getTrustStore(
