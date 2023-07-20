@@ -80,14 +80,14 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
         }
     }
 
-    private fun createUtxoToken(utxoToken: UtxoToken, stateAndRef: StateAndRef<ContractState>) =
+    private fun createUtxoToken(token: UtxoToken, stateAndRef: StateAndRef<ContractState>) =
         UtxoToken(
             UtxoTokenPoolKey(
                 stateAndRef.state.contractStateType.name,
-                utxoToken.poolKey.issuerHash,
-                utxoToken.poolKey.symbol
+                token.poolKey.issuerHash,
+                token.poolKey.symbol
             ),
-            utxoToken.amount,
-            utxoToken.filterFields
+            token.amount,
+            token.filterFields
         )
 }
