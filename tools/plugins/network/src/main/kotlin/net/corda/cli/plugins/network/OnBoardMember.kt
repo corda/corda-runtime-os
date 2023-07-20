@@ -141,7 +141,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
             val currentCpis = restClient.use { client ->
                 client.start().proxy.getAllCpis().cpis
             }
-            val exists = currentCpis.any { it.cpiFileChecksum == cpiFileChecksum }
+            if (currentCpis.any { it.cpiFileChecksum == cpiFileChecksum })
             if (exists) {
                 println("CPI was already uploaded in $cpiFile. CPI hash checksum is $cpiFileChecksum")
                 return cpiFileChecksum
