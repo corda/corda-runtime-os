@@ -59,7 +59,7 @@ class SessionInitProcessorSend(
             .setReceivedEventsState(SessionProcessState(0, mutableListOf()))
             .setSendEventsState(SessionProcessState(seqNum, mutableListOf(sessionEvent)))
             .setCounterpartySessionProperties(null)
-            .setStatus(SessionStateType.CREATED)
+            .setStatus(SessionStateType.CONFIRMED)
             .setHasScheduledCleanup(false)
             .build()
 

@@ -5,6 +5,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
@@ -105,7 +106,6 @@ class SessionInitExecutor(
             //with an extra field of flowKey. set flowkey to null to not expose it on outbound messages
             val tmpFLowEventKey = sessionInit.flowId
             sessionInit.flowId = null
-            sessionEvent.payload = sessionInit
             sessionEvent.messageDirection = MessageDirection.INBOUND
             sessionEvent.sessionId = toggleSessionId(sessionEvent.sessionId)
 

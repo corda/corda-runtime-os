@@ -13,12 +13,9 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.chunking.MessagingChunkFactory
-import net.corda.schema.configuration.FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW
-import net.corda.schema.configuration.FlowConfig.SESSION_MESSAGE_RESEND_WINDOW
 import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
 import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
-import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.setErrorState
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
@@ -50,6 +47,7 @@ class SessionManagerImpl @Activate constructor(
             it.lastReceivedMessageTime = instant
             processAcks(event, it)
         }
+        logger.info("Lorcan: processing received ${event.payload::class.java}: ${event.sequenceNum}")
 
         return sessionEventProcessorFactory.createEventReceivedProcessor(key, event, updatedSessionState, instant).execute()
     }
@@ -61,6 +59,8 @@ class SessionManagerImpl @Activate constructor(
         instant: Instant,
         maxMsgSize: Long,
     ): SessionState {
+        logger.info("Lorcan: sending mess ${event.payload::class.java}, ${event.sequenceNum}")
+
         return sessionEventProcessorFactory.createEventToSendProcessor(key, event, sessionState, instant, maxMsgSize).execute()
     }
 
@@ -141,43 +141,43 @@ class SessionManagerImpl @Activate constructor(
      */
     // @SESSION: This function works out if no message has been received in the timeout window and if so sends a
     // heartbeat. If a message has been received, then an ack is generated if required.
-  /*  private fun handleHeartbeatAndAcknowledgements(
-        sessionState: SessionState,
-        config: SmartConfig,
-        instant: Instant,
-        messagesToReturn: List<SessionEvent>,
-        identity: HoldingIdentity,
-    ): List<SessionEvent> {
-        val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
-        val lastReceivedMessageTime = sessionState.lastReceivedMessageTime
+    /*  private fun handleHeartbeatAndAcknowledgements(
+          sessionState: SessionState,
+          config: SmartConfig,
+          instant: Instant,
+          messagesToReturn: List<SessionEvent>,
+          identity: HoldingIdentity,
+      ): List<SessionEvent> {
+          val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
+          val lastReceivedMessageTime = sessionState.lastReceivedMessageTime
 
-        val sessionTimeoutTimestamp = lastReceivedMessageTime.plusMillis(config.getLong(SESSION_HEARTBEAT_TIMEOUT_WINDOW))
-        val scheduledHeartbeatTimestamp = sessionState.lastSentMessageTime.plusMillis(messageResendWindow)
+          val sessionTimeoutTimestamp = lastReceivedMessageTime.plusMillis(config.getLong(SESSION_HEARTBEAT_TIMEOUT_WINDOW))
+          val scheduledHeartbeatTimestamp = sessionState.lastSentMessageTime.plusMillis(messageResendWindow)
 
-        return if (instant > sessionTimeoutTimestamp) {
-            //send an error if the session has timed out
-            val updatedSessionState = errorSession(sessionState)
-            val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(updatedSessionState, identity)
-            listOf(
-                generateErrorEvent(
-                    updatedSessionState,
-                    initiatingIdentity,
-                    initiatedIdentity,
-                    "Session has timed out. No messages received since $lastReceivedMessageTime",
-                    "SessionTimeout-Heartbeat",
-                    instant
-                ).apply {
-                    this.initiatedIdentity = initiatedIdentity
-                    this.initiatingIdentity = initiatingIdentity
-                }
-            )
+          return if (instant > sessionTimeoutTimestamp) {
+              //send an error if the session has timed out
+              val updatedSessionState = errorSession(sessionState)
+              val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(updatedSessionState, identity)
+              listOf(
+                  generateErrorEvent(
+                      updatedSessionState,
+                      initiatingIdentity,
+                      initiatedIdentity,
+                      "Session has timed out. No messages received since $lastReceivedMessageTime",
+                      "SessionTimeout-Heartbeat",
+                      instant
+                  ).apply {
+                      this.initiatedIdentity = initiatedIdentity
+                      this.initiatingIdentity = initiatingIdentity
+                  }
+              )
 
-        } else if (messagesToReturn.isEmpty() && (instant > scheduledHeartbeatTimestamp || sessionState.sendAck)) {
-            listOf(generateAck(sessionState, instant, identity))
-        } else {
-            messagesToReturn
-        }
-    }*/
+          } else if (messagesToReturn.isEmpty() && (instant > scheduledHeartbeatTimestamp || sessionState.sendAck)) {
+              listOf(generateAck(sessionState, instant, identity))
+          } else {
+              messagesToReturn
+          }
+      }*/
 
     /**
      * Get any new messages to send from the sendEvents state within [sessionState].
@@ -198,6 +198,8 @@ class SessionManagerImpl @Activate constructor(
 //        config: SmartConfig,
     ): List<SessionEvent> {
         val sessionEvents = filterSessionEvents(sessionState, instant)
+        logger.info("Lorcan: filtered session event: ${sessionEvents.map { it.sequenceNum to it.payload }}")
+
         if (sessionEvents.isEmpty()) return emptyList()
 
         //update events with the latest ack info from the current state
@@ -212,12 +214,19 @@ class SessionManagerImpl @Activate constructor(
 
         logger.debug {
             "Dispatching events for session [${sessionState.sessionId}]: " +
-            sessionEvents.joinToString {
-                "[Sequence: ${it.sequenceNum}, Class: ${it.payload::class.java.simpleName}, Resend timestamp: ${it.timestamp}]"
-            }
+                    sessionEvents.joinToString {
+                        "[Sequence: ${it.sequenceNum}, Class: ${it.payload::class.java.simpleName}, Resend timestamp: ${it.timestamp}]"
+                    }
         }
 
-        return sessionEvents
+        //assume guaranteed delivery
+        sessionState.sendEventsState.undeliveredMessages = emptyList()
+
+        val sessionEventsToSend = sessionEvents.filter { it.payload is SessionData }
+        logger.info("Lorcan: session event to send: ${sessionEventsToSend.map { it.sequenceNum to it.payload::class.java }}")
+
+        //only send data msgs
+        return sessionEventsToSend
     }
 
     /**

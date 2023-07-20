@@ -119,7 +119,7 @@ class FlowSessionManagerImpl @Activate constructor(
             sendSessionMessageToExistingSession(
                 checkpoint,
                 sessionId,
-                payload = SessionData(ByteBuffer.wrap(payload)),
+                payload = SessionData(ByteBuffer.wrap(payload), null),
                 instant
             )
         }

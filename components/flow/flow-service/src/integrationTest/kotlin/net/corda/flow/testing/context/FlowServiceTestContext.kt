@@ -320,7 +320,7 @@ class FlowServiceTestContext @Activate constructor(
             sessionId,
             null,
             null,
-            SessionData(ByteBuffer.wrap(data)),
+            SessionData(ByteBuffer.wrap(data), null),
             sequenceNum,
             receivedSequenceNum,
             outOfOrderSeqNums

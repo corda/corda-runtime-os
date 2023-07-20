@@ -5,6 +5,7 @@ import java.time.Instant
 import net.corda.data.chunking.Chunk
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
@@ -95,6 +96,13 @@ class SessionDataProcessorSend(
         sessionEvent.sequenceNum = nextSeqNum
         sendEventsState.lastProcessedSequenceNum = nextSeqNum
         logger.debug { "Adding data message with seqNum ${sessionEvent.sequenceNum} to send queue. ${sessionEvent.sessionId}" }
+
+        val sessionInit = sendEventsState.undeliveredMessages.find { it.payload is SessionInit }
+        if (sessionInit != null) {
+            logger.info("Setting SessionInit as payload of data message")
+            val dataPayload = sessionEvent.payload as SessionData
+            dataPayload.sessionInit = sessionInit.payload as SessionInit
+        }
         sendEventsState.undeliveredMessages = sendEventsState.undeliveredMessages.plus(sessionEvent)
     }
 
