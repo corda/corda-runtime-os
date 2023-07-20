@@ -91,9 +91,9 @@ If we are using the default signing key, we need to import it into our key store
     keytool -importcert -keystore signingkeys.pfx -storepass "keystore password" -noprompt -alias gradle-plugin-default-key -file gradle-plugin-default-key.pem
     ```
 
-### Trust the signing key
+### Trust the R3 signing key
 
-The notary CPB is signed with a production signing key.
+The notary CPB is signed with an R3 production code signing certificate issued by the DigiCert.
 To use it import this certificate.
 
 1. Save the following text into a file named `digicert-ca.pem`
