@@ -32,10 +32,11 @@ interface SessionManager {
      * @param sessionState The session state. This should be null in the case of [SessionInit]
      * @param event Session event to process.
      * @param instant Timestamp to be applied for any output messages.
+     * @param waitingForData List of session IDs that the party is waiting to receive data from.
      * @return Updated session state with any output messages added to the undelivered sent events queue
      * and any valid received messages added to the undelivered received events queue
      */
-    fun processMessageReceived(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant): SessionState
+    fun processMessageReceived(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant, waitingForData: Boolean): SessionState
 
     /**
      * Process a session [event] to be sent to a counterparty, and output the updated session state.
@@ -81,9 +82,10 @@ interface SessionManager {
      * @param instant The time to check session events against when determining which messages need to be sent
      * @param config The config containing the flow session config values such as the resend time window
      * @param identity Identity of the calling party who owns the session state
+     * @param waitingForData List of session IDs that the party is waiting to receive data from.
      * @return The updated [SessionState] with SessionAcks removed as well as any messages to send to the counterparty.
      */
-    fun getMessagesToSend(sessionState: SessionState, instant: Instant, config: SmartConfig, identity: HoldingIdentity): Pair<SessionState,
+    fun getMessagesToSend(sessionState: SessionState, instant: Instant, config: SmartConfig, identity: HoldingIdentity, waitingForData: Boolean): Pair<SessionState,
             List<SessionEvent>>
 
     /**

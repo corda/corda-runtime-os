@@ -1,5 +1,6 @@
 package net.corda.session.manager.impl
 
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.chunking.Chunk
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -18,6 +19,7 @@ import net.corda.schema.configuration.FlowConfig.SESSION_MESSAGE_RESEND_WINDOW
 import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
 import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
+import net.corda.session.manager.impl.processor.SessionErrorProcessorSend
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.setErrorState
 import net.corda.utilities.debug
@@ -44,14 +46,47 @@ class SessionManagerImpl @Activate constructor(
 
     private val chunkDeserializerService = messagingChunkFactory.createChunkDeserializerService(ByteArray::class.java)
 
-    override fun processMessageReceived(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant):
-            SessionState {
+    override fun processMessageReceived(
+        key: Any,
+        sessionState: SessionState?,
+        event: SessionEvent,
+        instant: Instant,
+        waitingForData: Boolean
+    ): SessionState {
         val updatedSessionState = sessionState?.let {
             it.lastReceivedMessageTime = instant
             processAcks(event, it)
         }
 
-        return sessionEventProcessorFactory.createEventReceivedProcessor(key, event, updatedSessionState, instant).execute()
+        return if (event.waitingForDataFlag && waitingForData) {
+            generateErrorSessionState(instant, event, key, sessionState)
+        } else sessionEventProcessorFactory.createEventReceivedProcessor(key, event, updatedSessionState, instant)
+            .execute()
+    }
+
+    private fun generateErrorSessionState(
+        instant: Instant,
+        event: SessionEvent,
+        key: Any,
+        sessionState: SessionState?
+    ): SessionState {
+        val exceptionError = ExceptionEnvelope(
+            "WaitingForData",
+            "Both parties stuck waiting for data"
+        )
+        val errorEvent = SessionEvent.newBuilder()
+            .setMessageDirection(MessageDirection.OUTBOUND)
+            .setTimestamp(instant)
+            .setSequenceNum(null)
+            .setInitiatingIdentity(event.initiatingIdentity)
+            .setInitiatedIdentity(event.initiatedIdentity)
+            .setSessionId(event.sessionId)
+            .setReceivedSequenceNum(0)
+            .setOutOfOrderSequenceNums(emptyList())
+            .setPayload(SessionError(exceptionError))
+            .setWaitingForDataFlag(true)
+            .build()
+        return SessionErrorProcessorSend(key, sessionState, errorEvent, exceptionError, instant).execute()
     }
 
     override fun processMessageToSend(
@@ -61,7 +96,8 @@ class SessionManagerImpl @Activate constructor(
         instant: Instant,
         maxMsgSize: Long,
     ): SessionState {
-        return sessionEventProcessorFactory.createEventToSendProcessor(key, event, sessionState, instant, maxMsgSize).execute()
+        return sessionEventProcessorFactory.createEventToSendProcessor(key, event, sessionState, instant, maxMsgSize)
+            .execute()
     }
 
     override fun getNextReceivedEvent(sessionState: SessionState): SessionEvent? {
@@ -103,12 +139,20 @@ class SessionManagerImpl @Activate constructor(
         instant: Instant,
         config: SmartConfig,
         identity: HoldingIdentity,
+        waitingForData: Boolean
     ): Pair<SessionState,
             List<SessionEvent>> {
         var messagesToReturn = getMessagesToSendAndUpdateSendState(sessionState, instant, config)
 
         //add heartbeat if no messages sent recently, add ack if needs to be sent, error session if no heartbeat received within timeout
-        messagesToReturn = handleHeartbeatAndAcknowledgements(sessionState, config, instant, messagesToReturn, identity)
+        messagesToReturn = handleHeartbeatAndAcknowledgements(
+            sessionState,
+            config,
+            instant,
+            messagesToReturn,
+            identity,
+            waitingForData
+        )
 
         if (messagesToReturn.isNotEmpty()) {
             sessionState.sendAck = false
@@ -118,7 +162,7 @@ class SessionManagerImpl @Activate constructor(
         return Pair(sessionState, messagesToReturn)
     }
 
-    override fun errorSession(sessionState: SessionState) : SessionState {
+    override fun errorSession(sessionState: SessionState): SessionState {
         sessionState.status = SessionStateType.ERROR
         return sessionState
     }
@@ -141,6 +185,7 @@ class SessionManagerImpl @Activate constructor(
         instant: Instant,
         messagesToReturn: List<SessionEvent>,
         identity: HoldingIdentity,
+        waitingForData: Boolean
     ): List<SessionEvent> {
         val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
         val lastReceivedMessageTime = sessionState.lastReceivedMessageTime
@@ -167,7 +212,7 @@ class SessionManagerImpl @Activate constructor(
             )
 
         } else if (messagesToReturn.isEmpty() && (instant > scheduledHeartbeatTimestamp || sessionState.sendAck)) {
-            listOf(generateAck(sessionState, instant, identity))
+            listOf(generateHeartbeat(sessionState, instant, identity, waitingForData))
         } else {
             messagesToReturn
         }
@@ -306,7 +351,12 @@ class SessionManagerImpl @Activate constructor(
      * @param identity Identity of the party calling this method
      * @return A SessionAck SessionEvent with ack fields set on the SessionEvent based on messages received from a counterparty
      */
-    private fun generateAck(sessionState: SessionState, instant: Instant, identity: HoldingIdentity): SessionEvent {
+    private fun generateHeartbeat(
+        sessionState: SessionState,
+        instant: Instant,
+        identity: HoldingIdentity,
+        waitingForData: Boolean
+    ): SessionEvent {
         val receivedEventsState = sessionState.receivedEventsState
         val outOfOrderSeqNums = receivedEventsState.undeliveredMessages
             .filter { it.sequenceNum > receivedEventsState.lastProcessedSequenceNum }
@@ -322,6 +372,7 @@ class SessionManagerImpl @Activate constructor(
             .setReceivedSequenceNum(receivedEventsState.lastProcessedSequenceNum)
             .setOutOfOrderSequenceNums(outOfOrderSeqNums)
             .setPayload(SessionAck())
+            .setWaitingForDataFlag(waitingForData)
             .build()
     }
 

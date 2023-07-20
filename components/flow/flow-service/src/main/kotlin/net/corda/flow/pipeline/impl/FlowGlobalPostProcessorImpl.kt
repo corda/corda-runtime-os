@@ -6,6 +6,7 @@ import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.data.flow.state.waiting.SessionData
 import net.corda.flow.external.events.impl.ExternalEventManager
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.events.FlowEventContext
@@ -61,17 +62,20 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     private fun getSessionEvents(context: FlowEventContext<Any>, now: Instant): List<Record<*, FlowMapperEvent>> {
         val checkpoint = context.checkpoint
         val doesCheckpointExist = checkpoint.doesExist
+        val isWaitingFor = checkpoint.waitingFor?.value
+        val isSessionData = isWaitingFor != null && isWaitingFor is SessionData
 
         return checkpoint.sessions
             .filter {
                 verifyCounterparty(context, it, now)
             }
             .map { sessionState ->
+                val isSessionWaiting = isSessionData && (isWaitingFor as SessionData).sessionIds.contains(sessionState.sessionId)
                 sessionManager.getMessagesToSend(
                     sessionState,
                     now,
                     context.config,
-                    checkpoint.flowKey.identity
+                    checkpoint.flowKey.identity, isSessionWaiting
                 )
             }
             .onEach { (updatedSessionState, _) ->

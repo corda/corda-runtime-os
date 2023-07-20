@@ -38,7 +38,7 @@ class FlowSessionManagerImpl @Activate constructor(
     private val flowRecordFactory: FlowRecordFactory,
 ) : FlowSessionManager {
 
-    override fun getSessionErrorEventRecords(checkpoint: FlowCheckpoint, flowConfig: SmartConfig, instant: Instant):
+    override fun getSessionErrorEventRecords(checkpoint: FlowCheckpoint, flowConfig: SmartConfig, instant: Instant, waitingForData: Boolean):
             List<Record<*, FlowMapperEvent>> {
         return checkpoint.sessions
             .filter { it.status == SessionStateType.ERROR }
@@ -47,7 +47,7 @@ class FlowSessionManagerImpl @Activate constructor(
                     sessionState,
                     instant,
                     flowConfig,
-                    checkpoint.flowKey.identity
+                    checkpoint.flowKey.identity, waitingForData
                 )
             }
             .flatMap { (_, events) -> events }

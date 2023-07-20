@@ -54,6 +54,7 @@ class SessionEventHandler @Activate constructor(
     override fun preProcess(context: FlowEventContext<SessionEvent>): FlowEventContext<SessionEvent> {
         val checkpoint = context.checkpoint
         val sessionEvent = context.inputEventPayload
+        val waitingForData = context.inputEventPayload.waitingForDataFlag
 
         log.trace { "Session event in handler: ${sessionEvent.payload}" }
 
@@ -63,7 +64,7 @@ class SessionEventHandler @Activate constructor(
             sessionId,
             if (checkpoint.doesExist) checkpoint.getSessionState(sessionId) else null,
             sessionEvent,
-            now
+            now, waitingForData
         )
 
         // Null is returned if duplicate [SessionInit]s are received

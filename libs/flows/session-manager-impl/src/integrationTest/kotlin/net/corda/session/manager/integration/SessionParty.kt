@@ -40,7 +40,7 @@ class SessionParty (
     }
 
     override fun sendMessages(instant: Instant) {
-        val (updatedState, outputMessages) = sessionManager.getMessagesToSend(sessionState!!, instant, testConfig, testIdentity)
+        val (updatedState, outputMessages) = sessionManager.getMessagesToSend(sessionState!!, instant, testConfig, testIdentity, waitingForData = true)
         sessionState = updatedState
         outboundMessages.addMessages(outputMessages)
     }
@@ -67,7 +67,7 @@ class SessionParty (
 
     private fun processAndAcknowledgeEventsInSequence(nextMessage: SessionEvent?) {
         if (nextMessage != null) {
-            sessionState = sessionManager.processMessageReceived("key", sessionState, nextMessage, Instant.now())
+            sessionState = sessionManager.processMessageReceived("key", sessionState, nextMessage, Instant.now(), nextMessage.waitingForDataFlag)
 
             var message = sessionManager.getNextReceivedEvent(sessionState!!)
             while (message != null) {
