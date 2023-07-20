@@ -157,7 +157,7 @@ internal class InteropRestResourceImpl @Activate constructor(
                 "No interop identity identity found with short hash '$interopIdentityShortHash' exists."
             )
         }
-        if (vnodeshorthash != interopIdentityToExport.shortHash) {
+        if (vnodeshorthash != interopIdentityToExport.holdingIdentityShortHash) {
             throw InvalidInputDataException(
                 "Cannot export interop identity imported from another node."
             )
