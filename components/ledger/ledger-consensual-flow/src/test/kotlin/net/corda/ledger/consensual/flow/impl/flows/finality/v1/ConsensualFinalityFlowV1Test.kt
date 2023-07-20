@@ -3,6 +3,7 @@ package net.corda.ledger.consensual.flow.impl.flows.finality.v1
 import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.fullId
 import net.corda.crypto.core.fullIdHash
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -270,7 +271,7 @@ class ConsensualFinalityFlowV1Test {
         assertThatThrownBy { callFinalityFlow(signedTransaction, listOf(sessionAlice, sessionBob)) }
             .isInstanceOf(TransactionMissingSignaturesException::class.java)
             .hasMessageContainingAll(
-                "Transaction $TX_ID is missing signatures for signatories (encoded) ${setOf(publicKeyBob).map { it.encoded }}. ",
+                "Transaction $TX_ID is missing signatures for signatories (key ids) ${setOf(publicKeyBob).map { it.fullId() }}. ",
                 "The following counterparties provided signatures while finalizing the transaction:",
                 "$ALICE provided 2 signature(s) to satisfy the signatories (key ids) ${aliceSignatures.map { it.by }}",
                 "$BOB provided 0 signature(s) to satisfy the signatories (key ids) []"

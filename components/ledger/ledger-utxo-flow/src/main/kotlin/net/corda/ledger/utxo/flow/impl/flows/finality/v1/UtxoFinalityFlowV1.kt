@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
+import net.corda.crypto.core.fullId
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
@@ -176,8 +177,8 @@ class UtxoFinalityFlowV1(
             } else {
                 "[]"
             }
-            val message = "Transaction $transactionId is missing signatures for signatories (encoded) " +
-                    "${e.missingSignatories.map { it.encoded }}. The following counterparties provided signatures while finalizing " +
+            val message = "Transaction $transactionId is missing signatures for signatories (key ids) " +
+                    "${e.missingSignatories.map { it.fullId() }}. The following counterparties provided signatures while finalizing " +
                     "the transaction: $counterpartiesToSignatoriesMessage"
             log.warn(message)
             persistInvalidTransaction(transaction)
