@@ -13,19 +13,18 @@ dependencies {
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation project(":components:configuration:configuration-read-service")
+    implementation project(":components:crypto:crypto-client")
+    implementation project(":components:link-manager")
+    implementation project(":libs:flows:session-manager")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
-    implementation project(":libs:flows:session-manager")
-    implementation project(':libs:serialization:serialization-avro')
     implementation project(":libs:sandbox-types")
-    implementation project(":components:link-manager")
-    implementation project(':components:domino-logic')
-    implementation project(':components:membership:membership-group-read')
-    implementation project(":libs:membership:membership-impl")
+    implementation project(':libs:serialization:serialization-avro')
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-topic-schema"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
