@@ -2,8 +2,6 @@ package net.corda.rest.server.impl
 
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.config.models.RestServerSettings
-import net.corda.rest.test.CustomNonSerializableString
-import net.corda.rest.test.CustomUnsafeString
 import net.corda.rest.test.TestEndpointVersioningRestResourceImpl
 import net.corda.rest.test.TestResourceMaxVersioningRestResourceImpl
 import net.corda.rest.test.TestResourceVersioningRestResourceImpl
@@ -14,7 +12,6 @@ import net.corda.rest.tools.HttpVerb
 import net.corda.utilities.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
