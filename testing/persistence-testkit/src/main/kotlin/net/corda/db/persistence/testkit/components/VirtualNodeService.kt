@@ -57,7 +57,9 @@ class VirtualNodeService @Activate constructor(
         ))
 
         val dataSource = dataSourceAdmin.getOrCreateDataSource(dbConnectionId, "connection-${connectionCounter.incrementAndGet()}")
-        liquibaseSchemaMigrator.updateDb(dataSource.connection, vaultSchema)
+        dataSource.connection.use { connection ->
+            liquibaseSchemaMigrator.updateDb(connection, vaultSchema)
+        }
         return virtualNodeInfo
     }
 }
