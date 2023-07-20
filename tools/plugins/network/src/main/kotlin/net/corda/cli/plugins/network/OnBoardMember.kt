@@ -137,8 +137,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
         val cpiHashesFile = File(cpiRoot, "$baseNetworkName.shortHash")
         if (cpiHashesFile.canRead()) {
             val cpiFileChecksum = cpiHashesFile.readText()
-            val restClient = createRestClient(CpiUploadRestResource::class)
-            val currentCpis = restClient.use { client ->
+            val currentCpis = createRestClient(CpiUploadRestResource::class).use { client ->
                 client.start().proxy.getAllCpis().cpis
             }
             if (currentCpis.any { it.cpiFileChecksum == cpiFileChecksum })

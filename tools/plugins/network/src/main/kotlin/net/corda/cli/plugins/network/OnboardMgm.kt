@@ -113,9 +113,8 @@ class OnboardMgm : Runnable, BaseOnboard() {
     }
 
     private val cpi by lazy {
-        val parametersCpiFile = cpiFile
-        if (parametersCpiFile != null) {
-            return@lazy parametersCpiFile
+        if (cpiFile != null) {
+            return@lazy cpiFile
         }
         val mgmGroupPolicyFile = File.createTempFile("mgm.groupPolicy.", ".json").also {
             it.deleteOnExit()
@@ -154,7 +153,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
             return@lazy existingHash
         }
 
-        uploadCpi(cpi.inputStream(), cpbName)
+        uploadCpi(cpi!!.inputStream(), cpbName)
     }
 
     override fun run() {
