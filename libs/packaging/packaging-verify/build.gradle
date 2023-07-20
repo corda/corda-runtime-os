@@ -19,6 +19,9 @@ dependencies {
     implementation project(':libs:packaging:packaging')
     implementation project(':libs:packaging:packaging-core')
     implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
+    constraints {
+        implementation("com.ethlo.time:itu:$comEthloTimeItuVersion")
+    }
 
     testImplementation project(':testing:test-utilities')
     testImplementation project(':testing:packaging-test-utilities')

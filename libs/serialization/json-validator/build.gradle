@@ -27,6 +27,9 @@ dependencies {
         // Exclude transitive dependency on vulnerable version of jackson
         exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
     }
+    constraints {
+        implementation("com.ethlo.time:itu:$comEthloTimeItuVersion")
+    }
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

@@ -22,6 +22,9 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
+    constraints {
+        implementation("com.ethlo.time:itu:$comEthloTimeItuVersion")
+    }
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

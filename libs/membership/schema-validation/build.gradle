@@ -16,6 +16,9 @@ dependencies {
 
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
+    constraints {
+        implementation("com.ethlo.time:itu:$comEthloTimeItuVersion")
+    }
     implementation project(':libs:membership:membership-common')
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
