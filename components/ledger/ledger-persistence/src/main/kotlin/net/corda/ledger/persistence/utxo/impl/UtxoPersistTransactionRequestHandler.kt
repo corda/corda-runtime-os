@@ -52,7 +52,7 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
 
     private fun List<StateAndRef<ContractState>>.toTokens(tokenObservers: UtxoTokenObserverMap): List<Pair<StateAndRef<*>, UtxoToken>> =
         flatMap { stateAndRef ->
-            tokenObservers.getObserversFor(stateAndRef.state.contractStateType).let { observer ->
+            tokenObservers.getObserverFor(stateAndRef.state.contractStateType).let { observer ->
                 if(observer == null) {
                     emptyList()
                 } else {

@@ -4,6 +4,6 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
 
 interface UtxoTokenObserverMap {
-    fun getObserversFor(contactStateType: Class<*>): UtxoLedgerTokenStateObserver<ContractState>?
+    fun getObserverFor(contactStateType: Class<*>): UtxoLedgerTokenStateObserver<ContractState>?
 }
 

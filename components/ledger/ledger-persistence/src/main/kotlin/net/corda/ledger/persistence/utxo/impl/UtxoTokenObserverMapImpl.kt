@@ -10,7 +10,7 @@ import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
 class UtxoTokenObserverMapImpl(private val sandboxGroupContext: SandboxGroupContext) :
     UtxoTokenObserverMap {
 
-    override fun getObserversFor(contactStateType: Class<*>): UtxoLedgerTokenStateObserver<ContractState>? {
+    override fun getObserverFor(contactStateType: Class<*>): UtxoLedgerTokenStateObserver<ContractState>? {
         return sandboxGroupContext.getTokenStateObservers()[contactStateType]?.firstOrNull()
     }
 }
