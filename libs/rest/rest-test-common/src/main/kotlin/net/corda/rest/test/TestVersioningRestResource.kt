@@ -45,7 +45,7 @@ interface TestResourceVersioningRestResource : RestResource {
     maxVersion = RestApiVersion.C5_2)
 interface TestResourceMaxVersioningRestResource : RestResource {
     @Deprecated("Deprecated in favour of `getUsingPath()`")
-    @HttpGET(maxVersion = RestApiVersion.C5_2)
+    @HttpGET()
     fun getUsingQuery(@RestQueryParameter id: String): String
 
     @HttpGET(path = "{id}", minVersion=RestApiVersion.C5_0)

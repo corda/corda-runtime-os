@@ -120,11 +120,11 @@ class RestServerApiVersioningTest : RestServerTestBase() {
     @Test
     fun `request works with resource versions when no version specified at endpoint level`() {
         val response = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_2.versionPath}/testResourceVersion?id=1234"),
+            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_1.versionPath}/testResourceVersion?id=1234"),
             userName,
             password
         )
-        assertEquals(HttpStatus.SC_NOT_FOUND, response.responseStatus)
+        assertEquals(HttpStatus.SC_OK, response.responseStatus)
     }
 
     @Test
@@ -140,10 +140,17 @@ class RestServerApiVersioningTest : RestServerTestBase() {
     @Test
     fun `endpoint without specified maxVersion supported up to CURRENT Rest Endpoint version`() {
         val response = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_1.versionPath}/testResourceMaxVersion/1234"),
+            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_0.versionPath}/testResourceMaxVersion/1234"),
             userName,
             password
         )
         assertEquals(HttpStatus.SC_OK, response.responseStatus)
+
+        val response2 = client.call(
+            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_1.versionPath}/testResourceMaxVersion/1234"),
+            userName,
+            password
+        )
+        assertEquals(HttpStatus.SC_OK, response2.responseStatus)
     }
 }
