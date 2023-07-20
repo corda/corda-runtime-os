@@ -113,7 +113,7 @@ class MembershipSchemaValidatorImpl(
     private fun buildSchemaFactory(): JsonSchemaFactory {
         val builder = JsonSchemaFactory.builder(
             JsonSchemaFactory.getInstance(
-                SpecVersion.VersionFlag.V7
+                SpecVersion.VersionFlag.V202012
             )
         )
         builder.uriFetcher(MembershipSchemaURIFetcher(membershipSchemaProvider), REGISTERED_SCHEMES)
