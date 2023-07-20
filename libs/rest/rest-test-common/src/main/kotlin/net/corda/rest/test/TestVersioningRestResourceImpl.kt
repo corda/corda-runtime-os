@@ -30,12 +30,31 @@ class TestResourceVersioningRestResourceImpl :
     override val targetInterface: Class<TestResourceVersioningRestResource>
         get() = TestResourceVersioningRestResource::class.java
 
+    @Deprecated("Deprecated in favour of `getUsingPath()`")
+    override fun getUsingQuery(id: String): String {
+        return "Retrieved using query: $id"
+    }
+
     override fun getUsingPath(id: String): String {
         return "Retrieved using path id: $id"
     }
+}
+
+class TestResourceMaxVersioningRestResourceImpl :
+    TestResourceMaxVersioningRestResource,
+    PluggableRestResource<TestResourceMaxVersioningRestResource> {
+    override val protocolVersion: Int
+        get() = 3
+
+    override val targetInterface: Class<TestResourceMaxVersioningRestResource>
+        get() = TestResourceMaxVersioningRestResource::class.java
 
     @Deprecated("Deprecated in favour of `getUsingPath()`")
     override fun getUsingQuery(id: String): String {
         return "Retrieved using query: $id"
+    }
+
+    override fun getUsingPath(id: String): String {
+        return "Retrieved using path id: $id"
     }
 }

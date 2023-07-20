@@ -5,6 +5,7 @@ import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.test.CustomNonSerializableString
 import net.corda.rest.test.CustomUnsafeString
 import net.corda.rest.test.TestEndpointVersioningRestResourceImpl
+import net.corda.rest.test.TestResourceMaxVersioningRestResourceImpl
 import net.corda.rest.test.TestResourceVersioningRestResourceImpl
 import net.corda.rest.test.utils.TestHttpClientUnirestImpl
 import net.corda.rest.test.utils.WebRequest
@@ -34,7 +35,8 @@ class RestServerApiVersioningTest : RestServerTestBase() {
             server = RestServerImpl(
                 listOf(
                     TestEndpointVersioningRestResourceImpl(),
-                    TestResourceVersioningRestResourceImpl()
+                    TestResourceVersioningRestResourceImpl(),
+                    TestResourceMaxVersioningRestResourceImpl()
                 ),
                 RestServerTestBase.Companion::securityManager,
                 restServerSettings,
@@ -116,9 +118,9 @@ class RestServerApiVersioningTest : RestServerTestBase() {
     }
 
     @Test
-    fun `endpoint with version below resource limits isnt supported`() {
+    fun `request works with resource versions when no version specified at endpoint level`() {
         val response = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_0.versionPath}/testResourceVersion?id=1234"),
+            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_2.versionPath}/testResourceVersion?id=1234"),
             userName,
             password
         )
@@ -126,9 +128,19 @@ class RestServerApiVersioningTest : RestServerTestBase() {
     }
 
     @Test
-    fun `endpoint without specified maxVersion supported up to Resource maxVersion`() {
+    fun `when endpoint versions are outside of resource version limit, calling endpoint fails`() {
         val response = client.call(
-            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_2.versionPath}/testEndpointVersion/1234"),
+            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_0.versionPath}/testResourceVersion/1234"),
+            userName,
+            password
+        )
+        assertEquals(HttpStatus.SC_NOT_FOUND, response.responseStatus)
+    }
+
+    @Test
+    fun `endpoint without specified maxVersion supported up to CURRENT Rest Endpoint version`() {
+        val response = client.call(
+            HttpVerb.GET, WebRequest<Any>("${RestApiVersion.C5_1.versionPath}/testResourceMaxVersion/1234"),
             userName,
             password
         )
