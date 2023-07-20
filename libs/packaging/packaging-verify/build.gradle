@@ -18,13 +18,10 @@ dependencies {
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:packaging:packaging')
     implementation project(':libs:packaging:packaging-core')
-    implementation("com.networknt:json-schema-validator:$networkntJsonSchemaVersion") {
-        exclude group: 'org.slf4j', module: 'slf4j-api'
-    }
+    implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
     constraints {
         implementation("com.ethlo.time:itu:$comEthloTimeItuVersion")
     }
-    implementation("org.slf4j:slf4j-api:$slf4jVersion")
 
     testImplementation project(':testing:test-utilities')
     testImplementation project(':testing:packaging-test-utilities')

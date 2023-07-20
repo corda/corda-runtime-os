@@ -21,13 +21,10 @@ dependencies {
 
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation("com.networknt:json-schema-validator:$networkntJsonSchemaVersion") {
-        exclude group: 'org.slf4j', module: 'slf4j-api'
-    }
+    implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
     constraints {
         implementation("com.ethlo.time:itu:$comEthloTimeItuVersion")
     }
-    implementation("org.slf4j:slf4j-api:$slf4jVersion")
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

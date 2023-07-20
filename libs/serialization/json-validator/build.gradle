@@ -26,12 +26,10 @@ dependencies {
     implementation("com.networknt:json-schema-validator:$networkntJsonSchemaVersion"){
         // Exclude transitive dependency on vulnerable version of jackson
         exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
-        exclude group: 'org.slf4j', module: 'slf4j-api'
     }
     constraints {
         implementation("com.ethlo.time:itu:$comEthloTimeItuVersion")
     }
-    implementation("org.slf4j:slf4j-api:$slf4jVersion")
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
