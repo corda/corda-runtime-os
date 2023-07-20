@@ -323,7 +323,8 @@ internal class OutboundMessageProcessor(
                         "Initiating a new one.."
                 }
                 if (!isReplay) messagesPendingSession.queueMessage(messageAndKey, state.sessionCounterparties)
-                logger.info("FFF processNoTtlRemoteAuthenticatedMessage message expire - ${messageAndKey.message.header.messageId} II NewSessionsNeeded")
+                logger.info("FFF processNoTtlRemoteAuthenticatedMessage message expire " +
+                        "- ${messageAndKey.message.header.messageId} II NewSessionsNeeded")
                 recordsForNewSessions(state)
             }
             is SessionManager.SessionState.SessionEstablished -> {
@@ -331,7 +332,8 @@ internal class OutboundMessageProcessor(
                     "Session already established with ${messageAndKey.message.header.destination}." +
                         " Using this to send outbound message."
                 }
-                logger.info("FFF processNoTtlRemoteAuthenticatedMessage message expire - ${messageAndKey.message.header.messageId} II SessionEstablished")
+                logger.info("FFF processNoTtlRemoteAuthenticatedMessage message expire " +
+                        "- ${messageAndKey.message.header.messageId} II SessionEstablished")
                 recordsForSessionEstablished(state, messageAndKey)
             }
             is SessionManager.SessionState.SessionAlreadyPending -> {
@@ -339,7 +341,8 @@ internal class OutboundMessageProcessor(
                     "Session already pending with ${messageAndKey.message.header.destination}. " +
                         "Message queued until session is established."
                 }
-                logger.info("FFF processNoTtlRemoteAuthenticatedMessage message expire - ${messageAndKey.message.header.messageId} II SessionAlreadyPending")
+                logger.info("FFF processNoTtlRemoteAuthenticatedMessage message expire " +
+                        "- ${messageAndKey.message.header.messageId} II SessionAlreadyPending")
                 if (!isReplay) messagesPendingSession.queueMessage(messageAndKey, state.sessionCounterparties)
                 emptyList()
             }
