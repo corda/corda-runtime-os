@@ -218,8 +218,9 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
             try {
                 log.debug { "Polling and processing events" }
                 val records = getHighestPriorityEvents()
+                batchSizeHistogram.record(records?.values?.flatten()?.size?.toDouble() ?: 0.0)
                 for ((consumer, events) in records!!) {
-                    log.debug { "Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${records.size})" }
+                    log.info("Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${records.size})")
                     val groupedEvents = events.groupBy { it.key }
                     runBlocking(Dispatchers.IO) {
                         val jobs = groupedEvents.values.map {
@@ -232,6 +233,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                         jobs.joinAll()
                     }
                     consumer.commitSync()
+                    log.info("Finished processing batch of events")
                 }
             } catch (ex: Exception) {
                 attempts++
@@ -323,13 +325,13 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
             val currentEvent = eventsQueue.removeFirst()
             processorMeter.recordCallable {
                 var state: S? = null
+                log.info("Processing event: ${currentEvent.key}")
+                if (isStateLocked(currentEvent.key)) {
+                    log.info("Skipping event: ${currentEvent.key} because its state is locked!")
+                    eventsQueue.add(currentEvent)
+                    return@recordCallable
+                }
                 try {
-                    log.info("Processing event: $currentEvent")
-                    if (isStateLocked(currentEvent.key)) {
-                        log.info("Skipping event: ${currentEvent.key} because its state is locked!")
-                        eventsQueue.add(currentEvent)
-                        return@recordCallable
-                    }
                     state = getState(currentEvent.key)
                     val currentEventUpdates = processor.onNext(state, currentEvent.toRecord())
                     state = currentEventUpdates.updatedState
