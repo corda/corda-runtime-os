@@ -154,7 +154,7 @@ internal class InteropRestResourceImpl @Activate constructor(
             interopIdentityMap[interopIdentityShortHash]!!
         } else {
             throw InvalidInputDataException(
-                "No interop identity identity found with short hash '$interopIdentityShortHash' exists."
+                "No interop identity found with short hash '$interopIdentityShortHash'."
             )
         }
         if (vnodeshorthash != interopIdentityToExport.holdingIdentityShortHash) {
