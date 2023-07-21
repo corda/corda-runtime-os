@@ -13,10 +13,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.*
-import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.BlockingDeque
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.*
 
 @Component
 @Suppress("Unused")
@@ -30,7 +27,7 @@ class FlowFiberFactoryImpl @Activate constructor(
     }
 
     private val fiberExecutorScheduler = FiberExecutorScheduler("Multi-threaded executor scheduler",
-        ThreadPoolExecutor(16, 16, 0, TimeUnit.MILLISECONDS, ArrayBlockingQueue(100), ThreadFactoryBuilder().setDaemon(true).setNameFormat("quasar-fiber-thread-%d").build()))
+        Executors.newSingleThreadScheduledExecutor())
 
     override fun createAndStartFlowFiber(
         flowFiberExecutionContext: FlowFiberExecutionContext,
@@ -44,6 +41,7 @@ class FlowFiberFactoryImpl @Activate constructor(
         }
         try {
             val flowFiber = FlowFiberImpl(id, logic, fiberExecutorScheduler)
+//            val flowFiber = FlowFiberImpl(id, logic, flowFiberExecutor())
             return FiberFuture(flowFiber, flowFiber.startFlow(flowFiberExecutionContext))
         } catch (e: Throwable) {
             throw FlowFatalException(FiberExceptionConstants.UNABLE_TO_EXECUTE.format(e.message ?: "No exception message provided."), e)
@@ -63,6 +61,7 @@ class FlowFiberFactoryImpl @Activate constructor(
             }!!
 
         return FiberFuture(fiber, fiber.resume(flowFiberExecutionContext, suspensionOutcome, fiberExecutorScheduler))
+//        return FiberFuture(fiber, fiber.resume(flowFiberExecutionContext, suspensionOutcome, flowFiberExecutor()))
     }
 
     private fun getFromCacheOrDeserialize(flowFiberExecutionContext: FlowFiberExecutionContext): FlowFiberImpl {

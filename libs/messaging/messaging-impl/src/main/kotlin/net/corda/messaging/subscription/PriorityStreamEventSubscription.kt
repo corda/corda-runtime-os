@@ -4,10 +4,7 @@ import kotlinx.coroutines.*
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.MessageDirection
-import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.Wakeup
-import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -51,6 +48,7 @@ import java.util.*
 import java.util.concurrent.*
 import kotlin.collections.ArrayDeque
 
+
 @Suppress("LongParameterList")
 internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
     private val subscriptionConfig: SubscriptionConfig,
@@ -86,10 +84,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
 //        thread.isDaemon = true
 //        thread
 //    }
-//    private val processingExecutor = ThreadPoolExecutor(
-//        8, 8, 0L, TimeUnit.MILLISECONDS, LinkedBlockingQueue(),
-//        ThreadFactoryBuilder().setNameFormat("data-sink-thread-%d").setDaemon(false).build()
-//    )
+    private val processingExecutor = Executors.newFixedThreadPool(16)
     private val random = SecureRandom()
 
     private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
@@ -212,6 +207,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun processEvents() {
         var attempts = 0
         while (!threadLooper.loopStopped) {
@@ -221,26 +217,34 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                 batchSizeHistogram.record(records?.values?.flatten()?.size?.toDouble() ?: 0.0)
                 for ((consumer, events) in records!!) {
                     log.info("Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${records.size})")
-                    val groupedEvents = events.groupBy { it.key }
-                    runBlocking(Dispatchers.IO) {
-                        val jobs = groupedEvents.values.map {
-                            launch {
-                                withTimeoutOrNull(30000) {
-                                    processEvents(it)
-                                }
-                            }
-                        }
-                        jobs.joinAll()
+                    val groupedEvents = events.chunked(30)
+//                    runBlocking(Dispatchers.IO.limitedParallelism(10)) {
+//                        val jobs = groupedEvents.map {
+//                            launch {
+//                                withTimeoutOrNull(30000) {
+//                                    processEvents(it)
+//                                }
+//                            }
+//                        }
+//                        jobs.joinAll()
+//                    }
+                    val futures = groupedEvents.map {
+                        CompletableFuture.supplyAsync(
+                            { processEvents(it) },
+                            processingExecutor
+                        ).completeOnTimeout(null,30000, TimeUnit.MILLISECONDS)
                     }
+                    CompletableFuture.allOf(*futures.toTypedArray()).join()
                     consumer.commitSync()
                     log.info("Finished processing batch of events")
                 }
             } catch (ex: Exception) {
                 attempts++
-                log.warn(
+                log.error(
                     "Failed to process record from group ${config.group}, " +
                             "producerClientId ${config.clientId}. " +
-                            "Retrying poll and process. Attempts: $attempts."
+                            "Retrying poll and process. Attempts: $attempts.",
+                    ex
                 )
                 consumers.forEach {
                     it.value.forEach { consumer ->
@@ -281,6 +285,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                             }
                         } catch (ex: Exception) {
                             consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.LATEST)
+                            log.error(ex.message, ex)
                         }
                     }
                 } else {
