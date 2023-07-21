@@ -175,7 +175,6 @@ internal class RouteInfo(
         webSocketIdleTimeoutMs: Long
     ): (WsConfig) -> Unit {
         return { wsConfig ->
-            log.info("Setting-up WS call for '$fullPath'")
             try {
                 val adaptor = WebSocketRouteAdaptor(
                     this, restAuthProvider, credentialResolver, webSocketCloserService, webSocketIdleTimeoutMs
@@ -186,9 +185,9 @@ internal class RouteInfo(
                 wsConfig.onError(adaptor)
 
                 adaptors.add(adaptor)
-                log.debug { "Setting-up WS call for '$fullPath' completed." }
+                log.trace { "Setup for WS call for \"$fullPath\" completed." }
             } catch (e: Exception) {
-                log.warn("Error Setting-up WS call for '$fullPath'", e)
+                log.warn("Error setting-up WS call for \"$fullPath\"", e)
                 throw HttpExceptionMapper.mapToResponse(e)
             }
         }

@@ -81,7 +81,10 @@ class ExternalEventManagerImpl(
         externalEventResponse: ExternalEventResponse
     ): ExternalEventState {
         val requestId = externalEventResponse.requestId
-        log.info(flowTraceMarker, "Processing response for external event with id '{}'", requestId)
+        // This manual tracing has been superseded by Owen/Joseph's work (talk with Juan to check, CORE-12440).
+        if (log.isTraceEnabled) {
+            log.trace(flowTraceMarker, "Processing response for external event with id '{}'", requestId)
+        }
 
         if (requestId == externalEventState.requestId) {
             log.debug { "External event response with id $requestId matched last sent request" }
@@ -200,12 +203,14 @@ class ExternalEventManagerImpl(
     private fun generateRecord(externalEventState: ExternalEventState, instant: Instant) : Record<*, *> {
         val eventToSend = externalEventState.eventToSend
         eventToSend.timestamp = instant
-        log.info(
-            flowTraceMarker,
-            "Dispatching external event with id '{}' to '{}'",
-            externalEventState.requestId,
-            eventToSend.topic
-        )
+        if (log.isDebugEnabled) {
+            log.debug(
+                flowTraceMarker,
+                "Dispatching external event with id '{}' to '{}'",
+                externalEventState.requestId,
+                eventToSend.topic
+            )
+        }
         return Record(eventToSend.topic, eventToSend.key.array(), eventToSend.payload.array())
     }
 }

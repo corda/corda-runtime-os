@@ -53,6 +53,7 @@ open class CryptoRetryingExecutor(
                     // the strategy is exhausted, giving up
                     logCompleteFailure(attempt, op)
                     // throws the CryptoRetryException only because the original exception was recoverable
+                    // FAILED TO EXECUTE WHAT??
                     throw CryptoRetryException("Failed to execute on attempt=$attempt", e)
                 } else {
                     attempt++

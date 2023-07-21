@@ -102,8 +102,7 @@ internal object ContextUtils {
             val ctxMethod = ctx.method()
             withMDC(restContext()?.principal ?: "<anonymous>", ctxMethod, ctx.path()) {
                 val methodLogger = ctxMethod.loggerFor()
-                methodLogger.info("Servicing $ctxMethod request to '${ctx.path()}'")
-                methodLogger.debug { "Invoke method \"${method.method.name}\" for route info." }
+                methodLogger.debug { "Servicing $ctxMethod request to '${ctx.path()}' and invoking  method \"${method.method.name}\"" }
                 methodLogger.trace { "Get parameter values." }
 
                 val startTime = System.nanoTime()
@@ -129,9 +128,14 @@ internal object ContextUtils {
                     ctx.header(Header.CACHE_CONTROL, "no-cache")
                     methodLogger.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
                 } catch (e: Exception) {
-                    "Error invoking path '${this.fullPath}' - ${e.message}".let {
-                        methodLogger.info(it)
-                        methodLogger.debug(it, e)
+                    // Should really only log at debug for all exceptions except for unexpected exceptions
+                    // We should filter out most calls to log here.
+                    "Failed while invoking path '${this.fullPath}' - ${e.message}".let {
+                        // removed info log for now until filtering by exception can be achieved.
+//                        methodLogger.info(it)
+                        if (methodLogger.isDebugEnabled) {
+                            methodLogger.debug(it, e)
+                        }
                     }
                     throw HttpExceptionMapper.mapToResponse(e)
                 } finally {

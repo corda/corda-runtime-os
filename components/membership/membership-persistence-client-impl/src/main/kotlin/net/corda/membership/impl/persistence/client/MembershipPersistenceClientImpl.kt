@@ -54,6 +54,7 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.utilities.Either
+import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -167,7 +168,11 @@ class MembershipPersistenceClientImpl(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: InternalGroupParameters,
     ): MembershipPersistenceOperation<InternalGroupParameters> {
-        logger.info("Persisting group parameters.")
+        // More context is needed.
+        // We could then consider putting this back to INFO based on the context it contains
+        // Generally I think whatever triggered the group parameters to be persisted should log this at info,
+        // this does seem an important thing to log generally.
+        logger.debug { "Persisting group parameters." }
         val request = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             PersistGroupParameters(
