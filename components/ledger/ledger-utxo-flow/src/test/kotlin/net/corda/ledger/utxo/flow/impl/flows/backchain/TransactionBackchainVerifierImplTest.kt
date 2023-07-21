@@ -60,19 +60,19 @@ class TransactionBackchainVerifierImplTest {
     @BeforeEach
     fun beforeEach() {
         whenever(
-            utxoLedgerPersistenceService.findTransactionWithStatus(
+            utxoLedgerPersistenceService.findSignedTransactionWithStatus(
                 TX_ID_1,
                 UNVERIFIED
             )
         ).thenReturn(transaction1 to UNVERIFIED)
         whenever(
-            utxoLedgerPersistenceService.findTransactionWithStatus(
+            utxoLedgerPersistenceService.findSignedTransactionWithStatus(
                 TX_ID_2,
                 UNVERIFIED
             )
         ).thenReturn(transaction2 to UNVERIFIED)
         whenever(
-            utxoLedgerPersistenceService.findTransactionWithStatus(
+            utxoLedgerPersistenceService.findSignedTransactionWithStatus(
                 TX_ID_3,
                 UNVERIFIED
             )
@@ -154,21 +154,21 @@ class TransactionBackchainVerifierImplTest {
 
     @Test
     fun `throws an exception if a transaction cannot be retrieved from the database`() {
-        whenever(utxoLedgerPersistenceService.findTransactionWithStatus(TX_ID_1, UNVERIFIED)).thenReturn(null )
+        whenever(utxoLedgerPersistenceService.findSignedTransactionWithStatus(TX_ID_1, UNVERIFIED)).thenReturn(null )
         assertThrows<CordaRuntimeException>{transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())}
         verify(utxoLedgerPersistenceService, never()).persist(any(), eq(VERIFIED), any())
     }
 
     @Test
     fun `returns false if a transaction comes as invalid from the database`() {
-        whenever(utxoLedgerPersistenceService.findTransactionWithStatus(TX_ID_1, UNVERIFIED)).thenReturn(null to TransactionStatus.INVALID)
+        whenever(utxoLedgerPersistenceService.findSignedTransactionWithStatus(TX_ID_1, UNVERIFIED)).thenReturn(null to TransactionStatus.INVALID)
         assertThat(transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())).isFalse
         verify(utxoLedgerPersistenceService, never()).persist(any(), eq(VERIFIED), any())
     }
 
     @Test
     fun `updates the statuses of transactions that pass verification even when a later transaction cannot be retrieved from the database`() {
-        whenever(utxoLedgerPersistenceService.findTransactionWithStatus(TX_ID_3, UNVERIFIED)).thenReturn(null)
+        whenever(utxoLedgerPersistenceService.findSignedTransactionWithStatus(TX_ID_3, UNVERIFIED)).thenReturn(null)
         assertThrows<CordaRuntimeException>{transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())}
 
         verify(utxoLedgerPersistenceService).persist(transaction1, VERIFIED, emptyList())
@@ -178,7 +178,7 @@ class TransactionBackchainVerifierImplTest {
 
     @Test
     fun `returns true if a transaction comes as already verified from the database`() {
-        whenever(utxoLedgerPersistenceService.findTransactionWithStatus(TX_ID_1, UNVERIFIED)).thenReturn(null to VERIFIED)
+        whenever(utxoLedgerPersistenceService.findSignedTransactionWithStatus(TX_ID_1, UNVERIFIED)).thenReturn(null to VERIFIED)
         assertThat(transactionBackchainVerifier.verify(setOf(RESOLVING_TX_ID), topologicalSort())).isTrue
     }
 

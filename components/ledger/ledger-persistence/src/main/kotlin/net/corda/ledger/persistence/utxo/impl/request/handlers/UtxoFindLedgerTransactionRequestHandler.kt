@@ -1,7 +1,8 @@
-package net.corda.ledger.persistence.utxo.impl
+package net.corda.ledger.persistence.utxo.impl.request.handlers
 
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.FindTransaction
+import net.corda.data.ledger.persistence.v2.FindLedgerTransaction
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
@@ -9,9 +10,8 @@ import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.messaging.api.records.Record
 import net.corda.v5.application.serialization.SerializationService
 
-class UtxoFindTransactionRequestHandler(
-    private val findTransaction: FindTransaction,
-    private val serializationService: SerializationService,
+class UtxoFindLedgerTransactionRequestHandler(
+    private val findTransaction: FindLedgerTransaction,
     private val externalEventContext: ExternalEventContext,
     private val persistenceService: UtxoPersistenceService,
     private val utxoOutputRecordFactory: UtxoOutputRecordFactory
@@ -19,18 +19,17 @@ class UtxoFindTransactionRequestHandler(
 
     override fun execute(): List<Record<*, *>> {
         // Find the transaction
-        val (transactionContainer, status) = persistenceService.findTransaction(
+        val (transactionContainer, status) = persistenceService.findLedgerTransaction(
             findTransaction.id,
             findTransaction.transactionStatus.toTransactionStatus()
         )
 
         // return output records
         return listOf(
-            utxoOutputRecordFactory.getFindTransactionSuccessRecord(
+            utxoOutputRecordFactory.getFindLedgerTransactionSuccessRecord(
                 transactionContainer,
                 status,
                 externalEventContext,
-                serializationService
             )
         )
     }

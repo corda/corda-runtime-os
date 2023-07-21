@@ -3,6 +3,7 @@ package net.corda.ledger.persistence.utxo
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.utxo.data.transaction.LedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
@@ -10,7 +11,9 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 
 interface UtxoPersistenceService {
-    fun findTransaction(id: String, transactionStatus: TransactionStatus): Pair<SignedTransactionContainer?, String?>
+    fun findSignedTransaction(id: String, transactionStatus: TransactionStatus): Pair<SignedTransactionContainer?, String?>
+
+    fun findLedgerTransaction(id: String, transactionStatus: TransactionStatus): Pair<LedgerTransactionContainer?, String?>
 
     fun <T: ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoTransactionOutputDto>
 

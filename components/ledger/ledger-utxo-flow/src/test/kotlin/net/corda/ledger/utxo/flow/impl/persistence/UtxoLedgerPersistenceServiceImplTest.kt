@@ -173,7 +173,7 @@ class UtxoLedgerPersistenceServiceImplTest {
 
         whenever(utxoSignedTransactionFactory.create(any<WireTransaction>(), any())).thenReturn(expectedObj)
 
-        assertThat(utxoLedgerPersistenceService.find(testId)).isEqualTo(expectedObj)
+        assertThat(utxoLedgerPersistenceService.findSignedTransaction(testId)).isEqualTo(expectedObj)
 
         verify(serializationService).deserialize<UtxoSignedTransactionInternal>(any<ByteArray>(), any())
         assertThat(argumentCaptor.firstValue).isEqualTo(FindTransactionExternalEventFactory::class.java)
@@ -203,7 +203,7 @@ class UtxoLedgerPersistenceServiceImplTest {
 
         whenever(utxoSignedTransactionFactory.create(any<WireTransaction>(), any())).thenReturn(expectedObj)
 
-        assertThat(utxoLedgerPersistenceService.findTransactionWithStatus(testId)).isEqualTo(expectedObj to VERIFIED)
+        assertThat(utxoLedgerPersistenceService.findSignedTransactionWithStatus(testId)).isEqualTo(expectedObj to VERIFIED)
 
         verify(serializationService).deserialize<UtxoSignedTransactionInternal>(any<ByteArray>(), any())
         assertThat(argumentCaptor.firstValue).isEqualTo(FindTransactionExternalEventFactory::class.java)

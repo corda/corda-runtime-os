@@ -10,6 +10,7 @@ import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.ledger.persistence.PersistTransactionIfDoesNotExist
 import net.corda.data.ledger.persistence.ResolveStateRefs
 import net.corda.data.ledger.persistence.UpdateTransactionStatus
+import net.corda.data.ledger.persistence.v2.FindLedgerTransaction
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.persistence.common.RequestHandler
@@ -17,6 +18,16 @@ import net.corda.ledger.persistence.common.UnsupportedRequestTypeException
 import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
 import net.corda.ledger.persistence.query.execution.impl.VaultNamedQueryExecutorImpl
 import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoExecuteNamedQueryHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindLedgerTransactionRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedGroupParametersRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindUnconsumedStatesByTypeRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransactionIfDoesNotExistRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransactionRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoResolveStateRefsRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoUpdateTransactionStatusRequestHandler
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
@@ -54,75 +65,84 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             sandbox.getSerializationService()
         )
 
+        val serializationService = sandbox.getSerializationService()
+        val outputRecordFactory = UtxoOutputRecordFactoryImpl(responseFactory, serializationService)
+        val externalEventContext = request.flowExternalEventContext
+
         return when (val req = request.request) {
             is FindTransaction -> {
-                return UtxoFindTransactionRequestHandler(
+                UtxoFindTransactionRequestHandler(
                     req,
-                    sandbox.getSerializationService(),
-                    request.flowExternalEventContext,
+                    externalEventContext,
                     persistenceService,
-                    UtxoOutputRecordFactoryImpl(responseFactory)
+                    outputRecordFactory
+                )
+            }
+            is FindLedgerTransaction -> {
+                UtxoFindLedgerTransactionRequestHandler(
+                    req,
+                    externalEventContext,
+                    persistenceService,
+                    outputRecordFactory
                 )
             }
             is FindUnconsumedStatesByType -> {
-                return UtxoFindUnconsumedStatesByTypeRequestHandler(
+                UtxoFindUnconsumedStatesByTypeRequestHandler(
                     req,
                     sandbox,
-                    sandbox.getSerializationService(),
-                    request.flowExternalEventContext,
+                    externalEventContext,
                     persistenceService,
-                    UtxoOutputRecordFactoryImpl(responseFactory)
+                    outputRecordFactory
                 )
             }
             is ResolveStateRefs -> {
-                return UtxoResolveStateRefsRequestHandler(
+                UtxoResolveStateRefsRequestHandler(
                     req,
-                    sandbox.getSerializationService(),
-                    request.flowExternalEventContext,
+                    externalEventContext,
                     persistenceService,
-                    UtxoOutputRecordFactoryImpl(responseFactory)
+                    outputRecordFactory
                 )
             }
             is PersistTransaction -> {
                 UtxoPersistTransactionRequestHandler(
                     sandbox.virtualNodeContext.holdingIdentity,
-                    UtxoTransactionReaderImpl(sandbox, request.flowExternalEventContext, req),
+                    UtxoTransactionReaderImpl(sandbox, externalEventContext, req),
                     UtxoTokenObserverMapImpl(sandbox),
-                    request.flowExternalEventContext,
+                    externalEventContext,
                     persistenceService,
-                    UtxoOutputRecordFactoryImpl(responseFactory),
+                    outputRecordFactory,
                     sandbox.getSandboxSingletonService()
                 )
             }
             is PersistTransactionIfDoesNotExist -> {
                 UtxoPersistTransactionIfDoesNotExistRequestHandler(
-                    UtxoTransactionReaderImpl(sandbox, request.flowExternalEventContext, req),
-                    request.flowExternalEventContext,
+                    UtxoTransactionReaderImpl(sandbox, externalEventContext, req),
+                    externalEventContext,
                     externalEventResponseFactory,
-                    sandbox.getSandboxSingletonService(),
+                    serializationService,
                     persistenceService
                 )
             }
             is UpdateTransactionStatus -> {
                 UtxoUpdateTransactionStatusRequestHandler(
                     req,
-                    request.flowExternalEventContext,
+                    externalEventContext,
                     externalEventResponseFactory,
                     persistenceService
                 )
             }
             is FindWithNamedQuery -> {
                 UtxoExecuteNamedQueryHandler(
-                    request.flowExternalEventContext,
+                    externalEventContext,
                     req,
                     vaultNamedQueryExecutor,
                     externalEventResponseFactory
                 )
             }
             is FindSignedGroupParameters -> {
-                return UtxoFindSignedGroupParametersRequestHandler(
+                UtxoFindSignedGroupParametersRequestHandler(
                     req,
-                    request.flowExternalEventContext,
+                    externalEventContext,
                     persistenceService,
                     responseFactory
                 )
@@ -130,12 +150,11 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             is PersistSignedGroupParametersIfDoNotExist -> {
                 UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler(
                     req,
-                    request.flowExternalEventContext,
+                    externalEventContext,
                     externalEventResponseFactory,
                     persistenceService
                 )
             }
-
             else -> {
                 throw UnsupportedRequestTypeException(LedgerTypes.UTXO, request.request.javaClass)
             }

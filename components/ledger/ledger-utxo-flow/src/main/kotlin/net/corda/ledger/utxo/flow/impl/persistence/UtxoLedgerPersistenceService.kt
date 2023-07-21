@@ -5,6 +5,7 @@ import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
+import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 /**
@@ -24,8 +25,36 @@ interface UtxoLedgerPersistenceService {
      * @throws CordaPersistenceException if an error happens during find operation.
      */
     @Suspendable
-    fun find(id: SecureHash, transactionStatus: TransactionStatus = TransactionStatus.VERIFIED): UtxoSignedTransaction?
+    fun findSignedTransaction(id: SecureHash, transactionStatus: TransactionStatus = TransactionStatus.VERIFIED): UtxoSignedTransaction?
 
+    /**
+     * Find a verified UTXO signed transaction in the persistence context given it's [id], resolve its state refs and convert it to a ledger
+     * transaction.
+     *
+     * @param id UTXO signed transaction ID.
+     *
+     * @return The found UTXO ledger transaction, null if it could not be found in the persistence context.
+     *
+     * @throws CordaPersistenceException if an error happens during find operation.
+     */
+    @Suspendable
+    fun findLedgerTransaction(id: SecureHash): UtxoLedgerTransaction?
+
+    /**
+     * Find a UTXO signed transaction in the persistence context given it's [id], resolve its state refs and convert it to a ledger
+     * transaction.
+     *
+     * @param id UTXO signed transaction ID.
+     * @param transactionStatus filter for this status.
+     *
+     * @return The found UTXO ledger transaction, null if it could not be found in the persistence context.
+     *
+     * @throws CordaPersistenceException if an error happens during find operation.
+     */
+    @Suspendable
+    fun findLedgerTransactionWithStatus(id: SecureHash, transactionStatus: TransactionStatus): Pair<UtxoLedgerTransaction?, TransactionStatus>?
+
+    // NOT NEEDED NOW, WAS ONLY USED BY BACKCHAIN VERIFIED
     /**
      * Find a UTXO signed transaction in the persistence context given it's [id] and return it with its status.
      *
@@ -39,7 +68,7 @@ interface UtxoLedgerPersistenceService {
      * @throws CordaPersistenceException if an error happens during find operation.
      */
     @Suspendable
-    fun findTransactionWithStatus(
+    fun findSignedTransactionWithStatus(
         id: SecureHash,
         transactionStatus: TransactionStatus = TransactionStatus.VERIFIED
     ): Pair<UtxoSignedTransaction?, TransactionStatus>?

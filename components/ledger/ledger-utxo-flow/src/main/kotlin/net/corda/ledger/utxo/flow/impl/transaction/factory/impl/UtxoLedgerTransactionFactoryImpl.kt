@@ -9,6 +9,7 @@ import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -26,6 +27,11 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
     private val utxoLedgerStateQueryService: UtxoLedgerStateQueryService
 ) : UtxoLedgerTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
+    // fetch whole ledger tx as part of the find in the ledger service
+    // put states into the cache
+    // if all the states exist in the cache then no need to retrieve them from the database, need to hold in the checkpoint though or they
+    // could get evicted by the time we come back from the database (this is an optimisation though so need to decide if it is worth
+    // doing it).
     @Suspendable
     override fun create(
         wireTransaction: WireTransaction
@@ -51,6 +57,21 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
 
         return UtxoLedgerTransactionImpl(
             wrappedUtxoWireTransaction,
+            inputStateAndRefs,
+            referenceStateAndRefs
+        )
+    }
+
+    // if any of the state refs are missing return a platform exception from the database worker
+    // no point returning part of the data and then discarding it
+    @Suspendable
+    override fun create(
+        wireTransaction: WireTransaction,
+        inputStateAndRefs: List<StateAndRef<*>>, // or transaction output dtos
+        referenceStateAndRefs: List<StateAndRef<*>> // or transaction output dtos
+    ): UtxoLedgerTransaction {
+        return UtxoLedgerTransactionImpl(
+            WrappedUtxoWireTransaction(wireTransaction, serializationService),
             inputStateAndRefs,
             referenceStateAndRefs
         )

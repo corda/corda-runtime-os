@@ -44,7 +44,8 @@ class TransactionBackchainVerifierImpl @Activate constructor(
         val sortedTransactions = topologicalSort.complete().iterator()
 
         for (transactionId in sortedTransactions) {
-            val (transaction, status) = utxoLedgerPersistenceService.findTransactionWithStatus(
+            // can call find ledger transaction here because we find a signed tx and then resolve states later on
+            val (transaction, status) = utxoLedgerPersistenceService.findLedgerTransactionWithStatus(
                 transactionId,
                 UNVERIFIED
             ) ?: throw CordaRuntimeException("Transaction does not exist locally")

@@ -13,6 +13,7 @@ import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.persistence.EntityResponse
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
+import net.corda.ledger.utxo.data.transaction.LedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
@@ -23,7 +24,10 @@ import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.virtualnode.HoldingIdentity
 import java.nio.ByteBuffer
 
-class UtxoOutputRecordFactoryImpl(private val responseFactory: ResponseFactory) : UtxoOutputRecordFactory {
+class UtxoOutputRecordFactoryImpl(
+    private val responseFactory: ResponseFactory,
+    private val serializationService: SerializationService
+) : UtxoOutputRecordFactory {
 
     override fun getTokenCacheChangeEventRecords(
         holdingIdentity: HoldingIdentity,
@@ -60,13 +64,25 @@ class UtxoOutputRecordFactoryImpl(private val responseFactory: ResponseFactory) 
         transactionContainer: SignedTransactionContainer?,
         status: String?,
         externalEventContext: ExternalEventContext,
-        serializationService: SerializationService
     ): Record<String, FlowEvent> {
         return responseFactory.successResponse(
             externalEventContext,
             EntityResponse(
-                listOf(transactionContainer to status)
-                    .map { ByteBuffer.wrap(serializationService.serialize(it).bytes) },
+                listOf(transactionContainer to status).map { ByteBuffer.wrap(serializationService.serialize(it).bytes) },
+                KeyValuePairList(emptyList())
+            )
+        )
+    }
+
+    override fun getFindLedgerTransactionSuccessRecord(
+        transactionContainer: LedgerTransactionContainer?,
+        status: String?,
+        externalEventContext: ExternalEventContext,
+    ): Record<String, FlowEvent> {
+        return responseFactory.successResponse(
+            externalEventContext,
+            EntityResponse(
+                listOf(transactionContainer to status).map { ByteBuffer.wrap(serializationService.serialize(it).bytes) },
                 KeyValuePairList(emptyList())
             )
         )
@@ -75,18 +91,17 @@ class UtxoOutputRecordFactoryImpl(private val responseFactory: ResponseFactory) 
     override fun getStatesSuccessRecord(
         states: List<UtxoTransactionOutputDto>,
         externalEventContext: ExternalEventContext,
-        serializationService: SerializationService
     ): Record<String, FlowEvent> {
         return responseFactory.successResponse(
             externalEventContext,
                 UtxoTransactionOutputs(
-                states.map {
-                    UtxoTransactionOutput(
-                        it.transactionId,
-                        it.leafIndex,
-                        ByteBuffer.wrap(it.info),
-                        ByteBuffer.wrap(it.data)
-                    )
+                states.map { state ->
+                    UtxoTransactionOutput.newBuilder()
+                        .setTransactionId(state.transactionId)
+                        .setIndex(state.leafIndex)
+                        .setInfo(ByteBuffer.wrap(state.info))
+                        .setData(ByteBuffer.wrap(state.data))
+                        .build()
                 }
             )
         )

@@ -184,7 +184,7 @@ class UtxoPersistenceServiceImplTest {
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction = persistTransactionViaEntity(entityFactory)
 
-        val retval = persistenceService.findTransaction(transaction.id.toString(), UNVERIFIED)
+        val retval = persistenceService.findSignedTransaction(transaction.id.toString(), UNVERIFIED)
 
         assertThat(retval).isEqualTo(transaction to "U")
     }
@@ -194,7 +194,7 @@ class UtxoPersistenceServiceImplTest {
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction = persistTransactionViaEntity(entityFactory)
 
-        val retval = persistenceService.findTransaction(transaction.id.toString(), VERIFIED)
+        val retval = persistenceService.findSignedTransaction(transaction.id.toString(), VERIFIED)
 
         assertThat(retval).isEqualTo(null to "U")
     }

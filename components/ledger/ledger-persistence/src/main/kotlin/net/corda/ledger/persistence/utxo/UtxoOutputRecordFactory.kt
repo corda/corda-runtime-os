@@ -5,6 +5,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.utxo.data.transaction.LedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.messaging.api.records.Record
 import net.corda.v5.application.serialization.SerializationService
@@ -23,13 +24,17 @@ interface UtxoOutputRecordFactory {
         transactionContainer: SignedTransactionContainer?,
         status: String?,
         externalEventContext: ExternalEventContext,
-        serializationService: SerializationService
+    ): Record<String, FlowEvent>
+
+    fun getFindLedgerTransactionSuccessRecord(
+        transactionContainer: LedgerTransactionContainer?,
+        status: String?,
+        externalEventContext: ExternalEventContext,
     ): Record<String, FlowEvent>
 
     fun getStatesSuccessRecord(
         states: List<UtxoTransactionOutputDto>,
         externalEventContext: ExternalEventContext,
-        serializationService: SerializationService
     ): Record<String, FlowEvent>
 
     fun getPersistTransactionSuccessRecord(

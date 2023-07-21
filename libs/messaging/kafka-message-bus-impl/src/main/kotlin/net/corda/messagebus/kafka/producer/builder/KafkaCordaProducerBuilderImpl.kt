@@ -57,6 +57,7 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
                 val producer = createKafkaProducer(kafkaProperties, onSerializationError)
                 val maxAllowedMessageSize = messageBusConfig.getLong(MessagingConfig.MAX_ALLOWED_MSG_SIZE)
                 val producerChunkService = messagingChunkFactory.createChunkSerializerService(maxAllowedMessageSize)
+//                val producerChunkService = messagingChunkFactory.createChunkSerializerService(12000)
                 CordaKafkaProducerImpl(
                     resolvedConfig,
                     producer,
