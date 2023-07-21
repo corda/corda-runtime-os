@@ -1,6 +1,5 @@
-package net.corda.membership.impl.registration
+package net.corda.membership.impl.registration.verifiers
 
-import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.lang.StringBuilder

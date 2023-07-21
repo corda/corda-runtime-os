@@ -50,6 +50,8 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Prot
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.MGM_INFO
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.PROTOCOL_PARAMETERS
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.lib.grouppolicy.MemberGroupPolicy
 import net.corda.membership.network.writer.NetworkInfoWriter
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
@@ -97,6 +99,12 @@ internal class DatabaseCpiPersistenceTest {
         on { encodeAsString(mgmPubKey) } doReturn mgmPubKeyStr
         on { decodePublicKey(any<ByteArray>()) } doReturn mgmPubKey
     }
+    private val mockGroupPolicy = mock<MemberGroupPolicy> {
+        on { protocolParameters } doReturn mock()
+    }
+    private val groupPolicyParser = mock<GroupPolicyParser> {
+        on { parseMember(any()) } doReturn mockGroupPolicy
+    }
     private val serializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn "serialized-bytes".toByteArray()
     }
@@ -106,6 +114,7 @@ internal class DatabaseCpiPersistenceTest {
     private val networkInfoWriter: NetworkInfoWriter = NetworkInfoDBWriterImpl(
         platformInfoProvider,
         keyEncodingService,
+        groupPolicyParser,
         cordaAvroSerializationFactory
     )
 
@@ -762,6 +771,7 @@ internal class DatabaseCpiPersistenceTest {
 
         @Test
         fun `database cpi persistence persists static network data if group policy is for a static network`() {
+            whenever(mockGroupPolicy.groupId).doReturn(groupId)
             val cpi = mockCpi(mockCpk(), groupPolicy = minimumStaticNetworkGroupPolicy)
 
             cpiPersistence.persistMetadataAndCpksWithDefaults(cpi)
@@ -788,6 +798,7 @@ internal class DatabaseCpiPersistenceTest {
 
         @Test
         fun `database cpi persistence add static network MGM to group policy if it is for a static network`() {
+            whenever(mockGroupPolicy.groupId).doReturn(groupId)
             val cpi = mockCpi(mockCpk(), groupPolicy = minimumStaticNetworkGroupPolicy)
 
             cpiPersistence.persistMetadataAndCpksWithDefaults(cpi)
@@ -821,6 +832,7 @@ internal class DatabaseCpiPersistenceTest {
 
         @Test
         fun `database cpi persistence operation returns the static network persisted group policy in the returned entity`() {
+            whenever(mockGroupPolicy.groupId).doReturn(groupId)
             val cpi = mockCpi(mockCpk(), groupPolicy = minimumStaticNetworkGroupPolicy)
 
             val result = cpiPersistence.persistMetadataAndCpksWithDefaults(cpi)
