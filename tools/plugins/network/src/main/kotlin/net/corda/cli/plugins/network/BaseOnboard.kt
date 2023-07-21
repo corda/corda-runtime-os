@@ -136,6 +136,8 @@ abstract class BaseOnboard : Runnable, RestCommand() {
 
     internal class OnboardException(message: String) : Exception(message)
 
+    internal class ResourceNotReadyException(message: String) : Exception(message)
+
     protected fun uploadCpi(cpi: InputStream, name: String): String {
         return createRestClient(CpiUploadRestResource::class).use { client ->
             cpi.use { jarInputStream ->
@@ -160,9 +162,9 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                 if (status.status == "OK") {
                     status.cpiFileChecksum
                 } else {
-                    null
+                    throw ResourceNotReadyException("CPI request $id is not ready yet!")
                 }
-            } ?: throw OnboardException("CPI request $id had failed after all attempts!")
+            }
         }
     }
 
@@ -178,6 +180,8 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                 val response = client.start().proxy.getVirtualNode(shortHashId)
                 if (response.flowP2pOperationalStatus == OperationalStatus.ACTIVE) {
                     return@executeWithRetry
+                } else {
+                    throw ResourceNotReadyException("Virtual Node $shortHashId is not active yet!")
                 }
             }
         }
@@ -211,9 +215,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         return createRestClient(HsmRestResource::class).use { client ->
             executeWithRetry(WAIT_DURATION, "Assign Soft HSM") {
                 val hsmAssociation = client.start().proxy.assignSoftHsm(holdingId, category)
-                if (hsmAssociation.hsmId.isNotEmpty()) {
-                    hsmAssociation.hsmId
-                } else {
+                hsmAssociation.hsmId.ifEmpty {
                     null
                 }
             } ?: run {
