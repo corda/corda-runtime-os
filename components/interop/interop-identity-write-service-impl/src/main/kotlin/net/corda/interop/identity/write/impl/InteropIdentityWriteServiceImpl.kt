@@ -27,6 +27,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
 import net.corda.interop.identity.cache.InteropIdentityCacheService
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import java.util.UUID
 
 
 @Suppress("ForbiddenComment")
@@ -46,6 +47,7 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
     companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val CLIENT_ID = "INTEROP_IDENTITY_WRITER"
+        const val CREATE_ID = "CREATE_ID"
     }
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<InteropIdentityWriteService>()
@@ -59,6 +61,7 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
     private val interopIdentityProducer = InteropIdentityProducer(publisher)
     private val hostedIdentityProducer = HostedIdentityProducer(publisher)
     private val membershipInfoProducer = MembershipInfoProducer(publisher)
+    private val interopGroupPolicyProducer = InteropGroupPolicyProducer(publisher)
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -69,6 +72,13 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
 
         // TODO: This should only be done for locally hosted identities!
         writeHostedIdentitiesTopic(identity)
+    }
+    override fun addGroupPolicy(groupId: String, groupPolicy: String) {
+        var groupPolicyContent = ""
+        if(groupPolicy.contains(CREATE_ID)) {
+            groupPolicyContent = groupPolicy.replace(CREATE_ID, UUID.randomUUID().toString())
+        }
+        interopGroupPolicyProducer.publishInteropGroupPolicy(groupId, groupPolicyContent)
     }
 
     private fun writeMemberInfoTopic(vNodeShortHash: String, identity: InteropIdentity) {

@@ -31,6 +31,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
 import net.corda.interop.core.InteropIdentity
+import net.corda.libs.interop.endpoints.v1.types.InteropIdentityResponse
 import net.corda.rest.exception.BadRequestException
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
@@ -111,7 +112,7 @@ internal class InteropRestResourceImpl @Activate constructor(
         } catch (e: ShortHashException) {
             throw BadRequestException("Invalid holding identity short hash${e.message?.let { ": $it" }}")
         }
-
+        interopIdentityWriteService.addGroupPolicy(restInteropIdentity.groupId.toString(), restInteropIdentity.groupPolicy)
         interopIdentityWriteService.addInteropIdentity(
             vnodeshorthash,
             InteropIdentity(
@@ -130,12 +131,12 @@ internal class InteropRestResourceImpl @Activate constructor(
         return ResponseEntity.ok("OK")
     }
 
-    override fun getInterOpIdentities(vnodeshorthash: String): List<RestInteropIdentity> {
+    override fun getInterOpIdentities(vnodeshorthash: String): List<InteropIdentityResponse> {
         val vNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(vnodeshorthash))
         val cacheView = interopIdentityCacheService.getHoldingIdentityCacheView(vnodeshorthash)
         val interopIdentities = cacheView.getIdentities()
         return interopIdentities.map {
-            RestInteropIdentity(
+            InteropIdentityResponse(
                 it.x500Name,
                 UUID.fromString(it.groupId),
                 vNodeInfo?.holdingIdentity?.shortHash.toString(),

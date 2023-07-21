@@ -12,4 +12,12 @@ interface InteropIdentityWriteService : Lifecycle {
      * @param identity The new interop identity to add.
      */
     fun addInteropIdentity(vNodeShortHash: String, identity: InteropIdentity)
+
+    /**
+     * Add a new group policy json.
+     *
+     * @param groupId groupId of the interop group.
+     * @param groupPolicy group policy content.
+     */
+    fun addGroupPolicy(groupId: String, groupPolicy: String)
 }

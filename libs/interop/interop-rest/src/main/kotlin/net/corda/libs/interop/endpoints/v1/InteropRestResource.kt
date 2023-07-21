@@ -1,5 +1,6 @@
 package net.corda.libs.interop.endpoints.v1
 
+import net.corda.libs.interop.endpoints.v1.types.InteropIdentityResponse
 import net.corda.libs.interop.endpoints.v1.types.RestInteropIdentity
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpGET
@@ -57,7 +58,7 @@ interface InteropRestResource : RestResource {
     fun getInterOpIdentities(
         @RestPathParameter(description = "ID of the holding identity which identities are to be returned.")
         vnodeshorthash: String
-    ): List<RestInteropIdentity>
+    ): List<InteropIdentityResponse>
 
     /**
      * Get the details of my interop identity.
