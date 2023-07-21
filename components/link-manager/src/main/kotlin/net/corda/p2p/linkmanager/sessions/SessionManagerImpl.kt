@@ -152,7 +152,7 @@ internal class SessionManagerImpl(
         groupPolicyProvider,
         membershipGroupReaderProvider,
         ::refreshOutboundSession,
-        { activeInboundSessions.remove(it) },
+        ::tearDownInboundSession,
         clock,
         executorServiceFactory
     )
@@ -386,6 +386,11 @@ internal class SessionManagerImpl(
         executorService.shutdownNow()
         CordaMetrics.registry.remove(inboundSessionCount)
         CordaMetrics.registry.remove(outboundSessionCount)
+    }
+
+    private fun tearDownInboundSession(sessionId: String) {
+        activeInboundSessions.remove(sessionId)
+        pendingInboundSessions.remove(sessionId)
     }
 
     private fun refreshOutboundSession(sessionCounterparties: SessionCounterparties, sessionId: String) {
@@ -1053,7 +1058,7 @@ internal class SessionManagerImpl(
                         initialTrackedSession
                     } else {
                         executorService.schedule(
-                            { sessionTimeout(counterparties, sessionId) },
+                            { outboundSessionTimeout(counterparties, sessionId) },
                             config.get().sessionTimeout.toMillis(),
                             TimeUnit.MILLISECONDS
                         )
@@ -1135,21 +1140,23 @@ internal class SessionManagerImpl(
             }
         }
 
-        private fun sessionTimeout(counterparties: SessionCounterparties, sessionId: String) {
+        private fun outboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String) {
             val sessionInfo = trackedOutboundSessions[sessionId] ?: return
             val timeSinceLastAck = timeStamp() - sessionInfo.lastAckTimestamp
-            if (timeSinceLastAck >= config.get().sessionTimeout.toMillis()) {
+            val sessionTimeoutMs = config.get().sessionTimeout.toMillis()
+            if (timeSinceLastAck >= sessionTimeoutMs) {
                 logger.info(
-                    "Outbound session $sessionId (local=${counterparties.ourId}, remote=${counterparties.counterpartyId}) timed " +
-                        "out due to inactivity and it will be cleaned up."
+                    "Outbound session $sessionId (local=${counterparties.ourId}, remote=" +
+                            "${counterparties.counterpartyId}) has not received any messages for the configured " +
+                            "timeout threshold ($sessionTimeoutMs ms) so it will be cleaned up."
                 )
                 destroyOutboundSession(counterparties, sessionId)
                 trackedOutboundSessions.remove(sessionId)
                 recordSessionTimeoutMetric(counterparties.ourId, counterparties.counterpartyId)
             } else {
                 executorService.schedule(
-                    { sessionTimeout(counterparties, sessionId) },
-                    config.get().sessionTimeout.toMillis() - timeSinceLastAck,
+                    { outboundSessionTimeout(counterparties, sessionId) },
+                    sessionTimeoutMs - timeSinceLastAck,
                     TimeUnit.MILLISECONDS
                 )
             }
@@ -1158,17 +1165,18 @@ internal class SessionManagerImpl(
         private fun inboundSessionTimeout(sessionId: String) {
             val sessionInfo = trackedInboundSessions[sessionId] ?: return
             val timeSinceLastReceived = timeStamp() - sessionInfo.lastReceivedTimestamp
-            if (timeSinceLastReceived >= config.get().sessionTimeout.toMillis()) {
+            val sessionTimeoutMs = config.get().sessionTimeout.toMillis()
+            if (timeSinceLastReceived >= sessionTimeoutMs) {
                 logger.info(
                     "Inbound session $sessionId has not received any messages for the configured timeout " +
-                            "threshold (${config.get().sessionTimeout.toMillis()} ms) so it will be cleaned up."
+                            "threshold ($sessionTimeoutMs ms) so it will be cleaned up."
                 )
                 destroyInboundSession(sessionId)
                 trackedInboundSessions.remove(sessionId)
             } else {
                 executorService.schedule(
                     { inboundSessionTimeout(sessionId) },
-                    config.get().sessionTimeout.toMillis() - timeSinceLastReceived,
+                    sessionTimeoutMs - timeSinceLastReceived,
                     TimeUnit.MILLISECONDS
                 )
             }
