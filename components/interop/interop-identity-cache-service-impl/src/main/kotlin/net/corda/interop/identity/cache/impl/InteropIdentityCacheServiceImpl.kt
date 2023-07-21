@@ -53,7 +53,7 @@ class InteropIdentityCacheServiceImpl @Activate constructor(
         getOrCreateView(holdingIdentityShortHash).removeInteropIdentity(identity)
     }
 
-    override fun getHoldingIdentityCacheView(shortHash: String): InteropIdentityCacheView {
+    override fun getVirtualNodeCacheView(shortHash: String): InteropIdentityCacheView {
         return getOrCreateView(shortHash)
     }
 

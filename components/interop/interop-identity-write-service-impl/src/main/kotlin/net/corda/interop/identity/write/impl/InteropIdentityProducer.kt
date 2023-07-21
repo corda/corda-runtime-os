@@ -30,7 +30,7 @@ class InteropIdentityProducer(
         val recordValue = PersistentInteropIdentity(
             identity.groupId,
             identity.x500Name,
-            identity.holdingIdentityShortHash == holdingIdentityShortHash,
+            identity.owningVirtualNodeShortHash == holdingIdentityShortHash,
             identity.facadeIds,
             identity.applicationName,
             identity.endpointUrl,

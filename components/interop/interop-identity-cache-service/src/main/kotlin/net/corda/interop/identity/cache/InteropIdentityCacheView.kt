@@ -22,11 +22,11 @@ interface InteropIdentityCacheView {
     fun getIdentitiesByGroupId(): Map<String, Set<InteropIdentity>>
 
     /**
-     * Get identities within the view as a map with the holding identity short hash as a key.
+     * Get identities within the view as a map with the virtual node short hash as a key.
      *
      * @return Map of holding identity short hashes to sets of [InteropIdentity] objects.
      */
-    fun getIdentitiesByHoldingIdentity(): Map<String, Set<InteropIdentity>>
+    fun getIdentitiesByVirtualNode(): Map<String, Set<InteropIdentity>>
 
     /**
      * Get identities within the view as a map with the interop identity short hash as a key.
@@ -36,7 +36,7 @@ interface InteropIdentityCacheView {
     fun getIdentitiesByShortHash(): Map<String, InteropIdentity>
 
     /**
-     * Get interop identities owned by the owner of this view by group ID.
+     * Get interop identities owned by the owning virtual node of this view by group ID.
      *
      * @return Map of group IDs to [InteropIdentity] objects.
      */

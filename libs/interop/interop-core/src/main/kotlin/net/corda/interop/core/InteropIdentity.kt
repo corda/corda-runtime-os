@@ -10,21 +10,20 @@ import net.corda.data.interop.PersistentInteropIdentity
 data class InteropIdentity(
     val x500Name: String,
     val groupId: String,
-    val holdingIdentityShortHash: String,
+    val owningVirtualNodeShortHash: String,
     val facadeIds: List<String>,
     val applicationName: String,
     val endpointUrl: String,
     val endpointProtocol: String
-
 ) {
     val shortHash = Utils.computeShortHash(x500Name, groupId)
 
     companion object {
-        fun of(holdingIdentityShortHash: String, interopIdentity: PersistentInteropIdentity): InteropIdentity {
+        fun of(virtualNodeShortHash: String, interopIdentity: PersistentInteropIdentity): InteropIdentity {
             return InteropIdentity(
                 interopIdentity.x500Name,
                 interopIdentity.groupId,
-                holdingIdentityShortHash,
+                virtualNodeShortHash,
                 interopIdentity.facadeIds,
                 interopIdentity.applicationName,
                 interopIdentity.endpointUrl,
@@ -47,7 +46,7 @@ data class InteropIdentity(
     override fun hashCode(): Int {
         var result = x500Name.hashCode()
         result = 31 * result + groupId.hashCode()
-        result = 31 * result + holdingIdentityShortHash.hashCode()
+        result = 31 * result + owningVirtualNodeShortHash.hashCode()
         result = 31 * result + shortHash.hashCode()
         return result
     }

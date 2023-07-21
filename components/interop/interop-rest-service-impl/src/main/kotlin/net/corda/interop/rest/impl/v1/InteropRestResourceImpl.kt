@@ -117,7 +117,7 @@ internal class InteropRestResourceImpl @Activate constructor(
             InteropIdentity(
                 groupId = restInteropIdentity.groupId.toString(),
                 x500Name = restInteropIdentity.x500Name,
-                holdingIdentityShortHash = vnodeshorthash,
+                owningVirtualNodeShortHash = vnodeshorthash,
                 facadeIds = restInteropIdentity.facadeIds,
                 applicationName = restInteropIdentity.applicationName,
                 endpointProtocol = restInteropIdentity.endpointProtocol,
@@ -132,7 +132,7 @@ internal class InteropRestResourceImpl @Activate constructor(
 
     override fun getInterOpIdentities(vnodeshorthash: String): List<RestInteropIdentity> {
         val vNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(vnodeshorthash))
-        val cacheView = interopIdentityCacheService.getHoldingIdentityCacheView(vnodeshorthash)
+        val cacheView = interopIdentityCacheService.getVirtualNodeCacheView(vnodeshorthash)
         val interopIdentities = cacheView.getIdentities()
         return interopIdentities.map {
             RestInteropIdentity(
@@ -148,7 +148,7 @@ internal class InteropRestResourceImpl @Activate constructor(
     }
 
     override fun exportInterOpIdentity(vnodeshorthash: String, interopIdentityShortHash: String): String {
-        val cacheView = interopIdentityCacheService.getHoldingIdentityCacheView(vnodeshorthash)
+        val cacheView = interopIdentityCacheService.getVirtualNodeCacheView(vnodeshorthash)
         val interopIdentityMap = cacheView.getIdentitiesByShortHash()
         val interopIdentityToExport = if (interopIdentityMap.containsKey(interopIdentityShortHash)) {
             interopIdentityMap[interopIdentityShortHash]!!
@@ -157,7 +157,7 @@ internal class InteropRestResourceImpl @Activate constructor(
                 "No interop identity found with short hash '$interopIdentityShortHash'."
             )
         }
-        if (vnodeshorthash != interopIdentityToExport.holdingIdentityShortHash) {
+        if (vnodeshorthash != interopIdentityToExport.owningVirtualNodeShortHash) {
             throw InvalidInputDataException(
                 "Cannot export interop identity imported from another node."
             )
@@ -185,7 +185,7 @@ internal class InteropRestResourceImpl @Activate constructor(
             InteropIdentity(
                 groupId = restInteropIdentity.groupId.toString(),
                 x500Name = restInteropIdentity.x500Name,
-                holdingIdentityShortHash = vnodeshorthash,
+                owningVirtualNodeShortHash = vnodeshorthash,
                 facadeIds = restInteropIdentity.facadeIds,
                 applicationName = restInteropIdentity.applicationName,
                 endpointProtocol = restInteropIdentity.endpointProtocol,

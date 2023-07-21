@@ -19,21 +19,21 @@ class InteropIdentityTest {
         val identity1 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_1,
-            holdingIdentityShortHash = "101010101010",
+            owningVirtualNodeShortHash = "101010101010",
             facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
             applicationName = "Gold",
-            endpointUrl = "1",
-            endpointProtocol = "https://alice.corda5.r3.com:10000"
+            endpointProtocol = "https://alice.corda5.r3.com:10000",
+            endpointUrl = "1"
         )
 
         val identity2 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_1,
-            holdingIdentityShortHash = "101010101010",
+            owningVirtualNodeShortHash = "101010101010",
             facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
             applicationName = "Gold",
-            endpointUrl = "1",
-            endpointProtocol = "https://alice.corda5.r3.com:10000"
+            endpointProtocol = "https://alice.corda5.r3.com:10000",
+            endpointUrl = "1"
         )
 
         assertThat(identity1).isEqualTo(identity2)
@@ -44,21 +44,21 @@ class InteropIdentityTest {
         val identity1 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_1,
-            holdingIdentityShortHash = "101010101010",
+            owningVirtualNodeShortHash = "101010101010",
             facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
             applicationName = "Gold",
-            endpointUrl = "1",
-            endpointProtocol = "https://alice.corda5.r3.com:10000"
+            endpointUrl = "https://alice.corda5.r3.com:10000",
+            endpointProtocol = "1"
         )
 
         val identity2 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Bob",
             groupId = GROUP_ID_1,
-            holdingIdentityShortHash = "101010101010",
+            owningVirtualNodeShortHash = "101010101010",
             facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
             applicationName = "Gold",
-            endpointUrl = "1",
-            endpointProtocol = "https://bob.corda5.r3.com:10000"
+            endpointUrl = "https://bob.corda5.r3.com:10000",
+            endpointProtocol = "1"
         )
 
         assertThat(identity1).isNotEqualTo(identity2)
@@ -69,50 +69,50 @@ class InteropIdentityTest {
         val identity1 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_1,
-            holdingIdentityShortHash = "101010101010",
+            owningVirtualNodeShortHash = "101010101010",
             facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
             applicationName = "Gold",
-            endpointUrl = "1",
-            endpointProtocol = "https://alice.corda5.r3.com:10000"
+            endpointUrl = "https://alice.corda5.r3.com:10000",
+            endpointProtocol = "1"
         )
 
         val identity2 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_2,
-            holdingIdentityShortHash = "101010101010",
+            owningVirtualNodeShortHash = "101010101010",
             facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
             applicationName = "Gold",
-            endpointUrl = "1",
-            endpointProtocol = "https://alice.corda5.r3.com:10000"
+            endpointUrl = "https://alice.corda5.r3.com:10000",
+            endpointProtocol = "1"
         )
 
         assertThat(identity1).isNotEqualTo(identity2)
     }
 
     @Test
-    fun `unequal holding identity short hash`() {
+    fun `unequal virtual node short hash`() {
         val identity1 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_1,
-            holdingIdentityShortHash = "101010101010",
+            owningVirtualNodeShortHash = "101010101010",
             facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
             applicationName = "Gold",
-            endpointUrl = "1",
-            endpointProtocol = "https://alice.corda5.r3.com:10000"
+            endpointUrl = "https://alice.corda5.r3.com:10000",
+            endpointProtocol = "1"
         )
 
         val identity2 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_1,
-            holdingIdentityShortHash = "010101010101",
+            owningVirtualNodeShortHash = "010101010101",
             facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
             applicationName = "Gold",
-            endpointUrl = "1",
-            endpointProtocol = "https://alice.corda5.r3.com:10000"
+            endpointUrl = "https://alice.corda5.r3.com:10000",
+            endpointProtocol = "1"
         )
 
-        // Because each holding identity is expected to have only one identity in any given interop group
-        // we don't expect changes to the holding identity to affect equality
+        // Because each virtual node is expected to have only one identity in any given interop group
+        // we don't expect changes to the virtual node short hash to affect equality
         assertThat(identity1).isEqualTo(identity2)
     }
 }

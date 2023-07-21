@@ -7,11 +7,11 @@ import net.corda.interop.core.InteropIdentity
 import net.corda.interop.identity.cache.InteropIdentityCacheView
 
 
-class InteropIdentityCacheViewImpl(private val holdingIdentityShortHash: String): InteropIdentityCacheView {
+class InteropIdentityCacheViewImpl(private val virtualNodeShortHash: String): InteropIdentityCacheView {
     private val interopIdentities = HashSet<InteropIdentity>()
 
     private val byGroupId = HashMap<String, HashSet<InteropIdentity>>()
-    private val byHoldingIdentity = HashMap<String, HashSet<InteropIdentity>>()
+    private val byVirtualNode = HashMap<String, HashSet<InteropIdentity>>()
     private val byShortHash = HashMap<String, InteropIdentity>()
     private val myIdentities = HashMap<String, InteropIdentity>()
 
@@ -22,16 +22,16 @@ class InteropIdentityCacheViewImpl(private val holdingIdentityShortHash: String)
     }
 
     private fun getOrCreateByHoldingIdentityEntry(shortHash: String): HashSet<InteropIdentity> {
-        return byHoldingIdentity.computeIfAbsent(shortHash) {
+        return byVirtualNode.computeIfAbsent(shortHash) {
             HashSet()
         }
     }
 
     fun putInteropIdentity(identity: InteropIdentity) {
-        if (identity.holdingIdentityShortHash == holdingIdentityShortHash) {
+        if (identity.owningVirtualNodeShortHash == virtualNodeShortHash) {
             val existingOwnedIdentity = myIdentities[identity.groupId]
             require(existingOwnedIdentity == null || identity == existingOwnedIdentity) {
-                "Unable to add identity $identity to context of holding identity $holdingIdentityShortHash, " +
+                "Unable to add identity $identity to context of holding identity $virtualNodeShortHash, " +
                 "specified holding identity already owns an identity in this interop group."
             }
             myIdentities[identity.groupId] = identity
@@ -40,11 +40,11 @@ class InteropIdentityCacheViewImpl(private val holdingIdentityShortHash: String)
         interopIdentities.add(identity)
 
         getOrCreateByGroupIdEntry(identity.groupId).add(identity)
-        getOrCreateByHoldingIdentityEntry(identity.holdingIdentityShortHash).add(identity)
+        getOrCreateByHoldingIdentityEntry(identity.owningVirtualNodeShortHash).add(identity)
 
         // Safety check for short hash collisions
         require(byShortHash[identity.shortHash] == null || byShortHash[identity.shortHash] == identity) {
-            "Unable to add identity $identity to context of holding identity $holdingIdentityShortHash, " +
+            "Unable to add identity $identity to context of holding identity $virtualNodeShortHash, " +
             "the identity shares a short hash with an existing identity."
         }
 
@@ -61,10 +61,10 @@ class InteropIdentityCacheViewImpl(private val holdingIdentityShortHash: String)
             }
         }
 
-        byHoldingIdentity[identity.holdingIdentityShortHash]?.let {
+        byVirtualNode[identity.owningVirtualNodeShortHash]?.let {
             it.remove(identity)
             if (it.size == 0) {
-                byGroupId.remove(identity.holdingIdentityShortHash)
+                byGroupId.remove(identity.owningVirtualNodeShortHash)
             }
         }
 
@@ -72,7 +72,7 @@ class InteropIdentityCacheViewImpl(private val holdingIdentityShortHash: String)
             byShortHash.remove(identity.shortHash)
         }
 
-        if (identity.holdingIdentityShortHash == holdingIdentityShortHash) {
+        if (identity.owningVirtualNodeShortHash == virtualNodeShortHash) {
             myIdentities.remove(identity.groupId)
         }
     }
@@ -82,8 +82,8 @@ class InteropIdentityCacheViewImpl(private val holdingIdentityShortHash: String)
     override fun getIdentitiesByGroupId(): Map<String, Set<InteropIdentity>> =
         Collections.unmodifiableMap(byGroupId)
 
-    override fun getIdentitiesByHoldingIdentity(): Map<String, Set<InteropIdentity>> =
-        Collections.unmodifiableMap(byHoldingIdentity)
+    override fun getIdentitiesByVirtualNode(): Map<String, Set<InteropIdentity>> =
+        Collections.unmodifiableMap(byVirtualNode)
 
     override fun getIdentitiesByShortHash(): Map<String, InteropIdentity> =
         Collections.unmodifiableMap(byShortHash)

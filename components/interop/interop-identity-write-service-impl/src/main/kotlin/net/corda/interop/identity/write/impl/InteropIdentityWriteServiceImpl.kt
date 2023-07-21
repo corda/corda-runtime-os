@@ -72,11 +72,11 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
     }
 
     private fun writeMemberInfoTopic(vNodeShortHash: String, identity: InteropIdentity) {
-        val cacheView = interopIdentityCacheService.getHoldingIdentityCacheView(vNodeShortHash)
+        val cacheView = interopIdentityCacheService.getVirtualNodeCacheView(vNodeShortHash)
         val ownedInteropIdentities = cacheView.getOwnedIdentities()
 
         // If the new interop identity will become the owned one use that. Otherwise, retrieve an existing one from the cache.
-        val ownedInteropIdentity = if (identity.holdingIdentityShortHash == vNodeShortHash) {
+        val ownedInteropIdentity = if (identity.owningVirtualNodeShortHash == vNodeShortHash) {
             identity
         } else if (ownedInteropIdentities[identity.groupId] != null) {
             ownedInteropIdentities[identity.groupId]!!

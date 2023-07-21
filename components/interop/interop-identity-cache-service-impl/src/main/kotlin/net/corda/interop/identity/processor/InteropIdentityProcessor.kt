@@ -58,7 +58,7 @@ class InteropIdentityProcessor(
     }
 
     private fun updateCacheEntry(key: RecordKey, oldEntry: InteropIdentity, newEntry: InteropIdentity) {
-        val cacheView = cacheService.getHoldingIdentityCacheView(key.holdingIdentityShortHash)
+        val cacheView = cacheService.getVirtualNodeCacheView(key.holdingIdentityShortHash)
         val interopIdentities = cacheView.getIdentities()
 
         // Short hash can be derived from x500 name and group ID. Might as well perform a quick sanity check!
@@ -76,7 +76,7 @@ class InteropIdentityProcessor(
     }
 
     private fun insertCacheEntry(key: RecordKey, newEntry: InteropIdentity) {
-        val cacheView = cacheService.getHoldingIdentityCacheView(key.holdingIdentityShortHash)
+        val cacheView = cacheService.getVirtualNodeCacheView(key.holdingIdentityShortHash)
         val interopIdentities = cacheView.getIdentities()
 
         // Short hash can be derived from x500 name and group ID. Might as well perform a quick sanity check!
@@ -92,7 +92,7 @@ class InteropIdentityProcessor(
     }
 
     private fun removeCacheEntry(key: RecordKey, oldEntry: InteropIdentity) {
-        val cacheView = cacheService.getHoldingIdentityCacheView(key.holdingIdentityShortHash)
+        val cacheView = cacheService.getVirtualNodeCacheView(key.holdingIdentityShortHash)
         val interopIdentities = cacheView.getIdentities()
 
         // Short hash can be derived from x500 name and group ID. Might as well perform a quick sanity check!

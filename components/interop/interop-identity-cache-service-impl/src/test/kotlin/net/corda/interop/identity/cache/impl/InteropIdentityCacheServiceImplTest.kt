@@ -35,7 +35,7 @@ class InteropIdentityCacheServiceImplTest {
         val cache = InteropIdentityCacheServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
 
         val shortHash = "1234567890"
-        val response = cache.getHoldingIdentityCacheView(shortHash)
+        val response = cache.getVirtualNodeCacheView(shortHash)
 
         assertThat(response.getIdentities().isEmpty()).isTrue
     }
@@ -59,13 +59,13 @@ class InteropIdentityCacheServiceImplTest {
         val shortHash1 = "1234567890"
         val shortHash2 = "0987654321"
 
-        val view1 = cache.getHoldingIdentityCacheView(shortHash1)
-        val view2 = cache.getHoldingIdentityCacheView(shortHash2)
+        val view1 = cache.getVirtualNodeCacheView(shortHash1)
+        val view2 = cache.getVirtualNodeCacheView(shortHash2)
 
         val interopIdentity1 = InteropIdentity(
             groupId = UUID.randomUUID().toString(),
             x500Name = "C=GB, L=London, O=Alice",
-            holdingIdentityShortHash = shortHash1,
+            owningVirtualNodeShortHash = shortHash1,
             facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
             applicationName = "Gold",
             endpointUrl = "1",
@@ -75,7 +75,7 @@ class InteropIdentityCacheServiceImplTest {
         val interopIdentity2 = InteropIdentity(
             groupId = UUID.randomUUID().toString(),
             x500Name = "C=GB, L=London, O=Bob",
-            holdingIdentityShortHash = shortHash2,
+            owningVirtualNodeShortHash = shortHash2,
             facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
             applicationName = "Gold",
             endpointUrl = "1",
