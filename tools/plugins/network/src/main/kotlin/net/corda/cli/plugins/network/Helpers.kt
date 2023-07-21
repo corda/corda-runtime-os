@@ -39,8 +39,10 @@ internal object Helpers {
                 "deployment/$restWorkerDeploymentName",
                 "$port:8888"
             )
-                .inheritIO()
                 .start().also { process ->
+                    val reader = process.inputStream.bufferedReader()
+                    reader.readLine()
+                    reader.readLine()
                     Runtime.getRuntime().addShutdownHook(
                         thread(false) {
                             process.destroy()

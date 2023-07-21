@@ -72,9 +72,19 @@ for ((memberIndex=1; memberIndex<=MEMBER_COUNT; memberIndex++)); do
          $cluster
       echo "Member $memberIndex was onboarded into $cluster" >> "$reportFile"
   done
+  if ! ((memberIndex % 5)); then
+    echo "Verifying network"
+    while ! "$TESTING_DIR"/checkNetwork.sh; do
+        echo "Network is not valid, waiting..."
+        sleep 10
+    done
+    echo "Network is valid" >> "$reportFile"
+  fi
 done
 
+
+
 # Cleanup
-"$SCRIPT_DIR"/tearDown.sh
+#"$SCRIPT_DIR"/tearDown.sh
 
 echo "report saved in $reportFile"

@@ -173,7 +173,7 @@ abstract class BaseOnboard : Runnable {
     protected abstract val registrationContext: Map<String, Any?>
 
     private fun waitForVirtualNode(shortHashId: String) {
-        repeat(60) {
+        repeat(240) {
             try {
                 if (
                     Unirest.get("/virtualnode/$shortHashId")
