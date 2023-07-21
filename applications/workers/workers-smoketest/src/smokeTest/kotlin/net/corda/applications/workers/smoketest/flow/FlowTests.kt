@@ -7,6 +7,7 @@ import java.util.UUID
 import kotlin.text.Typography.quote
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
+import net.corda.applications.workers.smoketest.virtualnode.VirtualNodeInitializer
 import net.corda.e2etest.utilities.FlowResult
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_FAILED
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
@@ -96,6 +97,8 @@ class FlowTests {
         ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
 
         val jacksonObjectMapper = jacksonObjectMapper()
+
+        private val vNodeInitializer = VirtualNodeInitializer
 
         @BeforeAll
         @JvmStatic

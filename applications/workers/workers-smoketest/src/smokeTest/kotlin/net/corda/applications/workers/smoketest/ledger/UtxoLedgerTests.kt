@@ -3,6 +3,7 @@ package net.corda.applications.workers.smoketest.ledger
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import net.corda.applications.workers.smoketest.virtualnode.VirtualNodeInitializer
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
@@ -36,6 +37,8 @@ class UtxoLedgerTests {
             module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)
             registerModule(module)
         }
+
+        private val vNodeInitializer = VirtualNodeInitializer
     }
 
     private val testRunUniqueId = UUID.randomUUID()

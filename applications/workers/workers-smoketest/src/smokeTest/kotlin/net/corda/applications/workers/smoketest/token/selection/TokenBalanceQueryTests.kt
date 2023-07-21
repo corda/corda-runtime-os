@@ -2,6 +2,7 @@ package net.corda.applications.workers.smoketest.token.selection
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import net.corda.applications.workers.smoketest.virtualnode.VirtualNodeInitializer
 import java.math.BigDecimal
 import java.util.UUID
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
@@ -49,6 +50,8 @@ class TokenBalanceQueryTests {
         val objectMapper = ObjectMapper().apply {
             registerModule(KotlinModule.Builder().build())
         }
+
+        private val vNodeInitializer = VirtualNodeInitializer
     }
 
     private fun convertToTokenBalanceQueryResponseMsg(tokenBalanceQueryResponseMsgStr: String) =

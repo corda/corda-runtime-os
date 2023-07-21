@@ -1,13 +1,6 @@
 package net.corda.applications.workers.smoketest.virtualnode
 
-import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
-import net.corda.applications.workers.smoketest.TEST_CPI_NAME
-import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_NAME
-import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V1
-import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V2
-import net.corda.e2etest.utilities.CODE_SIGNER_CERT
-import net.corda.e2etest.utilities.CODE_SIGNER_CERT_ALIAS
-import net.corda.e2etest.utilities.CODE_SIGNER_CERT_USAGE
+import net.corda.applications.workers.smoketest.*
 import net.corda.e2etest.utilities.ClusterBuilder
 import net.corda.e2etest.utilities.assertWithRetry
 import net.corda.e2etest.utilities.awaitVirtualNodeOperationStatusCheck
@@ -54,44 +47,8 @@ class VirtualNodeRestTest {
 
         private val retryTimeout = 120.seconds
         private val retryInterval = 1.seconds
-    }
 
-    /**
-     * As long as no-one assigns an order lower than this, this test runs first, and all others, after, which is fine.
-     *
-     * This *first* test, uploads codesign certificate into the system.
-     */
-    @Test
-    @Order(5)
-    fun `can import codesigner certificate`() {
-        cluster {
-            assertWithRetry {
-                // Certificate upload can be slow in the combined worker, especially after it has just started up.
-                timeout(retryTimeout)
-                interval(retryInterval)
-                command { importCertificate(CODE_SIGNER_CERT, CODE_SIGNER_CERT_USAGE, CODE_SIGNER_CERT_ALIAS) }
-                condition { it.code == 204 }
-            }
-        }
-    }
-
-    /**
-     * This test, uploads a CPI into the system.
-     */
-    @Test
-    @Order(10)
-    fun `can upload CPI`() {
-        cluster {
-            val cpiHash = eventuallyUploadCpi(TEST_CPB_LOCATION, cpiName)
-
-            val actualChecksum = getCpiChecksum(cpiName)
-
-            assertThat(actualChecksum).isNotNull.isNotEmpty
-
-            assertThat(cpiHash).withFailMessage(ERROR_CPI_NOT_UPLOADED).isNotNull
-
-            assertThat(actualChecksum).isEqualTo(cpiHash)
-        }
+        private val vNodeInitializer = VirtualNodeInitializer
     }
 
     private fun ClusterBuilder.eventuallyUploadCpi(

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import net.corda.applications.workers.smoketest.virtualnode.VirtualNodeInitializer
 import net.corda.crypto.core.parseSecureHash
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
@@ -38,6 +39,8 @@ class ConsensualLedgerTests {
             module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)
             registerModule(module)
         }
+
+        private val vNodeInitializer = VirtualNodeInitializer
     }
 
     private val testRunUniqueId = UUID.randomUUID()
