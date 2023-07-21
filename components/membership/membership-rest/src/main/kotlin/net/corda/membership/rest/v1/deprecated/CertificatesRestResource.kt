@@ -1,4 +1,4 @@
-package net.corda.membership.rest.v1
+package net.corda.membership.rest.v1.deprecated
 
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.RestResource
@@ -8,18 +8,22 @@ import net.corda.rest.annotations.HttpPUT
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.annotations.RestApiVersion
 
 /**
  * The Certificates API consists of endpoints used to work with certificates and related operations. The API allows you
  * to import a certificate chain, and generate a certificate signing request (CSR) to be submitted to a certificate
  * authority (CA).
  */
+@Deprecated("Deprecated in favour of CertificateRestResource")
 @HttpRestResource(
     name = "Certificates API",
     description = "The Certificates API consists of endpoints used to work with certificates and related operations. " +
         "The API allows you to import a certificate chain, and generate a certificate signing request (CSR) to be" +
         " submitted to a certificate authority (CA).",
-    path = "certificates"
+    path = "certificates",
+    minVersion = RestApiVersion.C5_0,
+    maxVersion = RestApiVersion.C5_0
 )
 interface CertificatesRestResource : RestResource {
     companion object {

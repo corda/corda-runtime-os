@@ -11,7 +11,7 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.packaging.testutils.TestUtils
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
-import net.corda.membership.rest.v1.CertificatesRestResource
+import net.corda.membership.rest.v1.deprecated.CertificatesRestResource
 import net.corda.membership.rest.v1.HsmRestResource
 import net.corda.membership.rest.v1.KeysRestResource
 import net.corda.membership.rest.v1.MGMRestResource

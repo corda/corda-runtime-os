@@ -16,7 +16,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
-import net.corda.membership.rest.v1.CertificatesRestResource.Companion.SIGNATURE_SPEC
+import net.corda.membership.rest.v1.CertificateRestResource.Companion.SIGNATURE_SPEC
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.exception.BadRequestException
@@ -82,7 +82,7 @@ class CertificatesRestResourceImplTest {
     }
     private val certificatesClient = mock<CertificatesClient>()
 
-    private val certificatesOps = CertificatesRestResourceImpl(
+    private val certificatesOps = CertificateRestResourceImpl(
         cryptoOpsClient,
         keyEncodingService,
         lifecycleCoordinatorFactory,
