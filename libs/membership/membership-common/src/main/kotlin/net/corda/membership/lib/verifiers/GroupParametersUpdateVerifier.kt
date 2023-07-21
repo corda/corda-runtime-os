@@ -1,8 +1,8 @@
-package net.corda.membership.impl.rest.v1.verifiers
+package net.corda.membership.lib.verifiers
 
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MPV_KEY
 
-internal class GroupParametersUpdateVerifier {
+class GroupParametersUpdateVerifier {
 
     private companion object {
         const val CUSTOM_KEY_PREFIX = "ext."
@@ -25,7 +25,7 @@ internal class GroupParametersUpdateVerifier {
             }
         }
         parameters[MPV_KEY]?.let {
-            if (it.toInt() !in 0..99999) {
+            if (it.toInt() !in 50000..99999) {
                 errorMessages += "The minimum platform version (key: $MPV_KEY) has an invalid value.\n"
             }
             it

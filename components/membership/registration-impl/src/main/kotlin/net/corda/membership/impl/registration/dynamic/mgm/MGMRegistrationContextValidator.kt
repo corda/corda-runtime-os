@@ -4,8 +4,8 @@ import net.corda.configuration.read.ConfigurationGetService
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
 import net.corda.membership.impl.registration.dynamic.mgm.ContextUtils.sessionKeyRegex
-import net.corda.membership.impl.registration.dynamic.verifiers.OrderVerifier
-import net.corda.membership.impl.registration.dynamic.verifiers.P2pEndpointVerifier
+import net.corda.membership.impl.registration.verifiers.OrderVerifier
+import net.corda.membership.impl.registration.verifiers.P2pEndpointVerifier
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException

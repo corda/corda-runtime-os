@@ -1,5 +1,7 @@
 package net.corda.membership.lib.impl.grouppolicy.v1
 
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MPV_KEY
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.PROTOCOL_MODE
@@ -71,6 +73,14 @@ class MemberGroupPolicyImplTest {
                         mapOf(TEST_STATIC_MEMBER_KEY to TEST_STATIC_MEMBER_VALUE),
                         mapOf(TEST_STATIC_MEMBER_KEY to TEST_STATIC_MEMBER_VALUE)
                     )
+                it.assertThat(groupPolicy.protocolParameters.staticNetworkGroupParameters)
+                    .isNotNull
+                    .isNotEmpty
+                    .hasSize(2)
+                    .containsExactlyInAnyOrderEntriesOf(mapOf(
+                        MPV_KEY to MPV,
+                        CUSTOM_PARAMETER_KEY to CUSTOM_PARAMETER_VALUE
+                    ))
 
                 it.assertThat(groupPolicy.p2pParameters.sessionPki).isEqualTo(SessionPkiMode.STANDARD)
                 it.assertThat(groupPolicy.p2pParameters.sessionTrustRoots)
@@ -727,6 +737,27 @@ class MemberGroupPolicyImplTest {
                 MemberGroupPolicyImpl(buildGroupPolicyNode(cipherSuiteOverride = null))
             }
             assertThat(ex.message).isEqualTo(getMissingKeyError(CIPHER_SUITE))
+        }
+
+        @Test
+        fun `group parameters may only contain MPV or custom parameters`() {
+            val ex = assertThrows<BadGroupPolicyException> {
+                MemberGroupPolicyImpl(
+                    buildGroupPolicyNode(
+                        protocolParametersOverride = buildProtocolParameters(
+                            staticNetworkOverride = buildStaticMemberTemplate(
+                                listOf(
+                                    mapOf(TEST_STATIC_MEMBER_KEY to TEST_STATIC_MEMBER_VALUE)
+                                ),
+                                mapOf(
+                                    EPOCH_KEY to "5"
+                                )
+                            )
+                        )
+                    )
+                )
+            }
+            assertThat(ex.message).contains("Failed to validate the group parameters")
         }
     }
 }

@@ -30,7 +30,7 @@ resources:
   requests: {}
 
 # -- node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/
-nodeSelector: {}
+nodeSelector: { }
 
 # Database configuration
 db:
