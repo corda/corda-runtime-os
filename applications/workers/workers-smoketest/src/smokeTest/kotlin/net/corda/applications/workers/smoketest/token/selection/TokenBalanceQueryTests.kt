@@ -25,6 +25,7 @@ class TokenBalanceQueryTests {
     private companion object {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"
         const val TEST_CPB_LOCATION = "/META-INF/ledger-utxo-demo-app.cpb"
+        const val NOTARY_SERVICE_X500 = "O=MyNotaryService, L=London, C=GB"
 
         val testRunUniqueId = UUID.randomUUID().toString()
         val groupId = UUID.randomUUID().toString()
@@ -100,7 +101,7 @@ class TokenBalanceQueryTests {
         registerStaticMember(aliceHoldingId)
         registerStaticMember(bobHoldingId)
 
-        registerStaticMember(notaryHoldingId, true)
+        registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
     }
 
     @Test
