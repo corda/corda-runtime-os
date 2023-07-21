@@ -21,7 +21,7 @@ class InteropIdentityCacheViewImpl(private val virtualNodeShortHash: String): In
         }
     }
 
-    private fun getOrCreateByHoldingIdentityEntry(shortHash: String): HashSet<InteropIdentity> {
+    private fun getOrCreateByVirtualNodeEntry(shortHash: String): HashSet<InteropIdentity> {
         return byVirtualNode.computeIfAbsent(shortHash) {
             HashSet()
         }
@@ -31,8 +31,8 @@ class InteropIdentityCacheViewImpl(private val virtualNodeShortHash: String): In
         if (identity.owningVirtualNodeShortHash == virtualNodeShortHash) {
             val existingOwnedIdentity = myIdentities[identity.groupId]
             require(existingOwnedIdentity == null || identity == existingOwnedIdentity) {
-                "Unable to add identity $identity to context of holding identity $virtualNodeShortHash, " +
-                "specified holding identity already owns an identity in this interop group."
+                "Unable to add identity $identity to view of virtual node $virtualNodeShortHash, " +
+                "specified virtual node already owns an identity in this interop group."
             }
             myIdentities[identity.groupId] = identity
         }
@@ -40,11 +40,11 @@ class InteropIdentityCacheViewImpl(private val virtualNodeShortHash: String): In
         interopIdentities.add(identity)
 
         getOrCreateByGroupIdEntry(identity.groupId).add(identity)
-        getOrCreateByHoldingIdentityEntry(identity.owningVirtualNodeShortHash).add(identity)
+        getOrCreateByVirtualNodeEntry(identity.owningVirtualNodeShortHash).add(identity)
 
         // Safety check for short hash collisions
         require(byShortHash[identity.shortHash] == null || byShortHash[identity.shortHash] == identity) {
-            "Unable to add identity $identity to context of holding identity $virtualNodeShortHash, " +
+            "Unable to add identity $identity to view of virtual node $virtualNodeShortHash, " +
             "the identity shares a short hash with an existing identity."
         }
 
