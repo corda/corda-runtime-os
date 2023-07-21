@@ -114,7 +114,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
 
     private val cpi by lazy {
         if (cpiFile != null) {
-            return@lazy cpiFile
+            return@lazy cpiFile!!
         }
         val mgmGroupPolicyFile = File.createTempFile("mgm.groupPolicy.", ".json").also {
             it.deleteOnExit()
