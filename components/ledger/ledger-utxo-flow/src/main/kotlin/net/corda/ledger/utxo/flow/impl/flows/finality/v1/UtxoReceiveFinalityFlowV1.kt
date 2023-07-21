@@ -5,6 +5,8 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
+import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
+import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityVersion
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.flows.finality.v1.FinalityNotarizationFailureType.Companion.toFinalityNotarizationFailureType
@@ -28,7 +30,8 @@ import org.slf4j.LoggerFactory
 @CordaSystemFlow
 class UtxoReceiveFinalityFlowV1(
     private val session: FlowSession,
-    private val validator: UtxoTransactionValidator
+    private val validator: UtxoTransactionValidator,
+    val version: UtxoFinalityVersion
 ) : UtxoFinalityBaseV1() {
 
     private companion object {
@@ -48,7 +51,7 @@ class UtxoReceiveFinalityFlowV1(
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
-        val initialTransaction = receiveTransactionAndBackchain()
+        val (initialTransaction, transferAdditionalSignatures) = receiveTransactionAndBackchain()
         val transactionId = initialTransaction.id
         addTransactionIdToFlowContext(flowEngine, transactionId)
         verifyExistingSignatures(initialTransaction, session)
@@ -73,17 +76,38 @@ class UtxoReceiveFinalityFlowV1(
             session.send(payload)
             throw CordaRuntimeException(payload.message)
         }
-        transaction = receiveSignaturesAndAddToTransaction(transaction)
-        verifyAllReceivedSignatures(transaction)
-        persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
+
+        transaction = receiveAndPersistSignaturesOrSkip(transaction, transferAdditionalSignatures)
         transaction = receiveNotarySignaturesAndAddToTransaction(transaction)
         persistNotarizedTransaction(transaction)
         return transaction
     }
 
     @Suspendable
-    private fun receiveTransactionAndBackchain(): UtxoSignedTransactionInternal {
-        val initialTransaction = session.receive(UtxoSignedTransactionInternal::class.java)
+    private fun receiveAndPersistSignaturesOrSkip(
+        transaction: UtxoSignedTransactionInternal,
+        transferAdditionalSignatures: Boolean
+    ): UtxoSignedTransactionInternal {
+        return if (transferAdditionalSignatures) {
+            receiveSignaturesAndAddToTransaction(transaction).also {
+                verifyAllReceivedSignatures(it)
+                persistenceService.persist(it, TransactionStatus.UNVERIFIED)
+            }
+        } else {
+            verifyAllReceivedSignatures(transaction)
+            transaction
+        }
+    }
+
+    @Suspendable
+    private fun receiveTransactionAndBackchain(): Pair<UtxoSignedTransactionInternal, Boolean> {
+        val (initialTransaction, transferAdditionalSignatures) = if (version == UtxoFinalityVersion.V1) {
+            session.receive(UtxoSignedTransactionInternal::class.java) to true
+        } else {
+            val payload = session.receive(FinalityPayload::class.java)
+            payload.initialTransaction to payload.transferAdditionalSignatures
+        }
+
         if (log.isDebugEnabled) {
             log.debug( "Beginning receive finality for transaction: ${initialTransaction.id}")
         }
@@ -97,7 +121,7 @@ class UtxoReceiveFinalityFlowV1(
                 "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
             }
         }
-        return initialTransaction
+        return Pair(initialTransaction, transferAdditionalSignatures)
     }
 
     @Suspendable

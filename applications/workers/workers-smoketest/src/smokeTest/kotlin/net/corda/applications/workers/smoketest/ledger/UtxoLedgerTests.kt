@@ -32,6 +32,7 @@ class UtxoLedgerTests {
     private companion object {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"
         const val TEST_CPB_LOCATION = "/META-INF/ledger-utxo-demo-app.cpb"
+        const val NOTARY_SERVICE_X500 = "O=MyNotaryService, L=London, C=GB"
 
         val objectMapper = ObjectMapper().apply {
             registerModule(KotlinModule.Builder().build())
@@ -93,7 +94,7 @@ class UtxoLedgerTests {
         registerStaticMember(bobHoldingId)
         registerStaticMember(charlieHoldingId)
 
-        registerStaticMember(notaryHoldingId, true)
+        registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
     }
 
     @Test
@@ -106,7 +107,7 @@ class UtxoLedgerTests {
             // Issue state
             val flowId = startRpcFlow(
                 aliceHoldingId,
-                mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to notaryX500),
+                mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to NOTARY_SERVICE_X500),
                 "com.r3.corda.demo.utxo.UtxoDemoFlow"
             )
 
@@ -144,7 +145,7 @@ class UtxoLedgerTests {
         val input = "test input"
         val utxoFlowRequestId = startRpcFlow(
             aliceHoldingId,
-            mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to notaryX500),
+            mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to NOTARY_SERVICE_X500),
             "com.r3.corda.demo.utxo.UtxoDemoFlow"
         )
         val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
@@ -205,6 +206,19 @@ class UtxoLedgerTests {
         assertThat(parsedPeekFlowResult.errorMessage).isNull()
         assertThat(parsedPeekFlowResult.inputs).singleElement().extracting { it.testField }.isEqualTo(input)
         assertThat(parsedPeekFlowResult.outputs).singleElement().extracting { it.testField }.isEqualTo(evolvedMessage)
+    }
+
+    @Test
+    fun `Utxo Ledger - creating a transaction that fails custom validation causes finality to fail`() {
+        val utxoFlowRequestId = startRpcFlow(
+            aliceHoldingId,
+            mapOf("input" to "fail", "members" to listOf(bobX500, charlieX500), "notary" to NOTARY_SERVICE_X500),
+            "com.r3.corda.demo.utxo.UtxoDemoFlow"
+        )
+        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
+        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(utxoFlowResult.flowResult).contains("Transaction validation failed for transaction")
+        assertThat(utxoFlowResult.flowResult).contains("when signature was requested")
     }
 
     data class TestUtxoStateResult(val testField: String, val participants: List<ByteArray>)

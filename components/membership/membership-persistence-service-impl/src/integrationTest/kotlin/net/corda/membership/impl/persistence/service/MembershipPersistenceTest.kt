@@ -1774,13 +1774,13 @@ class MembershipPersistenceTest {
         }
 
         val updatedGroupParameters = membershipPersistenceClientWrapper.updateGroupParameters(
-            viewOwningHoldingIdentity, mapOf(MPV_KEY to "5000", "ext.key" to "value")
+            viewOwningHoldingIdentity, mapOf(MPV_KEY to "50000", "ext.key" to "value")
         ).getOrThrow()
 
         val updatedEpoch = 51
         val expectedGroupParameters = listOf(
             KeyValuePair(EPOCH_KEY, updatedEpoch.toString()),
-            KeyValuePair(MPV_KEY, "5000"),
+            KeyValuePair(MPV_KEY, "50000"),
             KeyValuePair("ext.key", "value")
         ) + notaryParameters
         assertThat(updatedGroupParameters.entries.filterNot { it.key == MODIFIED_TIME_KEY })

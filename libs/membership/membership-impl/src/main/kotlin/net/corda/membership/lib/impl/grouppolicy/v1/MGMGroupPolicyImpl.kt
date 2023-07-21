@@ -82,6 +82,8 @@ class MGMGroupPolicyImpl(
         }
 
         override val staticNetworkMembers: List<Map<String, Any>>? = null
+
+        override val staticNetworkGroupParameters: Map<String, String>? = null
     }
 
     internal inner class P2PParametersImpl : GroupPolicy.P2PParameters {
