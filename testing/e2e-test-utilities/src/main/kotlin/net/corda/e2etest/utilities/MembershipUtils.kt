@@ -46,7 +46,7 @@ const val DEFAULT_SIGNATURE_SPEC = "SHA256withECDSA"
  */
 @Suppress("LongParameterList")
 fun ClusterInfo.onboardMember(
-    cpb: String,
+    cpb: String?,
     cpiName: String,
     groupPolicy: String,
     x500Name: String,
