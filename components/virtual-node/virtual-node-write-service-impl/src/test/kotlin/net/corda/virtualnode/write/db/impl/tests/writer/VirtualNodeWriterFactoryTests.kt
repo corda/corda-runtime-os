@@ -23,6 +23,8 @@ import net.corda.virtualnode.write.db.impl.writer.CLIENT_NAME_DB
 import net.corda.virtualnode.write.db.impl.writer.CLIENT_NAME_RPC
 import net.corda.virtualnode.write.db.impl.writer.GROUP_NAME
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterFactory
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterFactory.Companion.VNODE_DDL_POOL_CONFIG
+import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterFactory.Companion.VNODE_DML_POOL_CONFIG
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationProcessor
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -64,6 +66,16 @@ class VirtualNodeWriterFactoryTests {
                 )
         )
 
+    private fun genVnodeDatasourceConfig() =
+        configFactory.create(
+            ConfigFactory.parseMap(
+                mapOf(
+                    "$VNODE_DDL_POOL_CONFIG.dummy" to "",
+                    "$VNODE_DML_POOL_CONFIG.dummy" to ""
+                )
+            )
+        )
+
     /** Returns a mock [PublisherFactory]. */
     private fun getPublisherFactory() = mock<PublisherFactory>().apply {
         whenever(createPublisher(any(), any())).thenReturn(mock())
@@ -73,7 +85,6 @@ class VirtualNodeWriterFactoryTests {
     private fun getDbConnectionManager() = mock<DbConnectionManager>().apply {
         whenever(clusterConfig).thenReturn(mock<SmartConfig>())
         whenever(getClusterEntityManagerFactory()).thenReturn(mock<EntityManagerFactory>())
-        whenever(getDataSourceConfig(any(), any())).thenReturn(mock())
     }
 
     @Test
@@ -81,11 +92,12 @@ class VirtualNodeWriterFactoryTests {
         val expectedPublisherConfig = PublisherConfig(CLIENT_NAME_DB)
         val expectedConfig = configFactory.create(ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue")))
         val externalMsgConfig = genExternalMessagingConfig()
+        val vnodeDatasourceConfig = genVnodeDatasourceConfig()
 
         val publisherFactory = getPublisherFactory()
         val virtualNodeWriterFactory = VirtualNodeWriterFactory(
             getSubscriptionFactory(), publisherFactory, getDbConnectionManager(), mock(), mock(), mock(), CpiCpkRepositoryFactory())
-        virtualNodeWriterFactory.create(expectedConfig, externalMsgConfig)
+        virtualNodeWriterFactory.create(expectedConfig, externalMsgConfig, vnodeDatasourceConfig)
 
         verify(publisherFactory).createPublisher(expectedPublisherConfig, expectedConfig)
     }
@@ -104,6 +116,7 @@ class VirtualNodeWriterFactoryTests {
         )
         val expectedConfig = configFactory.create(ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue")))
         val externalMsgConfig = genExternalMessagingConfig()
+        val vnodeDatasourceConfig = genVnodeDatasourceConfig()
 
         val subscriptionFactory = getSubscriptionFactory()
         val virtualNodeWriterFactory = VirtualNodeWriterFactory(
@@ -111,7 +124,7 @@ class VirtualNodeWriterFactoryTests {
         )
 
         val processor = argumentCaptor<VirtualNodeAsyncOperationProcessor>()
-        virtualNodeWriterFactory.create(expectedConfig, externalMsgConfig)
+        virtualNodeWriterFactory.create(expectedConfig, externalMsgConfig, vnodeDatasourceConfig)
 
         verify(subscriptionFactory).createRPCSubscription(eq(expectedRPCConfig), eq(expectedConfig), any())
         verify(subscriptionFactory).createDurableSubscription(
