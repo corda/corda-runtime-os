@@ -42,7 +42,7 @@ dependencies {
     implementation project(":components:virtual-node:cpk-read-service")
     implementation project(":components:configuration:configuration-read-service")
 
-    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+    implementation libs.caffeine
 
     runtimeOnly project(':components:virtual-node:sandbox-crypto')
     runtimeOnly project(':libs:sandbox-hooks')
@@ -83,8 +83,8 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-    integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
+    integrationTestRuntimeOnly libs.aries.dynamic.framework
+    integrationTestRuntimeOnly(libs.felix.security) {
         exclude group: 'org.osgi'
     }
 

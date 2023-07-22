@@ -19,5 +19,5 @@ dependencies {
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:messaging:messaging-impl')
 
-    runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    runtimeOnly libs.javax.activation
 }

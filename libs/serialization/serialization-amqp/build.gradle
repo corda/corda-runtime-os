@@ -34,7 +34,7 @@ dependencies {
     implementation project(":libs:utilities")
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "com.google.guava:guava:$guavaVersion"
+    implementation libs.guava
     implementation "org.apache.qpid:proton-j:$protonjVersion"
     implementation 'org.slf4j:slf4j-api'
 
@@ -67,13 +67,13 @@ dependencies {
     integrationTestImplementation project(':components:security-manager')
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation "net.corda:corda-application"
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    integrationTestRuntimeOnly libs.aries.dynamic.framework
     integrationTestRuntimeOnly project(':libs:crypto:crypto-core')
     integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
-    integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
+    integrationTestRuntimeOnly(libs.felix.security) {
         exclude group: 'org.osgi'
     }
 }

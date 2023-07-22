@@ -83,13 +83,13 @@ dependencies {
     integrationTestImplementation project(':testing:test-utilities')
 
     // needed to import serialization libs
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    integrationTestRuntimeOnly libs.aries.dynamic.framework
 
     integrationTestRuntimeOnly project(':libs:flows:external-event-responses-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
 
-    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly libs.javax.activation
 }
 
 //  Copy the cpi builds declared in the cpis configuration into our resources so we find and load them

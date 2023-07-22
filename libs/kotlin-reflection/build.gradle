@@ -21,16 +21,16 @@ configurations {
 dependencies {
     api 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     compileOnly 'org.osgi:osgi.annotation'
-    compileOnly "org.jetbrains.kotlinx:kotlinx-metadata-jvm:$kotlinMetadataVersion"
-    compileOnly "org.ow2.asm:asm:$asmVersion"
+    compileOnly libs.kotlinx.metadata
+    compileOnly libs.ow2.asm
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     testCompileOnly 'org.jetbrains:annotations'
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
-    testRuntimeOnly "org.jetbrains.kotlinx:kotlinx-metadata-jvm:$kotlinMetadataVersion"
-    testRuntimeOnly "org.ow2.asm:asm:$asmVersion"
+    testRuntimeOnly libs.kotlinx.metadata
+    testRuntimeOnly libs.ow2.asm
 
     integrationTestImplementation project(':libs:kotlin-reflection:kotlin-reflection-test-example')
     integrationTestImplementation 'org.slf4j:slf4j-api'
@@ -48,7 +48,7 @@ def jar = tasks.named('jar', Jar) {
 Bundle-Name: Corda Kotlin Reflection
 Bundle-SymbolicName: \${project.group}.kotlin-reflection
 Sealed: true
--includeresource: @kotlinx-metadata-jvm-${kotlinMetadataVersion}.jar
+-includeresource: @kotlinx-metadata-jvm-${libs.versions.kotlinMetadataVersion.get()}.jar
 -conditionalpackage: org.objectweb.asm
 """
     }

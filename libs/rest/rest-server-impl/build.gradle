@@ -54,7 +54,7 @@ dependencies {
     runtimeOnly "org.webjars:swagger-ui:$swaggeruiVersion"
     runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     runtimeOnly "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-    runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    runtimeOnly libs.javax.activation
 
     integrationTestImplementation "com.konghq:unirest-java:$unirestVersion"
 

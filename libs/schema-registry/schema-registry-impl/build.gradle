@@ -10,7 +10,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-base"
 
-    implementation "org.apache.avro:avro:$avroVersion"
+    implementation libs.apache.avro
 
     implementation "net.corda:corda-avro-schema"
     implementation project(":libs:schema-registry:schema-registry")

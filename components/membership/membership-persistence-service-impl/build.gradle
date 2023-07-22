@@ -56,8 +56,8 @@ dependencies {
     integrationTestImplementation project(':testing:message-patterns')
     integrationTestImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
 
-    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    integrationTestRuntimeOnly libs.javax.activation
+    integrationTestRuntimeOnly libs.aries.dynamic.framework
     integrationTestRuntimeOnly("org.hibernate:hibernate-core:$hibernateVersion")
 
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"

@@ -13,7 +13,7 @@ dependencies {
     implementation "net.corda:corda-application"
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
+    implementation libs.commons.lang3
     implementation "net.corda:corda-crypto"
 
     api project(":libs:rest:rest")

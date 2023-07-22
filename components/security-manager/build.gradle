@@ -30,7 +30,7 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation 'net.corda:corda-config-schema'
 
-    testRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
+    testRuntimeOnly(libs.felix.security) {
         exclude group: 'org.osgi'
     }
 
@@ -38,7 +38,7 @@ dependencies {
     integrationTestImplementation project(':testing:security-manager-utilities')
     integrationTestImplementation "net.corda:corda-application"
     integrationTestImplementation 'org.slf4j:slf4j-api'
-    integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
+    integrationTestRuntimeOnly(libs.felix.security) {
         exclude group: 'org.osgi'
     }
 

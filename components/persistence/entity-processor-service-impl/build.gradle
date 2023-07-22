@@ -74,7 +74,7 @@ dependencies {
     integrationTestImplementation project(':testing:test-utilities')
 
     // needed to import serialization libs
-    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    integrationTestRuntimeOnly libs.aries.dynamic.framework
 
     integrationTestRuntimeOnly project(':components:db:db-connection-manager-impl')
     integrationTestRuntimeOnly project(':libs:flows:external-event-responses-impl')
@@ -82,7 +82,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
 
-    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly libs.javax.activation
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }

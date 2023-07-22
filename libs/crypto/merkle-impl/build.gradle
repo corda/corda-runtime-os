@@ -30,7 +30,7 @@ dependencies {
     testImplementation project(":libs:crypto:cipher-suite-impl")
     testImplementation project(":testing:test-utilities")
 
-    integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
+    integrationTestRuntimeOnly(libs.felix.security) {
         exclude group: 'org.osgi'
     }
 }
