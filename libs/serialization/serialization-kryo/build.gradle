@@ -30,7 +30,7 @@ dependencies {
     implementation "net.corda:corda-serialization"
 
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
-    implementation "com.esotericsoftware:kryo:$kryoVersion"
+    implementation libs.kryo
     implementation project(path: ':libs:serialization:kryo-serializers', configuration: 'bundle')
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "org.slf4j:slf4j-api"

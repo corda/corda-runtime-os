@@ -16,7 +16,7 @@ dependencies {
     implementation "org.osgi:org.osgi.service.jdbc:$osgiJdbcServiceVersion"
     implementation project(':libs:metrics')
 
-    api "com.zaxxer:HikariCP:$hikariCpVersion"
+    api libs.hikaricp
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"

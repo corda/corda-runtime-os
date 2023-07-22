@@ -46,7 +46,7 @@ dependencies {
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-db-schema"
     implementation "net.corda:corda-ledger-utxo"
-    implementation "org.hibernate:hibernate-core:$hibernateVersion"
+    implementation libs.hibernate.core 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":components:uniqueness:backing-store")
     implementation project(":components:db:db-connection-manager")
@@ -56,7 +56,7 @@ dependencies {
     implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")
 
-    testImplementation "org.hibernate:hibernate-core:$hibernateVersion"
+    testImplementation libs.hibernate.core 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
@@ -82,8 +82,8 @@ dependencies {
     backingStoreBenchmarkRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 
     // For JSON serialization to DB
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    implementation libs.jackson.module
+    implementation libs.jackson.datatype
 }
 
 tasks.named('jar', Jar) {

@@ -8,7 +8,7 @@ dependencies {
     runtimeOnly 'org.osgi:osgi.core'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "com.esotericsoftware:kryo:$kryoVersion"
+    implementation libs.kryo
     implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     implementation project(":libs:serialization:serialization-kryo")

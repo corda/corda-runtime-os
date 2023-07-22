@@ -88,7 +88,7 @@ dependencies {
     integrationTestImplementation project(":testing:db-testkit")
     integrationTestImplementation project(":testing:test-utilities")
 
-    integrationTestImplementation("org.hibernate:hibernate-osgi:$hibernateVersion") {
+    integrationTestImplementation(libs.hibernate.osgi) {
         // Need to exclude the org.osgi package as will use the BND ones at runtime
         //  org.osgi ones are added above as compileOnly
         exclude group: 'org.osgi'
@@ -109,7 +109,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:crypto:merkle-impl')
 
     integrationTestRuntimeOnly libs.aries.dynamic.framework
-    integrationTestRuntimeOnly "org.hibernate:hibernate-core:$hibernateVersion"
+    integrationTestRuntimeOnly libs.hibernate.core 
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"

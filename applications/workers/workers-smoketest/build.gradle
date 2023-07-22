@@ -54,7 +54,7 @@ kotlin {
 dependencies {
     // NO CORDA DEPENDENCIES!!
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
+    implementation libs.kotlinx.coroutines
 
     // Avoid having the schema names and keys scattered across projects
     smokeTestImplementation "net.corda:corda-config-schema:$cordaApiVersion"
@@ -67,7 +67,7 @@ dependencies {
     upgradeTestingCpiV1 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v1', configuration: 'cordaCPB')
     upgradeTestingCpiV2 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v2', configuration: 'cordaCPB')
 
-    smokeTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    smokeTestImplementation libs.jackson.module
     smokeTestImplementation project(':testing:test-utilities')
     smokeTestImplementation project(':testing:e2e-test-utilities')
 

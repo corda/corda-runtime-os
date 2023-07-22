@@ -14,7 +14,7 @@ dependencies {
     implementation "net.corda:corda-base"
     api "net.corda:corda-membership-schema"
 
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation libs.jackson.databind
     implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
     implementation project(':libs:membership:membership-common')
 

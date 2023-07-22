@@ -13,8 +13,8 @@ group 'net.corda.cli.deployment'
 
 dependencies {
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib'
-    compileOnly "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    compileOnly "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
+    compileOnly libs.jackson.module
+    compileOnly libs.jackson.dataformat
 
     compileOnly "org.pf4j:pf4j:$pf4jVersion"
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
@@ -23,7 +23,7 @@ dependencies {
 
     compileOnly platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-topic-schema:$cordaApiVersion"
-    compileOnly "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    compileOnly libs.kafka.clients
     constraints {
         implementation("org.xerial.snappy:snappy-java:$xerialSnappyVersion") {
             because 'Kafka Client uses an older version of Snappy library which is exposed to CVE-2023-34455. ' +
@@ -36,9 +36,9 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.pf4j:pf4j:$pf4jVersion"
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
-    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    testImplementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
-    testImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    testImplementation libs.jackson.module
+    testImplementation libs.jackson.dataformat
+    testImplementation libs.kafka.clients
 }
 
 cliPlugin {

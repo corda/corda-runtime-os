@@ -15,7 +15,7 @@ group 'net.corda.cli.deployment'
 dependencies {
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation libs.jackson.module
     implementation libs.snakeyaml
     implementation "com.konghq:unirest-java:$unirestVersion"
     implementation project(":libs:crypto:certificate-generation")

@@ -25,7 +25,7 @@ dependencies {
 
     implementation "com.konghq:unirest-java:$unirestVersion"
     implementation "com.konghq:unirest-objectmapper-jackson:$unirestVersion"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation libs.jackson.module
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
