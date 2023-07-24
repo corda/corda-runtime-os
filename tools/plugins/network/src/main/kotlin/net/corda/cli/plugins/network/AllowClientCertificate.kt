@@ -3,11 +3,9 @@ package net.corda.cli.plugins.network
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.membership.rest.v1.MGMRestResource
-import net.corda.cli.plugins.common.RestClientUtils.executeWithRetry
+import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import picocli.CommandLine.Command
 import picocli.CommandLine.Parameters
-import java.time.Duration
-import java.time.temporal.ChronoUnit
 
 @Command(
     name = "allow-client-certificate",
@@ -31,8 +29,6 @@ class AllowClientCertificate : Runnable, RestCommand() {
     )
     var subjects: Collection<String> = emptyList()
 
-    private val waitDuration: Duration = Duration.of(300, ChronoUnit.SECONDS)
-
     override fun run() {
         allowAndListCertificates()
     }
@@ -43,23 +39,31 @@ class AllowClientCertificate : Runnable, RestCommand() {
             return
         }
 
-        createRestClient(MGMRestResource::class).use { client ->
-            executeWithRetry(waitDuration, "Allow and list certificates") {
-                println("Allowing certificates...")
+        val mgm = createRestClient(MGMRestResource::class).start().proxy
 
-                val mgm = client.start().proxy
-
-                subjects.forEach { subject ->
-                    println("\t Allowing $subject")
-                    mgm.mutualTlsAllowClientCertificate(mgmShortHash, subject)
-                }
-
-                println("Success!")
-
-                mgm.mutualTlsListClientCertificate(mgmShortHash).forEach { subject ->
-                    println("Certificate with subject $subject is allowed")
-                }
+        checkInvariant(
+            maxAttempts = MAX_ATTEMPTS,
+            waitInterval = WAIT_INTERVAL,
+            errorMessage = "Allow and list certificates: Invariant check failed after maximum attempts."
+        ) {
+            println("Allowing certificates...")
+            subjects.forEach { subject ->
+                println("\t Allowing $subject")
+                mgm.mutualTlsAllowClientCertificate(mgmShortHash, subject)
             }
+            println("Success!")
+            true // Return true to indicate the invariant is satisfied
+        }
+
+        checkInvariant(
+            maxAttempts = MAX_ATTEMPTS,
+            waitInterval = WAIT_INTERVAL,
+            errorMessage = "Allow and list certificates: Invariant check failed after maximum attempts."
+        ) {
+            mgm.mutualTlsListClientCertificate(mgmShortHash).forEach { subject ->
+                println("Certificate with subject $subject is allowed")
+            }
+            true // Return true to indicate the invariant is satisfied
         }
     }
 }
