@@ -1,0 +1,556 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "/Users/ignace.loomans/Documents/hardhat/evmTests/contracts/ERC1155Token.sol": {
+      "lastModificationDate": 1688119590412,
+      "contentHash": "10c24fd2cdcaca236618cf79620b9a51",
+      "sourceName": "contracts/ERC1155Token.sol",
+      "solcConfig": {
+        "version": "0.8.18",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/token/ERC1155/ERC1155.sol",
+        "@openzeppelin/contracts/utils/Counters.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "MyERC1155Token"
+      ]
+    },
+    "/Users/ignace.loomans/Documents/hardhat/evmTests/node_modules/@openzeppelin/contracts/utils/Counters.sol": {
+      "lastModificationDate": 1688117617450,
+      "contentHash": "74654e3ae5d7f39555055dfe244dab7a",
+      "sourceName": "@openzeppelin/contracts/utils/Counters.sol",
+      "solcConfig": {
+        "version": "0.8.18",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "Counters"
+      ]
+    },
+    "/Users/ignace.loomans/Documents/hardhat/evmTests/node_modules/@openzeppelin/contracts/token/ERC1155/ERC1155.sol": {
+      "lastModificationDate": 1688117617461,
+      "contentHash": "65c9d9c87e2b4df70e723819774a0482",
+      "sourceName": "@openzeppelin/contracts/token/ERC1155/ERC1155.sol",
+      "solcConfig": {
+        "version": "0.8.18",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./IERC1155.sol",
+        "./IERC1155Receiver.sol",
+        "./extensions/IERC1155MetadataURI.sol",
+        "../../utils/Address.sol",
+        "../../utils/Context.sol",
+        "../../utils/introspection/ERC165.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "ERC1155"
+      ]
+    },
+    "/Users/ignace.loomans/Documents/hardhat/evmTests/node_modules/@openzeppelin/contracts/utils/Context.sol": {
+      "lastModificationDate": 1688117617450,
+      "contentHash": "5f2c5c4b6af2dd4551027144797bc8be",
+      "sourceName": "@openzeppelin/contracts/utils/Context.sol",
+      "solcConfig": {
+        "version": "0.8.18",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "Context"
+      ]
+    },
+    "/Users/ignace.loomans/Documents/hardhat/evmTests/node_modules/@openzeppelin/contracts/utils/Address.sol": {
+      "lastModificationDate": 1688117617447,
+      "contentHash": "211ffd288c1588ba8c10eae668ca3c66",
+      "sourceName": "@openzeppelin/contracts/utils/Address.sol",
+      "solcConfig": {
+        "version": "0.8.18",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.1"
+      ],
+      "artifacts": [
+        "Address"
+      ]
+    },
+    "/Users/ignace.loomans/Documents/hardhat/evmTests/node_modules/@openzeppelin/contracts/utils/introspection/ERC165.sol": {
+      "lastModificationDate": 1688117617463,
+      "contentHash": "0e7db055ce108f9da7bb6686a00287c0",
+      "sourceName": "@openzeppelin/contracts/utils/introspection/ERC165.sol",
+      "solcConfig": {
+        "version": "0.8.18",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./IERC165.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "ERC165"
+      ]
+    },
+    "/Users/ignace.loomans/Documents/hardhat/evmTests/node_modules/@openzeppelin/contracts/token/ERC1155/IERC1155.sol": {
+      "lastModificationDate": 1688117617476,
+      "contentHash": "93aa9af4f5d2d2095a71ccde917038bb",
+      "sourceName": "@openzeppelin/contracts/token/ERC1155/IERC1155.sol",
+      "solcConfig": {
+        "version": "0.8.18",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../../utils/introspection/IERC165.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IERC1155"
+      ]
+    },
+    "/Users/ignace.loomans/Documents/hardhat/evmTests/node_modules/@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol": {
+      "lastModificationDate": 1688117617476,
+      "contentHash": "9f8822b72fe2702979e40160cb6d9636",
+      "sourceName": "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol",
+      "solcConfig": {
+        "version": "0.8.18",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../../utils/introspection/IERC165.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IERC1155Receiver"
+      ]
+    },
+    "/Users/ignace.loomans/Documents/hardhat/evmTests/node_modules/@openzeppelin/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol": {
+      "lastModificationDate": 1688117617476,
+      "contentHash": "9148c2e10c4efb12c71a7f080da5559b",
+      "sourceName": "@openzeppelin/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol",
+      "solcConfig": {
+        "version": "0.8.18",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../IERC1155.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IERC1155MetadataURI"
+      ]
+    },
+    "/Users/ignace.loomans/Documents/hardhat/evmTests/node_modules/@openzeppelin/contracts/utils/introspection/IERC165.sol": {
+      "lastModificationDate": 1688117617477,
+      "contentHash": "03e6768535ac4da0e9756f1d8a4a018a",
+      "sourceName": "@openzeppelin/contracts/utils/introspection/IERC165.sol",
+      "solcConfig": {
+        "version": "0.8.18",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IERC165"
+      ]
+    },
+    "/Users/ignace.loomans/Documents/hardhat/evmTests/node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol": {
+      "lastModificationDate": 1688117617464,
+      "contentHash": "3ae5166c6827a9cf1a7a462d1632b464",
+      "sourceName": "@openzeppelin/contracts/token/ERC20/ERC20.sol",
+      "solcConfig": {
+        "version": "0.8.18",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./IERC20.sol",
+        "./extensions/IERC20Metadata.sol",
+        "../../utils/Context.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "ERC20"
+      ]
+    },
+    "/Users/ignace.loomans/Documents/hardhat/evmTests/node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol": {
+      "lastModificationDate": 1688117617478,
+      "contentHash": "df36f7051335cd1e748b1b6463b7fdd3",
+      "sourceName": "@openzeppelin/contracts/token/ERC20/IERC20.sol",
+      "solcConfig": {
+        "version": "0.8.18",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IERC20"
+      ]
+    },
+    "/Users/ignace.loomans/Documents/hardhat/evmTests/node_modules/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol": {
+      "lastModificationDate": 1688117617479,
+      "contentHash": "909ab67fc5c25033fe6cd364f8c056f9",
+      "sourceName": "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol",
+      "solcConfig": {
+        "version": "0.8.18",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../IERC20.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IERC20Metadata"
+      ]
+    },
+    "/Users/ignace.loomans/Documents/hardhat/evmTests/contracts/ERC20Token.sol": {
+      "lastModificationDate": 1688549058068,
+      "contentHash": "33904e07478f480dff06ef6cb21c10e6",
+      "sourceName": "contracts/ERC20Token.sol",
+      "solcConfig": {
+        "version": "0.8.18",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/token/ERC20/ERC20.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.2"
+      ],
+      "artifacts": [
+        "Token"
+      ]
+    },
+    "/Users/ignace.loomans/Documents/hardhat/evmTests/contracts/Storage.sol": {
+      "lastModificationDate": 1688555526862,
+      "contentHash": "91e401c7a8b7d748614c2e84cc733aa4",
+      "sourceName": "contracts/Storage.sol",
+      "solcConfig": {
+        "version": "0.8.18",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.8.2 <0.9.0"
+      ],
+      "artifacts": [
+        "Storage"
+      ]
+    }
+  }
+}
