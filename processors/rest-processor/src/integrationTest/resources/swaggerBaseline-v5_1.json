@@ -1227,13 +1227,13 @@
         }
       }
     },
-    "/interop/{vnodeshorthash}/export/identity/{interopidentityshorthash}" : {
+    "/interop/{holdingidentityshorthash}/export/identity/{interopidentityshorthash}" : {
       "get" : {
         "tags" : [ "Interop API" ],
         "description" : "This method returns Json String containing GroupID, Group Policy and my InterOpIdentityInfo.",
-        "operationId" : "get_interop__vnodeshorthash__export_identity__interopidentityshorthash_",
+        "operationId" : "get_interop__holdingidentityshorthash__export_identity__interopidentityshorthash_",
         "parameters" : [ {
-          "name" : "vnodeshorthash",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
           "description" : "ID of the holding identity which interop identity is to be returned.",
           "required" : true,
@@ -1261,9 +1261,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "type" : "string",
-                  "nullable" : false,
-                  "example" : "string"
+                  "$ref" : "#/components/schemas/ExportInteropIdentityResponse"
                 }
               }
             }
@@ -1277,13 +1275,13 @@
         }
       }
     },
-    "/interop/{vnodeshorthash}/groups" : {
+    "/interop/{holdingidentityshorthash}/groups" : {
       "get" : {
         "tags" : [ "Interop API" ],
         "description" : "This method returns a list of interop group ids.",
-        "operationId" : "get_interop__vnodeshorthash__groups",
+        "operationId" : "get_interop__holdingidentityshorthash__groups",
         "parameters" : [ {
-          "name" : "vnodeshorthash",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
           "description" : "ID of the holding identity which groups are to be returned.",
           "required" : true,
@@ -1320,13 +1318,13 @@
         }
       }
     },
-    "/interop/{vnodeshorthash}/import/identity" : {
+    "/interop/{holdingidentityshorthash}/import/identity" : {
       "put" : {
         "tags" : [ "Interop API" ],
         "description" : "This method imports the interop identity.",
-        "operationId" : "put_interop__vnodeshorthash__import_identity",
+        "operationId" : "put_interop__holdingidentityshorthash__import_identity",
         "parameters" : [ {
-          "name" : "vnodeshorthash",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
           "description" : "ID of the holding identity which interop identity is to be returned.",
           "required" : true,
@@ -1370,13 +1368,13 @@
         }
       }
     },
-    "/interop/{vnodeshorthash}/interopidentities" : {
+    "/interop/{holdingidentityshorthash}/interopidentities" : {
       "get" : {
         "tags" : [ "Interop API" ],
         "description" : "This method returns a list of interop identities belonging to the given holding identity.",
-        "operationId" : "get_interop__vnodeshorthash__interopidentities",
+        "operationId" : "get_interop__holdingidentityshorthash__interopidentities",
         "parameters" : [ {
-          "name" : "vnodeshorthash",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
           "description" : "ID of the holding identity which identities are to be returned.",
           "required" : true,
@@ -1412,13 +1410,13 @@
         }
       }
     },
-    "/interop/{vnodeshorthash}/interopidentity" : {
+    "/interop/{holdingidentityshorthash}/interopidentity" : {
       "put" : {
         "tags" : [ "Interop API" ],
         "description" : "This method creates interop identity from holding identity id, group id and x500name.",
-        "operationId" : "put_interop__vnodeshorthash__interopidentity",
+        "operationId" : "put_interop__holdingidentityshorthash__interopidentity",
         "parameters" : [ {
-          "name" : "vnodeshorthash",
+          "name" : "holdingidentityshorthash",
           "in" : "path",
           "description" : "ID of the holding identity.",
           "required" : true,
@@ -4641,6 +4639,22 @@
         },
         "description" : "Details of the virtual node to be created"
       },
+      "ExportInteropIdentityResponse" : {
+        "required" : [ "groupPolicy", "interopIdentityJson" ],
+        "type" : "object",
+        "properties" : {
+          "groupPolicy" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "interopIdentityJson" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
       "FlowResultResponse" : {
         "required" : [ "flowStatus", "holdingIdentityShortHash", "timestamp" ],
         "type" : "object",
@@ -4947,7 +4961,7 @@
         }
       },
       "InteropIdentityResponse" : {
-        "required" : [ "applicationName", "endpointProtocol", "endpointUrl", "facadeIds", "groupId", "x500Name" ],
+        "required" : [ "applicationName", "endpointProtocol", "endpointUrl", "facadeIds", "groupId", "owningVirtualNodeShortHash", "x500Name" ],
         "type" : "object",
         "properties" : {
           "applicationName" : {
@@ -4979,9 +4993,9 @@
             "format" : "uuid",
             "nullable" : false
           },
-          "shortHash" : {
+          "owningVirtualNodeShortHash" : {
             "type" : "string",
-            "nullable" : true,
+            "nullable" : false,
             "example" : "string"
           },
           "x500Name" : {
@@ -5281,7 +5295,7 @@
         }
       },
       "RestInteropIdentity" : {
-        "required" : [ "applicationName", "endpointProtocol", "endpointUrl", "facadeIds", "groupId", "groupPolicy", "x500Name" ],
+        "required" : [ "applicationName", "endpointProtocol", "endpointUrl", "facadeIds", "groupId", "groupPolicy", "owningVirtualNodeShortHash", "x500Name" ],
         "type" : "object",
         "properties" : {
           "applicationName" : {
@@ -5318,9 +5332,9 @@
             "nullable" : false,
             "example" : "string"
           },
-          "shortHash" : {
+          "owningVirtualNodeShortHash" : {
             "type" : "string",
-            "nullable" : true,
+            "nullable" : false,
             "example" : "string"
           },
           "x500Name" : {

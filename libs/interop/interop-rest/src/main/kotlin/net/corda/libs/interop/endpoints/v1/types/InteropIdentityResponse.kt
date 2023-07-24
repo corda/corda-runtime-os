@@ -5,7 +5,7 @@ import java.util.UUID
 data class InteropIdentityResponse(
     val x500Name: String,
     val groupId: UUID,
-    val shortHash: String?,
+    val owningVirtualNodeShortHash: String,
     val facadeIds: List<String>,
     val applicationName: String,
     val endpointUrl: String,
