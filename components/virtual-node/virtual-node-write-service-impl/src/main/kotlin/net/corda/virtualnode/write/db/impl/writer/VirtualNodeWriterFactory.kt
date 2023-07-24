@@ -28,6 +28,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_ASYNC_REQUEST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
+import net.corda.schema.configuration.VirtualNodeDatasourceConfig
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationHandler
@@ -55,9 +56,6 @@ internal class VirtualNodeWriterFactory(
 
     companion object {
         private const val ASYNC_OPERATION_GROUP = "virtual.node.async.operation.group"
-
-        const val VNODE_DDL_POOL_CONFIG = "pool.ddl"
-        const val VNODE_DML_POOL_CONFIG = "pool.dml"
     }
 
     /**
@@ -110,8 +108,8 @@ internal class VirtualNodeWriterFactory(
             publisher
         )
 
-        val virtualNodesDdlPoolConfig = vnodeDatasourceConfig.getConfig(VNODE_DDL_POOL_CONFIG)
-        val virtualNodesDmlPoolConfig = vnodeDatasourceConfig.getConfig(VNODE_DML_POOL_CONFIG)
+        val virtualNodesDdlPoolConfig = vnodeDatasourceConfig.getConfig(VirtualNodeDatasourceConfig.VNODE_DDL_POOL_CONFIG)
+        val virtualNodesDmlPoolConfig = vnodeDatasourceConfig.getConfig(VirtualNodeDatasourceConfig.VNODE_DML_POOL_CONFIG)
 
         val virtualNodeDbFactory =
             VirtualNodeDbFactoryImpl(

@@ -16,6 +16,7 @@ import net.corda.db.core.DbPrivilege.DML
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.DatabaseConfig
+import net.corda.schema.configuration.VirtualNodeDatasourceConfig
 import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import java.security.SecureRandom
 
@@ -204,13 +205,6 @@ internal class VirtualNodeDbFactoryImpl(
     private fun String.toSmartConfig() = smartConfigFactory.create(ConfigFactory.parseString(this))
 }
 
-const val VNODE_POOL_MAX_SIZE = "max_size"
-const val VNODE_POOL_MIN_SIZE = "min_size"
-const val VNODE_POOL_IDLE_TIMEOUT_SECONDS = "idleTimeoutSeconds"
-const val VNODE_POOL_MAX_LIFETIME_SECONDS = "maxLifetimeSeconds"
-const val VNODE_POOL_KEEPALIVE_TIME_SECONDS = "keepaliveTimeSeconds"
-const val VNODE_VALIDATION_TIMEOUT_SECONDS = "validationTimeoutSeconds"
-
 @Suppress("LongParameterList")
 private fun createVirtualNodeDbConfig(
     smartConfigFactory: SmartConfigFactory,
@@ -229,21 +223,21 @@ private fun createVirtualNodeDbConfig(
         config = config.withValue(DatabaseConfig.JDBC_DRIVER, ConfigValueFactory.fromAnyRef(jdbcDriver))
     config = config.withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
 
-    val maxPoolSize = virtualNodePoolConfig.getInt(VNODE_POOL_MAX_SIZE)
+    val maxPoolSize = virtualNodePoolConfig.getInt(VirtualNodeDatasourceConfig.VNODE_POOL_MAX_SIZE)
     config = config.withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(maxPoolSize))
 
-    if (virtualNodePoolConfig.hasPath(VNODE_POOL_MIN_SIZE)) {
-        val minPoolSize = virtualNodePoolConfig.getInt(VNODE_POOL_MIN_SIZE)
+    if (virtualNodePoolConfig.hasPath(VirtualNodeDatasourceConfig.VNODE_POOL_MIN_SIZE)) {
+        val minPoolSize = virtualNodePoolConfig.getInt(VirtualNodeDatasourceConfig.VNODE_POOL_MIN_SIZE)
         config = config.withValue(DatabaseConfig.DB_POOL_MIN_SIZE, ConfigValueFactory.fromAnyRef(minPoolSize))
     }
 
-    val idleTimeout = virtualNodePoolConfig.getInt(VNODE_POOL_IDLE_TIMEOUT_SECONDS)
+    val idleTimeout = virtualNodePoolConfig.getInt(VirtualNodeDatasourceConfig.VNODE_POOL_IDLE_TIMEOUT_SECONDS)
     config = config.withValue(DatabaseConfig.DB_POOL_IDLE_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(idleTimeout))
-    val maxLifetime = virtualNodePoolConfig.getInt(VNODE_POOL_MAX_LIFETIME_SECONDS)
+    val maxLifetime = virtualNodePoolConfig.getInt(VirtualNodeDatasourceConfig.VNODE_POOL_MAX_LIFETIME_SECONDS)
     config = config.withValue(DatabaseConfig.DB_POOL_MAX_LIFETIME_SECONDS, ConfigValueFactory.fromAnyRef(maxLifetime))
-    val keepaliveTime = virtualNodePoolConfig.getInt(VNODE_POOL_KEEPALIVE_TIME_SECONDS)
+    val keepaliveTime = virtualNodePoolConfig.getInt(VirtualNodeDatasourceConfig.VNODE_POOL_KEEPALIVE_TIME_SECONDS)
     config = config.withValue(DatabaseConfig.DB_POOL_KEEPALIVE_TIME_SECONDS, ConfigValueFactory.fromAnyRef(keepaliveTime))
-    val validationTimeout = virtualNodePoolConfig.getInt(VNODE_VALIDATION_TIMEOUT_SECONDS)
+    val validationTimeout = virtualNodePoolConfig.getInt(VirtualNodeDatasourceConfig.VNODE_VALIDATION_TIMEOUT_SECONDS)
     config = config.withValue(DatabaseConfig.DB_POOL_VALIDATION_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(validationTimeout))
 
     return config

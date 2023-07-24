@@ -13,12 +13,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.schema.configuration.DatabaseConfig
-import net.corda.virtualnode.write.db.impl.writer.VNODE_POOL_IDLE_TIMEOUT_SECONDS
-import net.corda.virtualnode.write.db.impl.writer.VNODE_POOL_KEEPALIVE_TIME_SECONDS
-import net.corda.virtualnode.write.db.impl.writer.VNODE_POOL_MAX_LIFETIME_SECONDS
-import net.corda.virtualnode.write.db.impl.writer.VNODE_POOL_MAX_SIZE
-import net.corda.virtualnode.write.db.impl.writer.VNODE_POOL_MIN_SIZE
-import net.corda.virtualnode.write.db.impl.writer.VNODE_VALIDATION_TIMEOUT_SECONDS
+import net.corda.schema.configuration.VirtualNodeDatasourceConfig
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactoryImpl
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -60,21 +55,21 @@ class VirtualNodeDbFactoryImplTest {
     private val configFactory = SmartConfigFactory.createWithoutSecurityServices()
     private val virtualNodesDdlPoolConfig = configFactory.create(
         ConfigFactory.empty()
-            .withValue(VNODE_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(1))
-            .withValue(VNODE_POOL_IDLE_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(120))
-            .withValue(VNODE_POOL_MAX_LIFETIME_SECONDS, ConfigValueFactory.fromAnyRef(1800))
-            .withValue(VNODE_POOL_KEEPALIVE_TIME_SECONDS, ConfigValueFactory.fromAnyRef(0))
-            .withValue(VNODE_VALIDATION_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(5))
+            .withValue(VirtualNodeDatasourceConfig.VNODE_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(1))
+            .withValue(VirtualNodeDatasourceConfig.VNODE_POOL_IDLE_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(120))
+            .withValue(VirtualNodeDatasourceConfig.VNODE_POOL_MAX_LIFETIME_SECONDS, ConfigValueFactory.fromAnyRef(1800))
+            .withValue(VirtualNodeDatasourceConfig.VNODE_POOL_KEEPALIVE_TIME_SECONDS, ConfigValueFactory.fromAnyRef(0))
+            .withValue(VirtualNodeDatasourceConfig.VNODE_VALIDATION_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(5))
     )
 
     private val virtualNodesDmlPoolConfig = configFactory.create(
         ConfigFactory.empty()
-            .withValue(VNODE_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(10))
-            .withValue(VNODE_POOL_MIN_SIZE, ConfigValueFactory.fromAnyRef(0))
-            .withValue(VNODE_POOL_IDLE_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(120))
-            .withValue(VNODE_POOL_MAX_LIFETIME_SECONDS, ConfigValueFactory.fromAnyRef(1800))
-            .withValue(VNODE_POOL_KEEPALIVE_TIME_SECONDS, ConfigValueFactory.fromAnyRef(0))
-            .withValue(VNODE_VALIDATION_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(5))
+            .withValue(VirtualNodeDatasourceConfig.VNODE_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(10))
+            .withValue(VirtualNodeDatasourceConfig.VNODE_POOL_MIN_SIZE, ConfigValueFactory.fromAnyRef(0))
+            .withValue(VirtualNodeDatasourceConfig.VNODE_POOL_IDLE_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(120))
+            .withValue(VirtualNodeDatasourceConfig.VNODE_POOL_MAX_LIFETIME_SECONDS, ConfigValueFactory.fromAnyRef(1800))
+            .withValue(VirtualNodeDatasourceConfig.VNODE_POOL_KEEPALIVE_TIME_SECONDS, ConfigValueFactory.fromAnyRef(0))
+            .withValue(VirtualNodeDatasourceConfig.VNODE_VALIDATION_TIMEOUT_SECONDS, ConfigValueFactory.fromAnyRef(5))
     )
 
     private val impl = VirtualNodeDbFactoryImpl(

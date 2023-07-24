@@ -19,12 +19,11 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
 import net.corda.schema.configuration.ExternalMessagingConfig
+import net.corda.schema.configuration.VirtualNodeDatasourceConfig
 import net.corda.virtualnode.write.db.impl.writer.CLIENT_NAME_DB
 import net.corda.virtualnode.write.db.impl.writer.CLIENT_NAME_RPC
 import net.corda.virtualnode.write.db.impl.writer.GROUP_NAME
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterFactory
-import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterFactory.Companion.VNODE_DDL_POOL_CONFIG
-import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterFactory.Companion.VNODE_DML_POOL_CONFIG
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationProcessor
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -70,8 +69,8 @@ class VirtualNodeWriterFactoryTests {
         configFactory.create(
             ConfigFactory.parseMap(
                 mapOf(
-                    "$VNODE_DDL_POOL_CONFIG.dummy" to "",
-                    "$VNODE_DML_POOL_CONFIG.dummy" to ""
+                    "${VirtualNodeDatasourceConfig.VNODE_DDL_POOL_CONFIG}.dummy" to "",
+                    "${VirtualNodeDatasourceConfig.VNODE_DML_POOL_CONFIG}.dummy" to ""
                 )
             )
         )
