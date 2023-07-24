@@ -39,6 +39,7 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.nio.file.Files
 
 @ExtendWith(ServiceExtension::class)
 class OpenApiCompatibilityTest {
@@ -87,6 +88,9 @@ class OpenApiCompatibilityTest {
 
             val existingSwaggerJson = computeExistingSwagger(apiVersion)
             val baselineSwagger = fetchBaseline(apiVersion)
+
+            File("./existingSwaggerJson.json").writeText(existingSwaggerJson.second.toJson())
+            File("./baselineSwagger.json").writeText(baselineSwagger.toJson())
 
             val diffReport = existingSwaggerJson.second.diff(baselineSwagger)
 

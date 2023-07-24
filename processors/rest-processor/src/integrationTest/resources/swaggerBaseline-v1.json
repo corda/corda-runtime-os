@@ -1397,7 +1397,7 @@
                   "type" : "array",
                   "nullable" : false,
                   "items" : {
-                    "$ref" : "#/components/schemas/RestInteropIdentity"
+                    "$ref" : "#/components/schemas/InteropIdentityResponse"
                   }
                 }
               }
@@ -4946,6 +4946,51 @@
           }
         }
       },
+      "InteropIdentityResponse" : {
+        "required" : [ "applicationName", "endpointProtocol", "endpointUrl", "facadeIds", "groupId", "x500Name" ],
+        "type" : "object",
+        "properties" : {
+          "applicationName" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "endpointProtocol" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "endpointUrl" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "facadeIds" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          },
+          "groupId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "nullable" : false
+          },
+          "shortHash" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "x500Name" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
       "KeyMetaData" : {
         "required" : [ "alias", "created", "hsmCategory", "keyId", "scheme" ],
         "type" : "object",
@@ -5236,7 +5281,7 @@
         }
       },
       "RestInteropIdentity" : {
-        "required" : [ "applicationName", "endpointProtocol", "endpointUrl", "facadeIds", "groupId", "x500Name" ],
+        "required" : [ "applicationName", "endpointProtocol", "endpointUrl", "facadeIds", "groupId", "groupPolicy", "x500Name" ],
         "type" : "object",
         "properties" : {
           "applicationName" : {
@@ -5267,6 +5312,11 @@
             "type" : "string",
             "format" : "uuid",
             "nullable" : false
+          },
+          "groupPolicy" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
           },
           "shortHash" : {
             "type" : "string",
