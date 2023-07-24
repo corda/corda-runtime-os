@@ -1,13 +1,17 @@
 package net.corda.cli.plugins.network
 
+import com.fasterxml.jackson.core.util.DefaultIndenter
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
+import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfo
 import picocli.CommandLine
 
 @CommandLine.Command(name = "members-list", description = ["Shows the list of members on the network."])
-class MemberList : RestCommand(), Runnable {
+class MemberList(private val output: MemberListOutput = ConsoleMemberListOutput()) : RestCommand(), Runnable {
 
     @CommandLine.Option(
         names = ["-h", "--holding-identity-short-hash"],
@@ -57,16 +61,17 @@ class MemberList : RestCommand(), Runnable {
         description = ["Optional. Country (C) attribute of the X.500 name to filter members by."]
     )
     var country: String? = null
-    private fun performMembersLookup() {
+
+    private fun performMembersLookup(): String {
         requireNotNull(holdingIdentityShortHash) { "Holding identity short hash was not provided." }
 
-        val restClient = createRestClient(MemberLookupRestResource::class)
-
-        val result: List<RestMemberInfo> = restClient.use { client ->
-            val connection = client.start()
-            val memberLookupProxy = connection.proxy
-
-            try {
+        val result: List<RestMemberInfo> = createRestClient(MemberLookupRestResource::class).use { client ->
+            checkInvariant(
+                maxAttempts = MAX_ATTEMPTS,
+                waitInterval = WAIT_INTERVAL,
+                errorMessage = "Members lookup: Invariant check failed after maximum attempts."
+            ) {
+                val memberLookupProxy = client.start().proxy
                 memberLookupProxy.lookup(
                     holdingIdentityShortHash.toString(),
                     commonName,
@@ -76,17 +81,36 @@ class MemberList : RestCommand(), Runnable {
                     state,
                     country
                 ).members
-            } catch (e: Exception) {
-                println(e.message)
-                NetworkPluginWrapper.logger.error(e.stackTraceToString())
-                return
             }
         }
 
-        println(result)
+        return result.toString()
+    }
+
+    interface MemberListOutput {
+        fun generateOutput(content: String)
+    }
+
+    class ConsoleMemberListOutput : MemberListOutput {
+        /**
+         * Receives the content of the file and prints it to the console output. It makes the testing easier.
+         */
+        override fun generateOutput(content: String) {
+            content.lines().forEach {
+                println(it)
+            }
+        }
     }
 
     override fun run() {
-        performMembersLookup()
+        val result = performMembersLookup()
+        val objectMapper = jacksonObjectMapper()
+
+        // add pretty printer and override indentation to make the nested values look better and the file more presentable
+        val pp = DefaultPrettyPrinter()
+        pp.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE)
+
+        val jsonString = objectMapper.writer(pp).writeValueAsString(result)
+        output.generateOutput(jsonString)
     }
 }

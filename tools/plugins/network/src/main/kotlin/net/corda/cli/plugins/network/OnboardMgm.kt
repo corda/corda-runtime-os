@@ -3,6 +3,7 @@ package net.corda.cli.plugins.network
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
+import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.membership.rest.v1.MGMRestResource
 import picocli.CommandLine.Command
@@ -55,32 +56,22 @@ class OnboardMgm : Runnable, BaseOnboard() {
     }
 
     private fun saveGroupPolicy() {
-        repeat(10) {
-            try {
-                val restClient = createRestClient(MGMRestResource::class)
-                restClient.use { client ->
-                    client.start().also { connection ->
-                        val resource = connection.proxy
-                        val response = resource.generateGroupPolicy(holdingId)
-                        groupPolicyFile.parentFile.mkdirs()
-                        json.writerWithDefaultPrettyPrinter()
-                            .writeValue(
-                                groupPolicyFile,
-                                json.readTree(response)
-                            )
-                        println("Group policy file created at $groupPolicyFile")
-
-                        // extract the groupId from the response
-                        val groupId = json.readTree(response).get("groupId").asText()
-
-                        // write the groupId to the file
-                        groupIdFile.writeText(groupId)
-
-                        return@saveGroupPolicy
-                    }
-                }
-            } catch (e: Exception) {
-                Thread.sleep(300)
+        createRestClient(MGMRestResource::class).use { client ->
+            checkInvariant(
+                maxAttempts = MAX_ATTEMPTS,
+                waitInterval = WAIT_INTERVAL,
+                errorMessage = "Save group policy: Invariant check failed after maximum attempts."
+            ) {
+                val resource = client.start().proxy
+                val response = resource.generateGroupPolicy(holdingId)
+                groupPolicyFile.parentFile.mkdirs()
+                json.writerWithDefaultPrettyPrinter()
+                    .writeValue(
+                        groupPolicyFile,
+                        json.readTree(response)
+                    )
+                println("Group policy file created at $groupPolicyFile")
+                true // Return true to indicate the invariant is satisfied
             }
         }
     }
@@ -115,12 +106,8 @@ class OnboardMgm : Runnable, BaseOnboard() {
     }
 
     private val cpi by lazy {
-        val parametersCpiFile = cpiHash
-        if (parametersCpiFile != null) {
-            val file = File(parametersCpiFile)
-            if (file.exists()) {
-                return@lazy file
-            }
+        if (cpiFile != null) {
+            return@lazy cpiFile!!
         }
         val mgmGroupPolicyFile = File.createTempFile("mgm.groupPolicy.", ".json").also {
             it.deleteOnExit()

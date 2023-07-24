@@ -32,6 +32,7 @@ import net.corda.membership.rest.v1.types.response.RegistrationStatus
 import com.fasterxml.jackson.databind.JsonNode
 import net.corda.rest.JsonObject
 import org.bouncycastle.asn1.x500.X500Name
+import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
 import org.bouncycastle.crypto.util.PrivateKeyFactory
@@ -133,51 +134,41 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     internal class OnboardException(message: String) : Exception(message)
 
     protected fun uploadCpi(cpi: InputStream, name: String): String {
-        createRestClient(CpiUploadRestResource::class).use { client ->
+        return createRestClient(CpiUploadRestResource::class).use { client ->
             cpi.use { jarInputStream ->
-                client.start().also { connection ->
-                    val resource = connection.proxy
-                    val upload = HttpFileUpload(content = jarInputStream, fileName = "$name.cpi")
-                    val id = resource.cpi(upload).id
-
-                    // Wait for some time before checking the status of the CPI upload.
-                    Thread.sleep(2000)  // You can adjust this delay as per your requirements.
-
-                    // Retry for a certain number of times if the check fails
-                    var retryCount = 0
-                    val maxRetryCount = 3
-
-                    while (retryCount < maxRetryCount) {
-                        try {
-                            return checkCpiStatus(id)
-                        } catch (e: OnboardException) {
-                            println("Check CPI status failed for id: $id, retrying...")
-                            retryCount++
-                        }
-                    }
-
-                    // If all retries failed, throw the exception
-                    throw OnboardException("CPI request $id had failed after $maxRetryCount attempts!")
+                checkInvariant(
+                    maxAttempts = MAX_ATTEMPTS,
+                    waitInterval = WAIT_INTERVAL,
+                    errorMessage = "Check CPI status: Invariant check failed after maximum attempts."
+                ) {
+                    checkCpiStatus(
+                        client.start().proxy.cpi(
+                            HttpFileUpload(
+                                content = jarInputStream,
+                                fileName = "$name.cpi"
+                            )
+                        ).id
+                    )
                 }
             }
-
         }
     }
 
     private fun checkCpiStatus(id: String): String {
-        val end = System.currentTimeMillis() + 5 * 60 * 1000
-        while (System.currentTimeMillis() < end) {
-            createRestClient(CpiUploadRestResource::class).use { client ->
-                client.start().also { connection ->
-                    val resource = connection.proxy
-                    val status = resource.status(id)
-                    if (status.status == "OK") {
-                        return status.cpiFileChecksum
-                    }
+        return createRestClient(CpiUploadRestResource::class).use { client ->
+            checkInvariant(
+                maxAttempts = MAX_ATTEMPTS,
+                waitInterval = WAIT_INTERVAL,
+                errorMessage = "Check CPI status: Invariant check failed after maximum attempts."
+            ) {
+                val status = client.start().proxy.status(id)
+                if (status.status == "OK") {
+                    status.cpiFileChecksum
+                } else {
+                    null
                 }
             }
         }
-        throw OnboardException("CPI request $id had failed!")
     }
 
     protected abstract val cpiFileChecksum: String
@@ -187,20 +178,16 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     protected abstract val registrationContext: Map<String, Any?>
 
     private fun waitForVirtualNode(shortHashId: String) {
-        repeat(10) {
-            try {
-                val response = createRestClient(VirtualNodeRestResource::class).use { client ->
-                    client.start().proxy.getVirtualNode(shortHashId)
-                }
-                if (response.flowP2pOperationalStatus == OperationalStatus.ACTIVE) {
-                    return@waitForVirtualNode
-                }
-            } catch (e: Exception) {
-                // Do nothing...
+        createRestClient(VirtualNodeRestResource::class).use { client ->
+            checkInvariant(
+                maxAttempts = MAX_ATTEMPTS,
+                waitInterval = WAIT_INTERVAL,
+                errorMessage = "Virtual Node status check: Invariant check failed after maximum attempts."
+            ) {
+                val response = client.start().proxy.getVirtualNode(shortHashId)
+                response.flowP2pOperationalStatus == OperationalStatus.ACTIVE
             }
-            Thread.sleep(300)
         }
-        throw OnboardException("Virtual node $shortHashId cannot be created")
     }
 
     protected val holdingId: String by lazy {
@@ -228,25 +215,22 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     protected fun assignSoftHsmAndGenerateKey(category: String): String {
-        repeat(10) {
-            val hsmAssociation = createRestClient(HsmRestResource::class).use { client ->
+        createRestClient(HsmRestResource::class).use { client ->
+            checkInvariant(
+                maxAttempts = MAX_ATTEMPTS,
+                waitInterval = WAIT_INTERVAL,
+                errorMessage = "Assign Soft HSM: Invariant check failed after maximum attempts."
+            ) {
                 client.start().proxy.assignSoftHsm(holdingId, category)
+                true // Return true to indicate the invariant is satisfied
             }
-
-            if (!hsmAssociation.hsmId.isEmpty()) {
-                return@repeat
-            }
-
-            println("Could not assign HSM key, will retry in a while")
-            Thread.sleep(300)
         }
 
-        val response = createRestClient(KeysRestResource::class).use { client ->
-            client.start().proxy.generateKeyPair(
+        val response = createRestClient(KeysRestResource::class).use { keyClient ->
+            keyClient.start().proxy.generateKeyPair(
                 holdingId, "$holdingId-$category", category, "CORDA.ECDSA.SECP256R1"
             )
         }
-
         return response.id
     }
 
@@ -280,55 +264,75 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     protected fun createTlsKeyIdNeeded() {
-        val keys = createRestClient(KeysRestResource::class).use { client ->
-            client.start().proxy.listKeys(
-                tenantId = "p2p",
-                skip = 0,
-                take = 20,
-                orderBy = "NONE",
-                category = "TLS",
-                schemeCodeName = null,
-                alias = P2P_TLS_KEY_ALIAS,
-                masterKeyAlias = null,
-                createdAfter = null,
-                createdBefore = null,
-                ids = null,
-            )
+        val hasKeys = createRestClient(KeysRestResource::class).use { client ->
+            checkInvariant(
+                maxAttempts = MAX_ATTEMPTS,
+                waitInterval = WAIT_INTERVAL,
+                errorMessage = "List Keys: Invariant check failed after maximum attempts."
+            ) {
+                client.start().proxy.listKeys(
+                    tenantId = "p2p",
+                    skip = 0,
+                    take = 20,
+                    orderBy = "NONE",
+                    category = "TLS",
+                    schemeCodeName = null,
+                    alias = P2P_TLS_KEY_ALIAS,
+                    masterKeyAlias = null,
+                    createdAfter = null,
+                    createdBefore = null,
+                    ids = null,
+                ).isNotEmpty()
+            }
         }
 
-        if (keys.isNotEmpty()) {
-            return
+        if (hasKeys) return
+
+        val tlsKeyId = createRestClient(KeysRestResource::class).use { client ->
+            checkInvariant(
+                maxAttempts = MAX_ATTEMPTS,
+                waitInterval = WAIT_INTERVAL,
+                errorMessage = "Generate Key Pair: Invariant check failed after maximum attempts."
+            ) {
+                client.start().proxy.generateKeyPair(
+                    tenantId = "p2p",
+                    alias = P2P_TLS_KEY_ALIAS,
+                    hsmCategory = "TLS",
+                    scheme = "CORDA.ECDSA.SECP256R1"
+                ).id
+            }
         }
 
-        val generateKeyPairResponse = createRestClient(KeysRestResource::class).use { client ->
-            client.start().proxy.generateKeyPair(
-                tenantId = "p2p",
-                alias = P2P_TLS_KEY_ALIAS,
-                hsmCategory = "TLS",
-                scheme = "CORDA.ECDSA.SECP256R1"
-            )
-        }
-
-        val tlsKeyId = generateKeyPairResponse.id
-
-        createRestClient(CertificatesRestResource::class).use { client ->
-            client.start().also { connection ->
-                val resource = connection.proxy
-                val csr = resource.generateCsr(
+        val csr = createRestClient(CertificatesRestResource::class).use { client ->
+            checkInvariant(
+                maxAttempts = MAX_ATTEMPTS,
+                waitInterval = WAIT_INTERVAL,
+                errorMessage = "Generate CSR: Invariant check failed after maximum attempts."
+            ) {
+                client.start().proxy.generateCsr(
                     tenantId = "p2p",
                     keyId = tlsKeyId,
                     x500Name = certificateSubject,
                     subjectAlternativeNames = listOf(p2pHost),
                     contextMap = null
                 )
+            }
+        }
 
-                val csrCertRequest = csr.reader().use { reader ->
-                    PEMParser(reader).use { parser ->
-                        parser.readObject()
-                    }
-                } as? PKCS10CertificationRequest ?: throw OnboardException("CSR is not a valid CSR: $csr")
-                ca.signCsr(csrCertRequest).toPem().byteInputStream().use { certificate ->
-                    resource.importCertificateChain(
+        val csrCertRequest = csr.reader().use { reader ->
+            PEMParser(reader).use { parser ->
+                parser.readObject()
+            }
+        } as? PKCS10CertificationRequest ?: throw OnboardException("CSR is not a valid CSR: $csr")
+
+        createRestClient(CertificatesRestResource::class).use { client ->
+            ca.signCsr(csrCertRequest).toPem().byteInputStream().use { certificate ->
+                checkInvariant(
+                    maxAttempts = MAX_ATTEMPTS,
+                    waitInterval = WAIT_INTERVAL,
+                    errorMessage = "Generate CSR: Invariant check failed after maximum attempts."
+                ) {
+                    client.start().proxy.importCertificateChain(
                         usage = "p2p-tls",
                         alias = P2P_TLS_CERTIFICATE_ALIAS,
                         certificates = listOf(
@@ -356,7 +360,14 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         )
 
         createRestClient(NetworkRestResource::class).use { client ->
-            client.start().proxy.setupHostedIdentities(holdingId, request)
+            checkInvariant(
+                maxAttempts = MAX_ATTEMPTS,
+                waitInterval = WAIT_INTERVAL,
+                errorMessage = "Setup Network: Invariant check failed after maximum attempts."
+            ) {
+                client.start().proxy.setupHostedIdentities(holdingId, request)
+                true // Return true to indicate the invariant is satisfied
+            }
         }
     }
 
@@ -388,26 +399,27 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     private fun waitForFinalStatus(registrationId: String) {
-        val end = System.currentTimeMillis() + 5 * 60 * 1000
+        createRestClient(MemberRegistrationRestResource::class).use { client ->
+            checkInvariant(
+                maxAttempts = MAX_ATTEMPTS,
+                waitInterval = WAIT_INTERVAL,
+                errorMessage = "Check Registration Progress: Invariant check failed after maximum attempts."
+            ) {
+                val status = client.start().proxy.checkSpecificRegistrationProgress(holdingId, registrationId)
 
-        while (System.currentTimeMillis() < end) {
-            Thread.sleep(400)
-            val restClient = createRestClient(MemberRegistrationRestResource::class)
-            val status = restClient.use { client ->
-                client.start().proxy.checkSpecificRegistrationProgress(holdingId, registrationId)
-            }
+                when (val registrationStatus = status.registrationStatus) {
+                    RegistrationStatus.APPROVED -> true // Return true to indicate the invariant is satisfied
+                    RegistrationStatus.DECLINED,
+                    RegistrationStatus.INVALID,
+                    RegistrationStatus.FAILED -> throw OnboardException("Status of registration is $registrationStatus.")
 
-            when (val registrationStatus = status.registrationStatus) {
-                RegistrationStatus.APPROVED -> return
-                RegistrationStatus.DECLINED,
-                RegistrationStatus.INVALID,
-                RegistrationStatus.FAILED -> throw OnboardException("Status of registration is $registrationStatus.")
-
-                else -> println("Status of $x500Name registration is $registrationStatus")
+                    else -> {
+                        println("Status of registration is $registrationStatus")
+                        false // Return false to indicate the invariant is not yet satisfied
+                    }
+                }
             }
         }
-
-        throw OnboardException("Registration has failed!")
     }
 
     data class ConcreteJsonObject(override val escapedJson: String) : JsonObject
