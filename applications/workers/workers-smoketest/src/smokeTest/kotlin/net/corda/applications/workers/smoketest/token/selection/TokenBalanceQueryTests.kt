@@ -2,14 +2,15 @@ package net.corda.applications.workers.smoketest.token.selection
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import net.corda.applications.workers.smoketest.virtualnode.VirtualNodeInitializer
 import java.math.BigDecimal
 import java.util.UUID
+import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
+import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
@@ -50,8 +51,6 @@ class TokenBalanceQueryTests {
         val objectMapper = ObjectMapper().apply {
             registerModule(KotlinModule.Builder().build())
         }
-
-        private val vNodeInitializer = VirtualNodeInitializer
     }
 
     private fun convertToTokenBalanceQueryResponseMsg(tokenBalanceQueryResponseMsgStr: String) =
@@ -103,8 +102,9 @@ class TokenBalanceQueryTests {
 
         registerStaticMember(aliceHoldingId)
         registerStaticMember(bobHoldingId)
-
         registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
+        
+        DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
     }
 
     @Test

@@ -7,11 +7,13 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import net.corda.applications.workers.smoketest.virtualnode.VirtualNodeInitializer
+import java.util.UUID
 import net.corda.crypto.core.parseSecureHash
+import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
+import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
@@ -22,7 +24,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
-import java.util.UUID
 
 @Suppress("Unused", "FunctionName")
 @TestInstance(PER_CLASS)
@@ -39,8 +40,6 @@ class ConsensualLedgerTests {
             module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)
             registerModule(module)
         }
-
-        private val vNodeInitializer = VirtualNodeInitializer
     }
 
     private val testRunUniqueId = UUID.randomUUID()
@@ -81,6 +80,8 @@ class ConsensualLedgerTests {
         registerStaticMember(aliceHoldingId)
         registerStaticMember(bobHoldingId)
         registerStaticMember(charlieHoldingId)
+
+        DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
     }
 
     @Test

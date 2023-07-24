@@ -7,7 +7,7 @@ import java.util.UUID
 import kotlin.text.Typography.quote
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.TEST_CPI_NAME
-import net.corda.applications.workers.smoketest.virtualnode.VirtualNodeInitializer
+import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.FlowResult
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_FAILED
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
@@ -16,6 +16,7 @@ import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
 import net.corda.e2etest.utilities.awaitRestFlowResult
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
+import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.configWithDefaultsNode
 import net.corda.e2etest.utilities.getConfig
 import net.corda.e2etest.utilities.getHoldingIdShortHash
@@ -98,8 +99,6 @@ class FlowTests {
 
         val jacksonObjectMapper = jacksonObjectMapper()
 
-        private val vNodeInitializer = VirtualNodeInitializer
-
         @BeforeAll
         @JvmStatic
         internal fun beforeAll() {
@@ -131,6 +130,8 @@ class FlowTests {
             registerStaticMember(bobHoldingId)
             registerStaticMember(charlieHoldingId)
             registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
+
+            DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
         }
 
         private val JsonNode?.command: String
