@@ -46,4 +46,3 @@ class NetworkPluginWrapper : Plugin() {
     )
     class MgmPlugin : CordaCliPlugin
 }
-

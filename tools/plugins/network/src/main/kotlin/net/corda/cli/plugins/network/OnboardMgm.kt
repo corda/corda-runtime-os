@@ -21,10 +21,10 @@ import java.util.UUID
 )
 class OnboardMgm : Runnable, BaseOnboard() {
     @Option(
-        names = ["--cpi-hash", "-c"],
-        description = ["The CPI hash of a previously uploaded CPI. If not specified, an auto-generated MGM CPI will be used."]
+        names = ["--cpb-name"],
+        description = ["The name of the CPB. Default to random UUID"]
     )
-    var cpiHash: String? = null
+    var cpbName: String = UUID.randomUUID().toString()
 
     @Option(
         names = ["--x500-name"],
@@ -38,6 +38,16 @@ class OnboardMgm : Runnable, BaseOnboard() {
     )
     var groupPolicyFile: File =
         File(File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json")
+
+    @Option(
+        names = ["--cpi-file"],
+        description = [
+            "Location of the MGM CPI file.",
+            "To create the CPI use the package create-cpi command.",
+            "Leave empty to auto generate CPI file (not recommended)."
+        ]
+    )
+    var cpiFile: File? = null
 
     private var groupIdFile: File = File("groupId.txt")
 
@@ -71,6 +81,11 @@ class OnboardMgm : Runnable, BaseOnboard() {
                         json.readTree(response)
                     )
                 println("Group policy file created at $groupPolicyFile")
+                // extract the groupId from the response
+                val groupId = json.readTree(response).get("groupId").asText()
+
+                // write the groupId to the file
+                groupIdFile.writeText(groupId)
                 true // Return true to indicate the invariant is satisfied
             }
         }
@@ -146,7 +161,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
             return@lazy existingHash
         }
 
-        uploadCpi(cpi.inputStream(), x500Name)
+        uploadCpi(cpi.inputStream(), cpbName)
     }
 
     override fun run() {
