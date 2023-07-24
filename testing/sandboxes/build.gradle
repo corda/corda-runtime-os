@@ -7,7 +7,7 @@ description 'Creates sandboxes for testing purposes'
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
-    compileOnly "org.osgi:org.osgi.service.cm:$osgiCmVersion"
+    compileOnly libs.osgi.service.cm
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
