@@ -149,6 +149,10 @@ class P2PLayerEndToEndTest {
         }
     }
 
+    init {
+        Security.addProvider(BouncyCastleProvider())
+    }
+
     private val bootstrapConfig = SmartConfigFactory.createWithoutSecurityServices()
         .create(ConfigFactory.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1)))
         .withValue(MessagingConfig.MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(10000000))
@@ -480,9 +484,6 @@ class P2PLayerEndToEndTest {
         checkRevocation: Boolean,
         keyTemplate: KeySchemeTemplate,
     ) : AutoCloseable {
-        init {
-            Security.addProvider(BouncyCastleProvider())
-        }
         private val p2pPort by lazy {
             ServerSocket(0).use {
                 it.localPort
