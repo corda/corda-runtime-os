@@ -30,6 +30,7 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -48,9 +49,10 @@ class UtxoPersistenceServiceImpl(
 ) : UtxoPersistenceService {
 
     private companion object {
-        val log = LoggerFactory.getLogger(UtxoPersistenceServiceImpl::class.java)
+        val log: Logger = LoggerFactory.getLogger(UtxoPersistenceServiceImpl::class.java)
     }
 
+    // possibly simplify this method based on avro schema upgrading outcome.
     override fun findSignedTransaction(
         id: String,
         transactionStatus: TransactionStatus
@@ -66,8 +68,6 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    // need to deal with the exceptions being thrown here
-    // have to decide what to do, do we throw and deal with it in the flow code or return something else?
     override fun findLedgerTransaction(
         id: String,
         transactionStatus: TransactionStatus
@@ -85,12 +85,12 @@ class UtxoPersistenceServiceImpl(
                     .associateBy { StateRef(parseSecureHash(it.transactionId), it.leafIndex) }
                 val inputStateAndRefs = transaction.inputStateRefs.map {
                     stateRefsToStateAndRefs[it]
-                        ?: throw CordaRuntimeException("Could not find StateRef $it when resolving input states.")
+                        ?: throw CordaRuntimeException("Could not find input StateRef $it when finding transaction $id")
                 }
 
                 val referenceStateAndRefs = transaction.referenceStateRefs.map {
                     stateRefsToStateAndRefs[it]
-                        ?: throw CordaRuntimeException("Could not find StateRef $it when resolving reference states.")
+                        ?: throw CordaRuntimeException("Could not find reference StateRef $it when finding transaction $id")
                 }
 
                 LedgerTransactionContainer(transaction.wireTransaction, inputStateAndRefs, referenceStateAndRefs, signatures)
