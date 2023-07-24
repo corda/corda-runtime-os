@@ -64,6 +64,8 @@ class UtxoLedgerTests {
 
     @BeforeAll
     fun beforeAll() {
+        DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
+
         conditionallyUploadCordaPackage(
             cpiName,
             TEST_CPB_LOCATION,
@@ -91,8 +93,6 @@ class UtxoLedgerTests {
         registerStaticMember(bobHoldingId)
         registerStaticMember(charlieHoldingId)
         registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
-
-        DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
     }
 
     @Test

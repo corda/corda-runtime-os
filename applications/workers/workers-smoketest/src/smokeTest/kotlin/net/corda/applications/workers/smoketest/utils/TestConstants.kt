@@ -1,4 +1,4 @@
-package net.corda.applications.workers.smoketest
+package net.corda.applications.workers.smoketest.utils
 
 import java.util.UUID
 import net.corda.utilities.seconds
@@ -10,8 +10,8 @@ val defaultTestRunId: UUID by lazy { UUID.randomUUID() }
 val defaultGroupId: UUID by lazy { UUID.randomUUID() }
 
 val defaultStaticMemberList = listOf(
-    "CN=Alice-${defaultTestRunId}, OU=Application, O=R3, L=London, C=GB",
-    "CN=Bob-${defaultTestRunId}, OU=Application, O=R3, L=London, C=GB"
+    "CN=Alice-$defaultTestRunId, OU=Application, O=R3, L=London, C=GB",
+    "CN=Bob-$defaultTestRunId, OU=Application, O=R3, L=London, C=GB"
 )
 
 const val ERROR_CPI_NOT_UPLOADED =

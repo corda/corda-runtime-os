@@ -5,8 +5,8 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import java.util.UUID
 import kotlin.text.Typography.quote
-import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
-import net.corda.applications.workers.smoketest.TEST_CPI_NAME
+import net.corda.applications.workers.smoketest.utils.TEST_CPB_LOCATION
+import net.corda.applications.workers.smoketest.utils.TEST_CPI_NAME
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.FlowResult
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_FAILED
@@ -102,6 +102,8 @@ class FlowTests {
         @BeforeAll
         @JvmStatic
         internal fun beforeAll() {
+            DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
+
             // Upload test flows if not already uploaded
             conditionallyUploadCordaPackage(
                 applicationCpiName, TEST_CPB_LOCATION, groupId, staticMemberList
@@ -130,8 +132,6 @@ class FlowTests {
             registerStaticMember(bobHoldingId)
             registerStaticMember(charlieHoldingId)
             registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
-
-            DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
         }
 
         private val JsonNode?.command: String

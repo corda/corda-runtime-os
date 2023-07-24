@@ -79,6 +79,8 @@ class TokenBalanceQueryTests {
 
     @BeforeAll
     fun beforeAll() {
+        DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
+
         conditionallyUploadCordaPackage(
             cpiName,
             TEST_CPB_LOCATION,
@@ -103,8 +105,6 @@ class TokenBalanceQueryTests {
         registerStaticMember(aliceHoldingId)
         registerStaticMember(bobHoldingId)
         registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
-        
-        DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
     }
 
     @Test

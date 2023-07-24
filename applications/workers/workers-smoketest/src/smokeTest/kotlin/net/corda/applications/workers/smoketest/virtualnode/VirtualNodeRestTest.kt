@@ -1,13 +1,13 @@
 package net.corda.applications.workers.smoketest.virtualnode
 
 import java.util.UUID
-import net.corda.applications.workers.smoketest.ERROR_CPI_NOT_UPLOADED
-import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
-import net.corda.applications.workers.smoketest.TEST_CPI_NAME
-import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_NAME
-import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V1
-import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V2
-import net.corda.applications.workers.smoketest.eventuallyUploadCpi
+import net.corda.applications.workers.smoketest.utils.ERROR_CPI_NOT_UPLOADED
+import net.corda.applications.workers.smoketest.utils.TEST_CPB_LOCATION
+import net.corda.applications.workers.smoketest.utils.TEST_CPI_NAME
+import net.corda.applications.workers.smoketest.utils.VNODE_UPGRADE_TEST_CPI_NAME
+import net.corda.applications.workers.smoketest.utils.VNODE_UPGRADE_TEST_CPI_V1
+import net.corda.applications.workers.smoketest.utils.VNODE_UPGRADE_TEST_CPI_V2
+import net.corda.applications.workers.smoketest.utils.eventuallyUploadCpi
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT_ALIAS
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT_USAGE
@@ -27,30 +27,18 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.TestMethodOrder
-import org.junit.jupiter.api.extension.ConditionEvaluationResult
-import org.junit.jupiter.api.extension.ExecutionCondition
-import org.junit.jupiter.api.extension.ExtendWith
-import org.junit.jupiter.api.extension.ExtensionContext
 
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class SkipInitialization
-
-class SkipInitializationCondition : ExecutionCondition {
-    override fun evaluateExecutionCondition(context: ExtensionContext): ConditionEvaluationResult =
-        when (context.element.filter { it.isAnnotationPresent(SkipInitialization::class.java) }.isPresent) {
-            true -> ConditionEvaluationResult.disabled("Skipping signing cert upload for cert import test")
-            false -> ConditionEvaluationResult.enabled("Conditionally uploading signing cert to default test cluster")
-        }
-}
 
 /**
  * Any 'unordered' tests are run *last*
  */
 @Order(10)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-@ExtendWith(SkipInitializationCondition::class)
 class VirtualNodeRestTest {
     companion object {
         // Some simple test failure messages
@@ -67,8 +55,14 @@ class VirtualNodeRestTest {
     }
 
     @BeforeEach
-    internal fun beforeEach() {
-        DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
+    internal fun beforeEach(testInfo: TestInfo) {
+        val hasSkipAnnotation = testInfo.testMethod
+            .filter { it.isAnnotationPresent(SkipInitialization::class.java) }
+            .isPresent
+
+        if (!hasSkipAnnotation) {
+            DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
+        }
     }
 
     @Test

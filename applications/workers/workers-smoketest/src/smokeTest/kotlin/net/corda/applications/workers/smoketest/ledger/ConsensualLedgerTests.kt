@@ -62,6 +62,8 @@ class ConsensualLedgerTests {
 
     @BeforeAll
     fun beforeAll() {
+        DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
+
         conditionallyUploadCordaPackage(
             cpiName,
             TEST_CPB_LOCATION,
@@ -80,8 +82,6 @@ class ConsensualLedgerTests {
         registerStaticMember(aliceHoldingId)
         registerStaticMember(bobHoldingId)
         registerStaticMember(charlieHoldingId)
-
-        DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
     }
 
     @Test

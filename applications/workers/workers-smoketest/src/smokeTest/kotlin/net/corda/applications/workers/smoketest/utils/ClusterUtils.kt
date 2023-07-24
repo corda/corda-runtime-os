@@ -1,4 +1,4 @@
-package net.corda.applications.workers.smoketest
+package net.corda.applications.workers.smoketest.utils
 
 import net.corda.e2etest.utilities.ClusterBuilder
 import net.corda.e2etest.utilities.assertWithRetry
