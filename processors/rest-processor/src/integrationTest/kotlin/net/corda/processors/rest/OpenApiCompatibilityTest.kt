@@ -89,9 +89,6 @@ class OpenApiCompatibilityTest {
             val existingSwaggerJson = computeExistingSwagger(apiVersion)
             val baselineSwagger = fetchBaseline(apiVersion)
 
-            File("./existingSwaggerJson.json").writeText(existingSwaggerJson.second.toJson())
-            File("./baselineSwagger.json").writeText(baselineSwagger.toJson())
-
             val diffReport = existingSwaggerJson.second.diff(baselineSwagger)
 
             val tmpBaselineFile = kotlin.io.path.createTempFile(
