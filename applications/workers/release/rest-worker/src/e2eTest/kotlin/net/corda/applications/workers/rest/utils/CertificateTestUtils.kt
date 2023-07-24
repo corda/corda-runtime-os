@@ -6,7 +6,7 @@ import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAutho
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.rest.HttpFileUpload
-import net.corda.membership.rest.v1.deprecated.CertificatesRestResource
+import net.corda.membership.rest.v1.CertificateRestResource
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
@@ -46,7 +46,7 @@ fun E2eCluster.generateCsr(
     } else {
         null
     }
-    return clusterHttpClientFor(CertificatesRestResource::class.java)
+    return clusterHttpClientFor(CertificateRestResource::class.java)
         .use { client ->
             client.start().proxy.generateCsr(
                 tenantId = tenantId,
@@ -61,7 +61,7 @@ fun E2eCluster.generateCsr(
 fun E2eCluster.uploadTlsCertificate(
     certificatePem: String
 ) {
-    clusterHttpClientFor(CertificatesRestResource::class.java).use { client ->
+    clusterHttpClientFor(CertificateRestResource::class.java).use { client ->
         client.start().proxy.importCertificateChain(
             usage = "p2p-tls",
             alias = TLS_CERT_ALIAS,
@@ -79,7 +79,7 @@ fun E2eCluster.uploadSessionCertificate(
     certificatePem: String,
     holdingIdentityId: String
 ) {
-    clusterHttpClientFor(CertificatesRestResource::class.java).use { client ->
+    clusterHttpClientFor(CertificateRestResource::class.java).use { client ->
         client.start().proxy.importCertificateChain(
             usage = "p2p-session",
             alias = SESSION_CERT_ALIAS,

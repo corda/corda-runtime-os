@@ -16,7 +16,7 @@ import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
-import net.corda.membership.rest.v1.deprecated.CertificatesRestResource
+import net.corda.membership.rest.v1.CertificateRestResource
 import net.corda.membership.rest.v1.HsmRestResource
 import net.corda.membership.rest.v1.KeysRestResource
 import net.corda.membership.rest.v1.MGMAdminRestResource
@@ -47,7 +47,7 @@ class OpenApiCompatibilityTest {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private val importantRestResources = setOf(
-            CertificatesRestResource::class.java, // P2P
+            CertificateRestResource::class.java, // P2P
             HsmRestResource::class.java, // P2P
             KeysRestResource::class.java, // P2P
             ConfigRestResource::class.java, // Flow

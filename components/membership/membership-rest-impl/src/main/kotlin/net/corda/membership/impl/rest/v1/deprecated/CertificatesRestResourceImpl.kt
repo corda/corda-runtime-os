@@ -21,7 +21,9 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
+import net.corda.membership.impl.rest.v1.CertificateRestResourceImpl
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
+import net.corda.membership.rest.v1.CertificateRestResource
 import net.corda.membership.rest.v1.deprecated.CertificatesRestResource
 import net.corda.membership.rest.v1.deprecated.CertificatesRestResource.Companion.SIGNATURE_SPEC
 import net.corda.rest.HttpFileUpload
@@ -120,6 +122,8 @@ class CertificatesRestResourceImpl @Activate constructor(
         subjectAlternativeNames: List<String>?,
         contextMap: Map<String, String?>?,
     ): String {
+        logger.warn("Deprecated, please use next version at /certificate/{tenantId}/{keyId}")
+
         validateTenantId(tenantId)
 
         val key = tryWithExceptionHandling(logger, "find key with ID $keyId for $tenantId") {
@@ -192,6 +196,8 @@ class CertificatesRestResourceImpl @Activate constructor(
         alias: String,
         certificates: List<HttpFileUpload>,
     ) {
+        logger.warn("Deprecated, please use next version at /certificate/cluster/{usage}")
+
         if (alias.isBlank()) {
             throw InvalidInputDataException(
                 details = mapOf("alias" to "Empty alias")
@@ -284,6 +290,8 @@ class CertificatesRestResourceImpl @Activate constructor(
     }
 
     override fun getCertificateAliases(usage: String, holdingIdentityId: String?): List<String> {
+        logger.warn("Deprecated, please use next version at /certificate/cluster/{usage}")
+
         val holdingIdentityShortHash = if (holdingIdentityId != null) {
             ShortHash.ofOrThrow(holdingIdentityId)
         } else {
@@ -304,6 +312,7 @@ class CertificatesRestResourceImpl @Activate constructor(
     }
 
     override fun getCertificateChain(usage: String, holdingIdentityId: String?, alias: String): String {
+        logger.warn("Deprecated, please use next version at /certificate/cluster/{usage}/{alias}")
         if (alias.isBlank()) {
             throw InvalidInputDataException(
                 details = mapOf("alias" to "Empty alias")
