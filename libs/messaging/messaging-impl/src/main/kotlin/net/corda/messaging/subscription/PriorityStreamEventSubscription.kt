@@ -63,7 +63,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
 ) : StateAndEventSubscription<K, S, E> {
 
     private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(5)
-    private val EVENT_POLL_TIMEOUT = Duration.ofMillis(5)
+    private val EVENT_POLL_TIMEOUT = Duration.ofMillis(50)
     private val config: ResolvedSubscriptionConfig = getConfig(
         SubscriptionConfig("${subscriptionConfig.groupName}-default", "default"),
         messagingConfig)
@@ -84,7 +84,8 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
 //        thread.isDaemon = true
 //        thread
 //    }
-    private val processingExecutor = Executors.newFixedThreadPool(16)
+    private val threadCount = 8
+    private val processingExecutor = Executors.newFixedThreadPool(threadCount)
     private val random = SecureRandom()
 
     private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
@@ -216,8 +217,10 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                 val records = getHighestPriorityEvents()
                 batchSizeHistogram.record(records?.values?.flatten()?.size?.toDouble() ?: 0.0)
                 for ((consumer, events) in records!!) {
-                    log.info("Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${records.size})")
-                    val groupedEvents = events.chunked(30)
+                    if (events.isNotEmpty()) {
+                        log.info("Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${records.size})")
+                        val chunks = events.size / threadCount
+                        val groupedEvents = events.chunked(chunks.coerceAtLeast(events.size))
 //                    runBlocking(Dispatchers.IO.limitedParallelism(10)) {
 //                        val jobs = groupedEvents.map {
 //                            launch {
@@ -228,15 +231,16 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
 //                        }
 //                        jobs.joinAll()
 //                    }
-                    val futures = groupedEvents.map {
-                        CompletableFuture.supplyAsync(
-                            { processEvents(it) },
-                            processingExecutor
-                        ).completeOnTimeout(null,30000, TimeUnit.MILLISECONDS)
+                        val futures = groupedEvents.map {
+                            CompletableFuture.supplyAsync(
+                                { processEvents(it) },
+                                processingExecutor
+                            ).completeOnTimeout(null, 30000, TimeUnit.MILLISECONDS)
+                        }
+                        CompletableFuture.allOf(*futures.toTypedArray()).join()
+                        consumer.commitSync()
+                        log.info("Finished processing batch of events")
                     }
-                    CompletableFuture.allOf(*futures.toTypedArray()).join()
-                    consumer.commitSync()
-                    log.info("Finished processing batch of events")
                 }
             } catch (ex: Exception) {
                 attempts++

@@ -27,7 +27,7 @@ class FlowFiberFactoryImpl @Activate constructor(
     }
 
     private val fiberExecutorScheduler = FiberExecutorScheduler("Multi-threaded executor scheduler",
-        Executors.newSingleThreadScheduledExecutor())
+        Executors.newSingleThreadExecutor())
 
     override fun createAndStartFlowFiber(
         flowFiberExecutionContext: FlowFiberExecutionContext,
@@ -40,8 +40,8 @@ class FlowFiberFactoryImpl @Activate constructor(
             throw FlowFatalException(FiberExceptionConstants.INVALID_FLOW_KEY.format(flowId), e)
         }
         try {
-            val flowFiber = FlowFiberImpl(id, logic, fiberExecutorScheduler)
-//            val flowFiber = FlowFiberImpl(id, logic, flowFiberExecutor())
+//            val flowFiber = FlowFiberImpl(id, logic, fiberExecutorScheduler)
+            val flowFiber = FlowFiberImpl(id, logic, flowFiberExecutor())
             return FiberFuture(flowFiber, flowFiber.startFlow(flowFiberExecutionContext))
         } catch (e: Throwable) {
             throw FlowFatalException(FiberExceptionConstants.UNABLE_TO_EXECUTE.format(e.message ?: "No exception message provided."), e)
@@ -60,8 +60,8 @@ class FlowFiberFactoryImpl @Activate constructor(
                 getFromCacheOrDeserialize(flowFiberExecutionContext)
             }!!
 
-        return FiberFuture(fiber, fiber.resume(flowFiberExecutionContext, suspensionOutcome, fiberExecutorScheduler))
-//        return FiberFuture(fiber, fiber.resume(flowFiberExecutionContext, suspensionOutcome, flowFiberExecutor()))
+//        return FiberFuture(fiber, fiber.resume(flowFiberExecutionContext, suspensionOutcome, fiberExecutorScheduler))
+        return FiberFuture(fiber, fiber.resume(flowFiberExecutionContext, suspensionOutcome, flowFiberExecutor()))
     }
 
     private fun getFromCacheOrDeserialize(flowFiberExecutionContext: FlowFiberExecutionContext): FlowFiberImpl {
