@@ -7,6 +7,7 @@ import net.corda.applications.workers.smoketest.utils.TEST_CPI_NAME
 import net.corda.applications.workers.smoketest.utils.VNODE_UPGRADE_TEST_CPI_NAME
 import net.corda.applications.workers.smoketest.utils.VNODE_UPGRADE_TEST_CPI_V1
 import net.corda.applications.workers.smoketest.utils.VNODE_UPGRADE_TEST_CPI_V2
+import net.corda.applications.workers.smoketest.utils.eventuallyCreateVirtualNode
 import net.corda.applications.workers.smoketest.utils.eventuallyUploadCpi
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT_ALIAS
@@ -17,7 +18,6 @@ import net.corda.e2etest.utilities.assertWithRetry
 import net.corda.e2etest.utilities.cluster
 import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.getHoldingIdShortHash
-import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.truncateLongHash
 import net.corda.test.util.eventually
 import net.corda.utilities.seconds
@@ -119,7 +119,7 @@ class VirtualNodeRestTest {
     fun `can create virtual node with holding id and CPI`() {
         cluster {
             val cpiFileChecksum = getCpiChecksum(cpiName)
-            getOrCreateVirtualNodeFor(aliceX500, cpiFileChecksum)
+            eventuallyCreateVirtualNode(cpiFileChecksum, aliceX500)
         }
     }
 

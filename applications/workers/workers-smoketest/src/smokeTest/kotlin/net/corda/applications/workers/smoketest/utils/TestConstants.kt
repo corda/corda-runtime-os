@@ -18,3 +18,5 @@ const val ERROR_CPI_NOT_UPLOADED =
     "CPI has not been uploaded during this run - this test needs to be run on a clean cluster."
 const val ERROR_IS_CLUSTER_RUNNING =
     "Initial upload failed - is the cluster running?"
+const val ERROR_HOLDING_ID =
+    "Holding id could not be created - this test needs to be run on a clean cluster."

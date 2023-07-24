@@ -2,6 +2,7 @@ package net.corda.applications.workers.smoketest.utils
 
 import net.corda.e2etest.utilities.ClusterBuilder
 import net.corda.e2etest.utilities.assertWithRetry
+import net.corda.e2etest.utilities.awaitVirtualNodeOperationStatusCheck
 import net.corda.rest.ResponseCode
 import org.assertj.core.api.Assertions
 
@@ -52,3 +53,16 @@ fun ClusterBuilder.eventuallyUploadCpi(
     return cpiHash
 }
 
+fun ClusterBuilder.eventuallyCreateVirtualNode(cpiFileChecksum: String, x500Name: String): String {
+    val vNodeJson = assertWithRetry {
+        timeout(retryTimeout)
+        interval(retryInterval)
+        command { vNodeCreate(cpiFileChecksum, x500Name) }
+        condition { it.code == 202 }
+        failMessage(ERROR_HOLDING_ID)
+    }.toJson()
+    val requestId = vNodeJson["requestId"].textValue()
+    Assertions.assertThat(requestId).isNotNull.isNotEmpty
+
+    return awaitVirtualNodeOperationStatusCheck(requestId)
+}
