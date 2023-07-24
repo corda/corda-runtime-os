@@ -17,7 +17,9 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
     constraints {
-        implementation("com.ethlo.time:itu:$comEthloTimeItuVersion")
+        implementation("com.ethlo.time:itu:$comEthloTimeItuVersion") {
+            because "Version bundled with current version of 'com.networknt:json-schema-validator' does not have OSGi manifest."
+        }
     }
     implementation project(':libs:membership:membership-common')
 

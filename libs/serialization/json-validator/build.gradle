@@ -25,7 +25,9 @@ dependencies {
     implementation "io.github.erdtman:java-json-canonicalization:$jsonCanonicalizerVersion"
     implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
     constraints {
-        implementation("com.ethlo.time:itu:$comEthloTimeItuVersion")
+        implementation("com.ethlo.time:itu:$comEthloTimeItuVersion") {
+            because "Version bundled with current version of 'com.networknt:json-schema-validator' does not have OSGi manifest."
+        }
     }
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
 
