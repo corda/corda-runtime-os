@@ -1,4 +1,4 @@
-package net.corda.membership.impl.registration.dynamic.verifiers
+package net.corda.membership.impl.registration.verifiers
 
 internal class OrderVerifier {
     /**

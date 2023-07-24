@@ -232,18 +232,18 @@ fun ClusterInfo.waitForRegistrationStatus(
  */
 fun registerStaticMember(
     holdingIdentityShortHash: String,
-    isNotary: Boolean = false
-) = DEFAULT_CLUSTER.registerStaticMember(holdingIdentityShortHash, isNotary)
+    notaryServiceName: String? = null
+) = DEFAULT_CLUSTER.registerStaticMember(holdingIdentityShortHash, notaryServiceName)
 
 fun ClusterInfo.registerStaticMember(
     holdingIdentityShortHash: String,
-    isNotary: Boolean = false
+    notaryServiceName: String? = null
 ) {
     cluster {
         assertWithRetry {
             interval(1.seconds)
             timeout(10.seconds)
-            command { registerStaticMember(holdingIdentityShortHash, isNotary) }
+            command { registerStaticMember(holdingIdentityShortHash, notaryServiceName) }
             condition {
                 it.code == ResponseCode.OK.statusCode
                         && it.toJson()["registrationStatus"].textValue() == REGISTRATION_SUBMITTED

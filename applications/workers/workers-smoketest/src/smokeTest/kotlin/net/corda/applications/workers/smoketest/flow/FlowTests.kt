@@ -68,6 +68,7 @@ class FlowTests {
             davidX500,
             notaryX500
         )
+        private const val NOTARY_SERVICE_X500 = "O=MyNotaryService, L=London, C=GB"
 
         val invalidConstructorFlowNames = listOf(
             "com.r3.corda.testing.smoketests.flow.errors.PrivateConstructorFlow",
@@ -126,7 +127,7 @@ class FlowTests {
 
             registerStaticMember(bobHoldingId)
             registerStaticMember(charlieHoldingId)
-            registerStaticMember(notaryHoldingId, isNotary = true)
+            registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
         }
 
         private val JsonNode?.command: String
@@ -193,6 +194,27 @@ class FlowTests {
         assertThat(flowResult.json.command).isEqualTo("start_sessions")
         assertThat(flowResult.json.result)
             .isEqualTo("${bobX500}=echo:m1; ${charlyX500}=echo:m2")
+    }
+
+    @Test
+    fun `Flow Session - Send and receive primitive values across a session`() {
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "flow_session_primitives"
+            data = mapOf("sessions" to bobX500)
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
+
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.json).isNotNull
+        assertThat(flowResult.flowError).isNull()
+        assertThat(flowResult.json.command).isEqualTo("flow_session_primitives")
+        assertThat(flowResult.json.result)
+            .isEqualTo("Successfully received 8 items.\n" +
+                    "Successfully received 8 items from receiveAll.\n" +
+                    "Successfully received 8 items from receiveAllMap.\n")
     }
 
     @Test
