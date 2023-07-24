@@ -1,5 +1,7 @@
 package net.corda.cli.plugins.network.utils
 
+import net.corda.cli.plugins.network.exceptions.InvariantException
+
 object InvariantUtils {
     fun <T> checkInvariant(
         maxAttempts: Int,
@@ -19,6 +21,6 @@ object InvariantUtils {
             Thread.sleep(waitInterval)
         }
 
-        throw RuntimeException(errorMessage)
+        throw InvariantException(errorMessage)
     }
 }
