@@ -12,7 +12,7 @@ import org.osgi.framework.FrameworkUtil
 import java.io.StringWriter
 
 object DBSetup: BeforeAllCallback {
-    var topicsCreated = false
+    private var topicsCreated = false
 
     var isDB = false
         private set
@@ -46,13 +46,15 @@ object DBSetup: BeforeAllCallback {
         )
         val lbm = LiquibaseSchemaMigratorImpl()
         dbConfig.dataSource.use { dataSource ->
-            StringWriter().use {
-                dataSource.connection.use { connection -> lbm.createUpdateSql(connection, cl, it) }
-            }
-            dataSource.connection.use { connection  ->  lbm.updateDb(connection, cl) }
-            if(!topicsCreated) {
-                DbMessageBusSetup().createTopicsOnDbMessageBus(dataSource.connection)
-                topicsCreated = true
+            dataSource.connection.use { connection ->
+                StringWriter().use {
+                    lbm.createUpdateSql(connection, cl, it)
+                }
+                lbm.updateDb(connection, cl)
+                if(!topicsCreated) {
+                    DbMessageBusSetup.createTopicsOnDbMessageBus(connection)
+                    topicsCreated = true
+                }
             }
         }
     }
