@@ -16,8 +16,8 @@ fun ClusterBuilder.eventuallyUploadCpi(
     cpbLocation: String,
     cpiName: String,
     cpiVersion: String = "1.0.0.0-SNAPSHOT",
-    groupId: String = defaultGroupId.toString(),
-    staticMemberList: List<String> = defaultStaticMemberList
+    groupId: String,
+    staticMemberList: List<String>
 ): String {
     val requestId = cpiUpload(cpbLocation,
         groupId,

@@ -9,6 +9,8 @@ import net.corda.applications.workers.smoketest.utils.VNODE_UPGRADE_TEST_CPI_V1
 import net.corda.applications.workers.smoketest.utils.VNODE_UPGRADE_TEST_CPI_V2
 import net.corda.applications.workers.smoketest.utils.eventuallyCreateVirtualNode
 import net.corda.applications.workers.smoketest.utils.eventuallyUploadCpi
+import net.corda.applications.workers.smoketest.utils.retryInterval
+import net.corda.applications.workers.smoketest.utils.retryTimeout
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT_ALIAS
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT_USAGE
@@ -20,7 +22,6 @@ import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.truncateLongHash
 import net.corda.test.util.eventually
-import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -44,14 +45,16 @@ class VirtualNodeRestTest {
         // Some simple test failure messages
         private val testRunUniqueId = UUID.randomUUID()
         private val groupId = UUID.randomUUID().toString()
+
         private val aliceX500 = "CN=Alice-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
+        private val bobX500 = "CN=Bob-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
+
+        private val staticMemberList = listOf(aliceX500, bobX500)
+
         private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
 
         private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
         private val upgradeTestingCpiName = "${VNODE_UPGRADE_TEST_CPI_NAME}_$testRunUniqueId"
-
-        private val retryTimeout = 120.seconds
-        private val retryInterval = 1.seconds
     }
 
     @BeforeEach
@@ -87,7 +90,12 @@ class VirtualNodeRestTest {
     @Order(10)
     fun `can upload CPI`() {
         cluster {
-            val cpiHash = eventuallyUploadCpi(TEST_CPB_LOCATION, cpiName)
+            val cpiHash = eventuallyUploadCpi(
+                cpbLocation = TEST_CPB_LOCATION,
+                cpiName = cpiName,
+                groupId = groupId,
+                staticMemberList = staticMemberList
+            )
 
             val actualChecksum = getCpiChecksum(cpiName)
 
@@ -161,8 +169,10 @@ class VirtualNodeRestTest {
     @Order(110)
     fun `can upload multiple versions of a CPI with the same name`() {
         cluster {
-            eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V1, upgradeTestingCpiName, "v1")
-            eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V2, upgradeTestingCpiName, "v2")
+            eventuallyUploadCpi(
+                VNODE_UPGRADE_TEST_CPI_V1, upgradeTestingCpiName, "v1", groupId, staticMemberList)
+            eventuallyUploadCpi(
+                VNODE_UPGRADE_TEST_CPI_V2, upgradeTestingCpiName, "v2", groupId, staticMemberList)
         }
     }
 
