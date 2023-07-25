@@ -7,7 +7,6 @@ import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAutho
 import net.corda.crypto.test.certificates.generation.KeysFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.e2etest.utilities.config.SingleClusterTestConfigManager
-import net.corda.e2etest.utilities.config.TestConfigManager
 import net.corda.rest.ResponseCode
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.utilities.seconds
