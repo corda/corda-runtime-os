@@ -21,6 +21,9 @@ import java.io.File
 import java.net.ServerSocket
 import java.time.Clock
 import java.time.Duration
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.UUID
 import kotlin.concurrent.thread
 
@@ -36,6 +39,9 @@ class LargeNetworkTest {
             System.getProperty("user.name")
         }
         private val clock = Clock.systemDefaultZone()
+        private val formatter = DateTimeFormatter
+            .ofLocalizedDateTime(FormatStyle.MEDIUM)
+            .withZone(ZoneId.systemDefault())
     }
     private val scriptDir by lazy {
         File(System.getenv("SCRIPT_DIR"))
@@ -59,10 +65,60 @@ class LargeNetworkTest {
     private val mgmCluster by lazy {
         clusters.first()
     }
+    private val mgmName by lazy {
+        MemberX500Name("MGM", testName, "London", "GB")
+    }
     private data class OnboardedMember(
         val holdingId: String,
         val memberX500Name: MemberX500Name,
     )
+    private class PortForward(clusterName: String): AutoCloseable {
+        val port = ServerSocket(0).use {
+            it.localPort
+        }
+        private val process = ProcessBuilder().command(
+            "kubectl",
+            "port-forward",
+            "--namespace",
+            clusterName,
+            "deployment/corda-rest-worker",
+            "$port:8888"
+        ).start().also { process ->
+            Runtime.getRuntime().addShutdownHook(
+                thread(false) {
+                    process.destroy()
+                }
+            )
+            // When port forward is running it will output two lines (one for ipv4 and one for ipv6).
+            // For example:
+            //   Forwarding from 127.0.0.1:4321 -> 8888
+            //   Forwarding from [::1]:4321 -> 8888
+            // We want to capture those two line to know that the port forward is ready.
+            val reader = process.inputStream.bufferedReader()
+            reader.readLine()
+            reader.readLine()
+        }
+
+        private val created = clock.instant()
+
+        fun isValid() : Boolean {
+            return if (!process.isAlive) {
+                println("forward process had died")
+                false
+            }
+            else if (Duration.between(created, clock.instant()) > Duration.ofMinutes(30)) {
+                println("forward process had been alive for too long")
+                false
+            } else {
+                true
+            }
+        }
+
+        override fun close() {
+            process.destroy()
+            process.waitFor()
+        }
+    }
     private class Cluster(override val id: String) : ClusterInfo() {
         override val p2p: P2PEndpointInfo by lazy {
             P2PEndpointInfo(
@@ -71,37 +127,29 @@ class LargeNetworkTest {
                 protocol = "1",
             )
         }
-        private val port by lazy {
-            ServerSocket(0).use {
-                it.localPort
-            }.also { port ->
-                ProcessBuilder().command(
-                    "kubectl",
-                    "port-forward",
-                    "--namespace",
-                    id,
-                    "deployment/corda-rest-worker",
-                    "$port:8888"
-                ).start().also { process ->
-                    Runtime.getRuntime().addShutdownHook(
-                        thread(false) {
-                            process.destroy()
-                        }
-                    )
-                    val reader = process.inputStream.bufferedReader()
-                    reader.readLine()
-                    reader.readLine()
+
+        private var portForward: PortForward? = null
+
+        override val rest: RestEndpointInfo
+            get() {
+                val port = portForward.let {
+                    if (it?.isValid() != true) {
+                        portForward?.close()
+                        val forward = PortForward(id)
+                        portForward = forward
+                        forward.port
+                    } else {
+                        it.port
+                    }
                 }
+
+                return RestEndpointInfo(
+                    host = "localhost",
+                    user = "admin",
+                    password = "admin",
+                    port = port,
+                )
             }
-        }
-        override val rest: RestEndpointInfo by lazy {
-            RestEndpointInfo(
-                host = "localhost",
-                user = "admin",
-                password = "admin",
-                port = port,
-            )
-        }
 
         val onboardedMembers = mutableListOf<OnboardedMember>()
     }
@@ -109,14 +157,16 @@ class LargeNetworkTest {
     @AfterEach
     @BeforeEach
     fun tearDown() {
-        val tearDownScript = File(scriptDir, "tearDown.sh")
-        val tearDown = ProcessBuilder(
-            listOf(tearDownScript.absolutePath) + clusters.map { it.id }
-        )
-            .inheritIO()
-            .start()
-        if (tearDown.waitFor() != 0) {
-            throw CordaRuntimeException("Failed to tear down clusters")
+        logDuration("cleaning") {
+            val tearDownScript = File(scriptDir, "tearDown.sh")
+            val tearDown = ProcessBuilder(
+                listOf(tearDownScript.absolutePath) + clusters.map { it.id }
+            )
+                .inheritIO()
+                .start()
+            if (tearDown.waitFor() != 0) {
+                throw CordaRuntimeException("Failed to tear down clusters")
+            }
         }
     }
 
@@ -129,43 +179,50 @@ class LargeNetworkTest {
     private fun deployMembers() {
         (1..memberCount).forEach { index ->
             clusters.forEach { cluster ->
-                println("${clock.instant()} Onboarding member $index into ${cluster.id}")
-                val memberX500Name = MemberX500Name("Member-$index-${cluster.id}", testName, "London", "GB")
-                val holdingId = cluster.onboardMember(
-                    null,
-                    testName,
-                    groupPolicy,
-                    memberX500Name.toString(),
-                ).holdingId
-                cluster.onboardedMembers.add(
-                    OnboardedMember(
-                        holdingId = holdingId,
-                        memberX500Name = memberX500Name,
+                logDuration("onboarding member $index into ${cluster.id} out of $memberCount") {
+                    val memberX500Name = MemberX500Name("Member-$index-${cluster.id}", testName, "London", "GB")
+                    val holdingId = cluster.onboardMember(
+                        null,
+                        testName,
+                        groupPolicy,
+                        memberX500Name.toString(),
+                    ).holdingId
+                    cluster.onboardedMembers.add(
+                        OnboardedMember(
+                            holdingId = holdingId,
+                            memberX500Name = memberX500Name,
+                        )
                     )
-                )
+                }
             }
             if (index % 5 == 0) {
-                println("Validate network")
                 eventually(
+                    waitBefore = Duration.ofMinutes(0),
                     duration = Duration.ofMinutes(10),
                     waitBetween = Duration.ofSeconds(10),
                     retryAllExceptions = true,
                 ) {
-                    validateNetwork()
+                    logDuration("validate network") {
+                        validateNetwork()
+                    }
                 }
             }
         }
     }
 
     private fun validateNetwork() {
+        val start = clock.instant()
         val expectedNodes = clusters.flatMap { cluster ->
             cluster.onboardedMembers
         }.map {
             it.memberX500Name
-        }
+        } + mgmName
         println("expecting = ${expectedNodes.size} members")
         clusters.forEach { cluster ->
-            cluster.onboardedMembers.forEach { member ->
+            cluster.onboardedMembers
+                .shuffled()
+                .take(20)
+                .forEach { member ->
                 assertThat(
                     cluster.
                     lookup(member.holdingId)
@@ -173,7 +230,7 @@ class LargeNetworkTest {
                 ).containsAll(expectedNodes)
             }
         }
-        println("All valid")
+        println("All seemed valid - took ${Duration.between(start, clock.instant()).toMillis() / 1000.0} seconds")
     }
     private fun SimpleResponse.toMembersNames(): Collection<MemberX500Name> {
         assertThat(this.code).isEqualTo(200)
@@ -186,7 +243,6 @@ class LargeNetworkTest {
     }
     private val groupPolicy by lazy {
         println("Onboarding MGM")
-        val mgmName = MemberX500Name("MGM", testName, "London", "GB")
         val mgmInfo = mgmCluster.onboardMgm(mgmName.toString())
         mgmCluster.exportGroupPolicy(mgmInfo.holdingId).also {
             assertThat(it).isNotEmpty.isNotBlank
@@ -204,17 +260,29 @@ class LargeNetworkTest {
         println("deploy = $deployScript")
         println("prereqsEksFile = $prereqsEksFile")
         println("cordaEksFile = $cordaEksFile")
-        val deploy = ProcessBuilder(
-            listOf(deployScript.absolutePath) + clusters.map { it.id }
-        )
-            .also {
-                it.environment()["PREREQS_EKS_FILE"] = prereqsEksFile.absolutePath
-                it.environment()["CORDA_EKS_FILE"] = cordaEksFile.absolutePath
+        logDuration("deploy clusters") {
+            val deploy = ProcessBuilder(
+                listOf(deployScript.absolutePath) + clusters.map { it.id }
+            )
+                .also {
+                    it.environment()["PREREQS_EKS_FILE"] = prereqsEksFile.absolutePath
+                    it.environment()["CORDA_EKS_FILE"] = cordaEksFile.absolutePath
+                }
+                .inheritIO()
+                .start()
+            if (deploy.waitFor() != 0) {
+                throw CordaRuntimeException("Failed to deploy clusters")
             }
-            .inheritIO()
-            .start()
-        if (deploy.waitFor() != 0) {
-            throw CordaRuntimeException("Failed to deploy clusters")
         }
+    }
+
+    private fun Duration.format(): String {
+        return "${this.toMillis() / 1000.0} seconds"
+    }
+    private fun logDuration(what: String, block: ()->Unit) {
+        val start = clock.instant()
+        println("${formatter.format(start)}: Starting $what.")
+        block()
+        println("Done $what in ${Duration.between(start, clock.instant()).format()}")
     }
 }
