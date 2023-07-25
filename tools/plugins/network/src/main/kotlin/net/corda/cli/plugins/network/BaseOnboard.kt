@@ -163,8 +163,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                         null
                     }
                 } catch (e: MissingRequestedResourceException) {
-                    // Handle the exception here
-                    println("An error occurred while checking the CPI status: ${e.message}")
+                    // This exception can be thrown while the CPI upload is being processed, so we catch it and re-try.
                     null
                 }
             }
@@ -188,8 +187,8 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                     val response = client.start().proxy.getVirtualNode(shortHashId)
                     response.flowP2pOperationalStatus == OperationalStatus.ACTIVE
                 } catch (e: MissingRequestedResourceException) {
-                    // Handle the exception here
-                    println("An error occurred while waiting for the virtual node: ${e.message}")
+                    // This exception can be thrown while the Virtual Node is being processed, so we catch it and re-try.
+                    null
                 }
             }
         }
@@ -224,13 +223,12 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             checkInvariant(
                 maxAttempts = MAX_ATTEMPTS,
                 waitInterval = WAIT_INTERVAL,
-                errorMessage = "Assign Soft HSM for $category: Invariant check failed after maximum attempts."
+                errorMessage = "Assign Soft HSM operation for $category: failed after the maximum number of attempts ($MAX_ATTEMPTS)."
             ) {
                 try {
                     client.start().proxy.assignSoftHsm(holdingId, category)
                 } catch (e: MissingRequestedResourceException) {
-                    // Handle the exception here
-                    println("An error occurred while assigning soft HSM: ${e.message}")
+                    //This exception can be thrown while the assigning Hsm Key is being processed, so we catch it and re-try.
                     null
                 }
             }
@@ -381,7 +379,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             checkInvariant(
                 maxAttempts = MAX_ATTEMPTS,
                 waitInterval = WAIT_INTERVAL,
-                errorMessage = "Check Registration Progress: Invariant check failed after maximum attempts."
+                errorMessage = "Check Registration Progress failed after maximum number of attempts ($MAX_ATTEMPTS)."
             ) {
                 try {
                     val status = client.start().proxy.checkSpecificRegistrationProgress(holdingId, registrationId)
@@ -399,7 +397,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                     }
                 } catch (e: Exception) {
                     println("Error checking registration progress: ${e.message}")
-                    null // Return false to indicate the invariant is not yet satisfied
+                    null // Return null to indicate the invariant is not yet satisfied
                 }
             }
         }

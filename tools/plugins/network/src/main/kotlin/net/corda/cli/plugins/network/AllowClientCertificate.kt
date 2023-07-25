@@ -38,17 +38,20 @@ class AllowClientCertificate : Runnable, RestCommand() {
             return
         }
 
-        val mgm = createRestClient(MGMRestResource::class).start().proxy
+        createRestClient(MGMRestResource::class).use { it ->
+            
+            val proxy = it.start().proxy
+            println("Allowing certificates...")
 
-        println("Allowing certificates...")
-        subjects.forEach { subject ->
-            println("\t Allowing $subject")
-            mgm.mutualTlsAllowClientCertificate(mgmShortHash, subject)
-        }
-        println("Success!")
+            subjects.forEach { subject ->
+                println("\t Allowing $subject")
+                proxy.mutualTlsAllowClientCertificate(mgmShortHash, subject)
+            }
+            println("Success!")
 
-        mgm.mutualTlsListClientCertificate(mgmShortHash).forEach { subject ->
-            println("Certificate with subject $subject is allowed")
+            proxy.mutualTlsListClientCertificate(mgmShortHash).forEach { subject ->
+                println("Certificate with subject $subject is allowed")
+            }
         }
     }
 }
