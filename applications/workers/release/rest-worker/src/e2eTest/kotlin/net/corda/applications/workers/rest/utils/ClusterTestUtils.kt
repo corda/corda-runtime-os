@@ -11,9 +11,9 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.packaging.testutils.TestUtils
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
-import net.corda.membership.rest.v1.deprecated.CertificatesRestResource
+import net.corda.membership.rest.v1.CertificateRestResource
 import net.corda.membership.rest.v1.HsmRestResource
-import net.corda.membership.rest.v1.KeysRestResource
+import net.corda.membership.rest.v1.KeyRestResource
 import net.corda.membership.rest.v1.MGMRestResource
 import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.NetworkRestResource
@@ -73,7 +73,7 @@ fun E2eCluster.uploadCpi(
     ).write(keystore.readAllBytes())
 
     // first upload certificate to corda
-    clusterHttpClientFor(CertificatesRestResource::class.java).use { client ->
+    clusterHttpClientFor(CertificateRestResource::class.java).use { client ->
         with(client.start().proxy) {
             val pem = TestUtils.ROOT_CA.toPem().toByteArray()
 
@@ -196,7 +196,7 @@ fun E2eCluster.keyExists(
     tenantId: String,
     cat: String
 ): Boolean {
-    return clusterHttpClientFor(KeysRestResource::class.java)
+    return clusterHttpClientFor(KeyRestResource::class.java)
         .use { client ->
             with(client.start().proxy) {
                 val keyAlias = "$tenantId-$cat"
@@ -221,7 +221,7 @@ fun E2eCluster.generateKeyPairIfNotExists(
     tenantId: String,
     cat: String
 ): String {
-    return clusterHttpClientFor(KeysRestResource::class.java)
+    return clusterHttpClientFor(KeyRestResource::class.java)
         .use { client ->
             with(client.start().proxy) {
                 val keyAlias = "$tenantId-$cat"

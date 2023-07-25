@@ -1,4 +1,4 @@
-package net.corda.membership.rest.v1.deprecated
+package net.corda.membership.rest.v1
 
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.RestResource

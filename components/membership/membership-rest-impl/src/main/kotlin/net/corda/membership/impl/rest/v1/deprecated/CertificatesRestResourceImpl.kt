@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package net.corda.membership.impl.rest.v1.deprecated
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
@@ -21,11 +22,9 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
-import net.corda.membership.impl.rest.v1.CertificateRestResourceImpl
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
-import net.corda.membership.rest.v1.CertificateRestResource
-import net.corda.membership.rest.v1.deprecated.CertificatesRestResource
-import net.corda.membership.rest.v1.deprecated.CertificatesRestResource.Companion.SIGNATURE_SPEC
+import net.corda.membership.rest.v1.CertificatesRestResource
+import net.corda.membership.rest.v1.CertificatesRestResource.Companion.SIGNATURE_SPEC
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.InvalidInputDataException
@@ -72,7 +71,7 @@ import java.security.cert.X509Certificate
 import javax.security.auth.x500.X500Principal
 
 @Deprecated("Deprecated in favour of CertificateRestResource")
-@SuppressWarnings("LongParameterList", "CertificatesRestResource")
+@SuppressWarnings("LongParameterList")
 @Component(service = [PluggableRestResource::class])
 class CertificatesRestResourceImpl @Activate constructor(
     @Reference(service = CryptoOpsClient::class)

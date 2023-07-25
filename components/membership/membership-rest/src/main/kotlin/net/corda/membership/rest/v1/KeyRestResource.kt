@@ -15,18 +15,16 @@ import net.corda.rest.annotations.RestApiVersion
  * allows you to list scheme codes which are supported by the associated HSM integration, retrieve information about
  * key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's public key in PEM format.
  */
-@Deprecated("Deprecated in favour of KeyRestResource")
 @HttpRestResource(
-    name = "Keys Management API",
+    name = "Key Management API",
     description = "The Keys Management API consists of endpoints used to manage public and private key pairs. The API" +
             " allows you to list scheme codes which are supported by the associated HSM integration, retrieve" +
             " information about key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's" +
             " public key in PEM format.",
-    path = "keys",
-    minVersion = RestApiVersion.C5_0,
-    maxVersion = RestApiVersion.C5_0
+    path = "key",
+    minVersion = RestApiVersion.C5_1
 )
-interface KeysRestResource : RestResource {
+interface KeyRestResource : RestResource {
     /**
      * The [listSchemes] method enables you to retrieve a list of supported key schemes for a specified tenant and HSM
      * category. Some examples of schemes are 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA.SECP256R1', 'CORDA.EDDSA.ED25519',
