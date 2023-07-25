@@ -109,7 +109,8 @@ fun createP2PRecord(
                 sessionEvent.initiatedIdentity,
                 receivedSequenceNumber,
                 emptyList(),
-                payload
+                payload,
+                sessionEvent.waitingForDataFlag
             ),
             sessionEventSerializer,
             flowConfig

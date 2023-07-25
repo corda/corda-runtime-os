@@ -78,7 +78,7 @@ class SessionStateClosingTransitionTest {
 
         val sessionEvent = generateMessage(SessionMessageType.INIT, instant, MessageDirection.INBOUND)
         sessionEvent.sequenceNum = 1
-        val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
+        val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant, false)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSING)
     }
 
@@ -88,7 +88,7 @@ class SessionStateClosingTransitionTest {
 
         val sessionEvent = generateMessage(SessionMessageType.DATA, instant, MessageDirection.INBOUND)
         sessionEvent.sequenceNum = 2
-        val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
+        val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant, false)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
     }
 
@@ -98,7 +98,7 @@ class SessionStateClosingTransitionTest {
 
         val sessionEvent = generateMessage(SessionMessageType.CLOSE, instant, MessageDirection.INBOUND)
         sessionEvent.sequenceNum = 1
-        val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
+        val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant, false)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.WAIT_FOR_FINAL_ACK)
     }
 
@@ -109,7 +109,7 @@ class SessionStateClosingTransitionTest {
         val sessionEvent = generateMessage(SessionMessageType.ACK, instant, MessageDirection.INBOUND)
         sessionEvent.receivedSequenceNum = 2
 
-        val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
+        val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant, false)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSING)
     }
 

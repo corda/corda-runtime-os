@@ -123,7 +123,7 @@ class SessionManagerImplTest {
             ),
         )
         //validate only messages with a timestamp in the past are returned.
-        val (outputState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
+        val (outputState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity, false)
         assertThat(messagesToSend.size).isEqualTo(2)
         //validate all acks removed
         assertThat(outputState.sendEventsState.undeliveredMessages.size).isEqualTo(3)
@@ -133,7 +133,8 @@ class SessionManagerImplTest {
         val (secondOutputState, secondMessagesToSend) = sessionManager.getMessagesToSend(
             sessionState, instant.plusMillis(testResendWindow + 100),
             testSmartConfig,
-            testIdentity
+            testIdentity,
+            false
         )
         assertThat(secondMessagesToSend.size).isEqualTo(3)
         assertThat(secondOutputState.sendEventsState.undeliveredMessages.size).isEqualTo(3)
@@ -155,14 +156,15 @@ class SessionManagerImplTest {
         )
 
         //validate no heartbeat
-        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
+        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity, false)
         assertThat(messagesToSend.size).isEqualTo(0)
 
         //Validate heartbeat
         val (_, secondMessagesToSend) = sessionManager.getMessagesToSend(
             sessionState, instant.plusMillis(testResendWindow  + 1),
             testSmartConfig,
-            testIdentity
+            testIdentity,
+            false
         )
 
         assertThat(secondMessagesToSend.size).isEqualTo(1)
@@ -185,7 +187,7 @@ class SessionManagerImplTest {
         )
 
         //validate no heartbeat
-        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
+        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity, false)
         assertThat(messagesToSend.size).isEqualTo(1)
         val messageToSend = messagesToSend.first()
         assertThat(messageToSend.payload::class.java).isEqualTo(SessionAck::class.java)
@@ -206,7 +208,7 @@ class SessionManagerImplTest {
         )
 
         //validate no heartbeat
-        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
+        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity, false)
         assertThat(messagesToSend).isEmpty()
     }
 
@@ -223,7 +225,7 @@ class SessionManagerImplTest {
         )
 
         //validate no heartbeat
-        val (firstUpdatedState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
+        val (firstUpdatedState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity, false)
         assertThat(messagesToSend.size).isEqualTo(0)
         assertThat(firstUpdatedState.status).isEqualTo(SessionStateType.CONFIRMED)
 
@@ -231,7 +233,8 @@ class SessionManagerImplTest {
         val (secondUpdatedState, secondMessagesToSend) = sessionManager.getMessagesToSend(
             sessionState, instant.plusMillis(testHeartbeatTimeout  + 1),
             testSmartConfig,
-            testIdentity
+            testIdentity,
+            false
         )
 
         assertThat(secondMessagesToSend.size).isEqualTo(1)
@@ -256,7 +259,7 @@ class SessionManagerImplTest {
         )
 
         // Ensure that only the SessionInit event is returned
-        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
+        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity, false)
         assertThat(messagesToSend.size).isEqualTo(1)
         assertThat(messagesToSend.first().payload is SessionInit).isTrue
     }
@@ -270,7 +273,7 @@ class SessionManagerImplTest {
         )
 
         val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", null, SessionAck(), 1)
-        val updatedState = sessionManager.processMessageReceived("key", sessionState, sessionEvent, Instant.now())
+        val updatedState = sessionManager.processMessageReceived("key", sessionState, sessionEvent, Instant.now(), false)
 
         assertThat(updatedState.status).isEqualTo(SessionStateType.CONFIRMED)
         assertThat(updatedState.sendEventsState?.undeliveredMessages).isEmpty()
@@ -287,7 +290,7 @@ class SessionManagerImplTest {
 
         val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", null, SessionAck(), 2)
 
-        val updatedState = sessionManager.processMessageReceived("key", sessionState, sessionEvent, Instant.now())
+        val updatedState = sessionManager.processMessageReceived("key", sessionState, sessionEvent, Instant.now(), false)
 
         assertThat(updatedState.status).isEqualTo(SessionStateType.CONFIRMED)
         assertThat(updatedState.sendEventsState?.undeliveredMessages?.size).isEqualTo(1)
@@ -302,7 +305,7 @@ class SessionManagerImplTest {
         )
 
         val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", null, SessionAck(), 0, listOf(3))
-        val updatedState = sessionManager.processMessageReceived("key", sessionState, sessionEvent, Instant.now())
+        val updatedState = sessionManager.processMessageReceived("key", sessionState, sessionEvent, Instant.now(), false)
 
         assertThat(updatedState.status).isEqualTo(SessionStateType.CLOSED)
         assertThat(updatedState.sendEventsState?.undeliveredMessages).isEmpty()

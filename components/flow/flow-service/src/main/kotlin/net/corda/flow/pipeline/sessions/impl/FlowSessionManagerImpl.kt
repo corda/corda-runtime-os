@@ -38,8 +38,9 @@ class FlowSessionManagerImpl @Activate constructor(
     private val flowRecordFactory: FlowRecordFactory,
 ) : FlowSessionManager {
 
-    override fun getSessionErrorEventRecords(checkpoint: FlowCheckpoint, flowConfig: SmartConfig, instant: Instant, waitingForData: Boolean):
+    override fun getSessionErrorEventRecords(checkpoint: FlowCheckpoint, flowConfig: SmartConfig, instant: Instant):
             List<Record<*, FlowMapperEvent>> {
+        val waitingForData = false // In the case of session error, it is irrelevant if the session is waiting to receive or not.
         return checkpoint.sessions
             .filter { it.status == SessionStateType.ERROR }
             .map { sessionState ->
