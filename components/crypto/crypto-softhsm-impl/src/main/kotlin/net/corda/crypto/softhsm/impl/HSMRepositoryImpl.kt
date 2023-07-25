@@ -1,6 +1,7 @@
 package net.corda.crypto.softhsm.impl
 
 import net.corda.crypto.config.impl.MasterKeyPolicy
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.persistence.HSMUsage
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
@@ -15,18 +16,15 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.Tuple
-import net.corda.crypto.core.CryptoConsts
 
 /**
  * Database operations for HSM.
  *
  * @param entityManagerFactory An entity manager factory connected to the right database, matching tenantId
- * @param tenantId The tenant who owns the database
  */
 
 class HSMRepositoryImpl(
-    private val entityManagerFactory: EntityManagerFactory,
-    val tenantId: String,
+    private val entityManagerFactory: EntityManagerFactory
 ) : HSMRepository {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -79,6 +77,8 @@ class HSMRepositoryImpl(
     ): HSMAssociationInfo = entityManagerFactory.createEntityManager().use {
         it.transaction { em ->
             val association =
+                findHSMAssociationEntity(em, tenantId)
+                    ?: createAndPersistAssociation(em, tenantId, CryptoConsts.SOFT_HSM_ID, masterKeyPolicy)
                 findHSMAssociationEntity(em, tenantId)
                     ?: createAndPersistAssociation(em, tenantId, CryptoConsts.SOFT_HSM_ID, masterKeyPolicy)
 

@@ -7,12 +7,10 @@ import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.config.impl.ALIAS
 import net.corda.crypto.config.impl.CACHING
-import net.corda.crypto.config.impl.CryptoSigningServiceConfig
 import net.corda.crypto.config.impl.DEFAULT
 import net.corda.crypto.config.impl.DEFAULT_WRAPPING_KEY
 import net.corda.crypto.config.impl.EXPIRE_AFTER_ACCESS_MINS
@@ -23,20 +21,21 @@ import net.corda.crypto.config.impl.SALT
 import net.corda.crypto.config.impl.WRAPPING_KEYS
 import net.corda.crypto.config.impl.retrying
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
-import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.persistence.getEntityManagerFactory
-import net.corda.crypto.service.TenantInfoService
-import net.corda.crypto.service.impl.CacheKey
-import net.corda.crypto.service.impl.SigningServiceImpl
 import net.corda.crypto.service.impl.TenantInfoServiceImpl
 import net.corda.crypto.service.impl.bus.CryptoFlowOpsBusProcessor
 import net.corda.crypto.service.impl.bus.CryptoOpsBusProcessor
 import net.corda.crypto.service.impl.bus.HSMRegistrationBusProcessor
-import net.corda.crypto.softhsm.impl.SigningRepositoryFactoryImpl
+import net.corda.crypto.softhsm.TenantInfoService
+import net.corda.crypto.softhsm.impl.HSMRepositoryImpl
+import net.corda.crypto.softhsm.impl.SigningRepositoryImpl
 import net.corda.crypto.softhsm.impl.SoftCryptoService
 import net.corda.crypto.softhsm.impl.WrappingRepositoryImpl
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
@@ -70,6 +69,7 @@ import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -81,7 +81,6 @@ import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
 
 // An OSGi component, with no unit tests; instead, tested by using OGGi and mocked out databases in
 // integration tests (CryptoProcessorTests), as well as in various kinds of end to end and other full
@@ -144,9 +143,7 @@ class CryptoProcessorImpl @Activate constructor(
 
     @Volatile
     private var dependenciesUp: Boolean = false
-
-    private val tmpAssignmentFailureCounter = AtomicInteger(0)
-
+    
     private lateinit var cryptoService: CryptoService
     private lateinit var tenantInfoService: TenantInfoService
 
@@ -195,16 +192,22 @@ class CryptoProcessorImpl @Activate constructor(
                 }
             }
             is ConfigChangedEvent -> {
-                startCryptoService(event.config.getConfig(CRYPTO_CONFIG))
-                startTenantInfoService()
+                tenantInfoService = startTenantInfoService()
+                cryptoService = startCryptoService(event.config.getConfig(CRYPTO_CONFIG), tenantInfoService)
+                CryptoConsts.Categories.all.forEach { category ->
+                    CryptoTenants.allClusterTenants.forEach { tenantId ->
+                        tenantInfoService.populate(tenantId, category, cryptoService)
+                        logger.trace("Assigned SOFT HSM for $tenantId:$category")
+                    }
+                }
                 startBusProcessors(event, coordinator)
                 setStatus(LifecycleStatus.UP, coordinator)
             }
         }
     }
-
+    
     @Suppress("ThrowsCount")
-    private fun startCryptoService(config: SmartConfig) {
+    private fun startCryptoService(config: SmartConfig, tenantInfoService: TenantInfoService): CryptoService {
         logger.info("Creating instance of the {}", SoftCryptoService::class.java.name)
         val cachingConfig = config.getConfig(CACHING)
         val expireAfterAccessMins = cachingConfig.getConfig(EXPIRE_AFTER_ACCESS_MINS).getLong(DEFAULT)
@@ -236,75 +239,86 @@ class CryptoProcessorImpl @Activate constructor(
                 .expireAfterAccess(expireAfterAccessMins, TimeUnit.MINUTES)
                 .maximumSize(maximumSize)
         )
-        cryptoService = SoftCryptoService(
-            wrappingRepositoryFactory = { tenantId ->
-                WrappingRepositoryImpl(
-                    entityManagerFactory = getEntityManagerFactory(
-                        tenantId = tenantId,
-                        dbConnectionManager = dbConnectionManager,
-                        virtualNodeInfoReadService = virtualNodeInfoReadService,
-                        jpaEntitiesRegistry = jpaEntitiesRegistry
-                    ),
-                    tenantId = tenantId
-                )
-            },
+        val signingKeyInfoCache: Cache<SecureHash, SigningKeyInfo> = CacheFactoryImpl().build(
+            "Signing-Key-Cache",
+            Caffeine.newBuilder()
+                .expireAfterAccess(expireAfterAccessMins, TimeUnit.MINUTES)
+                .maximumSize(maximumSize)
+        )
+        val shortHashCache: Cache<ShortHash, SecureHash> = CacheFactoryImpl().build(
+            "Signing-Key-Cache",
+            Caffeine.newBuilder()
+                .expireAfterAccess(expireAfterAccessMins, TimeUnit.MINUTES)
+                .maximumSize(maximumSize)
+        )
+        val wrappingRepositoryFactory = { tenantId: String ->
+            WrappingRepositoryImpl(
+                entityManagerFactory = getEntityManagerFactory(
+                    tenantId = tenantId,
+                    dbConnectionManager = dbConnectionManager,
+                    virtualNodeInfoReadService = virtualNodeInfoReadService,
+                    jpaEntitiesRegistry = jpaEntitiesRegistry
+                ),
+                tenantId = tenantId
+            )
+        } 
+        val signingRepositoryFactory = { tenantId: String ->
+            SigningRepositoryImpl(
+                entityManagerFactory = getEntityManagerFactory(
+                    tenantId = tenantId,
+                    dbConnectionManager = dbConnectionManager,
+                    virtualNodeInfoReadService = virtualNodeInfoReadService,
+                    jpaEntitiesRegistry = jpaEntitiesRegistry
+                ),
+                tenantId = tenantId,
+                keyEncodingService = schemeMetadata,
+                digestService = digestService,
+                layeredPropertyMapFactory = layeredPropertyMapFactory
+            )
+        }
+        val keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
+            KeyPairGenerator.getInstance(algorithm, provider)
+        }
+        val wrappingKeyFactory = { it: CipherSchemeMetadata -> WrappingKeyImpl.generateWrappingKey(it) }
+        return SoftCryptoService(
+            wrappingRepositoryFactory= wrappingRepositoryFactory,
+            signingRepositoryFactory=signingRepositoryFactory,
             schemeMetadata = schemeMetadata,
             digestService = digestService,
             defaultUnmanagedWrappingKeyName = defaultUnmanagedWrappingKeyName,
             unmanagedWrappingKeys = unmanagedWrappingKeys,
             wrappingKeyCache = wrappingKeyCache,
             privateKeyCache = privateKeyCache,
-            keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
-                KeyPairGenerator.getInstance(algorithm, provider)
-            },
-            wrappingKeyFactory = {
-                WrappingKeyImpl.generateWrappingKey(it)
-            }
+            shortHashCache = shortHashCache,
+            signingKeyInfoCache = signingKeyInfoCache,
+            keyPairGeneratorFactory = keyPairGeneratorFactory, 
+            wrappingKeyFactory = wrappingKeyFactory,
+            tenantInfoService = tenantInfoService
         )
     }
-
-    private fun startTenantInfoService() {
-        tenantInfoService = TenantInfoServiceImpl(dbConnectionManager, jpaEntitiesRegistry, virtualNodeInfoReadService, cryptoService)
-        CryptoConsts.Categories.all.forEach { category ->
-            CryptoTenants.allClusterTenants.forEach { tenantId ->
-                tenantInfoService.populate(tenantId, category)
-                logger.trace("Assigned SOFT HSM for $tenantId:$category")
-            }
-        }
-    }
-
+    
+    private fun startTenantInfoService() = TenantInfoServiceImpl({
+        HSMRepositoryImpl(
+            getEntityManagerFactory(
+                CryptoTenants.CRYPTO,
+                dbConnectionManager,
+                virtualNodeInfoReadService,
+                jpaEntitiesRegistry
+            )
+        )
+    })
+    
+    
     private fun startBusProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
 
-        val config = CryptoSigningServiceConfig(event.config.getConfig(CRYPTO_CONFIG))
-        val signingCache:  Cache<CacheKey, SigningKeyInfo> = CacheFactoryImpl().build(
-            "Signing-Key-Cache",
-            Caffeine.newBuilder()
-                .expireAfterAccess(config.cache.expireAfterAccessMins, TimeUnit.MINUTES)
-                .maximumSize(config.cache.maximumSize)
-        )
-        // first make the signing service object, which both processors will consume
-        val signingService = SigningServiceImpl(
-            cryptoService = cryptoService,
-            signingRepositoryFactory = SigningRepositoryFactoryImpl(
-                dbConnectionManager,
-                virtualNodeInfoReadService,
-                jpaEntitiesRegistry,
-                keyEncodingService,
-                digestService,
-                layeredPropertyMapFactory
-            ),
-            schemeMetadata = schemeMetadata,
-            digestService = digestService,
-            cache = signingCache,
-            tenantInfoService = tenantInfoService
-        )
 
         // make the processors
         val retryingConfig = cryptoConfig.retrying()
-        val flowOpsProcessor = CryptoFlowOpsBusProcessor(cryptoService, signingService, externalEventResponseFactory, retryingConfig)
-        val rpcOpsProcessor = CryptoOpsBusProcessor(signingService, retryingConfig)
-        val hsmRegistrationProcessor = HSMRegistrationBusProcessor(tenantInfoService, retryingConfig)
+        val flowOpsProcessor =
+            CryptoFlowOpsBusProcessor(cryptoService, externalEventResponseFactory, retryingConfig, keyEncodingService)
+        val rpcOpsProcessor = CryptoOpsBusProcessor(cryptoService, retryingConfig, keyEncodingService)
+        val hsmRegistrationProcessor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, retryingConfig)
 
         // now make and start the subscriptions
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
