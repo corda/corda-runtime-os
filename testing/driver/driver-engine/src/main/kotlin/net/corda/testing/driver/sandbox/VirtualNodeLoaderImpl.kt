@@ -44,6 +44,12 @@ class VirtualNodeLoaderImpl @Activate constructor(
     @Reference
     private val membershipGroupControllerProvider: MembershipGroupControllerProvider
 ) : VirtualNodeLoader, VirtualNodeInfoReadService {
+    private companion object {
+        private val CRYPTO_DML_ID = UUID.randomUUID()
+        private val UNIQUENESS_DML_ID = UUID.randomUUID()
+        private val VAULT_DML_ID = UUID.randomUUID()
+    }
+
     private val virtualNodeInfoMap = ConcurrentHashMap<HoldingIdentity, VirtualNodeInfo>()
     private val resourcesLookup = mutableMapOf<CpiIdentifier, String>()
     private val cpiResources = mutableMapOf<String, Cpi>()
@@ -82,11 +88,11 @@ class VirtualNodeLoaderImpl @Activate constructor(
                         cpi.metadata.cpiId.signerSummaryHash
                     ),
                     vaultDdlConnectionId = null,
-                    vaultDmlConnectionId = UUID.randomUUID(),
+                    vaultDmlConnectionId = VAULT_DML_ID,
                     cryptoDdlConnectionId = null,
-                    cryptoDmlConnectionId = UUID.randomUUID(),
+                    cryptoDmlConnectionId = CRYPTO_DML_ID,
                     uniquenessDdlConnectionId = null,
-                    uniquenessDmlConnectionId = UUID.randomUUID(),
+                    uniquenessDmlConnectionId = UNIQUENESS_DML_ID,
                     hsmConnectionId = null,
                     timestamp = Instant.now(),
                 )
