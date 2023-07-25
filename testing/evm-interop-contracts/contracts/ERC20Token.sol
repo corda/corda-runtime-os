@@ -8,7 +8,6 @@ contract Token is ERC20 {
         owner = msg.sender;
     }
 
-
     function getEverything() public view returns (address,  uint256, string memory) {
         return (owner, 100, "hello world");
     }
