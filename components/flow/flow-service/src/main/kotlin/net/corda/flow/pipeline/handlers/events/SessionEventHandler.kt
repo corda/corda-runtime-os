@@ -66,7 +66,6 @@ class SessionEventHandler @Activate constructor(
         // @SESSION: This is where we receive a session event and start processing it.
         var updatedSessionState: SessionState
         if (sessionInitPayload) {
-            log.info("handling new init")
             sessionInitEvent = SessionEvent.newBuilder(sessionEvent)
                 .setSequenceNum(1)
                 .setPayload((sessionEvent.payload as SessionData).sessionInit)
@@ -77,7 +76,6 @@ class SessionEventHandler @Activate constructor(
                 sessionInitEvent,
                 now
             )
-            log.info("handling data after init")
 
             updatedSessionState = sessionManager.processMessageReceived(
                 sessionId,
@@ -85,10 +83,8 @@ class SessionEventHandler @Activate constructor(
                 sessionEvent,
                 now
             )
-            log.info("handled data after init")
 
         } else {
-            log.info("handled data without an init")
 
             updatedSessionState = sessionManager.processMessageReceived(
                 sessionId,

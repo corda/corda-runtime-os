@@ -47,7 +47,6 @@ class SessionManagerImpl @Activate constructor(
             it.lastReceivedMessageTime = instant
             processAcks(event, it)
         }
-        logger.info("Lorcan: processing received ${event.payload::class.java}: ${event.sequenceNum}")
 
         return sessionEventProcessorFactory.createEventReceivedProcessor(key, event, updatedSessionState, instant).execute()
     }
@@ -59,7 +58,6 @@ class SessionManagerImpl @Activate constructor(
         instant: Instant,
         maxMsgSize: Long,
     ): SessionState {
-        logger.info("Lorcan: sending mess ${event.payload::class.java}, ${event.sequenceNum}")
 
         return sessionEventProcessorFactory.createEventToSendProcessor(key, event, sessionState, instant, maxMsgSize).execute()
     }
@@ -198,7 +196,6 @@ class SessionManagerImpl @Activate constructor(
 //        config: SmartConfig,
     ): List<SessionEvent> {
         val sessionEvents = filterSessionEvents(sessionState, instant)
-        logger.info("Lorcan: filtered session event: ${sessionEvents.map { it.sequenceNum to it.payload }}")
 
         if (sessionEvents.isEmpty()) return emptyList()
 
@@ -222,11 +219,8 @@ class SessionManagerImpl @Activate constructor(
         //assume guaranteed delivery
         sessionState.sendEventsState.undeliveredMessages = emptyList()
 
-        val sessionEventsToSend = sessionEvents.filter { it.payload is SessionData }
-        logger.info("Lorcan: session event to send: ${sessionEventsToSend.map { it.sequenceNum to it.payload::class.java }}")
-
         //only send data msgs
-        return sessionEventsToSend
+        return sessionEvents.filter { it.payload is SessionData }
     }
 
     /**
