@@ -15,15 +15,13 @@ import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
 import net.corda.e2etest.utilities.awaitRestFlowResult
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
-import net.corda.e2etest.utilities.configWithDefaultsNode
-import net.corda.e2etest.utilities.getConfig
+import net.corda.e2etest.utilities.config.configWithDefaultsNode
+import net.corda.e2etest.utilities.config.getConfig
+import net.corda.e2etest.utilities.config.managedConfig
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRpcFlow
-import net.corda.e2etest.utilities.toJsonString
-import net.corda.e2etest.utilities.updateConfig
-import net.corda.e2etest.utilities.waitForConfigurationChange
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -874,13 +872,11 @@ class FlowTests {
         val currentConfigValue = getConfig(MESSAGING_CONFIG).configWithDefaultsNode()[MAX_ALLOWED_MSG_SIZE].asInt()
         val newConfigurationValue = (currentConfigValue * 1.5).toInt()
 
-        // Update cluster configuration (ConfigProcessor should kick off on all workers at this point)
-        updateConfig(mapOf(MAX_ALLOWED_MSG_SIZE to newConfigurationValue).toJsonString(), MESSAGING_CONFIG)
+        managedConfig { configManager ->
+            configManager
+                .load(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue)
+                .apply()
 
-        // Wait for the rpc-worker to reload the configuration and come back up
-        waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue.toString())
-
-        try {
             // Execute some flows which require functionality from different workers and make sure they succeed
             val flowIds = mutableListOf(
                 startRpcFlow(
@@ -913,10 +909,6 @@ class FlowTests {
                 assertThat(flowResult.flowError).isNull()
                 assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
             }
-        } finally {
-            // Be a good neighbour and rollback the configuration change back to what it was
-            updateConfig(mapOf(MAX_ALLOWED_MSG_SIZE to currentConfigValue).toJsonString(), MESSAGING_CONFIG)
-            waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, currentConfigValue.toString())
         }
     }
 
