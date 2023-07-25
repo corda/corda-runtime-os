@@ -7,6 +7,7 @@ import net.corda.persistence.common.EntitySandboxService
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.testing.sandboxes.VirtualNodeLoader
+import net.corda.testing.sandboxes.testkit.RequireSandboxTestkit
 import net.corda.virtualnode.VirtualNodeInfo
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -14,6 +15,7 @@ import org.osgi.service.component.annotations.Reference
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
+@RequireSandboxTestkit
 @Component(service = [ VirtualNodeService::class ])
 class VirtualNodeService @Activate constructor(
     @Reference

@@ -23,9 +23,11 @@ dependencies {
     implementation 'net.corda:corda-serialization'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "io.github.erdtman:java-json-canonicalization:$jsonCanonicalizerVersion"
-    implementation("com.networknt:json-schema-validator:$networkntJsonSchemaVersion"){
-        // Exclude transitive dependency on vulnerable version of jackson
-        exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
+    implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
+    constraints {
+        implementation("com.ethlo.time:itu:$comEthloTimeItuVersion") {
+            because "Version bundled with current version of 'com.networknt:json-schema-validator' does not have OSGi manifest."
+        }
     }
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
 
