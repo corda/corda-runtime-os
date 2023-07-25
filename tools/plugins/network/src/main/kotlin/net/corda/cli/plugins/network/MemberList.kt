@@ -61,7 +61,7 @@ class MemberList(private val output: MemberListOutput = ConsoleMemberListOutput(
     )
     var country: String? = null
 
-    private fun performMembersLookup(): String {
+    private fun performMembersLookup(): Map<String, Any> {
         requireNotNull(holdingIdentityShortHash) { "Holding identity short hash was not provided." }
 
         val result: List<RestMemberInfo> = createRestClient(MemberLookupRestResource::class).use { client ->
@@ -77,7 +77,12 @@ class MemberList(private val output: MemberListOutput = ConsoleMemberListOutput(
             ).members
         }
 
-        return result.toString()
+        val resultMap = mutableMapOf<String, Any>()
+        result.forEachIndexed { index, memberInfo ->
+            resultMap["member$index"] = memberInfo.copy()
+        }
+
+        return resultMap
     }
 
     interface MemberListOutput {
