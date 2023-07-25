@@ -29,7 +29,7 @@ class DbMessageBusSetup {
                 "DB Message Bus connection used for creating topics must not have autoCommit enabled"
             }
             val bundle = FrameworkUtil.getBundle(net.corda.schema.Schemas::class.java)
-            log.debug { "Got bundle $bundle for class (net.corda.schema.Schemas::class.java)" }
+            log.debug { "Got bundle $bundle for class (net.corda.schema.Schemas)" }
             val paths = bundle.getEntryPaths("net/corda/schema").toList()
             log.debug { "Entry paths found at path \"net/corda/schema\" = $paths" }
             val resources = paths.filter { it.endsWith(".yaml") }.map {
