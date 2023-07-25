@@ -146,7 +146,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
             return@lazy existingHash
         }
 
-        uploadCpi(cpi!!.inputStream(), cpbName)
+        uploadCpi(cpi.inputStream(), cpbName)
     }
 
     override fun run() {
