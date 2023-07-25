@@ -234,6 +234,7 @@ class MemberResourceClientImpl @Activate constructor(
             registrationContext: Map<String, String>,
         ): RegistrationRequestProgressDto {
             val requestId = UUID.randomUUID().toString()
+            logger.info("QQQ startRegistration($holdingIdentityShortHash) -> $requestId")
             val holdingIdentity =
                 virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
                     ?.holdingIdentity
@@ -352,7 +353,11 @@ class MemberResourceClientImpl @Activate constructor(
                 membershipQueryClient.queryRegistrationRequests(
                     holdingIdentity.holdingIdentity
                 ).getOrThrow().map {
-                    it.toDto()
+                    it.toDto().also {
+                        if(it.registrationStatus == RegistrationStatusDto.DECLINED) {
+                            logger.info("QQQ Return decline for $holdingIdentityShortHash(${it.registrationId})")
+                        }
+                    }
                 }
             } catch (e: MembershipQueryResult.QueryException) {
                 throw ServiceNotReadyException(e)
@@ -373,7 +378,11 @@ class MemberResourceClientImpl @Activate constructor(
                     ).getOrThrow() ?: throw RegistrationProgressNotFoundException(
                         "There is no request with '$registrationRequestId' id in '$holdingIdentityShortHash'."
                     )
-                status.toDto()
+                status.toDto().also {
+                    if(status.registrationStatus == RegistrationStatus.DECLINED) {
+                        logger.info("QQQ Return decline for $registrationRequestId")
+                    }
+                }
             } catch (e: MembershipQueryResult.QueryException) {
                 throw ServiceNotReadyException(e)
             }

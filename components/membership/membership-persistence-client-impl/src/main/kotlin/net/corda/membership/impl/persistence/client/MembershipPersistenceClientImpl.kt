@@ -275,6 +275,9 @@ class MembershipPersistenceClientImpl(
             "Updating the status of a registration request with" +
                 " ID '$registrationId' to status $registrationRequestStatus."
         )
+        if (registrationRequestStatus == RegistrationStatus.DECLINED) {
+            logger.info("QQQ in setRegistrationRequestStatus set to decline for $registrationId", Exception("QQQ"))
+        }
         val request = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             UpdateRegistrationRequestStatus(registrationId, registrationRequestStatus, reason)

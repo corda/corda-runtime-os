@@ -275,6 +275,7 @@ internal class ExpirationProcessorImpl internal constructor(
             val records = requests.mapNotNull {
                 if(now.minusMillis(it.registrationLastModified.toEpochMilli()) > Instant.ofEpochMilli(expirationDate)) {
                     logger.info("Registration request with ID '${it.registrationId}' expired. Declining request.")
+                    logger.info("QQQ ExpirationProcessorImpl DeclineRegistration!", Exception("QQQ"))
                     val id = virtualNodeInfoReadService
                         .getByHoldingIdentityShortHash(ShortHash.of(it.holdingIdentityId))
                         ?.holdingIdentity

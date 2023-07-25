@@ -23,6 +23,7 @@ internal class QueryRegistrationRequestsHandler(persistenceHandlerServices: Pers
             HoldingIdentity(MemberX500Name.parse(it), context.holdingIdentity.groupId).shortHash
         }
         val shortHash = context.holdingIdentity.toCorda().shortHash
+        logger.info("QQQ for $shortHash QueryRegistrationRequestsHandler")
         return transaction(shortHash) { em ->
 
             val criteriaBuilder = em.criteriaBuilder

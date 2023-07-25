@@ -79,6 +79,7 @@ internal class VerifyMemberHandler(
                     )
         } catch (e: Exception) {
             logger.warn("Member verification failed for registration request: '$registrationId'.", e)
+            logger.info("QQQ VerifyMemberHandler DeclineRegistration!", Exception("QQQ"))
             listOf(
                 Record(
                     Schemas.Membership.REGISTRATION_COMMAND_TOPIC,

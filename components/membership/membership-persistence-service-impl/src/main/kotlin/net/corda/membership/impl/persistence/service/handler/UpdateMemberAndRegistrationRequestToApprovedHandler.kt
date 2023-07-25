@@ -51,6 +51,7 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
         logger.info(
             "Update member and registration request with registration ID ${request.registrationId} to approved.",
         )
+        logger.info("QQQ for ${request.registrationId} UpdateMemberAndRegistrationRequestToApprovedHandler")
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val now = clock.instant()
             val currentNonPendingMemberStatus = em.find(

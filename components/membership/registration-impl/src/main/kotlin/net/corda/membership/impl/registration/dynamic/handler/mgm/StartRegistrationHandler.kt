@@ -199,9 +199,11 @@ internal class StartRegistrationHandler(
             VerifyMember()
         } catch (ex: InvalidRegistrationRequestException) {
             logger.warn("Declined registration. ${ex.originalMessage}")
+            logger.info("QQQ StartRegistrationHandler DeclineRegistration!", Exception("QQQ"))
             DeclineRegistration(ex.originalMessage)
         } catch (ex: Exception) {
             logger.warn("Declined registration. ${ex.message}")
+            logger.info("QQQ StartRegistrationHandler DeclineRegistration!", Exception("QQQ"))
             DeclineRegistration("Failed to verify registration request due to: [${ex.message}]")
         }
         outputRecords.add(Record(REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(outputCommand)))

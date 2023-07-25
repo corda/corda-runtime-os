@@ -21,6 +21,7 @@ internal class MembershipP2PMarkersProcessor(
             val key = ttlIdsFactory.extractKey(record)
             if (key != null) {
                 logger.warn("Got TTL for $key")
+                logger.info("QQQ MembershipP2PMarkersProcessor DeclineRegistration!", Exception("QQQ"))
                 listOf(
                     Record(
                         Schemas.Membership.REGISTRATION_COMMAND_TOPIC,

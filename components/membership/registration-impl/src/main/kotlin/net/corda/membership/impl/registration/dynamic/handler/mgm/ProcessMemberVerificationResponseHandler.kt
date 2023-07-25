@@ -126,6 +126,7 @@ internal class ProcessMemberVerificationResponseHandler(
             ) + setRegistrationRequestStatusCommands
         } catch (e: Exception) {
             logger.warn("Could not process member verification response for registration request: '$registrationId'", e)
+            logger.info("QQQ ProcessMemberVerificationResponseHandler DeclineRegistration!", Exception("QQQ"))
             listOf(
                 Record(
                     REGISTRATION_COMMAND_TOPIC,

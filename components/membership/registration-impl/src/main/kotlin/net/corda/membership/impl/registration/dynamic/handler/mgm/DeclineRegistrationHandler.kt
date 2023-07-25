@@ -52,6 +52,7 @@ internal class DeclineRegistrationHandler(
         val declinedBy = state.mgm
         val declinedMember = state.registeringMember
         val registrationId = state.registrationId
+        logger.info("QQQ in DeclineRegistrationHandler $registrationId")
         if (memberTypeChecker.isMgm(declinedMember)) {
             logger.warn("Trying to decline registration request: '$registrationId' of ${declinedMember.x500Name} which is an MGM")
         }

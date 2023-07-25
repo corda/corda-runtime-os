@@ -14,6 +14,8 @@ internal class UpdateRegistrationRequestStatusHandler(
 ) : BasePersistenceHandler<UpdateRegistrationRequestStatus, Unit>(persistenceHandlerServices) {
     override val operation = UpdateRegistrationRequestStatus::class.java
     override fun invoke(context: MembershipRequestContext, request: UpdateRegistrationRequestStatus) {
+        logger.info("QQQ in UpdateRegistrationRequestStatusHandler for ${request.registrationId} " +
+                "to ${request.registrationStatus}")
         transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val registrationRequest = em.find(
                 RegistrationRequestEntity::class.java,

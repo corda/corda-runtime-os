@@ -153,6 +153,7 @@ internal class ApproveRegistrationHandler(
             listOfNotNull(memberRecord, persistApproveMessage, distributionAction, commandToStartProcessingTheNextRequest)
         } catch (e: Exception) {
             logger.warn("Could not approve registration request: '$registrationId'", e)
+            logger.info("QQQ ApproveRegistrationHandler DeclineRegistration!", Exception("QQQ"))
             return RegistrationHandlerResult(
                 state,
                 listOf(Record(REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(DeclineRegistration(e.message))))
