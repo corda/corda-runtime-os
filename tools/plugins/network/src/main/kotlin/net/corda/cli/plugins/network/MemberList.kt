@@ -61,7 +61,7 @@ class MemberList(private val output: MemberListOutput = ConsoleMemberListOutput(
     )
     var country: String? = null
 
-    private fun performMembersLookup(): Map<String, Any> {
+    private fun performMembersLookup(): List<RestMemberInfo> {
         requireNotNull(holdingIdentityShortHash) { "Holding identity short hash was not provided." }
 
         val result: List<RestMemberInfo> = createRestClient(MemberLookupRestResource::class).use { client ->
@@ -77,12 +77,7 @@ class MemberList(private val output: MemberListOutput = ConsoleMemberListOutput(
             ).members
         }
 
-        val resultMap = mutableMapOf<String, Any>()
-        result.forEachIndexed { index, memberInfo ->
-            resultMap["member$index"] = memberInfo.copy()
-        }
-
-        return resultMap
+        return result
     }
 
     interface MemberListOutput {
@@ -104,7 +99,6 @@ class MemberList(private val output: MemberListOutput = ConsoleMemberListOutput(
         val result = performMembersLookup()
         val objectMapper = jacksonObjectMapper()
 
-        // add pretty printer and override indentation to make the nested values look better and the file more presentable
         val pp = DefaultPrettyPrinter()
         pp.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE)
 
