@@ -35,7 +35,7 @@ import org.objenesis.strategy.InstantiatorStrategy
 import org.objenesis.strategy.StdInstantiatorStrategy
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import sun.net.www.protocol.jar.JarURLConnection
+// import sun.net.www.protocol.jar.JarURLConnection
 import java.io.BufferedInputStream
 import java.io.FileInputStream
 import java.io.InputStream
@@ -120,10 +120,10 @@ class DefaultKryoCustomizer {
                 register(FileInputStream::class.java, InputStreamSerializer)
                 // InputStream subclasses whitelisting, required for attachments
                 register(BufferedInputStream::class.java, InputStreamSerializer)
-                val jarUrlInputStreamClass = JarURLConnection::class.java.declaredClasses.single {
-                    it.simpleName == "JarURLInputStream"
-                }
-                register(jarUrlInputStreamClass, InputStreamSerializer)
+                //val jarUrlInputStreamClass = JarURLConnection::class.java.declaredClasses.single {
+                //    it.simpleName == "JarURLInputStream"
+                //}
+                //register(jarUrlInputStreamClass, InputStreamSerializer)
 
 
                 //register loggers using an int ID to reduce information saved in kryo
