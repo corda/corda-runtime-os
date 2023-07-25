@@ -2,10 +2,10 @@ package net.corda.ledger.utxo.token.cache.impl.handlers
 
 import java.math.BigDecimal
 import net.corda.data.flow.event.FlowEvent
-import net.corda.ledger.utxo.impl.token.selection.impl.TokenBalanceImpl
 import net.corda.ledger.utxo.token.cache.entities.BalanceQuery
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
+import net.corda.ledger.utxo.token.cache.entities.TokenBalance
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.handlers.TokenBalanceQueryEventHandler
@@ -62,7 +62,7 @@ class TokenBalanceQueryEventHandlerTest {
             flowId,
             balanceId,
             POOL_CACHE_KEY,
-            TokenBalanceImpl(BigDecimal(0.0), BigDecimal(0.0))
+            TokenBalance(BigDecimal(0.0), BigDecimal(0.0))
         )
     }
 
@@ -80,7 +80,7 @@ class TokenBalanceQueryEventHandlerTest {
             flowId,
             balanceId,
             POOL_CACHE_KEY,
-            TokenBalanceImpl(BigDecimal(99), BigDecimal(99))
+            TokenBalance(BigDecimal(99), BigDecimal(99))
         )
     }
 
@@ -103,7 +103,7 @@ class TokenBalanceQueryEventHandlerTest {
             flowId,
             balanceId,
             POOL_CACHE_KEY,
-            TokenBalanceImpl(BigDecimal(99), BigDecimal(199))
+            TokenBalance(BigDecimal(99), BigDecimal(199))
         )
     }
 

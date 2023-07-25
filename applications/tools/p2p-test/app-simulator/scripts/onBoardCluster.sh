@@ -3,6 +3,8 @@
 set -e
 SCRIPT_DIR=$(dirname ${BASH_SOURCE[0]})
 source "$SCRIPT_DIR/settings.sh"
+rm -rf $WORKING_DIR
+mkdir -p $WORKING_DIR
 
 create_mgm_group_policy() {
 echo '{
@@ -26,40 +28,32 @@ config_gateway() {
 }
 
 build_cli_tool() {
-   local WORKING_DIR=$PWD
-   cd $CORDA_CLI_DIR
-   ./gradlew build
+   $CORDA_CLI_DIR/gradlew -p $CORDA_CLI_DIR build
 
-   cd $REPO_TOP_LEVEL_DIR
-   ./gradlew :tools:plugins:package:build :tools:plugins:mgm:build
-   cd $WORKING_DIR
-   cp $REPO_TOP_LEVEL_DIR/tools/plugins/package/build/libs/package-cli-plugin-*.jar $REPO_TOP_LEVEL_DIR/tools/plugins/mgm/build/libs/mgm-cli*.jar $CORDA_CLI_DIR/build/plugins/
+   $REPO_TOP_LEVEL_DIR/gradlew -p $REPO_TOP_LEVEL_DIR :tools:plugins:package:build :tools:plugins:network:build
+
+   cp $REPO_TOP_LEVEL_DIR/tools/plugins/package/build/libs/package-cli-plugin-*.jar $REPO_TOP_LEVEL_DIR/tools/plugins/network/build/libs/network-cli*.jar $CORDA_CLI_DIR/build/plugins/
 }
 
 
 build_cpi() {
-   local WORKING_DIR=$PWD
-   cd $REPO_TOP_LEVEL_DIR
+   $REPO_TOP_LEVEL_DIR/gradlew -p $REPO_TOP_LEVEL_DIR testing:cpbs:test-cordapp:build
 
-   ./gradlew testing:cpbs:test-cordapp:build
+   cp $REPO_TOP_LEVEL_DIR/testing/cpbs/test-cordapp/build/libs/test-cordapp-$CORDA_VERSION-SNAPSHOT-package.cpb "$WORKING_DIR"
 
-   cd $WORKING_DIR
+   rm -f "$WORKING_DIR"/test-cordapp-*.cpi
 
-   cp $REPO_TOP_LEVEL_DIR/testing/cpbs/test-cordapp/build/libs/test-cordapp-$CORDA_VERSION-SNAPSHOT-package.cpb ./
+   rm -f "$WORKING_DIR"/signingkeys.pfx
+   keytool -genkeypair -alias "signing key 1" -keystore "$WORKING_DIR"/signingkeys.pfx -storepass "keystore password" -dname "cn=CPI Plugin Example - Signing Key 1, o=R3, L=London, c=GB" -keyalg RSA -storetype pkcs12 -validity 4000
+   keytool -importcert -keystore "$WORKING_DIR"/signingkeys.pfx -storepass "keystore password" -noprompt -alias gradle-plugin-default-key -file "$SCRIPT_DIR/gradle-plugin-default-key.pem"
 
-   rm -f test-cordapp-5.0.0.0-SNAPSHOT-package.cpi
-
-   rm -f signingkeys.pfx
-   keytool -genkeypair -alias "signing key 1" -keystore signingkeys.pfx -storepass "keystore password" -dname "cn=CPI Plugin Example - Signing Key 1, o=R3, L=London, c=GB" -keyalg RSA -storetype pkcs12 -validity 4000
-   keytool -importcert -keystore signingkeys.pfx -storepass "keystore password" -noprompt -alias gradle-plugin-default-key -file "$SCRIPT_DIR/gradle-plugin-default-key.pem"
-
-   $CORDA_CLI_DIR/build/generatedScripts/corda-cli.sh package create-cpi --cpb test-cordapp-$CORDA_VERSION-SNAPSHOT-package.cpb --group-policy $1 --cpi-name "test cordapp $2" --cpi-version "1.0.0.0-SNAPSHOT" --file test-cordapp-5.0.0.0-SNAPSHOT-package.cpi --keystore signingkeys.pfx --storepass "keystore password" --key "signing key 1"
+   $CORDA_CLI_DIR/build/generatedScripts/corda-cli.sh package create-cpi --cpb "$WORKING_DIR"/test-cordapp-$CORDA_VERSION-SNAPSHOT-package.cpb --group-policy $1 --cpi-name "test cordapp $2" --cpi-version "1.0.0.0-SNAPSHOT" --file "$WORKING_DIR"/test-cordapp-5.0.0.0-SNAPSHOT-package.cpi --keystore "$WORKING_DIR"/signingkeys.pfx --storepass "keystore password" --key "signing key 1"
 }
 
 trust_cpi_keys() {
    curl --insecure -u admin:admin -X PUT -F alias="gradle-plugin-default-key" -F certificate=@"$SCRIPT_DIR/gradle-plugin-default-key.pem" https://$1/api/v1/certificates/cluster/code-signer
-   keytool -exportcert -rfc -alias "signing key 1" -keystore signingkeys.pfx -storepass "keystore password" -file signingkey1.pem
-   curl --insecure -u admin:admin -X PUT -F alias="signingkey1-2022" -F certificate=@signingkey1.pem https://$1/api/v1/certificates/cluster/code-signer
+   keytool -exportcert -rfc -alias "signing key 1" -keystore "$WORKING_DIR"/signingkeys.pfx -storepass "keystore password" -file "$WORKING_DIR"/signingkey1.pem
+   curl --insecure -u admin:admin -X PUT -F alias="signingkey1-2022" -F certificate=@"$WORKING_DIR"/signingkey1.pem https://$1/api/v1/certificates/cluster/code-signer
 }
 
 allow_client_certificate() {
@@ -133,11 +127,11 @@ assign_hsm_and_generate_ledger_key_pair() {
 }
 
 get_csr() {
-    curl --fail-with-body -s -S -k -u admin:admin  -X POST -H "Content-Type: application/json" -d '{"x500Name": "'$2'", "subjectAlternativeNames": [ "'$3'" ]}' "https://$1/api/v1/certificates/p2p/$4" > ./$5.csr
+    curl --fail-with-body -s -S -k -u admin:admin  -X POST -H "Content-Type: application/json" -d '{"x500Name": "'$2'", "subjectAlternativeNames": [ "'$3'" ]}' "https://$1/api/v1/certificates/p2p/$4" > "$WORKING_DIR"/$5.csr
 }
 
 sign_certificate() {
-    java -jar $CA_JAR --home=./ca csr ./$1.csr
+    java -jar $CA_JAR --home="$WORKING_DIR"/ca csr "$WORKING_DIR"/$1.csr
 }
 
 upload_certificate() {
@@ -157,7 +151,7 @@ register_node() {
 }
 
 register_mgm() {
-    local TLS_TRUST_ROOT=$(cat ./ca/ca/root-certificate.pem | awk 1 ORS='\\n')
+    local TLS_TRUST_ROOT=$(cat "$WORKING_DIR"/ca/ca/root-certificate.pem | awk 1 ORS='\\n')
     if [[ $MTLS == "Y" ]]; then
       tls_type="Mutual"
     else
@@ -228,20 +222,20 @@ complete_network_setup() {
 }
 
 extract_group_policy() {
-   curl --fail-with-body -s -S --insecure -u admin:admin -X GET "https://$1/api/v1/mgm/$2/info" > ./GroupPolicy-out.json
+   curl --fail-with-body -s -S --insecure -u admin:admin -X GET "https://$1/api/v1/mgm/$2/info" > "$WORKING_DIR"/GroupPolicy-out.json
 }
 
 on_board_mgm() {
 
    config_gateway $MGM_RPC
 
-   create_mgm_group_policy ./GroupPolicy.json
+   create_mgm_group_policy "$WORKING_DIR"/GroupPolicy.json
 
-   build_cpi ./GroupPolicy.json MGM
+   build_cpi "$WORKING_DIR"/GroupPolicy.json MGM
 
    trust_cpi_keys $MGM_RPC
 
-   CPI_ID=$(upload_cpi $MGM_RPC ./test-cordapp-5.0.0.0-SNAPSHOT-package.cpi)
+   CPI_ID=$(upload_cpi $MGM_RPC "$WORKING_DIR"/test-cordapp-5.0.0.0-SNAPSHOT-package.cpi)
 
    echo "MGM CPI ID $CPI_ID"
 
@@ -276,7 +270,7 @@ on_board_mgm() {
    sign_certificate $MGM_TLS
 
    echo Upload Signed TLS certificate
-   upload_certificate $MGM_RPC ./ca/mgm_tls/certificate.pem
+   upload_certificate $MGM_RPC "$WORKING_DIR"/ca/mgm_tls/certificate.pem
 
    # Prepare Registration Context
    register_mgm $MGM_RPC $MGM_HOLDING_ID_SHORT_HASH $MGM_SESSION_KEY_ID $MGM_GATEWAY_ENDPOINT $ECDH_KEY_ID
@@ -293,9 +287,9 @@ on_board_mgm() {
 on_board_node() {
    config_gateway $1
 
-   cp ./GroupPolicy-out.json ./GroupPolicy.json
+   cp "$WORKING_DIR"/GroupPolicy-out.json "$WORKING_DIR"/GroupPolicy.json
 
-   build_cpi ./GroupPolicy.json $2
+   build_cpi "$WORKING_DIR"/GroupPolicy.json $2
 
    if [[ $MTLS == "Y" ]]; then
      allow_client_certificate $MGM_RPC $2 $MGM_HOLDING_ID_SHORT_HASH
@@ -303,7 +297,7 @@ on_board_node() {
 
    trust_cpi_keys $1
 
-   CPI_ID=$(upload_cpi $1 ./test-cordapp-5.0.0.0-SNAPSHOT-package.cpi)
+   CPI_ID=$(upload_cpi $1 "$WORKING_DIR"/test-cordapp-5.0.0.0-SNAPSHOT-package.cpi)
 
    echo "NODE $2 CPI ID $CPI_ID"
 
@@ -330,7 +324,7 @@ on_board_node() {
      sign_certificate $4
 
      echo Upload Signed TLS certificate
-     upload_certificate $1 ./ca/$4/certificate.pem
+     upload_certificate $1 "$WORKING_DIR"/ca/$4/certificate.pem
    fi
 
    complete_network_setup $1 $NODE_HOLDING_ID_SHORT_HASH $NODE_SESSION_KEY_ID
@@ -355,7 +349,8 @@ sleep 15
 build_cli_tool
 
 # Create CA
-java -jar $CA_JAR --home=./ca create-ca
+$REPO_TOP_LEVEL_DIR/gradlew -p $REPO_TOP_LEVEL_DIR :applications:tools:p2p-test:fake-ca:clean :applications:tools:p2p-test:fake-ca:appJar
+java -jar $CA_JAR --home="$WORKING_DIR"/ca create-ca
 
 # Onboard MGM
 

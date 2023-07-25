@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.ShortHash
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.actions.request.DistributeGroupParameters
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -35,6 +36,9 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARIES_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
@@ -176,6 +180,11 @@ class MGMResourceClientImpl @Activate constructor(
         fun activateMember(
             holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
         )
+
+        fun updateGroupParameters(
+            holdingIdentityShortHash: ShortHash,
+            newGroupParameters: Map<String, String>
+        ): InternalGroupParameters
     }
 
     private var impl: InnerMGMResourceClient = InactiveImpl
@@ -263,6 +272,10 @@ class MGMResourceClientImpl @Activate constructor(
     override fun activateMember(
         holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
     ) = impl.activateMember(holdingIdentityShortHash, memberX500Name, serialNumber, reason)
+
+    override fun updateGroupParameters(
+        holdingIdentityShortHash: ShortHash, newGroupParameters: Map<String, String>
+    ) = impl.updateGroupParameters(holdingIdentityShortHash, newGroupParameters)
 
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -377,6 +390,10 @@ class MGMResourceClientImpl @Activate constructor(
 
         override fun activateMember(
             holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+        ) = throw IllegalStateException(ERROR_MSG)
+
+        override fun updateGroupParameters(
+            holdingIdentityShortHash: ShortHash, newGroupParameters: Map<String, String>
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun mutualTlsAllowClientCertificate(
@@ -609,6 +626,51 @@ class MGMResourceClientImpl @Activate constructor(
             publishSuspensionActivationRecords(
                 updatedMemberInfo, updatedGroupParameters, memberX500Name, memberShortHash, mgm, holdingIdentityShortHash.value
             )
+        }
+
+        override fun updateGroupParameters(
+            holdingIdentityShortHash: ShortHash, newGroupParameters: Map<String, String>
+        ): InternalGroupParameters {
+            val mgm = mgmHoldingIdentity(holdingIdentityShortHash)
+
+            membershipGroupReaderProvider.getGroupReader(mgm).groupParameters.let { current ->
+                val changeableParameters = current?.toMap()?.filterNot {
+                    it.key in setOf(EPOCH_KEY, MODIFIED_TIME_KEY) || it.key.startsWith(NOTARIES_KEY)
+                }
+                if (newGroupParameters == changeableParameters) {
+                    logger.info("Nothing to persist - submitted group parameters are identical to the existing group " +
+                            "parameters.")
+                    return current
+                }
+            }
+
+            val updatedParameters = membershipPersistenceClient.updateGroupParameters(
+                mgm, newGroupParameters
+            ).getOrThrow()
+
+            createDistributionRequest(mgm, updatedParameters.epoch)
+
+            return updatedParameters
+        }
+
+        private fun createDistributionRequest(mgm: HoldingIdentity, epoch: Int) {
+            val distributionRequest = MembershipActionsRequest(
+                DistributeGroupParameters(
+                    mgm.toAvro(),
+                    epoch,
+                )
+            )
+            coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.apply {
+                publish(
+                    listOf(
+                        Record(
+                            topic = MEMBERSHIP_ACTIONS_TOPIC,
+                            key = "${mgm.x500Name}-${mgm.groupId}",
+                            value = distributionRequest
+                        )
+                    )
+                ).forEach { it.join() }
+            }
         }
 
         private fun validateSuspensionActivationRequest(

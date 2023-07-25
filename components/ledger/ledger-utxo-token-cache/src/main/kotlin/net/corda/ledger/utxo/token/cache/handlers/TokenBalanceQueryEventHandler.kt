@@ -2,14 +2,13 @@ package net.corda.ledger.utxo.token.cache.handlers
 
 import java.math.BigDecimal
 import net.corda.data.flow.event.FlowEvent
-import net.corda.ledger.utxo.impl.token.selection.impl.TokenBalanceImpl
 import net.corda.ledger.utxo.token.cache.entities.BalanceQuery
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
+import net.corda.ledger.utxo.token.cache.entities.TokenBalance
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
 import net.corda.messaging.api.records.Record
-import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 
 class TokenBalanceQueryEventHandler(
     private val filterStrategy: TokenFilterStrategy,
@@ -43,6 +42,6 @@ class TokenBalanceQueryEventHandler(
             totalBalance += token.amount
         }
 
-        return TokenBalanceImpl(availableBalance, totalBalance)
+        return TokenBalance(availableBalance, totalBalance)
     }
 }

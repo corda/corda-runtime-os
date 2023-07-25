@@ -6,6 +6,7 @@ import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.Lifecycle
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.v5.base.types.MemberX500Name
@@ -246,4 +247,21 @@ interface MGMResourceClient : Lifecycle {
         reason: String? = null,
     )
 
+    /**
+     * Updates the group parameters.
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param newGroupParameters Updated version of the group parameters.
+     *
+     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
+     */
+    @Throws(
+        CouldNotFindMemberException::class,
+        MemberNotAnMgmException::class,
+    )
+    fun updateGroupParameters(
+        holdingIdentityShortHash: ShortHash,
+        newGroupParameters: Map<String, String>
+    ): InternalGroupParameters
 }
