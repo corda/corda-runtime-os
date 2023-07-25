@@ -139,6 +139,4 @@ charts/corda/Chart.lock
 values.yaml
 debug.yaml
 /metrics/grafana/*.db
-
-
-# Add gitignore for appropriate evm files
+/metrics/data/*
