@@ -73,12 +73,16 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
         // TODO: This should only be done for locally hosted identities!
         writeHostedIdentitiesTopic(identity)
     }
-    override fun addGroupPolicy(groupId: String, groupPolicy: String) {
-        var groupPolicyContent = ""
+    override fun publishGroupPolicy(groupId: String, groupPolicy: String) : String {
+        var returnId = groupId
         if(groupPolicy.contains(CREATE_ID)) {
-            groupPolicyContent = groupPolicy.replace(CREATE_ID, UUID.randomUUID().toString())
+             returnId = UUID.randomUUID().toString()
+            val groupPolicyContent = groupPolicy.replace(CREATE_ID, returnId)
+            interopGroupPolicyProducer.publishInteropGroupPolicy(returnId, groupPolicyContent)
+        } else {
+            interopGroupPolicyProducer.publishInteropGroupPolicy(returnId, groupPolicy)
         }
-        interopGroupPolicyProducer.publishInteropGroupPolicy(groupId, groupPolicyContent)
+        return returnId
     }
 
     private fun writeMemberInfoTopic(vNodeShortHash: String, identity: InteropIdentity) {

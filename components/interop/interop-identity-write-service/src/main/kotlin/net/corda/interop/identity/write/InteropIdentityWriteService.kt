@@ -19,5 +19,5 @@ interface InteropIdentityWriteService : Lifecycle {
      * @param groupId groupId of the interop group.
      * @param groupPolicy group policy content.
      */
-    fun addGroupPolicy(groupId: String, groupPolicy: String)
+    fun publishGroupPolicy(groupId: String, groupPolicy: String) : String
 }

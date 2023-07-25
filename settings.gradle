@@ -467,6 +467,8 @@ include 'components:interop:interop-identity-write-service'
 include 'components:interop:interop-identity-write-service-impl'
 include 'components:interop:interop-identity-cache-service'
 include 'components:interop:interop-identity-cache-service-impl'
+include 'components:interop:interop-group-policy-read-service'
+include 'components:interop:interop-group-policy-read-service-impl'
 
 // The following logic dictates if we use the composite build gradle functionality,
 // If this evaluates to true local source code will be used in place of binary dependencies.
