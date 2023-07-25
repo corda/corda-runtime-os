@@ -31,6 +31,7 @@ contract Storage {
     }
 
     mapping (address => struct1) structMapper;
+
     /**
      * @dev Store value in variable
      * @param num value to store
