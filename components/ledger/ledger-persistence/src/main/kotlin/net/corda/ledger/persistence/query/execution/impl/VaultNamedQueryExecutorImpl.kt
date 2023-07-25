@@ -4,7 +4,6 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindWithNamedQuery
-import net.corda.ledger.persistence.common.ComponentLeafDto
 import net.corda.ledger.persistence.query.data.VaultNamedQuery
 import net.corda.ledger.persistence.query.execution.VaultNamedQueryExecutor
 import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
@@ -92,17 +91,23 @@ class VaultNamedQueryExecutorImpl(
         validateParameters(request)
 
         @Suppress("UNCHECKED_CAST")
-        val componentGroups = entityManagerFactory.transaction { em ->
+        return entityManagerFactory.transaction { em ->
+
                 val query = em.createNativeQuery(
-                    "SELECT tc.transaction_id, tc.group_idx, tc.leaf_idx, tc.data FROM " +
-                            "$UTXO_TX_COMPONENT_TABLE AS tc " +
-                            "JOIN $UTXO_VISIBLE_TX_TABLE AS visible_states " +
-                                "ON visible_states.transaction_id = tc.transaction_id " +
-                                "AND visible_states.leaf_idx = tc.leaf_idx " +
-                            "$whereJson " +
-                            "AND tc.group_idx IN (:groupIndices) " +
-                            "AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME " +
-                            "ORDER BY tc.created, tc.transaction_id, tc.leaf_idx, tc.group_idx",
+                    "SELECT output_info_result.transaction_id, output_info_result.data as output_info_data, tc_output.data AS output_data FROM " +
+                                "(SELECT visible_states.transaction_id, tc.group_idx, visible_states.leaf_idx, tc.data FROM " +
+                                "$UTXO_VISIBLE_TX_TABLE AS visible_states " +
+                                "JOIN $UTXO_TX_COMPONENT_TABLE AS tc " +
+                                    "ON visible_states.transaction_id = tc.transaction_id " +
+                                    "AND visible_states.leaf_idx = tc.leaf_idx " +
+                                "$whereJson " +
+                                "AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME " +
+                                "AND tc.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}) AS output_info_result " +
+                            "JOIN $UTXO_TX_COMPONENT_TABLE tc_output " +
+                            "    ON output_info_result.transaction_id = tc_output.transaction_id " +
+                            "    AND output_info_result.leaf_idx = tc_output.leaf_idx " +
+                            "WHERE tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal} " +
+                            "ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx, tc_output.group_idx",
                     Tuple::class.java
                 )
 
@@ -111,46 +116,15 @@ class VaultNamedQueryExecutorImpl(
                     query.setParameter(rec.key, serializationService.deserialize(bytes))
                 }
 
-            // Setting the parameter here prevents them from being set by CorDapp code.
-            query.setParameter(
-                "groupIndices",
-                listOf(
-                    UtxoComponentGroup.OUTPUTS.ordinal,
-                    UtxoComponentGroup.OUTPUTS_INFO.ordinal
-                )
-            )
-                // Each transaction will have two rows: outputs/outputs info so we need to multiply offset/result by 2
-                query.firstResult = request.offset * 2
-                query.maxResults = request.limit * 2
-
                 query.resultList as List<Tuple>
             }.map { t ->
-                ComponentLeafDto(
-                    t[0] as String, // transactionId
-                    (t[1] as Number).toInt(), // groupIndex
-                    (t[2] as Number).toInt(), // leafIndex
-                    t[3] as ByteArray // data
-                )
-            }.groupBy { it.groupIndex }
-
-        val outputInfos = componentGroups[UtxoComponentGroup.OUTPUTS_INFO.ordinal]
-            ?.associateBy { it.transactionId to it.leafIndex }
-            ?: emptyMap()
-
-        return componentGroups[UtxoComponentGroup.OUTPUTS.ordinal]?.map {
-            val serializedInfo = outputInfos[it.transactionId to it.leafIndex]
-
-            requireNotNull(serializedInfo) {
-                "Missing output info at index [${it.leafIndex}] for UTXO transaction with ID [${it.transactionId}]"
+                UtxoTransactionOutputDto(
+                    t[0] as String, // transactionId,,
+                    0, // leaf ID is always 0
+                    t[1] as ByteArray, // outputs info data
+                    t[2] as ByteArray // outputs data
+                ).toStateAndRef(serializationService)
             }
-
-            UtxoTransactionOutputDto(
-                it.transactionId,
-                it.leafIndex,
-                serializedInfo.data,
-                it.data
-            ).toStateAndRef(serializationService)
-        } ?: emptyList()
     }
 
     private fun validateParameters(request: FindWithNamedQuery) {
