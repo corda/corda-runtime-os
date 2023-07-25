@@ -1,5 +1,7 @@
-package com.example.ledger.testing.datamodel.utxo
+package net.corda.ledger.utxo.datamodel
 
+import net.corda.v5.base.annotations.CordaSerializable
+import java.io.Serializable
 import java.time.Instant
 import javax.persistence.CascadeType
 import javax.persistence.Column
@@ -10,33 +12,32 @@ import javax.persistence.JoinTable
 import javax.persistence.ManyToMany
 import javax.persistence.OneToMany
 import javax.persistence.Table
-import net.corda.v5.base.annotations.CordaSerializable
 
 @CordaSerializable
 @Entity
 @Table(name = "utxo_transaction")
-data class UtxoTransactionEntity(
+class UtxoTransactionEntity(
     @Id
-    @Column(name = "id", nullable = false, updatable = false)
-    val id: String,
+    @Column(name = "id", unique = true, nullable = false, updatable = false)
+    var id: String,
 
     @Column(name = "privacy_salt", nullable = false)
-    val privacySalt: ByteArray,
+    var privacySalt: ByteArray,
 
     @Column(name = "account_id", nullable = false)
-    val accountId: String,
+    var accountId: String,
 
     @Column(name = "created", nullable = false)
-    val created: Instant,
-) {
+    var created: Instant,
+) : Serializable {
     @OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
-    val components: MutableList<UtxoTransactionComponentEntity> = mutableListOf()
+    var components: MutableList<UtxoTransactionComponentEntity> = mutableListOf()
 
     @OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
-    val statuses: MutableList<UtxoTransactionStatusEntity> = mutableListOf()
+    var statuses: MutableList<UtxoTransactionStatusEntity> = mutableListOf()
 
     @OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
-    val signatures: MutableList<UtxoTransactionSignatureEntity> = mutableListOf()
+    var signatures: MutableList<UtxoTransactionSignatureEntity> = mutableListOf()
 
     @ManyToMany(cascade = [CascadeType.PERSIST, CascadeType.MERGE])
     @JoinTable(name = "utxo_transaction_cpk",
@@ -51,18 +52,15 @@ data class UtxoTransactionEntity(
         other as UtxoTransactionEntity
 
         if (id != other.id) return false
-        if (!privacySalt.contentEquals(other.privacySalt)) return false
-        if (accountId != other.accountId) return false
-        if (created != other.created) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = id.hashCode()
-        result = 31 * result + privacySalt.contentHashCode()
-        result = 31 * result + accountId.hashCode()
-        result = 31 * result + created.hashCode()
-        return result
+        return id.hashCode()
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = -8412188174627907588L
     }
 }

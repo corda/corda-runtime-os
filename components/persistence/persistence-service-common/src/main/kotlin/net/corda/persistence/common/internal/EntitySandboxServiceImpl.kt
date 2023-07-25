@@ -4,6 +4,7 @@ import net.corda.cpk.read.CpkReadService
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
+import net.corda.ledger.utxo.datamodel.UtxoLedgerEntities
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.orm.JpaEntitiesSet
 import net.corda.persistence.common.EntityExtractor
@@ -133,7 +134,7 @@ class EntitySandboxServiceImpl @Activate constructor(
         // entity manager factory per sandbox.
 
         // TODO - add general vault entities
-        val entityClasses = EntityExtractor.getEntityClassNames(cpks).map {
+        val entityClasses = UtxoLedgerEntities.classes + EntityExtractor.getEntityClassNames(cpks).map {
             try {
                 ctx.sandboxGroup.loadClassFromMainBundles(it)
             } catch (e: SandboxException) {

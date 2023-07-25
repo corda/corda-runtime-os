@@ -42,6 +42,7 @@ dependencies {
     implementation project(":libs:db:db-core")
     implementation project(':libs:db:db-orm')
     implementation project(':libs:layered-property-map')
+    implementation project(':libs:ledger:ledger-utxo-datamodel')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:membership:membership-common')
     implementation project(':libs:membership:membership-datamodel')

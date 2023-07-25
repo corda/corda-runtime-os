@@ -1,4 +1,4 @@
-package com.example.ledger.testing.datamodel.utxo
+package net.corda.ledger.utxo.datamodel
 
 import java.io.Serializable
 import java.time.Instant
@@ -10,13 +10,11 @@ import javax.persistence.IdClass
 import javax.persistence.JoinColumn
 import javax.persistence.ManyToOne
 import javax.persistence.Table
-import net.corda.v5.base.annotations.CordaSerializable
 
-@CordaSerializable
 @Entity
 @Table(name = "utxo_transaction_signature")
 @IdClass(UtxoTransactionSignatureEntityId::class)
-data class UtxoTransactionSignatureEntity(
+class UtxoTransactionSignatureEntity(
     @Id
     @ManyToOne
     @JoinColumn(name = "transaction_id", nullable = false, updatable = false)
@@ -34,7 +32,7 @@ data class UtxoTransactionSignatureEntity(
 
     @Column(name = "created", nullable = false)
     val created: Instant
-) {
+) : Serializable {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -43,9 +41,6 @@ data class UtxoTransactionSignatureEntity(
 
         if (transaction != other.transaction) return false
         if (index != other.index) return false
-        if (!signature.contentEquals(other.signature)) return false
-        if (publicKeyHash != other.publicKeyHash) return false
-        if (created != other.created) return false
 
         return true
     }
@@ -53,15 +48,38 @@ data class UtxoTransactionSignatureEntity(
     override fun hashCode(): Int {
         var result = transaction.hashCode()
         result = 31 * result + index
-        result = 31 * result + signature.contentHashCode()
-        result = 31 * result + publicKeyHash.hashCode()
-        result = 31 * result + created.hashCode()
         return result
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = -7652753106360934329L
     }
 }
 
 @Embeddable
-data class UtxoTransactionSignatureEntityId(
-    val transaction: UtxoTransactionEntity,
-    val index: Int
-) : Serializable
+class UtxoTransactionSignatureEntityId(
+    var transaction: UtxoTransactionEntity,
+    var index: Int
+) : Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 7444354660976338805L
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as UtxoTransactionSignatureEntityId
+
+        if (transaction != other.transaction) return false
+        if (index != other.index) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = transaction.hashCode()
+        result = 31 * result + index
+        return result
+    }
+}

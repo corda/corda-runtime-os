@@ -15,6 +15,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.entityprocessor.FlowPersistenceService
 import net.corda.ledger.persistence.LedgerPersistenceService
+import net.corda.ledger.utxo.datamodel.UtxoLedgerEntities
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.cpi.datamodel.CpiEntities
@@ -132,6 +133,7 @@ class DBProcessorImpl @Activate constructor(
             CordaDb.Vault.persistenceUnitName,
             CertificateEntities.vnodeClasses
                     + MembershipEntities.vnodeClasses
+                    + UtxoLedgerEntities.classes
         )
     }
 

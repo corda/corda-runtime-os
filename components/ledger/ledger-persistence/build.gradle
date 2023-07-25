@@ -34,6 +34,7 @@ dependencies {
     implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:ledger:ledger-consensual-data')
     implementation project(':libs:ledger:ledger-utxo-data')
+    implementation project(':libs:ledger:ledger-utxo-datamodel')
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:metrics')
     implementation project(':libs:serialization:json-validator')

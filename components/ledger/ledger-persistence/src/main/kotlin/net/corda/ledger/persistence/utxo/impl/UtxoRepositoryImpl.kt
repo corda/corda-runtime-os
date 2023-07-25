@@ -11,6 +11,7 @@ import net.corda.ledger.persistence.common.ComponentLeafDto
 import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
+import net.corda.ledger.utxo.datamodel.UtxoTransactionEntity
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.utilities.debug
@@ -72,7 +73,16 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager: EntityManager,
         transactionId: String
     ): PrivacySaltImpl? {
-        return entityManager.createNativeQuery(
+        return entityManager.createQuery(
+            "SELECT privacySalt FROM UtxoTransactionEntity WHERE id = :txId",
+            ByteArray::class.java
+        )
+            .setParameter("txId", transactionId)
+            .resultList
+            .map { PrivacySaltImpl(it) }
+            .firstOrNull()
+
+        /*return entityManager.createNativeQuery(
             """
                 SELECT privacy_salt
                 FROM {h-schema}utxo_transaction
@@ -82,13 +92,27 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("transactionId", transactionId)
             .resultListAsTuples()
             .map { r -> PrivacySaltImpl(r.get(0) as ByteArray) }
-            .firstOrNull()
+            .firstOrNull()*/
     }
 
     override fun findTransactionComponentLeafs(
         entityManager: EntityManager,
         transactionId: String
     ): Map<Int, List<ByteArray>> {
+
+        return entityManager.createQuery("""
+                SELECT groupIndex, leafIndex, data
+                FROM UtxoTransactionComponentEntity
+                WHERE transaction.id = :txId
+                ORDER BY groupIndex, leafIndex""",
+            Tuple::class.java
+        )
+            .setParameter("txId", transactionId)
+            .resultList
+            .mapToComponentGroups(UtxoComponentGroupMapper(transactionId))
+
+        /*logger.info("Component results = ${query.mapToComponentGroups(UtxoComponentGroupMapper(transactionId))}")
+
         return entityManager.createNativeQuery(
             """
                 SELECT group_idx, leaf_idx, data
@@ -99,7 +123,7 @@ class UtxoRepositoryImpl @Activate constructor(
         )
             .setParameter("transactionId", transactionId)
             .resultListAsTuples()
-            .mapToComponentGroups(UtxoComponentGroupMapper(transactionId))
+            .mapToComponentGroups(UtxoComponentGroupMapper(transactionId))*/
     }
 
     override fun findUnconsumedVisibleStatesByType(

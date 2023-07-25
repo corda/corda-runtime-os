@@ -1,4 +1,4 @@
-package com.example.ledger.testing.datamodel.utxo
+package net.corda.ledger.utxo.datamodel
 
 import java.io.Serializable
 import java.time.Instant
@@ -10,35 +10,33 @@ import javax.persistence.IdClass
 import javax.persistence.JoinColumn
 import javax.persistence.ManyToOne
 import javax.persistence.Table
-import net.corda.v5.base.annotations.CordaSerializable
 
-@CordaSerializable
 @Entity
 @Table(name = "utxo_transaction_component")
 @IdClass(UtxoTransactionComponentEntityId::class)
-data class UtxoTransactionComponentEntity(
+class UtxoTransactionComponentEntity(
     @Id
     @ManyToOne
     @JoinColumn(name = "transaction_id", nullable = false, updatable = false)
-    val transaction: UtxoTransactionEntity,
+    var transaction: UtxoTransactionEntity,
 
     @Id
     @Column(name = "group_idx", nullable = false)
-    val groupIndex: Int,
+    var groupIndex: Int,
 
     @Id
     @Column(name = "leaf_idx", nullable = false)
-    val leafIndex: Int,
+    var leafIndex: Int,
 
     @Column(name = "data", nullable = false)
-    val data: ByteArray,
+    var data: ByteArray,
 
     @Column(name = "hash", nullable = false)
-    val hash: String,
+    var hash: String,
 
     @Column(name = "created", nullable = false)
-    val created: Instant
-) {
+    var created: Instant
+) : Serializable {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -48,9 +46,6 @@ data class UtxoTransactionComponentEntity(
         if (transaction != other.transaction) return false
         if (groupIndex != other.groupIndex) return false
         if (leafIndex != other.leafIndex) return false
-        if (!data.contentEquals(other.data)) return false
-        if (hash != other.hash) return false
-        if (created != other.created) return false
 
         return true
     }
@@ -59,16 +54,42 @@ data class UtxoTransactionComponentEntity(
         var result = transaction.hashCode()
         result = 31 * result + groupIndex
         result = 31 * result + leafIndex
-        result = 31 * result + data.contentHashCode()
-        result = 31 * result + hash.hashCode()
-        result = 31 * result + created.hashCode()
+
         return result
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = 6041632694894522684L
     }
 }
 
 @Embeddable
-data class UtxoTransactionComponentEntityId(
-    val transaction: UtxoTransactionEntity,
-    val groupIndex: Int,
-    val leafIndex: Int
-) : Serializable
+class UtxoTransactionComponentEntityId(
+    var transaction: UtxoTransactionEntity,
+    var groupIndex: Int,
+    var leafIndex: Int
+) : Serializable {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as UtxoTransactionComponentEntityId
+
+        if (transaction != other.transaction) return false
+        if (groupIndex != other.groupIndex) return false
+        if (leafIndex != other.leafIndex) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = transaction.hashCode()
+        result = 31 * result + groupIndex
+        result = 31 * result + leafIndex
+        return result
+    }
+
+    companion object {
+        private const val serialVersionUID: Long = 1175691165696970977L
+    }
+}
