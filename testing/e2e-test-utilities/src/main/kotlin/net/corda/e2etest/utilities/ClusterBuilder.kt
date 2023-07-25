@@ -155,12 +155,12 @@ class ClusterBuilder {
     private fun registerMemberBody() =
         """{ "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }""".trimMargin()
 
-    private fun registerNotaryBody(holdingIdShortHash: String) =
+    private fun registerNotaryBody(notaryServiceName: String) =
         """{ 
             |  "context": { 
             |    "corda.key.scheme" : "CORDA.ECDSA.SECP256R1", 
             |    "corda.roles.0" : "notary",
-            |    "corda.notary.service.name" : "O=MyNotaryService-${holdingIdShortHash}, L=London, C=GB",
+            |    "corda.notary.service.name" : "$notaryServiceName",
             |    "corda.notary.service.flow.protocol.name" : "com.r3.corda.notary.plugin.nonvalidating",
             |    "corda.notary.service.flow.protocol.version.0" : "1"
             |   } 
@@ -258,10 +258,10 @@ class ClusterBuilder {
      * notary service. This is fine for now as we only support a 1-1 mapping from notary service to
      * notary vnode. It will need revisiting when 1-* is supported.
      */
-    fun registerStaticMember(holdingIdShortHash: String, isNotary: Boolean = false) =
+    fun registerStaticMember(holdingIdShortHash: String, notaryServiceName: String? = null) =
         register(
             holdingIdShortHash,
-            if (isNotary) registerNotaryBody(holdingIdShortHash) else registerMemberBody()
+            if (notaryServiceName != null) registerNotaryBody(notaryServiceName) else registerMemberBody()
         )
 
     fun register(holdingIdShortHash: String, registrationContext: String) =
