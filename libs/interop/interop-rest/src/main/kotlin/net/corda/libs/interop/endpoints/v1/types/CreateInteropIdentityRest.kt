@@ -9,6 +9,6 @@ class CreateInteropIdentityRest {
     )
 
     class Response(
-        interopIdentityShortHash: String
+        val interopIdentityShortHash: String
     )
 }
