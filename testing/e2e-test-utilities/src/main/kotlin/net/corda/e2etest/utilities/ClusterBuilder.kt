@@ -88,13 +88,13 @@ class ClusterBuilder {
             ?: throw FileNotFoundException("No such resource: '$resourceName'")
 
     fun importCertificate(resourceName: String, usage: String, alias: String) =
-        uploadCertificateResource("/api/$REST_API_VERSION_PATH/certificates/cluster/$usage", resourceName, alias)
+        uploadCertificateResource("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage", resourceName, alias)
 
     fun importCertificate(file: File, usage: String, alias: String) =
-        uploadCertificateFile("/api/$REST_API_VERSION_PATH/certificates/cluster/$usage", file, alias)
+        uploadCertificateFile("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage", file, alias)
 
     fun getCertificateChain(usage: String, alias: String) =
-        client!!.get("/api/$REST_API_VERSION_PATH/certificates/cluster/$usage/$alias")
+        client!!.get("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage/$alias")
 
     /** Assumes the resource *is* a CPB */
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/$REST_API_VERSION_PATH/cpi/", resourceName)
@@ -280,10 +280,10 @@ class ClusterBuilder {
         post("/api/$REST_API_VERSION_PATH/hsm/soft/$holdingIdentityShortHash/$category", body = "")
 
     fun createKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
-        post("/api/$REST_API_VERSION_PATH/keys/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme", body = "")
+        post("/api/$REST_API_VERSION_PATH/key/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme", body = "")
 
     fun getKey(tenantId: String, keyId: String) =
-        get("/api/$REST_API_VERSION_PATH/keys/$tenantId/$keyId")
+        get("/api/$REST_API_VERSION_PATH/key/$tenantId/$keyId")
 
     fun getKey(
         tenantId: String,
@@ -301,7 +301,7 @@ class ClusterBuilder {
         } else {
             queries.joinToString(prefix = "?", separator = "&")
         }
-        return get("/api/$REST_API_VERSION_PATH/keys/$tenantId$queryStr")
+        return get("/api/$REST_API_VERSION_PATH/key/$tenantId$queryStr")
     }
 
     /** Get status of a flow */
