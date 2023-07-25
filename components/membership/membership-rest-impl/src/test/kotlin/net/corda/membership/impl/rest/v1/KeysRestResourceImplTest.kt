@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
