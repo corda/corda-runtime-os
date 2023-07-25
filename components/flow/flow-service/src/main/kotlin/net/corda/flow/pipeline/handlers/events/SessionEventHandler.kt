@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.handlers.events
 
+import java.time.Instant
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
@@ -31,7 +32,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.time.Instant
 
 @Component(service = [FlowEventHandler::class])
 class SessionEventHandler @Activate constructor(
@@ -106,6 +106,7 @@ class SessionEventHandler @Activate constructor(
         val holdingIdentity = initiatedIdentity.toCorda()
         val (requestedProtocolName, initiatorVersionsSupported) = getProtocolInfo(sessionInit, sessionEvent)
         var initiatedFlowNameAndProtocol: FlowAndProtocolVersion? = null
+        var initiatedFlowNameAndProtocolResult: Result<FlowAndProtocolVersion>? = null
 
         checkpointInitializer.initialize(
             context.checkpoint,
@@ -115,17 +116,18 @@ class SessionEventHandler @Activate constructor(
             val protocolStore = try {
                 flowSandboxService.get(holdingIdentity, it).protocolStore
             } catch (e: Exception) {
-                // We assume that all sandbox creation failures are transient. This likely isn't true, but to handle
-                // it properly will need some changes to the exception handling to get the context elsewhere. Transient here
-                // will get the right failure eventually, so this is fine for now.
                 throw FlowTransientException(
                     "Failed to create the flow sandbox: ${e.message ?: "No exception message provided."}",
                     e
                 )
             }
 
-            val flowAndProtocolVersion = protocolStore.responderForProtocol(requestedProtocolName, initiatorVersionsSupported, context)
-            initiatedFlowNameAndProtocol = flowAndProtocolVersion
+            initiatedFlowNameAndProtocolResult = runCatching {
+                protocolStore.responderForProtocol(requestedProtocolName, initiatorVersionsSupported, context)
+            }
+
+            initiatedFlowNameAndProtocol = initiatedFlowNameAndProtocolResult!!.getOrNull()
+
             FlowStartContext.newBuilder()
                 .setStatusKey(FlowKey(sessionId, initiatedIdentity))
                 .setInitiatorType(FlowInitiatorType.P2P)
@@ -133,7 +135,7 @@ class SessionEventHandler @Activate constructor(
                 .setIdentity(initiatedIdentity)
                 .setCpiId(sessionInit.cpiId)
                 .setInitiatedBy(initiatingIdentity)
-                .setFlowClassName(flowAndProtocolVersion.flowClassName)
+                .setFlowClassName(initiatedFlowNameAndProtocol?.flowClassName ?: "INVALID")
                 .setContextPlatformProperties(keyValuePairListOf(mapOf(MDC_CLIENT_ID to sessionId)))
                 .setCreatedTimestamp(Instant.now())
                 .build()
@@ -143,7 +145,11 @@ class SessionEventHandler @Activate constructor(
         context.checkpoint.putSessionState(initialSessionState)
         context.flowMetrics.flowStarted()
 
-        sendConfirmMessage(initiatedFlowNameAndProtocol, requestedProtocolName, initiatorVersionsSupported, context, sessionId)
+        if (initiatedFlowNameAndProtocolResult!!.isSuccess) {
+            sendConfirmMessage(initiatedFlowNameAndProtocol, requestedProtocolName, initiatorVersionsSupported, context, sessionId)
+        } else if (initiatedFlowNameAndProtocolResult!!.isFailure) {
+            sendErrorMessage(context, sessionId, initiatedFlowNameAndProtocolResult!!.exceptionOrNull()!!)
+        }
     }
 
     private fun getProtocolInfo(
@@ -179,6 +185,21 @@ class SessionEventHandler @Activate constructor(
                 context.checkpoint,
                 sessionId,
                 getContextSessionProperties(flowAndProtocolVersion),
+                Instant.now()
+            )
+        )
+    }
+
+    private fun sendErrorMessage(
+        context: FlowEventContext<*>,
+        sessionId: String,
+        exception: Throwable
+    ) {
+        context.checkpoint.putSessionStates(
+            flowSessionManager.sendErrorMessages(
+                context.checkpoint,
+                listOf(sessionId),
+                exception,
                 Instant.now()
             )
         )
