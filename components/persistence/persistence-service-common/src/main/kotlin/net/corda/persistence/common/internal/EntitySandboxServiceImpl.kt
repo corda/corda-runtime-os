@@ -180,7 +180,7 @@ class EntitySandboxServiceImpl @Activate constructor(
             .mapNotNull { getObserverFromClassName(it, ctx) }
             .groupBy { it.stateType }
 
-        validateObservers(tokenStateObserverMap)
+        validateTokenStateObservers(tokenStateObserverMap)
 
         ctx.putObjectByKey(SANDBOX_TOKEN_STATE_OBSERVERS, tokenStateObserverMap)
         logger.debug {
@@ -190,7 +190,7 @@ class EntitySandboxServiceImpl @Activate constructor(
         }
     }
 
-    private fun validateObservers(tokenStateObserverMap: Map<Class<ContractState>, List<UtxoLedgerTokenStateObserver<ContractState>>>) {
+    private fun validateTokenStateObservers(tokenStateObserverMap: Map<Class<ContractState>, List<UtxoLedgerTokenStateObserver<ContractState>>>) {
 
         tokenStateObserverMap.forEach { contractStateTypeToObservers ->
             val numberOfObservers = contractStateTypeToObservers.value.size
