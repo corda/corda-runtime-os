@@ -35,6 +35,7 @@ import net.corda.interop.group.policy.read.InteropGroupPolicyReadService
 import net.corda.libs.interop.endpoints.v1.types.InteropIdentityResponse
 import net.corda.libs.interop.endpoints.v1.types.ExportInteropIdentityResponse
 import net.corda.rest.exception.BadRequestException
+import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
 @Component(service = [PluggableRestResource::class])
@@ -58,6 +59,13 @@ internal class InteropRestResourceImpl @Activate constructor(
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
     }
+
+    /**
+     * These are identical at the moment, but this may not be the case in future revisions of corda
+     * Separate methods have been created so that it is obvious to future maintainers which is required
+     */
+    private fun VirtualNodeInfo.getVNodeShortHash() = this.holdingIdentity.shortHash.toString()
+    private fun VirtualNodeInfo.getHoldingIdentityShortHash() = this.holdingIdentity.shortHash.toString()
 
     // RestResource values
     override val targetInterface: Class<InteropRestResource> = InteropRestResource::class.java
