@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap
 @Component(
     name = CpiLoader.COMPONENT_NAME,
     service = [ CpkReadService::class, CpiLoader::class ],
+    property = [ SandboxSetup.SANDBOX_SERVICE ],
     configurationPolicy = REQUIRE
 )
 @ServiceRanking(SandboxSetup.SANDBOX_SERVICE_RANKING)
@@ -50,10 +51,6 @@ class CpkReadServiceImpl @Activate constructor(
         get() = cpks.map(Cpk::metadata)
 
     override val isRunning: Boolean get() = true
-
-    init {
-        logger.info("Activated")
-    }
 
     private fun getInputStream(resourceName: String): InputStream {
         return testBundle.getResource(resourceName)?.openStream()

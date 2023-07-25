@@ -1,0 +1,20 @@
+kafka:
+  resources:
+    requests:
+      memory: 8192Mi
+      cpu: 4000m
+    limits:
+      memory: 8192Mi
+      cpu: 4000m
+  persistence:
+    size: 400Gi
+
+postgresql:
+  primary:
+    resources:
+      requests:
+        memory: 8192Mi
+        cpu: 4000m
+      limits:  
+        memory: 8192Mi
+        cpu: 4000m

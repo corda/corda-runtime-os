@@ -52,6 +52,7 @@ import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
@@ -77,6 +78,7 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -122,6 +124,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.lang.StringBuilder
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.PublicKey
@@ -260,9 +263,7 @@ class StaticMemberRegistrationServiceTest {
 
     private val hsmRegistrationClient: HSMRegistrationClient = mock()
 
-    private val mockContext: Map<String, String> = mock {
-        on { get(KEY_SCHEME) } doReturn ECDSA_SECP256R1_CODE_NAME
-    }
+    private val mockContext = mapOf(KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME)
     private val persistRegistrationRequestOperation = mock<MembershipPersistenceOperation<Unit>> {
         on { execute() } doReturn MembershipPersistenceResult.success()
     }
@@ -559,6 +560,28 @@ class StaticMemberRegistrationServiceTest {
                 registrationService.register(registrationId, alice, context)
             }
         }
+
+        @Test
+        fun `registration successfully adds custom fields from context to member info`() {
+            val mockContextWithCustomFields = mockContext + mapOf(
+                "$CUSTOM_KEY_PREFIX.key1" to "value1",
+                "$CUSTOM_KEY_PREFIX.key2" to "value2",
+            )
+            val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
+            val expectedContextEntries = mockContextWithCustomFields.filterNot { it.key == KEY_SCHEME }
+            setUpPublisher()
+            registrationService.start()
+
+            registrationService.register(registrationId, alice, mockContextWithCustomFields)
+
+            verify(mockPublisher).publish(capturedPublishedList.capture())
+            val publishedInfo = capturedPublishedList.firstValue.first()
+            val memberPublished = (publishedInfo.value as PersistentMemberInfo).let {
+                memberInfoFactory.create(it)
+            }
+
+            assertThat(memberPublished.memberProvidedContext.toMap()).containsAllEntriesOf(expectedContextEntries)
+        }
     }
 
     @Nested
@@ -774,6 +797,22 @@ class StaticMemberRegistrationServiceTest {
             }
 
             assertThat(exception).hasMessageContaining("Could not find virtual node")
+        }
+
+        @Test
+        fun `registration fails when context has invalid entries`() {
+            val longString = StringBuilder().apply { for(i in 0..256){ this.append("a") } }.toString()
+            setUpPublisher()
+            registrationService.start()
+            val invalidContext = mockContext + mapOf(
+                "$CUSTOM_KEY_PREFIX.$longString" to "value",
+            )
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, alice, invalidContext)
+            }
+
+            assertThat(exception).hasMessageContaining("Failed to validate the registration context")
         }
     }
 

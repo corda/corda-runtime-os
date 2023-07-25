@@ -33,6 +33,7 @@ import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
 import net.corda.data.membership.db.request.command.SuspendMember
+import net.corda.data.membership.db.request.command.UpdateGroupParameters
 import net.corda.data.membership.db.request.command.UpdateStaticNetworkInfo
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
@@ -1489,6 +1490,64 @@ class MembershipPersistenceClientImplTest {
 
             val output = membershipPersistenceClient.updateStaticNetworkInfo(info)
                 .execute()
+
+            assertThat(output).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
+            assertThat((output as MembershipPersistenceResult.Failure).errorMsg).contains("Unexpected response")
+        }
+    }
+
+    @Nested
+    inner class UpdateGroupParametersTest {
+        @Test
+        fun `Assert request and response are as expected when persisting`() {
+            val update = mapOf("ext.key" to "value")
+            val mockAvroParameters = mock<AvroGroupParameters>()
+            val queryResponse = PersistGroupParametersResponse(mockAvroParameters)
+            val mockParameters = mock<SignedGroupParameters>()
+            whenever(groupParametersFactory.create(mockAvroParameters)).doReturn(mockParameters)
+
+            postConfigChangedEvent()
+            mockPersistenceResponse(queryResponse)
+
+            val output = membershipPersistenceClient.updateGroupParameters(
+                ourHoldingIdentity, update
+            ).execute()
+
+            val argument = argumentCaptor<MembershipPersistenceRequest>()
+            verify(rpcSender).sendRequest(argument.capture())
+
+            val persistenceRequest = argument.firstValue as? MembershipPersistenceRequest
+            assertThat(persistenceRequest).isNotNull
+            assertThat(persistenceRequest!!.context.holdingIdentity).isEqualTo(ourHoldingIdentity.toAvro())
+
+            val sentRequest = (persistenceRequest.request as? UpdateGroupParameters)!!
+            assertThat(sentRequest.update).isEqualTo(update)
+
+            assertThat(output).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+            assertThat(output.getOrThrow()).isEqualTo(mockParameters)
+        }
+
+        @Test
+        fun `Assert persistence result is failure if persistence failed`() {
+            val error = "foo-bar"
+
+            postConfigChangedEvent()
+            mockPersistenceResponse(PersistenceFailedResponse(error, ErrorKind.GENERAL))
+
+            val output = membershipPersistenceClient.updateGroupParameters(ourHoldingIdentity, emptyMap()).execute()
+
+            assertThat(output).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
+            assertThat((output as MembershipPersistenceResult.Failure).errorMsg).isEqualTo(error)
+        }
+
+        @Test
+        fun `Assert persistence result is failure if persistence response is unexpected`() {
+            class BadResponse
+
+            postConfigChangedEvent()
+            mockPersistenceResponse(BadResponse())
+
+            val output = membershipPersistenceClient.updateGroupParameters(ourHoldingIdentity, emptyMap()).execute()
 
             assertThat(output).isInstanceOf(MembershipPersistenceResult.Failure::class.java)
             assertThat((output as MembershipPersistenceResult.Failure).errorMsg).contains("Unexpected response")

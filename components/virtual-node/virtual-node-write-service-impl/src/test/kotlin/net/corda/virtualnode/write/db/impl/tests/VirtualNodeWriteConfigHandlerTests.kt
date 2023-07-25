@@ -9,6 +9,7 @@ import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.EXTERNAL_MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.REST_CONFIG
+import net.corda.schema.configuration.ConfigKeys.VNODE_DATASOURCE_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.VirtualNodeWriteEventHandler
@@ -36,7 +37,7 @@ class VirtualNodeWriteConfigHandlerTests {
         val coordinator = mock<LifecycleCoordinator>()
         val vnodeWriter = mock<VirtualNodeWriter>()
         val vnodeWriterFactory = mock<VirtualNodeWriterFactory>().apply {
-            whenever(create(eq(config), any())).thenReturn(vnodeWriter)
+            whenever(create(eq(config), any(), any())).thenReturn(vnodeWriter)
         }
 
         val eventHandler = VirtualNodeWriteEventHandler(mock(), vnodeWriterFactory)
@@ -46,12 +47,13 @@ class VirtualNodeWriteConfigHandlerTests {
                 REST_CONFIG to config,
                 BOOT_CONFIG to config,
                 MESSAGING_CONFIG to config,
-                EXTERNAL_MESSAGING_CONFIG to config
+                EXTERNAL_MESSAGING_CONFIG to config,
+                VNODE_DATASOURCE_CONFIG to config
             )
         )
         eventHandler.processEvent(event, coordinator)
 
-        verify(vnodeWriterFactory).create(eq(config), any())
+        verify(vnodeWriterFactory).create(eq(config), any(), any())
         verify(vnodeWriter).start()
         verify(coordinator).updateStatus(UP)
     }
@@ -60,7 +62,7 @@ class VirtualNodeWriteConfigHandlerTests {
     fun `sets coordinator to down and throws if virtual node writer cannot be created`() {
         val coordinator = mock<LifecycleCoordinator>()
         val vnodeWriterFactory = mock<VirtualNodeWriterFactory>().apply {
-            whenever(create(any(), any())).thenAnswer { throw IllegalStateException() }
+            whenever(create(any(), any(), any())).thenAnswer { throw IllegalStateException() }
         }
 
         val eventHandler = VirtualNodeWriteEventHandler(mock(), vnodeWriterFactory)
@@ -76,7 +78,8 @@ class VirtualNodeWriteConfigHandlerTests {
                     REST_CONFIG to config,
                     BOOT_CONFIG to config,
                     MESSAGING_CONFIG to config,
-                    EXTERNAL_MESSAGING_CONFIG to config
+                    EXTERNAL_MESSAGING_CONFIG to config,
+                    VNODE_DATASOURCE_CONFIG to config
                 )
             )
             eventHandler.processEvent(event, coordinator)
@@ -93,7 +96,7 @@ class VirtualNodeWriteConfigHandlerTests {
     fun `sets status to UP if VirtualNodeRPCOps is running`() {
         val coordinator = mock<LifecycleCoordinator>()
         val vnodeWriterFactory = mock<VirtualNodeWriterFactory>().apply {
-            whenever(create(any(), any())).thenReturn(mock())
+            whenever(create(any(), any(), any())).thenReturn(mock())
         }
         val eventHandler = VirtualNodeWriteEventHandler(mock(), vnodeWriterFactory)
 
@@ -108,7 +111,8 @@ class VirtualNodeWriteConfigHandlerTests {
                 REST_CONFIG to config,
                 BOOT_CONFIG to config,
                 MESSAGING_CONFIG to config,
-                EXTERNAL_MESSAGING_CONFIG to config
+                EXTERNAL_MESSAGING_CONFIG to config,
+                VNODE_DATASOURCE_CONFIG to config
             )
         )
 

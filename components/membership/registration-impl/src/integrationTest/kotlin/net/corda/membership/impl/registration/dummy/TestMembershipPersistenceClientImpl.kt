@@ -141,6 +141,11 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         info: StaticNetworkInfo
     ): MembershipPersistenceOperation<StaticNetworkInfo> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
+    override fun updateGroupParameters(
+        viewOwningIdentity: HoldingIdentity, newGroupParameters: Map<String, String>
+    ): MembershipPersistenceOperation<InternalGroupParameters> =
+        MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
+
     override val isRunning = true
 
     override fun start() = coordinator.start()

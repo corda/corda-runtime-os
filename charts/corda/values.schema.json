@@ -41,6 +41,39 @@
             "title": "override chart name",
             "examples": [""]
         },
+        "topologySpreadConstraints": {
+            "type": "array",
+            "default": [],
+            "title": "topology spread constraints",
+            "items": {
+                "type": [
+                    "string",
+                    "object",
+                    "array"
+                ]
+            }
+        },
+        "affinity": {
+            "type": "object",
+            "default": {},
+            "title": "affinity for pod assignment",
+            "additionalProperties": {
+                "type": [
+                    "object"
+                ]
+            }
+        },
+        "commonLabels": {
+            "type": "object",
+            "default": {},
+            "title": "extra labels to add to all deployed objects",
+            "additionalProperties": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            }
+        },
         "image": {
             "type": "object",
             "default": {},

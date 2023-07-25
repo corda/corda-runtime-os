@@ -71,7 +71,15 @@ class CertificatesRestResourceImplTest {
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
-    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
+    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>() {
+        val nodeHoldingIdentity = mock<HoldingIdentity> {
+            on { x500Name } doReturn MemberX500Name.parse("O=Alice, L=LDN, C=GB")
+        }
+        val nodeInfo = mock<VirtualNodeInfo> {
+            on { holdingIdentity } doReturn nodeHoldingIdentity
+        }
+        on { getByHoldingIdentityShortHash(any()) } doReturn nodeInfo
+    }
     private val certificatesClient = mock<CertificatesClient>()
 
     private val certificatesOps = CertificatesRestResourceImpl(
@@ -516,17 +524,6 @@ class CertificatesRestResourceImplTest {
         fun `it will throw an exception for session certificate member key where the member name is not correct`() {
             whenever(key.category).doReturn(CryptoConsts.Categories.SESSION_INIT)
             val tenantId = "123123123123"
-            val nodeHoldingIdentity = mock<HoldingIdentity> {
-                on { x500Name } doReturn MemberX500Name.parse("O=Alice, L=LDN, C=GB")
-            }
-            val nodeInfo = mock<VirtualNodeInfo> {
-                on { holdingIdentity } doReturn nodeHoldingIdentity
-            }
-            whenever(
-                virtualNodeInfoReadService.getByHoldingIdentityShortHash(
-                    ShortHash.of(tenantId)
-                )
-            ).doReturn(nodeInfo)
             whenever(
                 cryptoOpsClient.sign(
                     eq(tenantId),
@@ -589,6 +586,21 @@ class CertificatesRestResourceImplTest {
             assertThrows<InvalidInputDataException> {
                 certificatesOps.generateCsr(
                     invalidTenantId,
+                    keyId,
+                    x500Name,
+                    null,
+                    null,
+                )
+            }
+        }
+
+        @Test
+        fun `it throws exception if tenant ID does not have virtual node registered`() {
+            val notRegisteredTenantId = "ABA912AC2439"
+            whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(notRegisteredTenantId))).thenReturn(null)
+            assertThrows<ResourceNotFoundException> {
+                certificatesOps.generateCsr(
+                    notRegisteredTenantId,
                     keyId,
                     x500Name,
                     null,

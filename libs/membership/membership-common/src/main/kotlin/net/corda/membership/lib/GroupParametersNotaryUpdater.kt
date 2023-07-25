@@ -24,6 +24,7 @@ class GroupParametersNotaryUpdater(
 
         const val EPOCH_KEY = "corda.epoch"
         const val MODIFIED_TIME_KEY = "corda.modifiedTime"
+        const val MPV_KEY = "corda.minimum.platform.version"
         val notaryServiceRegex = NOTARY_SERVICE_NAME_KEY.format("([0-9]+)").toRegex()
     }
     private val logger = LoggerFactory.getLogger(this::class.java)
