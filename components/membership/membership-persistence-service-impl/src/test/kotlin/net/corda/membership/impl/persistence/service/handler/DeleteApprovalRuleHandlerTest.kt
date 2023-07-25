@@ -11,6 +11,9 @@ import net.corda.membership.datamodel.ApprovalRulesEntityPrimaryKey
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -22,6 +25,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
@@ -33,6 +37,15 @@ class DeleteApprovalRuleHandlerTest {
         const val DUMMY_LABEL = "label1"
     }
 
+    private val identity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group").toCorda()
+    private val vaultDmlConnectionId = UUID(1, 2)
+    private val nodeInfo = mock<VirtualNodeInfo> {
+        on { holdingIdentity } doReturn identity
+        on { vaultDmlConnectionId } doReturn vaultDmlConnectionId
+    }
+    private val nodeInfoReadService = mock<VirtualNodeInfoReadService> {
+        on { getByHoldingIdentityShortHash(any()) } doReturn nodeInfo
+    }
     private val entitySet = mock<JpaEntitiesSet>()
     private val registry = mock<JpaEntitiesRegistry> {
         on { get(CordaDb.Vault.persistenceUnitName) } doReturn entitySet
@@ -52,14 +65,14 @@ class DeleteApprovalRuleHandlerTest {
     }
     private val connectionManager = mock<DbConnectionManager> {
         on {
-            getOrCreateEntityManagerFactory(
-                any(),
-                any(),
-                eq(entitySet),
+            createEntityManagerFactory(
+                vaultDmlConnectionId,
+                entitySet
             )
         } doReturn entityManagerFactory
     }
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
+        on { virtualNodeInfoReadService } doReturn nodeInfoReadService
         on { jpaEntitiesRegistry } doReturn registry
         on { dbConnectionManager } doReturn connectionManager
         on { transactionTimerFactory } doReturn { transactionTimer }

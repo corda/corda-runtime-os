@@ -3,8 +3,6 @@ package net.corda.membership.certificate.service.impl
 import net.corda.crypto.core.ShortHash
 import net.corda.data.certificates.CertificateUsage
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.VirtualNodeDbType
-import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.membership.certificate.client.DbCertificateClient
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
@@ -13,11 +11,13 @@ import net.corda.membership.certificates.datamodel.CertificateEntity
 import net.corda.membership.certificates.datamodel.ClusterCertificate
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import javax.persistence.EntityManagerFactory
 
 internal class DbClientImpl(
     private val dbConnectionManager: DbConnectionManager,
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
 ) : DbCertificateClient {
     internal abstract class CertificateProcessor<E : CertificateEntity>(
         usage: CertificateUsage,
@@ -95,16 +95,21 @@ internal class DbClientImpl(
         usage: CertificateUsage,
         block: (CertificateProcessor<*>) -> T,
     ): T {
-        val factory = dbConnectionManager.getOrCreateEntityManagerFactory(
-            name = VirtualNodeDbType.VAULT.getConnectionName(holdingIdentityId),
-            privilege = DbPrivilege.DML,
+        val node = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityId)
+            ?: throw NoSuchNode(holdingIdentityId)
+        val factory = dbConnectionManager.createEntityManagerFactory(
+            connectionId = node.vaultDmlConnectionId,
             entitiesSet = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
                 ?: throw IllegalStateException(
                     "persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered."
                 )
         )
-        val processor = NodeCertificateProcessor(factory, usage)
-        return block.invoke(processor)
+        return try {
+            val processor = NodeCertificateProcessor(factory, usage)
+            block.invoke(processor)
+        } finally {
+            factory.close()
+        }
     }
 
     override fun importCertificates(

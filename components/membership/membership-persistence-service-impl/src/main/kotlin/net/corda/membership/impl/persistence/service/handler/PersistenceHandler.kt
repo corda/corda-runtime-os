@@ -7,17 +7,18 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.VirtualNodeDbType
-import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.utilities.time.Clock
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -41,6 +42,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
 
     private val dbConnectionManager get() = persistenceHandlerServices.dbConnectionManager
     private val jpaEntitiesRegistry get() = persistenceHandlerServices.jpaEntitiesRegistry
+    private val virtualNodeInfoReadService get() = persistenceHandlerServices.virtualNodeInfoReadService
     private val transactionTimer get() = persistenceHandlerServices.transactionTimerFactory(operation.simpleName)
     val clock get() = persistenceHandlerServices.clock
     val cordaAvroSerializationFactory get() = persistenceHandlerServices.cordaAvroSerializationFactory
@@ -53,10 +55,17 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     val groupParametersFactory get() = persistenceHandlerServices.groupParametersFactory
 
     fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R {
-        val factory = getEntityManagerFactory(holdingIdentityShortHash)
-        return transactionTimer.recordCallable {
-            factory.transaction(block)
-        }!!
+        val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
+            ?: throw MembershipPersistenceException(
+                "Virtual node info can't be retrieved for " +
+                        "holding identity ID $holdingIdentityShortHash"
+            )
+        val factory = getEntityManagerFactory(virtualNodeInfo)
+        return try {
+            transactionTimer.recordCallable { factory.transaction(block) }!!
+        } finally {
+            factory.close()
+        }
     }
     fun <R> transaction(block: (EntityManager) -> R): R {
         return dbConnectionManager.getClusterEntityManagerFactory().let {
@@ -70,10 +79,9 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
         CryptoSignatureSpec(signatureSpec, null, null)
     }
 
-    private fun getEntityManagerFactory(holdingIdentityShortHash: ShortHash): EntityManagerFactory {
-        return dbConnectionManager.getOrCreateEntityManagerFactory(
-            name = VirtualNodeDbType.VAULT.getConnectionName(holdingIdentityShortHash),
-            privilege = DbPrivilege.DML,
+    private fun getEntityManagerFactory(info: VirtualNodeInfo): EntityManagerFactory {
+        return dbConnectionManager.createEntityManagerFactory(
+            connectionId = info.vaultDmlConnectionId,
             entitiesSet = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
                 ?: throw java.lang.IllegalStateException(
                     "persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered."
@@ -88,6 +96,7 @@ internal data class PersistenceHandlerServices(
     val jpaEntitiesRegistry: JpaEntitiesRegistry,
     val memberInfoFactory: MemberInfoFactory,
     val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     val keyEncodingService: KeyEncodingService,
     val platformInfoProvider: PlatformInfoProvider,
     val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
