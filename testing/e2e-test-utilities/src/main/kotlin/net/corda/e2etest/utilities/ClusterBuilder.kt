@@ -105,10 +105,11 @@ class ClusterBuilder {
         groupId: String,
         staticMemberNames: List<String>,
         cpiName: String,
-        cpiVersion: String = "1.0.0.0-SNAPSHOT"
+        cpiVersion: String = "1.0.0.0-SNAPSHOT",
+        customGroupParameters: Map<String, Any> = emptyMap(),
     ) = cpiUpload(
         cpbResourceName,
-        getDefaultStaticNetworkGroupPolicy(groupId, staticMemberNames),
+        getDefaultStaticNetworkGroupPolicy(groupId, staticMemberNames, customGroupParameters = customGroupParameters),
         cpiName,
         cpiVersion
     )
@@ -152,19 +153,30 @@ class ClusterBuilder {
     private fun vNodeBody(cpiHash: String, x500Name: String) =
         """{ "cpiFileChecksum" : "$cpiHash", "x500Name" : "$x500Name"}"""
 
-    private fun registerMemberBody() =
-        """{ "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }""".trimMargin()
+    private fun registerMemberBody(
+        customMetadata: Map<String, String>,
+    ): String {
+        val context = (mapOf("corda.key.scheme" to "CORDA.ECDSA.SECP256R1") + customMetadata).map {
+            "\"${it.key}\" : \"${it.value}\""
+        }.joinToString()
+        return """{ "context": { $context } }""".trimMargin()
+    }
 
-    private fun registerNotaryBody(holdingIdShortHash: String) =
-        """{ 
-            |  "context": { 
-            |    "corda.key.scheme" : "CORDA.ECDSA.SECP256R1", 
-            |    "corda.roles.0" : "notary",
-            |    "corda.notary.service.name" : "O=MyNotaryService-${holdingIdShortHash}, L=London, C=GB",
-            |    "corda.notary.service.flow.protocol.name" : "com.r3.corda.notary.plugin.nonvalidating",
-            |    "corda.notary.service.flow.protocol.version.0" : "1"
-            |   } 
-            | }""".trimMargin()
+    private fun registerNotaryBody(
+        holdingIdShortHash: String,
+        customMetadata: Map<String, String>,
+    ): String {
+        val context = (mapOf(
+            "corda.key.scheme" to "CORDA.ECDSA.SECP256R1",
+            "corda.roles.0" to "notary",
+            "corda.notary.service.name" to "O=MyNotaryService-${holdingIdShortHash}, L=London, C=GB",
+             "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
+             "corda.notary.service.flow.protocol.version.0" to "1",
+        ) + customMetadata)
+            .map { "\"${it.key}\" : \"${it.value}\"" }
+            .joinToString()
+        return """{ "context": { $context } }""".trimMargin()
+    }
 
     private fun createRbacRoleBody(roleName: String, groupVisibility: String?): String {
         val body: List<String> = mutableListOf(""""roleName": "$roleName"""").apply {
@@ -258,10 +270,13 @@ class ClusterBuilder {
      * notary service. This is fine for now as we only support a 1-1 mapping from notary service to
      * notary vnode. It will need revisiting when 1-* is supported.
      */
-    fun registerStaticMember(holdingIdShortHash: String, isNotary: Boolean = false) =
-        register(
+    fun registerStaticMember(
+        holdingIdShortHash: String,
+        isNotary: Boolean = false,
+        customMetadata: Map<String, String> = emptyMap(),
+    ) = register(
             holdingIdShortHash,
-            if (isNotary) registerNotaryBody(holdingIdShortHash) else registerMemberBody()
+            if (isNotary) registerNotaryBody(holdingIdShortHash, customMetadata) else registerMemberBody(customMetadata)
         )
 
     fun register(holdingIdShortHash: String, registrationContext: String) =
