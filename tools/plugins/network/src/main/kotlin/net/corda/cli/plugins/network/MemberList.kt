@@ -5,7 +5,6 @@ import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
-import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfo
 import picocli.CommandLine
@@ -66,22 +65,16 @@ class MemberList(private val output: MemberListOutput = ConsoleMemberListOutput(
         requireNotNull(holdingIdentityShortHash) { "Holding identity short hash was not provided." }
 
         val result: List<RestMemberInfo> = createRestClient(MemberLookupRestResource::class).use { client ->
-            checkInvariant(
-                maxAttempts = MAX_ATTEMPTS,
-                waitInterval = WAIT_INTERVAL,
-                errorMessage = "Members lookup: Invariant check failed after maximum attempts."
-            ) {
-                val memberLookupProxy = client.start().proxy
-                memberLookupProxy.lookup(
-                    holdingIdentityShortHash.toString(),
-                    commonName,
-                    organization,
-                    organizationUnit,
-                    locality,
-                    state,
-                    country
-                ).members
-            }
+            val memberLookupProxy = client.start().proxy
+            memberLookupProxy.lookup(
+                holdingIdentityShortHash.toString(),
+                commonName,
+                organization,
+                organizationUnit,
+                locality,
+                state,
+                country
+            ).members
         }
 
         return result.toString()

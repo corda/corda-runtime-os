@@ -3,7 +3,6 @@ package net.corda.cli.plugins.network
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.membership.rest.v1.MGMRestResource
-import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import picocli.CommandLine.Command
 import picocli.CommandLine.Parameters
 
@@ -41,29 +40,15 @@ class AllowClientCertificate : Runnable, RestCommand() {
 
         val mgm = createRestClient(MGMRestResource::class).start().proxy
 
-        checkInvariant(
-            maxAttempts = MAX_ATTEMPTS,
-            waitInterval = WAIT_INTERVAL,
-            errorMessage = "Allow and list certificates: Invariant check failed after maximum attempts."
-        ) {
-            println("Allowing certificates...")
-            subjects.forEach { subject ->
-                println("\t Allowing $subject")
-                mgm.mutualTlsAllowClientCertificate(mgmShortHash, subject)
-            }
-            println("Success!")
-            true // Return true to indicate the invariant is satisfied
+        println("Allowing certificates...")
+        subjects.forEach { subject ->
+            println("\t Allowing $subject")
+            mgm.mutualTlsAllowClientCertificate(mgmShortHash, subject)
         }
+        println("Success!")
 
-        checkInvariant(
-            maxAttempts = MAX_ATTEMPTS,
-            waitInterval = WAIT_INTERVAL,
-            errorMessage = "Allow and list certificates: Invariant check failed after maximum attempts."
-        ) {
-            mgm.mutualTlsListClientCertificate(mgmShortHash).forEach { subject ->
-                println("Certificate with subject $subject is allowed")
-            }
-            true // Return true to indicate the invariant is satisfied
+        mgm.mutualTlsListClientCertificate(mgmShortHash).forEach { subject ->
+            println("Certificate with subject $subject is allowed")
         }
     }
 }
