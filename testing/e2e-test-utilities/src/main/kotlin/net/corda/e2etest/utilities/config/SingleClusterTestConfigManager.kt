@@ -77,10 +77,10 @@ class SingleClusterTestConfigManager(
     override fun revert(): TestConfigManager {
         originalConfigs.forEach { (section, originalConfig) ->
             val previousVersion = getConfig(section).version
-            val preTestConfig = originalConfig.sourceConfig
+            val preTestConfig = originalConfig.sourceConfig.ifBlank { "{}" }
 
             logger.info("Reverting test config for section $section to $preTestConfig for cluster ${clusterInfo.name}.")
-            updateConfig(preTestConfig.ifBlank { "{}" }, section)
+            updateConfig(preTestConfig, section)
 
             eventually {
                 val newConfig = getConfig(section)
