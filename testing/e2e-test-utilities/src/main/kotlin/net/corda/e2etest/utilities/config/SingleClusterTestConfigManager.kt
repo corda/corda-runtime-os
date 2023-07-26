@@ -27,7 +27,7 @@ class SingleClusterTestConfigManager(
 
     override fun load(section: String, prop: String, value: Any?): TestConfigManager {
         logger.info(
-            "Loading test config $value for property $prop in section $section for cluster ${clusterInfo.name} " +
+            "Loading test config \"$value\" for property \"$prop\" in section \"$section\" for cluster \"${clusterInfo.name}\" " +
                     "into TestConfigManager."
         )
 
@@ -62,8 +62,8 @@ class SingleClusterTestConfigManager(
 
             val newConfig = toJsonString(configOverride)
             logger.info(
-                "Updating from config $previousSourceConfig to $newConfig for section $section on " +
-                        "cluster ${clusterInfo.name}."
+                "Updating from config \"$previousSourceConfig\" to \"$newConfig\" for section \"$section\" on " +
+                        "cluster \"${clusterInfo.name}\"."
             )
 
             if(newConfig != previousSourceConfig) {
@@ -88,8 +88,8 @@ class SingleClusterTestConfigManager(
             val preTestConfig = originalConfig.sourceConfig.ifBlank { "{}" }
 
             logger.info(
-                "Reverting test config for section $section from $previousSourceConfig to $preTestConfig " +
-                    "for cluster ${clusterInfo.name}."
+                "Reverting test config for section \"$section\" from \"$previousSourceConfig\" to \"$preTestConfig\" " +
+                    "for cluster \"${clusterInfo.name}\"."
             )
             updateConfig(preTestConfig, section)
 
