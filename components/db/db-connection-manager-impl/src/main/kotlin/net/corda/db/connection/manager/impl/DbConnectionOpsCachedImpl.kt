@@ -20,9 +20,9 @@ class DbConnectionOpsCachedImpl(
     // TODO - replace with caffeine cache
     private val cache = ConcurrentHashMap<Pair<String,DbPrivilege>, EntityManagerFactory>()
 
-    // TODO Maybe we could consider replacing the above cache with the one below. All `db_connection`s have/ get an ID
-    //  Currently the below cache is not cleared on overwriting a connection. In theory I think that should be OK for now
-    //  since we don't allow "re-creating" a vnode (I believe).
+    // TODO Maybe we could consider replacing the above cache with the one below. All `db_connection`s have/ get an ID.
+    //  Currently the below cache is not cleared on overwriting a connection (`putConnection`).
+    //  In theory I think that should be OK for now since we don't allow "re-creating" a vnode (I believe).
     private val cacheByConnectionId = ConcurrentHashMap<UUID, EntityManagerFactory>()
 
     private fun removeFromCache(name: String, privilege: DbPrivilege) {
