@@ -1,3 +1,4 @@
+@file:Suppress("deprecation")
 package net.corda.sandboxgroupcontext.test
 
 import net.corda.sandboxgroupcontext.SandboxGroupType

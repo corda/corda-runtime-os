@@ -1,3 +1,4 @@
+@file:Suppress("deprecation")
 package net.corda.ledger.consensual.flow.impl
 
 import net.corda.ledger.consensual.flow.impl.flows.finality.ConsensualFinalityFlow

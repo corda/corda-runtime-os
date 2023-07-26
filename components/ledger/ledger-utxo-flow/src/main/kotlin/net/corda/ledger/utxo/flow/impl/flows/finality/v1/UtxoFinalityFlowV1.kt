@@ -1,3 +1,4 @@
+@file:Suppress("deprecation")
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
 import net.corda.crypto.core.fullId

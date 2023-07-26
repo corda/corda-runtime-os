@@ -1,3 +1,4 @@
+@file:Suppress("deprecation")
 package net.corda.ledger.utxo.flow.impl
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor

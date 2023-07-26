@@ -1,3 +1,4 @@
+@file:Suppress("deprecation")
 package net.corda.application.impl.services.json
 
 import com.fasterxml.jackson.core.JsonGenerator

@@ -1,3 +1,4 @@
+@file:Suppress("deprecation")
 package net.corda.schema.registry.impl
 
 import net.corda.data.AvroEnvelope

@@ -1,3 +1,4 @@
+@file:Suppress("deprecation")
 package net.corda.simulator.runtime.flows
 
 import net.corda.simulator.runtime.messaging.CloseableFlowMessaging

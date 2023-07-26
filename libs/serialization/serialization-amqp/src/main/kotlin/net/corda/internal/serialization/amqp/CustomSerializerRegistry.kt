@@ -1,3 +1,4 @@
+@file:Suppress("deprecation")
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.amqp.CustomSerializerPermission.Companion.NON_BUNDLE

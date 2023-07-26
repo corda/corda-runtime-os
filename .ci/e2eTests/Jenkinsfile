@@ -6,4 +6,6 @@ endToEndPipeline(
     multiCluster: false,
     gradleTestTargetsToExecute: ['smokeTest', 'e2eTest'],
     usePackagedCordaHelmChart: false,
+    // TODO - remove this when J17 is the default in the pipeline
+    workerBaseImageTag: '17.0.4.1-17.36.17',
 )

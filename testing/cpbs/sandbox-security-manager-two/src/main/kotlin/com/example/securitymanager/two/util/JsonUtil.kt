@@ -1,3 +1,4 @@
+@file:Suppress("deprecation")
 package com.example.securitymanager.two.util
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect

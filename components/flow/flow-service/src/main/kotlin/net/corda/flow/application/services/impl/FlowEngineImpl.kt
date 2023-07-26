@@ -1,3 +1,4 @@
+@file:Suppress("deprecation")
 package net.corda.flow.application.services.impl
 
 import net.corda.data.flow.output.FlowStates
