@@ -16,5 +16,6 @@ cordaPipeline(
     publishToDownloadSiteTask: ':tools:plugins:publish',
     // TODO - remove this when J17 is the default in the pipeline
     workerBaseImageTag: '17.0.4.1-17.36.17',
-    javaVersion: '17'
+    javaVersion: '17',
+    snykDelta: false
     )
