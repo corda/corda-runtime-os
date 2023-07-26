@@ -1,9 +1,8 @@
-@Library('corda-shared-build-pipeline-steps@ES-829/build-eth-pipeline') _
+@Library('corda-shared-build-pipeline-steps@5.1') _
 
 endToEndPipeline(
     assembleAndCompile: false,
     dailyBuildCron: '',
-    deployEthereum: true,
     multiCluster: true,
     gradleTestTargetsToExecute: ['smokeTest', 'e2eTest'],
     usePackagedCordaHelmChart: false,
