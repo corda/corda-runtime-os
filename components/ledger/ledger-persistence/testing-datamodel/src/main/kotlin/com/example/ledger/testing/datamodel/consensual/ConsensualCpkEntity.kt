@@ -12,25 +12,25 @@ import net.corda.v5.base.annotations.CordaSerializable
 @Entity
 @Table(name = "consensual_cpk")
 data class ConsensualCpkEntity(
-    @Id
-    @Column(name = "file_checksum", nullable = false)
-    val fileChecksum: String,
+    @get:Id
+    @get:Column(name = "file_checksum", nullable = false)
+    var fileChecksum: String,
 
-    @Column(name = "name", nullable = false)
-    val name: String,
+    @get:Column(name = "name", nullable = false)
+    var name: String,
 
-    @Column(name = "signer_summary_hash", nullable = false)
-    val signerSummaryHash: String,
+    @get:Column(name = "signer_summary_hash", nullable = false)
+    var signerSummaryHash: String,
 
-    @Column(name = "version", nullable = false)
-    val version: String,
+    @get:Column(name = "version", nullable = false)
+    var version: String,
 
-    @Column(name = "data", nullable = false)
-    @Lob
-    val data: ByteArray,
+    @get:Column(name = "data", nullable = false)
+    @get:Lob
+    var data: ByteArray,
 
-    @Column(name = "created", nullable = false)
-    val created: Instant
+    @get:Column(name = "created", nullable = false)
+    var created: Instant
 
 ) {
     override fun equals(other: Any?): Boolean {

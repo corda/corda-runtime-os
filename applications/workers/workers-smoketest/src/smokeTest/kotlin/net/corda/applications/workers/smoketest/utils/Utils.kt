@@ -1,4 +1,4 @@
-package net.corda.applications.workers.smoketest
+package net.corda.applications.workers.smoketest.utils
 
 // The CPB and CPI used in smoke tests
 const val TEST_CPI_NAME = "test-cordapp"
