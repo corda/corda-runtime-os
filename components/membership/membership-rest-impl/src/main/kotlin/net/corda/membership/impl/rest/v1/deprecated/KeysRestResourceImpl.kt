@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.time.format.DateTimeParseException
 
-@Deprecated("Deprecated in favour of CertificateRestResource")
+@Deprecated("Deprecated in favour of KeyRestResourceImpl")
 @Component(service = [PluggableRestResource::class])
 class KeysRestResourceImpl @Activate constructor(
     @Reference(service = CryptoOpsClient::class)

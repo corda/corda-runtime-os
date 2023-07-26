@@ -70,7 +70,7 @@ import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import javax.security.auth.x500.X500Principal
 
-@Deprecated("Deprecated in favour of CertificateRestResource")
+@Deprecated("Deprecated in favour of CertificateRestResourceImpl")
 @SuppressWarnings("LongParameterList")
 @Component(service = [PluggableRestResource::class])
 class CertificatesRestResourceImpl @Activate constructor(

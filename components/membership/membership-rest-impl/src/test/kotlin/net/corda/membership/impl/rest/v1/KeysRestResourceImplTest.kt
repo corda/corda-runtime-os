@@ -22,7 +22,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.membership.impl.rest.v1.deprecated.KeysRestResourceImpl
+import net.corda.membership.impl.rest.v1.KeyRestResourceImpl
 import net.corda.membership.rest.v1.types.response.KeyMetaData
 import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
@@ -45,7 +45,7 @@ import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
 
-class KeysRestResourceImplTest {
+class KeyRestResourceImplTest {
     private companion object {
         const val ALIAS = "alias"
         const val SCHEME = "scheme"
@@ -65,7 +65,7 @@ class KeysRestResourceImplTest {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
 
-    private val keysOps = KeysRestResourceImpl(cryptoOpsClient, keyEncodingService, lifecycleCoordinatorFactory, mock())
+    private val keysOps = KeyRestResourceImpl(cryptoOpsClient, keyEncodingService, lifecycleCoordinatorFactory, mock())
 
     @Nested
     inner class BasicApiTests {
