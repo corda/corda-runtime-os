@@ -20,9 +20,11 @@ import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.KeyOrderBy
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.SigningKeyStatus
+import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
@@ -38,16 +40,19 @@ import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeTenantInfoService
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.X25519_CODE_NAME
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.exceptions.CryptoException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito
@@ -414,7 +419,7 @@ class SoftCryptoServiceGeneralTests {
         on { hash(any<ByteArray>(), any()) } doReturn SecureHashUtils.randomSecureHash()
     }
 
-    private fun makeCache(): Cache<PublicKey, SigningKeyInfo> =
+    private fun makeCache(): Cache<ShortHashCacheKey, SigningKeyInfo> =
         Caffeine.newBuilder()
             .expireAfterAccess(3600, TimeUnit.MINUTES)
             .maximumSize(3).build()
@@ -654,97 +659,97 @@ class SoftCryptoServiceGeneralTests {
         assertThat(keyIdsCap.allValues.single()).isEqualTo(setOf(hashB))
     }
 
-//    @Test
-//    fun `repository correctly looks up a signing key by full ids when needs both cache and database`() {
-//        val hashA = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "0123456789AB".toByteArray())
-//        val hashB = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "123456789ABC".toByteArray())
-//        val shortA = ShortHash.of(hashA)
-//        val shortB = ShortHash.of(hashB)
-//        val keys = listOf(hashA, hashB)
-//        val queryCap = argumentCaptor<Iterable<CacheKey>>()
-//        val mockCachedKey = mock<SigningKeyInfo> { on { fullId } doReturn hashA }
-//        val cache = mock<Cache<CacheKey, SigningKeyInfo>> {
-//            on { getAllPresent(queryCap.capture()) } doReturn mapOf(
-//                CacheKey("tenant", shortA) to mockCachedKey
-//            )
-//        }
-//        val fullIdsCap = argumentCaptor<Set<SecureHash>>()
-//        val signingKeyInfo = mock<SigningKeyInfo> { on { id } doReturn mock() }
-//        val repo = mock<SigningRepository> {
-//            on { lookupByPublicKeyHashes(fullIdsCap.capture()) } doReturn setOf(signingKeyInfo)
-//        }
-//
-//        val cryptoService = makeSoftCryptoService(signingRepository = repo, signingKeyInfoCache = cache)
-//        cryptoService.lookupSigningKeysByPublicKeyHashes("tenant", keys)
-//
-//        val cacheKeys = setOf(CacheKey("tenant", shortA), CacheKey("tenant", shortB))
-//        queryCap.allValues.single().forEach {
-//            assertThat(it in cacheKeys)
-//        }
-//        assertThat(fullIdsCap.allValues.single()).isEqualTo(setOf(hashB))
-//    }
+    @Test
+    fun `repository correctly looks up a signing key by full ids when needs both cache and database`() {
+        val hashA = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "0123456789AB".toByteArray())
+        val hashB = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "123456789ABC".toByteArray())
+        val shortA = ShortHash.of(hashA)
+        val shortB = ShortHash.of(hashB)
+        val keys = listOf(hashA, hashB)
+        val queryCap = argumentCaptor<Iterable<ShortHashCacheKey>>()
+        val mockCachedKey = mock<SigningKeyInfo> { on { fullId } doReturn hashA }
+        val cache = mock<Cache<ShortHashCacheKey, SigningKeyInfo>> {
+            on { getAllPresent(queryCap.capture()) } doReturn mapOf(
+                ShortHashCacheKey("tenant", shortA) to mockCachedKey
+            )
+        }
+        val fullIdsCap = argumentCaptor<Set<SecureHash>>()
+        val signingKeyInfo = mock<SigningKeyInfo> { on { id } doReturn mock() }
+        val repo = mock<SigningRepository> {
+            on { lookupByPublicKeyHashes(fullIdsCap.capture()) } doReturn setOf(signingKeyInfo)
+        }
 
+        val cryptoService = makeSoftCryptoService(signingRepository = repo, shortHashCache = cache)
+        cryptoService.lookupSigningKeysByPublicKeyHashes("tenant", keys)
 
-//    @ParameterizedTest
-//    @CsvSource("0,false", "1,false", "2,false", "0,true", "1,true", "2,true")
-//    fun `lookup returns requested keys from cache and db`(
-//        keysInCache: Int,
-//        longHashes: Boolean,
-//    ) {
-//        val shortHashCaptor = argumentCaptor<Set<ShortHash>>()
-//        val hashCaptor = argumentCaptor<Set<SecureHash>>()
-//        val mockDbResults = if (keysInCache == 0) setOf(signingKeyInfo0, signingKeyInfo1) else setOf(signingKeyInfo1)
-//
-//        val repo = if (longHashes) (mock<SigningRepository> {
-//            on { lookupByPublicKeyHashes(hashCaptor.capture()) }.thenReturn(mockDbResults)
-//        }) else (mock<SigningRepository> {
-//            on { lookupByPublicKeyShortHashes(shortHashCaptor.capture()) }.thenReturn(mockDbResults)
-//        })
-//        val cache = makeCache()
-//        var repoCount = 0
-//        val cryptoService = SoftCryptoService(
-//            wrappingRepositoryFactory = { mock<WrappingRepository>() },
-//            signingRepositoryFactory = {
-//                repoCount++
-//                repo
-//            },
-//            schemeMetadata = schemeMetadata,
-//            defaultUnmanagedWrappingKeyName = "root",
-//            unmanagedWrappingKeys = mapOf("root" to mock<WrappingKey>()),
-//            digestService = mockDigestService(),
-//            wrappingKeyCache = null,
-//            privateKeyCache = null,
-//            keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
-//                KeyPairGenerator.getInstance(algorithm, provider)
-//            },
-//            signingKeyInfoCache = cache,
-//            hsmStore = makeHSMStore()
-//        )
-//        if (keysInCache >= 1) populateCache(cache, shortKeyId0, fullKeyId0)
-//        if (keysInCache >= 2) populateCache(cache, shortKeyId1, fullKeyId1)
-//        fun doLookup() = if (longHashes)
-//            cryptoService.lookupSigningKeysByPublicKeyHashes(tenantId, listOf(fullKeyId0, fullKeyId1))
-//        else
-//            cryptoService.lookupSigningKeysByPublicKeyShortHash(tenantId, listOf(shortKeyId0, shortKeyId1))
-//
-//        val r = doLookup()
-//        Assertions.assertEquals(
-//            setOf(fullKeyId0, fullKeyId1).map { it.toString() }.toSet(),
-//            r.map { it.fullId.toString() }.toSet()
-//        )
-//        assertThat(repoCount).isEqualTo(if (keysInCache == 2) 0 else 1)
-//        if (longHashes) {
-//            if (keysInCache == 0) Assertions.assertEquals(setOf(fullKeyId0, fullKeyId1), hashCaptor.firstValue)
-//            if (keysInCache == 1) Assertions.assertEquals(setOf(fullKeyId1), hashCaptor.firstValue)
-//        } else {
-//            if (keysInCache == 0) Assertions.assertEquals(setOf(shortKeyId0, shortKeyId1), shortHashCaptor.firstValue)
-//            if (keysInCache == 1) Assertions.assertEquals(setOf(shortKeyId1), shortHashCaptor.firstValue)
-//        }
-//        // looking again should result in no more database access
-//        val r2 = doLookup()
-//        assertThat(r).isEqualTo(r2)
-//        assertThat(repoCount).isEqualTo(if (keysInCache == 2) 0 else 1)
-//    }
+        val cacheKeys = setOf(ShortHashCacheKey("tenant", shortA), ShortHashCacheKey("tenant", shortB))
+        queryCap.allValues.single().forEach {
+            assertThat(it in cacheKeys)
+        }
+        assertThat(fullIdsCap.allValues.single()).isEqualTo(setOf(hashB))
+    }
+    
+    @ParameterizedTest
+    @CsvSource("0,false", "1,false", "2,false", "0,true", "1,true", "2,true")
+    fun `lookup returns requested keys from cache and db`(
+        keysInCache: Int,
+        longHashes: Boolean,
+    ) {
+        val shortHashCaptor = argumentCaptor<Set<ShortHash>>()
+        val hashCaptor = argumentCaptor<Set<SecureHash>>()
+        val mockDbResults = if (keysInCache == 0) setOf(signingKeyInfo0, signingKeyInfo1) else setOf(signingKeyInfo1)
+
+        val repo = if (longHashes) (mock<SigningRepository> {
+            on { lookupByPublicKeyHashes(hashCaptor.capture()) }.thenReturn(mockDbResults)
+        }) else (mock<SigningRepository> {
+            on { lookupByPublicKeyShortHashes(shortHashCaptor.capture()) }.thenReturn(mockDbResults)
+        })
+        val cache = makeCache()
+        var repoCount = 0
+        val cryptoService = SoftCryptoService(
+            wrappingRepositoryFactory = { mock<WrappingRepository>() },
+            signingRepositoryFactory = {
+                repoCount++
+                repo
+            },
+            schemeMetadata = schemeMetadata,
+            defaultUnmanagedWrappingKeyName = "root",
+            unmanagedWrappingKeys = mapOf("root" to mock<WrappingKey>()),
+            digestService = mockDigestService(),
+            wrappingKeyCache = null,
+            privateKeyCache = null,
+            shortHashCache = cache,
+            keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
+                KeyPairGenerator.getInstance(algorithm, provider)
+            },
+            tenantInfoService = makeTenantInfoService(),
+            signingKeyInfoCache = makeSigningKeyInfoCache(),
+        )
+        if (keysInCache >= 1) populateShortHashCache(cache, shortKeyId0, fullKeyId0)
+        if (keysInCache >= 2) populateShortHashCache(cache, shortKeyId1, fullKeyId1)
+        fun doLookup() = if (longHashes)
+            cryptoService.lookupSigningKeysByPublicKeyHashes(tenantId, listOf(fullKeyId0, fullKeyId1))
+        else
+            cryptoService.lookupSigningKeysByPublicKeyShortHash(tenantId, listOf(shortKeyId0, shortKeyId1))
+
+        val r = doLookup()
+        Assertions.assertEquals(
+            setOf(fullKeyId0, fullKeyId1).map { it.toString() }.toSet(),
+            r.map { it.fullId.toString() }.toSet()
+        )
+        assertThat(repoCount).isEqualTo(if (keysInCache == 2) 0 else 1)
+        if (longHashes) {
+            if (keysInCache == 0) Assertions.assertEquals(setOf(fullKeyId0, fullKeyId1), hashCaptor.firstValue)
+            if (keysInCache == 1) Assertions.assertEquals(setOf(fullKeyId1), hashCaptor.firstValue)
+        } else {
+            if (keysInCache == 0) Assertions.assertEquals(setOf(shortKeyId0, shortKeyId1), shortHashCaptor.firstValue)
+            if (keysInCache == 1) Assertions.assertEquals(setOf(shortKeyId1), shortHashCaptor.firstValue)
+        }
+        // looking again should result in no more database access
+        val r2 = doLookup()
+        assertThat(r).isEqualTo(r2)
+        assertThat(repoCount).isEqualTo(if (keysInCache == 2) 0 else 1)
+    }
 
 //    @Test
 //    fun `lookupSigningKeysByPublicKeyHashes will not return clashed keys on short key id`() {
@@ -785,21 +790,19 @@ class SoftCryptoServiceGeneralTests {
 //    }
 
 
-//    private fun populateCache(
-//        cache: Cache<PublicKey, SigningKeyInfo>,
-//        shortKeyId: ShortHash,
-//        fullKeyId: SecureHash,
-//    ) {
-//        cache.put(
-//            CacheKey(tenantId, shortKeyId),
-//            mock<SigningKeyInfo> {
-//                on { fullId }.thenReturn(fullKeyId)
-//                on { id }.thenReturn(shortKeyId)
-//            }
-//        )
-//
-//
-//    }
+    private fun populateShortHashCache(
+        cache: Cache<ShortHashCacheKey, SigningKeyInfo>,
+        shortKeyId: ShortHash,
+        fullKeyId: SecureHash,
+    ) {
+        cache.put(
+            ShortHashCacheKey(tenantId, shortKeyId),
+            mock<SigningKeyInfo> {
+                on { fullId }.thenReturn(fullKeyId)
+                on { id }.thenReturn(shortKeyId)
+            }
+        )
+    }
 
 
 //    @Test
