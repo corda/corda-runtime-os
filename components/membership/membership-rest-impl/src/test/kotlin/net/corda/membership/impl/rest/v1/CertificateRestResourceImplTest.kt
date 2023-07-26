@@ -63,7 +63,7 @@ import java.security.cert.X509Certificate
 import java.security.spec.ECGenParameterSpec
 import javax.security.auth.x500.X500Principal
 
-class CertificatesRestResourceImplTest {
+class CertificateRestResourceImplTest {
     private val cryptoOpsClient = mock<CryptoOpsClient>()
     private val keyEncodingService = mock<KeyEncodingService>()
     private val coordinator = mock<LifecycleCoordinator>()

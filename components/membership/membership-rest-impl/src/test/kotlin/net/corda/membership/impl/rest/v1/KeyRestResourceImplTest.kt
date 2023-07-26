@@ -22,7 +22,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.membership.impl.rest.v1.KeyRestResourceImpl
 import net.corda.membership.rest.v1.types.response.KeyMetaData
 import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
