@@ -79,8 +79,6 @@ class HSMRepositoryImpl(
             val association =
                 findHSMAssociationEntity(em, tenantId)
                     ?: createAndPersistAssociation(em, tenantId, CryptoConsts.SOFT_HSM_ID, masterKeyPolicy)
-                findHSMAssociationEntity(em, tenantId)
-                    ?: createAndPersistAssociation(em, tenantId, CryptoConsts.SOFT_HSM_ID, masterKeyPolicy)
 
             val categoryAssociation = HSMCategoryAssociationEntity(
                 id = UUID.randomUUID().toString(),
