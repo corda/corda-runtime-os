@@ -5,10 +5,10 @@ import net.corda.lifecycle.Lifecycle
 
 interface InteropIdentityRegistryService : Lifecycle {
     /**
-     * Returns an object representing a given virtual nodes view of the cache.
+     * Returns an object representing a given virtual nodes view of the registry.
      *
-     * @param shortHash Short hash of the virtual node to get the view for.
-     * @return A cache view object containing interop identities visible to that interop identity.
+     * @param virtualNodeShortHash Short hash of the virtual node to get the view for.
+     * @return An object containing interop identities visible to the specified virtual node.
      */
-    fun getVirtualNodeCacheView(shortHash: String): InteropIdentityRegistryView
+    fun getVirtualNodeCacheView(virtualNodeShortHash: String): InteropIdentityRegistryView
 }

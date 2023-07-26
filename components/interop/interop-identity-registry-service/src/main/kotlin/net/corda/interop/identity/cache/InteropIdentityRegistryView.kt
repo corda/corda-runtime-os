@@ -4,7 +4,7 @@ import net.corda.interop.core.InteropIdentity
 
 
 /**
- * This class represents the state of the interop configuration visible to a specific virtual node.
+ * This class represents the state of the interop registry visible to a specific virtual node.
  */
 interface InteropIdentityRegistryView {
     /**

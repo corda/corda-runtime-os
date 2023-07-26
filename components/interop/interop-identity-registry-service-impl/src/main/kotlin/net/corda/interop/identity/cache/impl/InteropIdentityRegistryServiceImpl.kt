@@ -53,8 +53,8 @@ class InteropIdentityRegistryServiceImpl @Activate constructor(
         getOrCreateView(holdingIdentityShortHash).removeInteropIdentity(identity)
     }
 
-    override fun getVirtualNodeCacheView(shortHash: String): InteropIdentityRegistryView {
-        return getOrCreateView(shortHash)
+    override fun getVirtualNodeCacheView(virtualNodeShortHash: String): InteropIdentityRegistryView {
+        return getOrCreateView(virtualNodeShortHash)
     }
 
     override val isRunning: Boolean
