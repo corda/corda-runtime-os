@@ -15,6 +15,7 @@ import net.corda.data.membership.db.request.command.UpdateGroupParameters
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.impl.persistence.service.RecoverableException
@@ -24,8 +25,11 @@ import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
+import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -43,6 +47,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
@@ -131,15 +136,7 @@ class UpdateGroupParametersHandlerTest {
     private val entityManagerFactory = mock<EntityManagerFactory> {
         on { createEntityManager() } doReturn entityManager
     }
-    private val connectionManager = mock<DbConnectionManager> {
-        on {
-            getOrCreateEntityManagerFactory(
-                any(),
-                any(),
-                eq(entitySet),
-            )
-        } doReturn entityManagerFactory
-    }
+
     private val clock = TestClock(Instant.ofEpochMilli(10))
     private val keyEncodingService: KeyEncodingService = mock {
         on { encodeAsByteArray(any()) } doReturn "test-key".toByteArray()
@@ -149,17 +146,44 @@ class UpdateGroupParametersHandlerTest {
         on { create(signedParams) } doReturn internalGroupParameters
     }
     private val groupParametersWriterService = mock<GroupParametersWriterService>()
+
+    private val identity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group").toCorda()
+    val vaultDmlConnectionId = UUID(0, 11)
+
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
+
+        val virtualNodeInfo = VirtualNodeInfo(
+            identity,
+            CpiIdentifier("TEST_CPI", "1.0", TestRandom.secureHash()),
+            vaultDmlConnectionId = vaultDmlConnectionId,
+            cryptoDmlConnectionId = UUID(0, 0),
+            uniquenessDmlConnectionId = UUID(0, 0),
+            timestamp = clock.instant()
+        )
+        on { getByHoldingIdentityShortHash(eq(identity.shortHash)) } doReturn virtualNodeInfo
+    }
+
+    private val dbConnectionManager = mock<DbConnectionManager> {
+        on {
+            createEntityManagerFactory(
+                eq(vaultDmlConnectionId),
+                any()
+            )
+        } doReturn entityManagerFactory
+    }
+
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
         on { cordaAvroSerializationFactory } doReturn serializationFactory
         on { jpaEntitiesRegistry } doReturn registry
-        on { dbConnectionManager } doReturn connectionManager
+        on { dbConnectionManager } doReturn dbConnectionManager
         on { clock } doReturn clock
         on { keyEncodingService } doReturn keyEncodingService
         on { transactionTimerFactory } doReturn { transactionTimer }
         on { groupParametersFactory } doReturn groupParametersFactory
         on { groupParametersWriterService } doReturn groupParametersWriterService
+        on { virtualNodeInfoReadService } doReturn virtualNodeInfoReadService
     }
-    private val identity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group").toCorda()
+
     private val context = mock<MembershipRequestContext> {
         on { holdingIdentity } doReturn identity.toAvro()
     }
