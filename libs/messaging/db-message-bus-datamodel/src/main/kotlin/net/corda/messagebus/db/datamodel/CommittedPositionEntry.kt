@@ -24,25 +24,25 @@ import javax.persistence.Table
 @IdClass(CommittedOffsetEntryKey::class)
 class CommittedPositionEntry(
     @Id
-    val topic: String,
+    var topic: String,
 
     @Id
     @Column(name = "consumer_group")
-    val consumerGroup: String,
+    var consumerGroup: String,
 
     @Id
-    val partition: Int,
+    var partition: Int,
 
     @Id
     @Column(name = "record_offset")
-    val recordPosition: Long,
+    var recordPosition: Long,
 
     @ManyToOne
     @JoinColumn(name = "transaction_id")
-    val transactionId: TransactionRecordEntry,
+    var transactionId: TransactionRecordEntry,
 
     @Column
-    val timestamp: Instant = Instant.now(),
+    var timestamp: Instant = Instant.now(),
 ) {
     override fun toString(): String {
         return "CommittedPositionEntry(" +
@@ -56,8 +56,8 @@ class CommittedPositionEntry(
 
 @Embeddable
 data class CommittedOffsetEntryKey(
-    val topic: String,
-    val consumerGroup: String,
-    val partition: Int,
-    val recordPosition: Long
+    var topic: String,
+    var consumerGroup: String,
+    var partition: Int,
+    var recordPosition: Long
 ) : Serializable

@@ -14,18 +14,23 @@ import javax.persistence.Table
 @Table(name = "cpk_db_change_log_audit")
 internal class CpkDbChangeLogAuditEntity(
     @Id
-    val id: String,
+    var id: String,
+
     @Column(name = "cpk_file_checksum", nullable = false, updatable = false)
-    val cpkFileChecksum: String,
+    var cpkFileChecksum: String,
+
     @Column(name = "file_path", nullable = false, updatable = false)
-    val filePath: String,
+    var filePath: String,
+
     @Column(name = "content", nullable = false, updatable = false)
-    val content: String,
+    var content: String,
+
     @Column(name = "is_deleted", nullable = false, updatable = false)
     var isDeleted: Boolean = false,
+
     // this TS is managed on the DB itself
     @Column(name = "insert_ts", insertable = false, updatable = false)
-    val insertTimestamp: Instant? = null
+    var insertTimestamp: Instant? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

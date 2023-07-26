@@ -16,19 +16,19 @@ class PreAuthTokenEntity (
      */
     @Id
     @Column(name = "token_id", nullable = false, updatable = false)
-    val tokenId: String,
+    var tokenId: String,
 
     @Column(name = "owner_x500_name", nullable = false, updatable = false)
-    val ownerX500Name: String,
+    var ownerX500Name: String,
 
     @Column(name = "ttl", updatable = false)
-    val ttl: Instant?,
+    var ttl: Instant?,
 
     @Column(name = "status", nullable = false)
     var status: String,
 
     @Column(name = "creation_remark", updatable = false)
-    val creationRemark: String?,
+    var creationRemark: String?,
 
     @Column(name = "removal_remark")
     var removalRemark: String?

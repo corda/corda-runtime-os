@@ -16,18 +16,25 @@ internal class CpkMetadataEntity(
     @Id
     @Column(name = "file_checksum", nullable = false, unique = true)
     var cpkFileChecksum: String,
-    @Column(name = "cpk_name")
+
+    @Column(name = "cpk_name", nullable = false)
     var cpkName: String,
-    @Column(name = "cpk_version")
+
+    @Column(name = "cpk_version", nullable = false)
     var cpkVersion: String,
-    @Column(name = "cpk_signer_summary_hash")
+
+    @Column(name = "cpk_signer_summary_hash", nullable = false)
     var cpkSignerSummaryHash: String,
+
     @Column(name = "format_version", nullable = false)
     var formatVersion: String,
+
     @Column(name = "metadata", nullable = false)
     var serializedMetadata: String,
+
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false,
+
     @Version
     @Column(name = "entity_version", nullable = false)
     var entityVersion: Int = 0

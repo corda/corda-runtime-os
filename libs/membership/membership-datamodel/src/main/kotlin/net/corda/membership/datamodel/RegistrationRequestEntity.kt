@@ -19,13 +19,13 @@ class RegistrationRequestEntity(
      */
     @Id
     @Column(name = "registration_id", nullable = false, updatable = false)
-    val registrationId: String,
+    var registrationId: String,
 
     /**
      * The holding identity ID of the registering member.
      */
     @Column(name = "holding_identity_id", nullable = false, updatable = false)
-    val holdingIdentityShortHash: String,
+    var holdingIdentityShortHash: String,
 
     /**
      * The last status of the registration request.
@@ -37,7 +37,7 @@ class RegistrationRequestEntity(
      * The instant representing when this registration request was received or created.
      */
     @Column(nullable = false, updatable = false)
-    val created: Instant,
+    var created: Instant,
 
     /**
      * The instant representing the last time this registration request was updated.
@@ -50,56 +50,56 @@ class RegistrationRequestEntity(
      * The serialized member context provided during registration. Serialized as [KeyValuePairList].
      */
     @Column(name = "member_context", nullable = false, updatable = false, columnDefinition = "BLOB")
-    val memberContext: ByteArray,
+    var memberContext: ByteArray,
 
     /**
      * Signature key of member signature, can be sued to verify the signature.
      */
     @Column(name = "member_context_signature_key", nullable = false, updatable = false, columnDefinition = "BLOB")
-    val memberContextSignatureKey: ByteArray,
+    var memberContextSignatureKey: ByteArray,
 
     /**
      * Byte array of the member signature, exactly as returned by crypto signing operations.
      */
     @Column(name = "member_context_signature_content", nullable = false, updatable = false, columnDefinition = "BLOB")
-    val memberContextSignatureContent: ByteArray,
+    var memberContextSignatureContent: ByteArray,
 
     /**
      * Signature spec of member signature.
      */
     @Column(name = "member_context_signature_spec", nullable = false, updatable = false)
-    val memberContextSignatureSpec: String,
+    var memberContextSignatureSpec: String,
 
     /**
      * The serialized registration context provided during registration. Serialized as [KeyValuePairList].
      */
     @Column(name = "registration_context", nullable = false, updatable = false, columnDefinition = "BLOB")
-    val registrationContext: ByteArray,
+    var registrationContext: ByteArray,
 
     /**
      * Signature key of member signature over the registration context, can be used to verify the signature.
      */
     @Column(name = "registration_context_signature_key", nullable = false, updatable = false, columnDefinition = "BLOB")
-    val registrationContextSignatureKey: ByteArray,
+    var registrationContextSignatureKey: ByteArray,
 
     /**
      * Byte array of the member signature over the registration context,
      * exactly as returned by crypto signing operations.
      */
     @Column(name = "registration_context_signature_content", nullable = false, updatable = false, columnDefinition = "BLOB")
-    val registrationContextSignatureContent: ByteArray,
+    var registrationContextSignatureContent: ByteArray,
 
     /**
      * Signature spec of member signature over the registration context.
      */
     @Column(name = "registration_context_signature_spec", nullable = false, updatable = false)
-    val registrationContextSignatureSpec: String,
+    var registrationContextSignatureSpec: String,
 
     /**
      * Latest serial seen by the member when calling registration.
      */
     @Column(name = "serial", nullable = true)
-    val serial: Long?,
+    var serial: Long?,
 
     /**
      * Reason why the request is in the status specified by [status].
