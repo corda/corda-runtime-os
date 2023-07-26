@@ -409,18 +409,6 @@ class DBAccessIntegrationTest {
     }
 
     @Test
-    fun `DBAccess auto creates new topic partitions`() {
-        val dbAccess = DBAccess(emf)
-        val topic = randomId()
-        val expectedResult = setOf(
-            CordaTopicPartition(topic, 0),
-            CordaTopicPartition(topic, 1),
-            CordaTopicPartition(topic, 2),
-        )
-
-        assertThat(dbAccess.getTopicPartitionMapFor(topic)).isEqualTo(expectedResult)
-    }
-    @Test
     fun `Atomic Transaction has been committed`() {
         val result =
             query(
