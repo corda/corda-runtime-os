@@ -9,10 +9,14 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
+import net.corda.ledger.utxo.data.transaction.LedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
+import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.ALICE_X500_HOLDING_IDENTITY
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.AbstractUtxoLedgerExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindLedgerTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistExternalEventFactory
@@ -27,6 +31,8 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -51,6 +57,7 @@ class UtxoLedgerPersistenceServiceImplTest {
     private val serializationService = mock<SerializationService>()
     private val transactionSignatureService = mock<TransactionSignatureServiceInternal>()
     private val utxoSignedTransactionFactory = mock<UtxoSignedTransactionFactory>()
+    private val utxoLedgerTransactionFactory = mock<UtxoLedgerTransactionFactory>()
     private val sandbox = mock<SandboxGroupContext>()
     private val virtualNodeContext = mock<VirtualNodeContext>()
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
@@ -65,6 +72,7 @@ class UtxoLedgerPersistenceServiceImplTest {
             currentSandboxGroupContext,
             externalEventExecutor,
             serializationService,
+            utxoLedgerTransactionFactory,
             utxoSignedTransactionFactory
         )
 
@@ -150,10 +158,10 @@ class UtxoLedgerPersistenceServiceImplTest {
     }
 
     @Test
-    fun `find executes successfully`() {
+    fun `findSignedTransaction executes successfully`() {
         val metadata = mock<TransactionMetadata>()
-        whenever(metadata.getLedgerModel()).thenReturn(UtxoLedgerTransactionImpl::class.java.name)
-        whenever(metadata.getTransactionSubtype()).thenReturn("GENERAL")
+        whenever(metadata.ledgerModel).thenReturn(UtxoLedgerTransactionImpl::class.java.name)
+        whenever(metadata.transactionSubtype).thenReturn("GENERAL")
         val wireTransaction = mock<WireTransaction>()
         whenever(wireTransaction.componentGroupLists).thenReturn(List(UtxoComponentGroup.values().size) { listOf() })
         whenever(wireTransaction.metadata).thenReturn(metadata)
@@ -180,35 +188,42 @@ class UtxoLedgerPersistenceServiceImplTest {
     }
 
     @Test
-    fun `findTransactionWithStatus executes successfully`() {
+    fun `findLedgerTransaction executes successfully`() {
         val metadata = mock<TransactionMetadata>()
-        whenever(metadata.getLedgerModel()).thenReturn(UtxoLedgerTransactionImpl::class.java.name)
-        whenever(metadata.getTransactionSubtype()).thenReturn("GENERAL")
+        val ledgerTransaction = mock<UtxoLedgerTransaction>()
+
+        whenever(metadata.ledgerModel).thenReturn(UtxoLedgerTransactionImpl::class.java.name)
+        whenever(metadata.transactionSubtype).thenReturn("GENERAL")
         val wireTransaction = mock<WireTransaction>()
         whenever(wireTransaction.componentGroupLists).thenReturn(List(UtxoComponentGroup.values().size) { listOf() })
         whenever(wireTransaction.metadata).thenReturn(metadata)
 
-        val signatures = listOf(mock<DigitalSignatureAndMetadata>())
-        val expectedObj = UtxoSignedTransactionImpl(
-            serializationService,
-            transactionSignatureService,
-            mock<UtxoLedgerTransactionFactory>(),
-            wireTransaction,
-            signatures
-        )
-        val testId = parseSecureHash("SHA256:1234567890123456")
+        val inputUtxoTransactionOutputDtos = listOf(UtxoTransactionOutputDto("tx1", 1, byteArrayOf(0), byteArrayOf(1)))
+        val referenceUtxoTransactionOutputDtos = listOf(UtxoTransactionOutputDto("tx2", 1, byteArrayOf(0), byteArrayOf(1)))
 
-        whenever(serializationService.deserialize<Pair<SignedTransactionContainer, String>>(any<ByteArray>(), any()))
-            .thenReturn(SignedTransactionContainer(wireTransaction, signatures) to "V")
+        whenever(serializationService.deserialize<Pair<LedgerTransactionContainer, String>>(any<ByteArray>(), any()))
+            .thenReturn(
+                LedgerTransactionContainer(
+                    wireTransaction,
+                    inputUtxoTransactionOutputDtos,
+                    referenceUtxoTransactionOutputDtos
+                ) to "V"
+            )
 
-        whenever(utxoSignedTransactionFactory.create(any<WireTransaction>(), any())).thenReturn(expectedObj)
+        whenever(
+            utxoLedgerTransactionFactory.create(
+                wireTransaction,
+                inputUtxoTransactionOutputDtos,
+                referenceUtxoTransactionOutputDtos
+            )
+        ).thenReturn(ledgerTransaction)
 
-        assertThat(utxoLedgerPersistenceService.findSignedTransactionWithStatus(testId)).isEqualTo(expectedObj to VERIFIED)
+        assertThat(utxoLedgerPersistenceService.findLedgerTransaction(parseSecureHash("SHA256:1234567890123456")))
+            .isEqualTo(ledgerTransaction)
 
-        verify(serializationService).deserialize<UtxoSignedTransactionInternal>(any<ByteArray>(), any())
-        assertThat(argumentCaptor.firstValue).isEqualTo(FindTransactionExternalEventFactory::class.java)
+        verify(utxoLedgerTransactionFactory).create(wireTransaction, inputUtxoTransactionOutputDtos, referenceUtxoTransactionOutputDtos)
+        assertThat(argumentCaptor.firstValue).isEqualTo(FindLedgerTransactionExternalEventFactory::class.java)
     }
-
 
     private fun persistIfDoesNotExist(
         returnedStatus: String?,

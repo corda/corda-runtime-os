@@ -60,7 +60,7 @@ class TransactionBackchainVerifierImplTest {
     @BeforeEach
     fun beforeEach() {
         whenever(
-            utxoLedgerPersistenceService.findSignedTransactionWithStatus(
+            utxoLedgerPersistenceService.find(
                 TX_ID_1,
                 UNVERIFIED
             )

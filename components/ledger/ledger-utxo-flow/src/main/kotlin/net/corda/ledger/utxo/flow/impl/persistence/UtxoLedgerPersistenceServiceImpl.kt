@@ -64,7 +64,19 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun findSignedTransaction(id: SecureHash, transactionStatus: TransactionStatus): UtxoSignedTransaction? {
-        return findSignedTransactionWithStatus(id, transactionStatus)?.first
+        return recordSuspendable({ ledgerPersistenceFlowTimer(FindTransactionWithStatus) }) @Suspendable {
+            wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    FindTransactionExternalEventFactory::class.java,
+                    FindTransactionParameters(id.toString(), transactionStatus)
+                )
+            }.firstOrNull()?.let {
+                // Ignore the status returned from the database request. `FindTransaction` is an existing avro schema and discarding the
+                // returned status allows us to continue using it without upgrading issues.
+                val (transaction, _) = serializationService.deserialize<Pair<SignedTransactionContainer?, String?>>(it.array())
+                transaction?.toSignedTransaction()
+            }
+        }
     }
 
     @Suspendable
@@ -86,27 +98,6 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                 if (status == null)
                     return@let null
                 transaction?.toLedgerTransaction() to status.toTransactionStatus()
-            }
-        }
-    }
-
-    @Suspendable
-    override fun findSignedTransactionWithStatus(
-        id: SecureHash,
-        transactionStatus: TransactionStatus
-    ): Pair<UtxoSignedTransaction?, TransactionStatus>? {
-        return recordSuspendable({ ledgerPersistenceFlowTimer(FindTransactionWithStatus) }) @Suspendable {
-            wrapWithPersistenceException {
-                externalEventExecutor.execute(
-                    FindTransactionExternalEventFactory::class.java,
-                    FindTransactionParameters(id.toString(), transactionStatus)
-                )
-            }.firstOrNull().let {
-                if (it == null) return@let null
-                val (transaction, status) = serializationService.deserialize<Pair<SignedTransactionContainer?, String?>>(it.array())
-                if (status == null)
-                    return@let null
-                transaction?.toSignedTransaction() to status.toTransactionStatus()
             }
         }
     }
@@ -173,11 +164,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     }
 
     private fun LedgerTransactionContainer.toLedgerTransaction(): UtxoLedgerTransaction {
-        return utxoLedgerTransactionFactory.create(
-            this.wireTransaction,
-            this.serializedInputStateAndRefs.map { it.toStateAndRef<ContractState>(serializationService) },
-            this.serializedReferenceStateAndRefs.map { it.toStateAndRef<ContractState>(serializationService) }
-        )
+        return utxoLedgerTransactionFactory.create(wireTransaction, serializedInputStateAndRefs, serializedReferenceStateAndRefs)
     }
 
     private fun serialize(payload: Any) = ByteBuffer.wrap(serializationService.serialize(payload).bytes)

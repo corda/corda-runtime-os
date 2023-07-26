@@ -75,8 +75,8 @@ class UtxoPersistenceServiceImpl(
         return entityManagerFactory.transaction { em ->
             val status = repository.findTransactionStatus(em, id)
             if (status == transactionStatus.value) {
-                val (transaction, signatures) = repository.findTransaction(em, id)
-                    ?.let { WrappedUtxoWireTransaction(it.wireTransaction, serializationService) to it.signatures }
+                val transaction = repository.findTransaction(em, id)
+                    ?.let { WrappedUtxoWireTransaction(it.wireTransaction, serializationService) }
                     ?: throw InconsistentLedgerStateException("Transaction $id in status $status has disappeared from the database")
 
                 val allStateRefs = (transaction.inputStateRefs + transaction.referenceStateRefs).distinct()
@@ -93,7 +93,7 @@ class UtxoPersistenceServiceImpl(
                         ?: throw CordaRuntimeException("Could not find reference StateRef $it when finding transaction $id")
                 }
 
-                LedgerTransactionContainer(transaction.wireTransaction, inputStateAndRefs, referenceStateAndRefs, signatures)
+                LedgerTransactionContainer(transaction.wireTransaction, inputStateAndRefs, referenceStateAndRefs)
             } else {
                 null
             } to status

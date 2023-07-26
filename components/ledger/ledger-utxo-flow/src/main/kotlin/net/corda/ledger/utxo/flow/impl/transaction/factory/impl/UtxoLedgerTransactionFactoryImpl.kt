@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.transaction.factory.impl
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
+import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
@@ -9,6 +10,7 @@ import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -62,18 +64,16 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
         )
     }
 
-    // if any of the state refs are missing return a platform exception from the database worker
-    // no point returning part of the data and then discarding it
     @Suspendable
     override fun create(
         wireTransaction: WireTransaction,
-        inputStateAndRefs: List<StateAndRef<*>>, // or transaction output dtos
-        referenceStateAndRefs: List<StateAndRef<*>> // or transaction output dtos
+        inputStateAndRefs: List<UtxoTransactionOutputDto>,
+        referenceStateAndRefs: List<UtxoTransactionOutputDto>
     ): UtxoLedgerTransaction {
         return UtxoLedgerTransactionImpl(
             WrappedUtxoWireTransaction(wireTransaction, serializationService),
-            inputStateAndRefs,
-            referenceStateAndRefs
+            inputStateAndRefs.map { it.toStateAndRef<ContractState>(serializationService) },
+            referenceStateAndRefs.map { it.toStateAndRef<ContractState>(serializationService) }
         )
     }
 }
