@@ -94,7 +94,10 @@ class VaultNamedQueryExecutorImpl(
         return entityManagerFactory.transaction { em ->
 
                 val query = em.createNativeQuery(
-                    "SELECT output_info_result.transaction_id, output_info_result.data as output_info_data, tc_output.data AS output_data FROM " +
+                    "SELECT output_info_result.transaction_id, " +
+                            "tc_output.leaf_idx, " +
+                            "output_info_result.data as output_info_data, " +
+                            "tc_output.data AS output_data FROM " +
                                 "(SELECT visible_states.transaction_id, tc.group_idx, visible_states.leaf_idx, tc.data FROM " +
                                 "$UTXO_VISIBLE_TX_TABLE AS visible_states " +
                                 "JOIN $UTXO_TX_COMPONENT_TABLE AS tc " +
@@ -119,10 +122,10 @@ class VaultNamedQueryExecutorImpl(
                 query.resultList as List<Tuple>
             }.map { t ->
                 UtxoTransactionOutputDto(
-                    t[0] as String, // transactionId,,
-                    0, // leaf ID is always 0
-                    t[1] as ByteArray, // outputs info data
-                    t[2] as ByteArray // outputs data
+                    t[0] as String, // transactionId
+                    t[1] as Int, // leaf ID is always 0
+                    t[2] as ByteArray, // outputs info data
+                    t[3] as ByteArray // outputs data
                 ).toStateAndRef(serializationService)
             }
     }
