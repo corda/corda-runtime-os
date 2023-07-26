@@ -40,6 +40,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
+import java.security.Security
 import java.util.UUID
 
 class InMemorySessionReplayerTest {
@@ -62,6 +63,7 @@ class InMemorySessionReplayerTest {
         @JvmStatic
         fun setup() {
             loggingInterceptor = LoggingInterceptor.setupLogging()
+            Security.addProvider(BouncyCastleProvider())
         }
     }
 
