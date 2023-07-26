@@ -288,7 +288,10 @@ class ClusterBuilder {
 
     // Used to test RestApiVersion.C5_0 KeysRestResource, remove after LTS
     fun deprecatedCreateKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
-        post("/api/${RestApiVersion.C5_0.versionPath}/keys/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme", body = "")
+        post(
+            "/api/${RestApiVersion.C5_0.versionPath}/keys/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme",
+            body = ""
+        )
 
     fun getKey(tenantId: String, keyId: String) =
         get("/api/$REST_API_VERSION_PATH/key/$tenantId/$keyId")
