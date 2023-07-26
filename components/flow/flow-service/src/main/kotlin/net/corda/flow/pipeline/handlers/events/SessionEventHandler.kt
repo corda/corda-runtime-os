@@ -123,7 +123,8 @@ class SessionEventHandler @Activate constructor(
                 result.isFailure -> sendErrorMessage(
                     context,
                     sessionId,
-                    initiatedFlowNameAndProtocolResult.exceptionOrNull()!!
+                    initiatedFlowNameAndProtocolResult.exceptionOrNull() ?:
+                    FlowFatalException("Failed to create initiated checkpoint for session: $sessionId.")
                 )
             }
         }
