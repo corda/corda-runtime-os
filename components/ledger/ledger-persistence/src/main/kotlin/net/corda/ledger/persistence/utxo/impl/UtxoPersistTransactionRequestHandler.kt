@@ -34,18 +34,21 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
     override fun execute(): List<Record<*, *>> {
         val isTransactionVerified = transaction.status == TransactionStatus.VERIFIED
 
+        val listOfPairsStateAndUtxoToken = transaction.getVisibleStates().values.toList().toTokens(tokenObservers)
         val outputTokenRecords = if (isTransactionVerified) {
             utxoOutputRecordFactory.getTokenCacheChangeEventRecords(
                 holdingIdentity,
-                transaction.getVisibleStates().values.toList().toTokens(tokenObservers),
+                listOfPairsStateAndUtxoToken,
                 transaction.getConsumedStates(persistenceService).toTokens(tokenObservers)
             )
         } else {
             listOf()
         }
 
+        val unconsumedTokensMap = listOfPairsStateAndUtxoToken.associate { it.first.ref to it.second }
+
         // persist the transaction
-        persistenceService.persistTransaction(transaction)
+        persistenceService.persistTransaction(transaction, unconsumedTokensMap)
 
         // return output records
         return outputTokenRecords + utxoOutputRecordFactory.getPersistTransactionSuccessRecord(externalEventContext)
