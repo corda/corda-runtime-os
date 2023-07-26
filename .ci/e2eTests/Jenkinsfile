@@ -4,7 +4,7 @@ endToEndPipeline(
     assembleAndCompile: false,
     dailyBuildCron: '',
     deployEthereum: true,
-    multiCluster: false,
+    multiCluster: true,
     gradleTestTargetsToExecute: ['smokeTest', 'e2eTest'],
     usePackagedCordaHelmChart: false,
 )
