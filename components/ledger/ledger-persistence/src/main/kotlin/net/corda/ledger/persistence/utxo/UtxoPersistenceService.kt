@@ -16,7 +16,10 @@ interface UtxoPersistenceService {
 
     fun resolveStateRefs(stateRefs: List<StateRef>): List<UtxoTransactionOutputDto>
 
-    fun persistTransaction(transaction: UtxoTransactionReader, utxoTokenMap: Map<StateRef, UtxoToken> = emptyMap()): List<CordaPackageSummary>
+    fun persistTransaction(
+        transaction: UtxoTransactionReader,
+        utxoTokenMap: Map<StateRef, UtxoToken> = emptyMap()
+    ): List<CordaPackageSummary>
 
     fun persistTransactionIfDoesNotExist(transaction: UtxoTransactionReader): Pair<String?, List<CordaPackageSummary>>
 

@@ -110,7 +110,11 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    private fun persistTransaction(em: EntityManager, transaction: UtxoTransactionReader, utxoTokenMap: Map<StateRef, UtxoToken> = emptyMap()): List<CordaPackageSummary> {
+    private fun persistTransaction(
+        em: EntityManager,
+        transaction: UtxoTransactionReader,
+        utxoTokenMap: Map<StateRef, UtxoToken> = emptyMap()
+    ): List<CordaPackageSummary> {
         val nowUtc = utcClock.instant()
         val transactionIdString = transaction.id.toString()
 
