@@ -154,7 +154,6 @@ class LargeNetworkTest {
         val onboardedMembers = mutableListOf<OnboardedMember>()
     }
 
-    @AfterEach
     @BeforeEach
     fun tearDown() {
         logDuration("cleaning") {
@@ -168,6 +167,54 @@ class LargeNetworkTest {
                 throw CordaRuntimeException("Failed to tear down clusters")
             }
         }
+    }
+
+    @AfterEach
+    fun captureLogs() {
+        val buildDir = File(scriptDir, "build")
+        val outputDir = File(buildDir, "logs")
+        clusters.map {
+            it.id
+        }.map { clusterName ->
+            val clusterOutputDir = File(outputDir, clusterName)
+            clusterOutputDir.deleteRecursively()
+            clusterOutputDir.mkdirs()
+            val getPods = ProcessBuilder(
+                "kubectl", "get", "pod", "-n", clusterName
+            ).start()
+            getPods.waitFor()
+            val pods = getPods.inputStream
+                .reader()
+                .readLines()
+                .map {
+                    it.split(" ").filter { it.isNotBlank() }
+                }.filter {
+                    it[0] != "NAME"
+                }.filter {
+                    it[2] == "Running"
+                }.map {
+                    it[0]
+                }
+            pods.forEach {  podName ->
+                logDuration("saving logs of $podName in $clusterName") {
+                    val logFile = File(clusterOutputDir, "$podName.log")
+                    val getLogs = ProcessBuilder(
+                        "kubectl",
+                        "logs",
+                        "-n",
+                        clusterName,
+                        podName,
+                        "--all-containers",
+                        "--ignore-errors",
+                        "--timestamps",
+                    ).redirectOutput(logFile)
+                        .start()
+                    getLogs.waitFor()
+                }
+            }
+        }
+        println("Logs saved into $outputDir")
+        tearDown()
     }
 
     @Test
