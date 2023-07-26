@@ -10,7 +10,7 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
     implementation project(':components:configuration:configuration-read-service')
-    implementation project(':components:interop:interop-identity-cache-service')
+    implementation project(':components:interop:interop-identity-registry-service')
     implementation project(':components:interop:interop-identity-write-service')
     implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(":components:virtual-node:virtual-node-info-read-service")

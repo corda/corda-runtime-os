@@ -1,7 +1,7 @@
 package net.corda.interop.identity.read.impl
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.interop.identity.cache.InteropIdentityCacheService
+import net.corda.interop.identity.cache.InteropIdentityRegistryService
 import net.corda.interop.identity.read.InteropIdentityReadService
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -19,8 +19,8 @@ class InteropIdentityReadServiceImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = InteropIdentityCacheService::class)
-    private val interopIdentityCacheService: InteropIdentityCacheService
+    @Reference(service = InteropIdentityRegistryService::class)
+    private val interopIdentityRegistryService: InteropIdentityRegistryService
 ) : InteropIdentityReadService {
     companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -32,7 +32,7 @@ class InteropIdentityReadServiceImpl @Activate constructor(
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
-        ::interopIdentityCacheService
+        ::interopIdentityRegistryService
     )
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<InteropIdentityReadService>()

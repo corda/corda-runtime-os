@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
-import net.corda.interop.identity.cache.InteropIdentityCacheService
+import net.corda.interop.identity.cache.InteropIdentityRegistryService
 import net.corda.interop.identity.write.InteropIdentityWriteService
 import net.corda.libs.interop.endpoints.v1.InteropRestResource
 import net.corda.libs.interop.endpoints.v1.types.RestInteropIdentity
@@ -44,8 +44,8 @@ internal class InteropRestResourceImpl @Activate constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = InteropIdentityCacheService::class)
-    private val interopIdentityCacheService: InteropIdentityCacheService,
+    @Reference(service = InteropIdentityRegistryService::class)
+    private val interopIdentityRegistryService: InteropIdentityRegistryService,
     @Reference(service = InteropIdentityWriteService::class)
     private val interopIdentityWriteService: InteropIdentityWriteService,
     @Reference(service = VirtualNodeInfoReadService::class)
@@ -77,7 +77,7 @@ internal class InteropRestResourceImpl @Activate constructor(
             ?: throw InvalidInputDataException(
                 "No virtual node found with short hash $holdingIdentityShortHash."
             )
-        val cacheView = interopIdentityCacheService.getVirtualNodeCacheView(vNodeInfo.holdingIdentity.shortHash.toString())
+        val cacheView = interopIdentityRegistryService.getVirtualNodeCacheView(vNodeInfo.holdingIdentity.shortHash.toString())
         return cacheView.getOwnedIdentities().keys.associate {
             Pair(UUID.fromString(it), interopGroupPolicyReadService.getGroupPolicy(it)?:"")
         }
@@ -130,7 +130,7 @@ internal class InteropRestResourceImpl @Activate constructor(
             ?: throw InvalidInputDataException(
                 "No virtual node found with short hash $holdingIdentityShortHash."
             )
-        val cacheView = interopIdentityCacheService.getVirtualNodeCacheView(holdingIdentityShortHash)
+        val cacheView = interopIdentityRegistryService.getVirtualNodeCacheView(holdingIdentityShortHash)
         val interopIdentities = cacheView.getIdentities()
         return interopIdentities.map {
             InteropIdentityResponse(
@@ -154,7 +154,7 @@ internal class InteropRestResourceImpl @Activate constructor(
                 "No virtual node found with short hash $holdingIdentityShortHash."
             )
         val vNodeShortHash = vNodeInfo.holdingIdentity.shortHash.toString()
-        val cacheView = interopIdentityCacheService.getVirtualNodeCacheView(vNodeShortHash)
+        val cacheView = interopIdentityRegistryService.getVirtualNodeCacheView(vNodeShortHash)
         val interopIdentityMap = cacheView.getIdentitiesByShortHash()
         val interopIdentityToExport = if (interopIdentityMap.containsKey(interopIdentityShortHash)) {
             interopIdentityMap[interopIdentityShortHash]!!
@@ -236,7 +236,7 @@ internal class InteropRestResourceImpl @Activate constructor(
     // Lifecycle
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
-        ::interopIdentityCacheService,
+        ::interopIdentityRegistryService,
         ::interopIdentityWriteService,
         ::interopGroupPolicyReadService
     )

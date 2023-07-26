@@ -3,7 +3,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Interop identity read service implementation'
+description 'Interop identity registry service implementation'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -20,19 +20,15 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:utilities')
+    implementation project(':libs:interop:interop-core')
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
-    implementation project(":components:interop:interop-identity-read-service")
-    runtimeOnly project(":components:interop:interop-identity-read-service-impl")
-
     implementation project(":components:interop:interop-identity-registry-service")
+
     runtimeOnly project(":components:interop:interop-identity-registry-service-impl")
 
-    implementation project(":libs:configuration:configuration-core")
-
     implementation project(":components:configuration:configuration-read-service")
-
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
 
     testImplementation project(":libs:lifecycle:lifecycle-impl")

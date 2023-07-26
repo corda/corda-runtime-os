@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
 import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
-import net.corda.interop.identity.cache.InteropIdentityCacheService
+import net.corda.interop.identity.cache.InteropIdentityRegistryService
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import java.util.UUID
 
@@ -39,8 +39,8 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference(service = InteropIdentityCacheService::class)
-    private val interopIdentityCacheService: InteropIdentityCacheService,
+    @Reference(service = InteropIdentityRegistryService::class)
+    private val interopIdentityRegistryService: InteropIdentityRegistryService,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService
 ) : InteropIdentityWriteService, LifecycleEventHandler {
@@ -86,7 +86,7 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
     }
 
     private fun writeMemberInfoTopic(vNodeShortHash: String, identity: InteropIdentity) {
-        val cacheView = interopIdentityCacheService.getVirtualNodeCacheView(vNodeShortHash)
+        val cacheView = interopIdentityRegistryService.getVirtualNodeCacheView(vNodeShortHash)
         val ownedInteropIdentities = cacheView.getOwnedIdentities()
 
         // If the new interop identity will become the owned one use that. Otherwise, retrieve an existing one from the cache.
