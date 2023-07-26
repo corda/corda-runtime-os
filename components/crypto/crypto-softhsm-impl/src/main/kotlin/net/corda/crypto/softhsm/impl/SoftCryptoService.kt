@@ -233,7 +233,7 @@ open class SoftCryptoService(
         scheme: KeyScheme,
         context: Map<String, String>,
     ): GeneratedWrappedKey {
-        logger.info("generateKeyPair(tenant={}, category={}, alias={}))", tenantId, category, alias)
+        logger.info("generateKeyPair(tenant={}, category={}, alias={})", tenantId, category, alias)
         val parentKeyAlias =
             context.get("parentKeyAlias") ?: tenantInfoService.lookup(tenantId, category)?.masterKeyAlias
             ?: throw InvalidParamsException("The tenant '$tenantId' is not configured for category '$category'.")
