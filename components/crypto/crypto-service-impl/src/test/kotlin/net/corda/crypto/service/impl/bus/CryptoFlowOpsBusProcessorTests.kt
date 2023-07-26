@@ -75,44 +75,44 @@ import kotlin.test.assertTrue
         )
     }
 
-     private lateinit var tenantId: String
-     private lateinit var componentName: String
-     private lateinit var eventTopic: String
-     private lateinit var responseTopic: String
-     private lateinit var keyEncodingService: KeyEncodingService
-     private lateinit var cryptoOpsClient: CryptoOpsProxyClient
-     private lateinit var cryptoService: CryptoService
-     private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
-     private lateinit var processor: CryptoFlowOpsBusProcessor
-     private lateinit var digestService: DigestService
+    private lateinit var tenantId: String
+    private lateinit var componentName: String
+    private lateinit var eventTopic: String
+    private lateinit var responseTopic: String
+    private lateinit var keyEncodingService: KeyEncodingService
+    private lateinit var cryptoOpsClient: CryptoOpsProxyClient
+    private lateinit var cryptoService: CryptoService
+    private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
+    private lateinit var processor: CryptoFlowOpsBusProcessor
+    private lateinit var digestService: DigestService
 
-     private val flowOpsResponseArgumentCaptor = argumentCaptor<FlowOpsResponse>()
+    private val flowOpsResponseArgumentCaptor = argumentCaptor<FlowOpsResponse>()
 
-     private fun buildTransformer(ttl: Long = 123): CryptoFlowOpsTransformerImpl =
-         CryptoFlowOpsTransformerImpl(
-             serializer = mock(),
-             requestingComponent = componentName,
-             responseTopic = responseTopic,
-             keyEncodingService = keyEncodingService,
-             digestService = digestService,
-             requestValidityWindowSeconds = ttl
-         )
+    private fun buildTransformer(ttl: Long = 123): CryptoFlowOpsTransformerImpl =
+        CryptoFlowOpsTransformerImpl(
+            serializer = mock(),
+            requestingComponent = componentName,
+            responseTopic = responseTopic,
+            keyEncodingService = keyEncodingService,
+            digestService = digestService,
+            requestValidityWindowSeconds = ttl
+        )
 
-     private fun mockPublicKey(): PublicKey {
-         val serialisedPublicKey = Random(Instant.now().toEpochMilli()).nextBytes(256)
-         return mock {
-             on { encoded } doReturn serialisedPublicKey
-         }
-     }
+    private fun mockPublicKey(): PublicKey {
+        val serialisedPublicKey = Random(Instant.now().toEpochMilli()).nextBytes(256)
+        return mock {
+            on { encoded } doReturn serialisedPublicKey
+        }
+    }
 
-     private inline fun <reified REQUEST, reified RESPONSE> assertResponseContext(
-         result: ActResult<List<Record<*, *>>>,
-         flowOpsResponse: FlowOpsResponse,
-         ttl: Long = 123,
-     ): RESPONSE {
-         assertNotNull(result.value)
+    private inline fun <reified REQUEST, reified RESPONSE> assertResponseContext(
+        result: ActResult<List<Record<*, *>>>,
+        flowOpsResponse: FlowOpsResponse,
+        ttl: Long = 123
+    ): RESPONSE {
+        assertNotNull(result.value)
 //        assertEquals(1, result.value?.size)
-         assertInstanceOf(RESPONSE::class.java, flowOpsResponse.response)
+        assertInstanceOf(RESPONSE::class.java, flowOpsResponse.response)
         val context = flowOpsResponse.context
         val resp = flowOpsResponse.response as RESPONSE
         assertResponseContext<REQUEST>(result, context, ttl)

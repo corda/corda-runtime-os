@@ -90,8 +90,8 @@ class CryptoOperationsTests {
             factory = TestServicesFactory()
             schemeMetadata = factory.schemeMetadata
             verifier = factory.verifier
-            tenantId = "test"
-            category = LEDGER
+            tenantId = UUID.randomUUID().toString()
+            category = CryptoConsts.Categories.LEDGER
             CryptoConsts.Categories.all.forEach {
                 factory.tenantInfoService.populate(tenantId, it, factory.cryptoService)
             }
