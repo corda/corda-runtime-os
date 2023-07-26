@@ -51,9 +51,9 @@ build_cpi() {
 }
 
 trust_cpi_keys() {
-   curl --insecure -u admin:admin -X PUT -F alias="gradle-plugin-default-key" -F certificate=@"$SCRIPT_DIR/gradle-plugin-default-key.pem" https://$1/api/v1/certificates/cluster/code-signer
+   curl --insecure -u admin:admin -X PUT -F alias="gradle-plugin-default-key" -F certificate=@"$SCRIPT_DIR/gradle-plugin-default-key.pem" https://$1/api/v5_1/certificate/cluster/code-signer
    keytool -exportcert -rfc -alias "signing key 1" -keystore "$WORKING_DIR"/signingkeys.pfx -storepass "keystore password" -file "$WORKING_DIR"/signingkey1.pem
-   curl --insecure -u admin:admin -X PUT -F alias="signingkey1-2022" -F certificate=@"$WORKING_DIR"/signingkey1.pem https://$1/api/v1/certificates/cluster/code-signer
+   curl --insecure -u admin:admin -X PUT -F alias="signingkey1-2022" -F certificate=@"$WORKING_DIR"/signingkey1.pem https://$1/api/v5_1/certificate/cluster/code-signer
 }
 
 allow_client_certificate() {
@@ -104,30 +104,30 @@ create_vnode() {
 
 assign_hsm_and_generate_session_key_pair() {
     curl --fail-with-body -s -S --insecure -u admin:admin -X POST https://$1/api/v1/hsm/soft/$2/SESSION_INIT &> /dev/null
-    local MGM_SESSION_KEY_ID=$(curl --fail-with-body -s -S --insecure -u admin:admin -X POST https://$1/api/v1/keys/$2/alias/$2-session/category/SESSION_INIT/scheme/CORDA.ECDSA.SECP256R1 | jq -M '.["id"]' | tr -d '"')
+    local MGM_SESSION_KEY_ID=$(curl --fail-with-body -s -S --insecure -u admin:admin -X POST https://$1/api/v5_1/key/$2/alias/$2-session/category/SESSION_INIT/scheme/CORDA.ECDSA.SECP256R1 | jq -M '.["id"]' | tr -d '"')
     echo $MGM_SESSION_KEY_ID
 }
 
 assign_hsm_and_generate_tls_key_pair() {
     curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v1/hsm/soft/p2p/TLS &> /dev/null
-    MGM_TLS_KEY_ID=$(curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v1/keys/p2p/alias/cluster-tls/category/TLS/scheme/CORDA.RSA | jq -M '.["id"]' | tr -d '"')
+    MGM_TLS_KEY_ID=$(curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v5_1/key/p2p/alias/cluster-tls/category/TLS/scheme/CORDA.RSA | jq -M '.["id"]' | tr -d '"')
     echo $MGM_TLS_KEY_ID
 }
 
 assign_hsm_and_generate_edch_key_pair() {
     curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v1/hsm/soft/$2/PRE_AUTH &> /dev/null
-    MGM_EDCH_KEY_ID=$(curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v1/keys/$2/alias/$2-auth/category/PRE_AUTH/scheme/CORDA.ECDSA.SECP256R1 | jq -M '.["id"]' | tr -d '"')
+    MGM_EDCH_KEY_ID=$(curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v5_1/key/$2/alias/$2-auth/category/PRE_AUTH/scheme/CORDA.ECDSA.SECP256R1 | jq -M '.["id"]' | tr -d '"')
     echo $MGM_EDCH_KEY_ID
 }
 
 assign_hsm_and_generate_ledger_key_pair() {
     curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v1/hsm/soft/$2/LEDGER &> /dev/null
-    LEDGER_KEY_ID=$(curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v1/keys/$2/alias/$2-ledger/category/LEDGER/scheme/CORDA.ECDSA.SECP256R1 | jq -M '.["id"]' | tr -d '"')
+    LEDGER_KEY_ID=$(curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v5_1/key/$2/alias/$2-ledger/category/LEDGER/scheme/CORDA.ECDSA.SECP256R1 | jq -M '.["id"]' | tr -d '"')
     echo $LEDGER_KEY_ID
 }
 
 get_csr() {
-    curl --fail-with-body -s -S -k -u admin:admin  -X POST -H "Content-Type: application/json" -d '{"x500Name": "'$2'", "subjectAlternativeNames": [ "'$3'" ]}' "https://$1/api/v1/certificates/p2p/$4" > "$WORKING_DIR"/$5.csr
+    curl --fail-with-body -s -S -k -u admin:admin  -X POST -H "Content-Type: application/json" -d '{"x500Name": "'$2'", "subjectAlternativeNames": [ "'$3'" ]}' "https://$1/api/v5_1/certificate/p2p/$4" > "$WORKING_DIR"/$5.csr
 }
 
 sign_certificate() {
@@ -135,7 +135,7 @@ sign_certificate() {
 }
 
 upload_certificate() {
-    curl --fail-with-body -s -S -k -u admin:admin -X PUT  -F certificate=@$2 -F alias=cluster-tls "https://$1/api/v1/certificates/cluster/p2p-tls"
+    curl --fail-with-body -s -S -k -u admin:admin -X PUT  -F certificate=@$2 -F alias=cluster-tls "https://$1/api/v5_1/certificate/cluster/p2p-tls"
 }
 
 register_node() {
