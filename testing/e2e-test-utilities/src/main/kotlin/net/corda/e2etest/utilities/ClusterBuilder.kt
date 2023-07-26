@@ -93,6 +93,10 @@ class ClusterBuilder {
     fun importCertificate(file: File, usage: String, alias: String) =
         uploadCertificateFile("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage", file, alias)
 
+    // Used to test RestApiVersion.C5_0 CertificateRestResource, remove after LTS
+    fun deprecatedImportCertificate(resourceName: String, usage: String, alias: String) =
+        uploadCertificateResource("/api/${RestApiVersion.C5_0}/certificates/cluster/$usage", resourceName, alias)
+
     fun getCertificateChain(usage: String, alias: String) =
         client!!.get("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage/$alias")
 
@@ -281,6 +285,10 @@ class ClusterBuilder {
 
     fun createKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
         post("/api/$REST_API_VERSION_PATH/key/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme", body = "")
+
+    // Used to test RestApiVersion.C5_0 KeysRestResource, remove after LTS
+    fun deprecatedCreateKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
+        post("/api/${RestApiVersion.C5_0}/keys/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme", body = "")
 
     fun getKey(tenantId: String, keyId: String) =
         get("/api/$REST_API_VERSION_PATH/key/$tenantId/$keyId")
