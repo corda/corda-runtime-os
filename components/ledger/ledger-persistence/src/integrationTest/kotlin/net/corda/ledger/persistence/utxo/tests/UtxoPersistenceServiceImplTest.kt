@@ -405,7 +405,7 @@ class UtxoPersistenceServiceImplTest {
                     assertThat(dbInput.field<String>("type")).isEqualTo(transactionOutput::class.java.canonicalName)
                     assertThat(dbInput.field<String>("tokenType")).isNull()
                     assertThat(dbInput.field<String>("tokenIssuerHash")).isNull()
-                    assertThat(dbInput.field<String>("tokenNotaryX500Name")).isNull()
+                    assertThat(dbInput.field<String>("tokenNotaryX500Name")).isEqualTo(notaryX500Name.toString())
                     assertThat(dbInput.field<String>("tokenSymbol")).isNull()
                     assertThat(dbInput.field<String>("tokenTag")).isNull()
                     assertThat(dbInput.field<String>("tokenOwnerHash")).isNull()
