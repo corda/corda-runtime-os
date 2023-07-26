@@ -95,7 +95,7 @@ class ClusterBuilder {
 
     // Used to test RestApiVersion.C5_0 CertificateRestResource, remove after LTS
     fun deprecatedImportCertificate(resourceName: String, usage: String, alias: String) =
-        uploadCertificateResource("/api/${RestApiVersion.C5_0}/certificates/cluster/$usage", resourceName, alias)
+        uploadCertificateResource("/api/${RestApiVersion.C5_0.versionPath}/certificates/cluster/$usage", resourceName, alias)
 
     fun getCertificateChain(usage: String, alias: String) =
         client!!.get("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage/$alias")
@@ -288,7 +288,7 @@ class ClusterBuilder {
 
     // Used to test RestApiVersion.C5_0 KeysRestResource, remove after LTS
     fun deprecatedCreateKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
-        post("/api/${RestApiVersion.C5_0}/keys/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme", body = "")
+        post("/api/${RestApiVersion.C5_0.versionPath}/keys/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme", body = "")
 
     fun getKey(tenantId: String, keyId: String) =
         get("/api/$REST_API_VERSION_PATH/key/$tenantId/$keyId")
