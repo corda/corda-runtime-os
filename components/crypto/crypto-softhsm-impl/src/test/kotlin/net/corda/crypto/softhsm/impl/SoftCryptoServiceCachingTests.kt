@@ -216,6 +216,7 @@ class SoftCryptoServiceCachingTests {
             wrappingKeyCache = wrappingKeyCache,
             privateKeyCache = makePrivateKeyCache(),
             shortHashCache = makeShortHashCache()
+            
         )
 
         // starting fresh, all 3 aliases are missing from both store and cache

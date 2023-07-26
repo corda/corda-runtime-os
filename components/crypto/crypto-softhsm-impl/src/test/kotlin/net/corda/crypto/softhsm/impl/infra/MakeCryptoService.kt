@@ -25,6 +25,7 @@ fun makeSoftCryptoService(
     privateKeyCache: Cache<PublicKey, PrivateKey>? = null,
     wrappingKeyCache: Cache<String, WrappingKey>? = null,
     shortHashCache: Cache<ShortHashCacheKey, SigningKeyInfo>? = null,
+    signingKeyInfoCache: Cache<PublicKey, SigningKeyInfo>? = null,
     schemeMetadata: CipherSchemeMetadataImpl = CipherSchemeMetadataImpl(),
     rootWrappingKey: WrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata),
     wrappingKeyFactory: (schemeMetadata: CipherSchemeMetadata) -> WrappingKey = { it ->
@@ -32,7 +33,7 @@ fun makeSoftCryptoService(
     },
     wrappingRepository: WrappingRepository = TestWrappingRepository(),
     signingRepository: SigningRepository = TestSigningRepository(),
-    tenantInfoService: TenantInfoService = mock()
+    tenantInfoService: TenantInfoService = mock(),
 ): CryptoService {
     return SoftCryptoService(
         wrappingRepositoryFactory = { wrappingRepository },
@@ -48,7 +49,7 @@ fun makeSoftCryptoService(
             KeyPairGenerator.getInstance(algorithm, provider)
         },
         wrappingKeyFactory = wrappingKeyFactory,
-        signingKeyInfoCache =  makeSigningKeyInfoCache(),
+        signingKeyInfoCache = signingKeyInfoCache ?: makeSigningKeyInfoCache(),
         tenantInfoService =  tenantInfoService
     )
 }

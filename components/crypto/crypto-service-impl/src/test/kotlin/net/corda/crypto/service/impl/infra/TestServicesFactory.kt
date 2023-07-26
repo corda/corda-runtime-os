@@ -27,10 +27,10 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
-import net.corda.v5.crypto.SecureHash
 import org.mockito.kotlin.mock
 import java.security.KeyPairGenerator
 import java.security.Provider
+import java.security.PublicKey
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 
@@ -149,7 +149,7 @@ class TestServicesFactory {
     val secondLevelWrappingKeyWrapped = rootWrappingKey.wrap(secondLevelWrappingKey)
     val secondLevelWrappingKeyInfo = WrappingKeyInfo(1, "AES", secondLevelWrappingKeyWrapped, 1, "root")
     val wrappingRepository = TestWrappingRepository(secondLevelWrappingKeyInfo)
-    val signingKeyInfoCache: Cache<SecureHash, SigningKeyInfo> = CacheFactoryImpl().build(
+    val signingKeyInfoCache: Cache<PublicKey, SigningKeyInfo> = CacheFactoryImpl().build(
         "test private key cache", Caffeine.newBuilder()
             .expireAfterAccess(3600, TimeUnit.MINUTES)
             .maximumSize(20)

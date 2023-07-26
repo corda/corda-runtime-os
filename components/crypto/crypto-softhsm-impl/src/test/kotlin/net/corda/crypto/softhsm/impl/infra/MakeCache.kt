@@ -6,7 +6,6 @@ import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.softhsm.impl.ShortHashCacheKey
-import net.corda.v5.crypto.SecureHash
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.util.concurrent.TimeUnit
@@ -23,7 +22,7 @@ fun makeWrappingKeyCache(): Cache<String, WrappingKey> = CacheFactoryImpl().buil
         .maximumSize(100)
 )
 
-fun makeSigningKeyInfoCache(): Cache<SecureHash, SigningKeyInfo> = CacheFactoryImpl().build(
+fun makeSigningKeyInfoCache(): Cache<PublicKey, SigningKeyInfo> = CacheFactoryImpl().build(
     "test signing key info cache", Caffeine.newBuilder()
         .expireAfterAccess(3600, TimeUnit.MINUTES)
         .maximumSize(100)

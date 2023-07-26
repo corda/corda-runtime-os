@@ -69,7 +69,6 @@ import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -239,7 +238,7 @@ class CryptoProcessorImpl @Activate constructor(
                 .expireAfterAccess(expireAfterAccessMins, TimeUnit.MINUTES)
                 .maximumSize(maximumSize)
         )
-        val signingKeyInfoCache: Cache<SecureHash, SigningKeyInfo> = CacheFactoryImpl().build(
+        val signingKeyInfoCache: Cache<PublicKey, SigningKeyInfo> = CacheFactoryImpl().build(
             "Signing-Key-Cache",
             Caffeine.newBuilder()
                 .expireAfterAccess(expireAfterAccessMins, TimeUnit.MINUTES)

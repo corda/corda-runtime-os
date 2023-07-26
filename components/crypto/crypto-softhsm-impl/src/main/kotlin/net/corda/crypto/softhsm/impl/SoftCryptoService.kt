@@ -94,7 +94,7 @@ open class SoftCryptoService(
     private val wrappingKeyCache: Cache<String, WrappingKey>?,
     private val shortHashCache: Cache<ShortHashCacheKey, SigningKeyInfo>,
     private val privateKeyCache: Cache<PublicKey, PrivateKey>?,
-    private val signingKeyInfoCache: Cache<SecureHash, SigningKeyInfo>,
+    private val signingKeyInfoCache: Cache<PublicKey, SigningKeyInfo>,
     private val keyPairGeneratorFactory: (algorithm: String, provider: Provider) -> KeyPairGenerator,
     private val wrappingKeyFactory: (schemeMetadata: CipherSchemeMetadata) -> WrappingKey = {
         WrappingKeyImpl.generateWrappingKey(it)
@@ -531,7 +531,7 @@ open class SoftCryptoService(
         }
         // now we are not dealing with composite keys
 
-        val signingKeyInfo = signingKeyInfoCache.getIfPresent(publicKey.fullIdHash()) ?: run {
+        val signingKeyInfo = signingKeyInfoCache.getIfPresent(publicKey) ?: run {
             val repo = signingRepositoryFactory.getInstance(tenantId)
             val result = repo.findKey(publicKey)
             if (result == null) throw IllegalArgumentException("The public key '${publicKey.publicKeyId()}' was not found")
@@ -543,8 +543,7 @@ open class SoftCryptoService(
     }
 
     private fun populateCaches(result: SigningKeyInfo) {
-        val hash = result.publicKey.fullIdHash()
-        signingKeyInfoCache.put(hash, result)
+        signingKeyInfoCache.put(result.publicKey, result)
     }
 
     @Suppress("ThrowsCount")

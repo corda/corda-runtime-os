@@ -551,8 +551,7 @@ class SoftCryptoServiceGeneralTests {
         Assertions.assertSame(exception, thrown)
         verify(repo, times(2)).findKey(ArgumentMatchers.anyString())
     }
-
-
+    
     @Test
     @Suppress("ComplexMethod", "MaxLineLength")
     fun `Should save generated key with alias`() {
@@ -632,10 +631,10 @@ class SoftCryptoServiceGeneralTests {
 //        val hashB = ShortHash.of("123456789ABC")
 //        val keys = listOf(hashA, hashB)
 //        val mockCachedKey = mock<SigningKeyInfo> { on { id } doReturn hashA }
-//        val queryCap = argumentCaptor<Iterable<CacheKey>>()
+//        val queryCap = argumentCaptor<Iterable<ShortHashCacheKey>>()
 //        val cache = mock<Cache<PublicKey, SigningKeyInfo>> {
 //            on { getAllPresent(queryCap.capture()) } doReturn mapOf(
-//                CacheKey("tenant", hashA) to mockCachedKey
+//                ShortHashCacheKey("tenant", hashA) to mockCachedKey
 //            )
 //        }
 //        val keyIdsCap = argumentCaptor<Set<ShortHash>>()
