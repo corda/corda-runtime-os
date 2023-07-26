@@ -165,7 +165,7 @@ class UpdateGroupParametersHandlerTest {
 
     private val dbConnectionManager = mock<DbConnectionManager> {
         on {
-            createEntityManagerFactory(
+            getOrCreateEntityManagerFactory(
                 eq(vaultDmlConnectionId),
                 any()
             )

@@ -166,9 +166,9 @@ class AddNotaryToGroupParametersHandlerTest {
     private val entityManagerFactory = mock<EntityManagerFactory> {
         on { createEntityManager() } doReturn entityManager
     }
-    private val connectionManager = mock<DbConnectionManager> {
+    private val dbConnectionManager = mock<DbConnectionManager> {
         on {
-            createEntityManagerFactory(
+            getOrCreateEntityManagerFactory(
                 vaultDmlConnectionId,
                 entitySet
             )
@@ -225,7 +225,7 @@ class AddNotaryToGroupParametersHandlerTest {
         on { cordaAvroSerializationFactory } doReturn serializationFactory
         on { virtualNodeInfoReadService } doReturn nodeInfoReadService
         on { jpaEntitiesRegistry } doReturn registry
-        on { dbConnectionManager } doReturn connectionManager
+        on { dbConnectionManager } doReturn dbConnectionManager
         on { clock } doReturn clock
         on { keyEncodingService } doReturn keyEncodingService
         on { memberInfoFactory } doReturn memberInfoFactory
@@ -272,7 +272,6 @@ class AddNotaryToGroupParametersHandlerTest {
         handler.invoke(requestContext, request)
 
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityManager).transaction
         verify(registry).get(eq(CordaDb.Vault.persistenceUnitName))
         verify(keyValuePairListSerializer).serialize(
@@ -306,7 +305,6 @@ class AddNotaryToGroupParametersHandlerTest {
         handler.invoke(requestContext, request)
 
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityManager).transaction
         verify(registry).get(eq(CordaDb.Vault.persistenceUnitName))
         verify(keyValuePairListSerializer).serialize(
@@ -383,7 +381,6 @@ class AddNotaryToGroupParametersHandlerTest {
         handler.invoke(requestContext, request)
 
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityManager).transaction
         verify(registry).get(eq(CordaDb.Vault.persistenceUnitName))
         verify(entityManager, times(0)).persist(any())

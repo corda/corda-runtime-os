@@ -61,11 +61,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                         "holding identity ID $holdingIdentityShortHash"
             )
         val factory = getEntityManagerFactory(virtualNodeInfo)
-        return try {
-            transactionTimer.recordCallable { factory.transaction(block) }!!
-        } finally {
-            factory.close()
-        }
+        return transactionTimer.recordCallable { factory.transaction(block) }!!
     }
     fun <R> transaction(block: (EntityManager) -> R): R {
         return dbConnectionManager.getClusterEntityManagerFactory().let {
@@ -80,7 +76,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     }
 
     private fun getEntityManagerFactory(info: VirtualNodeInfo): EntityManagerFactory {
-        return dbConnectionManager.createEntityManagerFactory(
+        return dbConnectionManager.getOrCreateEntityManagerFactory(
             connectionId = info.vaultDmlConnectionId,
             entitiesSet = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
                 ?: throw java.lang.IllegalStateException(

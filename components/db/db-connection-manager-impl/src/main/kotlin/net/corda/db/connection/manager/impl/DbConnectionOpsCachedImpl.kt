@@ -20,6 +20,11 @@ class DbConnectionOpsCachedImpl(
     // TODO - replace with caffeine cache
     private val cache = ConcurrentHashMap<Pair<String,DbPrivilege>, EntityManagerFactory>()
 
+    // TODO Maybe we could consider replacing the above cache with the one below. All `db_connection`s have/ get an ID
+    //  Currently the below cache is not cleared on overwriting a connection. In theory I think that should be OK for now
+    //  since we don't allow "re-creating" a vnode (I believe).
+    private val cacheByConnectionId = ConcurrentHashMap<UUID, EntityManagerFactory>()
+
     private fun removeFromCache(name: String, privilege: DbPrivilege) {
         val entityManagerFactory = cache.remove(Pair(name,privilege))
         entityManagerFactory?.close()
@@ -55,6 +60,16 @@ class DbConnectionOpsCachedImpl(
     ): EntityManagerFactory {
         return cache.computeIfAbsent(Pair(name,privilege)) {
             delegate.getOrCreateEntityManagerFactory(name, privilege, entitiesSet)
+        }
+    }
+
+    override fun getOrCreateEntityManagerFactory(
+        connectionId: UUID,
+        entitiesSet: JpaEntitiesSet
+    ): EntityManagerFactory {
+        // TODO Should we be preventing DDL connections from being cached?
+        return cacheByConnectionId.computeIfAbsent(connectionId) {
+            delegate.createEntityManagerFactory(connectionId, entitiesSet)
         }
     }
 }

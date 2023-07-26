@@ -92,7 +92,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     }
     private val dbConnectionManager = mock<DbConnectionManager> {
         on {
-            createEntityManagerFactory(
+            getOrCreateEntityManagerFactory(
                 vaultDmlConnectionId,
                 jpaEntitiesSet
             )
