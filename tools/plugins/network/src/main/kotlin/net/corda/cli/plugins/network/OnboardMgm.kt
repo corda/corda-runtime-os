@@ -3,6 +3,8 @@ package net.corda.cli.plugins.network
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
+import net.corda.cli.plugins.network.utils.InvariantUtils
+import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.membership.rest.v1.MGMRestResource
 import picocli.CommandLine.Command
@@ -63,16 +65,26 @@ class OnboardMgm : Runnable, BaseOnboard() {
     }
 
     private fun saveGroupPolicy() {
-        createRestClient(MGMRestResource::class).use { client ->
-            val resource = client.start().proxy
-            val response = resource.generateGroupPolicy(holdingId)
-            groupPolicyFile.parentFile.mkdirs()
-            json.writerWithDefaultPrettyPrinter()
-                .writeValue(
-                    groupPolicyFile,
-                    json.readTree(response)
-                )
-            println("Group policy file created at $groupPolicyFile")
+        checkInvariant(
+            maxAttempts = MAX_ATTEMPTS,
+            waitInterval = WAIT_INTERVAL,
+            errorMessage = "Save group policy failed at ($MAX_ATTEMPTS)."
+        ) {
+            try {
+                createRestClient(MGMRestResource::class).use { client ->
+                    val resource = client.start().proxy
+                    val response = resource.generateGroupPolicy(holdingId)
+                    groupPolicyFile.parentFile.mkdirs()
+                    json.writerWithDefaultPrettyPrinter()
+                        .writeValue(
+                            groupPolicyFile,
+                            json.readTree(response)
+                        )
+                    println("Group policy file created at $groupPolicyFile")
+                }
+            } catch (e: Exception) {
+                null
+            }
         }
     }
 
