@@ -18,13 +18,12 @@ import java.time.Duration
  * Runs a function in the scope of a managed configuration which is automatically reverted upon completion.
  */
 fun managedConfig(vararg clusters: ClusterInfo, func: (TestConfigManager) -> Unit) {
-    if(clusters.isEmpty()) {
-        SingleClusterTestConfigManager(DEFAULT_CLUSTER).use(func)
-    } else if (clusters.size == 1){
-        SingleClusterTestConfigManager(clusters[0]).use(func)
+    val clusterDedup = clusters.toSet()
+    if(clusterDedup.size > 1) {
+        MultiClusterTestConfigManager(clusterDedup)
     } else {
-        MultiClusterTestConfigManager(*clusters).use(func)
-    }
+        SingleClusterTestConfigManager(clusters.getOrNull(0) ?: DEFAULT_CLUSTER)
+    }.use(func)
 }
 
 fun JsonNode.sourceConfigNode(): JsonNode =

@@ -3,7 +3,7 @@ package net.corda.e2etest.utilities.config
 import net.corda.e2etest.utilities.ClusterInfo
 
 class MultiClusterTestConfigManager(
-    vararg clusterInfos: ClusterInfo
+    clusterInfos: Collection<ClusterInfo>
 ): TestConfigManager, AutoCloseable {
     private val configManagers: MutableSet<TestConfigManager> = mutableSetOf()
 

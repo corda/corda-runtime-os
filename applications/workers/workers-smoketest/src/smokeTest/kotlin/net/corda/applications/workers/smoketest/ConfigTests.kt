@@ -42,6 +42,7 @@ class ConfigTests {
             val updatedValue = getReconConfigValue(defaults = false)
             assertThat(updatedValue).isEqualTo(newValue)
         }
+        waitForConfigurationChange(RECONCILIATION_CONFIG, RECONCILIATION_CONFIG_INTERVAL_MS, initialValue.toString(), false)
     }
 
     private fun getReconConfigValue(defaults: Boolean): Int {

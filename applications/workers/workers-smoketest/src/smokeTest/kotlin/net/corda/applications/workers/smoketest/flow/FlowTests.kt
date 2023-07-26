@@ -20,6 +20,7 @@ import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.config.configWithDefaultsNode
 import net.corda.e2etest.utilities.config.getConfig
 import net.corda.e2etest.utilities.config.managedConfig
+import net.corda.e2etest.utilities.config.waitForConfigurationChange
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
@@ -880,6 +881,8 @@ class FlowTests {
             configManager
                 .load(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue)
                 .apply()
+            // Wait for the rpc-worker to reload the configuration and come back up
+            waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue.toString())
 
             // Execute some flows which require functionality from different workers and make sure they succeed
             val flowIds = mutableListOf(

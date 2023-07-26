@@ -5,7 +5,7 @@ import net.corda.e2etest.utilities.ClusterInfo
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.toJsonString
 import net.corda.test.util.eventually
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 
@@ -26,7 +26,10 @@ class SingleClusterTestConfigManager(
     }
 
     override fun load(section: String, prop: String, value: Any?): TestConfigManager {
-        logger.info("Loading test config $value for property $prop in section $section for cluster ${clusterInfo.name}.")
+        logger.info(
+            "Loading test config $value for property $prop in section $section for cluster ${clusterInfo.name} " +
+                    "into TestConfigManager."
+        )
 
         // If the input value is a map, flatten it to a standardised form for merging with previously loaded configs.
         val propsAsFlattenedTree = mutableMapOf<String, Any?>().also {
@@ -58,15 +61,18 @@ class SingleClusterTestConfigManager(
             }
 
             val newConfig = toJsonString(configOverride)
-            logger.info("Applying config $newConfig for section $section on cluster ${clusterInfo.name}.")
+            logger.info(
+                "Updating from config $previousSourceConfig to $newConfig for section $section on " +
+                        "cluster ${clusterInfo.name}."
+            )
 
             if(newConfig != previousSourceConfig) {
                 updateConfig(newConfig, section)
 
                 eventually {
                     with(getConfig(section)) {
-                        Assertions.assertThat(version).isNotEqualTo(previousVersion)
-                        Assertions.assertThat(sourceConfig).isNotEqualTo(previousSourceConfig)
+                        assertThat(version).isNotEqualTo(previousVersion)
+                        assertThat(sourceConfig).isEqualTo(newConfig)
                     }
                 }
             }
@@ -76,16 +82,21 @@ class SingleClusterTestConfigManager(
 
     override fun revert(): TestConfigManager {
         originalConfigs.forEach { (section, originalConfig) ->
-            val previousVersion = getConfig(section).version
+            val (previousVersion, previousSourceConfig) = with(getConfig(section)) {
+                version to sourceConfig
+            }
             val preTestConfig = originalConfig.sourceConfig.ifBlank { "{}" }
 
-            logger.info("Reverting test config for section $section to $preTestConfig for cluster ${clusterInfo.name}.")
+            logger.info(
+                "Reverting test config for section $section from $previousSourceConfig to $preTestConfig " +
+                    "for cluster ${clusterInfo.name}."
+            )
             updateConfig(preTestConfig, section)
 
             eventually {
                 val newConfig = getConfig(section)
-                Assertions.assertThat(newConfig.version).isNotEqualTo(previousVersion)
-                Assertions.assertThat(newConfig.sourceConfig).isEqualTo(preTestConfig)
+                assertThat(newConfig.version).isNotEqualTo(previousVersion)
+                assertThat(newConfig.sourceConfig).isEqualTo(preTestConfig)
             }
         }
         return this
