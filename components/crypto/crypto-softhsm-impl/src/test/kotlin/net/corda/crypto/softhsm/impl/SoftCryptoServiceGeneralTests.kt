@@ -53,6 +53,7 @@ import org.mockito.ArgumentMatchers
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
@@ -625,33 +626,33 @@ class SoftCryptoServiceGeneralTests {
         )
     }
 
-//    @Test
-//    fun `repository can correctly looks up a signing key by short ids`() {
-//        val hashA = ShortHash.of("0123456789AB")
-//        val hashB = ShortHash.of("123456789ABC")
-//        val keys = listOf(hashA, hashB)
-//        val mockCachedKey = mock<SigningKeyInfo> { on { id } doReturn hashA }
-//        val queryCap = argumentCaptor<Iterable<ShortHashCacheKey>>()
-//        val cache = mock<Cache<PublicKey, SigningKeyInfo>> {
-//            on { getAllPresent(queryCap.capture()) } doReturn mapOf(
-//                ShortHashCacheKey("tenant", hashA) to mockCachedKey
-//            )
-//        }
-//        val keyIdsCap = argumentCaptor<Set<ShortHash>>()
-//        val signingKeyInfo = mock<SigningKeyInfo> { on { id } doReturn mock() }
-//        val repo = mock<SigningRepository> {
-//            on { lookupByPublicKeyShortHashes(keyIdsCap.capture()) } doReturn setOf(signingKeyInfo)
-//        }
-//
-//        val cryptoService = makeSoftCryptoService(signingRepository = repo, signingKeyInfoCache = cache)
-//        cryptoService.lookupSigningKeysByPublicKeyShortHash("tenant", keys)
-//
-//        val cacheKeys = setOf(CacheKey("tenant", hashA), CacheKey("tenant", hashB))
-//        queryCap.allValues.single().forEach {
-//            assertThat(it in cacheKeys)
-//        }
-//        assertThat(keyIdsCap.allValues.single()).isEqualTo(setOf(hashB))
-//    }
+    @Test
+    fun `repository can correctly looks up a signing key by short ids`() {
+        val hashA = ShortHash.of("0123456789AB")
+        val hashB = ShortHash.of("123456789ABC")
+        val keys = listOf(hashA, hashB)
+        val mockCachedKey = mock<SigningKeyInfo> { on { id } doReturn hashA }
+        val queryCap = argumentCaptor<Iterable<ShortHashCacheKey>>()
+        val cache = mock<Cache<ShortHashCacheKey, SigningKeyInfo>> {
+            on { getAllPresent(queryCap.capture()) } doReturn mapOf(
+                ShortHashCacheKey("tenant", hashA) to mockCachedKey
+            )
+        }
+        val keyIdsCap = argumentCaptor<Set<ShortHash>>()
+        val signingKeyInfo = mock<SigningKeyInfo> { on { id } doReturn mock() }
+        val repo = mock<SigningRepository> {
+            on { lookupByPublicKeyShortHashes(keyIdsCap.capture()) } doReturn setOf(signingKeyInfo)
+        }
+
+        val cryptoService = makeSoftCryptoService(signingRepository = repo, shortHashCache = cache)
+        cryptoService.lookupSigningKeysByPublicKeyShortHash("tenant", keys)
+
+        val cacheKeys = setOf(ShortHashCacheKey("tenant", hashA), ShortHashCacheKey("tenant", hashB))
+        queryCap.allValues.single().forEach {
+            assertThat(it in cacheKeys)
+        }
+        assertThat(keyIdsCap.allValues.single()).isEqualTo(setOf(hashB))
+    }
 
 //    @Test
 //    fun `repository correctly looks up a signing key by full ids when needs both cache and database`() {
