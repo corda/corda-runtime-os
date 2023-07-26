@@ -110,7 +110,6 @@ class SoftCryptoServiceOperationsTests {
             shortHashCache = shortHashCache,
             signingRepositoryFactory = { signingRepository },
             privateKeyCache = null,
-            signingKeyInfoCache = mock(),
             tenantInfoService = mock()
         )
         private val category = CryptoConsts.Categories.LEDGER

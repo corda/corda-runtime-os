@@ -36,7 +36,6 @@ import net.corda.crypto.softhsm.TenantInfoService
 import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
 import net.corda.crypto.softhsm.impl.infra.makeShortHashCache
-import net.corda.crypto.softhsm.impl.infra.makeSigningKeyInfoCache
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeTenantInfoService
 import net.corda.crypto.testkit.SecureHashUtils
@@ -593,7 +592,6 @@ class SoftCryptoServiceGeneralTests {
                 KeyPairGenerator.getInstance(algorithm, provider)
             },
             wrappingKeyFactory = { WrappingKeyImpl.generateWrappingKey(it) },
-            signingKeyInfoCache = makeSigningKeyInfoCache(),
             tenantInfoService = makeTenantInfoService(masterKeyAlias)
         ) {
             override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedWrappedKey =
@@ -724,8 +722,7 @@ class SoftCryptoServiceGeneralTests {
             keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
                 KeyPairGenerator.getInstance(algorithm, provider)
             },
-            tenantInfoService = makeTenantInfoService(),
-            signingKeyInfoCache = makeSigningKeyInfoCache(),
+            tenantInfoService = makeTenantInfoService()
         )
         if (keysInCache >= 1) populateShortHashCache(cache, shortKeyId0, fullKeyId0)
         if (keysInCache >= 2) populateShortHashCache(cache, shortKeyId1, fullKeyId1)
@@ -780,7 +777,6 @@ class SoftCryptoServiceGeneralTests {
                 KeyPairGenerator.getInstance(algorithm, provider)
             },
             shortHashCache = cache,
-            signingKeyInfoCache = makeSigningKeyInfoCache(),
             tenantInfoService = makeTenantInfoService()
         )
         val lookedUpByFullKeyIdsKeys =

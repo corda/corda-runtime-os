@@ -25,7 +25,6 @@ fun makeSoftCryptoService(
     privateKeyCache: Cache<PublicKey, PrivateKey>? = null,
     wrappingKeyCache: Cache<String, WrappingKey>? = null,
     shortHashCache: Cache<ShortHashCacheKey, SigningKeyInfo>? = null,
-    signingKeyInfoCache: Cache<PublicKey, SigningKeyInfo>? = null,
     schemeMetadata: CipherSchemeMetadataImpl = CipherSchemeMetadataImpl(),
     rootWrappingKey: WrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata),
     wrappingKeyFactory: (schemeMetadata: CipherSchemeMetadata) -> WrappingKey = { it ->
@@ -49,7 +48,6 @@ fun makeSoftCryptoService(
             KeyPairGenerator.getInstance(algorithm, provider)
         },
         wrappingKeyFactory = wrappingKeyFactory,
-        signingKeyInfoCache = signingKeyInfoCache ?: makeSigningKeyInfoCache(),
         tenantInfoService =  tenantInfoService
     )
 }

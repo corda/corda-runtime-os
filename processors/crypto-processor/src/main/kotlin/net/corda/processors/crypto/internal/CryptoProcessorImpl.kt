@@ -238,12 +238,6 @@ class CryptoProcessorImpl @Activate constructor(
                 .expireAfterAccess(expireAfterAccessMins, TimeUnit.MINUTES)
                 .maximumSize(maximumSize)
         )
-        val signingKeyInfoCache: Cache<PublicKey, SigningKeyInfo> = CacheFactoryImpl().build(
-            "Signing-Key-Cache",
-            Caffeine.newBuilder()
-                .expireAfterAccess(expireAfterAccessMins, TimeUnit.MINUTES)
-                .maximumSize(maximumSize)
-        )
         val shortHashCache: Cache<ShortHashCacheKey, SigningKeyInfo> = CacheFactoryImpl().build(
             "Signing-Key-Cache",
             Caffeine.newBuilder()
@@ -289,7 +283,6 @@ class CryptoProcessorImpl @Activate constructor(
             wrappingKeyCache = wrappingKeyCache,
             privateKeyCache = privateKeyCache,
             shortHashCache = shortHashCache,
-            signingKeyInfoCache = signingKeyInfoCache,
             keyPairGeneratorFactory = keyPairGeneratorFactory, 
             wrappingKeyFactory = wrappingKeyFactory,
             tenantInfoService = tenantInfoService
