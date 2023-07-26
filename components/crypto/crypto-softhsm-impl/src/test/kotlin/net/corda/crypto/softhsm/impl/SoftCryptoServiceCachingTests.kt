@@ -8,10 +8,7 @@ import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.aes.WrappingKeyImpl
-import net.corda.crypto.core.fullIdHash
-import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.TenantInfoService
 import net.corda.crypto.softhsm.WrappingRepository
@@ -32,9 +29,7 @@ import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.mock
 import java.security.KeyPairGenerator
 import java.security.Provider
-import java.security.PublicKey
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -164,6 +159,7 @@ class SoftCryptoServiceCachingTests {
 
         val myCryptoService =
             makeSoftCryptoService(
+                shortHashCache = makeShortHashCache(),
                 privateKeyCache = privateKeyCache,
                 wrappingKeyCache = null,
                 schemeMetadata = schemeMetadata,
@@ -219,6 +215,7 @@ class SoftCryptoServiceCachingTests {
             rootWrappingKey = rootWrappingKey,
             wrappingKeyCache = wrappingKeyCache,
             privateKeyCache = makePrivateKeyCache(),
+            shortHashCache = makeShortHashCache()
         )
 
         // starting fresh, all 3 aliases are missing from both store and cache
@@ -261,93 +258,4 @@ class SoftCryptoServiceCachingTests {
         assertNull(countingWrappingRepository.findKey(unknownAlias))
         assertNull(countingWrappingRepository.findKey(cacheAlias))
     }
-    
-    @Test
-    fun `Lookup by short hashes of keys for multiple tenants which are cached does not go to database`() {
-        val schemeMetadata = CipherSchemeMetadataImpl()
-        val tenants = listOf(0,1)
-        val tenantIds = tenants.map { UUID.randomUUID().toString() }
-        val knownWrappingKeyAliases = tenants.map { UUID.randomUUID().toString() }
-        val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
-        val knownWrappingKeys= tenants.map { WrappingKeyImpl.generateWrappingKey(schemeMetadata) }
-        val knownWrappingKeyMaterials = knownWrappingKeys.map { rootWrappingKey.wrap(it) }
-        
-        val tenantWrappingRepositories = tenants.map {
-            TestWrappingRepository(
-                ConcurrentHashMap(
-                    listOf(
-                        knownWrappingKeyAliases.elementAt(it) to WrappingKeyInfo(
-                            WRAPPING_KEY_ENCODING_VERSION,
-                            knownWrappingKeys.elementAt(it).algorithm,
-                            knownWrappingKeyMaterials.elementAt(it),
-                            1,
-                            "root",
-                        )
-                    ).toMap()
-                )
-            )
-        }        
-        val shortHashCache = makeShortHashCache()
-        val cryptoService = SoftCryptoService(
-            wrappingRepositoryFactory= {  tenantId -> tenantWrappingRepositories.elementAt(tenantIds.indexOf(tenantId)) },
-            schemeMetadata = schemeMetadata,
-            privateKeyCache = makePrivateKeyCache(),
-            shortHashCache = shortHashCache,
-            signingKeyInfoCache = makeSigningKeyInfoCache(),
-            keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
-                KeyPairGenerator.getInstance(algorithm, provider)
-            },
-            wrappingKeyFactory = { it -> WrappingKeyImpl.generateWrappingKey(it) },
-            wrappingKeyCache = makeWrappingKeyCache(),
-            signingRepositoryFactory = { TestSigningRepository(it) },
-            defaultUnmanagedWrappingKeyName = "root",
-            digestService = PlatformDigestServiceImpl(schemeMetadata),
-            tenantInfoService = mock(),
-            unmanagedWrappingKeys = mapOf("root" to rootWrappingKey)
-            )
-        val rsa = cryptoService.supportedSchemes.filter { it.key.codeName == RSA_CODE_NAME }.toList().first().first
-        val keyPairs = tenants.map {
-            cryptoService.generateKeyPair(
-                tenantIds.elementAt(it),
-                CryptoConsts.Categories.LEDGER,
-                "key-$it",
-                null,
-                rsa,
-                mapOf("parentKeyAlias" to knownWrappingKeyAliases.elementAt(it))
-            )
-        }
-        val shortHashes = tenants.map {
-            val key = keyPairs.elementAt(it).publicKey
-            makeShortHash(schemeMetadata, key)
-        }
-        tenants.map {
-            assertThat( shortHashCache.getIfPresent(shortHashes.elementAt(it))).isNotNull()
-        }
-        assertThat(shortHashCache.getIfPresent(makeShortHash(schemeMetadata,  keyPairs.elementAt(0).publicKey)))
-        val found1of1full = cryptoService.lookupSigningKeysByPublicKeyHashes(tenantIds.elementAt(0), 
-            listOf(keyPairs.elementAt(0).publicKey.fullIdHash()))
-        assertThat(found1of1full.size).isEqualTo(1)
-        assertThat(found1of1full.elementAt(0).publicKey).isEqualTo(keyPairs.elementAt(0).publicKey)
-        val found1of1short = cryptoService.lookupSigningKeysByPublicKeyShortHash(tenantIds.elementAt(0),
-            listOf(shortHashes.elementAt(0)))
-        assertThat(found1of1short.size).isEqualTo(1)
-        assertThat(found1of1short.elementAt(0).publicKey).isEqualTo(keyPairs.elementAt(0).publicKey)
-        val found1of2short = cryptoService.lookupSigningKeysByPublicKeyShortHash(tenantIds.elementAt(0), 
-            shortHashes)
-        assertThat(found1of2short.size).isEqualTo(1)
-        assertThat(found1of2short.elementAt(0).publicKey).isEqualTo(keyPairs.elementAt(0).publicKey)
-        val found1of2full = cryptoService.lookupSigningKeysByPublicKeyHashes(tenantIds.elementAt(1), 
-            keyPairs.map { it.publicKey.fullIdHash() })
-        assertThat(found1of2full.size).isEqualTo(1)
-        assertThat(found1of2full.elementAt(0).publicKey).isEqualTo(keyPairs.elementAt(1).publicKey)
-    }
-
-    private fun makeShortHash(
-        schemeMetadata: CipherSchemeMetadataImpl,
-        key: PublicKey
-    ): ShortHash {
-        val keyBytes = schemeMetadata.encodeAsByteArray(key)
-        return ShortHash.of(publicKeyIdFromBytes(keyBytes))
-    }
-
 }

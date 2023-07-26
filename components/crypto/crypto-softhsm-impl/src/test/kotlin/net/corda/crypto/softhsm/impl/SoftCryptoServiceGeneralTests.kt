@@ -32,6 +32,7 @@ import net.corda.crypto.softhsm.SigningRepository
 import net.corda.crypto.softhsm.TenantInfoService
 import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
+import net.corda.crypto.softhsm.impl.infra.makeShortHashCache
 import net.corda.crypto.softhsm.impl.infra.makeSigningKeyInfoCache
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeTenantInfoService
@@ -580,7 +581,7 @@ class SoftCryptoServiceGeneralTests {
             digestService = PlatformDigestServiceImpl(schemeMetadata),
             wrappingKeyCache = null,
             privateKeyCache = null,
-            shortHashCache = null,
+            shortHashCache = makeShortHashCache(),
             keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
                 KeyPairGenerator.getInstance(algorithm, provider)
             },

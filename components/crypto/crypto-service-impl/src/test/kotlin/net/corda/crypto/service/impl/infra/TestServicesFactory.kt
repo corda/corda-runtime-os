@@ -19,8 +19,8 @@ import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.softhsm.impl.ShortHashCacheKey
 import net.corda.crypto.softhsm.impl.SoftCryptoService
-import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleStatus
@@ -149,11 +149,13 @@ class TestServicesFactory {
     val secondLevelWrappingKeyWrapped = rootWrappingKey.wrap(secondLevelWrappingKey)
     val secondLevelWrappingKeyInfo = WrappingKeyInfo(1, "AES", secondLevelWrappingKeyWrapped, 1, "root")
     val wrappingRepository = TestWrappingRepository(secondLevelWrappingKeyInfo)
-    val association = mock<HSMAssociationInfo> {
-        on { masterKeyAlias }.thenReturn("second")
-    }
     val signingKeyInfoCache: Cache<SecureHash, SigningKeyInfo> = CacheFactoryImpl().build(
         "test private key cache", Caffeine.newBuilder()
+            .expireAfterAccess(3600, TimeUnit.MINUTES)
+            .maximumSize(20)
+    )
+    val shortHashCache: Cache<ShortHashCacheKey, SigningKeyInfo> = CacheFactoryImpl().build(
+        "test short hash cache", Caffeine.newBuilder()
             .expireAfterAccess(3600, TimeUnit.MINUTES)
             .maximumSize(20)
     )
@@ -166,7 +168,7 @@ class TestServicesFactory {
             digestService = PlatformDigestServiceImpl(schemeMetadata),
             wrappingKeyCache = null,
             privateKeyCache = null,
-            shortHashCache = null,
+            shortHashCache = shortHashCache,
             keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
                 KeyPairGenerator.getInstance(algorithm, provider)
             },

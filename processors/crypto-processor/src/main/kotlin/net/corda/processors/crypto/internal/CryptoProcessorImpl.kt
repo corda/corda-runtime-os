@@ -23,7 +23,6 @@ import net.corda.crypto.config.impl.retrying
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
@@ -35,6 +34,7 @@ import net.corda.crypto.service.impl.bus.CryptoOpsBusProcessor
 import net.corda.crypto.service.impl.bus.HSMRegistrationBusProcessor
 import net.corda.crypto.softhsm.TenantInfoService
 import net.corda.crypto.softhsm.impl.HSMRepositoryImpl
+import net.corda.crypto.softhsm.impl.ShortHashCacheKey
 import net.corda.crypto.softhsm.impl.SigningRepositoryImpl
 import net.corda.crypto.softhsm.impl.SoftCryptoService
 import net.corda.crypto.softhsm.impl.WrappingRepositoryImpl
@@ -245,7 +245,7 @@ class CryptoProcessorImpl @Activate constructor(
                 .expireAfterAccess(expireAfterAccessMins, TimeUnit.MINUTES)
                 .maximumSize(maximumSize)
         )
-        val shortHashCache: Cache<ShortHash, SecureHash> = CacheFactoryImpl().build(
+        val shortHashCache: Cache<ShortHashCacheKey, SigningKeyInfo> = CacheFactoryImpl().build(
             "Signing-Key-Cache",
             Caffeine.newBuilder()
                 .expireAfterAccess(expireAfterAccessMins, TimeUnit.MINUTES)
