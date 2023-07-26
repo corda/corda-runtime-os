@@ -184,7 +184,7 @@ class EntitySandboxServiceImpl @Activate constructor(
 
         // Create a map that contains a single UTXO token observer for each token state
         // This away, people know that the there will never be more than one UTXO token observer
-        val validatedTokenStateObserverMap = tokenStateObserverMap.map { it.key to it.value.singleOrNull() }
+        val validatedTokenStateObserverMap = tokenStateObserverMap.entries.associate { it.key to it.value.singleOrNull() }
 
         ctx.putObjectByKey(SANDBOX_TOKEN_STATE_OBSERVERS, validatedTokenStateObserverMap)
         logger.debug {
