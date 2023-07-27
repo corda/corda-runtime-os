@@ -3,6 +3,7 @@ package net.corda.cli.plugins.network
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
+import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.membership.rest.v1.MGMRestResource
 import picocli.CommandLine.Command
@@ -10,9 +11,6 @@ import picocli.CommandLine.Option
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.UUID
-import net.corda.cli.plugins.common.RestClientUtils.executeWithRetry
-import java.time.Duration
-import java.time.temporal.ChronoUnit
 
 @Command(
     name = "mgm",
@@ -65,20 +63,26 @@ class OnboardMgm : Runnable, BaseOnboard() {
         }
     }
 
-    private val waitDuration: Duration = Duration.of(300, ChronoUnit.SECONDS)
-
     private fun saveGroupPolicy() {
-        createRestClient(MGMRestResource::class).use { client ->
-            executeWithRetry(waitDuration, "Save group policy") {
-                val resource = client.start().proxy
-                val response = resource.generateGroupPolicy(holdingId)
-                groupPolicyFile.parentFile.mkdirs()
-                json.writerWithDefaultPrettyPrinter()
-                    .writeValue(
-                        groupPolicyFile,
-                        json.readTree(response)
-                    )
-                println("Group policy file created at $groupPolicyFile")
+        checkInvariant(
+            maxAttempts = MAX_ATTEMPTS,
+            waitInterval = WAIT_INTERVAL,
+            errorMessage = "Save group policy failed at ($MAX_ATTEMPTS)."
+        ) {
+            try {
+                createRestClient(MGMRestResource::class).use { client ->
+                    val resource = client.start().proxy
+                    val response = resource.generateGroupPolicy(holdingId)
+                    groupPolicyFile.parentFile.mkdirs()
+                    json.writerWithDefaultPrettyPrinter()
+                        .writeValue(
+                            groupPolicyFile,
+                            json.readTree(response)
+                        )
+                    println("Group policy file created at $groupPolicyFile")
+                }
+            } catch (e: Exception) {
+                null
             }
         }
     }
@@ -113,9 +117,8 @@ class OnboardMgm : Runnable, BaseOnboard() {
     }
 
     private val cpi by lazy {
-        val parametersCpiFile = cpiFile
-        if (parametersCpiFile != null) {
-            return@lazy parametersCpiFile
+        if (cpiFile != null) {
+            return@lazy cpiFile!!
         }
         val mgmGroupPolicyFile = File.createTempFile("mgm.groupPolicy.", ".json").also {
             it.deleteOnExit()

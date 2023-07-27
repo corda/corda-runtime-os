@@ -8,7 +8,7 @@ import net.corda.crypto.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
-import net.corda.crypto.core.CryptoTenants.REST
+import net.corda.crypto.core.CryptoTenants.allClusterTenants
 import net.corda.crypto.core.DefaultSignatureOIDMap
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
@@ -442,20 +442,16 @@ class CertificatesRestResourceImpl @Activate constructor(
     }
 
     private fun validateTenantId(tenantId: String) {
-        val isValidShortHash = try {
-            ShortHash.parse(tenantId)
-            true
-        } catch (e: ShortHashException) {
-            false
-        }
-        val isValidClusterTenant = (tenantId == P2P || tenantId == REST)
+        if (tenantId in allClusterTenants) return
 
-        if (!isValidShortHash && !isValidClusterTenant) {
-            throw InvalidInputDataException(
-                "Provided tenantId ($tenantId) was not valid. " +
-                        "It needs to be either a cluster tenant ($P2P or $REST) or a valid holding identity ID."
-            )
+        try {
+            ShortHash.parse(tenantId)
+        } catch (e: ShortHashException) {
+            throw InvalidInputDataException("Provided tenantId $tenantId is not a valid holding identity ID.")
         }
+
+        // Check if a virtual node exists for given tenantId, if not, it throws ResourceNotFoundException
+        virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(tenantId)
     }
 
     private fun validateHostname(hostname: String): Boolean {

@@ -3,8 +3,8 @@ package net.corda.ledger.utxo.token.cache.factories
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
+import net.corda.ledger.utxo.token.cache.entities.TokenBalance
 import net.corda.messaging.api.records.Record
-import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 
 /**
  * The [RecordFactory] creates instances of [Record]

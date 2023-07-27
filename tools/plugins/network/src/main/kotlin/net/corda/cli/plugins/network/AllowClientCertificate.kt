@@ -3,11 +3,8 @@ package net.corda.cli.plugins.network
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.membership.rest.v1.MGMRestResource
-import net.corda.cli.plugins.common.RestClientUtils.executeWithRetry
 import picocli.CommandLine.Command
 import picocli.CommandLine.Parameters
-import java.time.Duration
-import java.time.temporal.ChronoUnit
 
 @Command(
     name = "allow-client-certificate",
@@ -31,8 +28,6 @@ class AllowClientCertificate : Runnable, RestCommand() {
     )
     var subjects: Collection<String> = emptyList()
 
-    private val waitDuration: Duration = Duration.of(300, ChronoUnit.SECONDS)
-
     override fun run() {
         allowAndListCertificates()
     }
@@ -43,22 +38,19 @@ class AllowClientCertificate : Runnable, RestCommand() {
             return
         }
 
-        createRestClient(MGMRestResource::class).use { client ->
-            executeWithRetry(waitDuration, "Allow and list certificates") {
-                println("Allowing certificates...")
+        createRestClient(MGMRestResource::class).use { it ->
+            
+            val proxy = it.start().proxy
+            println("Allowing certificates...")
 
-                val mgm = client.start().proxy
+            subjects.forEach { subject ->
+                println("\t Allowing $subject")
+                proxy.mutualTlsAllowClientCertificate(mgmShortHash, subject)
+            }
+            println("Success!")
 
-                subjects.forEach { subject ->
-                    println("\t Allowing $subject")
-                    mgm.mutualTlsAllowClientCertificate(mgmShortHash, subject)
-                }
-
-                println("Success!")
-
-                mgm.mutualTlsListClientCertificate(mgmShortHash).forEach { subject ->
-                    println("Certificate with subject $subject is allowed")
-                }
+            proxy.mutualTlsListClientCertificate(mgmShortHash).forEach { subject ->
+                println("Certificate with subject $subject is allowed")
             }
         }
     }

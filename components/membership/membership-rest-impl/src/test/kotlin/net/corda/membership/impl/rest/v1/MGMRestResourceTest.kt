@@ -15,6 +15,8 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
+import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
 import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.rest.v1.types.response.PreAuthToken
@@ -22,6 +24,7 @@ import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.rest.v1.types.RestGroupParameters
 import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
 import net.corda.rest.exception.InvalidStateChangeException
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
@@ -1370,6 +1373,84 @@ class MGMRestResourceTest {
 
             assertThrows<InvalidStateChangeException> {
                 mgmRestResource.activateMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
+            }
+        }
+    }
+
+    @Nested
+    inner class UpdateGroupParametersTests {
+        @BeforeEach
+        fun setUp() = startService()
+
+        @AfterEach
+        fun tearDown() = stopService()
+
+        private val mockUpdate = mock<RestGroupParameters> {
+            on { parameters } doReturn mapOf("ext.key" to "value")
+        }
+
+        @Test
+        fun `updateGroupParameters delegates correctly to mgm resource client`() {
+            val mockParameters = mock<InternalGroupParameters> {
+                on { entries } doReturn emptySet()
+            }
+            whenever(mgmResourceClient.updateGroupParameters(any(), any())).doReturn(mockParameters)
+
+            mgmRestResource.updateGroupParameters(HOLDING_IDENTITY_ID, mockUpdate)
+
+            verify(mgmResourceClient).updateGroupParameters(
+                (ShortHash.of(HOLDING_IDENTITY_ID)),
+                mockUpdate.parameters
+            )
+        }
+
+        @Test
+        fun `updateGroupParameters throws resource not found for invalid member`() {
+            whenever(mgmResourceClient.updateGroupParameters(
+                ShortHash.of(HOLDING_IDENTITY_ID), mockUpdate.parameters
+            )).doThrow(mock<CouldNotFindMemberException>())
+
+            assertThrows<ResourceNotFoundException> {
+                mgmRestResource.updateGroupParameters(HOLDING_IDENTITY_ID, mockUpdate)
+            }
+        }
+
+        @Test
+        fun `updateGroupParameters throws invalid input for non MGM member`() {
+            whenever(mgmResourceClient.updateGroupParameters(
+                ShortHash.of(HOLDING_IDENTITY_ID), mockUpdate.parameters
+            )).doThrow(mock<MemberNotAnMgmException>())
+
+            assertThrows<InvalidInputDataException> {
+                mgmRestResource.updateGroupParameters(HOLDING_IDENTITY_ID, mockUpdate)
+            }
+        }
+
+        @Test
+        fun `updateGroupParameters throws bad request if short hash is invalid`() {
+            assertThrows<BadRequestException> {
+                mgmRestResource.updateGroupParameters(INVALID_SHORT_HASH, mockUpdate)
+            }
+        }
+
+        @Test
+        fun `updateGroupParameters throws bad request if update is not valid`() {
+            assertThrows<BadRequestException> {
+                mgmRestResource.updateGroupParameters(
+                    HOLDING_IDENTITY_ID,
+                    RestGroupParameters(mapOf(EPOCH_KEY to "5"))
+                )
+            }
+        }
+
+        @Test
+        fun `updateGroupParameters throws invalid state change in case of concurrent update attempt`() {
+            whenever(mgmResourceClient.updateGroupParameters(
+                ShortHash.of(HOLDING_IDENTITY_ID), mockUpdate.parameters
+            )).doThrow(mock<PessimisticLockException>())
+
+            assertThrows<InvalidStateChangeException> {
+                mgmRestResource.updateGroupParameters(HOLDING_IDENTITY_ID, mockUpdate)
             }
         }
     }

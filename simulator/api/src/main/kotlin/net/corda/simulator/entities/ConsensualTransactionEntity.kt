@@ -18,18 +18,18 @@ import javax.persistence.Table
 @Entity
 @Table(name = "consensual_transaction")
 class ConsensualTransactionEntity (
-    @Id
-    @Column(name="id")
-    val id: String,
+    @get:Id
+    @get:Column(name="id")
+    var id: String,
 
-    @Column(name="state_data")
-    val stateData: ByteArray,
+    @get:Column(name="state_data")
+    var stateData: ByteArray,
 
-    @Column(name="timestamp")
-    val timestamp: Instant,
+    @get:Column(name="timestamp")
+    var timestamp: Instant,
 
-    @OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true, fetch = FetchType.EAGER)
-    val signatures: MutableSet<ConsensualTransactionSignatureEntity> = mutableSetOf()
+    @get:OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true, fetch = FetchType.EAGER)
+    var signatures: MutableSet<ConsensualTransactionSignatureEntity> = mutableSetOf()
 ){
     override fun equals(other: Any?): Boolean {
         if(this === other) return true
@@ -59,20 +59,20 @@ class ConsensualTransactionEntity (
 @IdClass(ConsensualTransactionSignatureEntityId::class)
 class ConsensualTransactionSignatureEntity(
 
-    @Id
-    @ManyToOne
-    @JoinColumn(name = "transaction_id", nullable = false, updatable = false)
-    val transaction: ConsensualTransactionEntity,
+    @get:Id
+    @get:ManyToOne
+    @get:JoinColumn(name = "transaction_id", nullable = false, updatable = false)
+    var transaction: ConsensualTransactionEntity,
 
-    @Id
-    @Column(name = "signature_idx", nullable = false)
-    val index: Int,
+    @get:Id
+    @get:Column(name = "signature_idx", nullable = false)
+    var index: Int,
 
-    @Column(name = "key", nullable = false)
-    val signatureWithKey: ByteArray,
+    @get:Column(name = "key", nullable = false)
+    var signatureWithKey: ByteArray,
 
-    @Column(name = "timestamp", nullable = false)
-    val timestamp: Instant
+    @get:Column(name = "timestamp", nullable = false)
+    var timestamp: Instant
 ){
     override fun equals(other: Any?): Boolean {
         if(this === other) return true
@@ -91,8 +91,8 @@ class ConsensualTransactionSignatureEntity(
 
 @Embeddable
 class ConsensualTransactionSignatureEntityId(
-    val transaction: ConsensualTransactionEntity,
-    val index: Int
+    var transaction: ConsensualTransactionEntity,
+    var index: Int
 ) : Serializable {
     override fun equals(other: Any?): Boolean {
         if(this === other) return true

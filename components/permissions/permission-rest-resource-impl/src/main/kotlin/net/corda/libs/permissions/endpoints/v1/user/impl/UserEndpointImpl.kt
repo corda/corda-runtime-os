@@ -82,7 +82,19 @@ class UserEndpointImpl @Activate constructor(
         return ResponseEntity.created(createUserResult.convertToEndpointType())
     }
 
-    override fun getUser(loginName: String): UserResponseType {
+    @Deprecated("Deprecated in favour of `getUserPath()`")
+    override fun getUserQuery(loginName: String): ResponseEntity<UserResponseType> {
+        "Deprecated, please use next version where loginName is passed as a path parameter.".let { msg ->
+            logger.warn(msg)
+            return ResponseEntity.okButDeprecated(doGetUser(loginName), msg)
+        }
+    }
+
+    override fun getUserPath(loginName: String): UserResponseType {
+        return doGetUser(loginName)
+    }
+
+    private fun doGetUser(loginName: String): UserResponseType {
         val principal = getRestThreadLocalContext()
 
         val userResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
