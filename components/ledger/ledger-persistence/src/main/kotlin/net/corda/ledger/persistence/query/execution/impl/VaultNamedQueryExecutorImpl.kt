@@ -93,41 +93,44 @@ class VaultNamedQueryExecutorImpl(
         @Suppress("UNCHECKED_CAST")
         return entityManagerFactory.transaction { em ->
 
-                val query = em.createNativeQuery(
-                    "SELECT output_info_result.transaction_id, " +
-                            "tc_output.leaf_idx, " +
-                            "output_info_result.data as output_info_data, " +
-                            "tc_output.data AS output_data FROM " +
-                                "(SELECT visible_states.transaction_id, tc.group_idx, visible_states.leaf_idx, tc.data FROM " +
-                                "$UTXO_VISIBLE_TX_TABLE AS visible_states " +
-                                "JOIN $UTXO_TX_COMPONENT_TABLE AS tc " +
-                                    "ON visible_states.transaction_id = tc.transaction_id " +
-                                    "AND visible_states.leaf_idx = tc.leaf_idx " +
-                                "$whereJson " +
-                                "AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME " +
-                                "AND tc.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}) AS output_info_result " +
-                            "JOIN $UTXO_TX_COMPONENT_TABLE tc_output " +
-                            "    ON output_info_result.transaction_id = tc_output.transaction_id " +
-                            "    AND output_info_result.leaf_idx = tc_output.leaf_idx " +
-                            "WHERE tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal} " +
-                            "ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx, tc_output.group_idx",
-                    Tuple::class.java
-                )
+            val query = em.createNativeQuery(
+                "SELECT output_info_result.transaction_id, " +
+                        "tc_output.leaf_idx, " +
+                        "output_info_result.data as output_info_data, " +
+                        "tc_output.data AS output_data FROM " +
+                        "(SELECT visible_states.transaction_id, tc.group_idx, visible_states.leaf_idx, tc.data FROM " +
+                        "$UTXO_VISIBLE_TX_TABLE AS visible_states " +
+                        "JOIN $UTXO_TX_COMPONENT_TABLE AS tc " +
+                        "ON visible_states.transaction_id = tc.transaction_id " +
+                        "AND visible_states.leaf_idx = tc.leaf_idx " +
+                        "$whereJson " +
+                        "AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME " +
+                        "AND tc.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}) AS output_info_result " +
+                        "JOIN $UTXO_TX_COMPONENT_TABLE tc_output " +
+                        "    ON output_info_result.transaction_id = tc_output.transaction_id " +
+                        "    AND output_info_result.leaf_idx = tc_output.leaf_idx " +
+                        "WHERE tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal} " +
+                        "ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx, tc_output.group_idx",
+                Tuple::class.java
+            )
 
-                request.parameters.filter { it.value != null }.forEach { rec ->
-                    val bytes = rec.value.array()
-                    query.setParameter(rec.key, serializationService.deserialize(bytes))
-                }
-
-                query.resultList as List<Tuple>
-            }.map { t ->
-                UtxoTransactionOutputDto(
-                    t[0] as String, // transactionId
-                    t[1] as Int, // leaf ID is always 0
-                    t[2] as ByteArray, // outputs info data
-                    t[3] as ByteArray // outputs data
-                ).toStateAndRef(serializationService)
+            request.parameters.filter { it.value != null }.forEach { rec ->
+                val bytes = rec.value.array()
+                query.setParameter(rec.key, serializationService.deserialize(bytes))
             }
+
+            query.firstResult = request.offset
+            query.maxResults = request.limit
+
+            query.resultList as List<Tuple>
+        }.map { t ->
+            UtxoTransactionOutputDto(
+                t[0] as String, // transactionId
+                t[1] as Int, // leaf ID is always 0
+                t[2] as ByteArray, // outputs info data
+                t[3] as ByteArray // outputs data
+            ).toStateAndRef(serializationService)
+        }
     }
 
     private fun validateParameters(request: FindWithNamedQuery) {
