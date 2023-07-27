@@ -168,7 +168,6 @@ class UtxoPersistenceServiceImpl(
                 stateAndRef.state.contractState::class.java.canonicalName,
                 utxoToken?.poolKey?.tokenType,
                 utxoToken?.poolKey?.issuerHash?.toString(),
-                stateAndRef.state.notaryName.toString(),
                 utxoToken?.poolKey?.symbol,
                 utxoToken?.filterFields?.tag,
                 utxoToken?.filterFields?.ownerHash?.toString(),
