@@ -28,7 +28,7 @@ class NetworkPluginWrapper : Plugin() {
             MemberList::class,
             GenerateGroupPolicy::class,
             OnBoard::class,
-            CheckRegistrationStatus::class
+            GetRegistrations::class
         ],
         hidden = true,
         mixinStandardHelpOptions = true,
