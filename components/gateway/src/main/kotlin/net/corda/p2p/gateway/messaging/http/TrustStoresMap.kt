@@ -99,6 +99,7 @@ internal class TrustStoresMap(
                 truststoreKey to TrustedCertificates(it.value.trustedCertificates, certificateFactory)
             }.toMap()
             trustRootsPerHoldingIdentity.putAll(newTrustRoots)
+            logger.info("QQQ onSnapshot trustRootsPerHoldingIdentity.size ${trustRootsPerHoldingIdentity.size}")
             logger.info("Received initial set of trust roots for the following holding x500 names and destination groups: " +
                     "${newTrustRoots.keys}")
             ready.complete(Unit)
@@ -116,12 +117,14 @@ internal class TrustStoresMap(
                 entriesPerKey[newRecord.key] = truststoreKey
                 val trustedCertificates = TrustedCertificates(value.trustedCertificates, certificateFactory)
                 trustRootsPerHoldingIdentity[truststoreKey] = trustedCertificates
+                logger.info("QQQ onNext not null trustRootsPerHoldingIdentity.size ${trustRootsPerHoldingIdentity.size}")
                 logger.info("Trust roots updated for x500 name ${truststoreKey.sourceX500Name} and " +
                         "group ID ${truststoreKey.destinationGroupId}.")
             } else {
                 val truststoreKey = entriesPerKey.remove(newRecord.key)
                 if (truststoreKey != null) {
                     trustRootsPerHoldingIdentity.remove(truststoreKey)
+                    logger.info("QQQ onNext null trustRootsPerHoldingIdentity.size ${trustRootsPerHoldingIdentity.size}")
                     logger.info("Trust roots removed for x500 name ${truststoreKey.sourceX500Name} and " +
                             "group ID ${truststoreKey.destinationGroupId}.")
                 }

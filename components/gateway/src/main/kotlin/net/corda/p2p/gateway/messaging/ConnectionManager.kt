@@ -7,6 +7,7 @@ import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.lifecycle.Resource
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
+import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
 /**
@@ -27,6 +28,7 @@ internal class ConnectionManager(
     companion object {
         private const val NUM_CLIENT_WRITE_THREADS = 2
         private const val NUM_CLIENT_NETTY_THREADS = 2
+        private val logger = LoggerFactory.getLogger("ConnectionManager")
     }
 
     private val clientPool: Cache<DestinationInfo, HttpClient> = CacheFactoryImpl().build(
@@ -34,7 +36,10 @@ internal class ConnectionManager(
         Caffeine.newBuilder()
             .maximumSize(connectionConfiguration.maxClientConnections)
             .expireAfterAccess(connectionConfiguration.connectionIdleTimeout)
-            .removalListener { _, value, _ -> value?.close() })
+            .removalListener { _, value, _ ->
+                value?.close()
+                logger.info("QQQ on close in removalListener")
+            })
     private var writeGroup = nioEventLoopGroupFactory(NUM_CLIENT_WRITE_THREADS)
     private var nettyGroup = nioEventLoopGroupFactory(NUM_CLIENT_NETTY_THREADS)
 
@@ -51,6 +56,7 @@ internal class ConnectionManager(
                 nettyGroup,
                 connectionConfiguration,
             )
+            logger.info("QQQ on acquire, pool: ${clientPool.estimatedSize()}")
             client.start()
             client
         }
@@ -58,6 +64,7 @@ internal class ConnectionManager(
 
     override fun close() {
         clientPool.invalidateAll()
+        logger.info("QQQ on close, pool: ${clientPool.estimatedSize()}")
         // Using short quiet period (100 ms) - all the clients had been closed.
         val shutdownWriteGroup = writeGroup.shutdownGracefully(100, 15000, TimeUnit.MILLISECONDS)
         val shutdownNettyGroup = nettyGroup.shutdownGracefully(100, 15000, TimeUnit.MILLISECONDS)

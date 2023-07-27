@@ -144,6 +144,7 @@ internal class DynamicKeyStore(
                 }
             )
             logger.info("Received initial set of TLS certificates for the following identities: ${currentData.keys}.")
+            logger.info("QQQ onSnapshot, aliasToCertificates size = ${aliasToCertificates.size} ")
             ready.complete(Unit)
         }
 
@@ -163,6 +164,7 @@ internal class DynamicKeyStore(
                     holdingIdentityToClientKeyStore.remove(oldValue.holdingIdentity)
                 }
                 logger.info("TLS certificate removed for the following identities: ${currentData.keys}.")
+                logger.info("QQQ onNext, value = null, aliasToCertificates size = ${aliasToCertificates.size} ")
             } else {
                 aliasToCertificates[newRecord.key] = chain.tlsCertificates.map { pemCertificate ->
                     ByteArrayInputStream(pemCertificate.toByteArray()).use {
@@ -178,6 +180,7 @@ internal class DynamicKeyStore(
                     )
                 }
                 logger.info("TLS certificate updated for the following identities: ${currentData.keys}")
+                logger.info("QQQ onNext, value != null, aliasToCertificates size = ${aliasToCertificates.size} ")
             }
         }
     }

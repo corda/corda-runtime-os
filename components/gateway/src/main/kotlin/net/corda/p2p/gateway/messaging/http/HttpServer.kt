@@ -75,6 +75,7 @@ internal class HttpServer(
      */
     @Throws(IllegalStateException::class)
     override fun write(statusCode: HttpResponseStatus, destination: SocketAddress, message: ByteArray) {
+        logger.info("QQQ in write to $destination clientChannels size: ${clientChannels.size}")
         val channel = clientChannels[destination]
         if (channel == null) {
             throw IllegalStateException("Connection to $destination not active")
@@ -93,10 +94,12 @@ internal class HttpServer(
 
     override fun onOpen(event: HttpConnectionEvent) {
         clientChannels[event.channel.remoteAddress()] = event.channel
+        logger.info("QQQ onOpen to ${event.channel.remoteAddress()} clientChannels size: ${clientChannels.size}")
     }
 
     override fun onClose(event: HttpConnectionEvent) {
         clientChannels.remove(event.channel.remoteAddress())
+        logger.info("QQQ onClose to ${event.channel.remoteAddress()} clientChannels size: ${clientChannels.size}")
     }
 
     override fun onRequest(request: HttpRequest) {
@@ -171,6 +174,7 @@ internal class HttpServer(
                     }
                 }
                 shutdownSequence.addFirst {
+                    logger.info("QQQ shutdownSequence clientChannels size: ${clientChannels.size}")
                     clientChannels.clear()
                 }
                 logger.info("HTTP Server started")
