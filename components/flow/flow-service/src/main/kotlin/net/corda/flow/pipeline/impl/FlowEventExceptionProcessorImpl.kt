@@ -214,7 +214,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             val exceptionHandlingStartTime = Instant.now()
             val checkpoint = context.checkpoint
 
-                if (!checkpoint.doesExist) {
+            if (!checkpoint.doesExist) {
                 val statusRecord = createFlowKilledStatusRecordWithoutCheckpoint(
                     checkpoint.flowId,
                     context,

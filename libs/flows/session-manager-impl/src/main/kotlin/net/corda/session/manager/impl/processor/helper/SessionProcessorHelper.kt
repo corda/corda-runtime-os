@@ -68,6 +68,7 @@ fun generateErrorEvent(
         .setReceivedSequenceNum(0)
         .setOutOfOrderSequenceNums(emptyList())
         .setPayload(sessionError)
+        .setWaitingForDataFlag(false)
         .build()
 }
 

@@ -58,5 +58,6 @@ fun buildSessionEvent(
         .setTimestamp(timestamp)
         .setReceivedSequenceNum(receivedSequenceNum)
         .setOutOfOrderSequenceNums(outOfOrderSeqNums)
+        .setWaitingForDataFlag(false)
         .build()
 }
