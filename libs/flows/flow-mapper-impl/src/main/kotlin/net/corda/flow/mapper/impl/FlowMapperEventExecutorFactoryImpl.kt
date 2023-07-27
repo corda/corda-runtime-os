@@ -21,6 +21,7 @@ import net.corda.flow.mapper.impl.executor.StartFlowExecutor
 import net.corda.flow.mapper.impl.executor.generateAppMessage
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.Schemas.Flow.*
+import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -48,7 +49,7 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
     ): FlowMapperEventExecutor {
         return when (val flowMapperEventPayload = flowMapperEvent.payload) {
             is SessionEvent -> {
-                logger.info("Processing ${(flowMapperEvent.payload as SessionEvent).messageDirection} session event: ${flowMapperEventPayload.payload::class.java}...")
+                logger.debug { "Processing ${(flowMapperEvent.payload as SessionEvent).messageDirection} session event: ${flowMapperEventPayload.payload::class.java}..." }
 
                 when (val sessionPayload = flowMapperEventPayload.payload) {
                     is SessionInit -> {
@@ -74,7 +75,6 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                     }
                     else -> {
                         if ((sessionPayload as SessionData).sessionInit != null) {
-                            logger.info("handling data init")
                             SessionInitExecutor(
                                 eventKey,
                                 flowMapperEventPayload,
