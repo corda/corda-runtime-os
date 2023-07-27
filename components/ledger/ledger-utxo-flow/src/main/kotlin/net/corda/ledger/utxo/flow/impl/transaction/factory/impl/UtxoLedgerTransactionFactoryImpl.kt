@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.flow.impl.transaction.factory.impl
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
+import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
@@ -11,7 +12,6 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -64,12 +64,11 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
         )
     }
 
-    @Suspendable
     override fun create(
         wireTransaction: WireTransaction,
         inputStateAndRefs: List<UtxoTransactionOutputDto>,
         referenceStateAndRefs: List<UtxoTransactionOutputDto>
-    ): UtxoLedgerTransaction {
+    ): UtxoLedgerTransactionInternal {
         return UtxoLedgerTransactionImpl(
             WrappedUtxoWireTransaction(wireTransaction, serializationService),
             inputStateAndRefs.map { it.toStateAndRef<ContractState>(serializationService) },

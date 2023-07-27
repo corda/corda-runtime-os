@@ -1,11 +1,11 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedLedgerTransaction
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
-import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 /**
@@ -38,7 +38,7 @@ interface UtxoLedgerPersistenceService {
      * @throws CordaPersistenceException if an error happens during find operation.
      */
     @Suspendable
-    fun findLedgerTransaction(id: SecureHash): UtxoLedgerTransaction?
+    fun findSignedLedgerTransaction(id: SecureHash): UtxoSignedLedgerTransaction?
 
     /**
      * Find a UTXO signed transaction in the persistence context given it's [id], resolve its state refs and convert it to a ledger
@@ -52,7 +52,7 @@ interface UtxoLedgerPersistenceService {
      * @throws CordaPersistenceException if an error happens during find operation.
      */
     @Suspendable
-    fun findLedgerTransactionWithStatus(id: SecureHash, transactionStatus: TransactionStatus): Pair<UtxoLedgerTransaction?, TransactionStatus>?
+    fun findSignedLedgerTransactionWithStatus(id: SecureHash, transactionStatus: TransactionStatus): Pair<UtxoSignedLedgerTransaction?, TransactionStatus>?
 
     /**
      * Persist a [UtxoSignedTransaction] to the store.

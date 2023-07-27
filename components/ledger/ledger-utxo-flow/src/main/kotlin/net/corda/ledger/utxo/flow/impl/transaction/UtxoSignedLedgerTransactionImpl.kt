@@ -1,0 +1,58 @@
+package net.corda.ledger.utxo.flow.impl.transaction
+
+import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.utxo.Command
+import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.TimeWindow
+import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
+import java.security.PublicKey
+
+data class UtxoSignedLedgerTransactionImpl(
+    override val ledgerTransaction: UtxoLedgerTransactionInternal,
+    private val signedTransaction: UtxoSignedTransactionInternal
+) : UtxoSignedLedgerTransaction, UtxoLedgerTransaction by ledgerTransaction, UtxoSignedTransactionInternal by signedTransaction {
+
+    override fun getId(): SecureHash {
+        return signedTransaction.id
+    }
+
+    override fun getMetadata(): TransactionMetadata {
+        return signedTransaction.metadata
+    }
+
+    override fun getInputStateRefs(): MutableList<StateRef> {
+        return signedTransaction.inputStateRefs
+    }
+
+    override fun getReferenceStateRefs(): MutableList<StateRef> {
+        return signedTransaction.referenceStateRefs
+    }
+
+    override fun getOutputStateAndRefs(): MutableList<StateAndRef<*>> {
+        return signedTransaction.outputStateAndRefs
+    }
+
+    override fun getNotaryName(): MemberX500Name {
+        return signedTransaction.notaryName
+    }
+
+    override fun getNotaryKey(): PublicKey {
+        return signedTransaction.notaryKey
+    }
+
+    override fun getTimeWindow(): TimeWindow {
+        return signedTransaction.timeWindow
+    }
+
+    override fun getCommands(): MutableList<Command> {
+        return signedTransaction.commands
+    }
+
+    override fun getSignatories(): MutableList<PublicKey> {
+        return signedTransaction.signatories
+    }
+}

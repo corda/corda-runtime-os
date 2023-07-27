@@ -5,7 +5,6 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
@@ -45,7 +44,7 @@ class TransactionBackchainVerifierImpl @Activate constructor(
 
         for (transactionId in sortedTransactions) {
             // can call find ledger transaction here because we find a signed tx and then resolve states later on
-            val (transaction, status) = utxoLedgerPersistenceService.findLedgerTransactionWithStatus(
+            val (transaction, status) = utxoLedgerPersistenceService.findSignedLedgerTransactionWithStatus(
                 transactionId,
                 UNVERIFIED
             ) ?: throw CordaRuntimeException("Transaction does not exist locally")
@@ -57,12 +56,12 @@ class TransactionBackchainVerifierImpl @Activate constructor(
                     )
                     return false
                 }
-
                 VERIFIED -> {
-                    log.trace { "Backchain resolution of $initialTransactionIds - transaction $transactionId is already verified, " +
-                            "skipping verification ." }
+                    log.trace {
+                        "Backchain resolution of $initialTransactionIds - transaction $transactionId is already verified, " +
+                                "skipping verification."
+                    }
                 }
-
                 UNVERIFIED -> {
                     if (transaction == null) {
                         log.warn(
@@ -71,13 +70,11 @@ class TransactionBackchainVerifierImpl @Activate constructor(
                         )
                         return false
                     }
-                    transaction as UtxoSignedTransactionInternal
-
                     try {
                         log.trace { "Backchain resolution of $initialTransactionIds - Verifying transaction $transactionId" }
                         transaction.verifySignatorySignatures()
                         transaction.verifyAttachedNotarySignature()
-                        utxoLedgerTransactionVerificationService.verify(transaction.toLedgerTransaction())
+                        utxoLedgerTransactionVerificationService.verify(transaction)
                         log.trace { "Backchain resolution of $initialTransactionIds - Verified transaction $transactionId" }
                     } catch (e: Exception) {
                         // TODO revisit what exceptions get caught

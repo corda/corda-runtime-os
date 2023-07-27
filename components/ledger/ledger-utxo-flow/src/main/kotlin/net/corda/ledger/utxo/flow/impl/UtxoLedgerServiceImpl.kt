@@ -90,7 +90,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     @Suspendable
     override fun findLedgerTransaction(id: SecureHash): UtxoLedgerTransaction? {
-        return utxoLedgerPersistenceService.findLedgerTransaction(id)
+        return utxoLedgerPersistenceService.findSignedLedgerTransaction(id)?.ledgerTransaction
     }
 
     @Suspendable

@@ -22,6 +22,8 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransa
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.UpdateTransactionStatusExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.UpdateTransactionStatusParameters
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedLedgerTransaction
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
@@ -34,8 +36,6 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
-import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -80,12 +80,12 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun findLedgerTransaction(id: SecureHash): UtxoLedgerTransaction? {
-        return findLedgerTransactionWithStatus(id, TransactionStatus.VERIFIED)?.first
+    override fun findSignedLedgerTransaction(id: SecureHash): UtxoSignedLedgerTransaction? {
+        return findSignedLedgerTransactionWithStatus(id, TransactionStatus.VERIFIED)?.first
     }
 
     @Suspendable
-    override fun findLedgerTransactionWithStatus(id: SecureHash, transactionStatus: TransactionStatus): Pair<UtxoLedgerTransaction?, TransactionStatus>? {
+    override fun findSignedLedgerTransactionWithStatus(id: SecureHash, transactionStatus: TransactionStatus): Pair<UtxoSignedLedgerTransaction?, TransactionStatus>? {
         return recordSuspendable({ ledgerPersistenceFlowTimer(FindLedgerTransactionWithStatus) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
@@ -97,7 +97,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                 val (transaction, status) = serializationService.deserialize<Pair<LedgerTransactionContainer?, String?>>(it.array())
                 if (status == null)
                     return@let null
-                transaction?.toLedgerTransaction() to status.toTransactionStatus()
+                transaction?.toSignedLedgerTransaction() to status.toTransactionStatus()
             }
         }
     }
@@ -163,8 +163,15 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         }
     }
 
-    private fun LedgerTransactionContainer.toLedgerTransaction(): UtxoLedgerTransaction {
-        return utxoLedgerTransactionFactory.create(wireTransaction, serializedInputStateAndRefs, serializedReferenceStateAndRefs)
+    private fun LedgerTransactionContainer.toSignedLedgerTransaction(): UtxoSignedLedgerTransaction {
+        return UtxoSignedLedgerTransactionImpl(
+            utxoLedgerTransactionFactory.create(
+                wireTransaction,
+                serializedInputStateAndRefs,
+                serializedReferenceStateAndRefs
+            ),
+            utxoSignedTransactionFactory.create(wireTransaction, signatures)
+        )
     }
 
     private fun serialize(payload: Any) = ByteBuffer.wrap(serializationService.serialize(payload).bytes)
