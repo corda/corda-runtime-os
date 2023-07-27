@@ -114,6 +114,7 @@ import java.security.KeyFactory
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.PublicKey
+import java.security.Security
 import java.security.Signature
 import java.security.spec.PKCS8EncodedKeySpec
 import java.time.Duration
@@ -146,6 +147,10 @@ class P2PLayerEndToEndTest {
         private fun readKeyStore(resource: URL): ByteArray {
             return resource.readBytes()
         }
+    }
+
+    init {
+        Security.addProvider(BouncyCastleProvider())
     }
 
     private val bootstrapConfig = SmartConfigFactory.createWithoutSecurityServices()
@@ -597,7 +602,8 @@ class P2PLayerEndToEndTest {
                 val providerName = when (publicKey.algorithm) {
                     "RSA" -> "SunRsaSign"
                     "EC" -> "SunEC"
-                    else -> throw SecurityException("Unsupported Algorithm")
+                    "ECDSA" -> "BC"
+                    else -> throw SecurityException("Unsupported Algorithm: ${publicKey.algorithm}")
                 }
                 val signature = Signature.getInstance(
                     signatureSpec.signatureName,

@@ -18,7 +18,7 @@ import java.util.Base64
 internal object CpkV2DependenciesReader {
     private const val CORDA_CPK_V2_SCHEMA = "corda-cpk-2.0.json"
     private val mapper = ObjectMapper()
-    private val schema: JsonSchema = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7).getSchema(
+    private val schema: JsonSchema = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V201909).getSchema(
         this::class.java.classLoader.getResourceAsStream(CORDA_CPK_V2_SCHEMA)
             ?: throw IllegalStateException("Corda CPK v2 schema missing")
     )

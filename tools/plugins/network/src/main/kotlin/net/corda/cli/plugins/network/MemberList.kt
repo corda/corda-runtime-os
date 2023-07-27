@@ -1,5 +1,8 @@
 package net.corda.cli.plugins.network
 
+import com.fasterxml.jackson.core.util.DefaultIndenter
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.membership.rest.v1.MemberLookupRestResource
@@ -7,35 +10,7 @@ import net.corda.membership.rest.v1.types.response.RestMemberInfo
 import picocli.CommandLine
 
 @CommandLine.Command(name = "members-list", description = ["Shows the list of members on the network."])
-class MemberList : RestCommand(), Runnable {
-    override fun run() {
-        performMembersLookup()
-    }
-    private fun performMembersLookup() {
-        require(holdingIdentityShortHash != null) { "Holding identity short hash was not provided." }
-        var result: List<RestMemberInfo>
-        createRestClient(MemberLookupRestResource::class).use { restClient ->
-            val connection = restClient.start()
-            with(connection.proxy) {
-                try {
-                    result = lookup(
-                        holdingIdentityShortHash.toString(),
-                        commonName,
-                        organization,
-                        organizationUnit,
-                        locality,
-                        state,
-                        country
-                    ).members
-                } catch (e: Exception) {
-                    println(e.message)
-                    NetworkPluginWrapper.logger.error(e.stackTrace.toString())
-                    return
-                }
-            }
-        }
-        println(result)
-    }
+class MemberList(private val output: MemberListOutput = ConsoleMemberListOutput()) : RestCommand(), Runnable {
 
     @CommandLine.Option(
         names = ["-h", "--holding-identity-short-hash"],
@@ -85,4 +60,49 @@ class MemberList : RestCommand(), Runnable {
         description = ["Optional. Country (C) attribute of the X.500 name to filter members by."]
     )
     var country: String? = null
+
+    private fun performMembersLookup(): List<RestMemberInfo> {
+        requireNotNull(holdingIdentityShortHash) { "Holding identity short hash was not provided." }
+
+        val result: List<RestMemberInfo> = createRestClient(MemberLookupRestResource::class).use { client ->
+            val memberLookupProxy = client.start().proxy
+            memberLookupProxy.lookup(
+                holdingIdentityShortHash.toString(),
+                commonName,
+                organization,
+                organizationUnit,
+                locality,
+                state,
+                country
+            ).members
+        }
+
+        return result
+    }
+
+    interface MemberListOutput {
+        fun generateOutput(content: String)
+    }
+
+    class ConsoleMemberListOutput : MemberListOutput {
+        /**
+         * Receives the content of the file and prints it to the console output. It makes the testing easier.
+         */
+        override fun generateOutput(content: String) {
+            content.lines().forEach {
+                println(it)
+            }
+        }
+    }
+
+    override fun run() {
+        val result = performMembersLookup()
+        val objectMapper = jacksonObjectMapper()
+
+        val pp = DefaultPrettyPrinter()
+        pp.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE)
+
+        val jsonString = objectMapper.writer(pp).writeValueAsString(result)
+        output.generateOutput(jsonString)
+    }
 }

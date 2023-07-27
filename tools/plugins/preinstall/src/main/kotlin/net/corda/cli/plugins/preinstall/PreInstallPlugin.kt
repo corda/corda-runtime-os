@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import io.fabric8.kubernetes.api.model.Secret
+import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.KubernetesClientException
 import net.corda.cli.api.CordaCliPlugin
@@ -40,7 +41,7 @@ class PreInstallPlugin : Plugin() {
     // Common class for plugins to inherit methods from
     open class PluginContext {
         var report = Report()
-        private var client = KubernetesClientBuilder().build()
+        private var client: KubernetesClient = KubernetesClientBuilder().build()
         var logger = PreInstallPlugin.logger
 
         class SecretException: Exception {

@@ -1,4 +1,4 @@
-package net.corda.membership.impl.registration.dynamic.verifiers
+package net.corda.membership.impl.registration.verifiers
 
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test

@@ -1,12 +1,12 @@
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.module.kotlin.contains
+import java.time.Duration
 import net.corda.rest.ResponseCode
 import net.corda.test.util.eventually
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
-import java.time.Duration
 
 /**
  * Transform a Corda Package Bundle (CPB) into a Corda Package Installer (CPI) by adding a group policy file and upload
@@ -125,14 +125,8 @@ fun ClusterInfo.getOrCreateVirtualNodeFor(
             failMessage("Failed to create the virtual node for '$x500'")
         }.toJson()
 
-        val holdingId = createVNodeRequest["requestId"].textValue()
-
-        // Wait for the vNode creation to propagate through the system before moving on
-        eventually(duration = Duration.ofSeconds(30)) {
-            assertThat(getVNode(holdingId).code).isNotEqualTo(404)
-        }
-
-        holdingId
+        val requestId = createVNodeRequest["requestId"].textValue()
+        awaitVirtualNodeOperationStatusCheck(requestId)
     }
 }
 

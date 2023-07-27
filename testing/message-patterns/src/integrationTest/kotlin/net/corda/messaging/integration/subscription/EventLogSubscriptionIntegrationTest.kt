@@ -189,6 +189,7 @@ class EventLogSubscriptionIntegrationTest {
     }
 
     fun createSub(processor: TestEventLogProcessor, topic: String = EVENT_LOG_TOPIC2): Subscription<String, DemoRecord> {
+        topicUtils.createTopics(getTopicConfig(TopicTemplates.EVENT_LOG_TOPIC2_TEMPLATE))
         val config = TEST_CONFIG.withValue(
             INSTANCE_ID,
             ConfigValueFactory.fromAnyRef(processor.id)
