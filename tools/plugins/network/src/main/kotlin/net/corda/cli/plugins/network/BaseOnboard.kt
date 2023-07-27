@@ -34,6 +34,7 @@ import net.corda.rest.JsonObject
 import org.bouncycastle.asn1.x500.X500Name
 import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.rest.client.exceptions.MissingRequestedResourceException
+import net.corda.rest.client.exceptions.RequestErrorException
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
 import org.bouncycastle.crypto.util.PrivateKeyFactory
@@ -162,7 +163,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                     } else {
                         null
                     }
-                } catch (e: MissingRequestedResourceException) {
+                } catch (e: RequestErrorException) {
                     // This exception can be thrown while the CPI upload is being processed, so we catch it and re-try.
                     null
                 }
