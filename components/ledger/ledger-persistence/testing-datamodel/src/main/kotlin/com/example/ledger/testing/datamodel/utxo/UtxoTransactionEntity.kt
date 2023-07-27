@@ -16,27 +16,27 @@ import net.corda.v5.base.annotations.CordaSerializable
 @Entity
 @Table(name = "utxo_transaction")
 data class UtxoTransactionEntity(
-    @Id
-    @Column(name = "id", nullable = false, updatable = false)
-    val id: String,
+    @get:Id
+    @get:Column(name = "id", nullable = false, updatable = false)
+    var id: String,
 
-    @Column(name = "privacy_salt", nullable = false)
-    val privacySalt: ByteArray,
+    @get:Column(name = "privacy_salt", nullable = false)
+    var privacySalt: ByteArray,
 
-    @Column(name = "account_id", nullable = false)
-    val accountId: String,
+    @get:Column(name = "account_id", nullable = false)
+    var accountId: String,
 
-    @Column(name = "created", nullable = false)
-    val created: Instant,
+    @get:Column(name = "created", nullable = false)
+    var created: Instant,
 ) {
-    @OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
-    val components: MutableList<UtxoTransactionComponentEntity> = mutableListOf()
+    @get:OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var components: MutableList<UtxoTransactionComponentEntity> = mutableListOf()
 
-    @OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
-    val statuses: MutableList<UtxoTransactionStatusEntity> = mutableListOf()
+    @get:OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var statuses: MutableList<UtxoTransactionStatusEntity> = mutableListOf()
 
-    @OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
-    val signatures: MutableList<UtxoTransactionSignatureEntity> = mutableListOf()
+    @get:OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var signatures: MutableList<UtxoTransactionSignatureEntity> = mutableListOf()
 
     @ManyToMany(cascade = [CascadeType.PERSIST, CascadeType.MERGE])
     @JoinTable(name = "utxo_transaction_cpk",

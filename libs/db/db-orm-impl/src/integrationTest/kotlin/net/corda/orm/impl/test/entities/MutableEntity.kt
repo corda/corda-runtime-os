@@ -7,9 +7,10 @@ import javax.persistence.Id
 
 @Entity
 data class MutableEntity(
-    @Id
-    @Column
-    val id: UUID,
-    @Column
+    @get:Id
+    @get:Column
+    var id: UUID,
+
+    @get:Column
     var tag: String,
 )

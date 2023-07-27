@@ -17,7 +17,7 @@ import kotlin.reflect.jvm.javaField
 /**
  * Create the SQL insert statement to persist an object annotated as javax.persistence.Entity
  * into a database. It assumes that the table name is annotated on the object
- * and that all columns are either annotated as @Column, @JoinColumn or @Version.
+ * and that all columns are either annotated as @Column, @JoinColumn @Version or @Id.
  */
 fun Any.toInsertStatement(): String {
     val values = this::class.declaredMemberProperties.mapNotNull { field ->
@@ -55,6 +55,9 @@ private fun getColumnInfo(field: KProperty1<out Any, *>): ColumnInfo? {
             ColumnInfo(field.name, true)
         } else
             ColumnInfo(name, true)
+    }
+    field.javaField?.getAnnotation<Id>(Id::class.java)?.let {
+        return ColumnInfo(field.name, false)
     }
     field.javaField?.getAnnotation<Version>(Version::class.java)?.let {
         return ColumnInfo("version", false)

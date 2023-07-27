@@ -22,32 +22,32 @@ import javax.persistence.Table
 @Table(name = "utxo_visible_transaction_state")
 @IdClass(UtxoVisibleTransactionStateEntityId::class)
 data class UtxoVisibleTransactionStateEntity(
-    @Id
-    @ManyToOne
-    @JoinColumn(name = "transaction_id", nullable = false, updatable = false)
-    val transaction: UtxoTransactionEntity,
+    @get:Id
+    @get:ManyToOne
+    @get:JoinColumn(name = "transaction_id", nullable = false, updatable = false)
+    var transaction: UtxoTransactionEntity,
 
-    @Id
-    @Column(name = "group_idx", nullable = false)
-    val groupIndex: Int,
+    @get:Id
+    @get:Column(name = "group_idx", nullable = false)
+    var groupIndex: Int,
 
-    @Id
-    @Column(name = "leaf_idx", nullable = false)
-    val leafIndex: Int,
+    @get:Id
+    @get:Column(name = "leaf_idx", nullable = false)
+    var leafIndex: Int,
 
-    @Column(name = "custom_representation", nullable = false, columnDefinition = "jsonb")
-    val customRepresentation: String,
+    @get:Column(name = "custom_representation", nullable = false, columnDefinition = "jsonb")
+    var customRepresentation: String,
 
-    @Column(name = "created", nullable = false)
-    val created: Instant,
+    @get:Column(name = "created", nullable = false)
+    var created: Instant,
 
-    @Column(name = "consumed", nullable = true)
-    val consumed: Instant?
+    @get:Column(name = "consumed", nullable = true)
+    var consumed: Instant?
 )
 
 @Embeddable
 data class UtxoVisibleTransactionStateEntityId(
-    val transaction: UtxoTransactionEntity,
-    val groupIndex: Int,
-    val leafIndex: Int
+    var transaction: UtxoTransactionEntity,
+    var groupIndex: Int,
+    var leafIndex: Int
 ) : Serializable
