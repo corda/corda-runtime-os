@@ -94,23 +94,22 @@ class VaultNamedQueryExecutorImpl(
         return entityManagerFactory.transaction { em ->
 
             val query = em.createNativeQuery(
-                "SELECT output_info_result.transaction_id, " +
+                "SELECT tc_output.transaction_id, " +
                         "tc_output.leaf_idx, " +
-                        "output_info_result.data as output_info_data, " +
+                        "tc_output_info.data as output_info_data, " +
                         "tc_output.data AS output_data FROM " +
-                        "(SELECT visible_states.transaction_id, tc.group_idx, visible_states.leaf_idx, tc.data FROM " +
                         "$UTXO_VISIBLE_TX_TABLE AS visible_states " +
-                        "JOIN $UTXO_TX_COMPONENT_TABLE AS tc " +
-                        "ON visible_states.transaction_id = tc.transaction_id " +
-                        "AND visible_states.leaf_idx = tc.leaf_idx " +
+                        "JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output_info " +
+                            "ON visible_states.transaction_id = tc_output_info.transaction_id " +
+                            "AND visible_states.leaf_idx = tc_output_info.leaf_idx " +
+                            "AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal} " +
+                        "JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output " +
+                            "ON tc_output_info.transaction_id = tc_output.transaction_id " +
+                            "AND tc_output_info.leaf_idx = tc_output.leaf_idx " +
+                            "AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal} " +
                         "$whereJson " +
                         "AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME " +
-                        "AND tc.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}) AS output_info_result " +
-                        "JOIN $UTXO_TX_COMPONENT_TABLE tc_output " +
-                        "    ON output_info_result.transaction_id = tc_output.transaction_id " +
-                        "    AND output_info_result.leaf_idx = tc_output.leaf_idx " +
-                        "WHERE tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal} " +
-                        "ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx, tc_output.group_idx",
+                        "ORDER BY tc_output_info.created, tc_output.transaction_id, tc_output.leaf_idx, tc_output.group_idx",
                 Tuple::class.java
             )
 
