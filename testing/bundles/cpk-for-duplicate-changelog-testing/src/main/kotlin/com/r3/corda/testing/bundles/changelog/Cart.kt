@@ -9,11 +9,13 @@ import javax.persistence.Id
 @CordaSerializable
 @Entity
 class Cart(
-    @Id
-    @Column
-    val id: String,
-    @Column
-    val name: String,
-    @Column
-    val colour: String,
+    @get:Id
+    @get:Column
+    var id: String,
+
+    @get:Column
+    var name: String,
+
+    @get:Column
+    var colour: String,
 )

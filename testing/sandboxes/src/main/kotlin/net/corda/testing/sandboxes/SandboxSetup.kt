@@ -6,6 +6,8 @@ import org.osgi.framework.BundleContext
 interface SandboxSetup {
     companion object {
         const val SANDBOX_SERVICE_RANKING = Int.MAX_VALUE / 2
+        const val SANDBOX_SERVICE = "corda.testing.sandbox:Boolean=true"
+        const val SANDBOX_SERVICE_FILTER = "(corda.testing.sandbox=*)"
     }
 
     fun configure(bundleContext: BundleContext, baseDirectory: Path)

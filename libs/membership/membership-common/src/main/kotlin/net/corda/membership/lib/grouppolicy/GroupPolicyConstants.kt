@@ -47,6 +47,8 @@ class GroupPolicyConstants {
              */
             object StaticNetwork {
                 const val MEMBERS = "members"
+
+                const val GROUP_PARAMETERS = "groupParameters"
             }
         }
 

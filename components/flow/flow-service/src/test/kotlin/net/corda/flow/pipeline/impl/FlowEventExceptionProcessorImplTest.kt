@@ -6,8 +6,11 @@ import java.nio.ByteBuffer
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.checkpoint.Checkpoint
+import net.corda.data.flow.state.session.SessionState
+import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
@@ -24,6 +27,7 @@ import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas
 import net.corda.schema.configuration.FlowConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -53,6 +57,16 @@ class FlowEventExceptionProcessorImplTest {
     )
     private val flowFiberCache = mock<FlowFiberCache>()
     private val serializedFiber = ByteBuffer.wrap("mock fiber".toByteArray())
+
+    private val sessionIdOpen = "sesh-id"
+    private val sessionIdClosed = "sesh-id-closed"
+    private val flowActiveSessionState = SessionState().apply {
+        sessionId = sessionIdOpen
+        status = SessionStateType.CONFIRMED
+        hasScheduledCleanup = false
+    }
+    private val flowInactiveSessionState =
+        SessionState().apply { sessionId = sessionIdClosed; status = SessionStateType.CLOSED; hasScheduledCleanup = true }
 
     private val target = FlowEventExceptionProcessorImpl(
         flowMessageFactory,
@@ -157,6 +171,8 @@ class FlowEventExceptionProcessorImplTest {
         val flowStatusUpdate = FlowStatus()
         val key = FlowKey()
         val flowStatusUpdateRecord = Record("", key, flowStatusUpdate)
+        val flowMapperEvent = mock<FlowMapperEvent>()
+        val flowMapperRecord = Record(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC, "key", flowMapperEvent)
 
         whenever(
             flowMessageFactory.createFlowFailedStatusMessage(
@@ -168,11 +184,13 @@ class FlowEventExceptionProcessorImplTest {
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
         whenever(flowCheckpoint.doesExist).thenReturn(true)
         whenever(flowCheckpoint.flowKey).thenReturn(key)
+        whenever(flowCheckpoint.sessions).thenReturn(listOf(flowActiveSessionState, flowInactiveSessionState))
+        whenever(flowRecordFactory.createFlowMapperEventRecord(any(), any())).thenReturn(flowMapperRecord)
 
         val result = target.process(error, context)
 
         assertThat(result.updatedState).isNull()
-        assertThat(result.responseEvents).containsOnly(flowStatusUpdateRecord)
+        assertThat(result.responseEvents).contains(flowStatusUpdateRecord, flowMapperRecord)
         assertThat(result.markForDLQ).isTrue
         verify(flowFiberCache).remove(key)
     }
