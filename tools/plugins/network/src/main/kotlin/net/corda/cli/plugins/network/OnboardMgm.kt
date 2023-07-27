@@ -72,6 +72,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
                 waitInterval = WAIT_INTERVAL,
                 errorMessage = "Save group policy: Invariant check failed after maximum attempts."
             ) {
+                try {
                 val resource = client.start().proxy
                 val response = resource.generateGroupPolicy(holdingId)
                 groupPolicyFile.parentFile.mkdirs()
@@ -86,7 +87,9 @@ class OnboardMgm : Runnable, BaseOnboard() {
 
                 // write the groupId to the file
                 groupIdFile.writeText(groupId)
-                true // Return true to indicate the invariant is satisfied
+                } catch (e: Exception) {
+                    null
+                }
             }
         }
     }

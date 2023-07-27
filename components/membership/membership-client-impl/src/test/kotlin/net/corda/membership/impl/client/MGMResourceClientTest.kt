@@ -10,6 +10,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentGroupParameters
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.actions.request.DistributeGroupParameters
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -42,6 +43,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.EndpointInfoFactory
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
@@ -1936,6 +1938,129 @@ class MGMResourceClientTest {
 
             assertThrows<NoSuchElementException> {
                 mgmResourceClient.activateMember(shortHash, memberName)
+            }
+        }
+    }
+
+    @Nested
+    inner class UpdateGroupParametersTests {
+        @BeforeEach
+        fun setUp() = mgmResourceClient.start()
+
+        @AfterEach
+        fun tearDown() = mgmResourceClient.stop()
+
+        private val mockUpdate = mock<Map<String, String>>()
+
+        @Test
+        fun `updateGroupParameters should send the correct request`() {
+            setUpRpcSender(null)
+            whenever(
+                membershipPersistenceClient.updateGroupParameters(
+                    holdingIdentity,
+                    mockUpdate
+                )
+            ).doReturn(
+                Operation(MembershipPersistenceResult.Success(mock()))
+            )
+
+            mgmResourceClient.updateGroupParameters(
+                shortHash,
+                mockUpdate
+            )
+
+            verify(membershipPersistenceClient).updateGroupParameters(
+                holdingIdentity,
+                mockUpdate
+            )
+        }
+
+        @Test
+        fun `updateGroupParameters should publish the distribution request`() {
+            val groupParametersEpoch = 5
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+            val mockParameters = mock<InternalGroupParameters> {
+                on { epoch } doReturn groupParametersEpoch
+            }
+            whenever(membershipPersistenceClient.updateGroupParameters(eq(holdingIdentity), any()))
+                .doReturn(Operation(MembershipPersistenceResult.Success(mockParameters)))
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            mgmResourceClient.updateGroupParameters(shortHash, mockUpdate)
+
+            verify(publisher).publish(
+                listOf(
+                    Record(
+                        topic = Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC,
+                        key = "${mgmX500Name}-${DEFAULT_MEMBER_GROUP_ID}",
+                        value = MembershipActionsRequest(
+                            DistributeGroupParameters(
+                                HoldingIdentity(mgmX500Name, DEFAULT_MEMBER_GROUP_ID).toAvro(),
+                                groupParametersEpoch
+                            )
+                        )
+                    )
+                )
+            )
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `updateGroupParameters with no changes should return current group parameters`() {
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            whenever(membershipPersistenceClient.updateGroupParameters(eq(holdingIdentity), any()))
+                .doReturn(Operation(MembershipPersistenceResult.Success(mock())))
+            val mockParameters = mock<InternalGroupParameters> {
+                on { entries } doReturn mapOf(EPOCH_KEY to "1").entries
+            }
+            whenever(groupReader.groupParameters).doReturn(mockParameters)
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            val result = mgmResourceClient.updateGroupParameters(shortHash, emptyMap())
+
+            assertThat(result).isEqualTo(mockParameters)
+            verify(membershipPersistenceClient, never()).updateGroupParameters(any(), any())
+            verify(publisher, never()).publish(any())
+
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `updateGroupParameters should fail if the member cannot be found`() {
+            setUpRpcSender(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmResourceClient.updateGroupParameters(
+                    ShortHash.of("000000000000"),
+                    mockUpdate
+                )
+            }
+        }
+
+        @Test
+        fun `updateGroupParameters should fail if the member cannot be read`() {
+            setUpRpcSender(null)
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmResourceClient.updateGroupParameters(shortHash, mockUpdate)
+            }
+        }
+
+        @Test
+        fun `updateGroupParameters should fail if the member is not the MGM`() {
+            setUpRpcSender(null)
+            val mgmContext = mock<MGMContext>()
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mgmContext
+            }
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+
+            assertThrows<MemberNotAnMgmException> {
+                mgmResourceClient.updateGroupParameters(shortHash, mockUpdate)
             }
         }
     }

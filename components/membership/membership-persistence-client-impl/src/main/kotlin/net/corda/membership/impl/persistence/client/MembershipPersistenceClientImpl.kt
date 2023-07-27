@@ -27,6 +27,7 @@ import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
 import net.corda.data.membership.db.request.command.SuspendMember
+import net.corda.data.membership.db.request.command.UpdateGroupParameters
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
@@ -428,6 +429,22 @@ class MembershipPersistenceClientImpl(
         return request.operation { payload ->
             dataToResultConvertor<StaticNetworkInfoQueryResponse, StaticNetworkInfo>(payload) {
                 it.info
+            }
+        }
+    }
+
+    override fun updateGroupParameters(
+        viewOwningIdentity: HoldingIdentity, newGroupParameters: Map<String, String>
+    ): MembershipPersistenceOperation<InternalGroupParameters> {
+        logger.info("Updating group parameters for group '${viewOwningIdentity.groupId}'.")
+        val request = MembershipPersistenceRequest(
+            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
+            UpdateGroupParameters(newGroupParameters)
+        )
+
+        return request.operation { payload ->
+            dataToResultConvertor<PersistGroupParametersResponse, InternalGroupParameters>(payload) { response ->
+                groupParametersFactory.create(response.groupParameters)
             }
         }
     }

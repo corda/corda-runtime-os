@@ -18,6 +18,7 @@ import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
 import net.corda.data.membership.db.request.command.SuspendMember
+import net.corda.data.membership.db.request.command.UpdateGroupParameters
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.data.membership.db.request.command.UpdateStaticNetworkInfo
@@ -97,6 +98,7 @@ internal class HandlerFactories(
         ActivateMember::class.java to { ActivateMemberHandler(persistenceHandlerServices) },
         QueryStaticNetworkInfo::class.java to { QueryStaticNetworkInfoHandler(persistenceHandlerServices) },
         UpdateStaticNetworkInfo::class.java to { UpdateStaticNetworkInfoHandler(persistenceHandlerServices) },
+        UpdateGroupParameters::class.java to { UpdateGroupParametersHandler(persistenceHandlerServices) },
     )
 
     private fun getTransactionTimer(operation: String) = getTimerMetric(

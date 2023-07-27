@@ -24,6 +24,7 @@ import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.subscription.consumer.listener.ForwardingRebalanceListener
 import net.corda.messaging.subscription.consumer.listener.LoggingConsumerRebalanceListener
+import net.corda.messaging.utils.ExceptionUtils
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toEventLogRecord
 import net.corda.metrics.CordaMetrics
@@ -250,9 +251,8 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
             log.debug { "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
                     "size: ${cordaConsumerRecords.size}) complete." }
         } catch (ex: Exception) {
-            when (ex) {
-                is CordaMessageAPIFatalException,
-                is CordaMessageAPIIntermittentException -> {
+            when (ex::class.java) {
+                in ExceptionUtils.CordaMessageAPIException -> {
                     throw ex
                 }
                 else -> {

@@ -1832,13 +1832,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "type" : "object",
-                  "additionalProperties" : {
-                    "type" : "string",
-                    "example" : "string"
-                  },
-                  "nullable" : false,
-                  "example" : "No example available for this type"
+                  "$ref" : "#/components/schemas/RestGroupParameters"
                 }
               }
             }
@@ -2436,6 +2430,54 @@
         "responses" : {
           "200" : {
             "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgm/{holdingidentityshorthash}/group-parameters" : {
+      "post" : {
+        "tags" : [ "MGM API" ],
+        "description" : "This API allows you to make changes to the group parameters by submitting an updated version of the group parameters.",
+        "operationId" : "post_mgm__holdingidentityshorthash__group_parameters",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RestGroupParameters"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "The newly updated group parameters",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestGroupParameters"
+                }
+              }
+            }
           },
           "401" : {
             "description" : "Unauthorized"
@@ -3485,41 +3527,6 @@
       }
     },
     "/user" : {
-      "get" : {
-        "tags" : [ "RBAC User API" ],
-        "description" : "This method returns a user based on the specified login name.",
-        "operationId" : "get_user",
-        "parameters" : [ {
-          "name" : "loginname",
-          "in" : "query",
-          "description" : "The login name of the user to be returned",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "The login name of the user to be returned",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "\n            A newly created user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/UserResponseType"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      },
       "post" : {
         "tags" : [ "RBAC User API" ],
         "description" : "This method creates a new user.",
@@ -3572,6 +3579,43 @@
                   "format" : "int32",
                   "nullable" : false,
                   "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/user/{loginname}" : {
+      "get" : {
+        "tags" : [ "RBAC User API" ],
+        "description" : "This method returns a user based on the specified login name.",
+        "operationId" : "get_user__loginname_",
+        "parameters" : [ {
+          "name" : "loginname",
+          "in" : "path",
+          "description" : "The login name of the user to be returned",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The login name of the user to be returned",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            A user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserResponseType"
                 }
               }
             }
@@ -5032,6 +5076,21 @@
             "type" : "string",
             "nullable" : false,
             "example" : "string"
+          }
+        }
+      },
+      "RestGroupParameters" : {
+        "required" : [ "parameters" ],
+        "type" : "object",
+        "properties" : {
+          "parameters" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string",
+              "example" : "string"
+            },
+            "nullable" : false,
+            "example" : "No example available for this type"
           }
         }
       },

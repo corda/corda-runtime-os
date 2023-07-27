@@ -5,7 +5,6 @@ import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
-import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfo
 import picocli.CommandLine
@@ -62,29 +61,23 @@ class MemberList(private val output: MemberListOutput = ConsoleMemberListOutput(
     )
     var country: String? = null
 
-    private fun performMembersLookup(): String {
+    private fun performMembersLookup(): List<RestMemberInfo> {
         requireNotNull(holdingIdentityShortHash) { "Holding identity short hash was not provided." }
 
         val result: List<RestMemberInfo> = createRestClient(MemberLookupRestResource::class).use { client ->
-            checkInvariant(
-                maxAttempts = MAX_ATTEMPTS,
-                waitInterval = WAIT_INTERVAL,
-                errorMessage = "Members lookup: Invariant check failed after maximum attempts."
-            ) {
-                val memberLookupProxy = client.start().proxy
-                memberLookupProxy.lookup(
-                    holdingIdentityShortHash.toString(),
-                    commonName,
-                    organization,
-                    organizationUnit,
-                    locality,
-                    state,
-                    country
-                ).members
-            }
+            val memberLookupProxy = client.start().proxy
+            memberLookupProxy.lookup(
+                holdingIdentityShortHash.toString(),
+                commonName,
+                organization,
+                organizationUnit,
+                locality,
+                state,
+                country
+            ).members
         }
 
-        return result.toString()
+        return result
     }
 
     interface MemberListOutput {
@@ -106,7 +99,6 @@ class MemberList(private val output: MemberListOutput = ConsoleMemberListOutput(
         val result = performMembersLookup()
         val objectMapper = jacksonObjectMapper()
 
-        // add pretty printer and override indentation to make the nested values look better and the file more presentable
         val pp = DefaultPrettyPrinter()
         pp.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE)
 

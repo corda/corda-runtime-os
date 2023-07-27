@@ -1,7 +1,8 @@
 #!/bin/bash
 
-source settings.sh
 set -e
+SCRIPT_DIR=$(dirname ${BASH_SOURCE[0]})
+source "$SCRIPT_DIR/settings.sh"
 
 echo "Starting Sender"
 
@@ -13,4 +14,27 @@ POSTGRES_ADMIN_PASSWORD=$(kubectl get secret --namespace $APP_SIMULATOR_DB_NAMES
 HELM_A_X500_NAME=$(echo $A_X500_NAME | sed 's/,/\\,/g')
 HELM_B_X500_NAME=$(echo $B_X500_NAME | sed 's/,/\\,/g')
 
-helm upgrade --install app-simulator-sender $APP_SIMULATOR_CHART_DIR -f sender.yaml  -n $A_CLUSTER_NAMESPACE --set db.appSimulator.password=$POSTGRES_ADMIN_PASSWORD --set "imagePullSecrets={docker-registry-cred}" --set image.tag=$DOCKER_IMAGE_VERSION --set "appSimulators.sender.ourX500Name=$HELM_A_X500_NAME" --set "appSimulators.sender.peerX500Name=$HELM_B_X500_NAME"  --set "appSimulators.sender.ourGroupId=$GROUP_ID" --set "appSimulators.sender.peerGroupId=$GROUP_ID" --set "db.appSimulator.namespace=$APP_SIMULATOR_DB_NAMESPACE"  --wait
+if kubectl get ns metrics-server > /dev/null 2>/dev/null ; then
+  metrics_args=" -f \"$SCRIPT_DIR/app-simulator-eks.metrics.yaml\""
+fi
+
+if [ -z "$SENDER_DETAILS_FILE" ]; then
+  SENDER_DETAILS_FILE="$SCRIPT_DIR"/sender.yaml
+fi
+
+helm upgrade --install \
+  app-simulator-sender $APP_SIMULATOR_CHART_DIR \
+  -f "$SENDER_DETAILS_FILE" \
+  $metrics_args \
+  -n $A_CLUSTER_NAMESPACE \
+  --set db.appSimulator.password=$POSTGRES_ADMIN_PASSWORD \
+  --set "imagePullSecrets={docker-registry-cred}" \
+  --set image.tag=$DOCKER_IMAGE_VERSION \
+  --set "appSimulators.sender.ourX500Name=$HELM_A_X500_NAME" \
+  --set "appSimulators.sender.peerX500Name=$HELM_B_X500_NAME" \
+  --set "appSimulators.sender.ourGroupId=$GROUP_ID" \
+  --set "appSimulators.sender.peerGroupId=$GROUP_ID" \
+  --set "db.appSimulator.namespace=$APP_SIMULATOR_DB_NAMESPACE"  \
+  --set appSimulators.sender.replicaCount=$WORKER_REPLICAS \
+  --timeout 30m00s \
+  --wait

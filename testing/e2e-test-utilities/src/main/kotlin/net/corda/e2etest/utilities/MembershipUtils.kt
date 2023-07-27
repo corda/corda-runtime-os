@@ -46,7 +46,7 @@ const val DEFAULT_SIGNATURE_SPEC = "SHA256withECDSA"
  */
 @Suppress("LongParameterList")
 fun ClusterInfo.onboardMember(
-    cpb: String,
+    cpb: String?,
     cpiName: String,
     groupPolicy: String,
     x500Name: String,
@@ -191,6 +191,12 @@ fun ClusterInfo.register(
     }
 }
 
+private val finalRegistrationStates =  setOf(
+    "DECLINED",
+    "INVALID",
+    "FAILED",
+    "APPROVED",
+)
 /**
  * Check a given cluster for a registration visible by the virtual node represented by the holding identity short hash
  * provided which has status matching the provided status.
@@ -222,6 +228,15 @@ fun ClusterInfo.waitForRegistrationStatus(
                     it.toJson().firstOrNull()?.get("registrationStatus")?.textValue() == registrationStatus
                 }
             }
+            immediateFailCondition {
+                val status = if (registrationId != null) {
+                    it.toJson().get("registrationStatus")?.textValue()
+                } else {
+                    it.toJson().firstOrNull()?.get("registrationStatus")?.textValue() == registrationStatus
+                }
+                (status != registrationStatus) &&
+                    (finalRegistrationStates.contains(status))
+            }
             failMessage("Registration was not completed for $holdingIdentityShortHash")
         }
     }
@@ -232,18 +247,18 @@ fun ClusterInfo.waitForRegistrationStatus(
  */
 fun registerStaticMember(
     holdingIdentityShortHash: String,
-    isNotary: Boolean = false
-) = DEFAULT_CLUSTER.registerStaticMember(holdingIdentityShortHash, isNotary)
+    notaryServiceName: String? = null
+) = DEFAULT_CLUSTER.registerStaticMember(holdingIdentityShortHash, notaryServiceName)
 
 fun ClusterInfo.registerStaticMember(
     holdingIdentityShortHash: String,
-    isNotary: Boolean = false
+    notaryServiceName: String? = null
 ) {
     cluster {
         assertWithRetry {
             interval(1.seconds)
             timeout(10.seconds)
-            command { registerStaticMember(holdingIdentityShortHash, isNotary) }
+            command { registerStaticMember(holdingIdentityShortHash, notaryServiceName) }
             condition {
                 it.code == ResponseCode.OK.statusCode
                         && it.toJson()["registrationStatus"].textValue() == REGISTRATION_SUBMITTED
