@@ -31,6 +31,7 @@ class MembershipInfoProducer(val publisher: AtomicReference<Publisher?>) {
          * Creates member info record for each [newInteropIdentities] for publishing into the
          * view of [ownedInteropIdentity].
          */
+        @Suppress("ForbiddenComment")
         private fun createInteropIdentityMemberInfo(
             realHoldingIdentity: HoldingIdentity,
             ownedInteropIdentity: InteropIdentity,
