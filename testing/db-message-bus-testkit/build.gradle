@@ -15,6 +15,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'net.corda:corda-db-schema'
     implementation 'net.corda:corda-config-schema'
+    implementation project(":libs:application:application-db-setup")
     implementation project(":libs:messaging:db-message-bus-datamodel")
     implementation project(":libs:db:db-core")
     implementation project(":libs:db:db-orm")

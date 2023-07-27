@@ -17,21 +17,21 @@ import net.corda.v5.base.annotations.CordaSerializable
 @Table(name = "utxo_transaction_status")
 @IdClass(UtxoTransactionStatusEntityId::class)
 data class UtxoTransactionStatusEntity(
-    @Id
-    @ManyToOne
-    @JoinColumn(name = "transaction_id", nullable = false, updatable = false)
-    val transaction: UtxoTransactionEntity,
+    @get:Id
+    @get:ManyToOne
+    @get:JoinColumn(name = "transaction_id", nullable = false, updatable = false)
+    var transaction: UtxoTransactionEntity,
 
-    @Id
-    @Column(name = "status", nullable = false)
-    val status: String,
+    @get:Id
+    @get:Column(name = "status", nullable = false)
+    var status: String,
 
-    @Column(name = "updated", nullable = false)
-    val updated: Instant
+    @get:Column(name = "updated", nullable = false)
+    var updated: Instant
 )
 
 @Embeddable
 data class UtxoTransactionStatusEntityId(
-    val transaction: UtxoTransactionEntity,
-    val status: String
+    var transaction: UtxoTransactionEntity,
+    var status: String
 ) : Serializable
