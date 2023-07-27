@@ -12,14 +12,14 @@ ignore:
           HTTPS connections with other gateways.
         expires: 2023-12-13T12:08:30.514Z
         created: 2022-12-20T12:08:30.517Z
-SNYK-JAVA-ORGBOUNCYCASTLE-5771340:
+  SNYK-JAVA-ORGBOUNCYCASTLE-5771340:
     - '*':
         reason: >-
           C5 Is not using LDAP directory for storing trusted certificates and
           their revocation lists which is provided by Bouncy Castle library.
         expires: 2023-12-13T09:18:00.644Z
         created: 2023-07-18T09:18:00.648Z
-SNYK-JAVA-ORGECLIPSEJETTY-5769685:
+  SNYK-JAVA-ORGECLIPSEJETTY-5769685:
   - '*':
       reason: >-
         This vulnerability does not apply to C5 as we are not parsing XML
