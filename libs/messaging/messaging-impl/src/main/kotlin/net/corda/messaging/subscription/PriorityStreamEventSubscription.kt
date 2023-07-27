@@ -63,7 +63,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
 ) : StateAndEventSubscription<K, S, E> {
 
     private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(5)
-    private val EVENT_POLL_TIMEOUT = Duration.ofMillis(50)
+    private val EVENT_POLL_TIMEOUT = Duration.ofMillis(10)
     private val config: ResolvedSubscriptionConfig = getConfig(
         SubscriptionConfig("${subscriptionConfig.groupName}-default", "default"),
         messagingConfig)
@@ -84,7 +84,7 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
 //        thread.isDaemon = true
 //        thread
 //    }
-    private val threadCount = 8
+    private val threadCount = 20
     private val processingExecutor = Executors.newFixedThreadPool(threadCount)
     private val random = SecureRandom()
 
@@ -218,9 +218,8 @@ internal class PriorityStreamEventSubscription<K : Any, S : Any, E : Any>(
                 batchSizeHistogram.record(records?.values?.flatten()?.size?.toDouble() ?: 0.0)
                 for ((consumer, events) in records!!) {
                     if (events.isNotEmpty()) {
-                        log.info("Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${records.size})")
-                        val chunks = events.size / threadCount
-                        val groupedEvents = events.chunked(chunks.coerceAtLeast(events.size))
+                        log.info("Processing events(keys: ${events.joinToString { it.key.toString() }}, size: ${events.size})")
+                        val groupedEvents = events.chunked(15)
 //                    runBlocking(Dispatchers.IO.limitedParallelism(10)) {
 //                        val jobs = groupedEvents.map {
 //                            launch {

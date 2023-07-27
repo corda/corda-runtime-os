@@ -26,9 +26,14 @@ class FlowFiberFactoryImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val threadCount = 8
+    private val threadCount = 20
     private val fiberExecutorScheduler = FiberExecutorScheduler("Multi-threaded executor scheduler",
         Executors.newFixedThreadPool(threadCount))
+    private val currentThreadFiberExecutor = object : FiberExecutorScheduler("Flow Fiber scheduler", SameThreadExecutor.getExecutor()) {
+        override fun isCurrentThreadInScheduler(): Boolean {
+            return true
+        }
+    }
 
     override fun createAndStartFlowFiber(
         flowFiberExecutionContext: FlowFiberExecutionContext,
@@ -41,8 +46,8 @@ class FlowFiberFactoryImpl @Activate constructor(
             throw FlowFatalException(FiberExceptionConstants.INVALID_FLOW_KEY.format(flowId), e)
         }
         try {
-            val flowFiber = FlowFiberImpl(id, logic, fiberExecutorScheduler)
-//            val flowFiber = FlowFiberImpl(id, logic, flowFiberExecutor())
+//            val flowFiber = FlowFiberImpl(id, logic, fiberExecutorScheduler)
+            val flowFiber = FlowFiberImpl(id, logic, currentThreadFiberExecutor)
             return FiberFuture(flowFiber, flowFiber.startFlow(flowFiberExecutionContext))
         } catch (e: Throwable) {
             throw FlowFatalException(FiberExceptionConstants.UNABLE_TO_EXECUTE.format(e.message ?: "No exception message provided."), e)
@@ -61,8 +66,8 @@ class FlowFiberFactoryImpl @Activate constructor(
                 getFromCacheOrDeserialize(flowFiberExecutionContext)
             }!!
 
-        return FiberFuture(fiber, fiber.resume(flowFiberExecutionContext, suspensionOutcome, fiberExecutorScheduler))
-//        return FiberFuture(fiber, fiber.resume(flowFiberExecutionContext, suspensionOutcome, flowFiberExecutor()))
+//        return FiberFuture(fiber, fiber.resume(flowFiberExecutionContext, suspensionOutcome, fiberExecutorScheduler))
+        return FiberFuture(fiber, fiber.resume(flowFiberExecutionContext, suspensionOutcome, currentThreadFiberExecutor))
     }
 
     private fun getFromCacheOrDeserialize(flowFiberExecutionContext: FlowFiberExecutionContext): FlowFiberImpl {
@@ -76,9 +81,5 @@ class FlowFiberFactoryImpl @Activate constructor(
             flowFiberExecutionContext.flowCheckpoint.serializedFiber.array(),
             FlowFiberImpl::class.java
         )
-    }
-
-    private fun flowFiberExecutor(): FiberExecutorScheduler {
-        return FiberExecutorScheduler("Flow fiber scheduler", SameThreadExecutor.getExecutor())
     }
 }
