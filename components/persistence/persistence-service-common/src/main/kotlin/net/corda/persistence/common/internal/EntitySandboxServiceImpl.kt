@@ -182,17 +182,19 @@ class EntitySandboxServiceImpl @Activate constructor(
 
         validateTokenStateObservers(tokenStateObserverMap)
 
-        // Create a map that contains a single UTXO token observer for each token state
-        // This away, people know that the there will never be more than one UTXO token observer
-        val validatedTokenStateObserverMap = tokenStateObserverMap.entries.associate { it.key to it.value.singleOrNull() }
+        ctx.putObjectByKey(SANDBOX_TOKEN_STATE_OBSERVERS, requireSingleObserverToState(tokenStateObserverMap))
 
-        ctx.putObjectByKey(SANDBOX_TOKEN_STATE_OBSERVERS, validatedTokenStateObserverMap)
         logger.debug {
             "Registered token observers: ${tokenStateObserverMap.mapValues { (_, observers) ->
                 observers.map { it::class.java.name }}
             }"
         }
     }
+
+    private fun requireSingleObserverToState(
+        tokenStateObserverMap: Map<Class<ContractState>, List<UtxoLedgerTokenStateObserver<ContractState>>>
+    ) =
+        tokenStateObserverMap.entries.associate { it.key to it.value.singleOrNull() }
 
     private fun validateTokenStateObservers(
         tokenStateObserverMap: Map<Class<ContractState>, List<UtxoLedgerTokenStateObserver<ContractState>>>
@@ -202,8 +204,8 @@ class EntitySandboxServiceImpl @Activate constructor(
             val numberOfObservers = contractStateTypeToObservers.value.size
 
             if (numberOfObservers > 1) {
-                val observerTypes = contractStateTypeToObservers.value.map { it.stateType.toString() }
-                throw SandboxException(
+                val observerTypes = contractStateTypeToObservers.value.map { it.stateType.name }
+                throw IllegalStateException(
                     "More than one observer found for the contract state. " +
                             "Contract state: ${contractStateTypeToObservers.key}, observers: $observerTypes"
                 )
