@@ -3,6 +3,7 @@ package net.corda.flow.application.services.impl
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
+import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.application.versioning.impl.RESET_VERSIONING_MARKER
 import net.corda.flow.application.versioning.impl.VERSIONING_PROPERTY_NAME
 import net.corda.flow.fiber.FlowFiberExecutionContext
@@ -99,18 +100,40 @@ class FlowEngineImpl @Activate constructor(
     @Suspendable
     private fun closeSessionsOnSubFlowFinish() {
         val currentSessionIds = this.currentSessionIds
+        var toBeSuspended = false
         if (currentSessionIds.isNotEmpty()) {
-            flowFiberService.getExecutingFiber()
-                .suspend(FlowIORequest.SubFlowFinished(currentSessionIds))
+            val checkPoint = getFiberExecutionContext().flowCheckpoint
+            for (sessionId in currentSessionIds){
+                val status = checkPoint.getSessionState(sessionId)?.status
+                if (status != SessionStateType.CLOSED && status != SessionStateType.ERROR){
+                    toBeSuspended = true
+                    break
+                }
+            }
+            if (toBeSuspended) {
+                flowFiberService.getExecutingFiber()
+                    .suspend(FlowIORequest.SubFlowFinished(currentSessionIds))
+            }
         }
     }
 
     @Suspendable
     private fun errorSessionsOnSubFlowFinish(t: Throwable) {
         val currentSessionIds = this.currentSessionIds
+        var toBeSuspended = false
         if (currentSessionIds.isNotEmpty()) {
-            flowFiberService.getExecutingFiber()
-                .suspend(FlowIORequest.SubFlowFailed(t, currentSessionIds))
+            val checkPoint = getFiberExecutionContext().flowCheckpoint
+            for (sessionId in currentSessionIds){
+                val status = checkPoint.getSessionState(sessionId)?.status
+                if (status != SessionStateType.CLOSED && status != SessionStateType.ERROR){
+                    toBeSuspended = true
+                    break
+                }
+            }
+            if (toBeSuspended) {
+                flowFiberService.getExecutingFiber()
+                    .suspend(FlowIORequest.SubFlowFailed(t, currentSessionIds))
+            }
         }
     }
 
