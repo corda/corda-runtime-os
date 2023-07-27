@@ -193,17 +193,17 @@ class EntitySandboxServiceImpl @Activate constructor(
         tokenStateObserverMap: Map<Class<ContractState>, List<UtxoLedgerTokenStateObserver<ContractState>>>
     ): Map<Class<ContractState>, UtxoLedgerTokenStateObserver<ContractState>?> {
 
-        return tokenStateObserverMap.entries.associate { contractStateTypeToObserver  ->
-            val numberOfObservers = contractStateTypeToObserver.value.size
+        return tokenStateObserverMap.entries.associate { contractStateTypeToObservers  ->
+            val numberOfObservers = contractStateTypeToObservers.value.size
 
             if (numberOfObservers > 1) {
-                val observerTypes = contractStateTypeToObserver.value.map { observer -> observer.stateType.name }
+                val observerTypes = contractStateTypeToObservers.value.map { observer -> observer.stateType.name }
                 throw IllegalStateException(
                     "More than one observer found for the contract state. " +
-                            "Contract state: ${contractStateTypeToObserver.key}, observers: $observerTypes"
+                            "Contract state: ${contractStateTypeToObservers.key}, observers: $observerTypes"
                 )
             }
-            contractStateTypeToObserver.key to contractStateTypeToObserver.value.singleOrNull()
+            contractStateTypeToObservers.key to contractStateTypeToObservers.value.singleOrNull()
         }
     }
 
