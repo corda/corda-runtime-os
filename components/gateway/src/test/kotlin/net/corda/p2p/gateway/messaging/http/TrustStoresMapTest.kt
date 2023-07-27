@@ -246,7 +246,7 @@ class TrustStoresMapTest {
     }
 
     @Test
-    fun `trust store creat the key sore more than once when the certificates are different`() {
+    fun `trust store create the key sore more than once when the certificates are different`() {
         val source1X500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
         val source2X500Name = "CN=Bob, O=Alice Corp, L=LDN, C=GB"
         val groupId = "group id 1"

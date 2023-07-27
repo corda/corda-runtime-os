@@ -57,7 +57,7 @@ internal class TrustStoresMap(
             .expireAfterAccess(KEEP_KEY_STORE)
     )
 
-    private fun TrustedCertificates.cachedKeyStore(): KeyStore? {
+    private fun TrustedCertificates.cachedKeyStore(): KeyStore {
         return keyStorePool.get(pemCertificates) {
             trustStore
         }
@@ -77,7 +77,11 @@ internal class TrustStoresMap(
             ?: throw IllegalArgumentException("Unknown trust store for source X500 name ($sourceX500Name) " +
                     "and group ID ($destinationGroupId)")
 
-    fun getTrustStores() = trustRootsPerHoldingIdentity.values.mapNotNull { it.cachedKeyStore() }
+    fun getTrustStores() = trustRootsPerHoldingIdentity
+        .values
+        .map {
+            it.cachedKeyStore()
+        }.toSet()
 
     private val blockingDominoTile = BlockingDominoTile(
         this::class.java.simpleName,
