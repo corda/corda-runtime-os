@@ -75,7 +75,6 @@ internal class HttpServer(
      */
     @Throws(IllegalStateException::class)
     override fun write(statusCode: HttpResponseStatus, destination: SocketAddress, message: ByteArray) {
-        logger.info("QQQ in write to $destination clientChannels size: ${clientChannels.size}")
         val channel = clientChannels[destination]
         if (channel == null) {
             throw IllegalStateException("Connection to $destination not active")
