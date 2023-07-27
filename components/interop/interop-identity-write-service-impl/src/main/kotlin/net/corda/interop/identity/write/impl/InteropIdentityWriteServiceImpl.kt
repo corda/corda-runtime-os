@@ -70,8 +70,9 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
         writeMemberInfoTopic(vNodeShortHash, identity)
         writeInteropIdentityTopic(vNodeShortHash, identity)
 
-        // TODO: This should only be done for locally hosted identities!
-        writeHostedIdentitiesTopic(identity)
+        if (vNodeShortHash == identity.owningVirtualNodeShortHash) {
+            writeHostedIdentitiesTopic(identity)
+        }
     }
     override fun publishGroupPolicy(groupId: String, groupPolicy: String) : String {
         var returnId = groupId
