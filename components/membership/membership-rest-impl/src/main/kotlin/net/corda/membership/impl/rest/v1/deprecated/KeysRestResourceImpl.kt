@@ -39,6 +39,11 @@ import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.time.format.DateTimeParseException
 
+/*
+ *  Deprecated:
+ *  This version of KeysRestResourceImpl supports endpoints located at v1/keys/ * only.
+ *  From v5_1 upwards, /key/ * is used. Any changes do these resources should be made at [KeyRestResource].
+ */
 @Deprecated("Deprecated in favour of KeyRestResourceImpl")
 @Component(service = [PluggableRestResource::class])
 class KeysRestResourceImpl @Activate constructor(

@@ -70,6 +70,11 @@ import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import javax.security.auth.x500.X500Principal
 
+/*
+ * Deprecated:
+ * This version of CertificatesRestResourceImpl supports endpoints located at v1/certificates/ * only
+ * From v5_1 upwards, /certificate/ * is used. Any changes do these resources should be made at [CertificateRestResourceImpl].
+ */
 @Deprecated("Deprecated in favour of CertificateRestResourceImpl")
 @SuppressWarnings("LongParameterList")
 @Component(service = [PluggableRestResource::class])

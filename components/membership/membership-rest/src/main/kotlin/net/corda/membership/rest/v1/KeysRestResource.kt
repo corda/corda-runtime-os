@@ -11,6 +11,10 @@ import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.rest.annotations.RestApiVersion
 
 /**
+ *  Deprecated:
+ *  This version of KeysRestResource supports endpoints located at v1/keys/ * only.
+ *  From v5_1 upwards, /key/ * is used. Any changes do these resources should be made at [KeyRestResource].
+ *
  * The Keys Management API consists of endpoints used to manage public and private key pairs. The API
  * allows you to list scheme codes which are supported by the associated HSM integration, retrieve information about
  * key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's public key in PEM format.
