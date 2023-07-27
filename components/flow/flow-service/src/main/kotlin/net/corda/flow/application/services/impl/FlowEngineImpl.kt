@@ -100,19 +100,15 @@ class FlowEngineImpl @Activate constructor(
     @Suspendable
     private fun closeSessionsOnSubFlowFinish() {
         val currentSessionIds = this.currentSessionIds
-        var toBeSuspended = false
         if (currentSessionIds.isNotEmpty()) {
             val checkPoint = getFiberExecutionContext().flowCheckpoint
             for (sessionId in currentSessionIds){
                 val status = checkPoint.getSessionState(sessionId)?.status
                 if (status != SessionStateType.CLOSED && status != SessionStateType.ERROR){
-                    toBeSuspended = true
+                    flowFiberService.getExecutingFiber()
+                        .suspend(FlowIORequest.SubFlowFinished(currentSessionIds))
                     break
                 }
-            }
-            if (toBeSuspended) {
-                flowFiberService.getExecutingFiber()
-                    .suspend(FlowIORequest.SubFlowFinished(currentSessionIds))
             }
         }
     }
@@ -120,19 +116,15 @@ class FlowEngineImpl @Activate constructor(
     @Suspendable
     private fun errorSessionsOnSubFlowFinish(t: Throwable) {
         val currentSessionIds = this.currentSessionIds
-        var toBeSuspended = false
         if (currentSessionIds.isNotEmpty()) {
             val checkPoint = getFiberExecutionContext().flowCheckpoint
             for (sessionId in currentSessionIds){
                 val status = checkPoint.getSessionState(sessionId)?.status
                 if (status != SessionStateType.CLOSED && status != SessionStateType.ERROR){
-                    toBeSuspended = true
+                    flowFiberService.getExecutingFiber()
+                        .suspend(FlowIORequest.SubFlowFailed(t, currentSessionIds))
                     break
                 }
-            }
-            if (toBeSuspended) {
-                flowFiberService.getExecutingFiber()
-                    .suspend(FlowIORequest.SubFlowFailed(t, currentSessionIds))
             }
         }
     }
