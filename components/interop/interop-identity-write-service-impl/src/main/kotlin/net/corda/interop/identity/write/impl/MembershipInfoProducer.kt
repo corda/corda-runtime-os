@@ -32,21 +32,20 @@ class MembershipInfoProducer(val publisher: AtomicReference<Publisher?>) {
             viewOwningIdentity: InteropIdentity,
             groupIdentities: List<InteropIdentity>
         ): List<Record<String, PersistentMemberInfo>> {
+
+            // TODO: CORE-15749 - Key generation and interop certificates
+            val sessionKeyHash = "9DEA9C982267BD142162ADC141C1C11C2F547C3C37B4C693A3EA3A017C2C6563"
+            val ledgerKeyHashesKey = "DFE65EAD29C556DF3A9C94C1A0F2C2155FFCC0768A282E18985BB021E8103B9D"
+
             val memberContext = listOf(
                 KeyValuePair(MemberInfoExtension.PARTY_NAME, viewOwningIdentity.x500Name),
                 KeyValuePair(String.format(MemberInfoExtension.URL_KEY, "0"), "http://localhost:8080"),
                 KeyValuePair(String.format(MemberInfoExtension.PROTOCOL_VERSION, "0"), "1"),
                 KeyValuePair(String.format(MemberInfoExtension.PARTY_SESSION_KEYS, 0), DUMMY_CERTIFICATE),
-                KeyValuePair(
-                    MemberInfoExtension.SESSION_KEYS_HASH.format(0),
-                    "9DEA9C982267BD142162ADC141C1C11C2F547C3C37B4C693A3EA3A017C2C6563"
-                ),
+                KeyValuePair(MemberInfoExtension.SESSION_KEYS_HASH.format(0), sessionKeyHash),
                 KeyValuePair(MemberInfoExtension.GROUP_ID, INTEROP_GROUP_ID),
                 KeyValuePair(MemberInfoExtension.LEDGER_KEYS_KEY.format(0), DUMMY_PUBLIC_SESSION_KEY),
-                KeyValuePair(
-                    MemberInfoExtension.LEDGER_KEY_HASHES_KEY.format(0),
-                    "DFE65EAD29C556DF3A9C94C1A0F2C2155FFCC0768A282E18985BB021E8103B9D"
-                ),
+                KeyValuePair(MemberInfoExtension.LEDGER_KEY_HASHES_KEY.format(0), ledgerKeyHashesKey),
                 KeyValuePair(MemberInfoExtension.LEDGER_KEY_SIGNATURE_SPEC.format(0), "SHA256withECDSA"),
                 KeyValuePair(MemberInfoExtension.SOFTWARE_VERSION, "5.0.0.0-Fox10-RC03"),
                 KeyValuePair(MemberInfoExtension.PLATFORM_VERSION, "5000"),
