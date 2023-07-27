@@ -174,36 +174,36 @@ class EntitySandboxServiceImpl @Activate constructor(
         ctx: MutableSandboxGroupContext,
         cpks: Collection<CpkMetadata>
     ) {
-        val contractStateTypeToObserver = cpks
+        val tokenStateObserverMap = cpks
             .flatMap { it.cordappManifest.tokenStateObservers }
             .toSet()
             .mapNotNull { getObserverFromClassName(it, ctx) }
             .groupBy { it.stateType }
 
-        ctx.putObjectByKey(SANDBOX_TOKEN_STATE_OBSERVERS, requireSingleObserverToState(contractStateTypeToObserver))
+        ctx.putObjectByKey(SANDBOX_TOKEN_STATE_OBSERVERS, requireSingleObserverToState(tokenStateObserverMap))
 
         logger.debug {
-            "Registered token observers: ${contractStateTypeToObserver.mapValues { (_, observers) ->
+            "Registered token observers: ${tokenStateObserverMap.mapValues { (_, observers) ->
                 observers.map { it::class.java.name }}
             }"
         }
     }
 
     private fun requireSingleObserverToState(
-        contractStateTypeToObserver: Map<Class<ContractState>, List<UtxoLedgerTokenStateObserver<ContractState>>>
+        tokenStateObserverMap: Map<Class<ContractState>, List<UtxoLedgerTokenStateObserver<ContractState>>>
     ): Map<Class<ContractState>, UtxoLedgerTokenStateObserver<ContractState>?> {
 
-        return contractStateTypeToObserver.entries.associate { entry  ->
+        return tokenStateObserverMap.entries.associate { contractStateTypeToObserver  ->
             val numberOfObservers = entry.value.size
 
             if (numberOfObservers > 1) {
-                val observerTypes = entry.value.map { it.stateType.name }
+                val observerTypes = contractStateTypeToObserver.value.map { it.stateType.name }
                 throw IllegalStateException(
                     "More than one observer found for the contract state. " +
                             "Contract state: ${entry.key}, observers: $observerTypes"
                 )
             }
-            entry.key to entry.value.singleOrNull()
+            contractStateTypeToObserver.key to entry.value.singleOrNull()
         }
     }
 
