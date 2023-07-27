@@ -882,7 +882,7 @@ class FlowTests {
                 .load(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue)
                 .apply()
             // Wait for the rpc-worker to reload the configuration and come back up
-            waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue.toString())
+            waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue.toString(), false)
 
             // Execute some flows which require functionality from different workers and make sure they succeed
             val flowIds = mutableListOf(
