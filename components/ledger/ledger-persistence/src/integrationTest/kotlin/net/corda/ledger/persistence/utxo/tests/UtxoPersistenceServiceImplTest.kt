@@ -82,8 +82,12 @@ import java.security.spec.ECGenParameterSpec
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import java.util.Random
 import java.util.concurrent.atomic.AtomicInteger
 import javax.persistence.EntityManagerFactory
+import net.corda.v5.ledger.utxo.observer.UtxoToken
+import net.corda.v5.ledger.utxo.observer.UtxoTokenFilterFields
+import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
@@ -330,7 +334,25 @@ class UtxoPersistenceServiceImplTest {
             transactionStatus,
             visibleStatesIndexes
         )
-        persistenceService.persistTransaction(transactionReader)
+
+        // Create the utxo tokens
+        val tokenType = "token type"
+        val tokenSymbol = "token symbol"
+        val tokenTag = "token tag"
+        val issuerHash = newRandomSecureHash()
+        val ownerHash = newRandomSecureHash()
+        val tokenAmount = BigDecimal(1)
+        val utxoTokenMap = createUtxoTokenMap(
+            transactionReader,
+            tokenType,
+            tokenSymbol,
+            tokenTag,
+            issuerHash,
+            ownerHash,
+            tokenAmount
+        )
+
+        persistenceService.persistTransaction(transactionReader, utxoTokenMap)
 
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
 
@@ -403,12 +425,12 @@ class UtxoPersistenceServiceImplTest {
                     assertThat(dbInput.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.OUTPUTS.ordinal)
                     assertThat(dbInput.field<Int>("leafIndex")).isEqualTo(leafIndex)
                     assertThat(dbInput.field<String>("type")).isEqualTo(transactionOutput::class.java.canonicalName)
-                    assertThat(dbInput.field<String>("tokenType")).isNull()
-                    assertThat(dbInput.field<String>("tokenIssuerHash")).isNull()
-                    assertThat(dbInput.field<String>("tokenSymbol")).isNull()
-                    assertThat(dbInput.field<String>("tokenTag")).isNull()
-                    assertThat(dbInput.field<String>("tokenOwnerHash")).isNull()
-                    assertThat(dbInput.field<BigDecimal>("tokenAmount")).isNull()
+                    assertThat(dbInput.field<String>("tokenType")).isEqualTo(tokenType)
+                    assertThat(dbInput.field<String>("tokenIssuerHash")).isEqualTo(issuerHash.toString())
+                    assertThat(dbInput.field<String>("tokenSymbol")).isEqualTo(tokenSymbol)
+                    assertThat(dbInput.field<String>("tokenTag")).isEqualTo(tokenTag)
+                    assertThat(dbInput.field<String>("tokenOwnerHash")).isEqualTo(ownerHash.toString())
+                    assertThat(dbInput.field<BigDecimal>("tokenAmount")).isEqualTo(tokenAmount)
                 }
 
             val dbRelevancyData = em.createNamedQuery(
@@ -482,6 +504,30 @@ class UtxoPersistenceServiceImplTest {
         assertThat(persistedSignedGroupParameters?.mgmSignature?.publicKey.toString()).isEqualTo(signedGroupParameters.mgmSignature?.publicKey.toString())
         assertThat(persistedSignedGroupParameters?.mgmSignatureSpec.toString()).isEqualTo(signedGroupParameters.mgmSignatureSpec.toString())
     }
+
+    private fun createUtxoTokenMap(
+        transactionReader: TestUtxoTransactionReader,
+        tokenType: String,
+        tokenSymbol: String,
+        tokenTag: String,
+        issuerHash: SecureHash,
+        ownerHash: SecureHash,
+        tokenAmount: BigDecimal
+    ) =
+        transactionReader.getVisibleStates().map {
+            it.value.ref to UtxoToken(
+                UtxoTokenPoolKey(
+                    tokenType,
+                    issuerHash,
+                    tokenSymbol
+                ),
+                tokenAmount,
+                UtxoTokenFilterFields(
+                    tokenTag,
+                    ownerHash
+                )
+            )
+        }.toMap()
 
     private fun persistTransactionViaEntity(
         entityFactory: UtxoEntityFactory,
@@ -698,4 +744,9 @@ class UtxoPersistenceServiceImplTest {
         SecureHashImpl(algorithm, MessageDigest.getInstance(algorithm).digest(data))
 
     private fun nextTime() = testClock.peekTime()
+
+    private fun newRandomSecureHash(): SecureHash {
+        val random = Random()
+        return SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
+    }
 }
