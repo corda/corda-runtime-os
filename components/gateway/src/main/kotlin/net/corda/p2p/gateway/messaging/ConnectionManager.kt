@@ -34,11 +34,11 @@ internal class ConnectionManager(
     private val clientPool: Cache<DestinationInfo, HttpClient> = CacheFactoryImpl().build(
         "P2P-Client-Pool",
         Caffeine.newBuilder()
-            .maximumSize(connectionConfiguration.maxClientConnections)
+            .maximumSize(16)
             .expireAfterAccess(connectionConfiguration.connectionIdleTimeout)
             .removalListener { _, value, _ ->
                 value?.close()
-                logger.info("QQQ on close in removalListener")
+                logger.info("QQQ on close in removalListener", Exception("QQQ"))
             })
     private var writeGroup = nioEventLoopGroupFactory(NUM_CLIENT_WRITE_THREADS)
     private var nettyGroup = nioEventLoopGroupFactory(NUM_CLIENT_NETTY_THREADS)
@@ -56,7 +56,7 @@ internal class ConnectionManager(
                 nettyGroup,
                 connectionConfiguration,
             )
-            logger.info("QQQ on acquire, pool: ${clientPool.estimatedSize()}")
+            logger.info("QQQ on acquire, pool: ${clientPool.estimatedSize()}, destinationInfo $destinationInfo")
             client.start()
             client
         }
