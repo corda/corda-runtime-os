@@ -9,7 +9,7 @@ import java.io.InputStream
 
 internal object InputStreamSerializer : Serializer<InputStream>() {
     override fun write(kryo: Kryo, output: Output, stream: InputStream) {
-        val buffer = ByteArray(4096)
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
         while (true) {
             val numberOfBytesRead = stream.read(buffer)
             if (numberOfBytesRead != -1) {
