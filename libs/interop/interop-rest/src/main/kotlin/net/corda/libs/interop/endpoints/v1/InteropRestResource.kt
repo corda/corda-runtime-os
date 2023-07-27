@@ -1,8 +1,9 @@
 package net.corda.libs.interop.endpoints.v1
 
-import net.corda.libs.interop.endpoints.v1.types.ExportInteropIdentityResponse
+import net.corda.libs.interop.endpoints.v1.types.CreateInteropIdentityRest
+import net.corda.libs.interop.endpoints.v1.types.ExportInteropIdentityRest
+import net.corda.libs.interop.endpoints.v1.types.ImportInteropIdentityRest
 import net.corda.libs.interop.endpoints.v1.types.InteropIdentityResponse
-import net.corda.libs.interop.endpoints.v1.types.RestInteropIdentity
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPUT
@@ -30,7 +31,7 @@ interface InteropRestResource : RestResource {
     fun getInterOpGroups(
         @RestPathParameter(description = "ID of the holding identity which groups are to be returned.")
         holdingIdentityShortHash: String
-    ): Map<UUID,String>
+    ): Map<UUID, String>
 
     /**
      * Endpoint to create interop identity
@@ -42,10 +43,10 @@ interface InteropRestResource : RestResource {
         responseDescription = "Response entity with the status of the request."
     )
     fun createInterOpIdentity(
-        restInteropIdentity: RestInteropIdentity,
+        createInteropIdentityRestRequest: CreateInteropIdentityRest.Request,
         @RestPathParameter(description = "ID of the holding identity.")
         holdingIdentityShortHash: String
-    ): ResponseEntity<String>
+    ): CreateInteropIdentityRest.Response
 
     /**
      * Get a list of interop identities belonging to the given holding identity.
@@ -75,7 +76,7 @@ interface InteropRestResource : RestResource {
         holdingIdentityShortHash: String,
         @RestPathParameter(description = "ShortHash of the interop identity")
         interopIdentityShortHash: String
-    ): ExportInteropIdentityResponse
+    ): ExportInteropIdentityRest.Response
 
     /**
      * Import the details of my interop identity into the system of another interop identity.
@@ -87,7 +88,10 @@ interface InteropRestResource : RestResource {
         responseDescription = "Response entity with the status of the request."
     )
     fun importInterOpIdentity(
-        restInteropIdentity: RestInteropIdentity,
+        importInteropIdentityRestRequest: ImportInteropIdentityRest.Request,
+        facadeIds: List<String>,
+        endpointUrl: String,
+        endpointProtocol: String,
         @RestPathParameter(description = "ID of the holding identity which interop identity is to be returned.")
         holdingIdentityShortHash: String
     ): ResponseEntity<String>
