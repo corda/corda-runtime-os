@@ -174,26 +174,26 @@ class EntitySandboxServiceImpl @Activate constructor(
         ctx: MutableSandboxGroupContext,
         cpks: Collection<CpkMetadata>
     ) {
-        val tokenStateObserverMap = cpks
+        val contractStateTypeToObserver = cpks
             .flatMap { it.cordappManifest.tokenStateObservers }
             .toSet()
             .mapNotNull { getObserverFromClassName(it, ctx) }
             .groupBy { it.stateType }
 
-        ctx.putObjectByKey(SANDBOX_TOKEN_STATE_OBSERVERS, requireSingleObserverToState(tokenStateObserverMap))
+        ctx.putObjectByKey(SANDBOX_TOKEN_STATE_OBSERVERS, requireSingleObserverToState(contractStateTypeToObserver))
 
         logger.debug {
-            "Registered token observers: ${tokenStateObserverMap.mapValues { (_, observers) ->
+            "Registered token observers: ${contractStateTypeToObserver.mapValues { (_, observers) ->
                 observers.map { it::class.java.name }}
             }"
         }
     }
 
     private fun requireSingleObserverToState(
-        tokenStateObserverMap: Map<Class<ContractState>, List<UtxoLedgerTokenStateObserver<ContractState>>>
+        contractStateTypeToObserver: Map<Class<ContractState>, List<UtxoLedgerTokenStateObserver<ContractState>>>
     ): Map<Class<ContractState>, UtxoLedgerTokenStateObserver<ContractState>?> {
 
-        return tokenStateObserverMap.entries.associate { entry  ->
+        return contractStateTypeToObserver.entries.associate { entry  ->
             val numberOfObservers = entry.value.size
 
             if (numberOfObservers > 1) {
