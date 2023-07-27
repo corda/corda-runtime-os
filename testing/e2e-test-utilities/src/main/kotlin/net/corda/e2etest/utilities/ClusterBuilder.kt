@@ -100,6 +100,7 @@ class ClusterBuilder {
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/$REST_API_VERSION_PATH/cpi/", resourceName)
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
+    @Suppress("LongParameterList")
     fun cpiUpload(
         cpbResourceName: String,
         groupId: String,
