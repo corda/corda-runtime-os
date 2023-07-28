@@ -24,13 +24,14 @@ import org.mockito.Mockito.mockStatic
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.io.InputStream
 import java.security.KeyStore
 import java.security.cert.Certificate
+import java.security.cert.CertificateException
 import java.security.cert.CertificateFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicReference
@@ -107,7 +108,12 @@ class TrustStoresMapTest {
             emptyMap()
         )
 
-        assertThat(testObject.getTrustStore(MemberX500Name.parse(sourceX500Name), groupId)).isEqualTo(keyStore)
+        assertThat(
+            testObject.getTrustStore(
+                MemberX500Name.parse(sourceX500Name),
+                groupId,
+            ).trustStore
+        ).isEqualTo(keyStore)
     }
 
     @Test
@@ -133,7 +139,7 @@ class TrustStoresMapTest {
             testObject.getTrustStore(
                 MemberX500Name.parse("C=GB,   CN=Alice, O=Alice Corp, L=LDN"),
                 groupId
-            )
+            ).trustStore
         )
             .isEqualTo(keyStore)
     }
@@ -171,7 +177,11 @@ class TrustStoresMapTest {
             )
         )
 
-        assertThat(testObject.getTrustStore(MemberX500Name.parse(sourceX500Name), groupId)).isEqualTo(keyStore)
+        assertThat(
+            testObject.getTrustStore(
+                MemberX500Name.parse(sourceX500Name),
+                groupId,
+            ).trustStore).isEqualTo(keyStore)
     }
 
     @Test
@@ -186,6 +196,7 @@ class TrustStoresMapTest {
         )
 
         testObject.getTrustStore(MemberX500Name.parse(sourceX500Name), groupId)
+            .trustStore
 
         verify(keyStore).setCertificateEntry("gateway-0", certificate)
         verify(keyStore).setCertificateEntry("gateway-1", certificate)
@@ -202,7 +213,7 @@ class TrustStoresMapTest {
             )
         )
 
-        testObject.getTrustStore(MemberX500Name.parse(sourceX500Name), groupId)
+        testObject.getTrustStore(MemberX500Name.parse(sourceX500Name), groupId).trustStore
 
         verify(keyStore).load(null, null)
     }
@@ -220,47 +231,62 @@ class TrustStoresMapTest {
             )
         )
 
-        testObject.getTrustStore(MemberX500Name.parse(sourceX500Name), groupId)
+        testObject.getTrustStore(MemberX500Name.parse(sourceX500Name), groupId).trustStore
 
         assertThat(data.firstValue.reader().readText()).isEqualTo("one")
         assertThat(data.secondValue.reader().readText()).isEqualTo("two")
     }
 
     @Test
-    fun `trust store create the key store once when the certificate are the same`() {
-        val source1X500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
-        val source2X500Name = "CN=Bob, O=Alice Corp, L=LDN, C=GB"
-        val groupId = "group id 1"
-        creteResources.get()?.invoke(mock())
-        processor.firstValue.onSnapshot(
-            mapOf(
-                "key1" to GatewayTruststore(HoldingIdentity(source1X500Name, groupId), listOf("one")),
-                "key2" to GatewayTruststore(HoldingIdentity(source2X500Name, groupId), listOf("one"))
-            )
+    fun `TrustedCertificates throws an exception for invalid certificate`() {
+        whenever(certificateFactory.generateCertificate(any())).doThrow(CertificateException())
+        val certificates = TrustStoresMap.TrustedCertificates(
+            listOf("nop"),
+            certificateFactory,
         )
 
-        testObject.getTrustStore(MemberX500Name.parse(source1X500Name), groupId)
-        testObject.getTrustStore(MemberX500Name.parse(source2X500Name), groupId)
-
-        verify(keyStore, times(1)).setCertificateEntry(any(), any())
+        assertThrows<IllegalArgumentException> {
+            certificates.trustStore
+        }
     }
 
     @Test
-    fun `trust store create the key sore more than once when the certificates are different`() {
-        val source1X500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
-        val source2X500Name = "CN=Bob, O=Alice Corp, L=LDN, C=GB"
-        val groupId = "group id 1"
-        creteResources.get()?.invoke(mock())
-        processor.firstValue.onSnapshot(
-            mapOf(
-                "key1" to GatewayTruststore(HoldingIdentity(source1X500Name, groupId), listOf("one")),
-                "key2" to GatewayTruststore(HoldingIdentity(source2X500Name, groupId), listOf("two"))
-            )
+    fun `hashCode of TrustedCertificates returns the pems hash code`() {
+        val pems = listOf("one", "two")
+        val certificates = TrustStoresMap.TrustedCertificates(
+            pems,
+            certificateFactory,
         )
 
-        testObject.getTrustStore(MemberX500Name.parse(source1X500Name), groupId)
-        testObject.getTrustStore(MemberX500Name.parse(source2X500Name), groupId)
+        assertThat(certificates.hashCode()).isEqualTo(pems.hashCode())
+    }
 
-        verify(keyStore, times(2)).setCertificateEntry(any(), any())
+    @Test
+    fun `equals of TrustedCertificates return true when the pems are equals`() {
+        val pems = listOf("one", "two")
+        val certificatesOne = TrustStoresMap.TrustedCertificates(
+            pems,
+            mock(),
+        )
+        val certificatesTwo = TrustStoresMap.TrustedCertificates(
+            pems,
+            mock(),
+        )
+
+        assertThat(certificatesOne).isEqualTo(certificatesTwo)
+    }
+
+    @Test
+    fun `equals of TrustedCertificates return false when the pems are not equals`() {
+        val certificatesOne = TrustStoresMap.TrustedCertificates(
+            listOf("one"),
+            certificateFactory,
+        )
+        val certificatesTwo = TrustStoresMap.TrustedCertificates(
+            listOf("two"),
+            certificateFactory,
+        )
+
+        assertThat(certificatesOne).isNotEqualTo(certificatesTwo)
     }
 }
