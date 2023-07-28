@@ -22,7 +22,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
-import net.corda.membership.rest.v1.KeysRestResource
+import net.corda.membership.rest.v1.KeyRestResource
 import net.corda.membership.rest.v1.types.response.KeyMetaData
 import net.corda.membership.rest.v1.types.response.KeyPairIdentifier
 import net.corda.rest.PluggableRestResource
@@ -39,7 +39,7 @@ import java.time.Instant
 import java.time.format.DateTimeParseException
 
 @Component(service = [PluggableRestResource::class])
-class KeysRestResourceImpl @Activate constructor(
+class KeyRestResourceImpl @Activate constructor(
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = KeyEncodingService::class)
@@ -48,7 +48,7 @@ class KeysRestResourceImpl @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = PlatformInfoProvider::class)
     private val platformInfoProvider: PlatformInfoProvider,
-) : KeysRestResource, PluggableRestResource<KeysRestResource>, Lifecycle {
+) : KeyRestResource, PluggableRestResource<KeyRestResource>, Lifecycle {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
@@ -223,11 +223,11 @@ class KeysRestResourceImpl @Activate constructor(
         return keyEncodingService.encodeAsString(publicKey)
     }
 
-    override val targetInterface = KeysRestResource::class.java
+    override val targetInterface = KeyRestResource::class.java
 
     override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
-    private val coordinatorName = LifecycleCoordinatorName.forComponent<KeysRestResource>(
+    private val coordinatorName = LifecycleCoordinatorName.forComponent<KeyRestResource>(
         protocolVersion.toString()
     )
 
