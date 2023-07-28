@@ -112,6 +112,17 @@ open class SoftCryptoService(
 
     override val extensions = listOf(CryptoServiceExtensions.REQUIRE_WRAPPING_KEY)
 
+    /**
+     * Run a block of code, and wrap certain exceptions in CryptoException with a message
+     * that includes a description of what was being done. The set of exceptions that are to
+     * be wrapped is controlled by the `isRecoverable` extensions function. The idea is that
+     * we let the callers know when it is worth trying again.
+     * 
+     * @param description A message describing what the block will do
+     * @param block A callback to be executed
+     * 
+     * @return The result of the callback.
+     */
     private fun <R> recoverable(description: String, block: () -> R) = try {
         block()
     } catch (e: RuntimeException) {
