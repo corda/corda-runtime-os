@@ -32,5 +32,13 @@ class PrintUtils {
                 else -> throw IllegalArgumentException("Unsupported output type")
             }
         }
+
+        fun verifyAndPrintError(action: () -> Unit) {
+            try {
+                action()
+            } catch (e: Exception) {
+                System.err.println("Error: ${e.message}")
+            }
+        }
     }
 }

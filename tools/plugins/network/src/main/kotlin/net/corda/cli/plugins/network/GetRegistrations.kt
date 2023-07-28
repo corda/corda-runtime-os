@@ -9,6 +9,7 @@ import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.cli.plugins.network.output.Output
 import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.cli.plugins.network.utils.PrintUtils.Companion.printJsonOutput
+import net.corda.cli.plugins.network.utils.PrintUtils.Companion.verifyAndPrintError
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.virtualnode.HoldingIdentity
@@ -86,28 +87,31 @@ class GetRegistrations(private val output: Output = ConsoleOutput()) : RestComma
     }
 
     private fun getHoldingIdentity(): String {
-        val x500Name = MemberX500Name.parse(name.toString())
-        return if (name != null && group != null) {
-            val holdingIdentity = HoldingIdentity(x500Name, group.toString())
+        return holdingIdentityShortHash ?: name?.let {
+            val x500Name = MemberX500Name.parse(it)
+            val holdingIdentity = group?.let { group ->
+                HoldingIdentity(x500Name, group)
+            } ?: HoldingIdentity(x500Name, readDefaultGroup())
             holdingIdentity.shortHash.toString()
-        } else if (holdingIdentityShortHash != null) {
-            holdingIdentityShortHash.toString()
-        } else if (name != null) {
-            val groupIdFile = File("groupId.txt")
-            if (groupIdFile.exists()) {
-                val groupId = groupIdFile.readText().trim()
-                val holdingIdentity = HoldingIdentity(x500Name, groupId)
-                holdingIdentity.shortHash.toString()
-            } else {
-                throw IllegalArgumentException("Group ID not provided and groupId.txt file not found.")
-            }
+        } ?: throw IllegalArgumentException("Either 'holdingIdentityShortHash' or 'name' must be specified.")
+    }
+
+    private fun readDefaultGroup(): String {
+        val groupIdFile = File(
+            File(File(File(System.getProperty("user.home")), ".corda"), "groupId"),
+            "groupId.txt"
+        )
+        return if (groupIdFile.exists()) {
+            groupIdFile.readText().trim()
         } else {
-            throw IllegalArgumentException("Either holdingIdentityShortHash or name and group must be provided.")
+            throw IllegalArgumentException("Group ID was not specified, and the last created group could not be found.")
         }
     }
 
     override fun run() {
-        val result = getRegistrations()
-        printJsonOutput(result, output)
+        verifyAndPrintError {
+            val result = getRegistrations()
+            printJsonOutput(result, output)
+        }
     }
 }
