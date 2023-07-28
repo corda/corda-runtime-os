@@ -99,7 +99,18 @@ class ClusterBuilder {
     /** Assumes the resource *is* a CPB */
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/$REST_API_VERSION_PATH/cpi/", resourceName)
 
-    /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
+    /**
+     * Assumes the resource is a CPB and converts it to CPI by adding a group policy file.
+     *
+     * @param cpbResourceName Name of the CPB resource
+     * @param groupId Group ID to be used with the static group policy
+     * @param staticMemberNames List of member names to be added to the static group policy
+     * @param cpiName Name associated with the uploaded CPI
+     * @param cpiVersion Optional. Version associated with the uploaded CPI
+     * @param customGroupParameters Optional. Custom properties to be included in the group parameters of the static
+     * network. May only include custom keys with the prefix "ext." or minimum platform version (with key
+     * "corda.minimum.platform.version").
+     * */
     @Suppress("LongParameterList")
     fun cpiUpload(
         cpbResourceName: String,
@@ -266,6 +277,9 @@ class ClusterBuilder {
 
     /**
      * Register a member to the network.
+     *
+     * Optional: Use [customMetadata] to specify custom properties which will be added to the member's [MemberInfo].
+     * Keys of properties specified in [customMetadata] must have the prefix "ext.".
      *
      * KNOWN LIMITATION: Registering a notary static member will currently always provision a new
      * notary service. This is fine for now as we only support a 1-1 mapping from notary service to
