@@ -16,7 +16,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.ALICE_X500_HOLDING_IDENTITY
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.AbstractUtxoLedgerExternalEventFactory
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindLedgerTransactionExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistExternalEventFactory
@@ -225,7 +225,7 @@ class UtxoLedgerPersistenceServiceImplTest {
         assertThat(utxoLedgerPersistenceService.findSignedLedgerTransaction(parseSecureHash("SHA256:1234567890123456")))
             .isEqualTo(UtxoSignedLedgerTransactionImpl(ledgerTransaction, signedTransaction))
 
-        assertThat(argumentCaptor.firstValue).isEqualTo(FindLedgerTransactionExternalEventFactory::class.java)
+        assertThat(argumentCaptor.firstValue).isEqualTo(FindSignedLedgerTransactionExternalEventFactory::class.java)
     }
 
     private fun persistIfDoesNotExist(

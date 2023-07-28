@@ -67,7 +67,7 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    override fun findLedgerTransaction(
+    override fun findSignedLedgerTransaction(
         id: String,
         transactionStatus: TransactionStatus
     ): Pair<LedgerTransactionContainer?, String?> {
@@ -82,11 +82,11 @@ class UtxoPersistenceServiceImpl(
 
                 val stateRefsToStateAndRefs = resolveStateRefs(allStateRefs)
                     .associateBy { StateRef(parseSecureHash(it.transactionId), it.leafIndex) }
+
                 val inputStateAndRefs = transaction.inputStateRefs.map {
                     stateRefsToStateAndRefs[it]
                         ?: throw CordaRuntimeException("Could not find input StateRef $it when finding transaction $id")
                 }
-
                 val referenceStateAndRefs = transaction.referenceStateRefs.map {
                     stateRefsToStateAndRefs[it]
                         ?: throw CordaRuntimeException("Could not find reference StateRef $it when finding transaction $id")

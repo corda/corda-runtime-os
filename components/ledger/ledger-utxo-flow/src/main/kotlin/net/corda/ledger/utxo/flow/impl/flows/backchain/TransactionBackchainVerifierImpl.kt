@@ -43,7 +43,6 @@ class TransactionBackchainVerifierImpl @Activate constructor(
         val sortedTransactions = topologicalSort.complete().iterator()
 
         for (transactionId in sortedTransactions) {
-            // can call find ledger transaction here because we find a signed tx and then resolve states later on
             val (transaction, status) = utxoLedgerPersistenceService.findSignedLedgerTransactionWithStatus(
                 transactionId,
                 UNVERIFIED

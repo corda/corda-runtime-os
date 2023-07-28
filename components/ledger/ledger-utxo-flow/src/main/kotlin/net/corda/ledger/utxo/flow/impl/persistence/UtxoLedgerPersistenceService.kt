@@ -28,12 +28,12 @@ interface UtxoLedgerPersistenceService {
     fun findSignedTransaction(id: SecureHash, transactionStatus: TransactionStatus = TransactionStatus.VERIFIED): UtxoSignedTransaction?
 
     /**
-     * Find a verified UTXO signed transaction in the persistence context given it's [id], resolve its state refs and convert it to a ledger
-     * transaction.
+     * Find a verified [UtxoSignedLedgerTransaction] in the persistence context given it's [id]. This involves resolving its input and
+     * reference state and fetching the transaction's signatures.
      *
-     * @param id UTXO signed transaction ID.
+     * @param id transaction ID.
      *
-     * @return The found UTXO ledger transaction, null if it could not be found in the persistence context.
+     * @return The found [UtxoSignedLedgerTransaction], null if it could not be found in the persistence context.
      *
      * @throws CordaPersistenceException if an error happens during find operation.
      */
@@ -41,18 +41,21 @@ interface UtxoLedgerPersistenceService {
     fun findSignedLedgerTransaction(id: SecureHash): UtxoSignedLedgerTransaction?
 
     /**
-     * Find a UTXO signed transaction in the persistence context given it's [id], resolve its state refs and convert it to a ledger
-     * transaction.
+     * Find a [UtxoSignedLedgerTransaction] in the persistence context given it's [id] and return it with the status it is stored with.
+     * This involves resolving its input and reference state and fetching the transaction's signatures.
      *
-     * @param id UTXO signed transaction ID.
+     * @param id transaction ID.
      * @param transactionStatus filter for this status.
      *
-     * @return The found UTXO ledger transaction, null if it could not be found in the persistence context.
+     * @return The found [UtxoSignedLedgerTransaction] and its status, null if it could not be found in the persistence context.
      *
      * @throws CordaPersistenceException if an error happens during find operation.
      */
     @Suspendable
-    fun findSignedLedgerTransactionWithStatus(id: SecureHash, transactionStatus: TransactionStatus): Pair<UtxoSignedLedgerTransaction?, TransactionStatus>?
+    fun findSignedLedgerTransactionWithStatus(
+        id: SecureHash,
+        transactionStatus: TransactionStatus
+    ): Pair<UtxoSignedLedgerTransaction?, TransactionStatus>?
 
     /**
      * Persist a [UtxoSignedTransaction] to the store.

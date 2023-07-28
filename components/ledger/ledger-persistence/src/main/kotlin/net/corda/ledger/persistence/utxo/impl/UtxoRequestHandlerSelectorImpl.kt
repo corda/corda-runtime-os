@@ -19,7 +19,7 @@ import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFacto
 import net.corda.ledger.persistence.query.execution.impl.VaultNamedQueryExecutorImpl
 import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoExecuteNamedQueryHandler
-import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindLedgerTransactionRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedLedgerTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedGroupParametersRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindUnconsumedStatesByTypeRequestHandler
@@ -79,7 +79,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                 )
             }
             is FindLedgerTransaction -> {
-                UtxoFindLedgerTransactionRequestHandler(
+                UtxoFindSignedLedgerTransactionRequestHandler(
                     req,
                     externalEventContext,
                     persistenceService,

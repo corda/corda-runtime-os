@@ -21,7 +21,6 @@ import net.corda.ledger.common.testkit.cpiPackageSummaryExample
 import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.common.testkit.getPrivacySalt
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
-import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
 import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
@@ -229,7 +228,7 @@ class UtxoPersistenceServiceImplTest {
         val resolvedInputStateRefs = persistenceService.resolveStateRefs(inputStateRefs)
         val resolvedReferenceStateRefs = persistenceService.resolveStateRefs(referenceStateRefs)
 
-        val retval = persistenceService.findLedgerTransaction(transaction.id.toString(), UNVERIFIED)
+        val retval = persistenceService.findSignedLedgerTransaction(transaction.id.toString(), UNVERIFIED)
 
         assertThat(retval).isEqualTo(
             LedgerTransactionContainer(
@@ -246,7 +245,7 @@ class UtxoPersistenceServiceImplTest {
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction = persistTransactionViaEntity(entityFactory)
 
-        val retval = persistenceService.findLedgerTransaction(transaction.id.toString(), VERIFIED)
+        val retval = persistenceService.findSignedLedgerTransaction(transaction.id.toString(), VERIFIED)
 
         assertThat(retval).isEqualTo(null to "U")
     }

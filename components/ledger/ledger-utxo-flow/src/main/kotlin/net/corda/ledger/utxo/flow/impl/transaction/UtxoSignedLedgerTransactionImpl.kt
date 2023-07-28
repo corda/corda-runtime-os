@@ -11,6 +11,14 @@ import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import java.security.PublicKey
 
+/**
+ * [UtxoSignedLedgerTransactionImpl] delegates to [UtxoLedgerTransactionInternal] and [UtxoSignedTransactionInternal] instances to provide
+ * the behaviour of the two interfaces.
+ *
+ * All the overridden methods in this class are methods that appear on both [UtxoLedgerTransactionInternal] and
+ * [UtxoSignedTransactionInternal]. The implementation from the [signedTransaction] is used; however, using the [ledgerTransaction]
+ * instead will lead to the same behaviour.
+ */
 data class UtxoSignedLedgerTransactionImpl(
     override val ledgerTransaction: UtxoLedgerTransactionInternal,
     private val signedTransaction: UtxoSignedTransactionInternal

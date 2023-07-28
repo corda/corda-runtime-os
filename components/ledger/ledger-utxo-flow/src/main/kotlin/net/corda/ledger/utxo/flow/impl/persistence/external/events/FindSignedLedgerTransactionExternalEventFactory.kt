@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.flow.impl.persistence.external.events
 
-import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.v2.FindLedgerTransaction
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.ledger.common.data.transaction.TransactionStatus
@@ -9,14 +8,14 @@ import org.osgi.service.component.annotations.Component
 import java.time.Clock
 
 @Component(service = [ExternalEventFactory::class])
-class FindLedgerTransactionExternalEventFactory : AbstractUtxoLedgerExternalEventFactory<FindLedgerTransactionParameters> {
+class FindSignedLedgerTransactionExternalEventFactory : AbstractUtxoLedgerExternalEventFactory<FindSignedLedgerTransactionParameters> {
     @Activate
     constructor() : super()
     constructor(clock: Clock) : super(clock)
 
-    override fun createRequest(parameters: FindLedgerTransactionParameters): Any {
+    override fun createRequest(parameters: FindSignedLedgerTransactionParameters): Any {
         return FindLedgerTransaction(parameters.id, parameters.transactionStatus.value)
     }
 }
 
-data class FindLedgerTransactionParameters(val id: String, val transactionStatus: TransactionStatus)
+data class FindSignedLedgerTransactionParameters(val id: String, val transactionStatus: TransactionStatus)

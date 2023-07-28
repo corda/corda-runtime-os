@@ -19,9 +19,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
 
-@Component(
-    service = [UtxoLedgerTransactionFactory::class, UsedByFlow::class], scope = ServiceScope.PROTOTYPE
-)
+@Component(service = [UtxoLedgerTransactionFactory::class, UsedByFlow::class], scope = ServiceScope.PROTOTYPE)
 class UtxoLedgerTransactionFactoryImpl @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
@@ -29,11 +27,6 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
     private val utxoLedgerStateQueryService: UtxoLedgerStateQueryService
 ) : UtxoLedgerTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
-    // fetch whole ledger tx as part of the find in the ledger service
-    // put states into the cache
-    // if all the states exist in the cache then no need to retrieve them from the database, need to hold in the checkpoint though or they
-    // could get evicted by the time we come back from the database (this is an optimisation though so need to decide if it is worth
-    // doing it).
     @Suspendable
     override fun create(
         wireTransaction: WireTransaction

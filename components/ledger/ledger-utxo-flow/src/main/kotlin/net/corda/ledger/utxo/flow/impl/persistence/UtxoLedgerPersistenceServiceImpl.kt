@@ -12,8 +12,8 @@ import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperat
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransaction
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransactionIfDoesNotExist
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.UpdateTransactionStatus
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindLedgerTransactionExternalEventFactory
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindLedgerTransactionParameters
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
@@ -89,8 +89,8 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         return recordSuspendable({ ledgerPersistenceFlowTimer(FindLedgerTransactionWithStatus) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
-                    FindLedgerTransactionExternalEventFactory::class.java,
-                    FindLedgerTransactionParameters(id.toString(), transactionStatus)
+                    FindSignedLedgerTransactionExternalEventFactory::class.java,
+                    FindSignedLedgerTransactionParameters(id.toString(), transactionStatus)
                 )
             }.firstOrNull().let {
                 if (it == null) return@let null
