@@ -3,6 +3,8 @@ package net.corda.e2etest.utilities.config
 import com.fasterxml.jackson.databind.JsonNode
 import net.corda.e2etest.utilities.ClusterInfo
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
+import net.corda.e2etest.utilities.expand
+import net.corda.e2etest.utilities.flatten
 import net.corda.e2etest.utilities.toJsonString
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
@@ -34,7 +36,7 @@ class SingleClusterTestConfigManager(
         // If the input value is a map, flatten it to a standardised form for merging with previously loaded configs.
         val propsAsFlattenedTree = mutableMapOf<String, Any?>().also {
             if (value is Map<*, *>) {
-                flatten(value, it, prop)
+                value.flatten(it, prop)
             } else {
                 it[prop] = value
             }
@@ -60,7 +62,7 @@ class SingleClusterTestConfigManager(
                 version to sourceConfig
             }
 
-            val newConfig = toJsonString(configOverride)
+            val newConfig = configOverride.expand().toJsonString()
             logger.info(
                 "Updating from config \"$previousSourceConfig\" to \"$newConfig\" for section \"$section\" on " +
                         "cluster \"${clusterInfo.name}\"."
@@ -118,38 +120,4 @@ class SingleClusterTestConfigManager(
 
     private val JsonNode.sourceConfig: String
         get() = get("sourceConfig").textValue()
-
-    private fun flatten(
-        map: Map<*, *>,
-        targetMap: MutableMap<String, Any?>,
-        prefix: String
-    ) {
-        map.forEach { (k, v) ->
-            if (v is Map<*, *>) {
-                flatten(v, targetMap, "$prefix.$k")
-            } else {
-                targetMap["$prefix.$k"] = v
-            }
-        }
-    }
-
-    private fun toJsonString(source: Map<String, Any?>): String {
-        return mutableMapOf<String, Any?>().also { output ->
-            source.forEach { (k, v) ->
-                var targetMap: MutableMap<String, Any?> = output
-                val splitKey = k.split('.')
-                splitKey.dropLast(1).forEach {
-                    if (targetMap.contains(it)) {
-                        @Suppress("unchecked_cast")
-                        targetMap = targetMap[it] as MutableMap<String, Any?>
-                    } else {
-                        val newMap = mutableMapOf<String, Any?>()
-                        targetMap[it] = newMap
-                        targetMap = newMap
-                    }
-                }
-                targetMap[splitKey.last()] = v
-            }
-        }.toJsonString()
-    }
 }
