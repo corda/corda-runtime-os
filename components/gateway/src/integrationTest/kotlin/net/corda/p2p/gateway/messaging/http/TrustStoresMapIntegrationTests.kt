@@ -58,7 +58,7 @@ class TrustStoresMapIntegrationTests : TestBase() {
             assertThat(map.isRunning).isTrue
 
             val store = assertDoesNotThrow {
-                map.getTrustStore(MemberX500Name.parse(ALICE_NAME), GROUP_ID)
+                map.getTrustStore(MemberX500Name.parse(ALICE_NAME), GROUP_ID).trustStore
             }
 
             val certificate = store.aliases().toList().map {
