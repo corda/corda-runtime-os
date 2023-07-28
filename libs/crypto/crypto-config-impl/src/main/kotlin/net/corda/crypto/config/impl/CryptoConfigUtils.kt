@@ -170,7 +170,6 @@ fun SmartConfig.toConfigurationSecrets(): ConfigurationSecrets = ConfigurationSe
 fun SmartConfig.signingService(): CryptoSigningServiceConfig =
     CryptoSigningServiceConfig(this)
 
-// TODO remove me, dead?
 fun SmartConfig.hsm(): CryptoHSMConfig {
     return try {
         CryptoHSMConfig(getConfig(HSM))
