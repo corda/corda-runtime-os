@@ -131,6 +131,6 @@ internal class DynamicX509ExtendedTrustManager(
     private fun getAllX509TrustManagers(): List<X509ExtendedTrustManager> =
         trustStoresMap
             .getTrustStores()
-            .mapNotNull { it.trustStore }
+            .map { it.trustStore }
             .flatMap { it.x509ExtendedTrustManager() }
 }

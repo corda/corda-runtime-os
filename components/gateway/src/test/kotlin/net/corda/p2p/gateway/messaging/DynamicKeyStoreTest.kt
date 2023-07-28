@@ -489,7 +489,7 @@ class DynamicKeyStoreTest {
         }
 
         @Test
-        fun `equals return true when ids and certifiactes are the same`() {
+        fun `equals return true when ids and certificates are the same`() {
             val certificateOne = mock<Certificate>()
             val certificateTwo = mock<Certificate>()
             val certificateThree = mock<Certificate>()
