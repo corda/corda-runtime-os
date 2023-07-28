@@ -19,7 +19,9 @@ interface TenantInfoService {
      * @param category indicates what the keys will be used for, and should be one of the constants 
      *                 defined in CryptoConsts.Categories
      * @param cryptoService a reference to the crypto service, which is used to allocate a wrapping key
-     *                      if necessary.
+     *                      if necessary. This is passed in as a parameter rather than injected in the constructor
+     *                      so as to avoid a circular dependency at construction time, since TenantInfoService
+     *                      and CryptoService call each other.
      * 
      * @return Information about crypto processing for a specific category of keys in a specific tenant.
      *         Includes `masterKeyAlias` which identifies the per-tenant master key used to wrap keys.
