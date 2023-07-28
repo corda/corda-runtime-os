@@ -17,8 +17,10 @@ import javax.persistence.Version
 internal class CpkDbChangeLogEntity(
     @EmbeddedId
     var id: CpkDbChangeLogKey,
+
     @Column(name = "content", nullable = false)
-    val content: String,
+    var content: String,
+
     // This structure does not distinguish the root changelogs from changelog include files
     // (or CSVs, which we do not need to support). So, to find the root, you need to look for a filename
     // convention. See the comment in the companion object of VirtualNodeDbChangeLog.
@@ -32,7 +34,7 @@ internal class CpkDbChangeLogEntity(
 
     // this TS is managed on the DB itself
     @Column(name = "insert_ts", insertable = false, updatable = false)
-    val insertTimestamp: Instant? = null
+    var insertTimestamp: Instant? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -58,7 +60,7 @@ internal class CpkDbChangeLogKey(
     @Column(name = "cpk_file_checksum", nullable = false)
     var cpkFileChecksum: String,
     @Column(name = "file_path", nullable = false)
-    val filePath: String
+    var filePath: String
 ) : Serializable {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
