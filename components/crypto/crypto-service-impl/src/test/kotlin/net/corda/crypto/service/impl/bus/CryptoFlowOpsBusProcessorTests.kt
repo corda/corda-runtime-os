@@ -559,7 +559,7 @@ import kotlin.test.assertTrue
         }
         on { timestamp } doAnswer { Instant.now() }
         on { publicKey } doAnswer { key0 }
-        on { convertToCryptoSigningKey(any()) } doAnswer { mock<CryptoSigningKey>() {
+        on { toCryptoSigningKey(any()) } doAnswer { mock<CryptoSigningKey>() {
             on { publicKey } doAnswer  { ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(key0)) }
         } }
     }

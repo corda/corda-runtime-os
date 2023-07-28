@@ -116,7 +116,7 @@ class CryptoOpsBusProcessor(
                     else -> throw IllegalArgumentException("Unexpected type for ${avroKeyIds::class.java.name}")
                 }
 
-            return CryptoSigningKeys(foundKeys.map { it.convertToCryptoSigningKey(keyEncodingService) })
+            return CryptoSigningKeys(foundKeys.map { it.toCryptoSigningKey(keyEncodingService) })
         }
 
         fun handleKeysRpcQuery(request: KeysRpcQuery): CryptoSigningKeys {
@@ -127,7 +127,7 @@ class CryptoOpsBusProcessor(
                 orderBy = KeyOrderBy.valueOf(request.orderBy.name),
                 filter = request.filter.toMap()
             )
-            return CryptoSigningKeys(found.map { it.convertToCryptoSigningKey(keyEncodingService) })
+            return CryptoSigningKeys(found.map { it.toCryptoSigningKey(keyEncodingService) })
         }
 
         fun handleDeriveSharedSecretCommand(request: DeriveSharedSecretCommand): CryptoDerivedSharedSecret {

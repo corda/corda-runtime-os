@@ -75,7 +75,7 @@ data class SigningKeyInfo(
         return result
     }
 
-    fun convertToCryptoSigningKey(keyEncodingService: KeyEncodingService): CryptoSigningKey = CryptoSigningKey(
+    fun toCryptoSigningKey(keyEncodingService: KeyEncodingService): CryptoSigningKey = CryptoSigningKey(
         this.id.value,
         this.tenantId,
         this.category,

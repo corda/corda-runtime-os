@@ -158,7 +158,7 @@ class CryptoFlowOpsBusProcessor(
                 CryptoSigningKeys(cryptoService.lookupSigningKeysByPublicKeyHashes(
                     context.tenantId,
                     request.fullKeyIds.hashes.map { SecureHashImpl(it.algorithm, it.bytes.array()) }
-                ).map { it.convertToCryptoSigningKey(keyEncodingService) })
+                ).map { it.toCryptoSigningKey(keyEncodingService) })
 
             else -> throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
         }
