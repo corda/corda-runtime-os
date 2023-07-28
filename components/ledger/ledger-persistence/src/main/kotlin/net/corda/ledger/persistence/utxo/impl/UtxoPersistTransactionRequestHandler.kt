@@ -45,10 +45,10 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
             listOf()
         }
 
-        val unconsumedTokensMap = listOfPairsStateAndUtxoToken.associate { it.first.ref to it.second }
+        val utxoTokenMap = listOfPairsStateAndUtxoToken.associate { it.first.ref to it.second }
 
         // persist the transaction
-        persistenceService.persistTransaction(transaction, unconsumedTokensMap)
+        persistenceService.persistTransaction(transaction, utxoTokenMap)
 
         // return output records
         return outputTokenRecords + utxoOutputRecordFactory.getPersistTransactionSuccessRecord(externalEventContext)
