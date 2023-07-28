@@ -5,14 +5,21 @@ import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import picocli.CommandLine
 import net.corda.cli.plugins.common.RestCommand
+import net.corda.cli.plugins.network.output.ConsoleOutput
+import net.corda.cli.plugins.network.output.Output
 import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.cli.plugins.network.utils.PrintUtils.Companion.printJsonOutput
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.exception.ServiceUnavailableException
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.v5.base.types.MemberX500Name
+import java.io.File
 
 @CommandLine.Command(
     name = "get-registrations",
     description = ["Check the status of a registration request."]
 )
-class GetRegistrations(private val output: GetRegistrationsOutput = ConsoleGetRegistrationsOutput()) : RestCommand(),
+class GetRegistrations(private val output: Output = ConsoleOutput()) : RestCommand(),
     Runnable {
 
     @CommandLine.Option(
@@ -58,43 +65,49 @@ class GetRegistrations(private val output: GetRegistrationsOutput = ConsoleGetRe
             ) {
                 try {
                     val registrationProxy = client.start().proxy
+                    val holdingIdentity = getHoldingIdentity()
                     if (requestId != null) {
                         listOf(
                             registrationProxy.checkSpecificRegistrationProgress(
-                                holdingIdentityShortHash!!,
+                                holdingIdentity,
                                 requestId!!
                             )
                         )
                     } else {
-                        registrationProxy.checkRegistrationProgress(holdingIdentityShortHash!!)
+                        registrationProxy.checkRegistrationProgress(holdingIdentity)
                     }
-                } catch (e: Exception) {
+                } catch (e: ResourceNotFoundException) {
+                    null
+                } catch (e: ServiceUnavailableException) {
                     null
                 }
             }
         }
     }
 
-    interface GetRegistrationsOutput {
-        fun generateOutput(content: String)
-    }
-
-    class ConsoleGetRegistrationsOutput : GetRegistrationsOutput {
-        /**
-         * Receives the content of the file and prints it to the console output. It makes the testing easier.
-         */
-        override fun generateOutput(content: String) {
-            content.lines().forEach {
-                println(it)
+    private fun getHoldingIdentity(): String {
+        val x500Name = MemberX500Name.parse(name.toString())
+        return if (name != null && group != null) {
+            val holdingIdentity = HoldingIdentity(x500Name, group.toString())
+            holdingIdentity.shortHash.toString()
+        } else if (holdingIdentityShortHash != null) {
+            holdingIdentityShortHash.toString()
+        } else if (name != null) {
+            val groupIdFile = File("groupId.txt")
+            if (groupIdFile.exists()) {
+                val groupId = groupIdFile.readText().trim()
+                val holdingIdentity = HoldingIdentity(x500Name, groupId)
+                holdingIdentity.shortHash.toString()
+            } else {
+                throw IllegalArgumentException("Group ID not provided and groupId.txt file not found.")
             }
+        } else {
+            throw IllegalArgumentException("Either holdingIdentityShortHash or name and group must be provided.")
         }
     }
 
     override fun run() {
         val result = getRegistrations()
-        if (group != null) {
-            println(group)
-        }
         printJsonOutput(result, output)
     }
 }

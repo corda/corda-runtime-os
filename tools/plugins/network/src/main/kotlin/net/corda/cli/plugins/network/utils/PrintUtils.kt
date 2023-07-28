@@ -3,11 +3,11 @@ package net.corda.cli.plugins.network.utils
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.core.util.DefaultIndenter
-import net.corda.cli.plugins.network.GetRegistrations.GetRegistrationsOutput
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.jsr310.ser.InstantSerializer
 import com.fasterxml.jackson.datatype.jsr310.deser.InstantDeserializer
+import net.corda.cli.plugins.network.output.Output
 import java.time.Instant
 
 class PrintUtils {
@@ -28,7 +28,7 @@ class PrintUtils {
 
             val jsonString = objectMapper.writer(pp).writeValueAsString(result)
             when (output) {
-                is GetRegistrationsOutput -> output.generateOutput(jsonString)
+                is Output -> output.generateOutput(jsonString)
                 else -> throw IllegalArgumentException("Unsupported output type")
             }
         }
