@@ -3,7 +3,6 @@ package net.corda.crypto.config.impl
 import com.typesafe.config.ConfigList
 import net.corda.libs.configuration.SmartConfig
 
-// TODO remove me, dead?
 class CryptoHSMConfig(private val config: SmartConfig) {
 
     class RetryConfig(private val config: SmartConfig) {
