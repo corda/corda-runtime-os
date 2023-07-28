@@ -21,7 +21,7 @@ class UtxoFindSignedLedgerTransactionRequestHandler(
             findTransaction.transactionStatus.toTransactionStatus()
         )
         return listOf(
-            utxoOutputRecordFactory.getFindLedgerTransactionSuccessRecord(
+            utxoOutputRecordFactory.getFindSignedLedgerTransactionSuccessRecord(
                 transactionContainer,
                 status,
                 externalEventContext,

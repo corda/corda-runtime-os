@@ -3,7 +3,7 @@ package net.corda.ledger.utxo.flow.impl.persistence
 enum class LedgerPersistenceMetricOperationName {
 
     FindGroupParameters,
-    FindLedgerTransactionWithStatus,
+    FindSignedLedgerTransactionWithStatus,
     FindTransactionWithStatus,
     FindUnconsumedStatesByType,
     FindWithNamedQuery,

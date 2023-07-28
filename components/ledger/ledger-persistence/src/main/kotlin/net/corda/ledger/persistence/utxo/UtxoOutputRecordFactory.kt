@@ -8,7 +8,6 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.utxo.data.transaction.LedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.messaging.api.records.Record
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.virtualnode.HoldingIdentity
@@ -26,7 +25,7 @@ interface UtxoOutputRecordFactory {
         externalEventContext: ExternalEventContext,
     ): Record<String, FlowEvent>
 
-    fun getFindLedgerTransactionSuccessRecord(
+    fun getFindSignedLedgerTransactionSuccessRecord(
         transactionContainer: LedgerTransactionContainer?,
         status: String?,
         externalEventContext: ExternalEventContext,

@@ -7,7 +7,7 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
 import net.corda.ledger.utxo.data.transaction.LedgerTransactionContainer
-import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindLedgerTransactionWithStatus
+import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindSignedLedgerTransactionWithStatus
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindTransactionWithStatus
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransaction
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransactionIfDoesNotExist
@@ -86,7 +86,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun findSignedLedgerTransactionWithStatus(id: SecureHash, transactionStatus: TransactionStatus): Pair<UtxoSignedLedgerTransaction?, TransactionStatus>? {
-        return recordSuspendable({ ledgerPersistenceFlowTimer(FindLedgerTransactionWithStatus) }) @Suspendable {
+        return recordSuspendable({ ledgerPersistenceFlowTimer(FindSignedLedgerTransactionWithStatus) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     FindSignedLedgerTransactionExternalEventFactory::class.java,

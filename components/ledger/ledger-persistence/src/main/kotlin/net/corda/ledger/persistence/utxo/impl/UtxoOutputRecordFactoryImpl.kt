@@ -74,7 +74,7 @@ class UtxoOutputRecordFactoryImpl(
         )
     }
 
-    override fun getFindLedgerTransactionSuccessRecord(
+    override fun getFindSignedLedgerTransactionSuccessRecord(
         transactionContainer: LedgerTransactionContainer?,
         status: String?,
         externalEventContext: ExternalEventContext,
