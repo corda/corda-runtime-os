@@ -4,6 +4,7 @@ import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.common.ComponentLeafDto
+import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.ledger.utxo.StateRef
 import java.math.BigDecimal
@@ -27,9 +28,8 @@ interface UtxoRepository {
 
     /** Retrieves transaction component leafs related to visible unspent states */
     fun findUnconsumedVisibleStatesByType(
-        entityManager: EntityManager,
-        groupIndices: List<Int>
-    ):  List<ComponentLeafDto>
+        entityManager: EntityManager
+    ):  List<UtxoTransactionOutputDto>
 
     /** Retrieves transaction component leafs related to specific StateRefs */
     fun resolveStateRefs(

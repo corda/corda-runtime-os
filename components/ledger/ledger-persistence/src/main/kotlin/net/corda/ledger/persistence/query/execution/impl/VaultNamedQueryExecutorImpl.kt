@@ -94,22 +94,24 @@ class VaultNamedQueryExecutorImpl(
         return entityManagerFactory.transaction { em ->
 
             val query = em.createNativeQuery(
-                "SELECT tc_output.transaction_id, " +
-                        "tc_output.leaf_idx, " +
-                        "tc_output_info.data as output_info_data, " +
-                        "tc_output.data AS output_data FROM " +
-                        "$UTXO_VISIBLE_TX_TABLE AS visible_states " +
-                        "JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output_info " +
-                            "ON visible_states.transaction_id = tc_output_info.transaction_id " +
-                            "AND visible_states.leaf_idx = tc_output_info.leaf_idx " +
-                            "AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal} " +
-                        "JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output " +
-                            "ON tc_output_info.transaction_id = tc_output.transaction_id " +
-                            "AND tc_output_info.leaf_idx = tc_output.leaf_idx " +
-                            "AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal} " +
-                        "$whereJson " +
-                        "AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME " +
-                        "ORDER BY tc_output_info.created, tc_output.transaction_id, tc_output.leaf_idx, tc_output.group_idx",
+                """
+                    SELECT tc_output.transaction_id,
+                        tc_output.leaf_idx
+                        tc_output_info.data as output_info_data
+                        tc_output.data AS output_data FROM
+                        $UTXO_VISIBLE_TX_TABLE AS visible_states
+                        JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output_info
+                             ON visible_states.transaction_id = tc_output_info.transaction_id
+                             AND visible_states.leaf_idx = tc_output_info.leaf_idx
+                             AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
+                        JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output
+                             ON tc_output_info.transaction_id = tc_output.transaction_id
+                             AND tc_output_info.leaf_idx = tc_output.leaf_idx
+                             AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
+                        $whereJson
+                        AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME
+                        ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx, tc_output.group_idx
+                """,
                 Tuple::class.java
             )
 

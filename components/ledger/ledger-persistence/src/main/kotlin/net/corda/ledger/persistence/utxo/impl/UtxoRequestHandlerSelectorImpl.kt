@@ -40,7 +40,6 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
         val persistenceService = UtxoPersistenceServiceImpl(
             entityManagerFactory = sandbox.getEntityManagerFactory(),
             repository = sandbox.getSandboxSingletonService(),
-            serializationService = sandbox.getSerializationService(),
             sandboxDigestService = sandbox.getSandboxSingletonService(),
             factoryStorage = sandbox.getSandboxSingletonService(),
             defaultContractStateVaultJsonFactory = DefaultContractStateVaultJsonFactoryImpl(),

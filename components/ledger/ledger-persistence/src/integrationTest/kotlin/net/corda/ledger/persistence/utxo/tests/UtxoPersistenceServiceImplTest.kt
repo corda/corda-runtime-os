@@ -33,7 +33,6 @@ import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.libs.packaging.hash
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
-import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.getSandboxSingletonService
 import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
@@ -148,7 +147,6 @@ class UtxoPersistenceServiceImplTest {
             jsonMarshallingService = ctx.getSandboxSingletonService()
             jsonValidator = ctx.getSandboxSingletonService()
             digestService = ctx.getSandboxSingletonService()
-            serializationService = ctx.getSerializationService()
             entityManagerFactory = ctx.getEntityManagerFactory()
             repository = ctx.getSandboxSingletonService()
             factoryRegistry = ctx.getSandboxSingletonService()
@@ -156,7 +154,6 @@ class UtxoPersistenceServiceImplTest {
             persistenceService = UtxoPersistenceServiceImpl(
                 entityManagerFactory,
                 repository,
-                serializationService,
                 digestService,
                 factoryRegistry,
                 DefaultContractStateVaultJsonFactoryImpl(),

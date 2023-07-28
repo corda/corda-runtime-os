@@ -15,11 +15,9 @@ import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.libs.packaging.hash
 import net.corda.orm.utils.transaction
-import net.corda.utilities.serialization.deserialize
 import net.corda.utilities.time.Clock
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
@@ -34,7 +32,6 @@ import javax.persistence.EntityManagerFactory
 class UtxoPersistenceServiceImpl(
     private val entityManagerFactory: EntityManagerFactory,
     private val repository: UtxoRepository,
-    private val serializationService: SerializationService,
     private val sandboxDigestService: DigestService,
     private val factoryStorage: ContractStateVaultJsonFactoryRegistry,
     private val defaultContractStateVaultJsonFactory: DefaultContractStateVaultJsonFactory,
@@ -62,26 +59,9 @@ class UtxoPersistenceServiceImpl(
     }
 
     override fun <T: ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoTransactionOutputDto> {
-        val outputsInfoIdx = UtxoComponentGroup.OUTPUTS_INFO.ordinal
-        val outputsIdx = UtxoComponentGroup.OUTPUTS.ordinal
-        val componentGroups = entityManagerFactory.transaction { em ->
-            repository.findUnconsumedVisibleStatesByType(em, listOf(outputsInfoIdx, outputsIdx))
-        }.groupBy { it.groupIndex }
-        val outputInfos = componentGroups[outputsInfoIdx]
-            ?.associateBy { it.transactionId to it.leafIndex }
-            ?: emptyMap()
-        return componentGroups[outputsIdx]?.mapNotNull {
-            val info = outputInfos[it.transactionId to it.leafIndex]
-            requireNotNull(info) {
-                "Missing output info at index [${it.leafIndex}] for UTXO transaction with ID [${it.transactionId}]"
-            }
-            val contractState = serializationService.deserialize<ContractState>(it.data)
-            if (stateClass.isInstance(contractState)) {
-                UtxoTransactionOutputDto(it.transactionId, it.leafIndex, info.data, it.data)
-            } else {
-                null
-            }
-        } ?: emptyList()
+        return entityManagerFactory.transaction { em ->
+            repository.findUnconsumedVisibleStatesByType(em)
+        }
     }
 
     override fun resolveStateRefs(stateRefs: List<StateRef>): List<UtxoTransactionOutputDto> {
