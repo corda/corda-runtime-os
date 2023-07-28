@@ -17,12 +17,11 @@ class DbConnectionOpsCachedImpl(
     private val entitiesRegistry: JpaEntitiesRegistry
     ): DbConnectionOps by delegate {
 
-    // TODO - replace with caffeine cache
+    // We should try merging the below two caches into one to, like so, make sure each connection gets one EMF only,
+    //  otherwise (i.e. if we get duplicate EMFs for same connection) we end up leaking memory with
+    //  duplicate entity proxies loaded in the class loader as identified in https://r3-cev.atlassian.net/browse/CORE-15806.
     private val cache = ConcurrentHashMap<Pair<String,DbPrivilege>, EntityManagerFactory>()
 
-    // TODO Maybe we could consider replacing the above cache with the one below. All `db_connection`s have/ get an ID.
-    //  Currently the below cache is not cleared on overwriting a connection (`putConnection`).
-    //  In theory I think that should be OK for now since we don't allow "re-creating" a vnode (I believe).
     private val cacheByConnectionId = ConcurrentHashMap<UUID, EntityManagerFactory>()
 
     private fun removeFromCache(name: String, privilege: DbPrivilege) {
@@ -67,7 +66,6 @@ class DbConnectionOpsCachedImpl(
         connectionId: UUID,
         entitiesSet: JpaEntitiesSet
     ): EntityManagerFactory {
-        // TODO Should we be preventing DDL connections from being cached?
         return cacheByConnectionId.computeIfAbsent(connectionId) {
             delegate.createEntityManagerFactory(connectionId, entitiesSet)
         }
