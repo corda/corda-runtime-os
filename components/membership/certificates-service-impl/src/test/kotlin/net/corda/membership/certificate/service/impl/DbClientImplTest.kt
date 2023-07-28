@@ -156,7 +156,7 @@ class DbClientImplTest {
     }
 
     @Test
-    fun `retrieveCertificates will not close the node factory`() {
+    fun `retrieveCertificates will not close the cluster factory`() {
         client.retrieveCertificates(
             null,
             CertificateUsage.P2P_TLS,

@@ -86,7 +86,8 @@ internal class CertificatesServiceImplTest {
             dbConnectionManagerMock,
             jpaEntitiesRegistryMock,
             mock(),
-            virtualNodeInfoReadServiceMock)
+            virtualNodeInfoReadServiceMock,
+        )
     }
 
     @Suppress("Unused")

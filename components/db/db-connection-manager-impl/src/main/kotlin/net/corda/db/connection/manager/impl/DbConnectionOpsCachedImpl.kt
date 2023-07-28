@@ -19,7 +19,7 @@ class DbConnectionOpsCachedImpl(
 
     // We should try merging the below two caches into one to, like so, make sure each connection gets one EMF only,
     //  otherwise (i.e. if we get duplicate EMFs for same connection) we end up leaking memory with
-    //  duplicate entity proxies loaded in the class loader as identified in https://r3-cev.atlassian.net/browse/CORE-15806.
+    //  duplicate entity proxies loaded in the class loader as identified in CORE-15806.
     private val cache = ConcurrentHashMap<Pair<String,DbPrivilege>, EntityManagerFactory>()
 
     private val cacheByConnectionId = ConcurrentHashMap<UUID, EntityManagerFactory>()
