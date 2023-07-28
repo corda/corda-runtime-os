@@ -16,7 +16,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
-import net.corda.membership.rest.v1.CertificatesRestResource.Companion.SIGNATURE_SPEC
+import net.corda.membership.rest.v1.CertificateRestResource.Companion.SIGNATURE_SPEC
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.exception.BadRequestException
@@ -63,7 +63,7 @@ import java.security.cert.X509Certificate
 import java.security.spec.ECGenParameterSpec
 import javax.security.auth.x500.X500Principal
 
-class CertificatesRestResourceImplTest {
+class CertificateRestResourceImplTest {
     private val cryptoOpsClient = mock<CryptoOpsClient>()
     private val keyEncodingService = mock<KeyEncodingService>()
     private val coordinator = mock<LifecycleCoordinator>()
@@ -82,7 +82,7 @@ class CertificatesRestResourceImplTest {
     }
     private val certificatesClient = mock<CertificatesClient>()
 
-    private val certificatesOps = CertificatesRestResourceImpl(
+    private val certificatesOps = CertificateRestResourceImpl(
         cryptoOpsClient,
         keyEncodingService,
         lifecycleCoordinatorFactory,

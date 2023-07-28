@@ -19,7 +19,7 @@ enum class TransactionState {
 class TransactionRecordEntry(
     @Id
     @Column(name = "transaction_id")
-    val transactionId: String,
+    var transactionId: String,
 
     @Column
     var state: TransactionState = TransactionState.PENDING,

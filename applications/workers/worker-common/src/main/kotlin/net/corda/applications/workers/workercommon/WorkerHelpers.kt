@@ -26,7 +26,7 @@ data class PathAndConfig(val path: String, val config: Map<String, String>)
 
 enum class BusType {
     KAFKA,
-    DB
+    DATABASE
 }
 
 /** Helpers used across multiple workers. */
@@ -97,7 +97,7 @@ class WorkerHelpers {
 
             //if we've requested a db message bus use that. default use kafka when not set
             val defaultMessagingParams = defaultParams.messaging
-            val messagingParams = if (defaultMessagingParams[BUS_TYPE] == BusType.DB.name) {
+            val messagingParams = if (defaultMessagingParams[BUS_TYPE] == BusType.DATABASE.name) {
                 defaultMessagingParams.mapKeys { (key, _) -> "${BootConfig.BOOT_DB}.${key.trim()}" }
             } else {
                 defaultMessagingParams.mapKeys { (key, _) -> "${BootConfig.BOOT_KAFKA_COMMON}.${key.trim()}" }

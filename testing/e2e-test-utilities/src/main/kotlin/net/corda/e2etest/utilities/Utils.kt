@@ -2,6 +2,7 @@ package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.crypto.core.parseSecureHash
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -64,3 +65,5 @@ fun getHoldingIdShortHash(x500Name: String, groupId: String): String {
 fun JsonNode.parseContextMap(): Map<String, String> = fields().asSequence().map {
     it.key to it.value.textValue()
 }.toMap()
+
+fun parseSecureHashString(hashString: String) = parseSecureHash(hashString)

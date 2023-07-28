@@ -21,13 +21,22 @@ import javax.persistence.Version
 @Table(name = "cpi_cpk")
 internal class CpiCpkEntity(
     @EmbeddedId
-    val id: CpiCpkKey,
+    var id: CpiCpkKey,
+
     @Column(name = "cpk_file_name", nullable = false)
     var cpkFileName: String,
+
     // note - orphanRemoval = false because a CPK could be associated with a different CPI.
     @OneToOne(cascade = [CascadeType.MERGE, CascadeType.PERSIST])
-    @JoinColumn(name = "cpk_file_checksum", referencedColumnName = "file_checksum", insertable = false, updatable = false)
+    @JoinColumn(
+        name = "cpk_file_checksum",
+        referencedColumnName = "file_checksum",
+        insertable = false,
+        updatable = false,
+        nullable = false
+    )
     var metadata: CpkMetadataEntity,
+
     @Version
     @Column(name = "entity_version", nullable = false)
     var entityVersion: Int = 0
@@ -35,6 +44,7 @@ internal class CpiCpkEntity(
     // Initial population of this TS is managed on the DB itself
     @Column(name = "insert_ts", insertable = false, updatable = true)
     var insertTimestamp: Instant? = null
+
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false
 
@@ -42,6 +52,7 @@ internal class CpiCpkEntity(
     fun onUpdate() {
         insertTimestamp = Instant.now()
     }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -60,14 +71,17 @@ internal class CpiCpkEntity(
 
 @Embeddable
 internal class CpiCpkKey(
-    @Column(name = "cpi_name")
-    val cpiName: String,
-    @Column(name = "cpi_version")
-    val cpiVersion: String,
-    @Column(name = "cpi_signer_summary_hash")
-    val cpiSignerSummaryHash: String,
-    @Column(name = "cpk_file_checksum")
-    val cpkFileChecksum: String,
+    @Column(name = "cpi_name", nullable = false)
+    var cpiName: String,
+
+    @Column(name = "cpi_version", nullable = false)
+    var cpiVersion: String,
+
+    @Column(name = "cpi_signer_summary_hash", nullable = false)
+    var cpiSignerSummaryHash: String,
+
+    @Column(name = "cpk_file_checksum", nullable = false)
+    var cpkFileChecksum: String,
 ): Serializable {
 
     override fun equals(other: Any?): Boolean {

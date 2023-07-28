@@ -25,32 +25,39 @@ import javax.persistence.Table
 class TopicRecordEntry(
     @Id
     @Column
-    val topic: String,
+    var topic: String,
+
     @Id
     @Column
-    val partition: Int,
+    var partition: Int,
+
     @Id
     @Column(name = "record_offset")
-    val recordOffset: Long,
+    var recordOffset: Long,
+
     /**
      * NOTE: All keys must end up on the same partition
      */
     @Column(name = "record_key")
-    val key: ByteArray,
+    var key: ByteArray,
+
     @Column(name = "record_value")
-    val value: ByteArray?,
+    var value: ByteArray?,
+
     @Column(name = "record_headers")
-    val headers: String?,
+    var headers: String?,
+
     @ManyToOne
     @JoinColumn(name = "transaction_id")
-    val transactionId: TransactionRecordEntry,
+    var transactionId: TransactionRecordEntry,
+
     @Column
-    val timestamp: Instant = Instant.now().truncatedTo(ChronoUnit.MILLIS),
+    var timestamp: Instant = Instant.now().truncatedTo(ChronoUnit.MILLIS),
 )
 
 @Embeddable
 data class TopicRecordEntryKey(
-    val topic: String,
-    val partition: Int,
-    val recordOffset: Long,
+    var topic: String,
+    var partition: Int,
+    var recordOffset: Long,
 ): Serializable

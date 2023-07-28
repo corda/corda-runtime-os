@@ -43,7 +43,7 @@ import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
 
-class KeysRestResourceImplTest {
+class KeyRestResourceImplTest {
     private companion object {
         const val ALIAS = "alias"
         const val SCHEME = "scheme"
@@ -63,7 +63,7 @@ class KeysRestResourceImplTest {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
 
-    private val keysOps = KeysRestResourceImpl(cryptoOpsClient, keyEncodingService, lifecycleCoordinatorFactory, mock())
+    private val keysOps = KeyRestResourceImpl(cryptoOpsClient, keyEncodingService, lifecycleCoordinatorFactory, mock())
 
     @Nested
     inner class BasicApiTests {

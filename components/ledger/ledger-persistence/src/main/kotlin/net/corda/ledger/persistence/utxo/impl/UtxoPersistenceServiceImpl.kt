@@ -68,16 +68,16 @@ class UtxoPersistenceServiceImpl(
             repository.findUnconsumedVisibleStatesByType(em, listOf(outputsInfoIdx, outputsIdx))
         }.groupBy { it.groupIndex }
         val outputInfos = componentGroups[outputsInfoIdx]
-            ?.associate { Pair(it.leafIndex, it.data) }
+            ?.associateBy { it.transactionId to it.leafIndex }
             ?: emptyMap()
         return componentGroups[outputsIdx]?.mapNotNull {
-            val info = outputInfos[it.leafIndex]
+            val info = outputInfos[it.transactionId to it.leafIndex]
             requireNotNull(info) {
                 "Missing output info at index [${it.leafIndex}] for UTXO transaction with ID [${it.transactionId}]"
             }
             val contractState = serializationService.deserialize<ContractState>(it.data)
             if (stateClass.isInstance(contractState)) {
-                UtxoTransactionOutputDto(it.transactionId, it.leafIndex, info, it.data)
+                UtxoTransactionOutputDto(it.transactionId, it.leafIndex, info.data, it.data)
             } else {
                 null
             }

@@ -38,15 +38,15 @@ data class DbConnectionAudit (
     )
     @GeneratedValue(strategy = SEQUENCE, generator = DB_CONNECTION_AUDIT_GENERATOR)
     @Column(name = "change_number", nullable = false)
-    val changeNumber: Int,
+    var changeNumber: Int,
 
     @Column(name = "connection_id", nullable = false)
-    val id: UUID,
+    var id: UUID,
     @Column(name = "connection_name", nullable = false)
-    val name: String,
+    var name: String,
     @Enumerated(EnumType.STRING)
     @Column(name = "privilege", nullable = false)
-    val privilege: DbPrivilege,
+    var privilege: DbPrivilege,
     @Column(name = "update_ts", nullable = false)
     var updateTimestamp: Instant,
     @Column(name = "update_actor", nullable = false)

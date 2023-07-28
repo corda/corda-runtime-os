@@ -1,6 +1,6 @@
 package net.corda.cli.plugin.initialconfig
 
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.Instant
@@ -11,26 +11,26 @@ import javax.persistence.JoinColumn
 import javax.persistence.Table
 import javax.persistence.Version
 
-class TestSqlFormatters {
+class TestSqlFormattersForFieldAccess {
 
     @Entity
     @Table(name = "testtable", schema = "testschema")
     private class TestEntity(
         @Suppress("Unused")
         @Column(name = "testyMcTestFace", nullable = false)
-        val testFace: String,
+        var testFace: String,
 
         @Suppress("Unused")
         @Column(name = "testNumber")
-        val testNum: Int,
+        var testNum: Int,
 
         @Suppress("Unused")
         @Column(name = "testDate")
-        val testDate: Instant? = null,
+        var testDate: Instant? = null,
 
         @Suppress("Unused")
         @JoinColumn(name = "crossRef")
-        val reference: ReferencedEntity? = null
+        var reference: ReferencedEntity? = null
     )
 
     @Entity
@@ -38,7 +38,7 @@ class TestSqlFormatters {
     private class VersionedTestEntity(
         @Suppress("Unused")
         @Column(name = "testyMcTestFace", nullable = false)
-        val testFace: String
+        var testFace: String
     ) {
         @Suppress("Unused")
         @Version
@@ -51,7 +51,7 @@ class TestSqlFormatters {
         @Suppress("Unused")
         @Id
         @Column(name = "name", nullable = false)
-        val name: String
+        var name: String
     )
 
     @Entity
@@ -59,7 +59,7 @@ class TestSqlFormatters {
     private class InvalidReferencedEntity(
         @Suppress("Unused")
         @JoinColumn(name = "reference")
-        val reference: VersionedTestEntity
+        var reference: VersionedTestEntity
     )
 
     @Entity
@@ -67,7 +67,7 @@ class TestSqlFormatters {
     private class NoSchemaEntity(
         @Suppress("Unused")
         @Column(name = "testface")
-        val testface: String
+        var testface: String
     )
 
     @Entity
@@ -75,12 +75,20 @@ class TestSqlFormatters {
     private class NoNameEntity(
         @Suppress("Unused")
         @Column(name = "testface")
-        val testFace: String
+        var testFace: String
     )
 
     @Entity
     @Table(name = "UnnamedColumn")
     private class UnnamedColumnEntity(
+        @Suppress("Unused")
+        @Column
+        var testFace: String
+    )
+
+    @Entity
+    @Table(name = "HasValProperty")
+    private class EntityWithValProperty(
         @Suppress("Unused")
         @Column
         val testFace: String
@@ -91,7 +99,7 @@ class TestSqlFormatters {
         val ent = TestEntity("face", 42)
         val statement = ent.toInsertStatement()
 
-        Assertions.assertEquals(
+        assertEquals(
             "insert into testschema.testtable (testyMcTestFace, testNumber) " +
                 "values ('face', 42)",
             statement
@@ -103,7 +111,7 @@ class TestSqlFormatters {
         val ent = TestEntity("face", 42, Instant.ofEpochSecond(123456))
         val statement = ent.toInsertStatement()
 
-        Assertions.assertEquals(
+        assertEquals(
             "insert into testschema.testtable (testDate, testyMcTestFace, testNumber) " +
                 "values ('1970-01-02T10:17:36Z', 'face', 42)",
             statement
@@ -115,7 +123,7 @@ class TestSqlFormatters {
         val ent = TestEntity("face", 42, reference = ReferencedEntity("ref#1"))
         val statement = ent.toInsertStatement()
 
-        Assertions.assertEquals(
+        assertEquals(
             "insert into testschema.testtable (crossRef, testyMcTestFace, testNumber) " +
                 "values ('ref#1', 'face', 42)",
             statement
@@ -127,7 +135,7 @@ class TestSqlFormatters {
         val ent = VersionedTestEntity("face")
         val statement = ent.toInsertStatement()
 
-        Assertions.assertEquals(
+        assertEquals(
             "insert into testschema.testtable (testyMcTestFace, version) " +
                 "values ('face', 0)",
             statement
@@ -139,7 +147,7 @@ class TestSqlFormatters {
         val testEntity = TestEntity("Robert'); DROP TABLE Students;--", 34)
         val statement = testEntity.toInsertStatement()
 
-        Assertions.assertEquals(
+        assertEquals(
             "insert into testschema.testtable (testyMcTestFace, testNumber) " +
                 "values ('Robert\\'); DROP TABLE Students;--', 34)",
             statement
@@ -150,34 +158,43 @@ class TestSqlFormatters {
     fun joinColumnWithMissingIdBlowsUp() {
         val ent = InvalidReferencedEntity(VersionedTestEntity("foo"))
 
-        assertThrows<java.lang.IllegalArgumentException> { ent.toInsertStatement() }.let {
-            Assertions.assertEquals(
-                "Value " +
-                    "net.corda.cli.plugin.initialconfig.TestSqlFormatters.VersionedTestEntity for join " +
-                    "column does not have a primary key/id column",
-                it.message
-            )
-        }
+        val ex = assertThrows<java.lang.IllegalArgumentException> { ent.toInsertStatement() }
+        assertEquals(
+            "Value " +
+                "net.corda.cli.plugin.initialconfig.TestSqlFormattersForFieldAccess.VersionedTestEntity for join " +
+                "column does not have a primary key/id column",
+            ex.message
+        )
     }
 
     @Test
     fun testToInsertStatementNoSchema() {
         val ent = NoSchemaEntity("test")
         val statement = ent.toInsertStatement()
-        Assertions.assertEquals("insert into NoSchemaTable (testface) values ('test')", statement)
+        assertEquals("insert into NoSchemaTable (testface) values ('test')", statement)
     }
 
     @Test
     fun testMissingTableName() {
         val ent = NoNameEntity("test")
         val statement = ent.toInsertStatement()
-        Assertions.assertEquals("insert into NoNameEntity (testface) values ('test')", statement)
+        assertEquals("insert into NoNameEntity (testface) values ('test')", statement)
     }
 
     @Test
     fun testMissingColumnName() {
         val ent = UnnamedColumnEntity("test")
         val statement = ent.toInsertStatement()
-        Assertions.assertEquals("insert into UnnamedColumn (testFace) values ('test')", statement)
+        assertEquals("insert into UnnamedColumn (testFace) values ('test')", statement)
+    }
+
+    @Test
+    fun testEntityWithValProperty() {
+        val ent = EntityWithValProperty("test")
+        val ex = assertThrows<IllegalArgumentException> { ent.toInsertStatement() }
+        assertEquals(
+            "Property 'val ${EntityWithValProperty::class.java.canonicalName}.testFace: kotlin.String' must be var for JPA annotations.",
+            ex.message
+        )
     }
 }

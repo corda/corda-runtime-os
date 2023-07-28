@@ -20,10 +20,10 @@ class GroupPolicyEntity(
     var version: Long,
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: Instant,
+    var createdAt: Instant,
 
     @Column(name = "properties", nullable = false, updatable = false)
-    val properties: ByteArray,
+    var properties: ByteArray,
 ) {
 
     override fun equals(other: Any?): Boolean {
