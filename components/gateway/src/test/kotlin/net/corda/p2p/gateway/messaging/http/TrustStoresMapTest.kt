@@ -25,6 +25,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.io.InputStream
@@ -223,5 +224,43 @@ class TrustStoresMapTest {
 
         assertThat(data.firstValue.reader().readText()).isEqualTo("one")
         assertThat(data.secondValue.reader().readText()).isEqualTo("two")
+    }
+
+    @Test
+    fun `trust store create the key store once when the certificate are the same`() {
+        val source1X500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
+        val source2X500Name = "CN=Bob, O=Alice Corp, L=LDN, C=GB"
+        val groupId = "group id 1"
+        creteResources.get()?.invoke(mock())
+        processor.firstValue.onSnapshot(
+            mapOf(
+                "key1" to GatewayTruststore(HoldingIdentity(source1X500Name, groupId), listOf("one")),
+                "key2" to GatewayTruststore(HoldingIdentity(source2X500Name, groupId), listOf("one"))
+            )
+        )
+
+        testObject.getTrustStore(MemberX500Name.parse(source1X500Name), groupId)
+        testObject.getTrustStore(MemberX500Name.parse(source2X500Name), groupId)
+
+        verify(keyStore, times(1)).setCertificateEntry(any(), any())
+    }
+
+    @Test
+    fun `trust store create the key sore more than once when the certificates are different`() {
+        val source1X500Name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
+        val source2X500Name = "CN=Bob, O=Alice Corp, L=LDN, C=GB"
+        val groupId = "group id 1"
+        creteResources.get()?.invoke(mock())
+        processor.firstValue.onSnapshot(
+            mapOf(
+                "key1" to GatewayTruststore(HoldingIdentity(source1X500Name, groupId), listOf("one")),
+                "key2" to GatewayTruststore(HoldingIdentity(source2X500Name, groupId), listOf("two"))
+            )
+        )
+
+        testObject.getTrustStore(MemberX500Name.parse(source1X500Name), groupId)
+        testObject.getTrustStore(MemberX500Name.parse(source2X500Name), groupId)
+
+        verify(keyStore, times(2)).setCertificateEntry(any(), any())
     }
 }

@@ -346,3 +346,23 @@ fun ClusterInfo.activateMember(
         condition { it.code == ResponseCode.NO_CONTENT.statusCode || it.code == ResponseCode.CONFLICT.statusCode }
     }
 }
+
+/**
+ * Update the group parameters as the MGM identified by [mgmHoldingId], and return the newly updated group parameters.
+ */
+fun ClusterInfo.updateGroupParameters(
+    mgmHoldingId: String,
+    update: Map<String, String>
+) = cluster {
+    val payload = mapOf(
+        "parameters" to update
+    )
+    assertWithRetry {
+        timeout(15.seconds)
+        interval(1.seconds)
+        command {
+            post("/api/v1/mgm/$mgmHoldingId/group-parameters", ObjectMapper().writeValueAsString(payload))
+        }
+        condition { it.code == ResponseCode.OK.statusCode }
+    }.toJson()
+}

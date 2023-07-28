@@ -95,8 +95,6 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
     @Suppress("NestedBlockDepth")
     private fun runConsumeLoop() {
         var attempts = 0
-        var consumer: CordaConsumer<K, V>?
-        var producer: CordaProducer?
         while (!threadLooper.loopStopped) {
             attempts++
             try {
@@ -108,7 +106,8 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                     ForwardingRebalanceListener(config.topic, config.clientId, partitionAssignmentListener)
                 }
                 val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.EVENT_LOG)
-                consumer = cordaConsumerBuilder.createConsumer(
+
+                cordaConsumerBuilder.createConsumer(
                     consumerConfig,
                     config.messageBusConfig,
                     processor.keyClass,
@@ -118,19 +117,19 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                         deadLetterRecords.add(data)
                     },
                     rebalanceListener
-                )
-                val producerConfig = ProducerConfig(config.clientId, config.instanceId, true, ProducerRoles.EVENT_LOG, false)
-                producer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig) { data ->
-                    log.warn("Failed to serialize record from ${config.topic}")
-                    deadLetterRecords.add(data)
-                }
-                consumer.use { cordaConsumer ->
+                ).use { cordaConsumer ->
                     cordaConsumer.subscribe(config.topic)
-                    producer.use { cordaProducer ->
+                    val producerConfig =
+                        ProducerConfig(config.clientId, config.instanceId, true, ProducerRoles.EVENT_LOG, false)
+                    cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig) { data ->
+                        log.warn("Failed to serialize record from ${config.topic}")
+                        deadLetterRecords.add(data)
+                    }.use { cordaProducer ->
                         threadLooper.updateLifecycleStatus(LifecycleStatus.UP)
                         pollAndProcessRecords(cordaConsumer, cordaProducer)
                     }
                 }
+
                 attempts = 0
             } catch (ex: Exception) {
                 when (ex) {

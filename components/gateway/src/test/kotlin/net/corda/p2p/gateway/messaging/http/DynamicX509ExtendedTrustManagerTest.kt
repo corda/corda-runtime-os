@@ -51,7 +51,7 @@ class DynamicX509ExtendedTrustManagerTest {
     }
     private val mockTrustStore = mock<KeyStore>()
     private val trustStoresMap = mock<TrustStoresMap> {
-        on { getTrustStores() } doReturn listOf(mockTrustStore)
+        on { getTrustStores() } doReturn setOf(mockTrustStore)
     }
     private val dynamicX509ExtendedTrustManager = DynamicX509ExtendedTrustManager(
         trustStoresMap,
