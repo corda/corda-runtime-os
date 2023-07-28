@@ -1,6 +1,7 @@
 package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.data.ledger.persistence.FindSignedGroupParameters
+import net.corda.data.ledger.persistence.FindSignedLedgerTransaction
 import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
@@ -10,7 +11,6 @@ import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.ledger.persistence.PersistTransactionIfDoesNotExist
 import net.corda.data.ledger.persistence.ResolveStateRefs
 import net.corda.data.ledger.persistence.UpdateTransactionStatus
-import net.corda.data.ledger.persistence.v2.FindLedgerTransaction
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.persistence.common.RequestHandler
@@ -19,8 +19,8 @@ import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFacto
 import net.corda.ledger.persistence.query.execution.impl.VaultNamedQueryExecutorImpl
 import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoExecuteNamedQueryHandler
-import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedLedgerTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedGroupParametersRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedLedgerTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindUnconsumedStatesByTypeRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler
@@ -78,7 +78,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     outputRecordFactory
                 )
             }
-            is FindLedgerTransaction -> {
+            is FindSignedLedgerTransaction -> {
                 UtxoFindSignedLedgerTransactionRequestHandler(
                     req,
                     externalEventContext,
