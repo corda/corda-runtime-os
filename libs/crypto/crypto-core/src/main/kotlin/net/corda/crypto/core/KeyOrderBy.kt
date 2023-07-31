@@ -1,4 +1,4 @@
-package net.corda.crypto.service
+package net.corda.crypto.core
 
 enum class KeyOrderBy {
     NONE,

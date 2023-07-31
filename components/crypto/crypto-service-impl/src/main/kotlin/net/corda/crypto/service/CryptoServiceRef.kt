@@ -1,6 +1,5 @@
 package net.corda.crypto.service
 
-import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.GeneratedWrappedKey
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
@@ -13,8 +12,6 @@ class CryptoServiceRef(
     val tenantId: String,
     val category: String,
     val masterKeyAlias: String,
-    val hsmId: String,
-    val instance: CryptoService
 ) {
     fun toSaveKeyContext(
         key: GeneratedWrappedKey,
