@@ -101,14 +101,9 @@ class FlowEngineImpl @Activate constructor(
     private fun closeSessionsOnSubFlowFinish() {
         val currentSessionIds = this.currentSessionIds
         if (currentSessionIds.isNotEmpty()) {
-            val checkPoint = getFiberExecutionContext().flowCheckpoint
-            for (sessionId in currentSessionIds){
-                val status = checkPoint.getSessionState(sessionId)?.status
-                if (status != SessionStateType.CLOSED && status != SessionStateType.ERROR){
-                    flowFiberService.getExecutingFiber()
-                        .suspend(FlowIORequest.SubFlowFinished(currentSessionIds))
-                    break
-                }
+            if (sessionsAllErrorOrClose()){
+                flowFiberService.getExecutingFiber()
+                    .suspend(FlowIORequest.SubFlowFinished(currentSessionIds))
             }
         }
     }
@@ -117,16 +112,21 @@ class FlowEngineImpl @Activate constructor(
     private fun errorSessionsOnSubFlowFinish(t: Throwable) {
         val currentSessionIds = this.currentSessionIds
         if (currentSessionIds.isNotEmpty()) {
-            val checkPoint = getFiberExecutionContext().flowCheckpoint
-            for (sessionId in currentSessionIds){
-                val status = checkPoint.getSessionState(sessionId)?.status
-                if (status != SessionStateType.CLOSED && status != SessionStateType.ERROR){
-                    flowFiberService.getExecutingFiber()
-                        .suspend(FlowIORequest.SubFlowFailed(t, currentSessionIds))
-                    break
-                }
+           if (sessionsAllErrorOrClose()){
+               flowFiberService.getExecutingFiber()
+                   .suspend(FlowIORequest.SubFlowFailed(t, currentSessionIds))
+           }
+        }
+    }
+    private fun sessionsAllErrorOrClose(): Boolean {
+        val checkPoint = getFiberExecutionContext().flowCheckpoint
+        for (sessionId in currentSessionIds){
+            val status = checkPoint.getSessionState(sessionId)?.status
+            if (status != SessionStateType.CLOSED && status != SessionStateType.ERROR){
+                return true
             }
         }
+        return false
     }
 
     private fun peekCurrentFlowStackItem(): FlowStackItem {
