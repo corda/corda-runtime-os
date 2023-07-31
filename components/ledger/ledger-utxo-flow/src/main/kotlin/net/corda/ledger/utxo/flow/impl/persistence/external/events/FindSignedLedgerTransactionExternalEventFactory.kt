@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.persistence.external.events
 
-import net.corda.data.ledger.persistence.v2.FindLedgerTransaction
+import net.corda.data.ledger.persistence.FindSignedLedgerTransaction
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import org.osgi.service.component.annotations.Activate
@@ -14,7 +14,7 @@ class FindSignedLedgerTransactionExternalEventFactory : AbstractUtxoLedgerExtern
     constructor(clock: Clock) : super(clock)
 
     override fun createRequest(parameters: FindSignedLedgerTransactionParameters): Any {
-        return FindLedgerTransaction(parameters.id, parameters.transactionStatus.value)
+        return FindSignedLedgerTransaction(parameters.id, parameters.transactionStatus.value)
     }
 }
 
