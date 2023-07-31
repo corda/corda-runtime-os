@@ -242,7 +242,7 @@ open class SoftCryptoService(
         scheme: KeyScheme,
         context: Map<String, String>,
     ): GeneratedWrappedKey {
-        logger.info("generateKeyPair(tenant={}, category={}, alias={}))", tenantId, category, alias)
+        logger.info("generateKeyPair(tenant={}, category={}, alias={})", tenantId, category, alias)
         val parentKeyAlias =
             context.get("parentKeyAlias") ?: tenantInfoService.lookup(tenantId, category)?.masterKeyAlias
             ?: throw InvalidParamsException("The tenant '$tenantId' is not configured for category '$category'.")
@@ -441,22 +441,24 @@ open class SoftCryptoService(
         // uniqueness constraints to stop clashes from being created.
         val publicKeyListCached = keyIds.map {
             val publicKey = shortHashCache?.getIfPresent(it)
-            Triple(it, publicKey, publicKey?.let { _ ->signingKeyInfoCache.getIfPresent(publicKey) })
+            Pair(it, publicKey?.let { _ ->signingKeyInfoCache.getIfPresent(publicKey) })
         }
-        val publicKeyListFinal = if (publicKeyListCached.filter { it.third != null}.size == keyIds.size) publicKeyListCached 
-        else signingRepositoryFactory.getInstance(tenantId).use {repo ->             
-            val fetchedCollection =repo.lookupByPublicKeyShortHashes(publicKeyListCached
-                .filter { it.third == null }
-                .map {it.first }.toSet())
+        // Get all the signingKeyInfo for required keyIds and check if we cached have them all cached, if not, fetched them
+        // from the database.
+        val signingKeyInfoList = if (publicKeyListCached.filter { it.second == null }.isEmpty()) publicKeyListCached.map { it.second }
+        else signingRepositoryFactory.getInstance(tenantId).use {repo ->
+            val fetchedCollection = repo.lookupByPublicKeyShortHashes(publicKeyListCached
+                .filter { it.second == null }
+                .map { it.first }
+                .toSet())
             val fetchedMap = fetchedCollection.map { shortHashOf(it.publicKey) to it }.toMap()
-            publicKeyListCached.map { keyData: Triple<ShortHash, PublicKey?, SigningKeyInfo?> ->
-                if (keyData.third != null) keyData else {
-                    val info = fetchedMap.get(keyData.first)?.also { populateCaches(it) }
-                    Triple(keyData.first, info?.publicKey, info)
+            publicKeyListCached.map { keyData: Pair<ShortHash, SigningKeyInfo?> ->
+                if (keyData.second != null) keyData.second else {
+                    fetchedMap.get(keyData.first)?.also { populateCaches(it) }
                 }
             }
         }
-        return publicKeyListFinal.map { it.third }.filterNotNull()
+        return signingKeyInfoList.filter { it?.tenantId == tenantId }.toCollection()
     }
 
     override fun lookupSigningKeysByPublicKeyHashes(
