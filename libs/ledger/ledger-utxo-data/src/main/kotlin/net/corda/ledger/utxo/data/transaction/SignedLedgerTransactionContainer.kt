@@ -6,7 +6,7 @@ import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.SecureHash
 
 @CordaSerializable
-data class LedgerTransactionContainer(
+data class SignedLedgerTransactionContainer(
     val wireTransaction: WireTransaction,
     val serializedInputStateAndRefs: List<UtxoTransactionOutputDto>,
     val serializedReferenceStateAndRefs: List<UtxoTransactionOutputDto>,

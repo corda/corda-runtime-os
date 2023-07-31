@@ -12,7 +12,7 @@ import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
-import net.corda.ledger.utxo.data.transaction.LedgerTransactionContainer
+import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
@@ -70,7 +70,7 @@ class UtxoPersistenceServiceImpl(
     override fun findSignedLedgerTransaction(
         id: String,
         transactionStatus: TransactionStatus
-    ): Pair<LedgerTransactionContainer?, String?> {
+    ): Pair<SignedLedgerTransactionContainer?, String?> {
         return entityManagerFactory.transaction { em ->
             val status = repository.findTransactionStatus(em, id)
             if (status == transactionStatus.value) {
@@ -92,7 +92,7 @@ class UtxoPersistenceServiceImpl(
                         ?: throw CordaRuntimeException("Could not find reference StateRef $it when finding transaction $id")
                 }
 
-                LedgerTransactionContainer(transaction.wireTransaction, inputStateAndRefs, referenceStateAndRefs, signatures)
+                SignedLedgerTransactionContainer(transaction.wireTransaction, inputStateAndRefs, referenceStateAndRefs, signatures)
             } else {
                 null
             } to status

@@ -9,7 +9,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
-import net.corda.ledger.utxo.data.transaction.LedgerTransactionContainer
+import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
@@ -187,7 +187,7 @@ class UtxoLedgerPersistenceServiceImplTest {
     }
 
     @Test
-    fun `findLedgerTransaction executes successfully`() {
+    fun `findSignedLedgerTransaction executes successfully`() {
         val metadata = mock<TransactionMetadata>()
         val signedTransaction = mock<UtxoSignedTransactionInternal>()
         val ledgerTransaction = mock<UtxoLedgerTransactionInternal>()
@@ -202,9 +202,9 @@ class UtxoLedgerPersistenceServiceImplTest {
         val inputUtxoTransactionOutputDtos = listOf(UtxoTransactionOutputDto("tx1", 1, byteArrayOf(0), byteArrayOf(1)))
         val referenceUtxoTransactionOutputDtos = listOf(UtxoTransactionOutputDto("tx2", 1, byteArrayOf(0), byteArrayOf(1)))
 
-        whenever(serializationService.deserialize<Pair<LedgerTransactionContainer, String>>(any<ByteArray>(), any()))
+        whenever(serializationService.deserialize<Pair<SignedLedgerTransactionContainer, String>>(any<ByteArray>(), any()))
             .thenReturn(
-                LedgerTransactionContainer(
+                SignedLedgerTransactionContainer(
                     wireTransaction,
                     inputUtxoTransactionOutputDtos,
                     referenceUtxoTransactionOutputDtos,

@@ -13,7 +13,7 @@ import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.persistence.EntityResponse
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
-import net.corda.ledger.utxo.data.transaction.LedgerTransactionContainer
+import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
@@ -75,7 +75,7 @@ class UtxoOutputRecordFactoryImpl(
     }
 
     override fun getFindSignedLedgerTransactionSuccessRecord(
-        transactionContainer: LedgerTransactionContainer?,
+        transactionContainer: SignedLedgerTransactionContainer?,
         status: String?,
         externalEventContext: ExternalEventContext,
     ): Record<String, FlowEvent> {

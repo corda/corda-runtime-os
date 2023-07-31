@@ -5,7 +5,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
-import net.corda.ledger.utxo.data.transaction.LedgerTransactionContainer
+import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.messaging.api.records.Record
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -26,7 +26,7 @@ interface UtxoOutputRecordFactory {
     ): Record<String, FlowEvent>
 
     fun getFindSignedLedgerTransactionSuccessRecord(
-        transactionContainer: LedgerTransactionContainer?,
+        transactionContainer: SignedLedgerTransactionContainer?,
         status: String?,
         externalEventContext: ExternalEventContext,
     ): Record<String, FlowEvent>

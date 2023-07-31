@@ -31,7 +31,7 @@ import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.persistence.utxo.impl.UtxoPersistenceServiceImpl
 import net.corda.ledger.persistence.utxo.tests.datamodel.UtxoEntityFactory
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
-import net.corda.ledger.utxo.data.transaction.LedgerTransactionContainer
+import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
@@ -231,7 +231,7 @@ class UtxoPersistenceServiceImplTest {
         val retval = persistenceService.findSignedLedgerTransaction(transaction.id.toString(), UNVERIFIED)
 
         assertThat(retval).isEqualTo(
-            LedgerTransactionContainer(
+            SignedLedgerTransactionContainer(
                 transaction.wireTransaction,
                 resolvedInputStateRefs,
                 resolvedReferenceStateRefs,

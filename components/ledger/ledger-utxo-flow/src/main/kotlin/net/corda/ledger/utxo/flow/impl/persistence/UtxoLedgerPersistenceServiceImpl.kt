@@ -6,7 +6,7 @@ import net.corda.flow.fiber.metrics.recordSuspendable
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
-import net.corda.ledger.utxo.data.transaction.LedgerTransactionContainer
+import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindSignedLedgerTransactionWithStatus
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindTransactionWithStatus
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransaction
@@ -85,7 +85,10 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun findSignedLedgerTransactionWithStatus(id: SecureHash, transactionStatus: TransactionStatus): Pair<UtxoSignedLedgerTransaction?, TransactionStatus>? {
+    override fun findSignedLedgerTransactionWithStatus(
+        id: SecureHash,
+        transactionStatus: TransactionStatus
+    ): Pair<UtxoSignedLedgerTransaction?, TransactionStatus>? {
         return recordSuspendable({ ledgerPersistenceFlowTimer(FindSignedLedgerTransactionWithStatus) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
@@ -94,7 +97,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                 )
             }.firstOrNull().let {
                 if (it == null) return@let null
-                val (transaction, status) = serializationService.deserialize<Pair<LedgerTransactionContainer?, String?>>(it.array())
+                val (transaction, status) = serializationService.deserialize<Pair<SignedLedgerTransactionContainer?, String?>>(it.array())
                 if (status == null)
                     return@let null
                 transaction?.toSignedLedgerTransaction() to status.toTransactionStatus()
@@ -163,7 +166,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         }
     }
 
-    private fun LedgerTransactionContainer.toSignedLedgerTransaction(): UtxoSignedLedgerTransaction {
+    private fun SignedLedgerTransactionContainer.toSignedLedgerTransaction(): UtxoSignedLedgerTransaction {
         return UtxoSignedLedgerTransactionImpl(
             utxoLedgerTransactionFactory.create(
                 wireTransaction,
