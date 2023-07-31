@@ -152,7 +152,7 @@ class SessionEventHandlerTest {
     }
 
     @Test
-    fun `Receiving a session init payload throws an exception if there is no matching initiated flow`() {
+    fun `Receiving a session init payload sends an error message if there is no matching initiated flow`() {
         val sessionEvent = createSessionInit()
         val inputContext = buildFlowEventContext(checkpoint = expectedCheckpoint, inputEventPayload = sessionEvent)
 
