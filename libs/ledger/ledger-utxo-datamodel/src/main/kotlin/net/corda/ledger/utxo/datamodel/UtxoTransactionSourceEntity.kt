@@ -8,8 +8,6 @@ import javax.persistence.Embeddable
 import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.IdClass
-import javax.persistence.JoinColumn
-import javax.persistence.ManyToOne
 import javax.persistence.Table
 
 @CordaSerializable
@@ -18,9 +16,8 @@ import javax.persistence.Table
 @IdClass(UtxoTransactionSourceEntityId::class)
 class UtxoTransactionSourceEntity(
     @Id
-    @ManyToOne
-    @JoinColumn(name = "transaction_id", nullable = false, updatable = false)
-    var transaction: UtxoTransactionEntity,
+    @Column(name = "transaction_id", nullable = false, updatable = false)
+    var transactionId: String,
 
     @Id
     @Column(name = "group_idx", nullable = false)
@@ -49,7 +46,7 @@ class UtxoTransactionSourceEntity(
 
         other as UtxoTransactionSourceEntity
 
-        if (transaction != other.transaction) return false
+        if (transactionId != other.transactionId) return false
         if (groupIndex != other.groupIndex) return false
         if (leafIndex != other.leafIndex) return false
 
@@ -57,7 +54,7 @@ class UtxoTransactionSourceEntity(
     }
 
     override fun hashCode(): Int {
-        var result = transaction.hashCode()
+        var result = transactionId.hashCode()
         result = 31 * result + groupIndex
         result = 31 * result + leafIndex
         return result
@@ -70,7 +67,7 @@ class UtxoTransactionSourceEntity(
 
 @Embeddable
 class UtxoTransactionSourceEntityId(
-    var transaction: UtxoTransactionEntity,
+    var transactionId: String,
     var groupIndex: Int,
     var leafIndex: Int
 ) : Serializable {
@@ -80,7 +77,7 @@ class UtxoTransactionSourceEntityId(
 
         other as UtxoTransactionSourceEntityId
 
-        if (transaction != other.transaction) return false
+        if (transactionId != other.transactionId) return false
         if (groupIndex != other.groupIndex) return false
         if (leafIndex != other.leafIndex) return false
 
@@ -88,7 +85,7 @@ class UtxoTransactionSourceEntityId(
     }
 
     override fun hashCode(): Int {
-        var result = transaction.hashCode()
+        var result = transactionId.hashCode()
         result = 31 * result + groupIndex
         result = 31 * result + leafIndex
         return result

@@ -78,6 +78,10 @@ class UtxoDemoEvolveFlow : ClientStartableFlow {
                 }
             }
 
+            val altState = utxoLedgerService.resolve<TestUtxoState>(input.ref)
+
+            log.info("Alt state = $altState, input = ${input.state}")
+
             val signedTransaction = utxoLedgerService.createTransactionBuilder()
                 .addCommand(TestCommand())
                 .addOutputState(output)

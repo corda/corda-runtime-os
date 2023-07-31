@@ -5,17 +5,14 @@ import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
-import javax.persistence.JoinColumn
-import javax.persistence.ManyToOne
 import javax.persistence.Table
 
 @Entity
 @Table(name = "utxo_transaction_status")
 class UtxoTransactionStatusEntity(
     @Id
-    @ManyToOne
-    @JoinColumn(name = "transaction_id", nullable = false, updatable = false)
-    var transaction: UtxoTransactionEntity,
+    @Column(name = "transaction_id", nullable = false, updatable = false)
+    var transactionId: String,
 
     @Column(name = "status", nullable = false)
     var status: String,
@@ -29,13 +26,13 @@ class UtxoTransactionStatusEntity(
 
         other as UtxoTransactionStatusEntity
 
-        if (transaction != other.transaction) return false
+        if (transactionId != other.transactionId) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        return transaction.hashCode()
+        return transactionId.hashCode()
     }
 
     companion object {

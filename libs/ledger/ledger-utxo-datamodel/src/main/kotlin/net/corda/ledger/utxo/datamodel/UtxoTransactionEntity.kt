@@ -3,14 +3,9 @@ package net.corda.ledger.utxo.datamodel
 import net.corda.v5.base.annotations.CordaSerializable
 import java.io.Serializable
 import java.time.Instant
-import javax.persistence.CascadeType
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
-import javax.persistence.JoinColumn
-import javax.persistence.JoinTable
-import javax.persistence.ManyToMany
-import javax.persistence.OneToMany
 import javax.persistence.Table
 
 @CordaSerializable
@@ -30,20 +25,6 @@ class UtxoTransactionEntity(
     @Column(name = "created", nullable = false)
     var created: Instant,
 ) : Serializable {
-    @OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
-    var components: MutableList<UtxoTransactionComponentEntity> = mutableListOf()
-
-    @OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
-    var statuses: MutableList<UtxoTransactionStatusEntity> = mutableListOf()
-
-    @OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
-    var signatures: MutableList<UtxoTransactionSignatureEntity> = mutableListOf()
-
-    @ManyToMany(cascade = [CascadeType.PERSIST, CascadeType.MERGE])
-    @JoinTable(name = "utxo_transaction_cpk",
-        joinColumns = [JoinColumn(name = "transaction_id")],
-        inverseJoinColumns = [JoinColumn(name = "file_checksum")]
-    )
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
