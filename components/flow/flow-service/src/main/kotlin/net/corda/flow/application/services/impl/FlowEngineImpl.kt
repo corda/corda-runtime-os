@@ -115,14 +115,10 @@ class FlowEngineImpl @Activate constructor(
         }
     }
     private fun anyActiveSessions(currentSessionIds: List<String>): Boolean {
-        val checkPoint = getFiberExecutionContext().flowCheckpoint
-        for (sessionId in currentSessionIds){
-            val status = checkPoint.getSessionState(sessionId)?.status
-            if (status != SessionStateType.CLOSED && status != SessionStateType.ERROR){
-                return true
-            }
+        val flowCheckPoint = getFiberExecutionContext().flowCheckpoint
+        return currentSessionIds.any {sessionId ->
+            flowCheckPoint.getSessionState(sessionId)?.status !in listOf(SessionStateType.CLOSED, SessionStateType.ERROR)
         }
-        return false
     }
 
     private fun peekCurrentFlowStackItem(): FlowStackItem {
