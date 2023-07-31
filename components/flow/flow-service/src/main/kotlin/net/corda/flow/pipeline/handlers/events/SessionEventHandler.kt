@@ -168,7 +168,7 @@ class SessionEventHandler @Activate constructor(
                 .setIdentity(initiatedIdentity)
                 .setCpiId(sessionInit.cpiId)
                 .setInitiatedBy(initiatingIdentity)
-                .setFlowClassName(initiatedFlowNameAndProtocolResult?.getOrNull()?.flowClassName ?: "INVALID PROTOCOL")
+                .setFlowClassName(initiatedFlowNameAndProtocolResult?.getOrNull()?.flowClassName ?: "Invalid protocol")
                 .setContextPlatformProperties(keyValuePairListOf(mapOf(MDC_CLIENT_ID to sessionId)))
                 .setCreatedTimestamp(Instant.now())
                 .build()
