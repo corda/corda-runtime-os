@@ -11,25 +11,19 @@ import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.RestApiVersion
 
 /**
- * Deprecated:
- * This version of CertificatesRestResource supports endpoints located at v1/certificates/ * only
- * From v5_1 upwards, /certificate/ * is used. Any changes do these resources should be made at [CertificateRestResource].
- *
  * The Certificates API consists of endpoints used to work with certificates and related operations. The API allows you
  * to import a certificate chain, and generate a certificate signing request (CSR) to be submitted to a certificate
  * authority (CA).
  */
-@Deprecated("Deprecated in favour of CertificateRestResource")
 @HttpRestResource(
-    name = "Certificates API",
+    name = "Certificate API",
     description = "The Certificates API consists of endpoints used to work with certificates and related operations. " +
         "The API allows you to import a certificate chain, and generate a certificate signing request (CSR) to be" +
         " submitted to a certificate authority (CA).",
-    path = "certificates",
-    minVersion = RestApiVersion.C5_0,
-    maxVersion = RestApiVersion.C5_0
+    path = "certificate",
+    minVersion = RestApiVersion.C5_1
 )
-interface CertificatesRestResource : RestResource {
+interface CertificateRestResource : RestResource {
     companion object {
         const val SIGNATURE_SPEC = "signatureSpec"
     }

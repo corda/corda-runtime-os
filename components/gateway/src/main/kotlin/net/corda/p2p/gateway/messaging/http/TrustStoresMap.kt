@@ -1,8 +1,5 @@
 package net.corda.p2p.gateway.messaging.http
 
-import com.github.benmanes.caffeine.cache.Cache
-import com.github.benmanes.caffeine.cache.Caffeine
-import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.crypto.utils.convertToKeyStore
 import net.corda.data.p2p.GatewayTruststore
 import net.corda.libs.configuration.SmartConfig
@@ -20,7 +17,6 @@ import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
-import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
@@ -35,8 +31,6 @@ internal class TrustStoresMap(
     companion object {
         private const val CONSUMER_GROUP_ID = "gateway_tls_truststores_reader"
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val KEY_STORE_POOL_SIZE = 50L
-        private val KEEP_KEY_STORE = Duration.ofMinutes(30)
     }
     private val ready = CompletableFuture<Unit>()
     private val subscriptionConfig = SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_TRUSTSTORES)
@@ -50,18 +44,6 @@ internal class TrustStoresMap(
 
     private val entriesPerKey = ConcurrentHashMap<String, TruststoreKey>()
     private val trustRootsPerHoldingIdentity = ConcurrentHashMap<TruststoreKey, TrustedCertificates>()
-    private val keyStorePool: Cache<Collection<String>, KeyStore> = CacheFactoryImpl().build(
-        "P2P-Key-Store-Pool",
-        Caffeine.newBuilder()
-            .maximumSize(KEY_STORE_POOL_SIZE)
-            .expireAfterAccess(KEEP_KEY_STORE)
-    )
-
-    private fun TrustedCertificates.cachedKeyStore(): KeyStore {
-        return keyStorePool.get(pemCertificates) {
-            trustStore
-        }
-    }
 
     private val subscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
@@ -73,15 +55,12 @@ internal class TrustStoresMap(
 
     fun getTrustStore(sourceX500Name: MemberX500Name, destinationGroupId: String) =
         trustRootsPerHoldingIdentity[TruststoreKey(sourceX500Name, destinationGroupId)]
-            ?.cachedKeyStore()
             ?: throw IllegalArgumentException("Unknown trust store for source X500 name ($sourceX500Name) " +
                     "and group ID ($destinationGroupId)")
 
     fun getTrustStores() = trustRootsPerHoldingIdentity
         .values
-        .map {
-            it.cachedKeyStore()
-        }.toSet()
+        .toSet()
 
     private val blockingDominoTile = BlockingDominoTile(
         this::class.java.simpleName,
@@ -100,9 +79,14 @@ internal class TrustStoresMap(
         val pemCertificates: Collection<String>,
         certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
     ) {
-        val trustStore: KeyStore? by lazy {
-            convertToKeyStore(certificateFactory, pemCertificates, "gateway")
+        val trustStore: KeyStore by lazy {
+            convertToKeyStore(certificateFactory, pemCertificates, "gateway") ?:
+              throw IllegalArgumentException("Invalid trusted certificate")
         }
+
+        override fun hashCode() = pemCertificates.hashCode()
+        override fun equals(other: Any?) =
+            ((other is TrustedCertificates) && (other.pemCertificates == pemCertificates))
     }
 
     private inner class Processor : CompactedProcessor<String, GatewayTruststore> {
