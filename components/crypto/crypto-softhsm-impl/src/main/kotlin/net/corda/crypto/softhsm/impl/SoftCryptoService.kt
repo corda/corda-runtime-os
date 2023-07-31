@@ -474,6 +474,7 @@ open class SoftCryptoService(
                 }
             }.filterNotNull()
 
+        // This is a full table scan
         val cachedMap = signingKeyInfoCache.asMap().filter {
             fullKeyIds.contains(it.key.fullIdHash())
         }

@@ -245,7 +245,7 @@ class CryptoProcessorImpl @Activate constructor(
                 .maximumSize(maximumSize)
         )
         val shortHashCache: Cache<ShortHash, PublicKey> = CacheFactoryImpl().build(
-            "Signing-Key-Cache",
+            "Short-Hash-Signing-Key-Cache",
             Caffeine.newBuilder()
                 .expireAfterAccess(expireAfterAccessMins, TimeUnit.MINUTES)
                 .maximumSize(maximumSize)

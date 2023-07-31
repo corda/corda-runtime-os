@@ -20,7 +20,6 @@ import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.impl.SoftCryptoService
-import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleStatus
@@ -149,9 +148,6 @@ class TestServicesFactory {
     val secondLevelWrappingKeyWrapped = rootWrappingKey.wrap(secondLevelWrappingKey)
     val secondLevelWrappingKeyInfo = WrappingKeyInfo(1, "AES", secondLevelWrappingKeyWrapped, 1, "root")
     val wrappingRepository = TestWrappingRepository(secondLevelWrappingKeyInfo)
-    val association = mock<HSMAssociationInfo> {
-        on { masterKeyAlias }.thenReturn("second")
-    }
     val signingKeyInfoCache: Cache<PublicKey, SigningKeyInfo> = CacheFactoryImpl().build(
         "test private key cache", Caffeine.newBuilder()
             .expireAfterAccess(3600, TimeUnit.MINUTES)
