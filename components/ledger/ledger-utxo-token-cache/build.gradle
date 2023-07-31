@@ -6,6 +6,8 @@ plugins {
 description "Token Cache"
 
 dependencies {
+    implementation project(path: ':components:virtual-node:virtual-node-info-read-service')
+    implementation project(path: ':components:db:db-connection-manager')
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     compileOnly 'org.osgi:osgi.annotation'
@@ -26,6 +28,7 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-db-schema"
     implementation project(":libs:packaging:packaging")
     implementation "net.corda:corda-topic-schema"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
