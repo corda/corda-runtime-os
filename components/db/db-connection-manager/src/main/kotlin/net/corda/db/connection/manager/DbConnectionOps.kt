@@ -140,4 +140,6 @@ interface DbConnectionOps {
      * @return
      */
     fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory
+
+    fun getOrCreateEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory
 }
