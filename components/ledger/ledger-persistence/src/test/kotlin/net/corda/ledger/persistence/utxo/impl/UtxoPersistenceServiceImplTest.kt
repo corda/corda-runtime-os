@@ -33,6 +33,7 @@ import java.lang.IllegalArgumentException
 import java.security.PublicKey
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import net.corda.v5.base.types.MemberX500Name
 
 // FIXME / NOTE: This test only tests custom representation (JSON) string functionality
 class UtxoPersistenceServiceImplTest {
@@ -49,7 +50,7 @@ class UtxoPersistenceServiceImplTest {
         on { persistTransaction(any(), any(), any(), any(), any()) } doAnswer {}
         on { persistTransactionComponentLeaf(any(), any(), any(), any(), any(), any(), any()) } doAnswer {}
         on { persistTransactionOutput(any(), any(), any(), any(), any(), any(), any(), any(), any(),
-            any(), any(), any(), any()) } doAnswer {}
+            any(), any(), any()) } doAnswer {}
     }
 
     private val mockPrivacySalt = mock<PrivacySalt> {
@@ -297,6 +298,7 @@ class UtxoPersistenceServiceImplTest {
     private inline fun <reified T : ContractState> createStateAndRef(returnState: T): StateAndRef<T> {
         val txState = mock<TransactionState<T>> {
             on { contractState } doReturn returnState
+            on { notaryName } doReturn MemberX500Name.parse("O=notary, L=London, C=GB")
         }
         val secureHash = mock<SecureHash> {
             on { toString() } doReturn "hash"
