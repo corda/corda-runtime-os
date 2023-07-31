@@ -22,6 +22,9 @@ data class Member(
 
     val status: String?
         get() = mgmContext["corda.status"]
+
+    val serial: Long?
+        get() = mgmContext["corda.serial"]?.toLong()
 }
 
 /**

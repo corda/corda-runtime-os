@@ -18,6 +18,7 @@ import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
@@ -53,6 +54,8 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
     private val cpiUploadService: CpiUploadService,
     @Reference(service = VirtualNodeSenderFactory::class)
     private val virtualNodeSenderFactory: VirtualNodeSenderFactory,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider
 ) : VirtualNodeMaintenanceRestResource, PluggableRestResource<VirtualNodeMaintenanceRestResource>, Lifecycle {
 
     companion object {
@@ -68,7 +71,8 @@ class VirtualNodeMaintenanceRestResourceImpl @Activate constructor(
 
     override val targetInterface: Class<VirtualNodeMaintenanceRestResource> =
         VirtualNodeMaintenanceRestResource::class.java
-    override val protocolVersion: Int = 1
+
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     private val clock = UTCClock()
     private val dependentComponents = DependentComponents.of(

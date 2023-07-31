@@ -65,6 +65,7 @@ allprojects {
         tasks.withType(Test).configureEach {
             useJUnitPlatform(){
                 excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
+                excludeTags project.hasProperty('runMultiClusterTests') ? 'runAllTestsNoExclusions' : 'MultiCluster'
             }
 
             doFirst {
@@ -83,7 +84,7 @@ allprojects {
             includeConfigs = ["runtimeClasspath"]
             skipProjects = [rootProject.name]
             destination = file("${buildDir}/reports/SBOM")
-            outputName = "${project.name}-corda-runtime-os-sbom"   
+            outputName = "${project.name}-corda-runtime-os-sbom"
         }
     }
 
@@ -143,7 +144,7 @@ allprojects {
         mavenLocal()
 
         maven {
-            url = "$artifactoryContextUrl/corda-dependencies"
+            url = "${publicArtifactURL}/corda-dependencies"
             content {
                 // For Quasar release.
                 includeGroup 'co.paralleluniverse'

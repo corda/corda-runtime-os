@@ -5,6 +5,7 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.crypto.core.CryptoTenants.REST
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
@@ -30,6 +31,8 @@ class HsmRestResourceImpl @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : HsmRestResource, PluggableRestResource<HsmRestResource>, Lifecycle {
 
     companion object {
@@ -80,7 +83,7 @@ class HsmRestResourceImpl @Activate constructor(
 
     override val targetInterface = HsmRestResource::class.java
 
-    override val protocolVersion = 1
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<HsmRestResource>(
         protocolVersion.toString()

@@ -1,13 +1,17 @@
 package net.corda.components.rest.endpoints.impl
 
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.RestQueryParameter
 import net.corda.rest.security.CURRENT_REST_CONTEXT
+import org.osgi.service.component.annotations.Activate
 import org.slf4j.LoggerFactory
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
 
 @HttpRestResource(name = "Hello Rest API", description = "The Hello Rest API is used to test interactions via the " +
         "Rest API. It verifies that a call to Rest can be made, and that the identity of the user making the " +
@@ -23,15 +27,18 @@ interface HelloRestResource : RestResource {
 
 @Component(service = [PluggableRestResource::class])
 @Suppress("unused")
-class HelloRestResourceImpl : HelloRestResource, PluggableRestResource<HelloRestResource>, RestResource {
+class HelloRestResourceImpl @Activate constructor(
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider
+) : HelloRestResource, PluggableRestResource<HelloRestResource> {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val targetInterface = HelloRestResource::class.java
 
-    override val protocolVersion = 99
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     override fun greet(addressee: String): String {
         val restContext = CURRENT_REST_CONTEXT.get()

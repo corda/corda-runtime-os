@@ -50,8 +50,9 @@ class SigningKeyMaterialEntity(
                 other.wrappingKeyId.equals(this.wrappingKeyId) &&
                 other.signingKeyId.equals(this.signingKeyId)
 }
+
 @Embeddable
 data class SigningKeyMaterialEntityId(
-    val wrappingKeyId: UUID,
-    val signingKeyId: UUID,
+    var wrappingKeyId: UUID,
+    var signingKeyId: UUID,
 ) : Serializable

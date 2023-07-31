@@ -22,4 +22,9 @@ interface InternalGroupParameters: GroupParameters {
      * serialised byte array available as [groupParameters].
      */
     val hash: SecureHash
+
+    /**
+     * Transforms [InternalGroupParameters] into [Map].
+     */
+    fun toMap() = entries.associate { it.key to it.value }
 }

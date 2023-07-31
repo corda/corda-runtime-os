@@ -1,6 +1,7 @@
 package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.core.ShortHash
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
@@ -29,6 +30,8 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = MemberResourceClient::class)
     private val memberResourceClient: MemberResourceClient,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : MemberRegistrationRestResource, PluggableRestResource<MemberRegistrationRestResource>, Lifecycle {
     private interface InnerMemberRegistrationRestResource {
         fun startRegistration(
@@ -43,7 +46,7 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
         ): RestRegistrationRequestStatus
     }
 
-    override val protocolVersion = 1
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     private var impl: InnerMemberRegistrationRestResource = InactiveImpl
 

@@ -1,10 +1,10 @@
 package net.corda.membership.impl.registration.dynamic.member
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.util.UUID
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
@@ -26,7 +26,7 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.SignedData
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequestHeader
@@ -48,9 +48,10 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.impl.registration.KeyDetails
 import net.corda.membership.impl.registration.MemberRole
 import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
-import net.corda.membership.impl.registration.dynamic.verifiers.OrderVerifier
-import net.corda.membership.impl.registration.dynamic.verifiers.P2pEndpointVerifier
-import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
+import net.corda.membership.impl.registration.verifiers.OrderVerifier
+import net.corda.membership.impl.registration.verifiers.P2pEndpointVerifier
+import net.corda.membership.impl.registration.verifiers.RegistrationContextCustomFieldsVerifier
+import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -81,6 +82,7 @@ import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toWire
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.spec
@@ -282,20 +284,24 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
             val customFieldsValid = registrationContextCustomFieldsVerifier.verify(context)
             if (customFieldsValid is RegistrationContextCustomFieldsVerifier.Result.Failure) {
-                logger.info(customFieldsValid.reason)
-                throw InvalidMembershipRegistrationException("Registration failed. ${customFieldsValid.reason}")
+                val errorMessage = "Registration failed for ID '$registrationId'. ${customFieldsValid.reason}"
+                logger.warn(errorMessage)
+                throw InvalidMembershipRegistrationException(errorMessage)
             }
             return try {
                 val memberId = member.shortHash
                 val roles = MemberRole.extractRolesFromContext(context)
                 val notaryKeys = generateNotaryKeys(context, memberId.value)
                 logger.debug("Member roles: {}, notary keys: {}", roles, notaryKeys)
+                val groupReader = membershipGroupReaderProvider.getGroupReader(member)
+                val previousInfo = groupReader.lookup(member.x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
                 val memberContext = buildMemberContext(
                     context,
                     registrationId,
                     member,
                     roles,
                     notaryKeys,
+                    previousInfo?.memberProvidedContext?.toMap(),
                 ).toSortedMap()
                     .toWire()
                 val registrationContext = buildRegistrationContext(context)
@@ -306,17 +312,11 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val signedMemberContext = sign(memberId, publicKey, signatureSpec, memberContext)
                 val signedRegistrationContext = sign(memberId, publicKey, signatureSpec, registrationContext)
 
-                val groupReader = membershipGroupReaderProvider.getGroupReader(member)
                 val mgm = groupReader.lookup().firstOrNull { it.isMgm }
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
 
-                val currentInfo = groupReader.lookup(member.x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
-                require(currentInfo == null) {
-                    "Re-registration is not supported."
-                }
-
                 val serialInfo = context[SERIAL]?.toLong()
-                    ?: currentInfo?.serial
+                    ?: previousInfo?.serial
                     ?: 0
 
                 val message = MembershipRegistrationRequest(
@@ -415,6 +415,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             member: HoldingIdentity,
             roles: Collection<MemberRole>,
             notaryKeys: List<KeyDetails>,
+            previousRegistrationContext: Map<String, String>?,
         ): Map<String, String> {
             val cpi = virtualNodeInfoReadService.get(member)?.cpiIdentifier
                 ?: throw CordaRuntimeException("Could not find virtual node info for member ${member.shortHash}")
@@ -438,7 +439,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             )
             val roleContext = roles.toMemberInfo { notaryKeys }
             val optionalContext = mapOf(MEMBER_CPI_SIGNER_HASH to cpi.signerSummaryHash.toString())
-            return filteredContext +
+            val newRegistrationContext = filteredContext +
                     sessionKeyContext +
                     ledgerKeyContext +
                     additionalContext +
@@ -446,6 +447,23 @@ class DynamicMemberRegistrationService @Activate constructor(
                     optionalContext +
                     tlsSubject
 
+            previousRegistrationContext?.let { previous ->
+                ((newRegistrationContext.entries - previous.entries) + (previous.entries - newRegistrationContext.entries)).filter {
+                    it.key.startsWith(ENDPOINTS) ||
+                            it.key.startsWith(SESSION_KEYS) ||
+                            it.key.startsWith(LEDGER_KEYS) ||
+                            it.key.startsWith(ROLES_PREFIX) ||
+                            it.key.startsWith("corda.notary")
+                }.apply {
+                    require(isEmpty()) {
+                        throw InvalidMembershipRegistrationException(
+                            "Fields ${this.map { it.key }} cannot be added, removed or updated during re-registration."
+                        )
+                    }
+                }
+            }
+
+            return newRegistrationContext
         }
 
         private fun getTlsSubject(member: HoldingIdentity): Map<String, String> {
@@ -471,17 +489,26 @@ class DynamicMemberRegistrationService @Activate constructor(
             context.keys.filter { sessionKeyIdRegex.matches(it) }.apply {
                 require(isNotEmpty()) { "No session key ID was provided." }
                 require(orderVerifier.isOrdered(this, 3)) { "Provided session key IDs are incorrectly numbered." }
+                this.forEach {
+                    validateKey(it, context[it]!!)
+                }
             }
             p2pEndpointVerifier.verifyContext(context)
             val isNotary = context.entries.any { it.key.startsWith(ROLES_PREFIX) && it.value == NOTARY_ROLE }
             context.keys.filter { ledgerIdRegex.matches(it) }.apply {
                 if (!isNotary) require(isNotEmpty()) { "No ledger key ID was provided." }
                 require(orderVerifier.isOrdered(this, 3)) { "Provided ledger key IDs are incorrectly numbered." }
+                this.forEach {
+                    validateKey(it, context[it]!!)
+                }
             }
             if (isNotary) {
                 context.keys.filter { notaryIdRegex.matches(it) }.apply {
                     require(isNotEmpty()) { "No notary key ID was provided." }
                     require(orderVerifier.isOrdered(this, 3)) { "Provided notary key IDs are incorrectly numbered." }
+                    this.forEach {
+                        validateKey(it, context[it]!!)
+                    }
                 }
                 context.keys.filter { notaryProtocolVersionsRegex.matches(it) }.apply {
                     require(
@@ -491,6 +518,14 @@ class DynamicMemberRegistrationService @Activate constructor(
                         )
                     ) { "Provided notary protocol versions are incorrectly numbered." }
                 }
+            }
+        }
+
+        private fun validateKey(contextKey: String, keyId: String) {
+            try {
+                ShortHash.parse(keyId)
+            } catch (e: ShortHashException) {
+                throw IllegalArgumentException("Invalid value for key ID $contextKey. ${e.message}", e)
             }
         }
 

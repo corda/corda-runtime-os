@@ -180,46 +180,10 @@ class CheckKafka : Callable<Int>, PluginContext() {
             return 1
         }
 
-        if (yaml.kafka.bootstrapServers == null) {
-            report.addEntry(ReportEntry("Bootstrap servers have not been defined under Kafka", false))
+        val kafkaProperties = getKafkaProperties(yaml)
+        if (!report.testsPassed() || kafkaProperties == null) {
+            logger.error(report.failingTests())
             return 1
-        }
-        val kafkaProperties = KafkaProperties(yaml.kafka.bootstrapServers)
-        kafkaProperties.timeout = timeout
-
-        if (yaml.kafka.tls?.enabled == true) {
-            kafkaProperties.tlsEnabled = true
-            kafkaProperties.truststoreType = yaml.kafka.tls.truststore?.type
-
-            if (kafkaProperties.truststoreType == "JKS" && yaml.kafka.tls.truststore?.password != null) {
-                try {
-                    kafkaProperties.truststorePassword = getCredential(yaml.kafka.tls.truststore.password, namespace)
-                    report.addEntry(ReportEntry("Get TLS truststore password", true))
-                } catch (e: Exception) {
-                    report.addEntry(ReportEntry("Get TLS truststore password", false, e))
-                    logger.error(report.failingTests())
-                    return 1
-                }
-            }
-            if (yaml.kafka.tls.truststore?.valueFrom?.secretKeyRef?.name != null ) {
-                val secret = PreInstallPlugin.SecretValues(yaml.kafka.tls.truststore.valueFrom, null)
-                try {
-                    kafkaProperties.truststoreFile = getCredential(secret, namespace)
-                    report.addEntry(ReportEntry("Get TLS truststore certificate", true))
-                } catch (e: Exception) {
-                    report.addEntry(ReportEntry("Get TLS truststore certificate", false, e))
-                    logger.error(report.failingTests())
-                    return 1
-                }
-            }
-        }
-
-        if (yaml.kafka.sasl?.enabled == true) {
-            if (yaml.kafka.sasl.mechanism.isNullOrEmpty()) {
-                report.addEntry(ReportEntry("SASL mechanism provided", false))
-            }
-            kafkaProperties.saslEnabled = true
-            kafkaProperties.saslMechanism = yaml.kafka.sasl.mechanism
         }
 
         val replicas = yaml.bootstrap?.kafka?.replicas ?: 3
@@ -242,4 +206,54 @@ class CheckKafka : Callable<Int>, PluginContext() {
             1
         }
     }
+
+    fun getKafkaProperties(yaml: Kafka) : KafkaProperties? {
+        if (yaml.kafka.bootstrapServers.isNullOrEmpty()) {
+            report.addEntry(ReportEntry("Bootstrap servers have not been defined under Kafka", false))
+            return null
+        }
+
+        val kafkaProperties = KafkaProperties(yaml.kafka.bootstrapServers)
+        kafkaProperties.timeout = timeout
+
+        if (yaml.kafka.tls?.enabled == true) {
+            kafkaProperties.tlsEnabled = true
+            kafkaProperties.truststoreType = yaml.kafka.tls.truststore?.type
+
+            if (kafkaProperties.truststoreType == "JKS" &&
+                yaml.kafka.tls.truststore?.password != null &&
+                providesValueOrSecret(yaml.kafka.tls.truststore.password)
+            ) {
+                try {
+                    kafkaProperties.truststorePassword = getCredential(yaml.kafka.tls.truststore.password, namespace)
+                    report.addEntry(ReportEntry("Get TLS truststore password", true))
+                } catch (e: Exception) {
+                    report.addEntry(ReportEntry("Get TLS truststore password", false, e))
+                }
+            }
+            if (!yaml.kafka.tls.truststore?.valueFrom?.secretKeyRef?.name.isNullOrEmpty()) {
+                val secret = PreInstallPlugin.SecretValues(yaml.kafka.tls.truststore?.valueFrom, null)
+                try {
+                    kafkaProperties.truststoreFile = getCredential(secret, namespace)
+                    report.addEntry(ReportEntry("Get TLS truststore certificate", true))
+                } catch (e: Exception) {
+                    report.addEntry(ReportEntry("Get TLS truststore certificate", false, e))
+                }
+            }
+        }
+
+        if (yaml.kafka.sasl?.enabled == true) {
+            if (yaml.kafka.sasl.mechanism.isNullOrEmpty()) {
+                report.addEntry(ReportEntry("SASL mechanism provided", false))
+            }
+            kafkaProperties.saslEnabled = true
+            kafkaProperties.saslMechanism = yaml.kafka.sasl.mechanism
+        }
+
+        return kafkaProperties
+    }
+
+    private fun providesValueOrSecret(password: PreInstallPlugin.SecretValues) =
+        !(password.valueFrom?.secretKeyRef?.name.isNullOrEmpty() &&
+                password.value.isNullOrEmpty())
 }

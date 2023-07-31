@@ -17,7 +17,7 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedData
 import net.corda.data.membership.StaticNetworkInfo
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.layeredpropertymap.toAvro
@@ -33,9 +33,11 @@ import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplate
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
 import net.corda.membership.impl.registration.staticnetwork.StaticNetworkGroupParametersUtils.addNotary
 import net.corda.membership.impl.registration.staticnetwork.StaticNetworkGroupParametersUtils.signGroupParameters
+import net.corda.membership.impl.registration.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
@@ -198,6 +200,8 @@ class StaticMemberRegistrationService(
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize key value pair list.") }
 
+    private val customFieldsVerifier = RegistrationContextCustomFieldsVerifier()
+
     override val isRunning: Boolean
         get() = coordinator.isRunning
 
@@ -233,6 +237,12 @@ class StaticMemberRegistrationService(
                 ex,
             )
         }
+        val customFieldsValid = customFieldsVerifier.verify(context)
+        if (customFieldsValid is RegistrationContextCustomFieldsVerifier.Result.Failure) {
+            val errorMessage = "Registration failed for ID '$registrationId'. ${customFieldsValid.reason}"
+            logger.warn(errorMessage)
+            throw InvalidMembershipRegistrationException(errorMessage)
+        }
         val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(member)
         if (membershipGroupReader.lookup(member.x500Name)?.isActive == true) {
             throw InvalidMembershipRegistrationException(
@@ -254,6 +264,7 @@ class StaticMemberRegistrationService(
         }
         try {
             val roles = MemberRole.extractRolesFromContext(context)
+            val customFields = context.filter { it.key.startsWith(CUSTOM_KEY_PREFIX) }
             logger.debug("Roles are: {}", roles)
             val keyScheme = context[KEY_SCHEME] ?: throw IllegalArgumentException("Key scheme must be specified.")
             val groupPolicy = groupPolicyProvider.getGroupPolicy(member)
@@ -268,6 +279,7 @@ class StaticMemberRegistrationService(
                 keyScheme,
                 roles,
                 staticMemberList,
+                customFields,
                 membershipGroupReader,
             )
             (records + createHostedIdentity(member, groupPolicy)).publish()
@@ -421,6 +433,7 @@ class StaticMemberRegistrationService(
         keyScheme: String,
         roles: Collection<MemberRole>,
         staticMemberList: List<StaticMember>,
+        customFields: Map<String, String>,
         membershipGroupReader: MembershipGroupReader,
     ): Pair<MemberInfo, List<Record<String, PersistentMemberInfo>>> {
         validateStaticMemberList(staticMemberList)
@@ -489,7 +502,7 @@ class StaticMemberRegistrationService(
             PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
             MEMBER_CPI_NAME to cpi.name,
             MEMBER_CPI_VERSION to cpi.version,
-        ) + optionalContext
+        ) + optionalContext + customFields
 
         val memberInfo = memberInfoFactory.create(
             memberContext.toSortedMap(),

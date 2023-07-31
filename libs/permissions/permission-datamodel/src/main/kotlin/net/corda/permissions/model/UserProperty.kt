@@ -15,7 +15,7 @@ import javax.persistence.Version
 class UserProperty(
     @Id
     @Column(name = "id", nullable = false)
-    val id: String,
+    var id: String,
 
     @Column(name = "update_ts", nullable = false)
     var updateTimestamp: Instant,
@@ -25,13 +25,13 @@ class UserProperty(
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_ref", nullable = false)
-    val userRef: User,
+    var userRef: User,
 
     @Column(name = "key", nullable = false)
-    val key: String,
+    var key: String,
 
     @Column(name = "value", nullable = false)
-    val value: String
+    var value: String
 ) {
     /**
      * Version column for optimistic locking.

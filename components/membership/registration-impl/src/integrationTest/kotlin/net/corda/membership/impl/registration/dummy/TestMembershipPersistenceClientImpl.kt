@@ -4,7 +4,7 @@ import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -140,6 +140,11 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun updateStaticNetworkInfo(
         info: StaticNetworkInfo
     ): MembershipPersistenceOperation<StaticNetworkInfo> = MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
+
+    override fun updateGroupParameters(
+        viewOwningIdentity: HoldingIdentity, newGroupParameters: Map<String, String>
+    ): MembershipPersistenceOperation<InternalGroupParameters> =
+        MembershipPersistenceOperationImpl(MembershipPersistenceResult.Failure("Unsupported"))
 
     override val isRunning = true
 

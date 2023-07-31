@@ -15,7 +15,7 @@
     "name" : "CPI API",
     "description" : "The CPI API consists of a number of endpoints used to manage Corda Package Installer (CPI) files in the Corda cluster."
   }, {
-    "name" : "Certificates API",
+    "name" : "Certificate API",
     "description" : "The Certificates API consists of endpoints used to work with certificates and related operations. The API allows you to import a certificate chain, and generate a certificate signing request (CSR) to be submitted to a certificate authority (CA)."
   }, {
     "name" : "Configuration API",
@@ -33,11 +33,14 @@
     "name" : "Hello Rest API",
     "description" : "The Hello Rest API is used to test interactions via the Rest API. It verifies that a call to Rest can be made, and that the identity of the user making the call can be recognized. RBAC permissions are checked and the call is successfully processed by the HTTP-Rest worker."
   }, {
-    "name" : "Keys Management API",
+    "name" : "Key Management API",
     "description" : "The Keys Management API consists of endpoints used to manage public and private key pairs. The API allows you to list scheme codes which are supported by the associated HSM integration, retrieve information about key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's public key in PEM format."
   }, {
     "name" : "MGM API",
     "description" : "The MGM API consists of a number of endpoints used to manage membership groups. A membership group is a logical grouping of a number of Corda Identities to communicate and transact with one another with a specific set of CorDapps. The API allows you to generate the group policy for a membership group, required for new members to join the group."
+  }, {
+    "name" : "MGM Admin API",
+    "description" : "The MGM Admin API consists of endpoints used to carry out administrative tasks on membership groups. A membership group is a logical grouping of a number of Corda Identities to communicate and transact with one another with a specific set of CorDapps. The API allows the MGM to perform actions such as force decline registration requests which may be displaying unexpected behaviour. This API should only be used by the MGM under exceptional circumstances."
   }, {
     "name" : "Member Lookup API",
     "description" : "The Member Lookup API consists of endpoints used to look up information related to membership groups."
@@ -64,11 +67,11 @@
     "description" : "The Virtual Node Maintenance API consists of a series of endpoints used for virtual node management.Warning: Using these endpoints could be highly disruptive, so great care should be taken when using them."
   } ],
   "paths" : {
-    "/certificates/cluster/{usage}" : {
+    "/certificate/cluster/{usage}" : {
       "get" : {
-        "tags" : [ "Certificates API" ],
+        "tags" : [ "Certificate API" ],
         "description" : "This method gets the certificate chain aliases for a cluster.",
-        "operationId" : "get_certificates_cluster__usage_",
+        "operationId" : "get_certificate_cluster__usage_",
         "parameters" : [ {
           "name" : "usage",
           "in" : "path",
@@ -107,9 +110,9 @@
         }
       },
       "put" : {
-        "tags" : [ "Certificates API" ],
+        "tags" : [ "Certificate API" ],
         "description" : "This method imports a certificate chain for a cluster.",
-        "operationId" : "put_certificates_cluster__usage_",
+        "operationId" : "put_certificate_cluster__usage_",
         "parameters" : [ {
           "name" : "usage",
           "in" : "path",
@@ -165,11 +168,11 @@
         }
       }
     },
-    "/certificates/cluster/{usage}/{alias}" : {
+    "/certificate/cluster/{usage}/{alias}" : {
       "get" : {
-        "tags" : [ "Certificates API" ],
+        "tags" : [ "Certificate API" ],
         "description" : "This method gets the certificate chain in PEM format for a cluster.",
-        "operationId" : "get_certificates_cluster__usage___alias_",
+        "operationId" : "get_certificate_cluster__usage___alias_",
         "parameters" : [ {
           "name" : "usage",
           "in" : "path",
@@ -215,11 +218,11 @@
         }
       }
     },
-    "/certificates/getprotocolversion" : {
+    "/certificate/getprotocolversion" : {
       "get" : {
-        "tags" : [ "Certificates API" ],
+        "tags" : [ "Certificate API" ],
         "description" : "",
-        "operationId" : "get_certificates_getprotocolversion",
+        "operationId" : "get_certificate_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
           "200" : {
@@ -244,11 +247,11 @@
         }
       }
     },
-    "/certificates/vnode/{holdingidentityid}/{usage}" : {
+    "/certificate/vnode/{holdingidentityid}/{usage}" : {
       "get" : {
-        "tags" : [ "Certificates API" ],
+        "tags" : [ "Certificate API" ],
         "description" : "This method gets the certificate chain aliases for a virtual node.",
-        "operationId" : "get_certificates_vnode__holdingidentityid___usage_",
+        "operationId" : "get_certificate_vnode__holdingidentityid___usage_",
         "parameters" : [ {
           "name" : "usage",
           "in" : "path",
@@ -298,9 +301,9 @@
         }
       },
       "put" : {
-        "tags" : [ "Certificates API" ],
+        "tags" : [ "Certificate API" ],
         "description" : "This method imports a certificate chain for a virtual node.",
-        "operationId" : "put_certificates_vnode__holdingidentityid___usage_",
+        "operationId" : "put_certificate_vnode__holdingidentityid___usage_",
         "parameters" : [ {
           "name" : "usage",
           "in" : "path",
@@ -367,11 +370,11 @@
         }
       }
     },
-    "/certificates/vnode/{holdingidentityid}/{usage}/{alias}" : {
+    "/certificate/vnode/{holdingidentityid}/{usage}/{alias}" : {
       "get" : {
-        "tags" : [ "Certificates API" ],
+        "tags" : [ "Certificate API" ],
         "description" : "This method gets the certificate chain in PEM format for a virtual node.",
-        "operationId" : "get_certificates_vnode__holdingidentityid___usage___alias_",
+        "operationId" : "get_certificate_vnode__holdingidentityid___usage___alias_",
         "parameters" : [ {
           "name" : "usage",
           "in" : "path",
@@ -428,11 +431,11 @@
         }
       }
     },
-    "/certificates/{tenantid}/{keyid}" : {
+    "/certificate/{tenantid}/{keyid}" : {
       "post" : {
-        "tags" : [ "Certificates API" ],
+        "tags" : [ "Certificate API" ],
         "description" : "This method enables you to generate a certificate signing request (CSR) for a tenant.",
-        "operationId" : "post_certificates__tenantid___keyid_",
+        "operationId" : "post_certificate__tenantid___keyid_",
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
@@ -1195,11 +1198,11 @@
         }
       }
     },
-    "/keys/getprotocolversion" : {
+    "/key/getprotocolversion" : {
       "get" : {
-        "tags" : [ "Keys Management API" ],
+        "tags" : [ "Key Management API" ],
         "description" : "",
-        "operationId" : "get_keys_getprotocolversion",
+        "operationId" : "get_key_getprotocolversion",
         "parameters" : [ ],
         "responses" : {
           "200" : {
@@ -1224,11 +1227,11 @@
         }
       }
     },
-    "/keys/{tenantid}" : {
+    "/key/{tenantid}" : {
       "get" : {
-        "tags" : [ "Keys Management API" ],
+        "tags" : [ "Key Management API" ],
         "description" : "This method retrieves information about a list of key pairs belonging to a tenant.",
-        "operationId" : "get_keys__tenantid_",
+        "operationId" : "get_key__tenantid_",
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
@@ -1381,11 +1384,11 @@
         }
       }
     },
-    "/keys/{tenantid}/alias/{alias}/category/{hsmcategory}/scheme/{scheme}" : {
+    "/key/{tenantid}/alias/{alias}/category/{hsmcategory}/scheme/{scheme}" : {
       "post" : {
-        "tags" : [ "Keys Management API" ],
+        "tags" : [ "Key Management API" ],
         "description" : "This method generates a new key pair for a tenant.",
-        "operationId" : "post_keys__tenantid__alias__alias__category__hsmcategory__scheme__scheme_",
+        "operationId" : "post_key__tenantid__alias__alias__category__hsmcategory__scheme__scheme_",
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
@@ -1451,11 +1454,11 @@
         }
       }
     },
-    "/keys/{tenantid}/schemes/{hsmcategory}" : {
+    "/key/{tenantid}/schemes/{hsmcategory}" : {
       "get" : {
-        "tags" : [ "Keys Management API" ],
+        "tags" : [ "Key Management API" ],
         "description" : "This method retrieves a list of supported key schemes for a specified tenant and HSM category.",
-        "operationId" : "get_keys__tenantid__schemes__hsmcategory_",
+        "operationId" : "get_key__tenantid__schemes__hsmcategory_",
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
@@ -1505,11 +1508,11 @@
         }
       }
     },
-    "/keys/{tenantid}/{keyid}" : {
+    "/key/{tenantid}/{keyid}" : {
       "get" : {
-        "tags" : [ "Keys Management API" ],
+        "tags" : [ "Key Management API" ],
         "description" : "This method retrieves a tenant's public key in PEM format.",
-        "operationId" : "get_keys__tenantid___keyid_",
+        "operationId" : "get_key__tenantid___keyid_",
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
@@ -1829,13 +1832,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "type" : "object",
-                  "additionalProperties" : {
-                    "type" : "string",
-                    "example" : "string"
-                  },
-                  "nullable" : false,
-                  "example" : "No example available for this type"
+                  "$ref" : "#/components/schemas/RestGroupParameters"
                 }
               }
             }
@@ -2443,6 +2440,54 @@
         }
       }
     },
+    "/mgm/{holdingidentityshorthash}/group-parameters" : {
+      "post" : {
+        "tags" : [ "MGM API" ],
+        "description" : "This API allows you to make changes to the group parameters by submitting an updated version of the group parameters.",
+        "operationId" : "post_mgm__holdingidentityshorthash__group_parameters",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RestGroupParameters"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "The newly updated group parameters",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RestGroupParameters"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/mgm/{holdingidentityshorthash}/info" : {
       "get" : {
         "tags" : [ "MGM API" ],
@@ -2877,6 +2922,76 @@
           },
           "required" : true
         },
+        "responses" : {
+          "200" : {
+            "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgmadmin/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "MGM Admin API" ],
+        "description" : "",
+        "operationId" : "get_mgmadmin_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/mgmadmin/{holdingidentityshorthash}/force-decline/{requestid}" : {
+      "post" : {
+        "tags" : [ "MGM Admin API" ],
+        "description" : "This method enables you to force decline an in-progress registration request that may be stuck or displaying some other unexpected behaviour.",
+        "operationId" : "post_mgmadmin__holdingidentityshorthash__force_decline__requestid_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "The holding identity ID of the MGM of the membership group",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The holding identity ID of the MGM of the membership group",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "requestid",
+          "in" : "path",
+          "description" : "ID of the registration request",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "ID of the registration request",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "description" : "Success"
@@ -3412,41 +3527,6 @@
       }
     },
     "/user" : {
-      "get" : {
-        "tags" : [ "RBAC User API" ],
-        "description" : "This method returns a user based on the specified login name.",
-        "operationId" : "get_user",
-        "parameters" : [ {
-          "name" : "loginname",
-          "in" : "query",
-          "description" : "The login name of the user to be returned",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "The login name of the user to be returned",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "\n            A newly created user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/UserResponseType"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      },
       "post" : {
         "tags" : [ "RBAC User API" ],
         "description" : "This method creates a new user.",
@@ -3499,6 +3579,43 @@
                   "format" : "int32",
                   "nullable" : false,
                   "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/user/{loginname}" : {
+      "get" : {
+        "tags" : [ "RBAC User API" ],
+        "description" : "This method returns a user based on the specified login name.",
+        "operationId" : "get_user__loginname_",
+        "parameters" : [ {
+          "name" : "loginname",
+          "in" : "path",
+          "description" : "The login name of the user to be returned",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The login name of the user to be returned",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "\n            A user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserResponseType"
                 }
               }
             }
@@ -4968,6 +5085,21 @@
           }
         }
       },
+      "RestGroupParameters" : {
+        "required" : [ "parameters" ],
+        "type" : "object",
+        "properties" : {
+          "parameters" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string",
+              "example" : "string"
+            },
+            "nullable" : false,
+            "example" : "No example available for this type"
+          }
+        }
+      },
       "RestMemberInfo" : {
         "required" : [ "memberContext", "mgmContext" ],
         "type" : "object",
@@ -5033,7 +5165,7 @@
             "type" : "object",
             "nullable" : false,
             "example" : "SENT_TO_MGM",
-            "enum" : [ "NEW", "SENT_TO_MGM", "RECEIVED_BY_MGM", "PENDING_MEMBER_VERIFICATION", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "INVALID", "FAILED", "APPROVED" ]
+            "enum" : [ "NEW", "SENT_TO_MGM", "RECEIVED_BY_MGM", "STARTED_PROCESSING_BY_MGM", "PENDING_MEMBER_VERIFICATION", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "INVALID", "FAILED", "APPROVED" ]
           },
           "registrationUpdated" : {
             "type" : "string",

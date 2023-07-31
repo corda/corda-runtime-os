@@ -290,8 +290,7 @@ class MemberSynchronisationServiceImpl internal constructor(
 
             return try {
                 cancelCurrentRequestAndScheduleNewOne(viewOwningMember, mgm)
-                val updateMembersInfo = updates.membershipPackage.memberships.memberships.map { update ->
-
+                val updateMembersInfo = updates.membershipPackage.memberships?.memberships?.map { update ->
                     val memberContext = deserializer.deserialize(update.memberContext.data.array())
                         ?: throw CordaRuntimeException("Invalid member context")
                     val mgmContext = deserializer.deserialize(update.mgmContext.data.array())
@@ -324,7 +323,7 @@ class MemberSynchronisationServiceImpl internal constructor(
                     )
 
                     memberInfo
-                }.associateBy { it.id }
+                }?.associateBy { it.id } ?: emptyMap()
 
                 val persistentMemberInfoRecords = updateMembersInfo.entries.map { (id, memberInfo) ->
                     val persistentMemberInfo = PersistentMemberInfo(
@@ -339,7 +338,7 @@ class MemberSynchronisationServiceImpl internal constructor(
                     )
                 }
 
-                val packageHash = updates.membershipPackage.memberships.hashCheck?.toCorda()
+                val packageHash = updates.membershipPackage.memberships?.hashCheck?.toCorda()
                 val allRecords = if (packageHash == null) {
                     persistentMemberInfoRecords + createSynchronisationRequestMessage(
                         groupReader,

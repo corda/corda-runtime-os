@@ -27,7 +27,7 @@ class SigningKeyEntity(
      */
     @Id
     @Column(name = "id", nullable = false)
-    val id: UUID,
+    var id: UUID,
 
     /**
      * Tenant which the key belongs to.

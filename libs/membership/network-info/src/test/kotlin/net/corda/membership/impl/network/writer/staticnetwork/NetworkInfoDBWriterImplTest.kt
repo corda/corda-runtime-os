@@ -10,6 +10,9 @@ import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.StaticNetworkInfoEntity
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MPV_KEY
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_STATIC_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
@@ -17,10 +20,14 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNATURE_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
+import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.ProtocolParameters.STATIC_NETWORK
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.MGM_INFO
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.PROTOCOL_PARAMETERS
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.lib.grouppolicy.MemberGroupPolicy
+import net.corda.membership.lib.toMap
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSignatureSpec
 import net.corda.test.util.time.TestClock
@@ -31,6 +38,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -45,6 +53,12 @@ import java.util.UUID
 import javax.persistence.EntityManager
 
 class NetworkInfoDBWriterImplTest {
+
+    private companion object {
+        const val CUSTOM_KEY = "ext.key"
+        const val CUSTOM_VALUE = "value"
+        const val MPV = "50000"
+    }
 
     private val groupId = UUID(0, 1).toString()
     private val platformInfoProvider: PlatformInfoProvider = mock {
@@ -69,9 +83,17 @@ class NetworkInfoDBWriterImplTest {
     }
 
     private val clock = TestClock(Instant.ofEpochSecond(1))
+    private val mockProtocolParameters = mock<GroupPolicy.ProtocolParameters>()
+    private val mockGroupPolicy = mock<MemberGroupPolicy> {
+        on { groupId } doReturn groupId
+        on { protocolParameters } doReturn mockProtocolParameters
+    }
+    private val groupPolicyParser = mock<GroupPolicyParser> {
+        on { parseMember(any()) } doReturn mockGroupPolicy
+    }
 
     private val staticNetworkInfoDBWriterImpl = NetworkInfoDBWriterImpl(
-        clock, platformInfoProvider, keyEncodingService, cordaAvroSerializationFactory
+        clock, platformInfoProvider, keyEncodingService, groupPolicyParser, cordaAvroSerializationFactory
     )
 
     private val existingInfo: StaticNetworkInfoEntity = mock {
@@ -113,6 +135,14 @@ class NetworkInfoDBWriterImplTest {
 
         @Test
         fun `Can parse and persist static network info`() {
+            val groupParamsFromPolicy = mapOf(
+                MPV_KEY to MPV,
+                CUSTOM_KEY to CUSTOM_VALUE
+            )
+            whenever(mockProtocolParameters.staticNetworkGroupParameters).doReturn(groupParamsFromPolicy)
+            val captor = argumentCaptor<KeyValuePairList>()
+            whenever(serializer.serialize(captor.capture())).doReturn(serializedProperties)
+
             val result = assertDoesNotThrow {
                 staticNetworkInfoDBWriterImpl.parseAndPersistStaticNetworkInfo(entityManager, cpi)
             }
@@ -120,6 +150,12 @@ class NetworkInfoDBWriterImplTest {
             assertThat(result).isNotNull
             assertThat(result!!.groupId).isEqualTo(groupId)
             assertThat(result.groupParameters).isEqualTo(serializedProperties)
+            assertThat(captor.firstValue.toMap()).containsExactlyInAnyOrderEntriesOf(
+                groupParamsFromPolicy + mapOf(
+                    EPOCH_KEY to "1",
+                    MODIFIED_TIME_KEY to clock.instant().toString()
+                )
+            )
 
             val keyFactory = KeyFactory.getInstance(
                 StaticNetworkUtils.mgmSigningKeyAlgorithm,
@@ -148,17 +184,6 @@ class NetworkInfoDBWriterImplTest {
                 staticNetworkInfoDBWriterImpl.parseAndPersistStaticNetworkInfo(entityManager, cpi)
             }
             assertThat(result).isNull()
-            verify(entityManager, never()).persist(any())
-        }
-
-        @Test
-        fun `exception thrown if group ID is missing`() {
-            whenever(metadata.groupPolicy).doReturn(getGroupPolicy(hasGroupId = false))
-            assertThrows<CordaRuntimeException> {
-                staticNetworkInfoDBWriterImpl.parseAndPersistStaticNetworkInfo(entityManager, cpi)
-            }.also {
-                assertThat(it.message).contains("group policy ID not found")
-            }
             verify(entityManager, never()).persist(any())
         }
 

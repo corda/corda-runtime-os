@@ -13,7 +13,6 @@ import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
-import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.virtualnode.toCorda
 
 internal class PersistGroupParametersInitialSnapshotHandler(
@@ -27,18 +26,10 @@ internal class PersistGroupParametersInitialSnapshotHandler(
             logger.error("Failed to serialize key value pair list.")
         }
 
-    private fun serializeProperties(context: KeyValuePairList): ByteArray {
-        return wrapWithNullErrorHandling({
-            MembershipPersistenceException("Failed to serialize key value pair list.", it)
-        }) {
-            serializer.serialize(context)
-        }
-    }
-
     private val deserializer: CordaAvroDeserializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroDeserializer(
             {
-                logger.error("Failed to serialize key value pair list.")
+                logger.error("Failed to deserialize key value pair list.")
             },
             KeyValuePairList::class.java
         )
@@ -74,7 +65,7 @@ internal class PersistGroupParametersInitialSnapshotHandler(
             }
             GroupParametersEntity(
                 epoch = 1,
-                parameters = serializeProperties(groupParameters),
+                parameters = serializer.serializeKeyValuePairList(groupParameters),
                 signaturePublicKey = null,
                 signatureContent = null,
                 signatureSpec = null

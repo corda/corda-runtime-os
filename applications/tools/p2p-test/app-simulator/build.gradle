@@ -46,4 +46,11 @@ dependencies {
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(':libs:messaging:kafka-topic-admin-impl')
 
+    testImplementation project(':testing:e2e-test-utilities')
+    testImplementation project(':libs:membership:membership-common')
+    testImplementation project(':testing:test-utilities')
+}
+test {
+    testLogging.showStandardStreams = true
+    environment["SCRIPT_DIR"]="$projectDir/scripts"
 }

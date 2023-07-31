@@ -20,13 +20,13 @@ import javax.persistence.Table
 class WrappingKeyEntity(
     @Id
     @Column(name = "id", nullable = false)
-    val id: UUID,
+    var id: UUID,
 
     /**
      * Key alias must be unique across all tenants. The key can be reused by different tenants.
      */
     @Column(name = "alias", nullable = false, updatable = false, length = 64)
-    val alias: String,
+    var alias: String,
 
     @Column(name = "generation", nullable = false, updatable = false)
     var generation: Int,

@@ -19,14 +19,14 @@ data class ChunkPropertyEntity(
 
     @Id
     @Column(name = "request_id", nullable = false)
-    val requestId: String,
+    var requestId: String,
 
     @Id
     @Column(name = "key", nullable = false)
-    val key: String,
+    var key: String,
 
     @Column(name = "value", nullable = true)
-    val value: String?,
+    var value: String?,
 
     @Column(name = "update_ts", nullable = false)
     var updateTimestamp: Instant

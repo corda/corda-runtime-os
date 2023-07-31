@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package net.corda.processors.rest
 
 import io.swagger.v3.core.util.Json
@@ -16,9 +17,12 @@ import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
+import net.corda.membership.rest.v1.CertificateRestResource
 import net.corda.membership.rest.v1.CertificatesRestResource
 import net.corda.membership.rest.v1.HsmRestResource
+import net.corda.membership.rest.v1.KeyRestResource
 import net.corda.membership.rest.v1.KeysRestResource
+import net.corda.membership.rest.v1.MGMAdminRestResource
 import net.corda.membership.rest.v1.MGMRestResource
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.MemberRegistrationRestResource
@@ -46,9 +50,11 @@ class OpenApiCompatibilityTest {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private val importantRestResources = setOf(
-            CertificatesRestResource::class.java, // P2P
+            CertificatesRestResource::class.java, // P2P - Deprecated but supporting RestApiVersion.C5.0
+            CertificateRestResource::class.java, // P2P
             HsmRestResource::class.java, // P2P
-            KeysRestResource::class.java, // P2P
+            KeysRestResource::class.java, // P2P  - Deprecated but supporting RestApiVersion.C5.0
+            KeyRestResource::class.java, // P2P
             ConfigRestResource::class.java, // Flow
             FlowRestResource::class.java, // Flow
             FlowClassRestResource::class.java, // Flow
@@ -57,6 +63,7 @@ class OpenApiCompatibilityTest {
             MemberLookupRestResource::class.java, // MGM
             MemberRegistrationRestResource::class.java, // MGM
             MGMRestResource::class.java, // MGM
+            MGMAdminRestResource::class.java, // MGM
             NetworkRestResource::class.java, // MGM
             PermissionEndpoint::class.java, // REST
             RoleEndpoint::class.java, // REST
@@ -65,7 +72,7 @@ class OpenApiCompatibilityTest {
         )
 
         // `cardinality` is not equal to `importantRestResources.size` as there might be some test RestResource as well
-        @InjectService(service = PluggableRestResource::class, cardinality = 16, timeout = 10_000)
+        @InjectService(service = PluggableRestResource::class, cardinality = 17, timeout = 10_000)
         lateinit var dynamicRestResources: List<RestResource>
 
         @InjectService(service = RestServerFactory::class, timeout = 10_000)
