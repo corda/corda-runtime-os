@@ -7,7 +7,7 @@ import net.corda.kryoserialization.testkit.mockSandboxGroup
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-internal class ClassSerializerTest {
+class ClassSerializerTest {
     @Test
     fun `class serializer returns the correct class back`() {
         val sandboxGroup = mockSandboxGroup(setOf(Class::class.java))

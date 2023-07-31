@@ -8,7 +8,7 @@ import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 
-internal class LinkedEntrySetSerializerTest {
+class LinkedEntrySetSerializerTest {
 
     @Test
     fun `LinkedEntrySet serializer returns correct value`() {

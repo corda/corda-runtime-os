@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-internal class LoggerSerializerTest {
+class LoggerSerializerTest {
     @Test
     fun `Logger serializer returns correct logger`() {
         val kryo = Kryo()
