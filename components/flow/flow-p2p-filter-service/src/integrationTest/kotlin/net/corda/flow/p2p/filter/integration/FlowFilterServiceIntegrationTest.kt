@@ -111,7 +111,7 @@ class FlowFilterServiceIntegrationTest {
                 emptyKeyValuePairList(),
                 emptyKeyValuePairList(),
                 ByteBuffer.wrap("".toByteArray())
-            )
+            ), false
         )
 
         val sessionRecord = Record(

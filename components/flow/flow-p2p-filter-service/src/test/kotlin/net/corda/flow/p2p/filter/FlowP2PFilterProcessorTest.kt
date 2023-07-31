@@ -60,7 +60,8 @@ class FlowP2PFilterProcessorTest {
                 emptyKeyValuePairList(),
                 emptyKeyValuePairList(),
                 ByteBuffer.wrap("".toByteArray())
-            )
+            ),
+            false
         )
 
         val flowEventMockData: ByteArray = "flowEvent".toByteArray()
