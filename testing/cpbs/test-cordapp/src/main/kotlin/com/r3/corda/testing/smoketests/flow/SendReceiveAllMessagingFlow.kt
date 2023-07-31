@@ -22,7 +22,7 @@ class SendReceiveAllMessagingFlow(
 ) : SubFlow<String> {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val CHARS_PER_KB = 1000
     }
 
@@ -103,6 +103,7 @@ class SendReceiveAllMessagingFlow(
     /**
      * Generate a large string whose size is roughly equal to the given amount of [kiloBytes]
      */
+    @Suppress("SameParameterValue")
     private fun getLargeString(kiloBytes: Int) : String {
         val stringBuilder = StringBuilder()
         for (i in 0..CHARS_PER_KB*kiloBytes) {
@@ -112,11 +113,12 @@ class SendReceiveAllMessagingFlow(
     }
 }
 
+@Suppress("unused")
 @InitiatedBy(protocol = "SendReceiveAllProtocol")
 class SendReceiveAllInitiatedFlow : ResponderFlow {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
@@ -124,7 +126,7 @@ class SendReceiveAllInitiatedFlow : ResponderFlow {
 
     @Suspendable
     override fun call(session: FlowSession) {
-        log.info("I have been called [${flowEngine.flowId}]")
+        log.info("I have been called [{}]", flowEngine.flowId)
 
         val received = session.receive(MyClass::class.java)
         log.info("Receive from send map from peer: $received")
@@ -135,13 +137,13 @@ class SendReceiveAllInitiatedFlow : ResponderFlow {
         }
 
         val received2 = session.receive(MyClass::class.java)
-        log.info("Receive from send all from peer: $received2")
+        log.info("Receive from send all from peer: {}", received2)
         session.send(received2.copy(string = "this is a new object 2"))
 
 
         val received3 = session.receive(MyClass::class.java)
         //this string is so large it activates chunking so do not log it
-        log.info("Receive from send from peer. Message size: ${received3.string.length}")
+        log.info("Receive from send from peer. Message size: {}", received3.string.length)
         session.send(received3.copy(string = "this is a new object 3"))
         log.info("Closing session")
 
@@ -156,4 +158,3 @@ data class MyOtherClass (
     val string: String,
     val int: Int
 )
-

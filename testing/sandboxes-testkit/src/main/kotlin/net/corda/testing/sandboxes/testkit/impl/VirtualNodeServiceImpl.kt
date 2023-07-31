@@ -3,6 +3,7 @@ package net.corda.testing.sandboxes.testkit.impl
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.testing.sandboxes.CpiLoader
+import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.testing.sandboxes.testkit.VirtualNodeService
 import net.corda.v5.base.types.MemberX500Name
@@ -24,7 +25,7 @@ class VirtualNodeServiceImpl @Activate constructor(
     @Reference
     private val virtualNodeLoader: VirtualNodeLoader,
 
-    @Reference
+    @Reference(target = SandboxSetup.SANDBOX_SERVICE_FILTER)
     private val sandboxGroupContextComponent: SandboxGroupContextComponent
 ) : VirtualNodeService {
     private companion object {

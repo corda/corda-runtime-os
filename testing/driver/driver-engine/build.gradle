@@ -87,6 +87,7 @@ dependencies {
     }
     runtimeOnly "commons-beanutils:commons-beanutils:$beanutilsVersion"
     runtimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
+    runtimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
 
     testRuntimeOnly project(':testing:driver')
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"

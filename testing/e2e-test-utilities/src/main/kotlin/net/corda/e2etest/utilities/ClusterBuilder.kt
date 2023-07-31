@@ -88,13 +88,17 @@ class ClusterBuilder {
             ?: throw FileNotFoundException("No such resource: '$resourceName'")
 
     fun importCertificate(resourceName: String, usage: String, alias: String) =
-        uploadCertificateResource("/api/$REST_API_VERSION_PATH/certificates/cluster/$usage", resourceName, alias)
+        uploadCertificateResource("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage", resourceName, alias)
 
     fun importCertificate(file: File, usage: String, alias: String) =
-        uploadCertificateFile("/api/$REST_API_VERSION_PATH/certificates/cluster/$usage", file, alias)
+        uploadCertificateFile("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage", file, alias)
+
+    // Used to test RestApiVersion.C5_0 CertificateRestResource, remove after LTS
+    fun deprecatedImportCertificate(resourceName: String, usage: String, alias: String) =
+        uploadCertificateResource("/api/${RestApiVersion.C5_0.versionPath}/certificates/cluster/$usage", resourceName, alias)
 
     fun getCertificateChain(usage: String, alias: String) =
-        client!!.get("/api/$REST_API_VERSION_PATH/certificates/cluster/$usage/$alias")
+        client!!.get("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage/$alias")
 
     /** Assumes the resource *is* a CPB */
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/$REST_API_VERSION_PATH/cpi/", resourceName)
@@ -155,12 +159,12 @@ class ClusterBuilder {
     private fun registerMemberBody() =
         """{ "context": { "corda.key.scheme" : "CORDA.ECDSA.SECP256R1" } }""".trimMargin()
 
-    private fun registerNotaryBody(holdingIdShortHash: String) =
+    private fun registerNotaryBody(notaryServiceName: String) =
         """{ 
             |  "context": { 
             |    "corda.key.scheme" : "CORDA.ECDSA.SECP256R1", 
             |    "corda.roles.0" : "notary",
-            |    "corda.notary.service.name" : "O=MyNotaryService-${holdingIdShortHash}, L=London, C=GB",
+            |    "corda.notary.service.name" : "$notaryServiceName",
             |    "corda.notary.service.flow.protocol.name" : "com.r3.corda.notary.plugin.nonvalidating",
             |    "corda.notary.service.flow.protocol.version.0" : "1"
             |   } 
@@ -258,10 +262,10 @@ class ClusterBuilder {
      * notary service. This is fine for now as we only support a 1-1 mapping from notary service to
      * notary vnode. It will need revisiting when 1-* is supported.
      */
-    fun registerStaticMember(holdingIdShortHash: String, isNotary: Boolean = false) =
+    fun registerStaticMember(holdingIdShortHash: String, notaryServiceName: String? = null) =
         register(
             holdingIdShortHash,
-            if (isNotary) registerNotaryBody(holdingIdShortHash) else registerMemberBody()
+            if (notaryServiceName != null) registerNotaryBody(notaryServiceName) else registerMemberBody()
         )
 
     fun register(holdingIdShortHash: String, registrationContext: String) =
@@ -280,10 +284,17 @@ class ClusterBuilder {
         post("/api/$REST_API_VERSION_PATH/hsm/soft/$holdingIdentityShortHash/$category", body = "")
 
     fun createKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
-        post("/api/$REST_API_VERSION_PATH/keys/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme", body = "")
+        post("/api/$REST_API_VERSION_PATH/key/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme", body = "")
+
+    // Used to test RestApiVersion.C5_0 KeysRestResource, remove after LTS
+    fun deprecatedCreateKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
+        post(
+            "/api/${RestApiVersion.C5_0.versionPath}/keys/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme",
+            body = ""
+        )
 
     fun getKey(tenantId: String, keyId: String) =
-        get("/api/$REST_API_VERSION_PATH/keys/$tenantId/$keyId")
+        get("/api/$REST_API_VERSION_PATH/key/$tenantId/$keyId")
 
     fun getKey(
         tenantId: String,
@@ -301,7 +312,7 @@ class ClusterBuilder {
         } else {
             queries.joinToString(prefix = "?", separator = "&")
         }
-        return get("/api/$REST_API_VERSION_PATH/keys/$tenantId$queryStr")
+        return get("/api/$REST_API_VERSION_PATH/key/$tenantId$queryStr")
     }
 
     /** Get status of a flow */

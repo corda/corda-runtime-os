@@ -33,6 +33,7 @@ import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC
 import net.corda.schema.Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC
+import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
 import net.corda.schema.Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC
 import net.corda.schema.Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC
 import net.corda.session.mapper.service.executor.FlowMapperMessageProcessor
@@ -44,6 +45,7 @@ import net.corda.testing.driver.processor.ExternalProcessor
 import net.corda.testing.driver.processor.crypto.CryptoProcessor
 import net.corda.testing.driver.processor.entity.EntityProcessor
 import net.corda.testing.driver.processor.ledger.LedgerProcessor
+import net.corda.testing.driver.processor.token.TokenCacheProcessor
 import net.corda.testing.driver.processor.uniqueness.UniquenessProcessor
 import net.corda.testing.driver.processor.verify.VerifyProcessor
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -61,6 +63,7 @@ typealias FlowEventRecord = Record<String, FlowEvent>
         Reference(name = FLOW_OPS_MESSAGE_TOPIC, service = CryptoProcessor::class),
         Reference(name = PERSISTENCE_ENTITY_PROCESSOR_TOPIC, service = EntityProcessor::class),
         Reference(name = PERSISTENCE_LEDGER_PROCESSOR_TOPIC, service = LedgerProcessor::class),
+        Reference(name = TOKEN_CACHE_EVENT, service = TokenCacheProcessor::class),
         Reference(name = UNIQUENESS_CHECK_TOPIC, service = UniquenessProcessor::class),
         Reference(name = VERIFICATION_LEDGER_PROCESSOR_TOPIC, service = VerifyProcessor::class)
     ]
@@ -94,11 +97,16 @@ class RunFlowImpl @Activate constructor(
             return results
         }
 
-        private fun Collection<Record<*, *>>.filterFlowEventsTo(events: Deque<FlowEventRecord>): Deque<FlowEventRecord> {
+        private fun Collection<Record<*, *>>.filterFlowEventsTo(
+            events: Deque<FlowEventRecord>,
+            other: Deque<Record<*,*>>
+        ): Deque<FlowEventRecord> {
             for (record in this) {
                 if (record.value is FlowEvent && record.key is String) {
                     @Suppress("unchecked_cast")
                     events.addLast(record as FlowEventRecord)
+                } else {
+                    other.addLast(record)
                 }
             }
             return events
@@ -152,14 +160,15 @@ class RunFlowImpl @Activate constructor(
         return try {
             val initialResponse = startFlow(createRPCStartFlow(virtualNodeInfo, flowClassName, flowStartArgs))
             flowEventProcessorFactory.create(smartConfig).let { processor ->
-                val checkpoints = mutableMapOf<String, Checkpoint>()
                 val flowMapperStates = mutableMapOf<String, FlowMapperState>()
-                val flowEvents = initialResponse.responseEvents.filterFlowEventsTo(LinkedList())
+                val checkpoints = mutableMapOf<String, Checkpoint>()
+                val responseEvents = LinkedList<Record<*, *>>()
 
-                while (flowEvents.isNotEmpty()) {
-                    val current = flowEvents.removeFirst()
+                val flowEvents = initialResponse.responseEvents.filterFlowEventsTo(LinkedList(), responseEvents)
+                while (true) {
+                    val current = flowEvents.pollFirst() ?: break
 
-                    val responseEvents = processor.onNext(checkpoints[current.key], current).let { result ->
+                    responseEvents += processor.onNext(checkpoints[current.key], current).let { result ->
                         result.updatedState?.also { state ->
                             checkpoints[current.key] = state
                         }
@@ -189,9 +198,11 @@ class RunFlowImpl @Activate constructor(
                         }
                     }
 
-                    @Suppress("unchecked_cast")
-                    while (responseEvents.isNotEmpty()) {
-                        val responseEvent = responseEvents.removeFirst()
+                    // Dispatch every response event to an appropriate handler.
+                    while (true) {
+                        val responseEvent = responseEvents.pollFirst() ?: break
+
+                        @Suppress("unchecked_cast")
                         when (responseEvent.topic) {
                             FLOW_EVENT_TOPIC ->
                                 flowEvents += responseEvent as FlowEventRecord
@@ -213,7 +224,7 @@ class RunFlowImpl @Activate constructor(
                             }
 
                             else ->
-                                processExternalEvent(responseEvent).filterFlowEventsTo(flowEvents)
+                                processExternalEvent(responseEvent).filterFlowEventsTo(flowEvents, responseEvents)
                         }
                     }
                 }

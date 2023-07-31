@@ -21,7 +21,7 @@ class InitiatingSubFlowSmokeTestFlow(
 ) : SubFlow<InitiatedSmokeTestMessage> {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
@@ -32,10 +32,10 @@ class InitiatingSubFlowSmokeTestFlow(
 
     @Suspendable
     override fun call(): InitiatedSmokeTestMessage {
-        log.info("SubFlow - Creating session for '${x500Name}'...")
+        log.info("SubFlow - Creating session for '{}'...", x500Name)
         val session = flowMessaging.initiateFlow(x500Name)
         if (initiateSessionInInitiatingFlow) {
-            log.info("SubFlow - Creating session '${session}' now sending and waiting for response ...")
+            log.info("SubFlow - Creating session '{}' now sending and waiting for response ...", session)
             session.send(InitiatedSmokeTestMessage("Initiate"))
         }
         return flowEngine.subFlow(InlineSubFlowSmokeTestFlow(session, initiateSessionInInitiatingFlow, message))
@@ -55,21 +55,22 @@ class InlineSubFlowSmokeTestFlow(
     @Suspendable
     override fun call(): InitiatedSmokeTestMessage {
         if (!initiateSessionInInitiatingFlow) {
-            log.info("SubFlow - Creating session '${session}' now sending and waiting for response ...")
+            log.info("SubFlow - Creating session '{}' now sending and waiting for response ...", session)
             session.send(InitiatedSmokeTestMessage("Initiate"))
         }
         val initiatedSmokeTestMessage =
             session.sendAndReceive(InitiatedSmokeTestMessage::class.java, InitiatedSmokeTestMessage(message))
-        log.info("SubFlow - Received response from session '$session'.")
+        log.info("SubFlow - Received response from session '{}'.", session)
         return initiatedSmokeTestMessage
     }
 }
 
+@Suppress("unused")
 @InitiatedBy(protocol = "subflow-protocol")
 class InitiatingSubFlowResponderSmokeTestFlow : ResponderFlow {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @Suspendable
@@ -77,8 +78,8 @@ class InitiatingSubFlowResponderSmokeTestFlow : ResponderFlow {
         session.receive(InitiatedSmokeTestMessage::class.java)
         log.info("SubFlow - Initiated.")
         val received = session.receive(InitiatedSmokeTestMessage::class.java)
-        log.info("SubFlow - Received message from session '$session'.")
+        log.info("SubFlow - Received message from session '{}'.", session)
         session.send(InitiatedSmokeTestMessage("echo:${received.message}"))
-        log.info("SubFlow - Sent message to session '$session'.")
+        log.info("SubFlow - Sent message to session '{}'.", session)
     }
 }

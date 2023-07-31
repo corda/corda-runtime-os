@@ -128,7 +128,7 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
     }
 
     private fun buildSchemaFactory(): JsonSchemaFactory {
-        val builder = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7))
+        val builder = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V201909))
         builder.uriFetcher(CordaURIFetcher(schemaProvider), REGISTERED_SCHEMES)
         return builder.build()
     }

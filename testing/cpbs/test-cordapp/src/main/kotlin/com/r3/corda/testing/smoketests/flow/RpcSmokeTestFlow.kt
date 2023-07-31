@@ -23,7 +23,6 @@ import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import com.r3.corda.testing.bundles.dogs.Dog
-import com.r3.corda.testing.smoketests.flow.context.launchContextPropagationFlows
 import com.r3.corda.testing.smoketests.flow.digest.CustomDigestAlgorithm
 import com.r3.corda.testing.smoketests.flow.messages.InitiatedSmokeTestMessage
 import com.r3.corda.testing.smoketests.flow.messages.JsonSerializationFlowOutput
@@ -46,7 +45,6 @@ class RpcSmokeTestFlow : ClientStartableFlow {
 
     private val commandMap: Map<String, (RpcSmokeTestInput) -> String> = mapOf(
         "echo" to this::echo,
-        "throw_error" to this::throwError,
         "start_sessions" to this::startSessions,
         "persistence_persist" to this::persistencePersistDog,
         "persistence_persist_bulk" to this::persistencePersistDogs,
@@ -58,17 +56,15 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         "persistence_find_bulk" to this::persistenceFindDogs,
         "persistence_findall" to { persistenceFindAllDogs() },
         "persistence_query" to { persistenceQueryDogs() },
-        "throw_platform_error" to { throwPlatformError() },
-        "throw_session_error" to this::closeSessionThenSend,
         "subflow_passed_in_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, true) },
         "subflow_passed_in_non_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, false) },
         "flow_messaging_apis" to { createMultipleSessionsSingleFlowAndExerciseFlowMessaging(it) },
+        "flow_session_primitives" to this::sendPrimitiveValuesAcrossFlowSession,
         "crypto_sign_and_verify" to this::signAndVerify,
         "crypto_verify_invalid_signature" to this::verifyInvalidSignature,
         "crypto_get_default_signature_spec" to this::getDefaultSignatureSpec,
         "crypto_get_compatible_signature_specs" to this::getCompatibleSignatureSpecs,
         "crypto_find_my_signing_keys" to this::findMySigningKeys,
-        "context_propagation" to { contextPropagation() },
         "serialization" to this::serialization,
         "lookup_member_by_x500_name" to this::lookupMember,
         "json_serialization" to this::jsonSerialization,
@@ -122,10 +118,6 @@ class RpcSmokeTestFlow : ClientStartableFlow {
 
     private fun echo(input: RpcSmokeTestInput): String {
         return input.getValue("echo_value")
-    }
-
-    private fun throwError(input: RpcSmokeTestInput): String {
-        throw IllegalStateException(input.getValue("error_message"))
     }
 
     @Suspendable
@@ -214,38 +206,6 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         }
     }
 
-    @Suspendable
-    private fun closeSessionThenSend(input: RpcSmokeTestInput): String {
-        val x500 = input.getValue("x500")
-        log.info("Creating session for '${x500}'...")
-        val session = flowMessaging.initiateFlow(MemberX500Name.parse(x500))
-        log.info("Sending first time to session for '${x500}'...")
-        session.sendAndReceive(InitiatedSmokeTestMessage::class.java, InitiatedSmokeTestMessage("test 1"))
-        log.info("Closing session for '${session}'...")
-        session.close()
-        log.info("Try and send on a closed session to generate an error '${session}'...")
-        try {
-            session.send(InitiatedSmokeTestMessage("test 2"))
-        } catch (e: Exception) {
-            log.info("Caught exception for '${session}'...", e)
-            return e.message ?: "Error with no message"
-        }
-
-        return "No error thrown"
-    }
-
-    @Suspendable
-    private fun throwPlatformError(): String {
-        try {
-            externalMessaging.send("junk", "junk")
-        } catch (e: Exception) {
-            log.info("Caught exception for external Messaging...", e)
-            return e.message ?: "Error with no message"
-        }
-
-        return "No error thrown"
-    }
-
     private fun getDogId(input: RpcSmokeTestInput): UUID {
         val id = input.getValue("id")
         return try {
@@ -295,6 +255,24 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     }
 
     @Suspendable
+    private fun sendPrimitiveValuesAcrossFlowSession(
+        input: RpcSmokeTestInput
+    ): String {
+        val sessions = input.getValue("sessions").split(";")
+        log.info("Session Primitives - Starting sessions for '${input.getValue("sessions")}'")
+        val outputs = mutableListOf<String>()
+        sessions.forEachIndexed { _, x500 ->
+            val response = flowEngine.subFlow(
+                SendReceivePrimitiveMessagingFlow(MemberX500Name.parse(x500))
+            )
+
+            outputs.add(response)
+        }
+
+        return outputs.joinToString("; ")
+    }
+
+    @Suspendable
     private fun createSessionsInInitiatingFlowAndPassToInlineFlow(
         input: RpcSmokeTestInput,
         initiateSessionInInitiatingFlow: Boolean
@@ -338,11 +316,6 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         }
 
         return outputs.joinToString("; ")
-    }
-
-    @Suspendable
-    private fun contextPropagation(): String {
-        return launchContextPropagationFlows(flowEngine, jsonMarshallingService)
     }
 
     @Suspendable

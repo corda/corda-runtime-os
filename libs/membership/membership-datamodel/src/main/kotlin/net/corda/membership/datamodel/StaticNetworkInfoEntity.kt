@@ -15,13 +15,13 @@ class StaticNetworkInfoEntity(
      */
     @Id
     @Column(name = "group_id", nullable = false, updatable = false)
-    val groupId: String,
+    var groupId: String,
 
     /**
      * The static network's "virtual" MGM's public signing key.
      */
     @Column(name = "mgm_public_signing_key", nullable = false, updatable = false)
-    val mgmPublicKey: ByteArray,
+    var mgmPublicKey: ByteArray,
 
     /**
      * The static network's "virtual" MGM's private signing key.
@@ -29,7 +29,7 @@ class StaticNetworkInfoEntity(
      * for production usage.
      */
     @Column(name = "mgm_private_signing_key", nullable = false, updatable = false)
-    val mgmPrivateKey: ByteArray,
+    var mgmPrivateKey: ByteArray,
 
     /**
      * Group parameters serialized as a [KeyValuePairList] using AVRO serialization

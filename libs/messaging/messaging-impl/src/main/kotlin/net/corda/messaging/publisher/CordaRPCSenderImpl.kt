@@ -29,6 +29,7 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.subscription.ThreadLooper
+import net.corda.messaging.utils.ExceptionUtils
 import net.corda.messaging.utils.FutureTracker
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getRPCResponseTopic
@@ -141,9 +142,8 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             try {
                 processRecords(consumerRecords)
             } catch (ex: Exception) {
-                when (ex) {
-                    is CordaMessageAPIFatalException,
-                    is CordaMessageAPIIntermittentException -> {
+                when (ex::class.java) {
+                    in ExceptionUtils.CordaMessageAPIException -> {
                         throw ex
                     }
 

@@ -41,6 +41,7 @@ import java.security.InvalidKeyException
 import java.security.PublicKey
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
+import java.util.Objects
 import java.util.concurrent.CompletableFuture
 
 class DynamicKeyStoreTest {
@@ -356,7 +357,7 @@ class DynamicKeyStoreTest {
             assertThat(
                 dynamicKeyStore.getClientKeyStore(
                     id,
-                )
+                )?.keyStore
             ).isSameAs(keyStoreWithPassword)
         }
 
@@ -364,7 +365,7 @@ class DynamicKeyStoreTest {
         fun `getClientKeyStore uses the correct aliasToCertificates`() {
             dynamicKeyStore.getClientKeyStore(
                 id
-            )
+            )?.keyStore
 
             assertThat(keyStoreCreationCertificatesStore?.aliasToCertificates)
                 .hasSize(1)
@@ -378,7 +379,7 @@ class DynamicKeyStoreTest {
         fun `getClientKeyStore throw exception when wrong public key is used`() {
             dynamicKeyStore.getClientKeyStore(
                 id
-            )
+            )?.keyStore
 
             assertThrows<InvalidKeyException> {
                 keyStoreCreationSigner?.sign(
@@ -408,7 +409,7 @@ class DynamicKeyStoreTest {
 
             dynamicKeyStore.getClientKeyStore(
                 id
-            )
+            )?.keyStore
 
             assertThat(
                 keyStoreCreationSigner?.sign(
@@ -436,6 +437,70 @@ class DynamicKeyStoreTest {
                     id,
                 )
             ).isNull()
+        }
+
+        @Test
+        fun `hashCode comes from the certificates and tenant id hash codes`() {
+            val certificateOne = mock<Certificate>()
+            val certificateTwo = mock<Certificate>()
+            val certificateThree = mock<Certificate>()
+            val id = "id"
+            val store = dynamicKeyStore.ClientKeyStore(
+                listOf(certificateOne, certificateTwo, certificateThree), id
+            )
+
+            assertThat(store.hashCode()).isEqualTo(
+                Objects.hash(
+                    listOf(certificateOne, certificateTwo, certificateThree),
+                    id,
+                )
+            )
+        }
+
+        @Test
+        fun `equals return false for different certificates`() {
+            val certificateOne = mock<Certificate>()
+            val certificateTwo = mock<Certificate>()
+            val certificateThree = mock<Certificate>()
+            val id = "id"
+            val storeOne = dynamicKeyStore.ClientKeyStore(
+                listOf(certificateOne, certificateThree), id
+            )
+            val storeTwo = dynamicKeyStore.ClientKeyStore(
+                listOf(certificateOne, certificateTwo), id
+            )
+
+            assertThat(storeOne).isNotEqualTo(storeTwo)
+        }
+
+        @Test
+        fun `equals return false for different ids`() {
+            val certificateOne = mock<Certificate>()
+            val certificateTwo = mock<Certificate>()
+            val certificateThree = mock<Certificate>()
+            val storeOne = dynamicKeyStore.ClientKeyStore(
+                listOf(certificateOne, certificateTwo, certificateThree), "id1"
+            )
+            val storeTwo = dynamicKeyStore.ClientKeyStore(
+                listOf(certificateOne, certificateTwo, certificateThree), "id2"
+            )
+
+            assertThat(storeOne).isNotEqualTo(storeTwo)
+        }
+
+        @Test
+        fun `equals return true when ids and certificates are the same`() {
+            val certificateOne = mock<Certificate>()
+            val certificateTwo = mock<Certificate>()
+            val certificateThree = mock<Certificate>()
+            val storeOne = dynamicKeyStore.ClientKeyStore(
+                listOf(certificateOne, certificateTwo, certificateThree), "id"
+            )
+            val storeTwo = dynamicKeyStore.ClientKeyStore(
+                listOf(certificateOne, certificateTwo, certificateThree), "id"
+            )
+
+            assertThat(storeOne).isEqualTo(storeTwo)
         }
     }
 }

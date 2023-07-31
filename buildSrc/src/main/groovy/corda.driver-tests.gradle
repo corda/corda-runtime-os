@@ -48,6 +48,14 @@ pluginManager.withPlugin('java') {
         }
     }
 
+    pluginManager.withPlugin('jacoco') {
+        tasks.withType(Test).configureEach {
+            jacoco {
+                enabled = false
+            }
+        }
+    }
+
     tasks.withType(Test).configureEach {
         doFirst {
             jvmArgs '--add-opens', 'java.base/java.lang=ALL-UNNAMED',

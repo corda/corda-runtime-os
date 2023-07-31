@@ -14,11 +14,11 @@ import javax.persistence.Table
 data class ClusterCertificate(
     @Id
     @Column(name = "alias", nullable = false, updatable = false)
-    override val alias: String,
+    override var alias: String,
 
     @Column(name = "usage", nullable = false, updatable = false)
-    override val usage: String,
+    override var usage: String,
 
     @Column(name = "raw_certificate", nullable = false, updatable = true)
-    override val rawCertificate: String,
+    override var rawCertificate: String,
 ) : CertificateEntity

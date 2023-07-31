@@ -2,6 +2,7 @@ package net.corda.testing.driver.sandbox
 
 import java.nio.ByteBuffer
 import java.security.PublicKey
+import java.util.LinkedList
 import java.util.SortedMap
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
@@ -313,8 +314,8 @@ class MembershipGroupControllerProviderImpl @Activate constructor(
         }
 
         private fun Collection<MemberInfo>.filterBy(filter: MembershipStatusFilter): Collection<MemberInfo> {
-            val candidates = filterTo(mutableListOf()) { it.filterBy(filter) }
-            val pending = candidates.extractAllTo(mutableListOf()) { it.status == MEMBER_STATUS_PENDING }
+            val candidates = filterTo(LinkedList()) { it.filterBy(filter) }
+            val pending = candidates.extractAllTo(LinkedList()) { it.status == MEMBER_STATUS_PENDING }
             return when(filter) {
                 MembershipStatusFilter.ACTIVE,
                 MembershipStatusFilter.ACTIVE_OR_SUSPENDED ->
