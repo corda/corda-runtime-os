@@ -64,7 +64,7 @@ fun ClusterInfo.onboardMgm(
 fun ClusterInfo.exportGroupPolicy(
     mgmHoldingId: String
 ) = cluster {
-    assertWithRetry {
+    assertWithRetryIgnoringExceptions {
         interval(2.seconds)
         timeout(30.seconds)
         command { get("/api/v1/mgm/$mgmHoldingId/info") }
@@ -103,7 +103,7 @@ private fun ClusterInfo.createApprovalRuleCommon(
         "ruleRegex" to regex
     )
 
-    assertWithRetry {
+    assertWithRetryIgnoringExceptions {
         interval(1.seconds)
         command { post(url, ObjectMapper().writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
@@ -155,7 +155,7 @@ fun ClusterInfo.createPreAuthToken(
         ttl?.let { put("ttl", it.toString()) }
     }
 
-    assertWithRetry {
+    assertWithRetryIgnoringExceptions {
         interval(1.seconds)
         command { post("/api/v1/mgm/$mgmHoldingId/preauthtoken", ObjectMapper().writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
@@ -195,7 +195,7 @@ fun ClusterInfo.getPreAuthTokens(
         ownerX500name?.let { add("ownerx500name=${encode(it, defaultCharset())}") }
     }
     val query = queries.joinToString(prefix = "?", separator = "&")
-    assertWithRetry {
+    assertWithRetryIgnoringExceptions {
         interval(1.seconds)
         command { get("/api/v1/mgm/$mgmHoldingId/preauthtoken$query") }
         condition { it.code == ResponseCode.OK.statusCode }
@@ -215,7 +215,7 @@ fun ClusterInfo.waitForPendingRegistrationReviews(
         val query = memberX500Name?.let {
             "?requestsubjectx500name=${encode(memberX500Name.toString(), defaultCharset())}"
         } ?: ""
-        assertWithRetry {
+        assertWithRetryIgnoringExceptions {
             timeout(2.minutes)
             interval(3.seconds)
             command { get("/api/v1/mgm/$mgmHoldingId/registrations$query") }
@@ -237,7 +237,7 @@ fun ClusterInfo.approveRegistration(
     registrationId: String
 ) {
     cluster {
-        assertWithRetry {
+        assertWithRetryIgnoringExceptions {
             interval(1.seconds)
             command { post("/api/v1/mgm/$mgmHoldingId/approve/$registrationId", "") }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
@@ -253,7 +253,7 @@ fun ClusterInfo.declineRegistration(
     registrationId: String
 ) {
     cluster {
-        assertWithRetry {
+        assertWithRetryIgnoringExceptions {
             interval(1.seconds)
             command { post(
                 "/api/v1/mgm/$mgmHoldingId/decline/$registrationId",
@@ -312,7 +312,7 @@ fun ClusterInfo.suspendMember(
     x500Name: String,
     serialNumber: Int? = null,
 ) = cluster {
-    assertWithRetry {
+    assertWithRetryIgnoringExceptions {
         timeout(15.seconds)
         interval(1.seconds)
         command {
@@ -334,7 +334,7 @@ fun ClusterInfo.activateMember(
     x500Name: String,
     serialNumber: Int? = null,
 ) = cluster {
-    assertWithRetry {
+    assertWithRetryIgnoringExceptions {
         timeout(15.seconds)
         interval(1.seconds)
         command {
@@ -357,7 +357,7 @@ fun ClusterInfo.updateGroupParameters(
     val payload = mapOf(
         "parameters" to update
     )
-    assertWithRetry {
+    assertWithRetryIgnoringExceptions {
         timeout(15.seconds)
         interval(1.seconds)
         command {

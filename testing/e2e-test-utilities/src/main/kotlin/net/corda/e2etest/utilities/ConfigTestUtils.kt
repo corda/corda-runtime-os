@@ -36,7 +36,10 @@ fun updateConfig(config: String, section: String) = DEFAULT_CLUSTER.updateConfig
 
 fun ClusterInfo.updateConfig(config: String, section: String) {
     return cluster {
-        val currentConfig = getConfig(section).body.toJson()
+        val currentConfig = assertWithRetryIgnoringExceptions {
+            command { getConfig(section) }
+            condition { it.code == OK.statusCode }
+        }.body.toJson()
         val currentSchemaVersion = currentConfig["schemaVersion"]
 
         try {

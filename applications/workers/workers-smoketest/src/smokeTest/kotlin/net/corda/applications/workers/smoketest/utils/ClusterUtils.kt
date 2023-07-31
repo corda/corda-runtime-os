@@ -2,6 +2,7 @@ package net.corda.applications.workers.smoketest.utils
 
 import net.corda.e2etest.utilities.ClusterBuilder
 import net.corda.e2etest.utilities.assertWithRetry
+import net.corda.e2etest.utilities.assertWithRetryIgnoringExceptions
 import net.corda.e2etest.utilities.awaitVirtualNodeOperationStatusCheck
 import net.corda.rest.ResponseCode
 import org.assertj.core.api.Assertions
@@ -26,7 +27,7 @@ fun ClusterBuilder.eventuallyUploadCpi(
     Assertions.assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
     // BUG:  returning "OK" feels 'weakly' typed
-    val json = assertWithRetry {
+    val json = assertWithRetryIgnoringExceptions {
         timeout(retryTimeout)
         interval(retryInterval)
         command { cpiStatus(requestId) }
@@ -54,7 +55,7 @@ fun ClusterBuilder.eventuallyUploadCpi(
 }
 
 fun ClusterBuilder.eventuallyCreateVirtualNode(cpiFileChecksum: String, x500Name: String): String {
-    val vNodeJson = assertWithRetry {
+    val vNodeJson = assertWithRetryIgnoringExceptions {
         timeout(retryTimeout)
         interval(retryInterval)
         command { vNodeCreate(cpiFileChecksum, x500Name) }

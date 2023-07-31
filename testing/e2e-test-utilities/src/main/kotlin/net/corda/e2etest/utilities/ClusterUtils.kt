@@ -21,7 +21,7 @@ fun ClusterInfo.conditionallyUploadCordaPackage(
 }
 
 fun ClusterInfo.conditionallyUploadCpiSigningCertificate() = cluster {
-    val hasCertificateChain = assertWithRetry {
+    val hasCertificateChain = assertWithRetryIgnoringExceptions {
         interval(1.seconds)
         command { getCertificateChain(CODE_SIGNER_CERT_USAGE, CODE_SIGNER_CERT_ALIAS) }
         condition {
@@ -32,7 +32,7 @@ fun ClusterInfo.conditionallyUploadCpiSigningCertificate() = cluster {
         it.code != ResponseCode.RESOURCE_NOT_FOUND.statusCode
     }
     if (!hasCertificateChain) {
-        assertWithRetry {
+        assertWithRetryIgnoringExceptions {
             // Certificate upload can be slow in the combined worker, especially after it has just started up.
             timeout(30.seconds)
             interval(2.seconds)
@@ -73,7 +73,7 @@ fun ClusterInfo.conditionallyUploadCordaPackage(
             toJson()["id"].textValue()
         }
 
-        assertWithRetry {
+        assertWithRetryIgnoringExceptions {
             timeout(Duration.ofSeconds(100))
             interval(Duration.ofSeconds(2))
             command { cpiStatus(responseStatusId) }
@@ -104,7 +104,7 @@ fun ClusterInfo.getOrCreateVirtualNodeFor(
     }
     val hash = truncateLongHash(json["cpiFileChecksum"].textValue())
 
-    val vNodesJson = assertWithRetry {
+    val vNodesJson = assertWithRetryIgnoringExceptions {
         command { vNodeList() }
         condition { it.code == 200 }
         failMessage("Failed to retrieve virtual nodes")
@@ -145,7 +145,7 @@ fun ClusterInfo.addSoftHsmFor(
     holdingId: String,
     category: String
 ) = cluster {
-    assertWithRetry {
+    assertWithRetryIgnoringExceptions {
         timeout(Duration.ofSeconds(5))
         command { addSoftHsmToVNode(holdingId, category) }
         condition { it.code == 200 }
@@ -159,7 +159,7 @@ fun ClusterInfo.createKeyFor(
     category: String,
     scheme: String
 ): String = cluster {
-    val keyId = assertWithRetry {
+    val keyId = assertWithRetryIgnoringExceptions {
         interval(1.seconds)
         command { createKey(tenantId, alias, category, scheme) }
         condition {
@@ -168,7 +168,7 @@ fun ClusterInfo.createKeyFor(
         }
         failMessage("Failed to create key for holding id '$tenantId'")
     }.toJson()
-    assertWithRetry {
+    assertWithRetryIgnoringExceptions {
         interval(1.seconds)
         command { getKey(tenantId, keyId["id"].textValue()) }
         condition { it.code == 200 }
