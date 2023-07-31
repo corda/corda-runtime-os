@@ -118,24 +118,6 @@ internal class VirtualNodeUpgradeOperationHandler(
 
         publishVirtualNodeInfo(upgradedVNodeInfo)
 
-        // Re-register the member once the virtual node has been upgraded, so that the member CPI version is up-to-date
-        val x500Name = membershipGroupReaderProvider.getGroupReader(upgradedVNodeInfo.holdingIdentity).owningMember
-        val registrationRequest = membershipQueryClient
-            .queryRegistrationRequests(upgradedVNodeInfo.holdingIdentity, x500Name, limit = 1)
-            .getOrThrow()
-            .first()
-        val registrationContext = registrationRequest.memberProvidedContext.toMap()
-
-        var hasSubmitted = false
-        while (!hasSubmitted) {
-            val registrationResult =
-                memberResourceClient
-                    .startRegistration(upgradedVNodeInfo.holdingIdentity.shortHash, registrationContext)
-            if(registrationResult.registrationStatus == SubmittedRegistrationStatus.SUBMITTED){
-                hasSubmitted = true
-            }
-        }
-
         if (migrationUtility.areChangesetsDeployedOnVault(
                 request.virtualNodeShortHash,
                 cpkChangelogs,
