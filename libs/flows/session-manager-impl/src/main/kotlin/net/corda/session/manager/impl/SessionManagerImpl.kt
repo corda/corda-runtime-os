@@ -179,6 +179,7 @@ class SessionManagerImpl @Activate constructor(
      * @param identity identity of the party sending messages
      * @return Messages to send to the counterparty
      */
+    @Suppress("LongParameterList")
     private fun handleHeartbeatAndAcknowledgements(
         sessionState: SessionState,
         config: SmartConfig,

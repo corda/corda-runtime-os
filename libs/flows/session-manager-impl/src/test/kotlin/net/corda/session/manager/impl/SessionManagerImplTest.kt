@@ -225,7 +225,8 @@ class SessionManagerImplTest {
         )
 
         //validate no heartbeat
-        val (firstUpdatedState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity, false)
+        val (firstUpdatedState, messagesToSend) =
+            sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity, false)
         assertThat(messagesToSend.size).isEqualTo(0)
         assertThat(firstUpdatedState.status).isEqualTo(SessionStateType.CONFIRMED)
 

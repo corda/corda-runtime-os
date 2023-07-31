@@ -36,7 +36,13 @@ interface SessionManager {
      * @return Updated session state with any output messages added to the undelivered sent events queue
      * and any valid received messages added to the undelivered received events queue
      */
-    fun processMessageReceived(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant, waitingForData: Boolean): SessionState
+    fun processMessageReceived(
+        key: Any,
+        sessionState: SessionState?,
+        event: SessionEvent,
+        instant: Instant,
+        waitingForData: Boolean
+    ): SessionState
 
     /**
      * Process a session [event] to be sent to a counterparty, and output the updated session state.
@@ -85,8 +91,13 @@ interface SessionManager {
      * @param waitingForData List of session IDs that the party is waiting to receive data from.
      * @return The updated [SessionState] with SessionAcks removed as well as any messages to send to the counterparty.
      */
-    fun getMessagesToSend(sessionState: SessionState, instant: Instant, config: SmartConfig, identity: HoldingIdentity, waitingForData: Boolean): Pair<SessionState,
-            List<SessionEvent>>
+    fun getMessagesToSend(
+        sessionState: SessionState,
+        instant: Instant,
+        config: SmartConfig,
+        identity: HoldingIdentity,
+        waitingForData: Boolean
+    ): Pair<SessionState, List<SessionEvent>>
 
     /**
      * Errors the passed [SessionState], returning the updated state.
