@@ -297,7 +297,15 @@ class UtxoPersistenceServiceImplTest {
         }
     }
 
-    public class MockTransactionState<T : ContractState>(
+    /**
+     * Due to introduction of hidden classes in Java 15,
+     * getCanonicalName() returns null, which is accessed via
+     * PersistenceService.persistenceTransaction(tx) using getCanonicalName().
+     * getCanonicalName() being null indicates that the hidden or anonymous class has no canonical name and
+     * mock objects created by Mockito are implemented using anonymous inner classes in Java
+     * hence this fake contractState implemented to avoid class being anonymous.
+     */
+    private class MockTransactionState<T : ContractState>(
         private val ctrState: T
     ) : TransactionState<T> {
         override fun getContractState(): T {

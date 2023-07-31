@@ -1,4 +1,3 @@
-@file:Suppress("deprecation")
 package net.corda.flow.application.services.impl
 
 import net.corda.data.flow.output.FlowStates
@@ -22,7 +21,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 import java.util.UUID
@@ -46,7 +44,8 @@ class FlowEngineImpl @Activate constructor(
     override fun <R> subFlow(subFlow: SubFlow<R>): R {
 
         try {
-            AccessController.doPrivileged(PrivilegedExceptionAction {
+            @Suppress("deprecation", "removal")
+            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
                 getFiberExecutionContext().sandboxGroupContext.dependencyInjector.injectServices(subFlow)
             })
         } catch (e: PrivilegedActionException) {
