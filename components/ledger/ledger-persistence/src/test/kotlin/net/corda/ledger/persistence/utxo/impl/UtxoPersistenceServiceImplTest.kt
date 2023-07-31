@@ -74,6 +74,7 @@ class UtxoPersistenceServiceImplTest {
         mockEmFactory,
         mockRepository,
         mock(),
+        mock(),
         storage,
         DefaultContractStateVaultJsonFactoryImpl(),
         JsonMarshallingServiceImpl(), // We could mock this but this is basically just a layer on top of Jackson
@@ -123,6 +124,7 @@ class UtxoPersistenceServiceImplTest {
         val singlePersistenceService = UtxoPersistenceServiceImpl(
             mockEmFactory,
             mockRepository,
+            mock(),
             mock(),
             storage,
             emptyDefaultContractStateVaultJsonFactory,
@@ -208,6 +210,7 @@ class UtxoPersistenceServiceImplTest {
             mockEmFactory,
             mockRepository,
             mock(),
+            mock(),
             ContractStateVaultJsonFactoryRegistryImpl(), // Empty storage
             DefaultContractStateVaultJsonFactoryImpl(),
             JsonMarshallingServiceImpl(),
@@ -245,6 +248,7 @@ class UtxoPersistenceServiceImplTest {
         val persistenceService = UtxoPersistenceServiceImpl(
             mockEmFactory,
             mockRepository,
+            mock(),
             mock(),
             storage,
             DefaultContractStateVaultJsonFactoryImpl(),
