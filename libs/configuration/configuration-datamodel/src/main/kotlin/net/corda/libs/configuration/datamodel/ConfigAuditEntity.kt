@@ -34,18 +34,18 @@ data class ConfigAuditEntity(
     )
     @GeneratedValue(strategy = SEQUENCE, generator = CONFIG_AUDIT_GENERATOR)
     @Column(name = "change_number", nullable = false)
-    val changeNumber: Int,
+    var changeNumber: Int,
 
     @Column(name = "section", nullable = false)
-    val section: String,
+    var section: String,
     @Column(name = "config", nullable = false)
-    val config: String,
+    var config: String,
     @Column(name = "config_version", nullable = false)
-    val configVersion: Int,
+    var configVersion: Int,
     @Column(name = "update_ts", nullable = false)
     var updateTimestamp: Instant,
     @Column(name = "update_actor", nullable = false)
-    val updateActor: String
+    var updateActor: String
 ) {
     constructor(configEntity: ConfigEntity) : this(
         0,

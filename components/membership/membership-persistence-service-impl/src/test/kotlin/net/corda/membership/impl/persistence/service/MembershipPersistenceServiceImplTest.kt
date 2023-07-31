@@ -35,6 +35,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_RPC_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -71,6 +72,7 @@ class MembershipPersistenceServiceImplTest {
     private val dependentComponents = setOf(
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
         LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
+        LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
         LifecycleCoordinatorName.forComponent<AllowedCertificatesReaderWriterService>(),
     )
     private val lifecycleHandlerCaptor: KArgumentCaptor<LifecycleEventHandler> = argumentCaptor()
@@ -122,6 +124,7 @@ class MembershipPersistenceServiceImplTest {
     private val jpaEntitiesRegistry: JpaEntitiesRegistry = mock()
     private val memberInfoFactory: MemberInfoFactory = mock()
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock()
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
 
@@ -136,6 +139,7 @@ class MembershipPersistenceServiceImplTest {
             jpaEntitiesRegistry,
             memberInfoFactory,
             cordaAvroSerializationFactory,
+            virtualNodeInfoReadService,
             keyEncodingService,
             platformInfoProvider,
             mock(),
@@ -157,11 +161,11 @@ class MembershipPersistenceServiceImplTest {
         verify(coordinator).stop()
     }
 
-    private fun postStartEvent() {
+    fun postStartEvent() {
         lifecycleHandlerCaptor.firstValue.processEvent(StartEvent(), coordinator)
     }
 
-    private fun postStopEvent() {
+    fun postStopEvent() {
         lifecycleHandlerCaptor.firstValue.processEvent(StopEvent(), coordinator)
     }
 

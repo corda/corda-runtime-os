@@ -76,16 +76,16 @@ open class TestBase {
     private val c4TruststoreCertificatePem by lazy {
         Certificates.c4TruststoreCertificatePem.readText()
     }
-    protected val truststoreKeyStore by lazy {
-        TrustStoresMap.TrustedCertificates(listOf(truststoreCertificatePem)).trustStore!!
+    internal val truststoreKeyStore by lazy {
+        TrustStoresMap.TrustedCertificates(listOf(truststoreCertificatePem))
     }
 
-    protected val truststoreKeyStoreWithRevocation by lazy {
-        TrustStoresMap.TrustedCertificates(listOf(truststoreWithRevocationCertificatePem)).trustStore!!
+    internal val truststoreKeyStoreWithRevocation by lazy {
+        TrustStoresMap.TrustedCertificates(listOf(truststoreWithRevocationCertificatePem))
     }
 
-    protected val c4TruststoreKeyStore by lazy {
-        TrustStoresMap.TrustedCertificates(listOf(c4TruststoreCertificatePem)).trustStore!!
+    internal val c4TruststoreKeyStore by lazy {
+        TrustStoresMap.TrustedCertificates(listOf(c4TruststoreCertificatePem))
     }
 
     protected fun getOpenPort(): Int {

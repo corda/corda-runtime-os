@@ -1,6 +1,7 @@
 package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.core.ShortHash
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
@@ -9,13 +10,17 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -51,6 +56,16 @@ class QueryMemberInfoHandlerTest {
     )
     private val ourRegistrationId = UUID.randomUUID().toString()
     private val clock = TestClock(Instant.ofEpochSecond(0))
+    private val vaultDmlConnectionId = UUID(44, 0)
+
+    private val virtualNodeInfo = VirtualNodeInfo(
+        ourHoldingIdentity,
+        CpiIdentifier("TEST_CPI", "1.0", TestRandom.secureHash()),
+        vaultDmlConnectionId = vaultDmlConnectionId,
+        cryptoDmlConnectionId = UUID(0, 0),
+        uniquenessDmlConnectionId = UUID(0, 0),
+        timestamp = clock.instant()
+    )
 
     private val memberContextBytes = "123".toByteArray()
     private val mgmContextBytes = "456".toByteArray()
@@ -66,11 +81,10 @@ class QueryMemberInfoHandlerTest {
         on { createEntityManager() } doReturn entityManager
     }
 
-    private val dbConnectionManager: DbConnectionManager = mock {
+    private val dbConnectionManager = mock<DbConnectionManager> {
         on {
             getOrCreateEntityManagerFactory(
-                any(),
-                any(),
+                eq(vaultDmlConnectionId),
                 any(),
             )
         } doReturn entityManagerFactory
@@ -93,6 +107,9 @@ class QueryMemberInfoHandlerTest {
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
         on { createAvroDeserializer<KeyValuePairList>(any(), any()) } doReturn keyValueDeserializer
     }
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
+        on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
+    }
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
     private val transactionTimerFactory = { _: String -> transactionTimer }
@@ -102,6 +119,7 @@ class QueryMemberInfoHandlerTest {
         jpaEntitiesRegistry,
         memberInfoFactory,
         cordaAvroSerializationFactory,
+        virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
         mock(),
@@ -167,6 +185,10 @@ class QueryMemberInfoHandlerTest {
             assertThat(firstValue).isEqualTo(memberContextBytes)
             assertThat(secondValue).isEqualTo(mgmContextBytes)
         }
+        with(argumentCaptor<ShortHash>()) {
+            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
+            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
+        }
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
         verify(entityTransaction).begin()
@@ -190,6 +212,10 @@ class QueryMemberInfoHandlerTest {
         verify(entityManager).createQuery(any(), eq(MemberInfoEntity::class.java))
         verify(cordaAvroSerializationFactory, never()).createAvroDeserializer<KeyValuePairList>(any(), any())
         verify(keyValueDeserializer, never()).deserialize(any())
+        with(argumentCaptor<ShortHash>()) {
+            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
+            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
+        }
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
         verify(entityTransaction).begin()
@@ -224,6 +250,10 @@ class QueryMemberInfoHandlerTest {
             assertThat(firstValue).isEqualTo(memberContextBytes)
             assertThat(secondValue).isEqualTo(mgmContextBytes)
         }
+        with(argumentCaptor<ShortHash>()) {
+            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
+            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
+        }
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
         verify(entityTransaction).begin()
@@ -248,6 +278,10 @@ class QueryMemberInfoHandlerTest {
         verify(entityManager).createQuery(any(), eq(MemberInfoEntity::class.java))
         verify(cordaAvroSerializationFactory, never()).createAvroDeserializer<KeyValuePairList>(any(), any())
         verify(keyValueDeserializer, never()).deserialize(any())
+        with(argumentCaptor<ShortHash>()) {
+            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
+            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
+        }
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
         verify(entityTransaction).begin()

@@ -10,7 +10,6 @@ import javax.persistence.Id
 import javax.persistence.JoinColumn
 import javax.persistence.Table
 import javax.persistence.Version
-import org.junit.jupiter.api.Disabled
 
 class TestSqlFormattersForFieldAccess {
 
@@ -189,7 +188,6 @@ class TestSqlFormattersForFieldAccess {
         assertEquals("insert into UnnamedColumn (testFace) values ('test')", statement)
     }
 
-    @Disabled
     @Test
     fun testEntityWithValProperty() {
         val ent = EntityWithValProperty("test")

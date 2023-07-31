@@ -19,7 +19,7 @@ class HSMAssociationEntity(
      */
     @Id
     @Column(name = "id", nullable = false, updatable = false, length = 36)
-    val id: String,
+    var id: String,
 
     /**
      * Tenant which the configuration belongs to.

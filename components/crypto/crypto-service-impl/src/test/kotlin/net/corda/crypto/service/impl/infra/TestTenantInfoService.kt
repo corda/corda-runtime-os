@@ -1,19 +1,19 @@
 package net.corda.crypto.service.impl.infra
 
-import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.config.impl.MasterKeyPolicy
+import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoService
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
-import net.corda.crypto.service.TenantInfoService
+import net.corda.crypto.softhsm.TenantInfoService
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.v5.base.util.EncodingUtils
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
-import net.corda.crypto.core.CryptoConsts
 
-class TestTenantInfoService(val cryptoService: CryptoService) : TenantInfoService {
+class TestTenantInfoService: TenantInfoService {
     private val lock = ReentrantLock()
     private val associations = mutableListOf<HSMAssociationEntity>()
     private val categoryAssociations = mutableListOf<HSMCategoryAssociationEntity>()
@@ -27,9 +27,10 @@ class TestTenantInfoService(val cryptoService: CryptoService) : TenantInfoServic
     override fun populate(
         tenantId: String,
         category: String,
+        cryptoService: CryptoService
     ): HSMAssociationInfo = lock.withLock {
         val association = associations.firstOrNull { it.tenantId == tenantId }
-            ?: createAndPersistAssociation(tenantId, MasterKeyPolicy.UNIQUE)
+            ?: createAndPersistAssociation(tenantId, MasterKeyPolicy.UNIQUE, cryptoService)
         val categoryAssociation = HSMCategoryAssociationEntity(
             id = UUID.randomUUID().toString(),
             tenantId = tenantId,
@@ -44,7 +45,8 @@ class TestTenantInfoService(val cryptoService: CryptoService) : TenantInfoServic
 
     private fun createAndPersistAssociation(
         tenantId: String,
-        masterKeyPolicy: MasterKeyPolicy
+        masterKeyPolicy: MasterKeyPolicy,
+        cryptoService: CryptoService
     ): HSMAssociationEntity {
         val alias = generateRandomShortAlias()
         val association = HSMAssociationEntity(

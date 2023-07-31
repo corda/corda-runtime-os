@@ -13,6 +13,7 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
@@ -25,8 +26,12 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
+import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -38,6 +43,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.LockModeType
@@ -64,6 +70,20 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
             createAvroSerializer<KeyValuePairList>(any())
         } doReturn keyValuePairListSerializer
     }
+    private val vaultDmlConnectionId = UUID(0, 0)
+    private val virtualNodeInfo = VirtualNodeInfo(
+        vaultDmlConnectionId = vaultDmlConnectionId,
+        cpiIdentifier = CpiIdentifier(
+            "", "", TestRandom.secureHash()
+        ),
+        cryptoDmlConnectionId = UUID(0, 0),
+        uniquenessDmlConnectionId = UUID(0, 0),
+        holdingIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "").toCorda(),
+        timestamp = clock.instant(),
+    )
+    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
+        on { getByHoldingIdentityShortHash(any()) } doReturn virtualNodeInfo
+    }
     private val entityManager = mock<EntityManager> {
         on { transaction } doReturn mock()
     }
@@ -73,9 +93,8 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     private val dbConnectionManager = mock<DbConnectionManager> {
         on {
             getOrCreateEntityManagerFactory(
-                any(),
-                any(),
-                eq(jpaEntitiesSet),
+                vaultDmlConnectionId,
+                jpaEntitiesSet
             )
         } doReturn factory
     }
@@ -91,6 +110,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         jpaEntitiesRegistry,
         memberInfoFactory,
         cordaAvroSerializationFactory,
+        virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
         mock(),

@@ -22,8 +22,8 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
-import net.corda.membership.rest.v1.CertificatesRestResource
-import net.corda.membership.rest.v1.CertificatesRestResource.Companion.SIGNATURE_SPEC
+import net.corda.membership.rest.v1.CertificateRestResource
+import net.corda.membership.rest.v1.CertificateRestResource.Companion.SIGNATURE_SPEC
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.InvalidInputDataException
@@ -71,7 +71,7 @@ import javax.security.auth.x500.X500Principal
 
 @Suppress("LongParameterList")
 @Component(service = [PluggableRestResource::class])
-class CertificatesRestResourceImpl @Activate constructor(
+class CertificateRestResourceImpl @Activate constructor(
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = KeyEncodingService::class)
@@ -84,7 +84,7 @@ class CertificatesRestResourceImpl @Activate constructor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = PlatformInfoProvider::class)
     private val platformInfoProvider: PlatformInfoProvider,
-) : CertificatesRestResource, PluggableRestResource<CertificatesRestResource>, Lifecycle {
+) : CertificateRestResource, PluggableRestResource<CertificateRestResource>, Lifecycle {
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -328,11 +328,11 @@ class CertificatesRestResourceImpl @Activate constructor(
         } ?: throw ResourceNotFoundException(alias, "alias")
     }
 
-    override val targetInterface = CertificatesRestResource::class.java
+    override val targetInterface = CertificateRestResource::class.java
 
     override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
-    private val coordinatorName = LifecycleCoordinatorName.forComponent<CertificatesRestResource>(
+    private val coordinatorName = LifecycleCoordinatorName.forComponent<CertificateRestResource>(
         protocolVersion.toString()
     )
     private fun updateStatus(status: LifecycleStatus, reason: String) {
