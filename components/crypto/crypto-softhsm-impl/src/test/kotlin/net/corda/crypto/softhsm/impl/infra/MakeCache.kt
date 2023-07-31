@@ -3,9 +3,9 @@ package net.corda.crypto.softhsm.impl.infra
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.aes.WrappingKey
-import net.corda.crypto.softhsm.impl.ShortHashCacheKey
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.util.concurrent.TimeUnit
@@ -28,7 +28,7 @@ fun makeSigningKeyInfoCache(): Cache<PublicKey, SigningKeyInfo> = CacheFactoryIm
         .maximumSize(100)
 )
 
-fun makeShortHashCache(): Cache<ShortHashCacheKey, SigningKeyInfo> = CacheFactoryImpl().build(
+fun makeShortHashCache(): Cache<ShortHash, PublicKey> = CacheFactoryImpl().build(
     "test short hash cache", Caffeine.newBuilder()
         .expireAfterAccess(3600, TimeUnit.MINUTES)
         .maximumSize(100)

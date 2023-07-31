@@ -110,7 +110,9 @@ interface CryptoService {
     ): ByteArray
 
     /**
-     * Generates a new key to be used as a wrapping key. 
+     * Optional, generates a new key to be used as a wrapping key. Some implementations may not have the notion of
+     * the wrapping key in such cases the implementation should do nothing (note that REQUIRE_WRAPPING_KEY should not
+     * be listed for such implementations).
      *
      * @param wrappingKeyAlias the alias of the key to be used as a wrapping key.
      * @param failIfExists a flag indicating whether the method should fail if a key already exists under
@@ -128,7 +130,7 @@ interface CryptoService {
     )
 
     /**
-     * Deletes the key corresponding to the specified alias.
+     * Optional, deletes the key corresponding to the input alias of the service supports the operations .
      * This method doesn't throw if the alias is not found, instead it has to return 'false'.
      *
      * @param alias the alias (as it stored in HSM) of the key being deleted.

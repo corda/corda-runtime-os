@@ -420,7 +420,7 @@ class SoftCryptoServiceGeneralTests {
         on { hash(any<ByteArray>(), any()) } doReturn SecureHashUtils.randomSecureHash()
     }
 
-    private fun makeCache(): Cache<ShortHashCacheKey, SigningKeyInfo> =
+    private fun makeCache(): Cache<PublicKey, SigningKeyInfo> =
         Caffeine.newBuilder()
             .expireAfterAccess(3600, TimeUnit.MINUTES)
             .maximumSize(3).build()
@@ -558,7 +558,8 @@ class SoftCryptoServiceGeneralTests {
         Assertions.assertSame(exception, thrown)
         verify(repo, times(2)).findKey(ArgumentMatchers.anyString())
     }
-    
+
+
     @Test
     @Suppress("ComplexMethod", "MaxLineLength")
     fun `Should save generated key with alias`() {
@@ -587,11 +588,12 @@ class SoftCryptoServiceGeneralTests {
             digestService = PlatformDigestServiceImpl(schemeMetadata),
             wrappingKeyCache = null,
             privateKeyCache = null,
-            shortHashCache = makeShortHashCache(),
+            shortHashCache = null,
             keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
                 KeyPairGenerator.getInstance(algorithm, provider)
             },
             wrappingKeyFactory = { WrappingKeyImpl.generateWrappingKey(it) },
+            signingKeyInfoCache = makeSigningKeyInfoCache(),
             tenantInfoService = makeTenantInfoService(masterKeyAlias)
         ) {
             override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedWrappedKey =

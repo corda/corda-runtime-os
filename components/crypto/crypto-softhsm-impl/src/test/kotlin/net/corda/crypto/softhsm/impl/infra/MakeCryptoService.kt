@@ -5,13 +5,12 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.core.CryptoService
-import net.corda.crypto.core.SigningKeyInfo
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.softhsm.SigningRepository
 import net.corda.crypto.softhsm.TenantInfoService
 import net.corda.crypto.softhsm.WrappingRepository
-import net.corda.crypto.softhsm.impl.ShortHashCacheKey
 import net.corda.crypto.softhsm.impl.SoftCryptoService
 import org.mockito.kotlin.mock
 import java.security.KeyPairGenerator
@@ -24,7 +23,7 @@ import java.security.PublicKey
 fun makeSoftCryptoService(
     privateKeyCache: Cache<PublicKey, PrivateKey>? = null,
     wrappingKeyCache: Cache<String, WrappingKey>? = null,
-    shortHashCache: Cache<ShortHashCacheKey, SigningKeyInfo>? = null,
+    shortHashCache: Cache<ShortHash, PublicKey>?= null,
     schemeMetadata: CipherSchemeMetadataImpl = CipherSchemeMetadataImpl(),
     rootWrappingKey: WrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata),
     wrappingKeyFactory: (schemeMetadata: CipherSchemeMetadata) -> WrappingKey = { it ->
@@ -32,7 +31,7 @@ fun makeSoftCryptoService(
     },
     wrappingRepository: WrappingRepository = TestWrappingRepository(),
     signingRepository: SigningRepository = TestSigningRepository(),
-    tenantInfoService: TenantInfoService = mock(),
+    tenantInfoService: TenantInfoService = mock()
 ): CryptoService {
     return SoftCryptoService(
         wrappingRepositoryFactory = { wrappingRepository },
@@ -43,11 +42,12 @@ fun makeSoftCryptoService(
         digestService = PlatformDigestServiceImpl(schemeMetadata),
         wrappingKeyCache = wrappingKeyCache,
         privateKeyCache = privateKeyCache,
-        shortHashCache =  shortHashCache ?: makeShortHashCache(),
+        shortHashCache =  shortHashCache,
         keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
             KeyPairGenerator.getInstance(algorithm, provider)
         },
         wrappingKeyFactory = wrappingKeyFactory,
+        signingKeyInfoCache =  makeSigningKeyInfoCache(),
         tenantInfoService =  tenantInfoService
     )
 }
