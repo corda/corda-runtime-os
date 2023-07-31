@@ -22,7 +22,7 @@ import zipkin2.reporter.AsyncReporter
 import zipkin2.reporter.Reporter
 import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.urlconnection.URLConnectionSender
-import java.util.*
+import java.util.Stack
 import java.util.concurrent.ExecutorService
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -33,7 +33,8 @@ internal object Unlimited : SampleRate
 internal data class PerSecond(val samplesPerSecond: Int) : SampleRate
 
 @Suppress("TooManyFunctions")
-internal class BraveTracingService(serviceName: String, zipkinHost: String?, samplesPerSecond: SampleRate) : TracingService {
+internal class BraveTracingService(serviceName: String, zipkinHost: String?, samplesPerSecond: SampleRate) :
+    TracingService {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
@@ -44,50 +45,40 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
 
     private val tracing: Tracing by lazy {
 
-        val braveCurrentTraceContext = ThreadLocalCurrentTraceContext.newBuilder()
-            .addScopeDecorator(MDCScopeDecorator.get())
-            .build()
+        val braveCurrentTraceContext =
+            ThreadLocalCurrentTraceContext.newBuilder().addScopeDecorator(MDCScopeDecorator.get()).build()
 
         val sampler = when (samplesPerSecond) {
             is PerSecond -> {
                 logger.info("Tracing will sample ${samplesPerSecond.samplesPerSecond} requests per second")
                 RateLimitingSampler.create(samplesPerSecond.samplesPerSecond)
             }
+
             is Unlimited -> {
                 logger.info("Tracing will sample unlimited requests per second")
                 Sampler.ALWAYS_SAMPLE
             }
         }
 
-        val tracingBuilder = Tracing.newBuilder()
-            .currentTraceContext(braveCurrentTraceContext)
-            .supportsJoin(false)
-            .localServiceName(serviceName)
-            .traceId128Bit(true)
-            .sampler(sampler)
-            .propagationFactory(
+        val tracingBuilder = Tracing.newBuilder().currentTraceContext(braveCurrentTraceContext).supportsJoin(false)
+            .localServiceName(serviceName).traceId128Bit(true).sampler(sampler).propagationFactory(
                 BaggagePropagation.newFactoryBuilder(B3Propagation.FACTORY)
                     .add(BaggagePropagationConfig.SingleBaggageField.remote(BraveBaggageFields.REQUEST_ID))
-                    .add(BaggagePropagationConfig.SingleBaggageField.remote(BraveBaggageFields.VIRTUAL_NODE_ID))
-                    .build()
+                    .add(BaggagePropagationConfig.SingleBaggageField.remote(BraveBaggageFields.VIRTUAL_NODE_ID)).build()
             )
-
 
         val reporters = mutableListOf<Reporter<Span>>()
 
         //Establish zipkin connection iff url host is provided and create respective reporter
-        if (zipkinHost != null){
+        if (zipkinHost != null) {
             val zipkinUrl = "$zipkinHost/api/v2/spans"
             val spanAsyncReporter =
-                AsyncReporter.create(URLConnectionSender.create(zipkinUrl))
-                    .also(resourcesToClose::push)
+                AsyncReporter.create(URLConnectionSender.create(zipkinUrl)).also(resourcesToClose::push)
             reporters.add(spanAsyncReporter)
         }
 
         // LogReporter will report trace spans to local log files
-        val logReporter = LogReporter()
-        reporters.add(logReporter)
-
+        reporters.add(LogReporter())
         val reporter = CombinedSpanReporter(reporters)
         val spanHandler = ZipkinSpanHandler.create(reporter)
         tracingBuilder.addSpanHandler(spanHandler)
@@ -113,11 +104,10 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
     }
 
     private val recordInjector by lazy {
-        tracing.propagation()
-            .injector { param: MutableList<Pair<String, String>>, key: String, value: String ->
-                param.removeAll { it.first == key }
-                param.add(key to value)
-            }
+        tracing.propagation().injector { param: MutableList<Pair<String, String>>, key: String, value: String ->
+            param.removeAll { it.first == key }
+            param.add(key to value)
+        }
     }
 
     private val recordTracing: BraveRecordTracing by lazy { BraveRecordTracing(tracing) }
@@ -147,9 +137,7 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
     }
 
     override fun <R> nextSpan(
-        operationName: String,
-        record: EventLogRecord<*, *>,
-        processingBlock: TraceContext.() -> R
+        operationName: String, record: EventLogRecord<*, *>, processingBlock: TraceContext.() -> R
     ): R {
         return recordTracing.nextSpan(record).doTrace(operationName) {
             val ctx = BraveTraceContext(tracer, this)
@@ -158,8 +146,7 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
     }
 
     override fun nextSpan(
-        operationName: String,
-        headers: List<Pair<String, String>>
+        operationName: String, headers: List<Pair<String, String>>
     ): TraceContext {
         val span = recordTracing.nextSpan(headers).name(operationName).start()
         return BraveTraceContext(tracer, span)
