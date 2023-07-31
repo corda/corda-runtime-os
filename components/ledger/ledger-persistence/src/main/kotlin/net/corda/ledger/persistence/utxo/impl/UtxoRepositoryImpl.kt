@@ -151,22 +151,19 @@ class UtxoRepositoryImpl @Activate constructor(
 				tc_output.leaf_idx, 
 				tc_output_info.data as output_info_data,
                 tc_output.data AS output_data FROM 
-                {h-schema}utxo_visible_transaction_state AS rts
-                JOIN {h-schema}utxo_transaction_component AS tc_output_info
-                    ON rts.transaction_id = tc_output_info.transaction_id
-                    AND rts.leaf_idx = tc_output_info.leaf_idx
-                    AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
+                {h-schema}utxo_transaction_component AS tc_output_info  
                 JOIN {h-schema}utxo_transaction_component AS tc_output
                 	ON tc_output_info.transaction_id = tc_output.transaction_id
                     AND tc_output_info.leaf_idx = tc_output.leaf_idx
                     AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
                 JOIN {h-schema}utxo_transaction_status AS ts
                     ON ts.transaction_id = tc_output.transaction_id
+                AND tc_output.transaction_id in (:transactionIds)
                 AND (tc_output.transaction_id||':'|| tc_output.leaf_idx) in (:stateRefs)
                 AND ts.status = :verified
-                AND tc_output.transaction_id in (:transactionIds)
+                AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
                 ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx, tc_output.group_idx
-            """.trimIndent(),
+            """,
             Tuple::class.java
         )
             .setParameter("transactionIds", stateRefs.map { it.transactionId.toString() })
