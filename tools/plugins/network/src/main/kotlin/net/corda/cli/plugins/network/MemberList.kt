@@ -1,16 +1,16 @@
 package net.corda.cli.plugins.network
 
-import com.fasterxml.jackson.core.util.DefaultIndenter
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
+import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfo
+import net.corda.cli.plugins.network.output.Output
+import net.corda.cli.plugins.network.utils.PrintUtils.Companion.printJsonOutput
 import picocli.CommandLine
 
 @CommandLine.Command(name = "members-list", description = ["Shows the list of members on the network."])
-class MemberList(private val output: MemberListOutput = ConsoleMemberListOutput()) : RestCommand(), Runnable {
+class MemberList(private val output: Output = ConsoleOutput()) : RestCommand(), Runnable {
 
     @CommandLine.Option(
         names = ["-h", "--holding-identity-short-hash"],
@@ -80,29 +80,8 @@ class MemberList(private val output: MemberListOutput = ConsoleMemberListOutput(
         return result
     }
 
-    interface MemberListOutput {
-        fun generateOutput(content: String)
-    }
-
-    class ConsoleMemberListOutput : MemberListOutput {
-        /**
-         * Receives the content of the file and prints it to the console output. It makes the testing easier.
-         */
-        override fun generateOutput(content: String) {
-            content.lines().forEach {
-                println(it)
-            }
-        }
-    }
-
     override fun run() {
         val result = performMembersLookup()
-        val objectMapper = jacksonObjectMapper()
-
-        val pp = DefaultPrettyPrinter()
-        pp.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE)
-
-        val jsonString = objectMapper.writer(pp).writeValueAsString(result)
-        output.generateOutput(jsonString)
+        printJsonOutput(result, output)
     }
 }
