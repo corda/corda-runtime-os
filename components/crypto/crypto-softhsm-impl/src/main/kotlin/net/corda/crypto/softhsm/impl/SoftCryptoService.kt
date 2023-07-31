@@ -458,7 +458,7 @@ open class SoftCryptoService(
                 }
             }
         }
-        return signingKeyInfoList.filter { it?.tenantId == tenantId }.toCollection()
+        return signingKeyInfoList.filterNotNull().filter { it.tenantId == tenantId }
     }
 
     override fun lookupSigningKeysByPublicKeyHashes(
