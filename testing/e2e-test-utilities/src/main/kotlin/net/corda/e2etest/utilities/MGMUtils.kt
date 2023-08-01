@@ -103,7 +103,7 @@ private fun ClusterInfo.createApprovalRuleCommon(
         "ruleRegex" to regex
     )
 
-    assertWithRetryIgnoringExceptions {
+    assertWithRetry {
         interval(1.seconds)
         command { post(url, ObjectMapper().writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
@@ -237,7 +237,7 @@ fun ClusterInfo.approveRegistration(
     registrationId: String
 ) {
     cluster {
-        assertWithRetryIgnoringExceptions {
+        assertWithRetry {
             interval(1.seconds)
             command { post("/api/v1/mgm/$mgmHoldingId/approve/$registrationId", "") }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
@@ -253,7 +253,7 @@ fun ClusterInfo.declineRegistration(
     registrationId: String
 ) {
     cluster {
-        assertWithRetryIgnoringExceptions {
+        assertWithRetry {
             interval(1.seconds)
             command { post(
                 "/api/v1/mgm/$mgmHoldingId/decline/$registrationId",
@@ -312,7 +312,7 @@ fun ClusterInfo.suspendMember(
     x500Name: String,
     serialNumber: Int? = null,
 ) = cluster {
-    assertWithRetryIgnoringExceptions {
+    assertWithRetry {
         timeout(15.seconds)
         interval(1.seconds)
         command {
@@ -334,7 +334,7 @@ fun ClusterInfo.activateMember(
     x500Name: String,
     serialNumber: Int? = null,
 ) = cluster {
-    assertWithRetryIgnoringExceptions {
+    assertWithRetry {
         timeout(15.seconds)
         interval(1.seconds)
         command {

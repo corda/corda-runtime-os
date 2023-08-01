@@ -32,7 +32,7 @@ fun ClusterInfo.conditionallyUploadCpiSigningCertificate() = cluster {
         it.code != ResponseCode.RESOURCE_NOT_FOUND.statusCode
     }
     if (!hasCertificateChain) {
-        assertWithRetryIgnoringExceptions {
+        assertWithRetry {
             // Certificate upload can be slow in the combined worker, especially after it has just started up.
             timeout(30.seconds)
             interval(2.seconds)
@@ -145,7 +145,7 @@ fun ClusterInfo.addSoftHsmFor(
     holdingId: String,
     category: String
 ) = cluster {
-    assertWithRetryIgnoringExceptions {
+    assertWithRetry {
         timeout(Duration.ofSeconds(5))
         command { addSoftHsmToVNode(holdingId, category) }
         condition { it.code == 200 }
@@ -159,7 +159,7 @@ fun ClusterInfo.createKeyFor(
     category: String,
     scheme: String
 ): String = cluster {
-    val keyId = assertWithRetryIgnoringExceptions {
+    val keyId = assertWithRetry {
         interval(1.seconds)
         command { createKey(tenantId, alias, category, scheme) }
         condition {
