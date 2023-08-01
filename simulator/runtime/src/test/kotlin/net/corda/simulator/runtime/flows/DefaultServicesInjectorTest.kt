@@ -1,4 +1,3 @@
-@file:Suppress("deprecation")
 package net.corda.simulator.runtime.flows
 
 import net.corda.simulator.SimulatorConfiguration
@@ -35,7 +34,6 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.security.AccessController
 import java.security.PrivilegedExceptionAction
 import java.time.Clock
 
@@ -305,7 +303,8 @@ class DefaultServicesInjectorTest {
             // Then sensible defaults should have been set
             flow.javaClass.declaredFields.forEach {f ->
                 if(services.contains(f.type)){
-                    AccessController.doPrivileged(PrivilegedExceptionAction {
+                    @Suppress("deprecation", "removal")
+                    java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
                         f.isAccessible = true
                     })
                     assertNotNull(f.get(flow))

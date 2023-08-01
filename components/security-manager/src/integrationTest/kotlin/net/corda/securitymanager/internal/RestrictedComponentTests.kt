@@ -1,4 +1,3 @@
-@file:Suppress("deprecation")
 package net.corda.securitymanager.internal
 
 import net.corda.securitymanager.SecurityManagerService

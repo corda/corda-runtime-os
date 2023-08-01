@@ -1,4 +1,3 @@
-@file:Suppress("deprecation")
 package net.corda.securitymanager.internal
 
 import net.corda.securitymanager.ConditionalPermission
@@ -41,6 +40,7 @@ class SecurityManagerServiceImpl @Activate constructor(
     }
 
     // The OSGi security manager that is installed at framework start.
+    @Suppress("deprecation", "removal")
     private val osgiSecurityManager: SecurityManager? = System.getSecurityManager()
 
     // The current Corda security manager.
@@ -53,6 +53,7 @@ class SecurityManagerServiceImpl @Activate constructor(
             applyDefaultSecurityPolicy(bundleContext)
         } else {
             log.warn("Security Manager disabled")
+            @Suppress("deprecation", "removal")
             System.setSecurityManager(null)
         }
     }

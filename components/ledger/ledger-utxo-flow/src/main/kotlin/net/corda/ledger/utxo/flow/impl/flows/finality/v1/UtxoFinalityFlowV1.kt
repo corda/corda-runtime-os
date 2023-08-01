@@ -1,4 +1,3 @@
-@file:Suppress("deprecation")
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
 import net.corda.crypto.core.fullId
@@ -29,7 +28,6 @@ import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.security.AccessController
 import java.security.PrivilegedExceptionAction
 
 @CordaSystemFlow
@@ -295,7 +293,8 @@ class UtxoFinalityFlowV1(
     internal fun newPluggableNotaryClientFlowInstance(
         transaction: UtxoSignedTransactionInternal
     ): PluggableNotaryClientFlow {
-        return AccessController.doPrivileged(PrivilegedExceptionAction {
+        @Suppress("deprecation", "removal")
+        return java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
             pluggableNotaryClientFlow.getConstructor(UtxoSignedTransaction::class.java, MemberX500Name::class.java).newInstance(
                 transaction, virtualNodeSelectorService.selectVirtualNode(transaction.notaryName)
             )

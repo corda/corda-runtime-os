@@ -1,4 +1,3 @@
-@file:Suppress("deprecation")
 package net.corda.securitymanager.internal
 
 import net.corda.securitymanager.SecurityManagerService
@@ -13,7 +12,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.framework.FrameworkUtil
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.security.AccessControlException
 
 /** Tests the `RestrictiveSecurityManager`. */
 @ExtendWith(ServiceExtension::class)
@@ -35,6 +33,7 @@ class RestrictiveSecurityManagerTests {
     @BeforeEach
     fun reset() {
         securityManagerService.startRestrictiveMode()
+        @Suppress("deprecation", "removal")
         assertNotNull(System.getSecurityManager())
     }
 
@@ -50,7 +49,8 @@ class RestrictiveSecurityManagerTests {
     fun `specific permissions can be denied`() {
         securityManagerService.denyPermissions(currentBundleLocation, listOf(getEnvPerm))
 
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             System.getenv()
         }
     }
@@ -59,10 +59,12 @@ class RestrictiveSecurityManagerTests {
     fun `multiple permissions can be denied at once`() {
         securityManagerService.denyPermissions(currentBundleLocation, listOf(getEnvPerm, getProtectionDomainPerm))
 
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             System.getenv()
         }
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             Any::class.java.protectionDomain
         }
     }
@@ -72,10 +74,12 @@ class RestrictiveSecurityManagerTests {
         securityManagerService.denyPermissions(currentBundleLocation, listOf(getEnvPerm))
         securityManagerService.denyPermissions(currentBundleLocation, listOf(getProtectionDomainPerm))
 
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             System.getenv()
         }
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             Any::class.java.protectionDomain
         }
     }
@@ -121,7 +125,8 @@ class RestrictiveSecurityManagerTests {
 
         securityManagerService.denyPermissions(wildcardLocation, listOf(getEnvPerm))
 
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             System.getenv()
         }
     }
@@ -149,7 +154,8 @@ class RestrictiveSecurityManagerTests {
         }
 
         securityManagerService.denyPermissions(currentBundleLocation, listOf(getEnvPerm))
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             System.getenv()
         }
     }
@@ -168,7 +174,8 @@ class RestrictiveSecurityManagerTests {
         securityManagerService.denyPermissions(currentBundleLocation, listOf(getEnvPerm))
         securityManagerService.grantPermissions("non-matching-filter", listOf(getEnvPerm))
 
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             System.getenv()
         }
     }
@@ -187,12 +194,14 @@ class RestrictiveSecurityManagerTests {
 
     @Test
     fun `the OSGi security manager is set again when the restrictive security manager is started`() {
+        @Suppress("deprecation", "removal")
         System.setSecurityManager(null)
 
         securityManagerService.startRestrictiveMode()
         securityManagerService.denyPermissions(currentBundleLocation, listOf(getEnvPerm))
 
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             System.getenv()
         }
     }

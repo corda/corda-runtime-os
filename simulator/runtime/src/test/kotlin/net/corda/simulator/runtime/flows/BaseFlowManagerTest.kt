@@ -1,4 +1,3 @@
-@file:Suppress("deprecation")
 package net.corda.simulator.runtime.flows
 
 import net.corda.simulator.runtime.messaging.CloseableFlowMessaging
@@ -16,7 +15,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.io.Closeable
-import java.security.AccessController
 import java.security.PrivilegedExceptionAction
 
 class BaseFlowManagerTest {
@@ -57,7 +55,8 @@ class BaseFlowManagerTest {
 
         // And all closeable services should have been closed
         val field = flow.accessField(FlowMessaging::class.java) ?: fail("No flow messaging service found")
-        AccessController.doPrivileged(PrivilegedExceptionAction {
+        @Suppress("deprecation", "removal")
+        java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
             field.isAccessible = true
         })
         val flowMessaging = field.get(flow) as Closeable
@@ -78,7 +77,8 @@ class BaseFlowManagerTest {
 
         // And all closeable services should have been closed
         val field = subFlow.accessField(FlowMessaging::class.java) ?: fail("No flow messaging service found")
-        AccessController.doPrivileged(PrivilegedExceptionAction {
+        @Suppress("deprecation", "removal")
+        java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
             field.isAccessible = true
         })
         val flowMessaging = field.get(subFlow) as Closeable

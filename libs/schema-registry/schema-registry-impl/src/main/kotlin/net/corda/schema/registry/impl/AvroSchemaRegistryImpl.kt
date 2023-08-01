@@ -1,4 +1,3 @@
-@file:Suppress("deprecation")
 package net.corda.schema.registry.impl
 
 import net.corda.data.AvroEnvelope
@@ -21,7 +20,6 @@ import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
-import java.security.AccessController
 import java.security.PrivilegedAction
 import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.DeflaterOutputStream
@@ -246,7 +244,8 @@ class AvroSchemaRegistryImpl(
 
     override fun <T : Any> deserialize(bytes: ByteBuffer, offset: Int, length: Int, clazz: Class<T>, reusable: T?): T {
         log.trace("Deserializing from: ${toHexString(bytes.array())}")
-        return AccessController.doPrivileged(PrivilegedAction {
+        @Suppress("deprecation", "removal")
+        return java.security.AccessController.doPrivileged(PrivilegedAction {
             val envelope = decodeAvroEnvelope(bytes.array())
             if (envelope.magic != MAGIC) {
                 throw CordaRuntimeException("Incorrect Header detected.  Cannot deserialize message.")
@@ -267,7 +266,8 @@ class AvroSchemaRegistryImpl(
     }
 
     override fun getClassType(bytes: ByteBuffer): Class<*> {
-        return AccessController.doPrivileged(PrivilegedAction {
+        @Suppress("deprecation", "removal")
+        return java.security.AccessController.doPrivileged(PrivilegedAction {
             val envelope = decodeAvroEnvelope(bytes.array())
             clazzByFingerprint[envelope.fingerprint]
                 ?: throw CordaRuntimeException("Could not find class for fingerprint: ${envelope.fingerprint}")

@@ -1,4 +1,3 @@
-@file:Suppress("deprecation")
 package net.corda.securitymanager.internal
 
 import net.corda.securitymanager.SecurityManagerService
@@ -13,7 +12,6 @@ import org.osgi.service.condpermadmin.ConditionalPermissionAdmin
 import org.osgi.service.permissionadmin.PermissionAdmin
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.security.AccessControlException
 import java.security.AllPermission
 
 /** Tests that the `RestrictiveSecurityManager` cannot be bypassed. */
@@ -32,6 +30,7 @@ class SecurityManagerBreakoutTests {
         @BeforeAll
         fun setup() {
             securityManagerService.startRestrictiveMode()
+            @Suppress("deprecation", "removal")
             assertNotNull(System.getSecurityManager())
             securityManagerService.denyPermissions(currentBundleLocation, listOf(AllPermission()))
         }
@@ -46,28 +45,32 @@ class SecurityManagerBreakoutTests {
 
     @Test
     fun `a bundle without AllPermission cannot modify permissions via the permission admin`() {
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             permAdmin.setPermissions("", arrayOf())
         }
     }
 
     @Test
     fun `a bundle without AllPermission cannot modify permissions via the conditional permission admin`() {
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             condPermAdmin.newConditionalPermissionUpdate().commit()
         }
     }
 
     @Test
     fun `a bundle without AllPermission cannot unset the security manager`() {
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             System.setSecurityManager(null)
         }
     }
 
     @Test
     fun `a bundle without AllPermission cannot replace the security manager`() {
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             System.setSecurityManager(SecurityManager())
         }
     }
