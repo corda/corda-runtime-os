@@ -71,8 +71,6 @@ allprojects {
                 } else {
                   excludeTags 'runAllTestsNoExclusions'
                 }
-                excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
-                excludeTags project.hasProperty('runMultiClusterTests') ? 'runAllTestsNoExclusions' : 'MultiCluster'
             }
 
             doFirst {
