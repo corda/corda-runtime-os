@@ -461,39 +461,11 @@ open class SoftCryptoService(
         return signingKeyInfoList.filterNotNull().filter { it.tenantId == tenantId }
     }
 
+    // We rely on the fact that we don't get ShortHash collision. We do check the ShortHash for collisions when we create keys
     override fun lookupSigningKeysByPublicKeyHashes(
         tenantId: String,
         fullKeyIds: List<SecureHash>,
-    ): Collection<SigningKeyInfo> {
-        fun filterOutMismatches(found: Collection<SigningKeyInfo>) =
-            found.map { foundSigningKeyInfo ->
-                if (fullKeyIds.contains(foundSigningKeyInfo.fullId)) {
-                    foundSigningKeyInfo
-                } else {
-                    null
-                }
-            }.filterNotNull()
-
-        // This is a full table scan
-        val cachedMap = signingKeyInfoCache.asMap().filter {
-            fullKeyIds.contains(it.key.fullIdHash())
-        }
-
-        val cachedKeys = cachedMap.map { it.value }
-        val cachedMatchingKeys = filterOutMismatches(cachedKeys)
-        if (cachedMatchingKeys.size == fullKeyIds.size) return cachedMatchingKeys
-        val notFound = fullKeyIds.filter { hash -> cachedMatchingKeys.count { it.fullId == hash } == 0 }
-        // if fullKeyIds has duplicates it's possible that notFound is empty here, even though
-        // we didn't get as many records from the cache as the number of keys we expected
-        if (notFound.isEmpty()) return cachedMatchingKeys
-
-        val fetchedKeys = signingRepositoryFactory.getInstance(tenantId).use {
-            it.lookupByPublicKeyHashes(notFound.toMutableSet())
-        }
-        val fetchedMatchingKeys = filterOutMismatches(fetchedKeys)
-        fetchedMatchingKeys.forEach { populateCaches(it) }
-        return cachedMatchingKeys + fetchedMatchingKeys
-    }
+    ): Collection<SigningKeyInfo> = lookupSigningKeysByPublicKeyShortHash(tenantId, fullKeyIds.map { ShortHash.of(it) })
 
     override fun createWrappingKey(
         hsmId: String,

@@ -689,6 +689,7 @@ class SoftCryptoServiceGeneralTests {
         val hashCaptor = argumentCaptor<Set<SecureHash>>()
         val repo = if (longHashes) (mock<SigningRepository> {
             on { lookupByPublicKeyHashes(hashCaptor.capture()) }.thenReturn(mockDbResults)
+            on { lookupByPublicKeyShortHashes(shortHashCaptor.capture()) }.thenReturn(mockDbResults)
             on { savePrivateKey(any()) }.thenReturn(randomSigningKeyInfo)
         }) else (mock<SigningRepository> {
             on { lookupByPublicKeyShortHashes(shortHashCaptor.capture()) }.thenReturn(mockDbResults)
@@ -766,14 +767,8 @@ class SoftCryptoServiceGeneralTests {
             r.map { it.fullId.toString() }.toSet()
         )
         assertThat(repoCount).isEqualTo(if (keysInCache == 2) 0 else 1)
-        if (longHashes) {
-            if (keysInCache == 0) Assertions.assertEquals(fullHashes.toSet(), hashCaptor.firstValue.toSet())
-            if (keysInCache == 1) Assertions.assertEquals(setOf(fullKeys.elementAt(1).publicKey.fullIdHash()), hashCaptor.firstValue.toSet())
-        } else {
-            if (keysInCache == 0) Assertions.assertEquals(shortHashes.toSet(), shortHashCaptor.firstValue.toSet())
-            if (keysInCache == 1) Assertions.assertEquals(setOf(shortHashes.elementAt(1)), shortHashCaptor.firstValue.toSet())
-        }
-        // looking again should result in no more database access
+        if (keysInCache == 0) Assertions.assertEquals(shortHashes.toSet(), shortHashCaptor.firstValue.toSet())
+        if (keysInCache == 1) Assertions.assertEquals(setOf(shortHashes.elementAt(1)), shortHashCaptor.firstValue.toSet())
         val r2 = doLookup()
         assertThat(r).isEqualTo(r2)
         assertThat(repoCount).isEqualTo(if (keysInCache == 2) 0 else 1)
@@ -840,7 +835,7 @@ class SoftCryptoServiceGeneralTests {
         val hsmAssociationInfo = mock<HSMAssociationInfo> {
             on { masterKeyAlias } doReturn "root1"
         }
-        val tenantInfoService = mock<TenantInfoService> { 
+        val tenantInfoService = mock<TenantInfoService> {
             on { lookup(any(), any()) } doReturn hsmAssociationInfo
         }
         whenever(repo.findKey(alias)).doReturn(key)
