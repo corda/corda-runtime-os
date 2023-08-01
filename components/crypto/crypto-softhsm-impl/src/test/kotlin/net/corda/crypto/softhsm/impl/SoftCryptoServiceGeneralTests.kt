@@ -1,7 +1,6 @@
 package net.corda.crypto.softhsm.impl
 
 import com.github.benmanes.caffeine.cache.Cache
-import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
@@ -25,7 +24,6 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.SigningKeyStatus
-import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.core.parseSecureHash
@@ -37,6 +35,7 @@ import net.corda.crypto.softhsm.TenantInfoService
 import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
 import net.corda.crypto.softhsm.impl.infra.makeShortHashCache
+import net.corda.crypto.softhsm.impl.infra.makeSigningKeyInfoCache
 import net.corda.crypto.softhsm.impl.infra.makeSoftCryptoService
 import net.corda.crypto.softhsm.impl.infra.makeTenantInfoService
 import net.corda.crypto.testkit.SecureHashUtils
@@ -73,7 +72,6 @@ import java.security.Provider
 import java.security.PublicKey
 import java.time.Instant
 import java.util.*
-import java.util.concurrent.TimeUnit
 import javax.persistence.QueryTimeoutException
 import kotlin.test.assertTrue
 
@@ -407,12 +405,7 @@ class SoftCryptoServiceGeneralTests {
     private fun mockDigestService() = mock<PlatformDigestService> {
         on { hash(any<ByteArray>(), any()) } doReturn SecureHashUtils.randomSecureHash()
     }
-
-    private fun makeSigningKeyInfoCache(): Cache<PublicKey, SigningKeyInfo> =
-        Caffeine.newBuilder()
-            .expireAfterAccess(3600, TimeUnit.MINUTES)
-            .maximumSize(3).build()
-
+    
     @Test
     fun `Should throw original exception failing derivation`() {
         val exception = RuntimeException("")
@@ -567,6 +560,8 @@ class SoftCryptoServiceGeneralTests {
         val wrappingRepository = mock<WrappingRepository>() {
             on { findKey(any()) } doReturn sampleWrappingKeyInfo
         }
+        val signingKeyInfoCache = makeSigningKeyInfoCache()
+
         val service = object : SoftCryptoService(
             wrappingRepositoryFactory = { wrappingRepository },
             signingRepositoryFactory = { repo },
@@ -577,12 +572,12 @@ class SoftCryptoServiceGeneralTests {
             wrappingKeyCache = null,
             privateKeyCache = null,
             shortHashCache = null,
+            signingKeyInfoCache = signingKeyInfoCache,
             keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
                 KeyPairGenerator.getInstance(algorithm, provider)
             },
             wrappingKeyFactory = { WrappingKeyImpl.generateWrappingKey(it) },
-            signingKeyInfoCache = net.corda.crypto.softhsm.impl.infra.makeSigningKeyInfoCache(),
-            tenantInfoService = makeTenantInfoService(masterKeyAlias)
+            tenantInfoService = makeTenantInfoService(masterKeyAlias),
         ) {
             override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedWrappedKey =
                 generatedKey
@@ -681,8 +676,42 @@ class SoftCryptoServiceGeneralTests {
         longHashes: Boolean,
     ) {
         val indices = arrayOf(0,1)
+        var repoCount = 0
+        val shortHashCache = makeShortHashCache()
+        val mockDbResults = arrayListOf<SigningKeyInfo>()
+        val shortHashCaptor = argumentCaptor<Set<ShortHash>>()
+        val hashCaptor = argumentCaptor<Set<SecureHash>>()
+        val repo = if (longHashes) (mock<SigningRepository> {
+            on { lookupByPublicKeyHashes(hashCaptor.capture()) }.thenReturn(mockDbResults)
+        }) else (mock<SigningRepository> {
+            on { lookupByPublicKeyShortHashes(shortHashCaptor.capture()) }.thenReturn(mockDbResults)
+        })
+        val signingKeyInfoCache = makeSigningKeyInfoCache()
+        val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
+        val wrappingRepository = TestWrappingRepository()
+        val cryptoService = SoftCryptoService(
+            wrappingRepositoryFactory = { wrappingRepository },
+            signingRepositoryFactory = {
+                repoCount++
+                repo
+            },
+            schemeMetadata = schemeMetadata,
+            defaultUnmanagedWrappingKeyName = "root",
+            unmanagedWrappingKeys = mapOf("root" to rootWrappingKey),
+            digestService = mockDigestService(),
+            wrappingKeyCache = null,
+            privateKeyCache = null,
+            signingKeyInfoCache = signingKeyInfoCache,
+            shortHashCache = null,
+            keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
+                KeyPairGenerator.getInstance(algorithm, provider)
+            },
+            tenantInfoService = makeTenantInfoService("alias1")
+        )
+        cryptoService.createWrappingKey("alias1", true, mapOf("tenantId" to tenantId))
+
         val fullKeys = indices.map {
-            service.generateKeyPair(
+            cryptoService.generateKeyPair(
                 tenantId = tenantId,
                 category = CryptoConsts.Categories.LEDGER,
                 externalId = UUID.randomUUID().toString(),
@@ -698,36 +727,8 @@ class SoftCryptoServiceGeneralTests {
                 on { id } doReturn shortHashes.elementAt(i)
             }
         }
-        val shortHashCaptor = argumentCaptor<Set<ShortHash>>()
-        val hashCaptor = argumentCaptor<Set<SecureHash>>()
-        val mockDbResults = signingKeyInfos.slice(0..keysInCache)
-        val repo = if (longHashes) (mock<SigningRepository> {
-            on { lookupByPublicKeyHashes(hashCaptor.capture()) }.thenReturn(mockDbResults)
-        }) else (mock<SigningRepository> {
-            on { lookupByPublicKeyShortHashes(shortHashCaptor.capture()) }.thenReturn(mockDbResults)
-        })
-        val signingKeyInfoCache = makeSigningKeyInfoCache()
-        val shortHashCache = makeShortHashCache()
-        var repoCount = 0
-        val cryptoService = SoftCryptoService(
-            wrappingRepositoryFactory = { mock<WrappingRepository>() },
-            signingRepositoryFactory = {
-                repoCount++
-                repo
-            },
-            schemeMetadata = schemeMetadata,
-            defaultUnmanagedWrappingKeyName = "root",
-            unmanagedWrappingKeys = mapOf("root" to mock<WrappingKey>()),
-            digestService = mockDigestService(),
-            wrappingKeyCache = null,
-            privateKeyCache = null,
-            signingKeyInfoCache = signingKeyInfoCache,
-            shortHashCache = null,
-            keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
-                KeyPairGenerator.getInstance(algorithm, provider)
-            },
-            tenantInfoService = makeTenantInfoService()
-        )
+    
+        mockDbResults.addAll(signingKeyInfos.slice(0..keysInCache))
 
         if (keysInCache >= 1) populateShortHashCache(shortHashCache, shortHashes.elementAt(0), fullKeys.elementAt(0).publicKey)
         if (keysInCache >= 2) populateShortHashCache(shortHashCache, shortHashes.elementAt(1), fullKeys.elementAt(1).publicKey)
@@ -782,7 +783,6 @@ class SoftCryptoServiceGeneralTests {
 //                KeyPairGenerator.getInstance(algorithm, provider)
 //            },
 //            shortHashCache = shortHashCache,
-//            signingKeyInfoCache = makeSigningKeyInfoCache(),
 //            tenantInfoService = makeTenantInfoService()
 //        )
 //        val lookedUpByFullKeyIdsKeys =
