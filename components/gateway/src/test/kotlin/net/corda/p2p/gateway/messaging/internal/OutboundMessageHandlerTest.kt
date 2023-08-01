@@ -29,7 +29,6 @@ import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import net.corda.p2p.gateway.messaging.http.HttpResponse
-import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
 import net.corda.test.util.time.MockTimeFacilitiesProvider
 import net.corda.utilities.millis
@@ -52,7 +51,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.net.URI
 import java.nio.ByteBuffer
-import java.security.KeyStore
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.ScheduledExecutorService
@@ -94,7 +92,7 @@ class OutboundMessageHandlerTest {
         }
         whenever(mock.dominoTile).doReturn(mockDominoTile)
     }
-    private val truststore = mock<KeyStore>()
+    private val truststore = mock<TrustStoresMap.TrustedCertificates>()
     private val trustStoresMap = mock<TrustStoresMap> {
         on { getTrustStore(any(), eq(GROUP_ID)) } doReturn truststore
     }
@@ -271,7 +269,7 @@ class OutboundMessageHandlerTest {
         val sslConfig = mock<SslConfiguration> {
             on { tlsType } doReturn TlsType.MUTUAL
         }
-        val keyStore = mock<KeyStoreWithPassword>()
+        val keyStore = mock<DynamicKeyStore.ClientKeyStore>()
         val dynamicKeyStore = mock<DynamicKeyStore> {
             on {
                 getClientKeyStore(

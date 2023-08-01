@@ -79,7 +79,7 @@ class QueryMemberSignatureHandlerTest {
     }
     private val dbConnectionManager = mock<DbConnectionManager> {
         on {
-            createEntityManagerFactory(
+            getOrCreateEntityManagerFactory(
                 vaultDmlConnectionId,
                 jpaEntitiesSet
             )
@@ -87,6 +87,7 @@ class QueryMemberSignatureHandlerTest {
     }
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
+    private val transactionTimerFactory = { _: String -> transactionTimer }
     private val service = PersistenceHandlerServices(
         clock,
         dbConnectionManager,
@@ -97,6 +98,9 @@ class QueryMemberSignatureHandlerTest {
         keyEncodingService,
         platformInfoProvider,
         mock(),
+        mock(),
+        mock(),
+        transactionTimerFactory
     )
     private val handler = QueryMemberSignatureHandler(service)
 

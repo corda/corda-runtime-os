@@ -33,6 +33,8 @@ dependencies {
     implementation project(':libs:flows:external-event-responses')
     implementation project(':libs:flows:flow-utils')
     implementation project(":libs:messaging:messaging")
+    implementation project(':libs:metrics')
+    implementation project(":libs:tracing")
     implementation project(":libs:utilities")
     implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(":libs:serialization:serialization-avro")

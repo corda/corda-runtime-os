@@ -21,13 +21,12 @@ import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.RegistrationRequestDetails
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.registration.TEST_CPI_NAME
 import net.corda.membership.impl.registration.TEST_CPI_VERSION
@@ -53,6 +52,7 @@ import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
@@ -78,6 +78,7 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -115,7 +116,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
@@ -124,6 +124,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.lang.StringBuilder
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.PublicKey
@@ -262,9 +263,7 @@ class StaticMemberRegistrationServiceTest {
 
     private val hsmRegistrationClient: HSMRegistrationClient = mock()
 
-    private val mockContext: Map<String, String> = mock {
-        on { get(KEY_SCHEME) } doReturn ECDSA_SECP256R1_CODE_NAME
-    }
+    private val mockContext = mapOf(KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME)
     private val persistRegistrationRequestOperation = mock<MembershipPersistenceOperation<Unit>> {
         on { execute() } doReturn MembershipPersistenceResult.success()
     }
@@ -308,10 +307,10 @@ class StaticMemberRegistrationServiceTest {
     }
     private val serializedGroupParameters = "group-params".toByteArray()
     private val mockSignedGroupParameters: SignedGroupParameters = mock {
-        on { bytes } doReturn serializedGroupParameters
+        on { groupParameters } doReturn serializedGroupParameters
     }
     private val mockUnsignedGroupParameters: UnsignedGroupParameters = mock {
-        on { bytes } doReturn serializedGroupParameters
+        on { groupParameters } doReturn serializedGroupParameters
     }
     private val groupParametersFactory: GroupParametersFactory = mock {
         on { create(any<AvroGroupParameters>()) } doReturn mockSignedGroupParameters
@@ -340,7 +339,6 @@ class StaticMemberRegistrationServiceTest {
 
         on { queryStaticNetworkInfo(any()) } doReturn MembershipQueryResult.Success(currentStaticNetworkInfo)
     }
-    private val groupParametersWriterService: GroupParametersWriterService = mock()
     private val notaryVirtualNodeLookup = mock<NotaryVirtualNodeLookup> {
         on { getNotaryVirtualNodes(any()) } doReturn emptyList()
     }
@@ -367,7 +365,6 @@ class StaticMemberRegistrationServiceTest {
         platformInfoProvider,
         groupParametersFactory,
         virtualNodeInfoReadService,
-        groupParametersWriterService,
         membershipGroupReaderProvider,
         membershipQueryClient,
     )
@@ -514,21 +511,6 @@ class StaticMemberRegistrationServiceTest {
         }
 
         @Test
-        fun `registration publishes group parameters to Kafka for registering member`() {
-            val knownIdentity = HoldingIdentity(aliceName, "test-group")
-            val status = argumentCaptor<SignedGroupParameters>()
-            doNothing().whenever(groupParametersWriterService).put(any(), status.capture())
-            whenever(groupPolicyProvider.getGroupPolicy(knownIdentity)).thenReturn(groupPolicyWithStaticNetwork)
-            whenever(virtualNodeInfoReadService.get(knownIdentity)).thenReturn(buildTestVirtualNodeInfo(knownIdentity))
-            setUpPublisher()
-            registrationService.start()
-
-            registrationService.register(registrationId, knownIdentity, mockContext)
-
-            assertThat(status.firstValue).isEqualTo(mockSignedGroupParameters)
-        }
-
-        @Test
         fun `registration pass when the member is not found`() {
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
@@ -544,12 +526,68 @@ class StaticMemberRegistrationServiceTest {
                 registrationService.register(registrationId, alice, mockContext)
             }
         }
+
+        @Test
+        fun `registration pass when role is set to notary and notary service name already exists with the same name`() {
+            setUpPublisher()
+            registrationService.start()
+            val context = mapOf(
+                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+                "${ROLES_PREFIX}.0" to "notary",
+                NOTARY_SERVICE_NAME to notary.toString(),
+                NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1",
+            )
+            val mockNotaryDetails = MemberNotaryDetails(
+                notary,
+                null,
+                emptyList(),
+                emptyList()
+            )
+            val mockMemberContext: MemberContext = mock {
+                on { entries } doReturn mapOf(
+                    String.format(ROLES_PREFIX, 0) to MemberInfoExtension.NOTARY_ROLE
+                ).entries
+                on { parse(eq("corda.notary"), eq(MemberNotaryDetails::class.java)) } doReturn mockNotaryDetails
+            }
+            val mockNotaryMember: MemberInfo = mock {
+                on { memberProvidedContext } doReturn mockMemberContext
+                on { name } doReturn aliceName
+            }
+            whenever(groupReader.lookup()).thenReturn(listOf(mockNotaryMember))
+
+            assertDoesNotThrow {
+                registrationService.register(registrationId, alice, context)
+            }
+        }
+
+        @Test
+        fun `registration successfully adds custom fields from context to member info`() {
+            val mockContextWithCustomFields = mockContext + mapOf(
+                "$CUSTOM_KEY_PREFIX.key1" to "value1",
+                "$CUSTOM_KEY_PREFIX.key2" to "value2",
+            )
+            val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
+            val expectedContextEntries = mockContextWithCustomFields.filterNot { it.key == KEY_SCHEME }
+            setUpPublisher()
+            registrationService.start()
+
+            registrationService.register(registrationId, alice, mockContextWithCustomFields)
+
+            verify(mockPublisher).publish(capturedPublishedList.capture())
+            val publishedInfo = capturedPublishedList.firstValue.first()
+            val memberPublished = (publishedInfo.value as PersistentMemberInfo).let {
+                memberInfoFactory.create(it)
+            }
+
+            assertThat(memberPublished.memberProvidedContext.toMap()).containsAllEntriesOf(expectedContextEntries)
+        }
     }
 
     @Nested
     inner class FailedRegistrationTests {
         @Test
-        fun `it fails when the member is active`() {
+        fun `it fails when the member is active in DB`() {
             val status = mock<RegistrationRequestDetails> {
                 on { registrationId } doReturn "ID"
             }
@@ -560,6 +598,20 @@ class StaticMemberRegistrationServiceTest {
                     listOf(RegistrationStatus.APPROVED),
                 )
             ).doReturn(MembershipQueryResult.Success(listOf(status)))
+            setUpPublisher()
+            registrationService.start()
+
+            assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, alice, mockContext)
+            }
+        }
+
+        @Test
+        fun `it fails when the member is active in group reader`() {
+            val activeMemberInfo = mock<MemberInfo> {
+                on { isActive } doReturn true
+            }
+            whenever(groupReader.lookup(aliceName)).doReturn(activeMemberInfo)
             setUpPublisher()
             registrationService.start()
 
@@ -746,6 +798,22 @@ class StaticMemberRegistrationServiceTest {
 
             assertThat(exception).hasMessageContaining("Could not find virtual node")
         }
+
+        @Test
+        fun `registration fails when context has invalid entries`() {
+            val longString = StringBuilder().apply { for(i in 0..256){ this.append("a") } }.toString()
+            setUpPublisher()
+            registrationService.start()
+            val invalidContext = mockContext + mapOf(
+                "$CUSTOM_KEY_PREFIX.$longString" to "value",
+            )
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationId, alice, invalidContext)
+            }
+
+            assertThat(exception).hasMessageContaining("Failed to validate the registration context")
+        }
     }
 
     @Nested
@@ -873,27 +941,6 @@ class StaticMemberRegistrationServiceTest {
             verify(persistenceClient, times(1)).persistGroupParameters(eq(bob), eq(mockSignedGroupParameters))
             verify(persistenceClient, times(1)).persistGroupParameters(eq(alice), eq(mockSignedGroupParameters))
             verify(persistenceClient, never()).persistGroupParameters(eq(charlie), eq(mockSignedGroupParameters))
-        }
-
-        @Test
-        fun `registration with notary role publishes group parameters to Kafka for all members who have vnodes set up`() {
-            val context = mapOf(
-                KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
-                "${ROLES_PREFIX}.0" to "notary",
-                NOTARY_SERVICE_NAME to notary.toString(),
-                NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
-                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1"
-            )
-            whenever(groupPolicyProvider.getGroupPolicy(bob)).thenReturn(groupPolicyWithStaticNetwork)
-            whenever(virtualNodeInfoReadService.get(bob)).thenReturn(buildTestVirtualNodeInfo(bob))
-            setUpPublisher()
-            registrationService.start()
-
-            registrationService.register(registrationId, bob, context)
-
-            verify(groupParametersWriterService).put(eq(bob), eq(mockSignedGroupParameters))
-            verify(groupParametersWriterService).put(eq(alice), eq(mockSignedGroupParameters))
-            verify(groupParametersWriterService, never()).put(eq(charlie), eq(mockSignedGroupParameters))
         }
 
         @Test

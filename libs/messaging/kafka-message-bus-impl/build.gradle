@@ -15,6 +15,7 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:configuration:configuration-merger")
     implementation project(":libs:metrics")
+    implementation project(":libs:tracing")
     implementation project(":libs:utilities")
     api project(":libs:serialization:serialization-avro")
 
@@ -24,6 +25,12 @@ dependencies {
     implementation "net.corda:corda-config-schema"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    constraints {
+        implementation("org.xerial.snappy:snappy-java:$xerialSnappyVersion") {
+            because 'Kafka Client uses an older version of Snappy library which is exposed to CVE-2023-34455. ' +
+                    'This might be resolved in the future versions of Kafka Client.'
+        }
+    }
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
@@ -35,4 +42,3 @@ dependencies {
     testRuntimeOnly 'org.osgi:osgi.core'
     testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
-

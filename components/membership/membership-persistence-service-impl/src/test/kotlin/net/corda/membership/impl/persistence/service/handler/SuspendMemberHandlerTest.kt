@@ -137,7 +137,7 @@ class SuspendMemberHandlerTest {
         on { createEntityManager() } doReturn em
     }
     private val dbConnectionManager: DbConnectionManager = mock {
-        on { createEntityManagerFactory(any(), any()) } doReturn emf
+        on { getOrCreateEntityManagerFactory(any<UUID>(), any()) } doReturn emf
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(holdingIdentity.shortHash) } doReturn ourVirtualNodeInfo
@@ -212,6 +212,7 @@ class SuspendMemberHandlerTest {
         on { cordaAvroSerializationFactory } doReturn cordaAvroSerializationFactory
         on { memberInfoFactory } doReturn memberInfoFactory
         on { keyEncodingService } doReturn mock()
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
     private val notaryUpdater = mock<GroupParametersNotaryUpdater>()
     private val handler: SuspendMemberHandler = SuspendMemberHandler(persistenceHandlerServices, notaryUpdater) { _, _, _, ->

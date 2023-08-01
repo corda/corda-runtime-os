@@ -36,6 +36,8 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
+import net.corda.metrics.CordaMetrics.Metric.InboundSessionCount
+import net.corda.metrics.CordaMetrics.Metric.OutboundSessionCount
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
@@ -119,20 +121,20 @@ internal class SessionManagerImpl(
         messagingConfiguration,
         groupPolicyProvider,
         membershipGroupReaderProvider,
-        clock,
+        clock
     ),
 
-    executorServiceFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
+    executorServiceFactory: () -> ScheduledExecutorService = Executors::newSingleThreadScheduledExecutor
 ) : SessionManager {
 
-    companion object {
+    private companion object {
         private const val SESSION_MANAGER_CLIENT_ID = "session-manager"
     }
 
     private val pendingInboundSessions = ConcurrentHashMap<String, AuthenticationProtocolResponder>()
     private val activeInboundSessions = ConcurrentHashMap<String, Pair<SessionManager.Counterparties, Session>>()
 
-    private val logger = LoggerFactory.getLogger(this::class.java.name)
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     private val sessionNegotiationLock = ReentrantReadWriteLock()
 
@@ -150,6 +152,7 @@ internal class SessionManagerImpl(
         groupPolicyProvider,
         membershipGroupReaderProvider,
         ::refreshOutboundSession,
+        ::tearDownInboundSession,
         clock,
         executorServiceFactory
     )
@@ -163,15 +166,17 @@ internal class SessionManagerImpl(
     )
 
     private val revocationCheckerClient = RevocationCheckerClient(publisherFactory, coordinatorFactory, messagingConfiguration)
-    private val executorService = executorServiceFactory().also {
-        it.scheduleAtFixedRate({ recordTotalSessionMetrics() }, 5, 5, TimeUnit.SECONDS)
-    }
+    private val executorService = executorServiceFactory()
+
+    // These metrics must be removed on shutdown as the MeterRegistry holds references to their lambdas.
+    private val outboundSessionCount = OutboundSessionCount { outboundSessionPool.getAllSessionIds().size }.builder().build()
+    private val inboundSessionCount = InboundSessionCount { activeInboundSessions.size + pendingInboundSessions.size }.builder().build()
 
     override val dominoTile = ComplexDominoTile(
         this::class.java.simpleName,
         coordinatorFactory,
         ::onTileStart,
-        onClose = { executorService.shutdownNow() },
+        ::onTileClose,
         dependentChildren = setOf(
             heartbeatManager.dominoTile.coordinatorName, sessionReplayer.dominoTile.coordinatorName,
             LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
@@ -331,6 +336,18 @@ internal class SessionManagerImpl(
         }
     }
 
+    override fun sessionMessageReceived(sessionId: String) {
+        dominoTile.withLifecycleLock {
+            heartbeatManager.sessionMessageReceived(sessionId)
+        }
+    }
+
+    override fun dataMessageReceived(sessionId: String) {
+        dominoTile.withLifecycleLock {
+            heartbeatManager.dataMessageReceived(sessionId)
+        }
+    }
+
     override fun recordsForSessionEstablished(
         session: Session,
         messageAndKey: AuthenticatedMessageAndKey,
@@ -363,6 +380,17 @@ internal class SessionManagerImpl(
             }
             if (records.isNotEmpty()) publisher.publish(records)
         }
+    }
+
+    private fun onTileClose() {
+        executorService.shutdownNow()
+        CordaMetrics.registry.remove(inboundSessionCount)
+        CordaMetrics.registry.remove(outboundSessionCount)
+    }
+
+    private fun tearDownInboundSession(sessionId: String) {
+        activeInboundSessions.remove(sessionId)
+        pendingInboundSessions.remove(sessionId)
     }
 
     private fun refreshOutboundSession(sessionCounterparties: SessionCounterparties, sessionId: String) {
@@ -697,7 +725,7 @@ internal class SessionManagerImpl(
                     "out to refresh ephemeral keys and it will be cleaned up."
         )
         refreshOutboundSession(sessionCounterparties, sessionId) 
-        heartbeatManager.stopTrackingSpecifiedSession(sessionId)
+        heartbeatManager.stopTrackingSpecifiedOutboundSession(sessionId)
     }
 
     private fun processInitiatorHello(message: InitiatorHelloMessage): LinkOutMessage? {
@@ -787,7 +815,7 @@ internal class SessionManagerImpl(
         }
 
         session.generateHandshakeSecrets()
-        val ourIdentityData = session.validatePeerHandshakeMessageHandleError(message, peer,) ?: return null
+        val ourIdentityData = session.validatePeerHandshakeMessageHandleError(message, peer) ?: return null
         // Find the correct Holding Identity to use (using the public key hash).
         val ourIdentityInfo = linkManagerHostingMap.getInfo(ourIdentityData.responderPublicKeyHash, ourIdentityData.groupId)
         if (ourIdentityInfo == null) {
@@ -900,13 +928,6 @@ internal class SessionManagerImpl(
         return false
     }
 
-    private fun recordTotalSessionMetrics() {
-        CordaMetrics.Metric.OutboundSessionCount.builder()
-            .build().set(outboundSessionPool.getAllSessionIds().size)
-        CordaMetrics.Metric.InboundSessionCount.builder()
-            .build().set(activeInboundSessions.size + pendingInboundSessions.size)
-    }
-
     class HeartbeatManager(
         publisherFactory: PublisherFactory,
         private val configurationReaderService: ConfigurationReadService,
@@ -914,7 +935,8 @@ internal class SessionManagerImpl(
         configuration: SmartConfig,
         private val groupPolicyProvider: GroupPolicyProvider,
         private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-        private val destroySession: (counterparties: SessionCounterparties, sessionId: String) -> Any,
+        private val destroyOutboundSession: (counterparties: SessionCounterparties, sessionId: String) -> Any,
+        private val destroyInboundSession: (sessionId: String) -> Unit,
         private val clock: Clock,
         executorServiceFactory: () -> ScheduledExecutorService
     ) : LifecycleWithDominoTile {
@@ -959,7 +981,8 @@ internal class SessionManagerImpl(
             )
         }
 
-        private val trackedSessions = ConcurrentHashMap<String, TrackedSession>()
+        private val trackedOutboundSessions = ConcurrentHashMap<String, TrackedOutboundSession>()
+        private val trackedInboundSessions = ConcurrentHashMap<String, TrackedInboundSession>()
 
         private val publisher = PublisherWithDominoLogic(
             publisherFactory,
@@ -971,7 +994,7 @@ internal class SessionManagerImpl(
         override val dominoTile = ComplexDominoTile(
             this::class.java.simpleName,
             coordinatorFactory,
-            onClose = { executorService.shutdownNow() },
+            onClose = executorService::shutdownNow,
             dependentChildren = setOf(
                 LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
                 LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
@@ -986,17 +1009,17 @@ internal class SessionManagerImpl(
          * Sessions for which an acknowledgement was recently received have a small weight.
          */
         fun calculateWeightForSession(sessionId: String): Long? {
-            return trackedSessions[sessionId]?.lastAckTimestamp?.let { timeStamp() - it }
+            return trackedOutboundSessions[sessionId]?.lastAckTimestamp?.let { timeStamp() - it }
         }
 
         /**
-         * For each Session we track the following.
+         * For each Outbound Session we track the following.
          * [identityData]: The source and destination identities for this Session.
          * [lastSendTimestamp]: The last time we sent a message using this Session.
          * [lastAckTimestamp]: The last time a message we sent via this Session was acknowledged by the other side.
          * [sendingHeartbeats]: If true we send heartbeats to the counterparty (this happens after the session established).
          */
-        class TrackedSession(
+        class TrackedOutboundSession(
             val identityData: SessionCounterparties,
             @Volatile
             var lastSendTimestamp: Long,
@@ -1006,12 +1029,22 @@ internal class SessionManagerImpl(
             var sendingHeartbeats: Boolean = false
         )
 
+        /**
+         * For each Inbound Session we track the following.
+         * [lastReceivedTimestamp]: The last time we received a message using this Session.
+         */
+        class TrackedInboundSession(
+            @Volatile
+            var lastReceivedTimestamp: Long,
+        )
+
         fun stopTrackingAllSessions() {
-            trackedSessions.clear()
+            trackedOutboundSessions.clear()
+            trackedInboundSessions.clear()
         }
 
-        fun stopTrackingSpecifiedSession(sessionId: String) {
-            trackedSessions.remove(sessionId)
+        fun stopTrackingSpecifiedOutboundSession(sessionId: String) {
+            trackedOutboundSessions.remove(sessionId)
         }
 
         fun sessionMessageSent(counterparties: SessionCounterparties, sessionId: String) {
@@ -1019,17 +1052,17 @@ internal class SessionManagerImpl(
                 if (!isRunning) {
                     throw IllegalStateException("A session message was added before the HeartbeatManager was started.")
                 }
-                trackedSessions.compute(sessionId) { _, initialTrackedSession ->
+                trackedOutboundSessions.compute(sessionId) { _, initialTrackedSession ->
                     if (initialTrackedSession != null) {
                         initialTrackedSession.lastSendTimestamp = timeStamp()
                         initialTrackedSession
                     } else {
                         executorService.schedule(
-                            { sessionTimeout(counterparties, sessionId) },
+                            { outboundSessionTimeout(counterparties, sessionId) },
                             config.get().sessionTimeout.toMillis(),
                             TimeUnit.MILLISECONDS
                         )
-                        TrackedSession(counterparties, timeStamp(), timeStamp())
+                        TrackedOutboundSession(counterparties, timeStamp(), timeStamp())
                     }
                 }
             }
@@ -1040,7 +1073,7 @@ internal class SessionManagerImpl(
                 if (!isRunning) {
                     throw IllegalStateException("A message was sent before the HeartbeatManager was started.")
                 }
-                trackedSessions.computeIfPresent(session.sessionId) { _, trackedSession ->
+                trackedOutboundSessions.computeIfPresent(session.sessionId) { _, trackedSession ->
                     if (!trackedSession.sendingHeartbeats) {
                         executorService.schedule(
                             { sendHeartbeat(trackedSession.identityData, session) },
@@ -1059,7 +1092,7 @@ internal class SessionManagerImpl(
                 if (!isRunning) {
                     throw IllegalStateException("A message was sent before the HeartbeatManager was started.")
                 }
-                trackedSessions.computeIfPresent(session.sessionId) { _, trackedSession ->
+                trackedOutboundSessions.computeIfPresent(session.sessionId) { _, trackedSession ->
                     trackedSession.lastSendTimestamp = timeStamp()
                     trackedSession
                 } ?: throw IllegalStateException("A message was sent on session with Id ${session.sessionId} which is not tracked.")
@@ -1071,34 +1104,86 @@ internal class SessionManagerImpl(
                 if (!isRunning) {
                     throw IllegalStateException("A message was acknowledged before the HeartbeatManager was started.")
                 }
-                val sessionInfo = trackedSessions[sessionId] ?: return@withLifecycleLock
+                val sessionInfo = trackedOutboundSessions[sessionId] ?: return@withLifecycleLock
                 logger.trace("Message acknowledged with on a session with Id $sessionId.")
                 sessionInfo.lastAckTimestamp = timeStamp()
             }
         }
 
-        private fun sessionTimeout(counterparties: SessionCounterparties, sessionId: String) {
-            val sessionInfo = trackedSessions[sessionId] ?: return
+        fun sessionMessageReceived(sessionId: String) {
+            dominoTile.withLifecycleLock {
+                check(isRunning) { "A session message was received before the HeartbeatManager was started." }
+                messageReceived(sessionId)
+            }
+        }
+
+        fun dataMessageReceived(sessionId: String) {
+            dominoTile.withLifecycleLock {
+                check(isRunning) { "A data message was received before the HeartbeatManager was started." }
+                messageReceived(sessionId)
+            }
+        }
+
+        private fun messageReceived(sessionId: String) {
+            trackedInboundSessions.compute(sessionId) { _, initialTrackedSession ->
+                if (initialTrackedSession != null) {
+                    initialTrackedSession.lastReceivedTimestamp = timeStamp()
+                    initialTrackedSession
+                } else {
+                    executorService.schedule(
+                        { inboundSessionTimeout(sessionId) },
+                        config.get().sessionTimeout.toMillis(),
+                        TimeUnit.MILLISECONDS
+                    )
+                    TrackedInboundSession(timeStamp())
+                }
+            }
+        }
+
+        private fun outboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String) {
+            val sessionInfo = trackedOutboundSessions[sessionId] ?: return
             val timeSinceLastAck = timeStamp() - sessionInfo.lastAckTimestamp
-            if (timeSinceLastAck >= config.get().sessionTimeout.toMillis()) {
+            val sessionTimeoutMs = config.get().sessionTimeout.toMillis()
+            if (timeSinceLastAck >= sessionTimeoutMs) {
                 logger.info(
-                    "Outbound session $sessionId (local=${counterparties.ourId}, remote=${counterparties.counterpartyId}) timed " +
-                        "out due to inactivity and it will be cleaned up."
+                    "Outbound session $sessionId (local=${counterparties.ourId}, remote=" +
+                            "${counterparties.counterpartyId}) has not received any messages for the configured " +
+                            "timeout threshold ($sessionTimeoutMs ms) so it will be cleaned up."
                 )
-                destroySession(counterparties, sessionId)
-                trackedSessions.remove(sessionId)
+                destroyOutboundSession(counterparties, sessionId)
+                trackedOutboundSessions.remove(sessionId)
                 recordSessionTimeoutMetric(counterparties.ourId, counterparties.counterpartyId)
             } else {
                 executorService.schedule(
-                    { sessionTimeout(counterparties, sessionId) },
-                    config.get().sessionTimeout.toMillis() - timeSinceLastAck,
+                    { outboundSessionTimeout(counterparties, sessionId) },
+                    sessionTimeoutMs - timeSinceLastAck,
+                    TimeUnit.MILLISECONDS
+                )
+            }
+        }
+
+        private fun inboundSessionTimeout(sessionId: String) {
+            val sessionInfo = trackedInboundSessions[sessionId] ?: return
+            val timeSinceLastReceived = timeStamp() - sessionInfo.lastReceivedTimestamp
+            val sessionTimeoutMs = config.get().sessionTimeout.toMillis()
+            if (timeSinceLastReceived >= sessionTimeoutMs) {
+                logger.info(
+                    "Inbound session $sessionId has not received any messages for the configured timeout " +
+                            "threshold ($sessionTimeoutMs ms) so it will be cleaned up."
+                )
+                destroyInboundSession(sessionId)
+                trackedInboundSessions.remove(sessionId)
+            } else {
+                executorService.schedule(
+                    { inboundSessionTimeout(sessionId) },
+                    sessionTimeoutMs - timeSinceLastReceived,
                     TimeUnit.MILLISECONDS
                 )
             }
         }
 
         private fun sendHeartbeat(counterparties: SessionCounterparties, session: Session) {
-            val sessionInfo = trackedSessions[session.sessionId]
+            val sessionInfo = trackedOutboundSessions[session.sessionId]
             if (sessionInfo == null) {
                 logger.info("Stopped sending heartbeats for session (${session.sessionId}), which expired.")
                 return

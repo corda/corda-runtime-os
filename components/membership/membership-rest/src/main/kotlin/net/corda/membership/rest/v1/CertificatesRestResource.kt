@@ -8,18 +8,26 @@ import net.corda.rest.annotations.HttpPUT
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.annotations.RestApiVersion
 
 /**
+ * Deprecated:
+ * This version of CertificatesRestResource supports endpoints located at v1/certificates/ * only
+ * From v5_1 upwards, /certificate/ * is used. Any changes do these resources should be made at [CertificateRestResource].
+ *
  * The Certificates API consists of endpoints used to work with certificates and related operations. The API allows you
  * to import a certificate chain, and generate a certificate signing request (CSR) to be submitted to a certificate
  * authority (CA).
  */
+@Deprecated("Deprecated in favour of CertificateRestResource")
 @HttpRestResource(
     name = "Certificates API",
     description = "The Certificates API consists of endpoints used to work with certificates and related operations. " +
         "The API allows you to import a certificate chain, and generate a certificate signing request (CSR) to be" +
         " submitted to a certificate authority (CA).",
-    path = "certificates"
+    path = "certificates",
+    minVersion = RestApiVersion.C5_0,
+    maxVersion = RestApiVersion.C5_0
 )
 interface CertificatesRestResource : RestResource {
     companion object {
@@ -154,14 +162,14 @@ interface CertificatesRestResource : RestResource {
     )
 
     /**
-     * The [getCertificateAliases] method enables you to get the virtual node certificate aliases..
+     * The [getCertificateAliases] method enables you to get the virtual node certificate aliases.
      *
      * @param usage The certificate usage. Can be:
      *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
      *     * 'p2p-session' for a session certificate to be used in P2P communication.
      *     * 'rest-tls' for a TLS certificate to be used in REST communication.
      *     * 'code-signer' for a certificate of the code signing service
-     * @param holdingIdentityId The holding identity of the virtual node that own the certificate.
+     * @param holdingIdentityId The holding identity of the virtual node that owns the certificate.
      * @return A list of the virtual node certificates aliases in the usage.
      */
     @HttpGET(
@@ -178,7 +186,7 @@ interface CertificatesRestResource : RestResource {
         )
         usage: String,
         @RestPathParameter(
-            description = "The certificate holding identity ID",
+            description = "Holding identity ID of the virtual node that owns the certificate.",
         )
         holdingIdentityId: String?,
     ): List<String>

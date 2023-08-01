@@ -1,5 +1,7 @@
 package net.corda.flow.testing.tests
 
+import net.corda.data.flow.output.FlowStates
+import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.virtualnode.OperationalStatus
 import org.junit.jupiter.api.BeforeEach
@@ -17,7 +19,7 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
     fun beforeEach() {
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY)
-            virtualNode(CPI1, BOB_HOLDING_IDENTITY, OperationalStatus.INACTIVE)
+            virtualNode(CPI1, BOB_HOLDING_IDENTITY, flowOperationalStatus = OperationalStatus.INACTIVE)
             cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
             sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(ALICE_HOLDING_IDENTITY)
@@ -40,6 +42,7 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowKilledStatus(flowTerminatedReason = "Flow operational status is INACTIVE")
+                flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }
@@ -56,7 +59,42 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
                 nullStateRecord()
                 flowKilledStatus(flowTerminatedReason = "Flow operational status is INACTIVE")
                 scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
+                flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }
+
+    @Test
+    fun `flow removed from cache when flow resumes for virtual node with flow operational status inactive`() {
+
+        `when` {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.InitialCheckpoint)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                wakeUpEvent()
+                flowStatus(FlowStates.RUNNING)
+                flowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+            }
+        }
+
+        given {
+            virtualNode(CPI1, ALICE_HOLDING_IDENTITY, flowOperationalStatus = OperationalStatus.INACTIVE)
+        }
+
+        `when` {
+            wakeupEventReceived(FLOW_ID1)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                nullStateRecord()
+                flowKilledStatus(flowTerminatedReason = "Flow operational status is INACTIVE")
+                flowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+            }
+        }
+    }
+
 }

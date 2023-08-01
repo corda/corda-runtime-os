@@ -1,0 +1,7 @@
+resources:
+  requests:
+    memory: "200E"
+    cpu: "500Gb"
+  limits:
+    memory: "1250Mib"
+    cpu: "1000B"

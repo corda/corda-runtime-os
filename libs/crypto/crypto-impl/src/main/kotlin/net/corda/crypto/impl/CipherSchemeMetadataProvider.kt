@@ -1,9 +1,16 @@
 package net.corda.crypto.impl
 
+import java.io.StringWriter
+import java.security.Provider
+import java.security.PublicKey
+import java.security.SecureRandom
+import java.security.spec.X509EncodedKeySpec
+import java.time.Duration
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.cipher.suite.schemes.KeySchemeTemplate
+import net.corda.metrics.CordaMetrics
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.CordaOID.OID_COMPOSITE_KEY
 import net.corda.v5.crypto.KeySchemeCodes.COMPOSITE_KEY_CODE_NAME
@@ -16,13 +23,17 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider
-import org.bouncycastle.util.io.pem.PemReader
-import java.io.StringReader
-import java.io.StringWriter
-import java.security.Provider
-import java.security.PublicKey
-import java.security.SecureRandom
-import java.security.spec.X509EncodedKeySpec
+import org.bouncycastle.util.encoders.Base64
+import org.bouncycastle.util.io.pem.PemObject
+
+private val PEM_BEGIN = "-----BEGIN "
+private val PEM_HEADER_TERMINATOR = "-----"
+private val PEM_END = "-----END "
+private val PUBLIC_KEY = "PUBLIC KEY"
+
+private const val DECODE_PUBLIC_KEY_FROM_BYTE_ARRAY_OPERATION_NAME = "decodePublicKeyFromByteArray"
+private const val DECODE_PUBLIC_KEY_FROM_STRING_OPERATION_NAME = "decodePublicKeyFromString"
+private const val ENCODE_PUBLIC_KEY_TO_STRING_OPERATION_NAME = "encodePublicKeyToString"
 
 class CipherSchemeMetadataProvider : KeyEncodingService {
 
@@ -140,31 +151,69 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
         algorithmMap[normaliseAlgorithmIdentifier(algorithm)]
             ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}, with parameters=${algorithm.parameters}")
 
-    override fun decodePublicKey(encodedKey: ByteArray): PublicKey = try {
-        val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)
-        val scheme = findKeyScheme(subjectPublicKeyInfo.algorithm)
-        val keyFactory = keyFactories[scheme]
-        keyFactory.generatePublic(X509EncodedKeySpec(encodedKey))
-    } catch (e: RuntimeException) {
-        throw e
-    } catch (e: Throwable) {
-        throw CryptoException("Failed to decode public key", e)
+
+    // We don't use lambdas here because of the difficulties that causes with Quasar,
+    // e.g. a lambda can't be marked as @Suspendable and cannot have checked exceptions, so
+    // makes the instrumentation analysis harder. We don't want to get suspended while doing a timing
+    // operation.
+
+    private fun recordPublicKeyOperationDuration(operationName: String, duration: Duration) {
+        val b = CordaMetrics.Metric.Crypto.CipherSchemeTimer.builder()
+        b.withTag(CordaMetrics.Tag.OperationName, operationName)
+        val built = b.build()
+        built.record(duration)
+    }
+
+    override fun decodePublicKey(encodedKey: ByteArray): PublicKey {
+
+        try {
+            val startTime = System.nanoTime()
+            val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)
+            val scheme = findKeyScheme(subjectPublicKeyInfo.algorithm)
+            val keyFactory = keyFactories[scheme]
+            val r = keyFactory.generatePublic(X509EncodedKeySpec(encodedKey))
+            val endTime = System.nanoTime() - startTime
+            recordPublicKeyOperationDuration(
+                DECODE_PUBLIC_KEY_FROM_BYTE_ARRAY_OPERATION_NAME,
+                Duration.ofNanos(endTime - startTime)
+            )
+            return r
+        } catch (e: RuntimeException) {
+            throw e
+        } catch (e: Throwable) {
+            throw CryptoException("Failed to decode public key", e)
+        }
     }
 
     override fun decodePublicKey(encodedKey: String): PublicKey = try {
-        val pemContent = parsePemContent(encodedKey)
+        val startTime = System.nanoTime()
+        val pemContent = parsePemPublicKeyContent(encodedKey)
         val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)
+        if (publicKeyInfo == null) throw IllegalArgumentException("Unable to extract public key (got null)")
         val converter = getJcaPEMKeyConverter(publicKeyInfo)
         val publicKey = converter.getPublicKey(publicKeyInfo)
-        toSupportedPublicKey(publicKey)
+        val r = toSupportedPublicKey(publicKey)
+        val endTime = System.nanoTime() - startTime
+        recordPublicKeyOperationDuration(
+            DECODE_PUBLIC_KEY_FROM_STRING_OPERATION_NAME,
+            Duration.ofNanos(endTime - startTime)
+        )
+        r
     } catch (e: RuntimeException) {
         throw e
-    } catch (e: Throwable) {
+    } catch (e: Exception) {
         throw CryptoException("Failed to decode public key", e)
     }
 
     override fun encodeAsString(publicKey: PublicKey): String = try {
-        objectToPem(publicKey)
+        val startTime = System.nanoTime()
+        val r = objectToPem(publicKey)
+        val endTime = System.nanoTime()
+        recordPublicKeyOperationDuration(
+            ENCODE_PUBLIC_KEY_TO_STRING_OPERATION_NAME,
+            Duration.ofNanos(endTime - startTime)
+        )
+        r
     } catch (e: RuntimeException) {
         throw e
     } catch (e: Throwable) {
@@ -193,12 +242,31 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
             return strWriter.toString()
         }
 
-    private fun parsePemContent(pem: String): ByteArray =
-        StringReader(pem).use { strReader ->
-            return PemReader(strReader).use { pemReader ->
-                pemReader.readPemObject().content
-            }
-        }
+    @Suppress("ThrowsCount")
+    private fun parsePemPublicKeyContent(pem: String): ByteArray {
+        // we no longer use Bouncy Castle PemReader since it required use of StringReader/BufferReader, which has
+        // locking, and that may not be safe from flow execution due to our use of Quasar Fibers. 
+        // Therefore we implement our own logic below to parse PEM files. This is simply a question of decoding base64,
+        // so not a cryptographic algorithm; we call from to Bouncy Castle to interpret the ASN.1 content.
+
+        // This is not the full PEM spec; we do not support headers or multiple sections  
+        val lines = pem.split('\n').map { it.trim() }
+        val header =
+            lines.withIndex()
+                .firstOrNull { it.value.startsWith(PEM_BEGIN) && it.value.endsWith((PEM_HEADER_TERMINATOR)) }
+                ?: throw IllegalArgumentException("No PEM header found starting [$PEM_BEGIN] and ending [$PEM_HEADER_TERMINATOR]")
+        var section =
+            header.value.substring(PEM_BEGIN.length, header.value.length - PEM_HEADER_TERMINATOR.length).trim()
+        if (section.uppercase() != PUBLIC_KEY) throw IllegalArgumentException("PEM $section not supported; only $PUBLIC_KEY")
+        val expectedFooter = "${PEM_END}${section}${PEM_HEADER_TERMINATOR}"
+        val footer = lines.withIndex().firstOrNull { it.value == expectedFooter }
+            ?: throw IllegalArgumentException("No PEM footer found expecting [$expectedFooter]")
+        val base64Content = lines.slice(header.index + 1..footer.index - 1).joinToString("")
+        val decodedContent = Base64.decode(base64Content)
+        val pemObject = PemObject(section, emptyList<String>(), decodedContent)
+        if (pemObject.content == null) throw IllegalArgumentException("Key content was null")
+        return pemObject.content
+    }
 
     private fun normaliseAlgorithmIdentifier(id: AlgorithmIdentifier): AlgorithmIdentifier =
         if (id.parameters is DERNull) {

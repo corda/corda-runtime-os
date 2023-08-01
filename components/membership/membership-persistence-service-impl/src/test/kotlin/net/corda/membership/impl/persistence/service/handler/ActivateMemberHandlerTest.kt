@@ -71,7 +71,7 @@ class ActivateMemberHandlerTest {
         on { createEntityManager() } doReturn em
     }
     private val dbConnectionManager: DbConnectionManager = mock {
-        on { createEntityManagerFactory(any(), any()) } doReturn emf
+        on { getOrCreateEntityManagerFactory(any<UUID>(), any()) } doReturn emf
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(holdingIdentity.shortHash) } doReturn ourVirtualNodeInfo
@@ -137,6 +137,7 @@ class ActivateMemberHandlerTest {
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
         on { cordaAvroSerializationFactory } doReturn cordaAvroSerializationFactory
         on { memberInfoFactory } doReturn memberInfoFactory
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
 
     private val addNotaryToGroupParametersHandler = mock<AddNotaryToGroupParametersHandler>()

@@ -8,7 +8,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedData
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
@@ -84,7 +84,7 @@ class PersistRegistrationRequestHandlerTest {
 
     private val dbConnectionManager: DbConnectionManager = mock {
         on {
-            createEntityManagerFactory(
+            getOrCreateEntityManagerFactory(
                 eq(vaultDmlConnectionId),
                 any()
             )
@@ -105,7 +105,7 @@ class PersistRegistrationRequestHandlerTest {
     }
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
-
+    private val transactionTimerFactory = { _: String -> transactionTimer }
     private val services = PersistenceHandlerServices(
         clock,
         dbConnectionManager,
@@ -116,6 +116,9 @@ class PersistRegistrationRequestHandlerTest {
         keyEncodingService,
         platformInfoProvider,
         mock(),
+        mock(),
+        mock(),
+        transactionTimerFactory,
     )
     private lateinit var persistRegistrationRequestHandler: PersistRegistrationRequestHandler
 
@@ -175,7 +178,6 @@ class PersistRegistrationRequestHandlerTest {
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityManager).transaction
         verify(jpaEntitiesRegistry).get(eq(CordaDb.Vault.persistenceUnitName))
         verify(memberInfoFactory, never()).create(any())

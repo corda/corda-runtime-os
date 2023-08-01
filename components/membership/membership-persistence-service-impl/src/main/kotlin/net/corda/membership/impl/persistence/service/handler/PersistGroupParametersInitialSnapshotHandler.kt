@@ -1,5 +1,6 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import javax.persistence.LockModeType
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
@@ -13,28 +14,22 @@ import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.virtualnode.toCorda
-import javax.persistence.LockModeType
 
 internal class PersistGroupParametersInitialSnapshotHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<PersistGroupParametersInitialSnapshot, PersistGroupParametersResponse>(
     persistenceHandlerServices
 ) {
+    override val operation = PersistGroupParametersInitialSnapshot::class.java
     private val serializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer {
             logger.error("Failed to serialize key value pair list.")
         }
 
-    private fun serializeProperties(context: KeyValuePairList): ByteArray {
-        return serializer.serialize(context) ?: throw MembershipPersistenceException(
-            "Failed to serialize key value pair list."
-        )
-    }
-
     private val deserializer: CordaAvroDeserializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroDeserializer(
             {
-                logger.error("Failed to serialize key value pair list.")
+                logger.error("Failed to deserialize key value pair list.")
             },
             KeyValuePairList::class.java
         )
@@ -58,7 +53,8 @@ internal class PersistGroupParametersInitialSnapshotHandler(
                 LockModeType.PESSIMISTIC_WRITE
             )
             if (currentGroupParameters != null) {
-                val currentParameters = deserializer.deserializeKeyValuePairList(currentGroupParameters.parameters).toMap()
+                val currentParameters =
+                    deserializer.deserializeKeyValuePairList(currentGroupParameters.parameters).toMap()
                 if (currentParameters.removeTime() != groupParameters.toMap().removeTime()) {
                     throw MembershipPersistenceException(
                         "Group parameters initial snapshot already exist with different parameters."
@@ -69,7 +65,7 @@ internal class PersistGroupParametersInitialSnapshotHandler(
             }
             GroupParametersEntity(
                 epoch = 1,
-                parameters = serializeProperties(groupParameters),
+                parameters = serializer.serializeKeyValuePairList(groupParameters),
                 signaturePublicKey = null,
                 signatureContent = null,
                 signatureSpec = null

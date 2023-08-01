@@ -24,10 +24,11 @@ import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.subscription.consumer.listener.ForwardingRebalanceListener
 import net.corda.messaging.subscription.consumer.listener.LoggingConsumerRebalanceListener
+import net.corda.messaging.utils.ExceptionUtils
 import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toEventLogRecord
 import net.corda.metrics.CordaMetrics
-import net.corda.schema.Schemas.getStateAndEventDLQTopic
+import net.corda.schema.Schemas.getDLQTopic
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
@@ -57,7 +58,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : Subscription<K, V> {
 
-    private val log = LoggerFactory.getLogger(config.loggerName)
+    private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
 
     private var threadLooper =
         ThreadLooper(log, config, lifecycleCoordinatorFactory, "durable processing thread", ::runConsumeLoop)
@@ -67,7 +68,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
     private val errorMsg = "Failed to read and process records from topic ${config.topic}, group ${config.group}, producerClientId " +
             "${config.clientId}."
 
-    private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
+    private val processorMeter = CordaMetrics.Metric.Messaging.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.DURABLE_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_NEXT_OPERATION)
@@ -94,20 +95,19 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
     @Suppress("NestedBlockDepth")
     private fun runConsumeLoop() {
         var attempts = 0
-        var consumer: CordaConsumer<K, V>?
-        var producer: CordaProducer?
         while (!threadLooper.loopStopped) {
             attempts++
             try {
                 log.debug { "Attempt: $attempts" }
                 deadLetterRecords = mutableListOf()
                 val rebalanceListener = if (partitionAssignmentListener == null) {
-                    LoggingConsumerRebalanceListener(config.topic, config.group, config.clientId)
+                    LoggingConsumerRebalanceListener(config.clientId)
                 } else {
-                    ForwardingRebalanceListener(config.topic, config.group, config.clientId, partitionAssignmentListener)
+                    ForwardingRebalanceListener(config.topic, config.clientId, partitionAssignmentListener)
                 }
                 val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.EVENT_LOG)
-                consumer = cordaConsumerBuilder.createConsumer(
+
+                cordaConsumerBuilder.createConsumer(
                     consumerConfig,
                     config.messageBusConfig,
                     processor.keyClass,
@@ -117,19 +117,19 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                         deadLetterRecords.add(data)
                     },
                     rebalanceListener
-                )
-                val producerConfig = ProducerConfig(config.clientId, config.instanceId, true, ProducerRoles.EVENT_LOG, false)
-                producer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig) { data ->
-                    log.warn("Failed to serialize record from ${config.topic}")
-                    deadLetterRecords.add(data)
-                }
-                consumer.use { cordaConsumer ->
+                ).use { cordaConsumer ->
                     cordaConsumer.subscribe(config.topic)
-                    producer.use { cordaProducer ->
+                    val producerConfig =
+                        ProducerConfig(config.clientId, config.instanceId, true, ProducerRoles.EVENT_LOG, false)
+                    cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig) { data ->
+                        log.warn("Failed to serialize record from ${config.topic}")
+                        deadLetterRecords.add(data)
+                    }.use { cordaProducer ->
                         threadLooper.updateLifecycleStatus(LifecycleStatus.UP)
                         pollAndProcessRecords(cordaConsumer, cordaProducer)
                     }
                 }
+
                 attempts = 0
             } catch (ex: Exception) {
                 when (ex) {
@@ -238,7 +238,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
             if(deadLetterRecords.isNotEmpty()) {
                 producer.sendRecords(deadLetterRecords.map {
                     CordaProducerRecord(
-                        getStateAndEventDLQTopic(config.topic),
+                        getDLQTopic(config.topic),
                         UUID.randomUUID().toString(),
                         it
                     )
@@ -250,9 +250,8 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
             log.debug { "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
                     "size: ${cordaConsumerRecords.size}) complete." }
         } catch (ex: Exception) {
-            when (ex) {
-                is CordaMessageAPIFatalException,
-                is CordaMessageAPIIntermittentException -> {
+            when (ex::class.java) {
+                in ExceptionUtils.CordaMessageAPIException -> {
                     throw ex
                 }
                 else -> {

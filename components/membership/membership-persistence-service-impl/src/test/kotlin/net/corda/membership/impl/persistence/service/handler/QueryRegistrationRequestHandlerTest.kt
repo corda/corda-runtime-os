@@ -87,7 +87,7 @@ class QueryRegistrationRequestHandlerTest {
         on { createEntityManager() } doReturn entityManager
     }
     private val dbConnectionManager = mock<DbConnectionManager> {
-        on { createEntityManagerFactory(any(), any()) } doReturn entityManagerFactory
+        on { getOrCreateEntityManagerFactory(any<UUID>(), any()) } doReturn entityManagerFactory
     }
     private val nodeInfo = mock<VirtualNodeInfo> {
         on { vaultDmlConnectionId } doReturn UUID(0, 0)
@@ -100,6 +100,7 @@ class QueryRegistrationRequestHandlerTest {
         on { dbConnectionManager } doReturn dbConnectionManager
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
         on { cordaAvroSerializationFactory } doReturn serializationFactory
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
     private val context = mock<MembershipRequestContext> {
         on { holdingIdentity } doReturn holdingIdentity

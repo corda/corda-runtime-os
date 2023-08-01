@@ -53,6 +53,13 @@ class FakeDbConnectionManager(
         )
     }
 
+    override fun getOrCreateEntityManagerFactory(
+        connectionId: UUID,
+        entitiesSet: JpaEntitiesSet
+    ): EntityManagerFactory {
+        TODO("Not yet implemented")
+    }
+
     fun getDataSource(id: UUID): CloseableDataSource {
         return dbSources.single { it.id ==  id}.dataSource
     }
@@ -149,7 +156,7 @@ class FakeDbConnectionManager(
         isAutoCommit: Boolean,
         isReadOnly: Boolean,
         maximumPoolSize: Int,
-        minimumPoolSize: Int,
+        minimumPoolSize: Int?,
         idleTimeout: Duration,
         maxLifetime: Duration,
         keepaliveTime: Duration,

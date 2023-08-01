@@ -2,9 +2,11 @@ package net.corda.membership.impl.network.writer.staticnetwork
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
+import java.security.KeyPairGenerator
+import javax.persistence.EntityManager
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.fullId
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.libs.packaging.Cpi
@@ -23,12 +25,14 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNA
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.MGM_INFO
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser.Companion.groupIdFromJson
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser.Companion.isStaticNetwork
 import net.corda.membership.network.writer.NetworkInfoWriter
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSignatureSpec
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSigningKeyAlgorithm
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmSigningKeyProvider
+import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -36,14 +40,13 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.security.KeyPairGenerator
-import javax.persistence.EntityManager
 
 @Component(service = [NetworkInfoWriter::class])
 class NetworkInfoDBWriterImpl(
     private val clock: Clock,
     private val platformInfoProvider: PlatformInfoProvider,
     private val keyEncodingService: KeyEncodingService,
+    private val groupPolicyParser: GroupPolicyParser,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) : NetworkInfoWriter {
 
@@ -53,12 +56,15 @@ class NetworkInfoDBWriterImpl(
         platformInfoProvider: PlatformInfoProvider,
         @Reference(service = KeyEncodingService::class)
         keyEncodingService: KeyEncodingService,
+        @Reference(service = GroupPolicyParser::class)
+        groupPolicyParser: GroupPolicyParser,
         @Reference(service = CordaAvroSerializationFactory::class)
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     ) : this(
         UTCClock(),
         platformInfoProvider,
         keyEncodingService,
+        groupPolicyParser,
         cordaAvroSerializationFactory
     )
 
@@ -79,12 +85,16 @@ class NetworkInfoDBWriterImpl(
         }?.let { groupPolicy ->
             logger.info("Creating and persisting static network information.")
 
-            val groupId = try {
-                groupIdFromJson(groupPolicy)
+            val parsedGroupPolicy = try {
+                groupPolicyParser.parseMember(groupPolicy)
             } catch (ex: CordaRuntimeException) {
-                logger.error("Couldn't parse the group ID required to create the static network information.", ex)
+                logger.error("Couldn't parse the group policy required to create the static network information.", ex)
                 throw ex
-            }
+            } ?: throw CordaRuntimeException(
+                "Could not create static network information - incorrect group policy detected."
+            )
+
+            val groupId = parsedGroupPolicy.groupId
 
             val existingInfo = em.find(StaticNetworkInfoEntity::class.java, groupId)
             if (existingInfo != null) {
@@ -100,16 +110,21 @@ class NetworkInfoDBWriterImpl(
                 .genKeyPair()
                 .let { it.public.encoded to it.private.encoded }
 
-            val serializedParams = serializer.serialize(
-                KeyValuePairList(
-                    listOf(
-                        KeyValuePair(EPOCH_KEY, "1"),
-                        KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
-                    )
+            val serializedParams = wrapWithNullErrorHandling({
+                CordaRuntimeException("Failed to serialize KeyValuePairList for static network group parameters.", it)
+            }) {
+                val snapshot = listOf(
+                    KeyValuePair(EPOCH_KEY, "1"),
+                    KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
                 )
-            ) ?: throw CordaRuntimeException(
-                "Failed to serialize KeyValuePairList for static network group parameters."
-            )
+                val combinedParams = parsedGroupPolicy.protocolParameters.staticNetworkGroupParameters
+                ?.let { groupPolicyParams ->
+                    groupPolicyParams.map { KeyValuePair(it.key, it.value) } + snapshot
+                } ?: snapshot
+                serializer.serialize(
+                    KeyValuePairList(combinedParams)
+                )
+            }
 
             StaticNetworkInfoEntity(
                 groupId,

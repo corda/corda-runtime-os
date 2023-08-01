@@ -16,8 +16,11 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
+import net.corda.processors.token.cache.TokenCacheProcessor
 import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB
+import net.corda.tracing.configureTracing
+import net.corda.tracing.shutdownTracing
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -33,6 +36,8 @@ class DBWorker @Activate constructor(
     private val processor: DBProcessor,
     @Reference(service = UniquenessProcessor::class)
     private val uniquenessProcessor: UniquenessProcessor,
+    @Reference(service = TokenCacheProcessor::class)
+    private val tokenCacheProcessor: TokenCacheProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = WorkerMonitor::class)
@@ -64,6 +69,8 @@ class DBWorker @Activate constructor(
         if (printHelpOrVersion(params.defaultParams, DBWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
+        configureTracing("DB Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
+
         val databaseConfig = PathAndConfig(BOOT_DB, params.databaseParams)
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
@@ -74,12 +81,15 @@ class DBWorker @Activate constructor(
 
         processor.start(config)
         uniquenessProcessor.start()
+        tokenCacheProcessor.start(config)
     }
 
     override fun shutdown() {
         logger.info("DB worker stopping.")
         processor.stop()
         workerMonitor.stop()
+        tokenCacheProcessor.stop()
+        shutdownTracing()
     }
 }
 

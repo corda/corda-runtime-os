@@ -1,13 +1,21 @@
 package net.corda.applications.workers.smoketest.ledger
 
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import java.util.UUID
+import net.corda.e2etest.utilities.DEFAULT_CLUSTER
+import net.corda.crypto.core.parseSecureHash
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
+import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
@@ -18,7 +26,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
-import java.util.UUID
 
 @Suppress("Unused", "FunctionName")
 @TestInstance(PER_CLASS)
@@ -27,6 +34,7 @@ class UtxoLedgerTests {
     private companion object {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"
         const val TEST_CPB_LOCATION = "/META-INF/ledger-utxo-demo-app.cpb"
+        const val NOTARY_SERVICE_X500 = "O=MyNotaryService, L=London, C=GB"
 
         val objectMapper = ObjectMapper().apply {
             registerModule(KotlinModule.Builder().build())
@@ -61,6 +69,8 @@ class UtxoLedgerTests {
 
     @BeforeAll
     fun beforeAll() {
+        DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
+
         conditionallyUploadCordaPackage(
             cpiName,
             TEST_CPB_LOCATION,
@@ -87,59 +97,16 @@ class UtxoLedgerTests {
         registerStaticMember(aliceHoldingId)
         registerStaticMember(bobHoldingId)
         registerStaticMember(charlieHoldingId)
-
-        registerStaticMember(notaryHoldingId, true)
+        registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
     }
 
-    @Test
-    fun `Utxo Ledger - custom query can be executed and results are returned if no offset is provided and limit is maximized`() {
-        val input = "test input"
-
-        // Issue some states and consume them
-        for (i in 0..1) {
-
-            // Issue state
-            val flowId = startRpcFlow(
-                aliceHoldingId,
-                mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to notaryX500),
-                "com.r3.corda.demo.utxo.UtxoDemoFlow"
-            )
-
-            val flowResult = awaitRpcFlowFinished(aliceHoldingId, flowId)
-
-            assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-            assertThat(flowResult.flowError).isNull()
-        }
-
-        val customQueryFlowId = startRpcFlow(
-            aliceHoldingId,
-            mapOf(
-                "offset" to 0,
-                "limit" to 100,
-                "testField" to input
-            ),
-            "com.r3.corda.demo.utxo.UtxoCustomQueryDemoFlow"
-        )
-
-        val customQueryFlowResult = awaitRpcFlowFinished(aliceHoldingId, customQueryFlowId)
-        assertThat(customQueryFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(customQueryFlowResult.flowError).isNull()
-
-        val parsedResponse = objectMapper.readValue(
-            customQueryFlowResult.flowResult!!,
-            CustomQueryFlowResponse::class.java
-        )
-
-        assertThat(parsedResponse.results).isNotEmpty
-        assertThat(parsedResponse.results).hasSizeGreaterThan(1)
-    }
 
     @Test
     fun `Utxo Ledger - create a transaction containing states and finalize it then evolve it`() {
         val input = "test input"
         val utxoFlowRequestId = startRpcFlow(
             aliceHoldingId,
-            mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to notaryX500),
+            mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to NOTARY_SERVICE_X500),
             "com.r3.corda.demo.utxo.UtxoDemoFlow"
         )
         val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
@@ -184,10 +151,11 @@ class UtxoLedgerTests {
 
         // Peek into the last transaction
 
-        val peekFlowId =  startRpcFlow(
+        val peekFlowId = startRpcFlow(
             bobHoldingId,
             mapOf("transactionId" to parsedEvolveFlowResult.transactionId!!),
-            "com.r3.corda.demo.utxo.PeekTransactionFlow")
+            "com.r3.corda.demo.utxo.PeekTransactionFlow"
+        )
 
         val peekFlowResult = awaitRpcFlowFinished(bobHoldingId, peekFlowId)
         assertThat(peekFlowResult.flowError).isNull()
@@ -201,12 +169,11 @@ class UtxoLedgerTests {
         assertThat(parsedPeekFlowResult.outputs).singleElement().extracting { it.testField }.isEqualTo(evolvedMessage)
     }
 
-
     @Test
     fun `Utxo Ledger - creating a transaction that fails custom validation causes finality to fail`() {
         val utxoFlowRequestId = startRpcFlow(
             aliceHoldingId,
-            mapOf("input" to "fail", "members" to listOf(bobX500, charlieX500), "notary" to notaryX500),
+            mapOf("input" to "fail", "members" to listOf(bobX500, charlieX500), "notary" to NOTARY_SERVICE_X500),
             "com.r3.corda.demo.utxo.UtxoDemoFlow"
         )
         val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
@@ -230,7 +197,8 @@ class UtxoLedgerTests {
 
     data class EvolveResponse(
         val transactionId: String?,
-        val errorMessage: String?)
+        val errorMessage: String?
+    )
 
     data class PeekTransactionResponse(
         val inputs: List<TestUtxoStateResult>,
@@ -239,4 +207,16 @@ class UtxoLedgerTests {
     )
 
     data class CustomQueryFlowResponse(val results: List<String>)
+
+    internal object SecureHashSerializer : com.fasterxml.jackson.databind.JsonSerializer<SecureHash>() {
+        override fun serialize(obj: SecureHash, generator: JsonGenerator, provider: SerializerProvider) {
+            generator.writeString(obj.toString())
+        }
+    }
+
+    internal object SecureHashDeserializer : com.fasterxml.jackson.databind.JsonDeserializer<SecureHash>() {
+        override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): SecureHash {
+            return parseSecureHash(parser.text)
+        }
+    }
 }

@@ -309,7 +309,8 @@ private fun ClusterInfo.createMgmRegistrationContext(
  */
 fun ClusterInfo.suspendMember(
     mgmHoldingId: String,
-    x500Name: String
+    x500Name: String,
+    serialNumber: Int? = null,
 ) = cluster {
     assertWithRetry {
         timeout(15.seconds)
@@ -317,10 +318,10 @@ fun ClusterInfo.suspendMember(
         command {
             post(
                 "/api/v1/mgm/$mgmHoldingId/suspend",
-                "{ \"x500Name\": \"$x500Name\" }"
+                "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
             )
         }
-        condition { it.code == ResponseCode.NO_CONTENT.statusCode }
+        condition { it.code == ResponseCode.NO_CONTENT.statusCode || it.code == ResponseCode.CONFLICT.statusCode }
     }
 }
 
@@ -330,7 +331,8 @@ fun ClusterInfo.suspendMember(
  */
 fun ClusterInfo.activateMember(
     mgmHoldingId: String,
-    x500Name: String
+    x500Name: String,
+    serialNumber: Int? = null,
 ) = cluster {
     assertWithRetry {
         timeout(15.seconds)
@@ -338,9 +340,29 @@ fun ClusterInfo.activateMember(
         command {
             post(
                 "/api/v1/mgm/$mgmHoldingId/activate",
-                "{ \"x500Name\": \"$x500Name\" }"
+                "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
             )
         }
-        condition { it.code == ResponseCode.NO_CONTENT.statusCode }
+        condition { it.code == ResponseCode.NO_CONTENT.statusCode || it.code == ResponseCode.CONFLICT.statusCode }
     }
+}
+
+/**
+ * Update the group parameters as the MGM identified by [mgmHoldingId], and return the newly updated group parameters.
+ */
+fun ClusterInfo.updateGroupParameters(
+    mgmHoldingId: String,
+    update: Map<String, String>
+) = cluster {
+    val payload = mapOf(
+        "parameters" to update
+    )
+    assertWithRetry {
+        timeout(15.seconds)
+        interval(1.seconds)
+        command {
+            post("/api/v1/mgm/$mgmHoldingId/group-parameters", ObjectMapper().writeValueAsString(payload))
+        }
+        condition { it.code == ResponseCode.OK.statusCode }
+    }.toJson()
 }

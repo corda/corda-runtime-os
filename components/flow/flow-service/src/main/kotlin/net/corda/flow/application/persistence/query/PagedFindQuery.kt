@@ -20,7 +20,7 @@ class PagedFindQuery<R : Any>(
 ) : PagedQuery<R> {
 
     override fun setLimit(limit: Int): PagedQuery<R> {
-        require (limit >= 0) { "Limit cannot be negative" }
+        require (limit > 0) { "Limit cannot be negative or zero" }
         this.limit = limit
         return this
     }

@@ -44,7 +44,8 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.util.*
+import java.util.LinkedList
+import java.util.UUID
 import kotlin.test.assertEquals
 
 /**
@@ -136,13 +137,7 @@ class UniquenessCheckerImplTests {
 
         backingStore = spy(BackingStoreImplFake(mock()))
 
-        uniquenessChecker = BatchedUniquenessCheckerImpl(
-            mock(),
-            mock(),
-            mock(),
-            mock(),
-            testClock,
-            backingStore)
+        uniquenessChecker = BatchedUniquenessCheckerImpl(backingStore, testClock)
     }
 
     @Nested
@@ -1468,12 +1463,9 @@ class UniquenessCheckerImplTests {
                 .doThrow(UnsupportedOperationException())
 
             val exceptionThrowingUniquenessChecker = BatchedUniquenessCheckerImpl(
-                mock(),
-                mock(),
-                mock(),
-                mock(),
-                testClock,
-                exceptionThrowingBackingStore)
+                exceptionThrowingBackingStore,
+                testClock
+            )
 
             exceptionThrowingUniquenessChecker.processRequests(
                 listOf(

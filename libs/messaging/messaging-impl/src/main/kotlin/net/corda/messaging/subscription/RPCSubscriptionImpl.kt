@@ -28,6 +28,7 @@ import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.constants.MetricsConstants
+import net.corda.messaging.utils.ExceptionUtils
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
@@ -43,14 +44,14 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : RPCSubscription<REQUEST, RESPONSE> {
 
-    private val log = LoggerFactory.getLogger(config.loggerName)
+    private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
 
     private var threadLooper =
         ThreadLooper(log, config, lifecycleCoordinatorFactory, "rpc subscription thread", ::runConsumeLoop)
 
     private val errorMsg = "Failed to read records from group ${config.group}, topic ${config.topic}"
 
-    private val processorMeter = CordaMetrics.Metric.MessageProcessorTime.builder()
+    private val processorMeter = CordaMetrics.Metric.Messaging.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.RPC_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.RPC_RESPONDER_OPERATION)
@@ -115,9 +116,8 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             try {
                 processRecords(consumerRecords, producer)
             } catch (ex: Exception) {
-                when (ex) {
-                    is CordaMessageAPIFatalException,
-                    is CordaMessageAPIIntermittentException -> {
+                when (ex::class.java) {
+                    in ExceptionUtils.CordaMessageAPIException -> {
                         throw ex
                     }
                     else -> {

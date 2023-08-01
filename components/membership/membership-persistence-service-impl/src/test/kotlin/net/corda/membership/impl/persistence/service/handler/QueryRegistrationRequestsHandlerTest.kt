@@ -4,7 +4,7 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.db.connection.manager.DbConnectionManager
@@ -90,7 +90,7 @@ class QueryRegistrationRequestsHandlerTest {
         on { createEntityManager() } doReturn entityManager
     }
     private val dbConnectionManager = mock<DbConnectionManager> {
-        on { createEntityManagerFactory(any(), any()) } doReturn entityManagerFactory
+        on { getOrCreateEntityManagerFactory(any<UUID>(), any()) } doReturn entityManagerFactory
     }
     private val nodeInfo = mock<VirtualNodeInfo> {
         on { vaultDmlConnectionId } doReturn UUID(0, 0)
@@ -103,6 +103,7 @@ class QueryRegistrationRequestsHandlerTest {
         on { dbConnectionManager } doReturn dbConnectionManager
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
         on { cordaAvroSerializationFactory } doReturn serializationFactory
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
     private val context = MembershipRequestContext(Instant.ofEpochSecond(0), null, holdingIdentity)
 

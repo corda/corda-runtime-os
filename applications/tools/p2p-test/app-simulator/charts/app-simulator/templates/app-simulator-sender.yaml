@@ -39,8 +39,8 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
           args:
-            - "--mode SENDER"
-            - "--clients {{ .Values.appSimulators.sender.parallelClientsPerReplica }}"
+            - "--mode=SENDER"
+            - "--clients={{ .Values.appSimulators.sender.parallelClientsPerReplica }}"
             - "-lloadGenerationType=CONTINUOUS"
             - "-lpeerX500Name={{ .Values.appSimulators.sender.peerX500Name }}"
             - "-lpeerGroupId={{ .Values.appSimulators.sender.peerGroupId }}"
@@ -79,6 +79,10 @@ spec:
       {{- include "appSimulator.volumes" . | nindent 8 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
 {{- end }}

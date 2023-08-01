@@ -23,7 +23,7 @@ data class CordappManifest(
 
     companion object {
         // The platform version at which CPKs were introduced.
-        const val DEFAULT_MIN_PLATFORM_VERSION = 999
+        const val DEFAULT_MIN_PLATFORM_VERSION = 50000
 
         // The CorDapp manifest entries.
         const val TARGET_PLATFORM_VERSION = "Target-Platform-Version"

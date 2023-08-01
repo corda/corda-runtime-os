@@ -2,6 +2,7 @@ package net.corda.applications.workers.combined
 
 import net.corda.application.dbsetup.PostgresDbSetup
 import net.corda.applications.workers.workercommon.ApplicationBanner
+import net.corda.applications.workers.workercommon.BusType
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.applications.workers.workercommon.PathAndConfig
@@ -25,10 +26,14 @@ import net.corda.processors.member.MemberProcessor
 import net.corda.processors.p2p.gateway.GatewayProcessor
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.processors.rest.RestProcessor
+import net.corda.processors.token.cache.TokenCacheProcessor
 import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.processors.verification.VerificationProcessor
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.DatabaseConfig
+import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.tracing.configureTracing
+import net.corda.tracing.shutdownTracing
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -52,6 +57,8 @@ class CombinedWorker @Activate constructor(
     private val dbProcessor: DBProcessor,
     @Reference(service = UniquenessProcessor::class)
     private val uniquenessProcessor: UniquenessProcessor,
+    @Reference(service = TokenCacheProcessor::class)
+    private val tokenCacheProcessor: TokenCacheProcessor,
     @Reference(service = FlowProcessor::class)
     private val flowProcessor: FlowProcessor,
     @Reference(service = VerificationProcessor::class)
@@ -135,6 +142,11 @@ class CombinedWorker @Activate constructor(
         // In the future, perhaps we can simply rely on the schema for crypto defaults, and not supply a
         // default passphrase and salt but instead require them to be specified.
 
+        /**
+         * isDbBusType is used to tell which Bus type we are using, so we know whether to use DATABASE specific methods
+         */
+        val isDbBusType: Boolean = params.defaultParams.messaging[BUS_TYPE] == BusType.DATABASE.name
+
         PostgresDbSetup(
             dbUrl,
             superUser,
@@ -142,10 +154,13 @@ class CombinedWorker @Activate constructor(
             dbAdmin,
             dbAdminPassword,
             dbName,
-            config.factory
+            isDbBusType,
+            config.factory,
         ).run()
 
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
+
+        configureTracing("Combined Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
 
         JavaSerialisationFilter.install()
 
@@ -154,6 +169,7 @@ class CombinedWorker @Activate constructor(
         cryptoProcessor.start(config)
         dbProcessor.start(config)
         uniquenessProcessor.start()
+        tokenCacheProcessor.start(config)
         flowProcessor.start(config)
         verificationProcessor.start(config)
         memberProcessor.start(config)
@@ -167,6 +183,7 @@ class CombinedWorker @Activate constructor(
 
         cryptoProcessor.stop()
         uniquenessProcessor.stop()
+        tokenCacheProcessor.stop()
         dbProcessor.stop()
         flowProcessor.stop()
         verificationProcessor.stop()
@@ -176,6 +193,7 @@ class CombinedWorker @Activate constructor(
         gatewayProcessor.stop()
 
         workerMonitor.stop()
+        shutdownTracing()
     }
 }
 

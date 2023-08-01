@@ -44,11 +44,12 @@ internal class VirtualNodeWriteEventHandler(
     private fun onConfigChangedEvent(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
         val msgConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
         val externalMsgConfig = event.config.getConfig(ConfigKeys.EXTERNAL_MESSAGING_CONFIG)
+        val vnodeDatasourceConfig = event.config.getConfig(ConfigKeys.VNODE_DATASOURCE_CONFIG)
 
         try {
             virtualNodeWriter?.close()
             virtualNodeWriter = virtualNodeWriterFactory
-                .create(msgConfig, externalMsgConfig)
+                .create(msgConfig, externalMsgConfig, vnodeDatasourceConfig)
                 .apply { start() }
 
             coordinator.updateStatus(UP)
@@ -83,7 +84,11 @@ internal class VirtualNodeWriteEventHandler(
                     configUpdateHandle =
                         configReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.EXTERNAL_MESSAGING_CONFIG)
+                            setOf(
+                                ConfigKeys.MESSAGING_CONFIG,
+                                ConfigKeys.EXTERNAL_MESSAGING_CONFIG,
+                                ConfigKeys.VNODE_DATASOURCE_CONFIG
+                            )
                         )
                 }
                 ERROR -> coordinator.postEvent(StopEvent(errored = true))

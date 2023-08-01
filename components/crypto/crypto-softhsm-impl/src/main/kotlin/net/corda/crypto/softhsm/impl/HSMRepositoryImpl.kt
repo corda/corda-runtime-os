@@ -1,10 +1,7 @@
 package net.corda.crypto.softhsm.impl
 
-import java.time.Instant
-import java.util.UUID
-import javax.persistence.EntityManager
-import javax.persistence.Tuple
 import net.corda.crypto.config.impl.MasterKeyPolicy
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.persistence.HSMUsage
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
@@ -14,18 +11,20 @@ import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.base.util.EncodingUtils.toHex
 import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.util.UUID
+import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import javax.persistence.Tuple
 
 /**
  * Database operations for HSM.
  *
  * @param entityManagerFactory An entity manager factory connected to the right database, matching tenantId
- * @param tenantId The tenant who owns the database
  */
 
 class HSMRepositoryImpl(
-    private val entityManagerFactory: EntityManagerFactory,
-    val tenantId: String,
+    private val entityManagerFactory: EntityManagerFactory
 ) : HSMRepository {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -74,13 +73,12 @@ class HSMRepositoryImpl(
     override fun associate(
         tenantId: String,
         category: String,
-        hsmId: String,
         masterKeyPolicy: MasterKeyPolicy,
     ): HSMAssociationInfo = entityManagerFactory.createEntityManager().use {
         it.transaction { em ->
             val association =
-                findHSMAssociationEntity(em, tenantId, hsmId)
-                    ?: createAndPersistAssociation(em, tenantId, hsmId, masterKeyPolicy)
+                findHSMAssociationEntity(em, tenantId)
+                    ?: createAndPersistAssociation(em, tenantId, CryptoConsts.SOFT_HSM_ID, masterKeyPolicy)
 
             val categoryAssociation = HSMCategoryAssociationEntity(
                 id = UUID.randomUUID().toString(),
@@ -99,8 +97,7 @@ class HSMRepositoryImpl(
 
     private fun findHSMAssociationEntity(
         entityManager: EntityManager,
-        tenantId: String,
-        hsmId: String,
+        tenantId: String
     ) =
         entityManager.createQuery(
             """
@@ -109,7 +106,7 @@ class HSMRepositoryImpl(
             WHERE a.tenantId = :tenantId AND a.hsmId = :hsmId
             """.trimIndent(),
             HSMAssociationEntity::class.java
-        ).setParameter("tenantId", tenantId).setParameter("hsmId", hsmId).resultList.singleOrNull()
+        ).setParameter("tenantId", tenantId).setParameter("hsmId", CryptoConsts.SOFT_HSM_ID).resultList.singleOrNull()
 
     private fun createAndPersistAssociation(
         entityManager: EntityManager,

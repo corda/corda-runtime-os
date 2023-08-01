@@ -1,8 +1,11 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
 import net.corda.configuration.read.ConfigurationGetService
-import net.corda.membership.impl.registration.dynamic.verifiers.OrderVerifier
-import net.corda.membership.impl.registration.dynamic.verifiers.P2pEndpointVerifier
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.ShortHashException
+import net.corda.membership.impl.registration.dynamic.mgm.ContextUtils.sessionKeyRegex
+import net.corda.membership.impl.registration.verifiers.OrderVerifier
+import net.corda.membership.impl.registration.verifiers.P2pEndpointVerifier
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
@@ -40,6 +43,13 @@ internal class MGMRegistrationContextValidator(
                 PKI_TLS to format("TLS PKI property"),
             )
         }
+
+        val SUPPORTED_REGISTRATION_PROTOCOLS = setOf(
+            "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService"
+        )
+        val SUPPORTED_SYNC_PROTOCOLS = setOf(
+            "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl"
+        )
     }
 
     private val certificateFactory = CertificateFactory.getInstance("X.509")
@@ -85,6 +95,8 @@ internal class MGMRegistrationContextValidator(
         for (key in errorMessageMap.keys) {
             context[key] ?: throw IllegalArgumentException(errorMessageMap[key])
         }
+        validateProtocols(context)
+        validateKeys(context)
         p2pEndpointVerifier.verifyContext(context)
         if (context[PKI_SESSION] != NO_PKI.toString()) {
             context.keys.filter { TRUSTSTORE_SESSION.format("[0-9]+").toRegex().matches(it) }.apply {
@@ -116,6 +128,37 @@ internal class MGMRegistrationContextValidator(
                 "A cluster configured with TLS type of $clusterTlsType can not register " +
                 "an MGM with TLS type $contextRegistrationTlsType"
             )
+        }
+    }
+
+    private fun validateProtocols(context: Map<String, String>) {
+        if (context[REGISTRATION_PROTOCOL] !in SUPPORTED_REGISTRATION_PROTOCOLS) {
+            throw MGMRegistrationContextValidationException("Invalid value for key $REGISTRATION_PROTOCOL in registration context. " +
+                    "It should be one of the following values: $SUPPORTED_REGISTRATION_PROTOCOLS.", null)
+        }
+        if (context[SYNCHRONISATION_PROTOCOL] !in SUPPORTED_SYNC_PROTOCOLS) {
+            throw MGMRegistrationContextValidationException("Invalid value for key $SYNCHRONISATION_PROTOCOL in registration context. " +
+                    "It should be one of the following values: $SUPPORTED_SYNC_PROTOCOLS.", null)
+        }
+    }
+
+    private fun validateKeys(context: Map<String, String>) {
+        val ecdhKeyId = context[ECDH_KEY_ID]
+        require(ecdhKeyId != null) { "No ECDH key ID was provided under $ECDH_KEY_ID." }
+        validateKey(ECDH_KEY_ID, ecdhKeyId)
+
+        context.filterKeys { key ->
+            sessionKeyRegex.matches(key)
+        }.forEach {
+            validateKey(it.key, it.value)
+        }
+    }
+
+    private fun validateKey(contextKey: String, keyId: String) {
+        try {
+            ShortHash.parse(keyId)
+        } catch (e: ShortHashException) {
+            throw MGMRegistrationContextValidationException("Invalid value for key ID $contextKey. ${e.message}", e)
         }
     }
 

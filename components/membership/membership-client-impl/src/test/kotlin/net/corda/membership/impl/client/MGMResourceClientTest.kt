@@ -6,8 +6,11 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentGroupParameters
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.actions.request.DistributeGroupParameters
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -16,7 +19,7 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationRequestDetails
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
@@ -40,9 +43,11 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.EndpointInfoFactory
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.approval.ApprovalRuleParams
@@ -118,7 +123,7 @@ class MGMResourceClientTest {
         val RULE_TYPE = ApprovalRuleType.STANDARD
         val memberName = MemberX500Name.parse("CN=Bob,O=Bob,OU=Unit1,L=London,ST=State1,C=GB")
         val mgmX500Name = MemberX500Name.parse("CN=Alice,OU=Unit1,O=Alice,L=London,ST=State1,C=GB")
-        val holdingIdentity = createTestHoldingIdentity(mgmX500Name.toString(), "DEFAULT_MEMBER_GROUP_ID")
+        val holdingIdentity = createTestHoldingIdentity(mgmX500Name.toString(), DEFAULT_MEMBER_GROUP_ID)
         val shortHash = ShortHash.of(HOLDING_IDENTITY_STRING)
         val clock = TestClock(Instant.ofEpochSecond(100))
 
@@ -185,7 +190,7 @@ class MGMResourceClientTest {
     @Suppress("SpreadOperator")
     private fun createMemberInfo(name: String, isMgm: Boolean = true): MemberInfo = memberInfoFactory.create(
         sortedMapOf(
-            MemberInfoExtension.PARTY_NAME to name,
+            PARTY_NAME to name,
             String.format(MemberInfoExtension.PARTY_SESSION_KEYS, 0) to KNOWN_KEY,
             MemberInfoExtension.GROUP_ID to DEFAULT_MEMBER_GROUP_ID,
             *convertPublicKeys().toTypedArray(),
@@ -828,6 +833,7 @@ class MGMResourceClientTest {
             whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
             val mockStatus = mock<RegistrationRequestDetails> {
                 on { registrationStatus } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
+                on { memberProvidedContext } doReturn KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
             }
             whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(mockStatus)
@@ -845,7 +851,7 @@ class MGMResourceClientTest {
                 listOf(
                     Record(
                         Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
-                        "$REQUEST_ID-$shortHash",
+                        "$memberName-$DEFAULT_MEMBER_GROUP_ID",
                         RegistrationCommand(ApproveRegistration())
                     )
                 )
@@ -859,6 +865,7 @@ class MGMResourceClientTest {
             whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
             val mockStatus = mock<RegistrationRequestDetails> {
                 on { registrationStatus } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
+                on { memberProvidedContext } doReturn KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
             }
             whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(mockStatus)
@@ -878,7 +885,7 @@ class MGMResourceClientTest {
                 listOf(
                     Record(
                         Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
-                        "$REQUEST_ID-$shortHash",
+                        "$memberName-$DEFAULT_MEMBER_GROUP_ID",
                         RegistrationCommand(DeclineRegistration(reason))
                     )
                 )
@@ -971,6 +978,127 @@ class MGMResourceClientTest {
                     shortHash,
                     REQUEST_ID.uuid(),
                     true
+                )
+            }
+            mgmResourceClient.stop()
+        }
+    }
+
+    @Nested
+    inner class ForceDeclineRegistrationRequestTests {
+        @Test
+        fun `forceDeclineRegistrationRequest should publish the correct command`() {
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+            val mockStatus = mock<RegistrationRequestDetails> {
+                on { registrationStatus } doReturn RegistrationStatus.PENDING_MEMBER_VERIFICATION
+                on { memberProvidedContext } doReturn KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
+            }
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
+                MembershipQueryResult.Success(mockStatus)
+            )
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            mgmResourceClient.forceDeclineRegistrationRequest(
+                shortHash,
+                REQUEST_ID.uuid(),
+            )
+
+            verify(publisher).publish(
+                listOf(
+                    Record(
+                        Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
+                        "$memberName-$DEFAULT_MEMBER_GROUP_ID",
+                        RegistrationCommand(DeclineRegistration("Force declined by MGM"))
+                    )
+                )
+            )
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `forceDeclineRegistrationRequest should fail for completed requests`() {
+            val mockStatus = mock<RegistrationRequestDetails> {
+                on { registrationStatus } doReturn RegistrationStatus.APPROVED
+                on { memberProvidedContext } doReturn KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
+            }
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
+                MembershipQueryResult.Success(mockStatus)
+            )
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            assertThrows<IllegalArgumentException> {
+                mgmResourceClient.forceDeclineRegistrationRequest(
+                    shortHash,
+                    REQUEST_ID.uuid(),
+                )
+            }
+            verify(publisher, never()).publish(any())
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `forceDeclineRegistrationRequest should fail if the MGM cannot be found`() {
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmResourceClient.forceDeclineRegistrationRequest(
+                    ShortHash.of("000000000000"),
+                    REQUEST_ID.uuid(),
+                )
+            }
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `forceDeclineRegistrationRequest should fail if the MGM cannot be read`() {
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmResourceClient.forceDeclineRegistrationRequest(
+                    shortHash,
+                    REQUEST_ID.uuid(),
+                )
+            }
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `forceDeclineRegistrationRequest should fail if holding identity ID does not belong to the MGM`() {
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+            val mgmContext = mock<MGMContext>()
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mgmContext
+            }
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+
+            assertThrows<MemberNotAnMgmException> {
+                mgmResourceClient.forceDeclineRegistrationRequest(
+                    shortHash,
+                    REQUEST_ID.uuid(),
+                )
+            }
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `forceDeclineRegistrationRequest should fail if request status cannot be determined`() {
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
+                MembershipQueryResult.Success(null)
+            )
+
+            assertThrows<IllegalArgumentException> {
+                mgmResourceClient.forceDeclineRegistrationRequest(
+                    shortHash,
+                    REQUEST_ID.uuid(),
                 )
             }
             mgmResourceClient.stop()
@@ -1492,7 +1620,7 @@ class MGMResourceClientTest {
             val mockMemberInfo = mock<PersistentMemberInfo>()
             val serializedGroupParameters = "group-params".toByteArray()
             val groupParameters = mock<InternalGroupParameters> {
-                on { bytes } doReturn serializedGroupParameters
+                on { groupParameters } doReturn serializedGroupParameters
                 on { epoch } doReturn groupParametersEpoch
             }
             whenever(membershipPersistenceClient.suspendMember(eq(holdingIdentity), eq(memberName), any(), any()))
@@ -1694,7 +1822,7 @@ class MGMResourceClientTest {
             val mockMemberInfo = mock<PersistentMemberInfo>()
             val serializedGroupParameters = "group-params".toByteArray()
             val groupParameters = mock<InternalGroupParameters> {
-                on { bytes } doReturn serializedGroupParameters
+                on { groupParameters } doReturn serializedGroupParameters
                 on { epoch } doReturn groupParametersEpoch
             }
             whenever(membershipPersistenceClient.activateMember(eq(holdingIdentity), eq(memberName), any(), any()))
@@ -1810,6 +1938,129 @@ class MGMResourceClientTest {
 
             assertThrows<NoSuchElementException> {
                 mgmResourceClient.activateMember(shortHash, memberName)
+            }
+        }
+    }
+
+    @Nested
+    inner class UpdateGroupParametersTests {
+        @BeforeEach
+        fun setUp() = mgmResourceClient.start()
+
+        @AfterEach
+        fun tearDown() = mgmResourceClient.stop()
+
+        private val mockUpdate = mock<Map<String, String>>()
+
+        @Test
+        fun `updateGroupParameters should send the correct request`() {
+            setUpRpcSender(null)
+            whenever(
+                membershipPersistenceClient.updateGroupParameters(
+                    holdingIdentity,
+                    mockUpdate
+                )
+            ).doReturn(
+                Operation(MembershipPersistenceResult.Success(mock()))
+            )
+
+            mgmResourceClient.updateGroupParameters(
+                shortHash,
+                mockUpdate
+            )
+
+            verify(membershipPersistenceClient).updateGroupParameters(
+                holdingIdentity,
+                mockUpdate
+            )
+        }
+
+        @Test
+        fun `updateGroupParameters should publish the distribution request`() {
+            val groupParametersEpoch = 5
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+            val mockParameters = mock<InternalGroupParameters> {
+                on { epoch } doReturn groupParametersEpoch
+            }
+            whenever(membershipPersistenceClient.updateGroupParameters(eq(holdingIdentity), any()))
+                .doReturn(Operation(MembershipPersistenceResult.Success(mockParameters)))
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            mgmResourceClient.updateGroupParameters(shortHash, mockUpdate)
+
+            verify(publisher).publish(
+                listOf(
+                    Record(
+                        topic = Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC,
+                        key = "${mgmX500Name}-${DEFAULT_MEMBER_GROUP_ID}",
+                        value = MembershipActionsRequest(
+                            DistributeGroupParameters(
+                                HoldingIdentity(mgmX500Name, DEFAULT_MEMBER_GROUP_ID).toAvro(),
+                                groupParametersEpoch
+                            )
+                        )
+                    )
+                )
+            )
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `updateGroupParameters with no changes should return current group parameters`() {
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            whenever(membershipPersistenceClient.updateGroupParameters(eq(holdingIdentity), any()))
+                .doReturn(Operation(MembershipPersistenceResult.Success(mock())))
+            val mockParameters = mock<InternalGroupParameters> {
+                on { entries } doReturn mapOf(EPOCH_KEY to "1").entries
+            }
+            whenever(groupReader.groupParameters).doReturn(mockParameters)
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            val result = mgmResourceClient.updateGroupParameters(shortHash, emptyMap())
+
+            assertThat(result).isEqualTo(mockParameters)
+            verify(membershipPersistenceClient, never()).updateGroupParameters(any(), any())
+            verify(publisher, never()).publish(any())
+
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `updateGroupParameters should fail if the member cannot be found`() {
+            setUpRpcSender(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmResourceClient.updateGroupParameters(
+                    ShortHash.of("000000000000"),
+                    mockUpdate
+                )
+            }
+        }
+
+        @Test
+        fun `updateGroupParameters should fail if the member cannot be read`() {
+            setUpRpcSender(null)
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
+
+            assertThrows<CouldNotFindMemberException> {
+                mgmResourceClient.updateGroupParameters(shortHash, mockUpdate)
+            }
+        }
+
+        @Test
+        fun `updateGroupParameters should fail if the member is not the MGM`() {
+            setUpRpcSender(null)
+            val mgmContext = mock<MGMContext>()
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mgmContext
+            }
+            whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+
+            assertThrows<MemberNotAnMgmException> {
+                mgmResourceClient.updateGroupParameters(shortHash, mockUpdate)
             }
         }
     }

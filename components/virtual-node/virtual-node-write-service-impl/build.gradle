@@ -31,6 +31,7 @@ dependencies {
     implementation project(':libs:virtual-node:virtual-node-common')
     implementation project(':libs:virtual-node:virtual-node-datamodel')
     implementation project(':libs:external-messaging')
+    implementation project(':libs:tracing')
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'javax.persistence:javax.persistence-api'

@@ -18,6 +18,7 @@ import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
 import net.corda.data.membership.db.request.command.SuspendMember
+import net.corda.data.membership.db.request.command.UpdateGroupParameters
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.data.membership.db.request.command.UpdateStaticNetworkInfo
@@ -32,8 +33,12 @@ import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.data.membership.db.request.query.QueryStaticNetworkInfo
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.metrics.TimerMetricTypes
+import net.corda.membership.lib.metrics.getTimerMetric
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.utilities.time.Clock
@@ -49,6 +54,8 @@ internal class HandlerFactories(
     virtualNodeInfoReadService: VirtualNodeInfoReadService,
     keyEncodingService: KeyEncodingService,
     platformInfoProvider: PlatformInfoProvider,
+    groupParametersWriterService: GroupParametersWriterService,
+    groupParametersFactory: GroupParametersFactory,
     allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
 ) {
     val persistenceHandlerServices = PersistenceHandlerServices(
@@ -61,6 +68,9 @@ internal class HandlerFactories(
         keyEncodingService,
         platformInfoProvider,
         allowedCertificatesReaderWriterService,
+        groupParametersWriterService,
+        groupParametersFactory,
+        ::getTransactionTimer
     )
     private val handlerFactories: Map<Class<*>, () -> PersistenceHandler<out Any, out Any>> = mapOf(
         PersistRegistrationRequest::class.java to { PersistRegistrationRequestHandler(persistenceHandlerServices) },
@@ -91,6 +101,13 @@ internal class HandlerFactories(
         ActivateMember::class.java to { ActivateMemberHandler(persistenceHandlerServices) },
         QueryStaticNetworkInfo::class.java to { QueryStaticNetworkInfoHandler(persistenceHandlerServices) },
         UpdateStaticNetworkInfo::class.java to { UpdateStaticNetworkInfoHandler(persistenceHandlerServices) },
+        UpdateGroupParameters::class.java to { UpdateGroupParametersHandler(persistenceHandlerServices) },
+    )
+
+    private fun getTransactionTimer(operation: String) = getTimerMetric(
+        TimerMetricTypes.PERSISTENCE_TRANSACTION,
+        null,
+        operation
     )
 
     private fun getHandler(requestClass: Class<*>): PersistenceHandler<Any, Any> {
@@ -103,6 +120,13 @@ internal class HandlerFactories(
     }
 
     fun handle(request: MembershipPersistenceRequest): Any? {
-        return getHandler(request.request::class.java).invoke(request.context, request.request)
+        val rqClass = request.request::class.java
+        return getTimerMetric(
+            TimerMetricTypes.PERSISTENCE_HANDLER,
+            request.context.holdingIdentity,
+            rqClass.simpleName
+        ).recordCallable {
+            getHandler(rqClass).invoke(request.context, request.request)
+        }
     }
 }

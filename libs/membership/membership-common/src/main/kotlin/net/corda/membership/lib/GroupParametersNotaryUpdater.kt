@@ -3,7 +3,7 @@ package net.corda.membership.lib
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.exceptions.InvalidGroupParametersUpdateException
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
@@ -24,6 +24,7 @@ class GroupParametersNotaryUpdater(
 
         const val EPOCH_KEY = "corda.epoch"
         const val MODIFIED_TIME_KEY = "corda.modifiedTime"
+        const val MPV_KEY = "corda.minimum.platform.version"
         val notaryServiceRegex = NOTARY_SERVICE_NAME_KEY.format("([0-9]+)").toRegex()
     }
     private val logger = LoggerFactory.getLogger(this::class.java)
@@ -35,12 +36,12 @@ class GroupParametersNotaryUpdater(
         val notaryServiceName = notaryDetails.serviceName.toString()
         logger.info("Adding notary to group parameters under new notary service '$notaryServiceName'.")
         requireNotNull(notaryDetails.serviceProtocol) {
-            throw MembershipPersistenceException("Cannot add notary to group parameters - notary protocol must be" +
+            throw InvalidGroupParametersUpdateException("Cannot add notary to group parameters - notary protocol must be" +
                     " specified to create new notary service '$notaryServiceName'."
             )
         }
         require(notaryDetails.serviceProtocolVersions.isNotEmpty()) {
-            throw MembershipPersistenceException(
+            throw InvalidGroupParametersUpdateException(
                 "Cannot add notary to notary service '$notaryServiceName' - protocol versions are missing."
             )
         }
@@ -80,11 +81,11 @@ class GroupParametersNotaryUpdater(
         logger.info("Adding notary to group parameters under existing notary service '$notaryServiceName'.")
         notaryDetails.serviceProtocol?.let {
             require(currentParameters[String.format(NOTARY_SERVICE_PROTOCOL_KEY, notaryServiceNumber)].toString() == it) {
-                throw MembershipPersistenceException("Cannot add notary to notary service " +
+                throw InvalidGroupParametersUpdateException("Cannot add notary to notary service " +
                         "'$notaryServiceName' - protocols do not match.")
             }
             require(notaryDetails.serviceProtocolVersions.isNotEmpty()) {
-                throw MembershipPersistenceException("Cannot add notary to notary service '$notaryServiceName' - protocol" +
+                throw InvalidGroupParametersUpdateException("Cannot add notary to notary service '$notaryServiceName' - protocol" +
                         "  versions are missing.")
             }
         }
@@ -142,11 +143,11 @@ class GroupParametersNotaryUpdater(
         logger.info("Removing notary from group parameters under notary service '$notaryServiceName'.")
         notaryDetails.serviceProtocol?.let {
             require(currentParameters[String.format(NOTARY_SERVICE_PROTOCOL_KEY, notaryServiceNumber)].toString() == it) {
-                throw MembershipPersistenceException("Cannot remove notary from notary service " +
+                throw InvalidGroupParametersUpdateException("Cannot remove notary from notary service " +
                         "'$notaryServiceName' - protocols do not match.")
             }
             require(notaryDetails.serviceProtocolVersions.isNotEmpty()) {
-                throw MembershipPersistenceException("Cannot remove notary from notary service '$notaryServiceName' - protocol" +
+                throw InvalidGroupParametersUpdateException("Cannot remove notary from notary service '$notaryServiceName' - protocol" +
                         "  versions are missing.")
             }
         }

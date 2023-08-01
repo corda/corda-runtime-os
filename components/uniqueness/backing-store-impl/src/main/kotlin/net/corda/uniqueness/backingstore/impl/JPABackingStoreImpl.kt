@@ -6,17 +6,8 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
-import net.corda.lifecycle.DependentComponents
-import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
-import net.corda.lifecycle.createCoordinator
 import net.corda.metrics.CordaMetrics
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.orm.JpaEntitiesSet
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.HIBERNATE_JDBC_BATCH_SIZE
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION
@@ -28,7 +19,6 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
-import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.debug
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
@@ -44,7 +34,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.time.Instant
 import javax.persistence.EntityExistsException
 import javax.persistence.EntityManager
 import javax.persistence.OptimisticLockException
@@ -56,8 +45,6 @@ import javax.persistence.RollbackException
  */
 @Component(service = [BackingStore::class])
 open class JPABackingStoreImpl @Activate constructor(
-    @Reference(service = LifecycleCoordinatorFactory::class)
-    coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = JpaEntitiesRegistry::class)
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = DbConnectionManager::class)
@@ -71,21 +58,16 @@ open class JPABackingStoreImpl @Activate constructor(
         const val MAX_ATTEMPTS = 10
     }
 
-    private val lifecycleCoordinator: LifecycleCoordinator = coordinatorFactory
-        .createCoordinator<BackingStore>(::eventHandler)
-
-    private val dependentComponents = DependentComponents.of(
-        ::dbConnectionManager
-    )
-
-    private lateinit var jpaEntities: JpaEntitiesSet
-
-    override val isRunning: Boolean
-        get() = lifecycleCoordinator.isRunning
+    init {
+        jpaEntitiesRegistry.register(
+            CordaDb.Uniqueness.persistenceUnitName,
+            JPABackingStoreEntities.classes
+        )
+    }
 
     override fun session(holdingIdentity: HoldingIdentity, block: (BackingStore.Session) -> Unit) {
 
-        val sessionStartTime = Instant.now().toEpochMilli()
+        val sessionStartTime = System.nanoTime()
 
         val entityManagerFactory = dbConnectionManager.getOrCreateEntityManagerFactory(
             VirtualNodeDbType.UNIQUENESS.getSchemaName(holdingIdentity.shortHash),
@@ -115,18 +97,8 @@ open class JPABackingStoreImpl @Activate constructor(
                 .builder()
                 .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
                 .build()
-                .record(Duration.ofMillis(Instant.now().toEpochMilli() - sessionStartTime))
+                .record(Duration.ofNanos(System.nanoTime() - sessionStartTime))
         }
-    }
-
-    override fun start() {
-        log.info("Backing store starting")
-        lifecycleCoordinator.start()
-    }
-
-    override fun stop() {
-        log.info("Backing store stopping")
-        lifecycleCoordinator.stop()
     }
 
     protected open inner class SessionImpl(
@@ -141,7 +113,7 @@ open class JPABackingStoreImpl @Activate constructor(
         override fun executeTransaction(
             block: (BackingStore.Session, BackingStore.Session.TransactionOps) -> Unit
         ) {
-            val transactionStartTime = Instant.now().toEpochMilli()
+            val transactionStartTime = System.nanoTime()
 
             try {
                 for (attemptNumber in 1..MAX_ATTEMPTS) {
@@ -227,7 +199,7 @@ open class JPABackingStoreImpl @Activate constructor(
                     .builder()
                     .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
                     .build()
-                    .record(Duration.ofMillis(Instant.now().toEpochMilli() - transactionStartTime))
+                    .record(Duration.ofNanos(System.nanoTime() - transactionStartTime))
             }
         }
 
@@ -235,7 +207,7 @@ open class JPABackingStoreImpl @Activate constructor(
             states: Collection<UniquenessCheckStateRef>
         ): Map<UniquenessCheckStateRef, UniquenessCheckStateDetails> {
 
-            val queryStartTime = Instant.now().toEpochMilli()
+            val queryStartTime = System.nanoTime()
 
             val results = HashMap<
                     UniquenessCheckStateRef, UniquenessCheckStateDetails>()
@@ -268,7 +240,7 @@ open class JPABackingStoreImpl @Activate constructor(
                 .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
                 .withTag(CordaMetrics.Tag.OperationName, "getStateDetails")
                 .build()
-                .record(Duration.ofMillis(Instant.now().toEpochMilli() - queryStartTime))
+                .record(Duration.ofNanos(System.nanoTime() - queryStartTime))
 
             return results
         }
@@ -277,7 +249,7 @@ open class JPABackingStoreImpl @Activate constructor(
             txIds: Collection<SecureHash>
         ): Map<out SecureHash, UniquenessCheckTransactionDetailsInternal> {
 
-            val queryStartTime = Instant.now().toEpochMilli()
+            val queryStartTime = System.nanoTime()
 
             val txPks = txIds.map {
                 UniquenessTxAlgoIdKey(it.algorithm, it.bytes)
@@ -321,7 +293,7 @@ open class JPABackingStoreImpl @Activate constructor(
                 .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
                 .withTag(CordaMetrics.Tag.OperationName, "getTransactionDetails")
                 .build()
-                .record(Duration.ofMillis(Instant.now().toEpochMilli() - queryStartTime))
+                .record(Duration.ofNanos(System.nanoTime() - queryStartTime))
 
             return results
         }
@@ -330,7 +302,7 @@ open class JPABackingStoreImpl @Activate constructor(
             txEntity: UniquenessTransactionDetailEntity
         ): UniquenessCheckError? {
 
-            val queryStartTime = Instant.now().toEpochMilli()
+            val queryStartTime = System.nanoTime()
 
             val existing = entityManager.createNamedQuery(
                 "UniquenessRejectedTransactionEntity.select",
@@ -350,7 +322,7 @@ open class JPABackingStoreImpl @Activate constructor(
                     .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
                     .withTag(CordaMetrics.Tag.OperationName, "getTransactionError")
                     .build()
-                    .record(Duration.ofMillis(Instant.now().toEpochMilli() - queryStartTime))
+                    .record(Duration.ofNanos(System.nanoTime() - queryStartTime))
             }
         }
 
@@ -401,7 +373,7 @@ open class JPABackingStoreImpl @Activate constructor(
                 transactionDetails: Collection<Pair<
                         UniquenessCheckRequestInternal, UniquenessCheckResult>>
             ) {
-                val commitStartTime = Instant.now().toEpochMilli()
+                val commitStartTime = System.nanoTime()
 
                 transactionDetails.forEach { (request, result) ->
                     entityManager.persist(
@@ -430,38 +402,7 @@ open class JPABackingStoreImpl @Activate constructor(
                     .builder()
                     .withTag(CordaMetrics.Tag.SourceVirtualNode, holdingIdentity.shortHash.toString())
                     .build()
-                    .record(Duration.ofMillis(Instant.now().toEpochMilli() - commitStartTime))
-            }
-        }
-    }
-
-    @VisibleForTesting
-    fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        log.info("Backing store received event $event")
-        when (event) {
-            is StartEvent -> {
-                dependentComponents.registerAndStartAll(coordinator)
-            }
-            is StopEvent -> {
-                dependentComponents.stopAll()
-            }
-            is RegistrationStatusChangeEvent -> {
-                jpaEntitiesRegistry.register(
-                    CordaDb.Uniqueness.persistenceUnitName,
-                    JPABackingStoreEntities.classes
-                )
-
-                jpaEntities = jpaEntitiesRegistry.get(CordaDb.Uniqueness.persistenceUnitName)
-                    ?: throw IllegalStateException(
-                        "persistenceUnitName " +
-                                "${CordaDb.Uniqueness.persistenceUnitName} is not registered."
-                    )
-
-                log.info("Backing store is ${event.status}")
-                coordinator.updateStatus(event.status)
-            }
-            else -> {
-                log.warn("Unexpected event ${event}, ignoring")
+                    .record(Duration.ofNanos(System.nanoTime() - commitStartTime))
             }
         }
     }

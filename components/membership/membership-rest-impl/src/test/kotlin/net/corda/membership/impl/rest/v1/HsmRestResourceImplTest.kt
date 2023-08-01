@@ -1,6 +1,7 @@
 package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.client.hsm.HSMRegistrationClient
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.Categories.CI
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.TLS
@@ -41,21 +42,33 @@ class HsmRestResourceImplTest {
         on { getByHoldingIdentityShortHash(tenantIdShortHash) } doReturn mock()
     }
 
-    private val ops = HsmRestResourceImpl(hsmRegistrationClient, lifecycleCoordinatorFactory, virtualNodeInfoReadService)
+    private val ops = HsmRestResourceImpl(hsmRegistrationClient, lifecycleCoordinatorFactory,
+        virtualNodeInfoReadService, mock())
 
     @Nested
     inner class ApiTests {
         @Test
-        fun `assignedHsm returns null if no HSM found`() {
+        fun `assignedHsm returns 404 if no HSM found`() {
             whenever(hsmRegistrationClient.findHSM(tenantId, TLS)).doReturn(null)
 
-            val hsm = ops.assignedHsm(tenantId, "tls")
-
-            assertThat(hsm).isNull()
+            val e = assertThrows<ResourceNotFoundException> { ops.assignedHsm(tenantId, "tls") }
+            assertThat(e).hasMessageContaining("No association found for tenant $tenantId category tls")
         }
 
         @Test
+        fun `assignedHsm returns 404 if category is not known`() {
+            whenever(hsmRegistrationClient.findHSM(tenantId, "Bob")).doReturn(null)
+
+            val e = assertThrows<ResourceNotFoundException> { ops.assignedHsm(tenantId, "Bob") }
+            assertThat(e.message).contains("Invalid category: BOB")
+        }
+
+
+        @Test
         fun `assignedHsm calls the client with upper case`() {
+            val association = HSMAssociationInfo("a", "b", CryptoConsts.SOFT_HSM_ID, NOTARY, "foo", 0L)
+            whenever(hsmRegistrationClient.findHSM(tenantId, NOTARY)).doReturn(association)
+
             ops.assignedHsm(tenantId, "Notary")
 
             verify(hsmRegistrationClient).findHSM(tenantId, NOTARY)
@@ -63,7 +76,9 @@ class HsmRestResourceImplTest {
 
         @Test
         fun `assignedHsm verify the tenantId`() {
-            ops.assignedHsm(tenantId, "Notary")
+            val association = HSMAssociationInfo("a", "b", CryptoConsts.SOFT_HSM_ID, CI, "foo", 0L)
+            whenever(hsmRegistrationClient.findHSM(tenantId, CI)).doReturn(association)
+            ops.assignedHsm(tenantId, CI)
 
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(tenantIdShortHash)
         }
@@ -107,7 +122,7 @@ class HsmRestResourceImplTest {
                 HSMAssociationInfo(
                     "id1",
                     tenantId,
-                    "SOFT",
+                    CryptoConsts.SOFT_HSM_ID,
                     CI,
                     "master-key-alias",
                     0
@@ -120,7 +135,7 @@ class HsmRestResourceImplTest {
                 HsmAssociationInfo(
                     id = "id1",
                     category = CI,
-                    hsmId = "SOFT",
+                    hsmId = CryptoConsts.SOFT_HSM_ID,
                     masterKeyAlias = "master-key-alias",
                     deprecatedAt = 0
                 ),
@@ -133,14 +148,14 @@ class HsmRestResourceImplTest {
                 HSMAssociationInfo(
                     "id1",
                     tenantId,
-                    "SOFT",
+                    CryptoConsts.SOFT_HSM_ID,
                     CI,
                     "master-key-alias",
                     0
                 ),
             )
 
-            ops.assignSoftHsm(tenantId, "ci")
+            ops.assignSoftHsm(tenantId, CI)
 
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(tenantIdShortHash)
         }
@@ -151,7 +166,7 @@ class HsmRestResourceImplTest {
                 HSMAssociationInfo(
                     "id1",
                     P2P,
-                    "SOFT",
+                    CryptoConsts.SOFT_HSM_ID,
                     CI,
                     "master-key-alias",
                     0

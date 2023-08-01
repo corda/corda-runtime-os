@@ -18,6 +18,12 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.TEST_CONFIG
+import net.corda.messaging.integration.TopicTemplates.Companion.EVENTSTATE_OUTPUT2
+import net.corda.messaging.integration.TopicTemplates.Companion.EVENTSTATE_OUTPUT3
+import net.corda.messaging.integration.TopicTemplates.Companion.EVENTSTATE_OUTPUT4
+import net.corda.messaging.integration.TopicTemplates.Companion.EVENTSTATE_OUTPUT5
+import net.corda.messaging.integration.TopicTemplates.Companion.EVENTSTATE_OUTPUT6
+import net.corda.messaging.integration.TopicTemplates.Companion.EVENTSTATE_OUTPUT7
 import net.corda.messaging.integration.TopicTemplates.Companion.EVENT_TOPIC1
 import net.corda.messaging.integration.TopicTemplates.Companion.EVENT_TOPIC1_TEMPLATE
 import net.corda.messaging.integration.TopicTemplates.Companion.EVENT_TOPIC2
@@ -71,12 +77,6 @@ class StateAndEventSubscriptionIntegrationTest {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val CLIENT_ID = "integrationTestEventPublisher"
-        const val EVENTSTATE_OUTPUT2 = "EventStateOutputTopic2"
-        const val EVENTSTATE_OUTPUT3 = "EventStateOutputTopic3"
-        const val EVENTSTATE_OUTPUT4 = "EventStateOutputTopic4"
-        const val EVENTSTATE_OUTPUT5 = "EventStateOutputTopic5"
-        const val EVENTSTATE_OUTPUT6 = "EventStateOutputTopic6"
-        const val EVENTSTATE_OUTPUT7 = "EventStateOutputTopic7"
         const val CONSUMER_PROCESSOR_TIMEOUT = "consumer.processor.timeout"
         const val KAFKA_CONSUMER_MAX_POLL_INTERVAL = "consumer.max.poll.interval.ms"
         const val TWENTY_FIVE_SECONDS = 25 * 1_000L
@@ -255,7 +255,7 @@ class StateAndEventSubscriptionIntegrationTest {
         val expectedCommitStates = listOf(mapOf("key1" to "1"), mapOf("key1" to "2"))
         val syncPartitionLatch = CountDownLatch(1)
         val losePartitionLatch = CountDownLatch(1)
-        val commitStatesLatch = CountDownLatch(2)
+        val commitStatesLatch = CountDownLatch(1)
         val onNextLatch2 = CountDownLatch(2)
         val stateEventSub2 = subscriptionFactory.createStateAndEventSubscription(
             SubscriptionConfig("$EVENT_TOPIC3-group-2", EVENT_TOPIC3),

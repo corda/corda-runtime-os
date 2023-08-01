@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package net.corda.processors.rest
 
 import io.swagger.v3.core.util.Json
@@ -16,14 +17,18 @@ import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRestResource
+import net.corda.membership.rest.v1.CertificateRestResource
 import net.corda.membership.rest.v1.CertificatesRestResource
 import net.corda.membership.rest.v1.HsmRestResource
+import net.corda.membership.rest.v1.KeyRestResource
 import net.corda.membership.rest.v1.KeysRestResource
+import net.corda.membership.rest.v1.MGMAdminRestResource
 import net.corda.membership.rest.v1.MGMRestResource
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.NetworkRestResource
 import net.corda.processors.rest.diff.diff
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.utilities.NetworkHostAndPort
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -32,6 +37,7 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.io.InputStream
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -44,9 +50,11 @@ class OpenApiCompatibilityTest {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private val importantRestResources = setOf(
-            CertificatesRestResource::class.java, // P2P
+            CertificatesRestResource::class.java, // P2P - Deprecated but supporting RestApiVersion.C5.0
+            CertificateRestResource::class.java, // P2P
             HsmRestResource::class.java, // P2P
-            KeysRestResource::class.java, // P2P
+            KeysRestResource::class.java, // P2P  - Deprecated but supporting RestApiVersion.C5.0
+            KeyRestResource::class.java, // P2P
             ConfigRestResource::class.java, // Flow
             FlowRestResource::class.java, // Flow
             FlowClassRestResource::class.java, // Flow
@@ -55,6 +63,7 @@ class OpenApiCompatibilityTest {
             MemberLookupRestResource::class.java, // MGM
             MemberRegistrationRestResource::class.java, // MGM
             MGMRestResource::class.java, // MGM
+            MGMAdminRestResource::class.java, // MGM
             NetworkRestResource::class.java, // MGM
             PermissionEndpoint::class.java, // REST
             RoleEndpoint::class.java, // REST
@@ -63,7 +72,7 @@ class OpenApiCompatibilityTest {
         )
 
         // `cardinality` is not equal to `importantRestResources.size` as there might be some test RestResource as well
-        @InjectService(service = PluggableRestResource::class, cardinality = 16, timeout = 10_000)
+        @InjectService(service = PluggableRestResource::class, cardinality = 17, timeout = 10_000)
         lateinit var dynamicRestResources: List<RestResource>
 
         @InjectService(service = RestServerFactory::class, timeout = 10_000)
@@ -79,35 +88,47 @@ class OpenApiCompatibilityTest {
 
         logger.info("REST resources discovered: ${allOps.map { it.simpleName }}")
 
-        val existingSwaggerJson = computeExistingSwagger()
-        val baselineSwagger = fetchBaseline()
+        RestApiVersion.values().forEach { apiVersion ->
 
-        val diffReport = existingSwaggerJson.second.diff(baselineSwagger)
+            val existingSwaggerJson = computeExistingSwagger(apiVersion)
+            val baselineSwagger = fetchBaseline(apiVersion)
 
-        val tmpBaselineFile = kotlin.io.path.createTempFile(
-            prefix = "open-api-baseline", suffix = ".json")
-        File(tmpBaselineFile.toUri()).printWriter().use {
-            it.println(existingSwaggerJson.second.toJson())
+            val diffReport = existingSwaggerJson.second.diff(baselineSwagger)
+
+            val tmpBaselineFile = kotlin.io.path.createTempFile(
+                prefix = "open-api-baseline-${apiVersion.versionPath}", suffix = ".json"
+            )
+            File(tmpBaselineFile.toUri()).printWriter().use {
+                it.println(existingSwaggerJson.second.toJson())
+            }
+
+            assertThat(diffReport).withFailMessage(
+                "Version: '${apiVersion.versionPath}': Produced Open API content:\n" + existingSwaggerJson.first +
+                        "\nis different to the baseline. Differences noted: ${diffReport.joinToString(" ## ")}\n\n" +
+                        "New baseline written to: $tmpBaselineFile"
+            ).isEmpty()
         }
-
-        assertThat(diffReport).withFailMessage(
-            "Produced Open API content:\n" + existingSwaggerJson.first +
-                    "\nis different to the baseline. Differences noted: ${diffReport.joinToString(" ## ")}\n\n" +
-                    "New baseline written to: $tmpBaselineFile"
-        ).isEmpty()
     }
 
-    private fun fetchBaseline(): OpenAPI {
-        val stream = requireNotNull(javaClass.classLoader.getResourceAsStream("/swaggerBaseline.json"))
+    private fun fetchBaseline(apiVersion: RestApiVersion): OpenAPI {
+
+        val stream = with("/swaggerBaseline-${apiVersion.versionPath}.json") {
+            val classLoader = OpenApiCompatibilityTest::class.java.classLoader
+            val resource = classLoader.getResource(this)
+            val errMsg =  { "File '$this' cannot be found on the classpath. Please check 'resources' folder." }
+            requireNotNull(resource, errMsg)
+            val resourceAsStream: InputStream? = resource.openStream()
+            requireNotNull(resourceAsStream, errMsg)
+        }
+
         return stream.use {
             val jsonString = String(it.readAllBytes())
             Json.mapper().readValue(jsonString, OpenAPI::class.java)
         }
     }
 
-    private fun computeExistingSwagger(): Pair<String, OpenAPI> {
+    private fun computeExistingSwagger(apiVersion: RestApiVersion): Pair<String, OpenAPI> {
         val context = RestContext(
-            "1",
             "api",
             "Corda REST API",
             "All the endpoints for publicly visible Open API calls"
@@ -127,7 +148,7 @@ class OpenApiCompatibilityTest {
             { FakeSecurityManager() }, restServerSettings, multipartDir, devMode = true
         ).apply { start() }
 
-        val url = "http://${serverAddress.host}:${server.port}/${context.basePath}/v${context.version}/swagger.json"
+        val url = "http://${serverAddress.host}:${server.port}/${context.basePath}/${apiVersion.versionPath}/swagger.json"
         logger.info("Swagger should be accessible on: $url")
 
         return server.use {

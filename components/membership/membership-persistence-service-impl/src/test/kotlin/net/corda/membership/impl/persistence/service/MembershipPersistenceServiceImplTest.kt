@@ -142,9 +142,11 @@ class MembershipPersistenceServiceImplTest {
             virtualNodeInfoReadService,
             keyEncodingService,
             platformInfoProvider,
-            mock()
+            mock(),
+            mock(),
+            mock(),
         )
-        verify(coordinatorFactory).createCoordinator(any(), any())
+        verify(coordinatorFactory, times(2)).createCoordinator(any(), any())
     }
 
     @Test
@@ -265,8 +267,6 @@ class MembershipPersistenceServiceImplTest {
             any()
         )
         verify(rpcSubscription).start()
-        verify(rpcSubscription).subscriptionName
-        verify(coordinator).followStatusChangesByName(eq(setOf(rpcSubscription.subscriptionName)))
 
         with(configCaptor.firstValue) {
             assertThat(requestTopic).isEqualTo(MEMBERSHIP_DB_RPC_TOPIC)
@@ -282,8 +282,6 @@ class MembershipPersistenceServiceImplTest {
             any()
         )
         verify(rpcSubscription, times(2)).start()
-        verify(rpcSubscription, times(3)).subscriptionName
-        verify(coordinator, times(2)).followStatusChangesByName(eq(setOf(rpcSubscription.subscriptionName)))
 
         postStopEvent()
         verify(rpcSubscription, times(2)).close()

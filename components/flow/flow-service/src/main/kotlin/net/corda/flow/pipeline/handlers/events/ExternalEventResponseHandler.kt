@@ -1,24 +1,36 @@
 package net.corda.flow.pipeline.handlers.events
 
 import net.corda.data.flow.event.external.ExternalEventResponse
+import net.corda.data.flow.state.external.ExternalEventStateType
 import net.corda.flow.external.events.impl.ExternalEventManager
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.utilities.debug
+import net.corda.utilities.time.Clock
+import net.corda.utilities.time.UTCClock
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.time.Duration
 
 @Component(service = [FlowEventHandler::class])
-class ExternalEventResponseHandler @Activate constructor(
-    @Reference(service = ExternalEventManager::class)
+class ExternalEventResponseHandler(
+    private val clock: Clock,
     private val externalEventManager: ExternalEventManager
 ) : FlowEventHandler<ExternalEventResponse> {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
+
+    @Suppress("Unused")
+    @Activate
+    constructor(
+        @Reference(service = ExternalEventManager::class)
+        externalEventManager: ExternalEventManager
+    ) : this(UTCClock(), externalEventManager)
 
     override val type = ExternalEventResponse::class.java
 
@@ -54,10 +66,21 @@ class ExternalEventResponseHandler @Activate constructor(
             )
         }
 
-        checkpoint.externalEventState = externalEventManager.processResponse(
+        val updatedExternalEventState = externalEventManager.processResponse(
             externalEventState,
             externalEventResponse
         )
+
+        checkpoint.externalEventState = updatedExternalEventState
+
+        if (updatedExternalEventState.status.type == ExternalEventStateType.RETRY) {
+            checkpoint.setFlowSleepDuration(
+                Duration.between(
+                    clock.instant(),
+                    updatedExternalEventState.sendTimestamp
+                ).toMillis().toInt().coerceAtLeast(0)
+            )
+        }
 
         return context
     }

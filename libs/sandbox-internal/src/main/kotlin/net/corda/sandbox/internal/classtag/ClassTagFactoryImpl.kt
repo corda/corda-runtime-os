@@ -11,6 +11,8 @@ import net.corda.sandbox.internal.classtag.v1.EvolvableTagImplV1
 import net.corda.sandbox.internal.classtag.v1.StaticTagImplV1
 import net.corda.sandbox.internal.sandbox.CpkSandbox
 import org.osgi.framework.Bundle
+import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
+import org.osgi.framework.Constants.SYSTEM_BUNDLE_SYMBOLICNAME
 
 /** An implementation of [ClassTagFactory]. */
 internal class ClassTagFactoryImpl : ClassTagFactory {
@@ -23,9 +25,12 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
             }.serialise()
         }
 
-        val bundleName = bundle.symbolicName ?: throw SandboxException(
-            "Bundle at ${bundle.location} does not have a symbolic name, preventing serialisation."
-        )
+        val bundleName = when (bundle.bundleId) {
+            SYSTEM_BUNDLE_ID -> SYSTEM_BUNDLE_SYMBOLICNAME
+            else -> bundle.symbolicName ?: throw SandboxException(
+                "Bundle at ${bundle.location} does not have a symbolic name, preventing serialisation."
+            )
+        }
 
         return if (cpkSandbox == null) {
             if (isStaticTag) {

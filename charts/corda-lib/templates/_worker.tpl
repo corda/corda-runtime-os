@@ -73,7 +73,7 @@ spec:
   - name: http
     port: {{ .port }}
     targetPort: http
-{{-   end }}
+{{- end }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -114,18 +114,8 @@ spec:
       {{- with $.Values.serviceAccount.name  }}
       serviceAccountName: {{ . }}
       {{- end }}
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 1
-              podAffinityTerm:
-                labelSelector:
-                  matchExpressions:
-                    - key: "app.kubernetes.io/component"
-                      operator: In
-                      values:
-                        - {{ include "corda.workerComponent" $worker }}
-                topologyKey: "kubernetes.io/hostname"
+      {{- include "corda.topologySpreadConstraints" $ | indent 6 }}
+      {{- include "corda.affinity" (list $ . $worker ) | nindent 6 }}
       containers:
       - name: {{ $workerName | quote }}
         image: {{ include "corda.workerImage" ( list $ . ) }}
@@ -271,6 +261,19 @@ spec:
           - "-ddatabase.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" $.Values.db.cluster.host }}:{{ $.Values.db.cluster.port }}/{{ $.Values.db.cluster.database }}?currentSchema={{ $.Values.db.cluster.schema }}"
           - "-ddatabase.jdbc.directory=/opt/jdbc-driver"
           - "-ddatabase.pool.max_size={{ .clusterDbConnectionPool.maxSize }}"
+          {{- if .clusterDbConnectionPool.minSize }}
+          - "-ddatabase.pool.min_size={{ .clusterDbConnectionPool.minSize }}"
+          {{- end }}
+          - "-ddatabase.pool.idleTimeoutSeconds={{ .clusterDbConnectionPool.idleTimeoutSeconds }}"
+          - "-ddatabase.pool.maxLifetimeSeconds={{ .clusterDbConnectionPool.maxLifetimeSeconds }}"
+          - "-ddatabase.pool.keepaliveTimeSeconds={{ .clusterDbConnectionPool.keepaliveTimeSeconds }}"
+          - "-ddatabase.pool.validationTimeoutSeconds={{ .clusterDbConnectionPool.validationTimeoutSeconds }}"
+          {{- end }}
+          {{- if $.Values.tracing.endpoint }}
+          - "--send-trace-to={{ $.Values.tracing.endpoint }}"
+          {{- end }}
+          {{- if $.Values.tracing.samplesPerSecond }}
+          - "--trace-samples-per-second={{ $.Values.tracing.samplesPerSecond }}"
           {{- end }}
           {{- range $i, $arg := $optionalArgs.additionalWorkerArgs }}
           - {{ $arg | quote }}
@@ -432,4 +435,39 @@ Worker image
 {{- with index . 1 }}
 {{- printf "%s/%s:%s" ( .image.registry | default $.Values.image.registry ) ( .image.repository ) ( .image.tag | default $.Values.image.tag | default $.Chart.AppVersion ) | quote }}
 {{- end }}
+{{- end }}
+
+{{/*
+Worker default affinity
+*/}}
+{{- define "corda.defaultAffinity" -}}
+{{- $weight := index . 0 }}
+{{- $worker := index . 1 }}
+weight: {{ $weight}}
+podAffinityTerm:
+  labelSelector:
+    matchExpressions:
+      - key: "app.kubernetes.io/component"
+        operator: In
+        values:
+          - {{ include "corda.workerComponent" $worker }}
+  topologyKey: "kubernetes.io/hostname"
+{{- end }}
+
+{{/*
+Worker affinity
+*/}}
+{{- define "corda.affinity" -}}
+{{- $ := index . 0 }}
+{{- $worker := index . 2 }}
+{{- $affinity := default ( deepCopy $.Values.affinity ) dict }}
+{{- if not ($affinity.podAntiAffinity) }}
+{{- $_ := set $affinity "podAntiAffinity" dict }}
+{{- end }}
+{{- if not ($affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution) }}
+{{- $_ := set $affinity.podAntiAffinity "preferredDuringSchedulingIgnoredDuringExecution" list }}
+{{- end }}
+{{- $_ := set $affinity.podAntiAffinity "preferredDuringSchedulingIgnoredDuringExecution" ( append $affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution ( fromYaml ( include "corda.defaultAffinity" ( list ( add ( len $affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution ) 1 ) $worker ) ) ) ) }}
+affinity:
+{{- toYaml $affinity | nindent 2 }}
 {{- end }}

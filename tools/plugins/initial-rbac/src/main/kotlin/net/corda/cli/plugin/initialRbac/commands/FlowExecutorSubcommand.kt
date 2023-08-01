@@ -1,5 +1,6 @@
 package net.corda.cli.plugin.initialRbac.commands
 
+import net.corda.cli.plugin.initialRbac.commands.RestApiVersionUtils.VERSION_PATH_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.checkOrCreateRole
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.wildcardMatch
 import net.corda.cli.plugins.common.RestCommand
@@ -31,13 +32,17 @@ class FlowExecutorSubcommand : RestCommand(), Callable<Int> {
 
     private val permissionsToCreate: Set<PermissionTemplate> get() = setOf(
         // Endpoint level commands
-        PermissionTemplate("Start Flow endpoint", "POST:/api/v1/flow/$vnodeShortHash", null),
-        PermissionTemplate("Get status for all flows", "GET:/api/v1/flow/$vnodeShortHash", null),
-        PermissionTemplate("Get status for a specific flow", "GET:/api/v1/flow/$vnodeShortHash/$CLIENT_REQ_REGEX", null),
-        PermissionTemplate("Get a list of startable flows", "GET:/api/v1/flowclass/$vnodeShortHash", null),
+        PermissionTemplate("Start Flow endpoint",
+            "POST:/api/$VERSION_PATH_REGEX/flow/$vnodeShortHash", null),
+        PermissionTemplate("Get status for all flows",
+            "GET:/api/$VERSION_PATH_REGEX/flow/$vnodeShortHash", null),
+        PermissionTemplate("Get status for a specific flow",
+            "GET:/api/$VERSION_PATH_REGEX/flow/$vnodeShortHash/$CLIENT_REQ_REGEX", null),
+        PermissionTemplate("Get a list of startable flows",
+            "GET:/api/$VERSION_PATH_REGEX/flowclass/$vnodeShortHash", null),
         PermissionTemplate(
             "Get status for a specific flow via WebSocket",
-            "WS:/api/v1/flow/$vnodeShortHash/$CLIENT_REQ_REGEX",
+            "WS:/api/$VERSION_PATH_REGEX/flow/$vnodeShortHash/$CLIENT_REQ_REGEX",
             null
         ),
 

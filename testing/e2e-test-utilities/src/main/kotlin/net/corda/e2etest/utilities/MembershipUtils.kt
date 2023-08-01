@@ -12,6 +12,7 @@ private val mapper = ObjectMapper()
 
 const val REGISTRATION_KEY_PRE_AUTH = "corda.auth.token"
 const val REGISTRATION_DECLINED = "DECLINED"
+const val REGISTRATION_INVALID = "INVALID"
 const val REGISTRATION_APPROVED = "APPROVED"
 const val REGISTRATION_SUBMITTED = "SUBMITTED"
 const val REGISTRATION_SENT_TO_MGM = "SENT_TO_MGM"
@@ -45,7 +46,7 @@ const val DEFAULT_SIGNATURE_SPEC = "SHA256withECDSA"
  */
 @Suppress("LongParameterList")
 fun ClusterInfo.onboardMember(
-    cpb: String,
+    cpb: String?,
     cpiName: String,
     groupPolicy: String,
     x500Name: String,
@@ -83,6 +84,28 @@ fun ClusterInfo.onboardMember(
     val registrationId = register(holdingId, registrationContext, waitForApproval)
 
     return NetworkOnboardingMetadata(holdingId, x500Name, registrationId, registrationContext, this)
+}
+
+/**
+ * Register a member who has registered previously using the [NetworkOnboardingMetadata] from the previous registration
+ * for the cluster connection details and for the member identifier.
+ */
+fun NetworkOnboardingMetadata.reregisterMember(
+    contextToMerge: Map<String, String?> = emptyMap(),
+    waitForApproval: Boolean = true
+): NetworkOnboardingMetadata {
+    val newContext = registrationContext.toMutableMap()
+    contextToMerge.forEach {
+        if (it.value == null) {
+            newContext.remove(it.key)
+        } else {
+            newContext[it.key] = it.value!!
+        }
+    }
+    return copy(
+        registrationContext = newContext,
+        registrationId = clusterInfo.register(holdingId, newContext, waitForApproval)
+    )
 }
 
 /**
@@ -168,6 +191,12 @@ fun ClusterInfo.register(
     }
 }
 
+private val finalRegistrationStates =  setOf(
+    "DECLINED",
+    "INVALID",
+    "FAILED",
+    "APPROVED",
+)
 /**
  * Check a given cluster for a registration visible by the virtual node represented by the holding identity short hash
  * provided which has status matching the provided status.
@@ -199,6 +228,15 @@ fun ClusterInfo.waitForRegistrationStatus(
                     it.toJson().firstOrNull()?.get("registrationStatus")?.textValue() == registrationStatus
                 }
             }
+            immediateFailCondition {
+                val status = if (registrationId != null) {
+                    it.toJson().get("registrationStatus")?.textValue()
+                } else {
+                    it.toJson().firstOrNull()?.get("registrationStatus")?.textValue() == registrationStatus
+                }
+                (status != registrationStatus) &&
+                    (finalRegistrationStates.contains(status))
+            }
             failMessage("Registration was not completed for $holdingIdentityShortHash")
         }
     }
@@ -209,17 +247,18 @@ fun ClusterInfo.waitForRegistrationStatus(
  */
 fun registerStaticMember(
     holdingIdentityShortHash: String,
-    isNotary: Boolean = false
-) = DEFAULT_CLUSTER.registerStaticMember(holdingIdentityShortHash, isNotary)
+    notaryServiceName: String? = null
+) = DEFAULT_CLUSTER.registerStaticMember(holdingIdentityShortHash, notaryServiceName)
 
 fun ClusterInfo.registerStaticMember(
     holdingIdentityShortHash: String,
-    isNotary: Boolean = false
+    notaryServiceName: String? = null
 ) {
     cluster {
         assertWithRetry {
             interval(1.seconds)
-            command { registerStaticMember(holdingIdentityShortHash, isNotary) }
+            timeout(10.seconds)
+            command { registerStaticMember(holdingIdentityShortHash, notaryServiceName) }
             condition {
                 it.code == ResponseCode.OK.statusCode
                         && it.toJson()["registrationStatus"].textValue() == REGISTRATION_SUBMITTED
@@ -231,7 +270,7 @@ fun ClusterInfo.registerStaticMember(
             // Use a fairly long timeout here to give plenty of time for the other side to respond. Longer
             // term this should be changed to not use the RPC message pattern and have the information available in a
             // cache on the REST worker, but for now this will have to suffice.
-            timeout(1.minutes)
+            timeout(20.seconds)
             interval(1.seconds)
             command { getRegistrationStatus(holdingIdentityShortHash) }
             condition {

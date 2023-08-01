@@ -11,7 +11,7 @@ import net.corda.data.membership.SignedData
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.ActivateMember
@@ -81,6 +81,7 @@ import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
@@ -256,6 +257,7 @@ class MembershipPersistenceRPCProcessorTest {
         on { merge(preAuthTokenEntity) } doReturn preAuthTokenEntity
         on { createQuery(registrationRequestsQuery) } doReturn registrationRequestQuery
         on { find(eq(MemberInfoEntity::class.java), any(), eq(LockModeType.PESSIMISTIC_WRITE)) } doReturn memberEntity
+        on { merge(any<Any>()) } doAnswer { it.arguments[0] }
     }
     private val entityManagerFactory: EntityManagerFactory = mock {
         on { createEntityManager() } doReturn entityManager
@@ -263,7 +265,7 @@ class MembershipPersistenceRPCProcessorTest {
 
     private val dbConnectionManager: DbConnectionManager = mock {
         on {
-            createEntityManagerFactory(
+            getOrCreateEntityManagerFactory(
                 eq(vaultDmlConnectionId),
                 any()
             )
@@ -305,6 +307,8 @@ class MembershipPersistenceRPCProcessorTest {
                 virtualNodeInfoReadService,
                 keyEncodingService,
                 platformInfoProvider,
+                mock(),
+                mock(),
                 mock(),
             )
         )

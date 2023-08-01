@@ -72,9 +72,9 @@ class PersistGroupPolicyHandlerTest {
     private val entityManagerFactory = mock<EntityManagerFactory> {
         on { createEntityManager() } doReturn entityManager
     }
-    private val connectionManager = mock<DbConnectionManager> {
+    private val dbConnectionManager = mock<DbConnectionManager> {
         on {
-            createEntityManagerFactory(
+            getOrCreateEntityManagerFactory(
                 vaultDmlConnectionId,
                 entitySet
             )
@@ -85,8 +85,9 @@ class PersistGroupPolicyHandlerTest {
         on { cordaAvroSerializationFactory } doReturn serializationFactory
         on { virtualNodeInfoReadService } doReturn nodeInfoReadService
         on { jpaEntitiesRegistry } doReturn registry
-        on { dbConnectionManager } doReturn connectionManager
+        on { dbConnectionManager } doReturn dbConnectionManager
         on { clock } doReturn clock
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
     private val handler = PersistGroupPolicyHandler(persistenceHandlerServices)
 

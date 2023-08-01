@@ -22,6 +22,7 @@ import net.corda.rest.annotations.HttpDELETE
 import net.corda.rest.annotations.HttpPUT
 import net.corda.rest.annotations.HttpWS
 import net.corda.rest.annotations.isRestEndpointAnnotation
+import net.corda.rest.annotations.retrieveApiVersionsSet
 import net.corda.rest.tools.annotations.extensions.name
 import net.corda.rest.tools.annotations.extensions.path
 import net.corda.rest.tools.annotations.extensions.title
@@ -74,7 +75,8 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
                     annotation.name(c),
                     annotation.description,
                     basePath,
-                    retrieveEndpoints(c).toSet()
+                    retrieveEndpoints(c).toSet(),
+                    retrieveApiVersionsSet(annotation.minVersion, annotation.maxVersion)
                 )
             }.also { log.trace { "Retrieve resources completed." } }
         } catch (e: Exception) {
@@ -164,7 +166,8 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
                         method.toClassAndParameterizedTypes().second,
                         method.kotlinFunction?.returnType?.isMarkedNullable ?: false
                     ),
-                    method.getInvocationMethod(clazz)
+                    method.getInvocationMethod(clazz),
+                    retrieveApiVersionsSet(annotation.minVersion, annotation.maxVersion)
                 )
             }
         }
@@ -213,7 +216,8 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
                 this.toClassAndParameterizedTypes().second,
                 this.kotlinFunction?.returnType?.isMarkedNullable ?: false
             ),
-            this.getInvocationMethod()
+            this.getInvocationMethod(),
+            retrieveApiVersionsSet(annotation.minVersion, annotation.maxVersion)
         ).also { log.trace { """"Method "$name" to GET endpoint completed.""" } }
     }
 
@@ -231,7 +235,8 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
                 this.toClassAndParameterizedTypes().second,
                 this.kotlinFunction?.returnType?.isMarkedNullable ?: false
             ),
-            this.getInvocationMethod()
+            this.getInvocationMethod(),
+            retrieveApiVersionsSet(annotation.minVersion, annotation.maxVersion)
         ).also { log.trace { """"Method "$name" to DELETE endpoint completed.""" } }
     }
 
@@ -272,7 +277,8 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
             annotation.path(),
             retrieveParameters(true),
             responseBody,
-            this.getInvocationMethod()
+            this.getInvocationMethod(),
+            retrieveApiVersionsSet(annotation.minVersion, annotation.maxVersion)
         ).also { log.trace { "Method \"${this.name}\" to POST endpoint completed." } }
     }
 
@@ -313,7 +319,8 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
             annotation.path(),
             retrieveParameters(true),
             responseBody,
-            this.getInvocationMethod()
+            this.getInvocationMethod(),
+            retrieveApiVersionsSet(annotation.minVersion, annotation.maxVersion)
         ).also { log.trace { "Method \"${this.name}\" to PUT endpoint completed." } }
     }
 
@@ -331,7 +338,8 @@ internal class APIStructureRetriever(private val opsImplList: List<PluggableRest
                 this.toClassAndParameterizedTypes().second,
                 this.kotlinFunction?.returnType?.isMarkedNullable ?: false
             ),
-            this.getInvocationMethod()
+            this.getInvocationMethod(),
+            retrieveApiVersionsSet(annotation.minVersion, annotation.maxVersion)
         ).also { log.trace { """"Method "$name" to WS endpoint completed.""" } }
     }
 

@@ -3,10 +3,11 @@ package net.corda.crypto.service.impl.bus
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.config.impl.retrying
+import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_KEY
-import net.corda.crypto.core.CryptoConsts.HSMContext.PREFERRED_PRIVATE_KEY_POLICY_NONE
-import net.corda.crypto.service.HSMService
+import net.corda.crypto.core.CryptoService
+import net.corda.crypto.softhsm.TenantInfoService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -15,7 +16,6 @@ import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
-import net.corda.data.crypto.wire.hsm.registration.commands.AssignHSMCommand
 import net.corda.data.crypto.wire.hsm.registration.commands.AssignSoftHSMCommand
 import net.corda.data.crypto.wire.hsm.registration.queries.AssignedHSMQuery
 import net.corda.data.crypto.wire.ops.rpc.commands.GenerateWrappingKeyRpcCommand
@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
@@ -85,48 +84,13 @@ class HSMRegistrationBusProcessorTests {
     }
 
     @Test
-    fun `Should handle AssignHSMCommand`() {
-        val info = HSMAssociationInfo()
-        val hsmService = mock<HSMService> {
-            on { assignHSM(any(), any(), any()) } doReturn info
-        }
-        val processor = HSMRegistrationBusProcessor(hsmService, configEvent)
-        val context = createRequestContext()
-        val future = CompletableFuture<HSMRegistrationResponse>()
-        processor.onNext(
-            HSMRegistrationRequest(
-                context,
-                AssignHSMCommand(
-                    CryptoConsts.Categories.LEDGER,
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(PREFERRED_PRIVATE_KEY_POLICY_KEY, PREFERRED_PRIVATE_KEY_POLICY_NONE)
-                        )
-                    )
-                )
-            ),
-            future
-        )
-        val result = future.get()
-        assertResponseContext(context, result.context)
-        assertThat(result.response).isInstanceOf(HSMAssociationInfo::class.java)
-        assertSame(info, result.response)
-        Mockito.verify(hsmService, times(1)).assignHSM(
-            eq(tenantId),
-            eq(CryptoConsts.Categories.LEDGER),
-            argThat {
-                this[PREFERRED_PRIVATE_KEY_POLICY_KEY] == PREFERRED_PRIVATE_KEY_POLICY_NONE
-            }
-        )
-    }
-
-    @Test
     fun `Should execute handle AssignSoftHSMCommand`() {
         val info = HSMAssociationInfo()
-        val hsmService = mock<HSMService> {
-            on { assignSoftHSM(any(), any()) } doReturn info
+        val tenantInfoService = mock<TenantInfoService> {
+            on { populate(any(), any(), any()) } doReturn info
         }
-        val processor = HSMRegistrationBusProcessor(hsmService, configEvent)
+        val cryptoService = mock<CryptoService> {}
+        val processor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, configEvent.config.toCryptoConfig().retrying())
         val context = createRequestContext()
         val future = CompletableFuture<HSMRegistrationResponse>()
         processor.onNext(
@@ -142,9 +106,10 @@ class HSMRegistrationBusProcessorTests {
         assertResponseContext(context, result.context)
         assertThat(result.response).isInstanceOf(HSMAssociationInfo::class.java)
         assertSame(info, result.response)
-        Mockito.verify(hsmService, times(1)).assignSoftHSM(
+        Mockito.verify(tenantInfoService, times(1)).populate(
             eq(tenantId),
-            eq(CryptoConsts.Categories.LEDGER)
+            eq(CryptoConsts.Categories.LEDGER),
+            any()
         )
     }
 
@@ -158,10 +123,11 @@ class HSMRegistrationBusProcessorTests {
             null,
             0
         )
-        val hsmService = mock<HSMService> {
-            on { findAssignedHSM(any(), any()) } doReturn association
+        val tenantInfoService = mock<TenantInfoService> {
+            on { lookup(any(), any()) } doReturn association
         }
-        val processor = HSMRegistrationBusProcessor(hsmService, configEvent)
+        val cryptoService = mock<CryptoService>()
+        val processor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, configEvent.config.toCryptoConfig().retrying())
         val context = createRequestContext()
         val future = CompletableFuture<HSMRegistrationResponse>()
         processor.onNext(
@@ -175,13 +141,14 @@ class HSMRegistrationBusProcessorTests {
         assertResponseContext(context, result.context)
         assertThat(result.response).isInstanceOf(HSMAssociationInfo::class.java)
         assertSame(association, result.response)
-        Mockito.verify(hsmService, times(1)).findAssignedHSM(tenantId, CryptoConsts.Categories.LEDGER)
+        Mockito.verify(tenantInfoService, times(1)).lookup(tenantId, CryptoConsts.Categories.LEDGER)
     }
 
     @Test
     fun `Should return no content response when handling AssignedMSMQQuery for unassigned category`() {
-        val hsmService = mock<HSMService>()
-        val processor = HSMRegistrationBusProcessor(hsmService, configEvent)
+        val tenantInfoService = mock<TenantInfoService>()
+        val cryptoService = mock<CryptoService>()
+        val processor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, configEvent.config.toCryptoConfig().retrying())
         val context = createRequestContext()
         val future = CompletableFuture<HSMRegistrationResponse>()
         processor.onNext(
@@ -194,13 +161,14 @@ class HSMRegistrationBusProcessorTests {
         val result = future.get()
         assertResponseContext(context, result.context)
         assertThat(result.response).isInstanceOf(CryptoNoContentValue::class.java)
-        Mockito.verify(hsmService, times(1)).findAssignedHSM(tenantId, CryptoConsts.Categories.LEDGER)
+        Mockito.verify(tenantInfoService, times(1)).lookup(tenantId, CryptoConsts.Categories.LEDGER)
     }
 
     @Test
     fun `Should complete future exceptionally with IllegalArgumentException in case of unknown request`() {
-        val hsmService = mock<HSMService>()
-        val processor = HSMRegistrationBusProcessor(hsmService, configEvent)
+        val tenantInfoService = mock<TenantInfoService>()
+        val cryptoService = mock<CryptoService>()
+        val processor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService , configEvent.config.toCryptoConfig().retrying())
         val context = createRequestContext()
         val future = CompletableFuture<HSMRegistrationResponse>()
         processor.onNext(
@@ -220,22 +188,18 @@ class HSMRegistrationBusProcessorTests {
     @Test
     fun `Should complete future exceptionally in case of service failure`() {
         val originalException = RuntimeException()
-        val hsmService = mock<HSMService> {
-            on { assignHSM(any(), any(), any()) } doThrow originalException
+        val tenantInfoService = mock<TenantInfoService> {
+            on { populate(any(), any(), any()) } doThrow originalException
         }
-        val processor = HSMRegistrationBusProcessor(hsmService, configEvent)
+        val cryptoService = mock<CryptoService>()
+        val processor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, configEvent.config.toCryptoConfig().retrying())
         val context = createRequestContext()
         val future = CompletableFuture<HSMRegistrationResponse>()
         processor.onNext(
             HSMRegistrationRequest(
                 context,
-                AssignHSMCommand(
-                    CryptoConsts.Categories.LEDGER,
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(PREFERRED_PRIVATE_KEY_POLICY_KEY, PREFERRED_PRIVATE_KEY_POLICY_NONE)
-                        )
-                    )
+                AssignSoftHSMCommand(
+                    CryptoConsts.Categories.LEDGER
                 )
             ),
             future
@@ -245,12 +209,10 @@ class HSMRegistrationBusProcessorTests {
         }
         assertNotNull(exception.cause)
         assertSame(originalException, exception.cause)
-        Mockito.verify(hsmService, times(1)).assignHSM(
+        Mockito.verify(tenantInfoService, times(1)).populate(
             eq(tenantId),
             eq(CryptoConsts.Categories.LEDGER),
-            argThat {
-                this[PREFERRED_PRIVATE_KEY_POLICY_KEY] == PREFERRED_PRIVATE_KEY_POLICY_NONE
-            }
+            eq(cryptoService)
         )
     }
 }

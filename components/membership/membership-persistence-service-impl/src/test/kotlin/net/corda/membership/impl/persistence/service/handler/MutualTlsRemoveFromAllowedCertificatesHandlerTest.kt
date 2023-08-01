@@ -15,6 +15,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -37,12 +38,13 @@ class MutualTlsRemoveFromAllowedCertificatesHandlerTest {
     private val entityTransaction = mock<EntityTransaction>()
     private val entityManager = mock<EntityManager> {
         on { transaction } doReturn entityTransaction
+        on { merge<Any>(any()) } doAnswer { it.arguments[0] }
     }
     private val entityManagerFactory = mock<EntityManagerFactory> {
         on { createEntityManager() } doReturn entityManager
     }
     private val dbConnectionManager = mock<DbConnectionManager> {
-        on { createEntityManagerFactory(any(), any()) } doReturn entityManagerFactory
+        on { getOrCreateEntityManagerFactory(any<UUID>(), any()) } doReturn entityManagerFactory
     }
     private val entitySet = mock<JpaEntitiesSet>()
     private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry> {
@@ -54,6 +56,7 @@ class MutualTlsRemoveFromAllowedCertificatesHandlerTest {
         on { dbConnectionManager } doReturn dbConnectionManager
         on { jpaEntitiesRegistry } doReturn jpaEntitiesRegistry
         on { allowedCertificatesReaderWriterService } doReturn writerToKafka
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
     private val handler = MutualTlsRemoveFromAllowedCertificatesHandler(persistenceHandlerServices)
     private val context = mock<MembershipRequestContext> {

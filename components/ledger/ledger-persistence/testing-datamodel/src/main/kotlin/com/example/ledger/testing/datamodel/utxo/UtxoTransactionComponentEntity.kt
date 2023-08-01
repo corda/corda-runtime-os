@@ -12,32 +12,33 @@ import javax.persistence.ManyToOne
 import javax.persistence.Table
 import net.corda.v5.base.annotations.CordaSerializable
 
+@Suppress("LongParameterList")
 @CordaSerializable
 @Entity
 @Table(name = "utxo_transaction_component")
 @IdClass(UtxoTransactionComponentEntityId::class)
 data class UtxoTransactionComponentEntity(
-    @Id
-    @ManyToOne
-    @JoinColumn(name = "transaction_id", nullable = false, updatable = false)
-    val transaction: UtxoTransactionEntity,
+    @get:Id
+    @get:ManyToOne
+    @get:JoinColumn(name = "transaction_id", nullable = false, updatable = false)
+    var transaction: UtxoTransactionEntity,
 
-    @Id
-    @Column(name = "group_idx", nullable = false)
-    val groupIndex: Int,
+    @get:Id
+    @get:Column(name = "group_idx", nullable = false)
+    var groupIndex: Int,
 
-    @Id
-    @Column(name = "leaf_idx", nullable = false)
-    val leafIndex: Int,
+    @get:Id
+    @get:Column(name = "leaf_idx", nullable = false)
+    var leafIndex: Int,
 
-    @Column(name = "data", nullable = false)
-    val data: ByteArray,
+    @get:Column(name = "data", nullable = false)
+    var data: ByteArray,
 
-    @Column(name = "hash", nullable = false)
-    val hash: String,
+    @get:Column(name = "hash", nullable = false)
+    var hash: String,
 
-    @Column(name = "created", nullable = false)
-    val created: Instant
+    @get:Column(name = "created", nullable = false)
+    var created: Instant
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -68,7 +69,7 @@ data class UtxoTransactionComponentEntity(
 
 @Embeddable
 data class UtxoTransactionComponentEntityId(
-    val transaction: UtxoTransactionEntity,
-    val groupIndex: Int,
-    val leafIndex: Int
+    var transaction: UtxoTransactionEntity,
+    var groupIndex: Int,
+    var leafIndex: Int
 ) : Serializable

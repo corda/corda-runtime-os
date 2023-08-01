@@ -1,6 +1,7 @@
 package net.corda.cli.plugins.common
 
 import net.corda.rest.RestResource
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.client.RestClient
 import net.corda.rest.client.RestConnectionListener
 import net.corda.rest.client.config.RestClientConfig
@@ -17,14 +18,17 @@ object RestClientUtils {
     private val logger = LoggerFactory.getLogger(this::class.java)
     private val errOut: Logger = LoggerFactory.getLogger("SystemErr")
 
-    fun <I : RestResource> RestCommand.createRestClient(restResource: KClass<I>): RestClient<I> {
+    fun <I : RestResource> RestCommand.createRestClient(
+        restResource: KClass<I>,
+        apiVersion: RestApiVersion = RestApiVersion.C5_0
+    ): RestClient<I> {
         val localTargetUrl = if(targetUrl.endsWith("/")) {
             targetUrl.dropLast(1)
         } else {
             targetUrl
         }
         val restClient = RestClient(
-            baseAddress = "$localTargetUrl/api/v1/",
+            baseAddress = "$localTargetUrl/api/${apiVersion.versionPath}/",
             restResource.java,
             RestClientConfig()
                 .enableSSL(true)

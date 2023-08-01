@@ -28,6 +28,7 @@ plugins {
     id 'jacoco'
     id 'com.github.ben-manes.versions' // discover possible dependency version upgrades
     id 'org.jetbrains.dokka' apply false
+    id 'org.cyclonedx.bom' apply false
 }
 
 tasks.named("wrapper") {
@@ -64,6 +65,7 @@ allprojects {
         tasks.withType(Test).configureEach {
             useJUnitPlatform(){
                 excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
+                excludeTags project.hasProperty('runMultiClusterTests') ? 'runAllTestsNoExclusions' : 'MultiCluster'
             }
 
             doFirst {
@@ -74,6 +76,17 @@ allprojects {
     }
 
     apply plugin: 'org.jetbrains.kotlin.jvm'
+
+    if (it.toString().contains(":applications:workers:release:")) {
+        apply plugin: 'org.cyclonedx.bom'
+        cyclonedxBom.dependsOn("assemble")
+        cyclonedxBom {
+            includeConfigs = ["runtimeClasspath"]
+            skipProjects = [rootProject.name]
+            destination = file("${buildDir}/reports/SBOM")
+            outputName = "${project.name}-corda-runtime-os-sbom"
+        }
+    }
 
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         compilerOptions {
@@ -131,9 +144,9 @@ allprojects {
         mavenLocal()
 
         maven {
-            url = "$artifactoryContextUrl/corda-dependencies-dev"
+            url = "${publicArtifactURL}/corda-dependencies"
             content {
-                // For Quasar SNAPSHOT
+                // For Quasar release.
                 includeGroup 'co.paralleluniverse'
             }
         }
@@ -195,19 +208,6 @@ allprojects {
                 filter {
                     includeGroup 'org.mule.distributions'
                     includeGroup 'antlr'
-                }
-            }
-
-            // NOTE: this block needs to be removed once Micrometer release 1.11.0 
-            // and code in this project is updated to use this version rather than the forked version.
-            exclusiveContent {
-                forRepository {
-                    maven {
-                        url "$artifactoryContextUrl/corda-dependencies"
-                    }
-                }
-                filter {
-                    includeGroup 'net.corda.micrometer'
                 }
             }
         }
@@ -278,6 +278,39 @@ allprojects {
         testImplementation "org.assertj:assertj-core:$assertjVersion"
         testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+    }
+}
+
+tasks.register('createSBOMZip', Zip) {
+    description = 'Create SBOM zip file for release'
+    group = 'documentation'
+    String sourceDestFolder = buildDir.toString() + "/archive/SBOM/"
+    archiveFileName = "${project.name}-SBOM-${project.version}.zip"
+    subprojects.each {
+        if (it.toString().contains(":applications:workers:release:")) {
+            String srcPath = it.buildDir.toString() + "/reports/SBOM/"
+            it.copy{
+                from srcPath
+                into sourceDestFolder
+            }
+        }
+    }
+    from sourceDestFolder
+    destinationDirectory = (file(buildDir.toString() + "/archive/corda-runtime-os-SBOM/"))
+}
+
+if (project.hasProperty('generateSBOM')) {
+    publishing {
+        publications {
+            sbom(MavenPublication) {
+                artifact createSBOMZip
+                artifactId "${project.name}-sbom"
+                groupId 'net.corda'
+            }
+        }
+    }
+    artifactoryPublish {
+        publications('sbom')
     }
 }
 

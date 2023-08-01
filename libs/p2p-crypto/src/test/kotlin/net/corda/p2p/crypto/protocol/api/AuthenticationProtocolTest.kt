@@ -8,17 +8,19 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.security.KeyPair
 import java.security.KeyPairGenerator
+import java.security.Security
 import java.security.Signature
 import java.util.UUID
 
 class AuthenticationProtocolTest {
 
-    private val provider = BouncyCastleProvider()
+    private val provider = BouncyCastleProvider.PROVIDER_NAME
     private val sessionId = UUID.randomUUID().toString()
     private val groupId = "some-group-id"
 
@@ -28,6 +30,14 @@ class AuthenticationProtocolTest {
     // party B
     private val partyBMaxMessageSize = 1_500_000
     private val aliceX500Name = MemberX500Name.parse("CN=alice, OU=MyUnit, O=MyOrg, L=London, S=London, C=GB")
+
+    companion object {
+        @BeforeAll
+        @JvmStatic
+        fun setup() {
+            Security.addProvider(BouncyCastleProvider())
+        }
+    }
 
     @Test
     fun `no handshake message crosses the minimum value allowed for max message size`() {

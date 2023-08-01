@@ -170,6 +170,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 sessionCloseEvents()
                 wakeUpEvent()
+                flowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1) // top level flow is yet to complete
             }
         }
     }
@@ -190,6 +191,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 sessionCloseEvents()
                 wakeUpEvent()
+                flowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1) // top level flow is yet to complete
             }
         }
     }
@@ -213,6 +215,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 wakeUpEvent()
                 sessionCloseEvents()
+                flowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1) // top level flow is yet to complete
             }
         }
     }

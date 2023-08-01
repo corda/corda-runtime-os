@@ -18,15 +18,15 @@ import javax.persistence.Table
 class RolePermissionAssociation(
     @Id
     @Column(name = "id", nullable = false, updatable = false)
-    val id: String,
+    var id: String,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id")
-    val role: Role,
+    var role: Role,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "perm_id")
-    val permission: Permission,
+    var permission: Permission,
 
     @Column(name = "update_ts", nullable = false)
     var updateTimestamp: Instant,

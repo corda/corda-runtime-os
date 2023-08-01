@@ -162,8 +162,12 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
     }
 }
 
-fun getFlowClasses(holdingId: String): List<String> {
-    return DEFAULT_CLUSTER.cluster {
+fun getFlowClasses(
+    holdingId: String
+) = DEFAULT_CLUSTER.getFlowClasses(holdingId)
+
+fun ClusterInfo.getFlowClasses(holdingId: String): List<String> {
+    return cluster {
         val vNodeJson = assertWithRetry {
             command { runnableFlowClasses(holdingId) }
             condition { it.code == 200 }

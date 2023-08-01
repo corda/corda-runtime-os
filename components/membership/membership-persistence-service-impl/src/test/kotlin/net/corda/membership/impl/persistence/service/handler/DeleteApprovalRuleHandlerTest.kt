@@ -63,9 +63,9 @@ class DeleteApprovalRuleHandlerTest {
     private val entityManagerFactory = mock<EntityManagerFactory> {
         on { createEntityManager() } doReturn entityManager
     }
-    private val connectionManager = mock<DbConnectionManager> {
+    private val dbConnectionManager = mock<DbConnectionManager> {
         on {
-            createEntityManagerFactory(
+            getOrCreateEntityManagerFactory(
                 vaultDmlConnectionId,
                 entitySet
             )
@@ -74,7 +74,8 @@ class DeleteApprovalRuleHandlerTest {
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
         on { virtualNodeInfoReadService } doReturn nodeInfoReadService
         on { jpaEntitiesRegistry } doReturn registry
-        on { dbConnectionManager } doReturn connectionManager
+        on { dbConnectionManager } doReturn dbConnectionManager
+        on { transactionTimerFactory } doReturn { transactionTimer }
     }
     private val context = mock<MembershipRequestContext> {
         on { holdingIdentity } doReturn HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group")

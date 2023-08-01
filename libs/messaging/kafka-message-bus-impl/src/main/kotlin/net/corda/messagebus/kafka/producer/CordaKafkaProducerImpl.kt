@@ -14,6 +14,10 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.metrics.CordaMetrics
+import net.corda.tracing.TraceContext
+import net.corda.tracing.addTraceContextToRecord
+import net.corda.tracing.getOrCreateBatchPublishTracing
+import net.corda.tracing.traceSend
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
@@ -42,10 +46,11 @@ class CordaKafkaProducerImpl(
     private val config: ResolvedProducerConfig,
     private val producer: Producer<Any, Any>,
     private val chunkSerializerService: ChunkSerializerService,
-    private val producerMetricsBinder : MeterBinder,
+    private val producerMetricsBinder: MeterBinder,
 ) : CordaProducer {
     private val topicPrefix = config.topicPrefix
     private val transactional = config.transactional
+    private val clientId = config.clientId
 
     init {
         producerMetricsBinder.bindTo(CordaMetrics.registry)
@@ -58,25 +63,63 @@ class CordaKafkaProducerImpl(
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val asyncChunkErrorMessage = "Tried to send record which requires chunking using an asynchronous producer"
+
+        val fatalExceptions: Set<Class<out Throwable>> = setOf(
+            ProducerFencedException::class.java,
+            UnsupportedVersionException::class.java,
+            UnsupportedForMessageFormatException::class.java,
+            AuthorizationException::class.java,
+            FencedInstanceIdException::class.java
+        )
+        val transientExceptions: Set<Class<out Throwable>> = setOf(
+            TimeoutException::class.java,
+            InterruptException::class.java,
+            // Failure to commit here might be due to consumer kicked from group.
+            // Return as intermittent to trigger retry
+            InvalidProducerEpochException::class.java,
+            // See https://cwiki.apache.org/confluence/display/KAFKA/KIP-588%3A+Allow+producers+to+recover+gracefully+from+transaction+timeouts
+            // This exception means the coordinator has bumped the producer epoch because of a timeout of this producer.
+            // There is no other producer, we are not a zombie, and so don't need to be fenced, we can simply abort and retry.
+            KafkaException::class.java
+        )
+        val ApiExceptions: Set<Class<out Throwable>> = setOf(
+            CordaMessageAPIFatalException::class.java,
+            CordaMessageAPIIntermittentException::class.java
+        )
     }
 
-    private fun CordaProducer.Callback.toKafkaCallback(): Callback {
-        return Callback { _, ex -> this@toKafkaCallback.onCompletion(ex) }
+    private fun toTraceKafkaCallback(callback: CordaProducer.Callback, ctx: TraceContext): Callback {
+        return Callback { m, ex ->
+            ctx.markInScope().use {
+                ctx.traceTag("send.offset", m.offset().toString())
+                ctx.traceTag("send.partition", m.partition().toString())
+                ctx.traceTag("send.topic", m.topic())
+                callback.onCompletion(ex)
+                if (ex != null) {
+                    ctx.errorAndFinish(ex)
+                } else {
+                    ctx.finish()
+                }
+            }
+        }
     }
 
     override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
+        getOrCreateBatchPublishTracing(clientId).begin(listOf(record.headers))
         tryWithCleanupOnFailure("send single record, no partition") {
             sendRecord(record, callback)
         }
     }
 
     override fun send(record: CordaProducerRecord<*, *>, partition: Int, callback: CordaProducer.Callback?) {
+        getOrCreateBatchPublishTracing(clientId).begin(listOf(record.headers))
         tryWithCleanupOnFailure("send single record, with partition") {
             sendRecord(record, callback, partition)
         }
     }
 
     override fun sendRecords(records: List<CordaProducerRecord<*, *>>) {
+        getOrCreateBatchPublishTracing(clientId).begin(records.map { it.headers })
         tryWithCleanupOnFailure("send multiple records, no partition") {
             for (record in records) {
                 sendRecord(record)
@@ -85,6 +128,8 @@ class CordaKafkaProducerImpl(
     }
 
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
+        val tracing = getOrCreateBatchPublishTracing(clientId)
+        tracing.begin(recordsWithPartitions.map { it.second.headers })
         tryWithCleanupOnFailure("send multiple records, with partitions") {
             for ((partition, record) in recordsWithPartitions) {
                 sendRecord(record, null, partition)
@@ -104,9 +149,24 @@ class CordaKafkaProducerImpl(
         if (chunkedRecords.isNotEmpty()) {
             sendChunks(chunkedRecords, callback, partition)
         } else {
+            sendWholeRecord(record, partition, callback)
+        }
+    }
+
+    private fun sendWholeRecord(
+        record: CordaProducerRecord<*, *>,
+        partition: Int?,
+        callback: CordaProducer.Callback?
+    ) {
+        val traceContext = traceSend(record.headers, "send $clientId")
+        traceContext.markInScope().use {
             try {
-                producer.send(record.toKafkaRecord(topicPrefix , partition), callback?.toKafkaCallback())
+                producer.send(
+                    addTraceContextToRecord(record).toKafkaRecord(topicPrefix, partition),
+                    toTraceKafkaCallback({ exception -> callback?.onCompletion(exception) }, traceContext)
+                )
             } catch (ex: CordaRuntimeException) {
+                traceContext.errorAndFinish(ex)
                 val msg = "Failed to send record to topic ${record.topic} with key ${record.key}"
                 if (config.throwOnSerializationError) {
                     log.error(msg, ex)
@@ -114,6 +174,9 @@ class CordaKafkaProducerImpl(
                 } else {
                     log.warn(msg, ex)
                 }
+            } catch (ex: Exception) {
+                traceContext.errorAndFinish(ex)
+                throw ex
             }
         }
     }
@@ -140,10 +203,26 @@ class CordaKafkaProducerImpl(
             callback?.onCompletion(exceptionThrown)
             throw exceptionThrown
         }
+
+        recordChunksCountPerTopic(cordaProducerRecords)
+
         cordaProducerRecords.forEach {
             //note callback is only applicable to async calls which are not allowed
-            producer.send(it.toKafkaRecord(topicPrefix,partition))
+            producer.send(it.toKafkaRecord(topicPrefix, partition))
         }
+    }
+
+    private fun recordChunksCountPerTopic(cordaProducerRecords: List<CordaProducerRecord<*, *>>) {
+        cordaProducerRecords.groupBy { it.topic }
+            .mapValues { (_, records) -> records.size }
+            .forEach { (topic, count) ->
+                CordaMetrics.Metric.Messaging.ProducerChunksGenerated.builder()
+                    .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
+                    .withTag(CordaMetrics.Tag.Topic, topic)
+                    .build()
+                    .record(count.toDouble())
+            }
+
     }
 
     override fun beginTransaction() {
@@ -153,6 +232,7 @@ class CordaKafkaProducerImpl(
     }
 
     override fun abortTransaction() {
+        getOrCreateBatchPublishTracing(config.clientId).abort()
         tryWithCleanupOnFailure("aborting transaction", abortTransactionOnFailure = false) {
             producer.abortTransaction()
         }
@@ -171,6 +251,8 @@ class CordaKafkaProducerImpl(
                 retryableException = commitTransactionAndCatchRetryable()
             }
         }
+
+        getOrCreateBatchPublishTracing(config.clientId).complete()
 
         if (retryableException != null) {
             // We have retried once, we are not retrying again, so the only other option compatible with the producer
@@ -285,7 +367,12 @@ class CordaKafkaProducerImpl(
     ) {
         try {
             block()
+            // transactional publications will be completed in commitTransaction()
+            if (!transactional) {
+                getOrCreateBatchPublishTracing(config.clientId).complete()
+            }
         } catch (ex: Exception) {
+            getOrCreateBatchPublishTracing(config.clientId).abort()
             handleException(ex, operation, abortTransactionOnFailure)
         }
     }
@@ -293,37 +380,24 @@ class CordaKafkaProducerImpl(
     @Suppress("ThrowsCount")
     private fun handleException(ex: Exception, operation: String, abortTransaction: Boolean) {
         val errorString = "$operation for CordaKafkaProducer with clientId ${config.clientId}"
-        when (ex) {
-            is ProducerFencedException,
-            is UnsupportedVersionException,
-            is UnsupportedForMessageFormatException,
-            is AuthorizationException,
-            is FencedInstanceIdException -> {
+        when (ex::class.java) {
+            in fatalExceptions -> {
                 throw CordaMessageAPIFatalException("FatalError occurred $errorString", ex)
             }
 
-            is IllegalStateException -> {
+            IllegalStateException::class.java -> {
                 // It's not clear whether the producer is ok to abort and continue or not in this case, so play it safe
                 // and let the client know to create a new one.
                 throw CordaMessageAPIProducerRequiresReset("Error occurred $errorString", ex)
             }
 
-            is TimeoutException,
-            is InterruptException,
-                // Failure to commit here might be due to consumer kicked from group.
-                // Return as intermittent to trigger retry
-            is InvalidProducerEpochException,
-                // See https://cwiki.apache.org/confluence/display/KAFKA/KIP-588%3A+Allow+producers+to+recover+gracefully+from+transaction+timeouts
-                // This exception means the coordinator has bumped the producer epoch because of a timeout of this producer.
-                // There is no other producer, we are not a zombie, and so don't need to be fenced, we can simply abort and retry.
-            is KafkaException -> {
+           in transientExceptions -> {
                 if (abortTransaction) {
                     abortTransaction()
                 }
                 throw CordaMessageAPIIntermittentException("Error occurred $errorString", ex)
             }
-            is CordaMessageAPIFatalException,
-            is CordaMessageAPIIntermittentException -> { throw ex }
+            in ApiExceptions -> { throw ex }
 
             else -> {
                 // Here we do not know what the exact cause of the exception is, but we do know Kafka has not told us we

@@ -44,7 +44,7 @@ fun mockSandboxGroup(taggedClasses: Set<Class<*>>): SandboxGroup {
         val tagCaptor = argumentCaptor<Class<*>>()
         whenever(getStaticTag(tagCaptor.capture())).thenAnswer {
             val clazz = tagCaptor.lastValue
-            if (clazz.isJvmClass && (bundleClasses.putIfAbsent(index.toString(), clazz) == null)) {
+            if ((clazz.isJvmClass || clazz.isLambda) && (bundleClasses.putIfAbsent(index.toString(), clazz) == null)) {
                 ++index
             }
             bundleClasses.keys.firstOrNull { value -> bundleClasses[value] == clazz }?.toString()
@@ -64,3 +64,6 @@ private val Class<*>.isJvmClass: Boolean
 
 private val Class<*>.isJavaType: Boolean
     get() = isPrimitive || name.startsWith("java.")
+
+private val Class<*>.isLambda: Boolean
+    get() = isSynthetic && name.contains('/')

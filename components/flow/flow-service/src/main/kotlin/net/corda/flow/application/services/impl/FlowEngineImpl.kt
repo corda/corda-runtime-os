@@ -1,5 +1,6 @@
 package net.corda.flow.application.services.impl
 
+import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.flow.application.versioning.impl.RESET_VERSIONING_MARKER
@@ -50,7 +51,7 @@ class FlowEngineImpl @Activate constructor(
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
-        getFiberExecutionContext().flowStackService.push(subFlow)
+        getFiberExecutionContext().flowStackService.push(subFlow, getFiberExecutionContext().flowMetrics)
 
         resetFlowVersioningInformationIfSubFlowIsInitiatingFlow()
 
@@ -62,7 +63,8 @@ class FlowEngineImpl @Activate constructor(
              * suspend for flows that require session cleanup
              */
 
-            finishSubFlow()
+            closeSessionsOnSubFlowFinish()
+            getFiberExecutionContext().flowMetrics.subFlowFinished(FlowStates.COMPLETED)
 
             return result
         } catch (t: Throwable) {
@@ -72,7 +74,8 @@ class FlowEngineImpl @Activate constructor(
             // We cannot conclude that throwing an exception out of a sub-flow is an error. User code is free to do this
             // as long as it catches it in the flow which initiated it. The only thing Corda needs to do here is mark
             // the sub-flow as failed and rethrow.
-            failSubFlow(t)
+            errorSessionsOnSubFlowFinish(t)
+            getFiberExecutionContext().flowMetrics.subFlowFinished(FlowStates.FAILED)
             throw t
         } finally {
             popCurrentFlowStackItem()
@@ -94,15 +97,21 @@ class FlowEngineImpl @Activate constructor(
             .map(FlowStackItemSession::getSessionId)
 
     @Suspendable
-    private fun finishSubFlow() {
-        flowFiberService.getExecutingFiber()
-            .suspend(FlowIORequest.SubFlowFinished(currentSessionIds))
+    private fun closeSessionsOnSubFlowFinish() {
+        val currentSessionIds = this.currentSessionIds
+        if (currentSessionIds.isNotEmpty()) {
+            flowFiberService.getExecutingFiber()
+                .suspend(FlowIORequest.SubFlowFinished(currentSessionIds))
+        }
     }
 
     @Suspendable
-    private fun failSubFlow(t: Throwable) {
-        flowFiberService.getExecutingFiber()
-            .suspend(FlowIORequest.SubFlowFailed(t, currentSessionIds))
+    private fun errorSessionsOnSubFlowFinish(t: Throwable) {
+        val currentSessionIds = this.currentSessionIds
+        if (currentSessionIds.isNotEmpty()) {
+            flowFiberService.getExecutingFiber()
+                .suspend(FlowIORequest.SubFlowFailed(t, currentSessionIds))
+        }
     }
 
     private fun peekCurrentFlowStackItem(): FlowStackItem {
