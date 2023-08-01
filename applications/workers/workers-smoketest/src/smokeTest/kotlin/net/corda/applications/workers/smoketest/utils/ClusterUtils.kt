@@ -55,7 +55,7 @@ fun ClusterBuilder.eventuallyUploadCpi(
 }
 
 fun ClusterBuilder.eventuallyCreateVirtualNode(cpiFileChecksum: String, x500Name: String): String {
-    val vNodeJson = assertWithRetryIgnoringExceptions {
+    val vNodeJson = assertWithRetry {
         timeout(retryTimeout)
         interval(retryInterval)
         command { vNodeCreate(cpiFileChecksum, x500Name) }
