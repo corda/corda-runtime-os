@@ -29,6 +29,7 @@ import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import net.corda.v5.ledger.utxo.observer.UtxoToken
 
 @Suppress("LongParameterList")
 class UtxoPersistenceServiceImpl(
@@ -103,13 +104,17 @@ class UtxoPersistenceServiceImpl(
         } ?: emptyList()
     }
 
-    override fun persistTransaction(transaction: UtxoTransactionReader): List<CordaPackageSummary> {
+    override fun persistTransaction(transaction: UtxoTransactionReader, utxoTokenMap: Map<StateRef, UtxoToken>): List<CordaPackageSummary> {
         entityManagerFactory.transaction { em ->
-            return persistTransaction(em, transaction)
+            return persistTransaction(em, transaction, utxoTokenMap)
         }
     }
 
-    private fun persistTransaction(em: EntityManager, transaction: UtxoTransactionReader): List<CordaPackageSummary> {
+    private fun persistTransaction(
+        em: EntityManager,
+        transaction: UtxoTransactionReader,
+        utxoTokenMap: Map<StateRef, UtxoToken> = emptyMap()
+    ): List<CordaPackageSummary> {
         val nowUtc = utcClock.instant()
         val transactionIdString = transaction.id.toString()
 
@@ -154,13 +159,20 @@ class UtxoPersistenceServiceImpl(
 
         // Insert outputs data
         transaction.getVisibleStates().entries.forEach { (stateIndex, stateAndRef) ->
+            val utxoToken = utxoTokenMap[stateAndRef.ref]
             repository.persistTransactionOutput(
                 em,
                 transactionIdString,
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 stateIndex,
                 stateAndRef.state.contractState::class.java.canonicalName,
-                timestamp = nowUtc
+                utxoToken?.poolKey?.tokenType,
+                utxoToken?.poolKey?.issuerHash?.toString(),
+                utxoToken?.poolKey?.symbol,
+                utxoToken?.filterFields?.tag,
+                utxoToken?.filterFields?.ownerHash?.toString(),
+                utxoToken?.amount,
+                nowUtc
             )
         }
 

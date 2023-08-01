@@ -276,7 +276,6 @@ class UtxoRepositoryImpl @Activate constructor(
         type: String,
         tokenType: String?,
         tokenIssuerHash: String?,
-        tokenNotaryX500Name: String?,
         tokenSymbol: String?,
         tokenTag: String?,
         tokenOwnerHash: String?,
@@ -290,7 +289,6 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("type", type)
             .setParameter("tokenType", tokenType)
             .setParameter("tokenIssuerHash", tokenIssuerHash)
-            .setParameter("tokenNotaryX500Name", tokenNotaryX500Name)
             .setParameter("tokenSymbol", tokenSymbol)
             .setParameter("tokenTag", tokenTag)
             .setParameter("tokenOwnerHash", tokenOwnerHash)

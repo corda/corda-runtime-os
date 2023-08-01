@@ -8,9 +8,9 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
+import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.fullId
 import net.corda.crypto.core.fullIdHash

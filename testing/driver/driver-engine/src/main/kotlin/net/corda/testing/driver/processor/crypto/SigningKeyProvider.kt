@@ -12,10 +12,10 @@ import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.SigningKeyInfo
+import net.corda.crypto.core.SigningKeyStatus
 import net.corda.crypto.core.fullId
 import net.corda.crypto.core.parseSecureHash
-import net.corda.crypto.persistence.SigningKeyInfo
-import net.corda.crypto.persistence.SigningKeyStatus
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.testing.driver.sandbox.CORDA_MEMBERSHIP_PID
 import net.corda.testing.driver.sandbox.CORDA_MEMBER_COUNT
@@ -73,7 +73,7 @@ class SigningKeyProvider @Activate constructor(
                                 category = LEDGER,
                                 alias = alias,
                                 hsmAlias = null,
-                                publicKey = publicKey.encoded,
+                                publicKey = publicKey,
                                 keyMaterial = privateKeyMaterial,
                                 schemeCodeName = keyScheme.codeName,
                                 wrappingKeyAlias = WRAPPING_KEY_ALIAS,
@@ -125,7 +125,7 @@ class SigningKeyProvider @Activate constructor(
                     cached.category,
                     cached.alias,
                     cached.hsmAlias,
-                    ByteBuffer.wrap(cached.publicKey).asReadOnlyBuffer(),
+                    ByteBuffer.wrap(cached.publicKey.encoded).asReadOnlyBuffer(),
                     cached.schemeCodeName,
                     cached.wrappingKeyAlias,
                     cached.encodingVersion,

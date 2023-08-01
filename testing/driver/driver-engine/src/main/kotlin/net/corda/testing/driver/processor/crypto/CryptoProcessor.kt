@@ -4,9 +4,9 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
+import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toSignatureSpec
