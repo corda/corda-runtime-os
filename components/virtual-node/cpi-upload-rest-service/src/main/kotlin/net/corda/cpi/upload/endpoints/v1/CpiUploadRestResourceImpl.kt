@@ -16,12 +16,15 @@ import net.corda.rest.exception.ResourceAlreadyExistsException
 import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
+import net.corda.libs.cpiupload.endpoints.v1.CpiMetadata
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
+import net.corda.rest.annotations.RestApiVersion
+import net.corda.rest.response.ResponseEntity
 import net.corda.utilities.trace
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
@@ -108,11 +111,21 @@ class CpiUploadRestResourceImpl @Activate constructor(
         }
     }
 
-    override fun getAllCpis(): GetCPIsResponse {
+    override fun getAllCpis(): ResponseEntity<GetCPIsResponse> {
+        "Deprecated, please use next version at ${RestApiVersion.C5_1} or above.".let { msg ->
+            logger.warn(msg)
+            return ResponseEntity.okButDeprecated(GetCPIsResponse(doGetAllCpis()), msg)
+        }
+    }
+
+    override fun getAllCpisList(): List<CpiMetadata> {
+        return doGetAllCpis()
+    }
+
+    private fun doGetAllCpis(): List<CpiMetadata> {
         logger.trace { "Get all CPIs request" }
         requireRunning()
-        val cpis = cpiInfoReadService.getAll().map { it.toEndpointType() }
-        return GetCPIsResponse(cpis)
+        return cpiInfoReadService.getAll().map { it.toEndpointType() }
     }
 
     /**

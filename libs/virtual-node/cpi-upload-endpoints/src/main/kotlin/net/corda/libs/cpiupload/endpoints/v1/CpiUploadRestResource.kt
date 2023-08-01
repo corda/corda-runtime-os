@@ -7,6 +7,8 @@ import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.annotations.RestApiVersion
+import net.corda.rest.response.ResponseEntity
 
 @HttpRestResource(
     name = "CPI API",
@@ -71,10 +73,26 @@ interface CpiUploadRestResource : RestResource {
      *
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
+    @Deprecated("Deprecated in favour of getAllCpisList")
     @HttpGET(
         title = "CPI info",
         description = "The GET method returns a list of all CPIs uploaded to the cluster.",
-        responseDescription = "Details of all of the CPIs uploaded to the cluster."
+        responseDescription = "Details of all of the CPIs uploaded to the cluster.",
+        minVersion = RestApiVersion.C5_0,
+        maxVersion = RestApiVersion.C5_0
     )
-    fun getAllCpis(): GetCPIsResponse
+    fun getAllCpis(): ResponseEntity<GetCPIsResponse>
+
+    /**
+     * Lists all CPIs uploaded to the cluster.
+     *
+     * @throws `HttpApiException` If the request returns an exceptional response.
+     */
+    @HttpGET(
+        title = "CPI info",
+        description = "The GET method returns a list of all CPIs uploaded to the cluster.",
+        responseDescription = "Details of all of the CPIs uploaded to the cluster.",
+        minVersion = RestApiVersion.C5_1,
+    )
+    fun getAllCpisList(): List<CpiMetadata>
 }
