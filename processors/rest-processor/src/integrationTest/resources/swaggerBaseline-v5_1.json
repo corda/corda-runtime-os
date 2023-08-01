@@ -1340,7 +1340,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/ImportstheinteropidentitydetailsintothesystemofanotherinteropidentityWrapperRequest"
+                "$ref" : "#/components/schemas/Request_1"
               }
             }
           },
@@ -4941,36 +4941,6 @@
             "example" : "string"
           }
         }
-      },
-      "ImportstheinteropidentitydetailsintothesystemofanotherinteropidentityWrapperRequest" : {
-        "required" : [ "endpointProtocol", "endpointUrl", "facadeIds", "importInteropIdentityRestRequest" ],
-        "type" : "object",
-        "properties" : {
-          "endpointProtocol" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "endpointUrl" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
-          },
-          "facadeIds" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "type" : "string",
-              "example" : "string"
-            }
-          },
-          "importInteropIdentityRestRequest" : {
-            "$ref" : "#/components/schemas/Request_1"
-          }
-        },
-        "description" : "ImportstheinteropidentitydetailsintothesystemofanotherinteropidentityWrapperRequest",
-        "nullable" : false
       },
       "InteropIdentityResponse" : {
         "required" : [ "applicationName", "endpointProtocol", "endpointUrl", "facadeIds", "groupId", "owningVirtualNodeShortHash", "x500Name" ],

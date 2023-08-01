@@ -89,9 +89,6 @@ interface InteropRestResource : RestResource {
     )
     fun importInterOpIdentity(
         importInteropIdentityRestRequest: ImportInteropIdentityRest.Request,
-        facadeIds: List<String>,
-        endpointUrl: String,
-        endpointProtocol: String,
         @RestPathParameter(description = "ID of the holding identity which interop identity is to be returned.")
         holdingIdentityShortHash: String
     ): ResponseEntity<String>

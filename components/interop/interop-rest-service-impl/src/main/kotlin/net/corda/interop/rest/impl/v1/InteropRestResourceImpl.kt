@@ -145,17 +145,18 @@ internal class InteropRestResourceImpl @Activate constructor(
 
     override fun getInterOpIdentities(holdingIdentityShortHash: String): List<InteropIdentityResponse> {
         val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(holdingIdentityShortHash)
-        val cacheView = interopIdentityRegistryService.getVirtualNodeRegistryView(holdingIdentityShortHash)
+        val vNodeShortHash = vNodeInfo.getVNodeShortHash()
+        val cacheView = interopIdentityRegistryService.getVirtualNodeRegistryView(vNodeShortHash)
         val interopIdentities = cacheView.getIdentities()
-        return interopIdentities.map {
+        return interopIdentities.map { interopIdentity ->
             InteropIdentityResponse(
-                it.x500Name,
-                UUID.fromString(it.groupId),
-                vNodeInfo.getVNodeShortHash(),
-                it.facadeIds,
-                MemberX500Name.parse(it.x500Name).organization,
-                it.endpointUrl,
-                it.endpointProtocol
+                interopIdentity.x500Name,
+                UUID.fromString(interopIdentity.groupId),
+                vNodeShortHash,
+                interopIdentity.facadeIds,
+                MemberX500Name.parse(interopIdentity.x500Name).organization,
+                interopIdentity.endpointUrl,
+                interopIdentity.endpointProtocol
             )
         }.toList()
     }
@@ -196,15 +197,12 @@ internal class InteropRestResourceImpl @Activate constructor(
 
     override fun importInterOpIdentity(
         importInteropIdentityRestRequest: ImportInteropIdentityRest.Request,
-        facadeIds: List<String>,
-        endpointUrl: String,
-        endpointProtocol: String,
         holdingIdentityShortHash: String
     ): ResponseEntity<String> {
 
         if (importInteropIdentityRestRequest.members.isEmpty()) {
             throw InvalidInputDataException(
-                "The members list is empty, no interop identities exist."
+                "No members provided in request, nothing to import."
             )
         }
         val x500Name = importInteropIdentityRestRequest.members[0].x500Name
@@ -215,30 +213,31 @@ internal class InteropRestResourceImpl @Activate constructor(
                 "X500 name \"$x500Name\" could not be parsed. Cause: ${e.message}"
             )
         }
-        val owningIdentityShortHash = importInteropIdentityRestRequest.members[0].owningIdentityShortHash
-        val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(owningIdentityShortHash)
-        val owningVirtualNodeShortHash = vNodeInfo.getVNodeShortHash()
+        val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(holdingIdentityShortHash)
+        val vNodeShortHash = vNodeInfo.getVNodeShortHash()
+        for (member in importInteropIdentityRestRequest.members) {
 
-        val mapper = ObjectMapper()
-        val result: Map<String, String> = mapper.readValue(
-            importInteropIdentityRestRequest.groupPolicy,
-            object : TypeReference<Map<String, String>>() {})
-        val groupId = interopIdentityWriteService.publishGroupPolicy(
-            result["groupId"].toString(), importInteropIdentityRestRequest.groupPolicy
-        )
-
-        interopIdentityWriteService.addInteropIdentity(
-            holdingIdentityShortHash,
-            InteropIdentity(
-                groupId = groupId,
-                x500Name = x500Name,
-                owningVirtualNodeShortHash = owningVirtualNodeShortHash,
-                facadeIds = facadeIds,
-                applicationName = MemberX500Name.parse(x500Name).organization,
-                endpointUrl = endpointUrl,
-                endpointProtocol = endpointProtocol
+            val mapper = ObjectMapper()
+            val result: Map<String, String> = mapper.readValue(
+                importInteropIdentityRestRequest.groupPolicy,
+                object : TypeReference<Map<String, String>>() {})
+            val groupId = interopIdentityWriteService.publishGroupPolicy(
+                result["groupId"].toString(), importInteropIdentityRestRequest.groupPolicy
             )
-        )
+
+            interopIdentityWriteService.addInteropIdentity(
+                vNodeShortHash,
+                InteropIdentity(
+                    groupId = groupId,
+                    x500Name = x500Name,
+                    owningVirtualNodeShortHash = member.owningIdentityShortHash,
+                    facadeIds = member.facadeIds,
+                    applicationName = MemberX500Name.parse(x500Name).organization,
+                    endpointUrl = member.endpointUrl,
+                    endpointProtocol = member.endpointProtocol
+                )
+            )
+        }
         logger.info("Interop identity imported.")
         return ResponseEntity.ok("OK")
     }
