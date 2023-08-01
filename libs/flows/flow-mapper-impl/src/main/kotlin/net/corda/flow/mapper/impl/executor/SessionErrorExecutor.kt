@@ -37,9 +37,10 @@ class SessionErrorExecutor(
     private val messageDirection = sessionEvent.messageDirection
     private val outputTopic = getSessionEventOutputTopic(messageDirection)
 
-    private val defaultMsg = "Received error event while in $flowMapperState, {} event. Key: $eventKey, Event: $sessionEvent"
-    private val missingSessionMsg = "Flow mapper received error event from counterparty for session which does not exist. " +
-            "Session may have expired. Key: $eventKey, Event: $sessionEvent. "
+    private val defaultMsg = "$messageDirection flow mapper received error event while in $flowMapperState, {} event. " +
+            "Key: $eventKey, Event: $sessionEvent"
+    private val missingSessionMsg = "$messageDirection flow mapper received error event from counterparty for session " +
+            "which does not exist. Session may have expired. Key: $eventKey, Event: $sessionEvent. "
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
