@@ -8,7 +8,6 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.Policy;
 import java.security.URIParameter;
 import java.util.Arrays;
 import java.util.List;
@@ -110,6 +109,7 @@ final class OSGiFrameworkMain {
      *
      * @param args passed by the OS when invoking JVM to run this bootable JAR.
      */
+    @SuppressWarnings("removal")
     public static void main(String[] args) throws Exception {
         /**
          * Set the Java security policy programmatically, as required by OSGi Security.
@@ -117,7 +117,7 @@ final class OSGiFrameworkMain {
          */
         final URL policy = OSGiFrameworkMain.class.getResource("all-permissions.policy");
         if (policy != null) {
-            Policy.setPolicy(Policy.getInstance("JavaPolicy", new URIParameter(policy.toURI())));
+            java.security.Policy.setPolicy(java.security.Policy.getInstance("JavaPolicy", new URIParameter(policy.toURI())));
         }
 
         /**

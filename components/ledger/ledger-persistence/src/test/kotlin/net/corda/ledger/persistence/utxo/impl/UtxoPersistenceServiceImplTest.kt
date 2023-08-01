@@ -13,8 +13,11 @@ import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.EncumbranceGroup
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
@@ -33,7 +36,6 @@ import java.lang.IllegalArgumentException
 import java.security.PublicKey
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
-import net.corda.v5.base.types.MemberX500Name
 
 // FIXME / NOTE: This test only tests custom representation (JSON) string functionality
 class UtxoPersistenceServiceImplTest {
@@ -183,9 +185,9 @@ class UtxoPersistenceServiceImplTest {
     }
 
     @Test
-    fun `Persisting a transaction while no JSON factory is present for the given type willstore the default state json`() {
+    fun `Persisting a transaction while no JSON factory is present for the given type will store the default state json`() {
         val tx = createMockTransaction(mapOf(
-            0 to createStateAndRef(ContractState { emptyList() }) // State that has no specific factory
+            0 to createStateAndRef(NoJsonFactoryState()) // State that has no specific factory
         ))
 
         persistenceService.persistTransaction(tx)
@@ -219,7 +221,7 @@ class UtxoPersistenceServiceImplTest {
         )
 
         val tx = createMockTransaction(mapOf(
-            0 to createStateAndRef(ContractState { emptyList() })
+            0 to createStateAndRef(NoJsonFactoryState())
         ))
 
         emptyPersistenceService.persistTransaction(tx)
@@ -295,11 +297,45 @@ class UtxoPersistenceServiceImplTest {
         }
     }
 
-    private inline fun <reified T : ContractState> createStateAndRef(returnState: T): StateAndRef<T> {
-        val txState = mock<TransactionState<T>> {
-            on { contractState } doReturn returnState
-            on { notaryName } doReturn MemberX500Name.parse("O=notary, L=London, C=GB")
+    /**
+     * Due to introduction of hidden classes in Java 15,
+     * getCanonicalName() returns null, which is accessed via
+     * PersistenceService.persistenceTransaction(tx) using getCanonicalName().
+     * getCanonicalName() being null indicates that the hidden or anonymous class has no canonical name and
+     * mock objects created by Mockito are implemented using anonymous inner classes in Java
+     * hence this fake contractState implemented to avoid class being anonymous.
+     */
+    private class MockTransactionState<T : ContractState>(
+        private val ctrState: T
+    ) : TransactionState<T> {
+        override fun getContractState(): T {
+            return ctrState
         }
+
+        override fun getContractStateType(): Class<T> {
+            TODO("Not yet implemented")
+        }
+
+        override fun getContractType(): Class<out Contract> {
+            TODO("Not yet implemented")
+        }
+
+        override fun getNotaryName(): MemberX500Name {
+            return MemberX500Name.parse("O=notary, L=London, C=GB")
+        }
+
+        override fun getNotaryKey(): PublicKey {
+            TODO("Not yet implemented")
+        }
+
+        override fun getEncumbranceGroup(): EncumbranceGroup? {
+            TODO("Not yet implemented")
+        }
+
+    }
+
+    private inline fun <reified T : ContractState> createStateAndRef(returnState: T): StateAndRef<T> {
+        val txState = MockTransactionState(returnState)
         val secureHash = mock<SecureHash> {
             on { toString() } doReturn "hash"
         }
@@ -347,6 +383,11 @@ private class InvalidStateJsonFactory : ContractStateVaultJsonFactory<InvalidSta
     override fun create(state: InvalidState, jsonMarshallingService: JsonMarshallingService): String {
         return "INVALID"
     }
+}
+
+private class NoJsonFactoryState : ContractState {
+
+    override fun getParticipants(): MutableList<PublicKey> = mutableListOf()
 }
 
 private class EmptyState : ContractState {
