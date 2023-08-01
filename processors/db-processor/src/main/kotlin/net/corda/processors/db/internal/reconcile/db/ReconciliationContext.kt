@@ -4,6 +4,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.orm.JpaEntitiesSet
 import net.corda.virtualnode.VirtualNodeInfo
 import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
 
 /**
  * Additional context to be included during reconciliation.
@@ -44,10 +45,12 @@ class VirtualNodeReconciliationContext(
     val virtualNodeInfo: VirtualNodeInfo
 ) : ReconciliationContext {
 
+    private var entityManagerFactory: EntityManagerFactory? = null
     private var entityManager: EntityManager? = null
 
-    private fun getOrCreateEntityManagerFactory() =
-        dbConnectionManager.getOrCreateEntityManagerFactory(virtualNodeInfo.vaultDmlConnectionId, jpaEntitiesSet)
+    private fun getOrCreateEntityManagerFactory() = entityManagerFactory
+        ?: dbConnectionManager.createEntityManagerFactory(virtualNodeInfo.vaultDmlConnectionId, jpaEntitiesSet)
+            .also { entityManagerFactory = it }
 
     override fun getOrCreateEntityManager(): EntityManager = entityManager
         ?: getOrCreateEntityManagerFactory().createEntityManager()
@@ -55,6 +58,8 @@ class VirtualNodeReconciliationContext(
 
     override fun close() {
         entityManager?.close()
+        entityManagerFactory?.close()
         entityManager = null
+        entityManagerFactory = null
     }
 }
