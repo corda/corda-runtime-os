@@ -11,12 +11,18 @@ import net.corda.data.ledger.persistence.PersistTransactionIfDoesNotExist
 import net.corda.data.ledger.persistence.ResolveStateRefs
 import net.corda.data.ledger.persistence.UpdateTransactionStatus
 import net.corda.data.persistence.FindWithNamedQuery
+import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.VirtualNodeDbType
+import net.corda.db.core.DbPrivilege
+import net.corda.db.schema.CordaDb
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.common.UnsupportedRequestTypeException
 import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
 import net.corda.ledger.persistence.query.execution.impl.VaultNamedQueryExecutorImpl
 import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
+import net.corda.ledger.utxo.datamodel.UtxoLedgerEntities
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
@@ -33,12 +39,31 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
     @Reference(service = ExternalEventResponseFactory::class)
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     @Reference(service = ResponseFactory::class)
-    private val responseFactory: ResponseFactory
+    private val responseFactory: ResponseFactory,
+    @Reference(service = DbConnectionManager::class)
+    private val dbConnectionManager: DbConnectionManager,
+    @Reference(service = JpaEntitiesRegistry::class)
+    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
 ): UtxoRequestHandlerSelector {
+
+    init {
+        jpaEntitiesRegistry.register(
+            CordaDb.Vault.persistenceUnitName,
+            emptySet()
+        )
+    }
 
     override fun selectHandler(sandbox: SandboxGroupContext, request: LedgerPersistenceRequest): RequestHandler {
         val persistenceService = UtxoPersistenceServiceImpl(
-            entityManagerFactory = sandbox.getEntityManagerFactory(),
+            entityManagerFactory = dbConnectionManager.getOrCreateEntityManagerFactory(
+                VirtualNodeDbType.VAULT.getSchemaName(sandbox.virtualNodeContext.holdingIdentity.shortHash),
+                DbPrivilege.DML,
+                entitiesSet = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
+                    ?: throw IllegalStateException(
+                        "persistenceUnitName " +
+                                "${CordaDb.Vault.persistenceUnitName} is not registered."
+                    )
+            ),
             repository = sandbox.getSandboxSingletonService(),
             serializationService = sandbox.getSerializationService(),
             sandboxDigestService = sandbox.getSandboxSingletonService(),

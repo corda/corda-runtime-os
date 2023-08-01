@@ -418,22 +418,29 @@ class UtxoRepositoryImpl @Activate constructor(
         customRepresentation: CustomRepresentation,
         timestamp: Instant,
     ) {
-        try {
-            if ( entityManager.find(
-                    UtxoVisibleTransactionStateEntity::class.java,
-                    UtxoVisibleTransactionStateEntityId(transactionId, groupIndex, leafIndex)) == null ) {
-                entityManager.persist(UtxoVisibleTransactionStateEntity(
-                    transactionId,
-                    groupIndex,
-                    leafIndex,
-                    customRepresentation.json,
-                    timestamp,
-                    if (consumed) timestamp else null
-                ))
-            }
-        } catch (e: EntityExistsException) {
-            0.logResult("transaction relevancy [$transactionId, $groupIndex, $leafIndex]")
-        }
+        entityManager.createNativeQuery(
+            """
+            INSERT INTO {h-schema}utxo_visible_transaction_state(
+                transaction_id, group_idx, leaf_idx, custom_representation, created, consumed
+            )
+            VALUES(
+                :transactionId, 
+                :groupIndex, 
+                :leafIndex, 
+                CAST(:custom_representation as JSONB), 
+                :createdAt, 
+                ${if (consumed) ":consumedAt" else "null"}
+            )
+            ON CONFLICT DO NOTHING"""
+        )
+            .setParameter("transactionId", transactionId)
+            .setParameter("groupIndex", groupIndex)
+            .setParameter("leafIndex", leafIndex)
+            .setParameter("custom_representation", customRepresentation.json)
+            .setParameter("createdAt", timestamp)
+            .run { if (consumed) setParameter("consumedAt", timestamp) else this }
+            .executeUpdate()
+            .logResult("transaction relevancy [$transactionId, $groupIndex, $leafIndex]")
     }
 
     override fun persistTransactionSignature(

@@ -26,15 +26,14 @@ class UtxoVisibleTransactionStateEntity(
     @Column(name = "leaf_idx", nullable = false)
     var leafIndex: Int,
 
-    @Type(type = "json")
-    @Column(name = "custom_representation", nullable = false, columnDefinition = "jsonb")
-    var customRepresentation: String,
-
     @Column(name = "created", nullable = false)
     var created: Instant,
 
     @Column(name = "consumed", nullable = true)
     var consumed: Instant?
+
+    // custom_representation is excluded, because there's no easy DB-agnostic way to handle JSON
+    // fields in Hibernate (pre-v6).
 ) : Serializable {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

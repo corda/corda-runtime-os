@@ -134,7 +134,7 @@ class EntitySandboxServiceImpl @Activate constructor(
         // entity manager factory per sandbox.
 
         // TODO - add general vault entities
-        val entityClasses = UtxoLedgerEntities.classes + EntityExtractor.getEntityClassNames(cpks).map {
+        val entityClasses = EntityExtractor.getEntityClassNames(cpks).map {
             try {
                 ctx.sandboxGroup.loadClassFromMainBundles(it)
             } catch (e: SandboxException) {
