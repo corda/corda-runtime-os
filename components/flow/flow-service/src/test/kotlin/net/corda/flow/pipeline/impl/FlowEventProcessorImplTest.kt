@@ -78,6 +78,7 @@ class FlowEventProcessorImplTest {
             .setSequenceNum(1)
             .setReceivedSequenceNum(0)
             .setOutOfOrderSequenceNums(emptyList())
+            .setWaitingForDataFlag(false)
             .build()
 
     private val flowKey = "flow id"
