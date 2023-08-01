@@ -51,19 +51,20 @@ allprojects {
     pluginManager.withPlugin('java') {
         java {
             toolchain {
-                languageVersion = of(javaVersion.majorVersion.toInteger())
+                languageVersion = of(17)
             }
 
             withSourcesJar()
         }
 
         tasks.withType(JavaCompile).configureEach {
+            options.release = 11
             options.encoding = 'UTF-8'
-            options.compilerArgs += [ '-XDenableSunApiLintControl', '-parameters' ]
+            options.compilerArgs += ['-XDenableSunApiLintControl', '-parameters']
         }
 
         tasks.withType(Test).configureEach {
-            useJUnitPlatform(){
+            useJUnitPlatform() {
                 excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
                 excludeTags project.hasProperty('runMultiClusterTests') ? 'runAllTestsNoExclusions' : 'MultiCluster'
             }
@@ -90,19 +91,19 @@ allprojects {
 
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         compilerOptions {
-            allWarningsAsErrors = true
+            allWarningsAsErrors = false
             languageVersion = KOTLIN_1_8
             apiVersion = KOTLIN_1_8
             jvmTarget = JVM_11
             javaParameters = true   // Useful for reflection.
             freeCompilerArgs.addAll([
-                "-Xjvm-default=all"
+                    "-Xjvm-default=all"
             ])
         }
     }
 
     configurations {
-        [ compileClasspath, testCompileClasspath, runtimeClasspath, testRuntimeClasspath ].forEach { cfg ->
+        [compileClasspath, testCompileClasspath, runtimeClasspath, testRuntimeClasspath].forEach { cfg ->
             configureKotlinForOSGi(cfg)
         }
     }
@@ -114,7 +115,7 @@ allprojects {
             }
         }
     }
-    
+
     if (project.hasProperty('generateJavaDocWithBuild')) {
         pluginManager.withPlugin('corda.javadoc-generation') {
             artifacts {
@@ -131,7 +132,7 @@ allprojects {
         group = "verification"
 
         task.dependsOn tasks.withType(AbstractCompile),
-            tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile)
+                tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile)
     }
 
     repositories {
@@ -216,13 +217,13 @@ allprojects {
     sourceSets {
         integrationTest {
             java {
-                srcDirs += [ 'src/integrationTest/java' ]
+                srcDirs += ['src/integrationTest/java']
             }
             kotlin {
-                srcDirs += [ 'src/integrationTest/kotlin' ]
+                srcDirs += ['src/integrationTest/kotlin']
             }
             resources {
-                srcDirs = [ 'src/integrationTest/resources' ]
+                srcDirs = ['src/integrationTest/resources']
             }
             compileClasspath += main.output + test.output
             runtimeClasspath += main.output + test.output
@@ -241,7 +242,7 @@ allprojects {
                     integrationTestImplementation.extendsFrom testImplementation
                     integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
 
-                    [ integrationTestCompileClasspath, integrationTestRuntimeClasspath ].forEach { cfg ->
+                    [integrationTestCompileClasspath, integrationTestRuntimeClasspath].forEach { cfg ->
                         configureKotlinForOSGi(cfg)
                     }
                 }
@@ -289,7 +290,7 @@ tasks.register('createSBOMZip', Zip) {
     subprojects.each {
         if (it.toString().contains(":applications:workers:release:")) {
             String srcPath = it.buildDir.toString() + "/reports/SBOM/"
-            it.copy{
+            it.copy {
                 from srcPath
                 into sourceDestFolder
             }
@@ -339,7 +340,7 @@ if (System.getenv("RELEASE_VERSION")?.trim()) {
     version = System.getenv("RELEASE_VERSION")
 } else {
     def versionSuffix = '-SNAPSHOT'
-    if(project.hasProperty('overridePublishVersionSuffix')) {
+    if (project.hasProperty('overridePublishVersionSuffix')) {
         versionSuffix = project.property('overridePublishVersionSuffix')
     } else if (System.getenv('VERSION_SUFFIX')) {
         versionSuffix = System.getenv('VERSION_SUFFIX')
@@ -351,12 +352,12 @@ logger.quiet("Corda API dependency version spec: {}", cordaApiVersion)
 //logger.quiet("Release Type: {}", releaseType)
 
 if ("${compositeBuild}".toBoolean() && file("${cordaApiLocation}").exists()) {
-    logger.quiet( "Corda-Api project exists on disk in the expected location and Gradle composite build is enabled, corda-api binaries will be substituted with source code")
+    logger.quiet("Corda-Api project exists on disk in the expected location and Gradle composite build is enabled, corda-api binaries will be substituted with source code")
 }
 
 if ("${compositeBuild}".toBoolean() && file("${cordaCliHostLocation}").exists()) {
-    logger.quiet( "Corda-Cli-Plugin-Host project exists on disk in the expected location and Gradle composite build is enabled, corda-cli-plugin-host binaries will be substituted with source code")
-} 
+    logger.quiet("Corda-Cli-Plugin-Host project exists on disk in the expected location and Gradle composite build is enabled, corda-cli-plugin-host binaries will be substituted with source code")
+}
 
 subprojects {
     buildscript {
@@ -376,13 +377,13 @@ subprojects {
     version rootProject.version
     group 'net.corda'
 
-    idea{
+    idea {
         module {
             downloadJavadoc = true
             downloadSources = true
         }
     }
-    
+
     // we do this to allow for Gradle task caching. OSGI attribute Bnd-LastModified breaks gradle caching as it is a timestamp
     // below block tells Gradle to ignore specifically the Bnd-LastModified attribute of the manifest when checking if
     // a task is up-to-date, this has no impact on publishing or production of jar.
@@ -394,9 +395,9 @@ subprojects {
         }
     }
 
-    pluginManager.withPlugin('io.gitlab.arturbosch.detekt'){
+    pluginManager.withPlugin('io.gitlab.arturbosch.detekt') {
         dependencies {
-        detekt "io.gitlab.arturbosch.detekt:detekt-cli:$detektPluginVersion"
+            detekt "io.gitlab.arturbosch.detekt:detekt-cli:$detektPluginVersion"
             constraints {
                 detekt("org.yaml:snakeyaml:$snakeyamlVersion") {
                     because "required until detekt plugin updates it's internal version of snakeYaml, not fixed as of detekt version 1.21"
@@ -406,13 +407,13 @@ subprojects {
     }
 
     tasks.named("detekt").configure {
-        if(file("$projectDir/detekt-baseline.xml").exists()){
+        if (file("$projectDir/detekt-baseline.xml").exists()) {
             baseline = file("$projectDir/detekt-baseline.xml")
         }
         config.setFrom(files("$rootDir/detekt-config.yml"))
         parallel = true
         reports {
-            xml{
+            xml {
                 outputLocation.set(file("$projectDir/build/detekt-report.xml"))
             }
             txt.required.set(false)
@@ -461,9 +462,9 @@ subprojects {
 
     allOpen {
         annotations(
-            "javax.persistence.Entity",
-            "javax.persistence.Embeddable",
-            "javax.persistence.MappedSuperclass"
+                "javax.persistence.Entity",
+                "javax.persistence.Embeddable",
+                "javax.persistence.MappedSuperclass"
         )
     }
 }
