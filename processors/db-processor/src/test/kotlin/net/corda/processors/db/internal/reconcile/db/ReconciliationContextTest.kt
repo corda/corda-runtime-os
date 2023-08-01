@@ -46,7 +46,7 @@ class ReconciliationContextTest {
     private val dbConnectionManager: DbConnectionManager = mock {
         on { getClusterEntityManagerFactory() } doReturn clusterEmf
         on {
-            getOrCreateEntityManagerFactory(eq(virtualNodeInfo.vaultDmlConnectionId), eq(jpaEntitiesSet))
+            createEntityManagerFactory(eq(virtualNodeInfo.vaultDmlConnectionId), eq(jpaEntitiesSet))
         } doReturn vnodeEmf
     }
 
@@ -123,9 +123,9 @@ class ReconciliationContextTest {
         }
 
         @Test
-        fun `Context entity manager factory and entity manager are acquired when called`() {
+        fun `Context entity manager factory and entity manager are created when called`() {
             context.getOrCreateEntityManager()
-            verify(dbConnectionManager).getOrCreateEntityManagerFactory(
+            verify(dbConnectionManager).createEntityManagerFactory(
                 eq(virtualNodeInfo.vaultDmlConnectionId),
                 eq(jpaEntitiesSet)
             )
@@ -133,10 +133,10 @@ class ReconciliationContextTest {
         }
 
         @Test
-        fun `Context entity manager is not recreated if it hasn't been closed`() {
+        fun `Context entity manager factory and entity manager are not recreated if they haven't been closed`() {
             context.getOrCreateEntityManager()
             context.getOrCreateEntityManager()
-            verify(dbConnectionManager).getOrCreateEntityManagerFactory(
+            verify(dbConnectionManager).createEntityManagerFactory(
                 eq(virtualNodeInfo.vaultDmlConnectionId),
                 eq(jpaEntitiesSet)
             )
@@ -144,11 +144,11 @@ class ReconciliationContextTest {
         }
 
         @Test
-        fun `Context entity manager is recreated if it has been closed`() {
+        fun `Context entity manager factory and entity manager are recreated if they have been closed`() {
             context.getOrCreateEntityManager()
             context.close()
             context.getOrCreateEntityManager()
-            verify(dbConnectionManager, times(2)).getOrCreateEntityManagerFactory(
+            verify(dbConnectionManager, times(2)).createEntityManagerFactory(
                 eq(virtualNodeInfo.vaultDmlConnectionId),
                 eq(jpaEntitiesSet)
             )
@@ -166,6 +166,14 @@ class ReconciliationContextTest {
             verify(vnodeEm, never()).close()
             context.close()
             verify(vnodeEm).close()
+        }
+
+        @Test
+        fun `Closing the context closes the entity manager factory`() {
+            context.getOrCreateEntityManager()
+            verify(vnodeEmf, never()).close()
+            context.close()
+            verify(vnodeEmf).close()
         }
     }
 }
