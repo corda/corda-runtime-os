@@ -1,7 +1,7 @@
 package net.corda.crypto.impl.decorators
 
-import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.CryptoServiceExtensions
+import net.corda.crypto.core.CryptoService
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock

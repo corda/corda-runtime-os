@@ -2,7 +2,7 @@ package net.corda.crypto.softhsm
 
 import java.security.PublicKey
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.persistence.SigningKeyInfo
+import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.v5.crypto.SecureHash

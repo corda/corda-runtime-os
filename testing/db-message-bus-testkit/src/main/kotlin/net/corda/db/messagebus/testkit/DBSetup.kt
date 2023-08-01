@@ -1,5 +1,6 @@
 package net.corda.db.messagebus.testkit
 
+import net.corda.application.dbsetup.DbMessageBusSetup
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
@@ -11,6 +12,7 @@ import org.osgi.framework.FrameworkUtil
 import java.io.StringWriter
 
 object DBSetup: BeforeAllCallback {
+    private var topicsCreated = false
 
     var isDB = false
         private set
@@ -44,10 +46,16 @@ object DBSetup: BeforeAllCallback {
         )
         val lbm = LiquibaseSchemaMigratorImpl()
         dbConfig.dataSource.use { dataSource ->
-            StringWriter().use {
-                dataSource.connection.use { connection -> lbm.createUpdateSql(connection, cl, it) }
+            dataSource.connection.use { connection ->
+                StringWriter().use {
+                    lbm.createUpdateSql(connection, cl, it)
+                }
+                lbm.updateDb(connection, cl)
+                if(!topicsCreated) {
+                    DbMessageBusSetup.createTopicsOnDbMessageBus(connection)
+                    topicsCreated = true
+                }
             }
-            dataSource.connection.use { connection  ->  lbm.updateDb(connection, cl) }
         }
     }
 }

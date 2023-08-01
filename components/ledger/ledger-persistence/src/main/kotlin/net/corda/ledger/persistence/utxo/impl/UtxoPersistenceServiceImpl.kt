@@ -29,6 +29,7 @@ import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import net.corda.v5.ledger.utxo.observer.UtxoToken
 
 @Suppress("LongParameterList")
 class UtxoPersistenceServiceImpl(
@@ -68,16 +69,16 @@ class UtxoPersistenceServiceImpl(
             repository.findUnconsumedVisibleStatesByType(em, listOf(outputsInfoIdx, outputsIdx))
         }.groupBy { it.groupIndex }
         val outputInfos = componentGroups[outputsInfoIdx]
-            ?.associate { Pair(it.leafIndex, it.data) }
+            ?.associateBy { it.transactionId to it.leafIndex }
             ?: emptyMap()
         return componentGroups[outputsIdx]?.mapNotNull {
-            val info = outputInfos[it.leafIndex]
+            val info = outputInfos[it.transactionId to it.leafIndex]
             requireNotNull(info) {
                 "Missing output info at index [${it.leafIndex}] for UTXO transaction with ID [${it.transactionId}]"
             }
             val contractState = serializationService.deserialize<ContractState>(it.data)
             if (stateClass.isInstance(contractState)) {
-                UtxoTransactionOutputDto(it.transactionId, it.leafIndex, info, it.data)
+                UtxoTransactionOutputDto(it.transactionId, it.leafIndex, info.data, it.data)
             } else {
                 null
             }
@@ -103,13 +104,17 @@ class UtxoPersistenceServiceImpl(
         } ?: emptyList()
     }
 
-    override fun persistTransaction(transaction: UtxoTransactionReader): List<CordaPackageSummary> {
+    override fun persistTransaction(transaction: UtxoTransactionReader, utxoTokenMap: Map<StateRef, UtxoToken>): List<CordaPackageSummary> {
         entityManagerFactory.transaction { em ->
-            return persistTransaction(em, transaction)
+            return persistTransaction(em, transaction, utxoTokenMap)
         }
     }
 
-    private fun persistTransaction(em: EntityManager, transaction: UtxoTransactionReader): List<CordaPackageSummary> {
+    private fun persistTransaction(
+        em: EntityManager,
+        transaction: UtxoTransactionReader,
+        utxoTokenMap: Map<StateRef, UtxoToken> = emptyMap()
+    ): List<CordaPackageSummary> {
         val nowUtc = utcClock.instant()
         val transactionIdString = transaction.id.toString()
 
@@ -154,13 +159,20 @@ class UtxoPersistenceServiceImpl(
 
         // Insert outputs data
         transaction.getVisibleStates().entries.forEach { (stateIndex, stateAndRef) ->
+            val utxoToken = utxoTokenMap[stateAndRef.ref]
             repository.persistTransactionOutput(
                 em,
                 transactionIdString,
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 stateIndex,
                 stateAndRef.state.contractState::class.java.canonicalName,
-                timestamp = nowUtc
+                utxoToken?.poolKey?.tokenType,
+                utxoToken?.poolKey?.issuerHash?.toString(),
+                utxoToken?.poolKey?.symbol,
+                utxoToken?.filterFields?.tag,
+                utxoToken?.filterFields?.ownerHash?.toString(),
+                utxoToken?.amount,
+                nowUtc
             )
         }
 

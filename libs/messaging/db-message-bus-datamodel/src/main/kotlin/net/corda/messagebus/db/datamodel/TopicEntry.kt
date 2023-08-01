@@ -14,10 +14,10 @@ import javax.persistence.Table
 @Table(name = "topic")
 class TopicEntry(
     @Id
-    val topic: String,
+    var topic: String,
 
     @Column(name = "num_partitions")
-    val numPartitions: Int
+    var numPartitions: Int
 ) {
     override fun toString(): String {
         return "TopicEntry(topic='$topic', numPartitions=$numPartitions)"

@@ -6,7 +6,8 @@ import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.config.impl.retrying
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.service.TenantInfoService
+import net.corda.crypto.core.CryptoService
+import net.corda.crypto.softhsm.TenantInfoService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoNoContentValue
@@ -86,9 +87,10 @@ class HSMRegistrationBusProcessorTests {
     fun `Should execute handle AssignSoftHSMCommand`() {
         val info = HSMAssociationInfo()
         val tenantInfoService = mock<TenantInfoService> {
-            on { populate(any(), any()) } doReturn info
+            on { populate(any(), any(), any()) } doReturn info
         }
-        val processor = HSMRegistrationBusProcessor(tenantInfoService, configEvent.config.toCryptoConfig().retrying())
+        val cryptoService = mock<CryptoService> {}
+        val processor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, configEvent.config.toCryptoConfig().retrying())
         val context = createRequestContext()
         val future = CompletableFuture<HSMRegistrationResponse>()
         processor.onNext(
@@ -106,7 +108,8 @@ class HSMRegistrationBusProcessorTests {
         assertSame(info, result.response)
         Mockito.verify(tenantInfoService, times(1)).populate(
             eq(tenantId),
-            eq(CryptoConsts.Categories.LEDGER)
+            eq(CryptoConsts.Categories.LEDGER),
+            any()
         )
     }
 
@@ -123,7 +126,8 @@ class HSMRegistrationBusProcessorTests {
         val tenantInfoService = mock<TenantInfoService> {
             on { lookup(any(), any()) } doReturn association
         }
-        val processor = HSMRegistrationBusProcessor(tenantInfoService, configEvent.config.toCryptoConfig().retrying())
+        val cryptoService = mock<CryptoService>()
+        val processor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, configEvent.config.toCryptoConfig().retrying())
         val context = createRequestContext()
         val future = CompletableFuture<HSMRegistrationResponse>()
         processor.onNext(
@@ -143,7 +147,8 @@ class HSMRegistrationBusProcessorTests {
     @Test
     fun `Should return no content response when handling AssignedMSMQQuery for unassigned category`() {
         val tenantInfoService = mock<TenantInfoService>()
-        val processor = HSMRegistrationBusProcessor(tenantInfoService, configEvent.config.toCryptoConfig().retrying())
+        val cryptoService = mock<CryptoService>()
+        val processor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, configEvent.config.toCryptoConfig().retrying())
         val context = createRequestContext()
         val future = CompletableFuture<HSMRegistrationResponse>()
         processor.onNext(
@@ -162,7 +167,8 @@ class HSMRegistrationBusProcessorTests {
     @Test
     fun `Should complete future exceptionally with IllegalArgumentException in case of unknown request`() {
         val tenantInfoService = mock<TenantInfoService>()
-        val processor = HSMRegistrationBusProcessor(tenantInfoService, configEvent.config.toCryptoConfig().retrying())
+        val cryptoService = mock<CryptoService>()
+        val processor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService , configEvent.config.toCryptoConfig().retrying())
         val context = createRequestContext()
         val future = CompletableFuture<HSMRegistrationResponse>()
         processor.onNext(
@@ -183,9 +189,10 @@ class HSMRegistrationBusProcessorTests {
     fun `Should complete future exceptionally in case of service failure`() {
         val originalException = RuntimeException()
         val tenantInfoService = mock<TenantInfoService> {
-            on { populate(any(), any()) } doThrow originalException
+            on { populate(any(), any(), any()) } doThrow originalException
         }
-        val processor = HSMRegistrationBusProcessor(tenantInfoService, configEvent.config.toCryptoConfig().retrying())
+        val cryptoService = mock<CryptoService>()
+        val processor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, configEvent.config.toCryptoConfig().retrying())
         val context = createRequestContext()
         val future = CompletableFuture<HSMRegistrationResponse>()
         processor.onNext(
@@ -204,7 +211,8 @@ class HSMRegistrationBusProcessorTests {
         assertSame(originalException, exception.cause)
         Mockito.verify(tenantInfoService, times(1)).populate(
             eq(tenantId),
-            eq(CryptoConsts.Categories.LEDGER)
+            eq(CryptoConsts.Categories.LEDGER),
+            eq(cryptoService)
         )
     }
 }

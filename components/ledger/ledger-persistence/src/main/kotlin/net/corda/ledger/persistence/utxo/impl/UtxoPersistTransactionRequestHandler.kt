@@ -11,6 +11,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
 import net.corda.virtualnode.HoldingIdentity
@@ -33,45 +34,63 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
     override fun execute(): List<Record<*, *>> {
         val isTransactionVerified = transaction.status == TransactionStatus.VERIFIED
 
+        val listOfPairsStateAndUtxoToken = transaction.getVisibleStates().values.toList().toTokens(tokenObservers)
         val outputTokenRecords = if (isTransactionVerified) {
             utxoOutputRecordFactory.getTokenCacheChangeEventRecords(
                 holdingIdentity,
-                transaction.getVisibleStates().values.toList().toTokens(tokenObservers),
+                listOfPairsStateAndUtxoToken,
                 transaction.getConsumedStates(persistenceService).toTokens(tokenObservers)
             )
         } else {
             listOf()
         }
 
+        val utxoTokenMap = listOfPairsStateAndUtxoToken.associate { it.first.ref to it.second }
+
         // persist the transaction
-        persistenceService.persistTransaction(transaction)
+        persistenceService.persistTransaction(transaction, utxoTokenMap)
 
         // return output records
         return outputTokenRecords + utxoOutputRecordFactory.getPersistTransactionSuccessRecord(externalEventContext)
     }
 
-    private fun List<StateAndRef<ContractState>>.toTokens(
-        tokenObservers: UtxoTokenObserverMap
-    ): List<Pair<StateAndRef<*>, UtxoToken>> = flatMap { stateAndRef ->
-        tokenObservers.getObserversFor(stateAndRef.state.contractStateType).mapNotNull { observer ->
-            try {
-                val token = observer.onCommit(stateAndRef.state.contractState, digestService).let { token ->
-                    token.poolKey.tokenType?.let { token } ?: UtxoToken(
-                        UtxoTokenPoolKey(
-                            stateAndRef.state.contractStateType.name,
-                            token.poolKey.issuerHash,
-                            token.poolKey.symbol
-                        ),
-                        token.amount,
-                        token.filterFields
-                    )
-                }
-
-                stateAndRef to token
-            } catch (e: Exception) {
-                log.error("Failed while trying call '${this.javaClass}'.onCommit() with '${stateAndRef.state.contractStateType}'")
-                null
+    private fun List<StateAndRef<ContractState>>.toTokens(tokenObservers: UtxoTokenObserverMap): List<Pair<StateAndRef<*>, UtxoToken>> =
+        flatMap { stateAndRef ->
+            val observer = tokenObservers.getObserverFor(stateAndRef.state.contractStateType)
+            if (observer == null) {
+                emptyList()
+            } else {
+                onCommit(observer, stateAndRef)
             }
         }
+
+    private fun onCommit(
+        observer: UtxoLedgerTokenStateObserver<ContractState>,
+        stateAndRef: StateAndRef<ContractState>
+    ): List<Pair<StateAndRef<*>, UtxoToken>> {
+        return try {
+            val token = observer.onCommit(stateAndRef.state.contractState, digestService).let { token ->
+                if (token.poolKey.tokenType != null) {
+                    token
+                } else {
+                    createUtxoToken(token, stateAndRef)
+                }
+            }
+            listOf(Pair(stateAndRef, token))
+        } catch (e: Exception) {
+            log.error("Failed while trying call '${this.javaClass}'.onCommit() with '${stateAndRef.state.contractStateType}'")
+            emptyList()
+        }
     }
+
+    private fun createUtxoToken(token: UtxoToken, stateAndRef: StateAndRef<ContractState>) =
+        UtxoToken(
+            UtxoTokenPoolKey(
+                stateAndRef.state.contractStateType.name,
+                token.poolKey.issuerHash,
+                token.poolKey.symbol
+            ),
+            token.amount,
+            token.filterFields
+        )
 }

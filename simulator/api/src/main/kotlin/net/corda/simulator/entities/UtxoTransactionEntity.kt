@@ -23,33 +23,33 @@ import javax.persistence.Embeddable
 @Entity
 @Table(name = "utxo_transaction")
 class UtxoTransactionEntity(
-    @Id
-    @Column(name="tx_id")
-    val id: String,
+    @get:Id
+    @get:Column(name="tx_id")
+    var id: String,
 
-    @Column(name="command_data")
-    val commandData: ByteArray,
+    @get:Column(name="command_data")
+    var commandData: ByteArray,
 
-    @Column(name="input_data")
-    val inputData: ByteArray,
+    @get:Column(name="input_data")
+    var inputData: ByteArray,
 
-    @Column(name="reference_state_data")
-    val referenceStateDate: ByteArray,
+    @get:Column(name="reference_state_data")
+    var referenceStateDate: ByteArray,
 
-    @Column(name="signatories_data")
-    val signatoriesData: ByteArray,
+    @get:Column(name="signatories_data")
+    var signatoriesData: ByteArray,
 
-    @Column(name="time_window_data")
-    val timeWindowData: ByteArray,
+    @get:Column(name="time_window_data")
+    var timeWindowData: ByteArray,
 
-    @Column(name="output_data")
-    val outputData: ByteArray,
+    @get:Column(name="output_data")
+    var outputData: ByteArray,
 
-    @Column(name="attachment_data")
-    val attachmentData: ByteArray,
+    @get:Column(name="attachment_data")
+    var attachmentData: ByteArray,
 
-    @OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true, fetch = FetchType.EAGER)
-    val signatures: MutableSet<UtxoTransactionSignatureEntity> = mutableSetOf(),
+    @get:OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true, fetch = FetchType.EAGER)
+    var signatures: MutableSet<UtxoTransactionSignatureEntity> = mutableSetOf(),
 
 ){
     override fun equals(other: Any?): Boolean {
@@ -83,20 +83,20 @@ class UtxoTransactionEntity(
 @Table(name = "utxo_transaction_signature")
 @IdClass(UtxoTransactionEntityId::class)
 class UtxoTransactionSignatureEntity(
-    @Id
-    @ManyToOne
-    @JoinColumn(name = "tx_id", nullable = false, updatable = false)
-    val transaction: UtxoTransactionEntity,
+    @get:Id
+    @get:ManyToOne
+    @get:JoinColumn(name = "tx_id", nullable = false, updatable = false)
+    var transaction: UtxoTransactionEntity,
 
-    @Id
-    @Column(name = "signature_idx", nullable = false)
-    val index: Int,
+    @get:Id
+    @get:Column(name = "signature_idx", nullable = false)
+    var index: Int,
 
-    @Column(name = "key", nullable = false)
-    val signatureWithKey: ByteArray,
+    @get:Column(name = "key", nullable = false)
+    var signatureWithKey: ByteArray,
 
-    @Column(name = "timestamp", nullable = false)
-    val timestamp: Instant
+    @get:Column(name = "timestamp", nullable = false)
+    var timestamp: Instant
 ){
     override fun equals(other: Any?): Boolean {
         if(this === other) return true
@@ -126,24 +126,24 @@ class UtxoTransactionSignatureEntity(
     query = "from UtxoTransactionOutputEntity where consumed = false and type = :type"
 )
 class UtxoTransactionOutputEntity(
-    @Id
-    @Column(name = "tx_id", nullable = false, updatable = false)
-    val transactionId: String,
+    @get:Id
+    @get:Column(name = "tx_id", nullable = false, updatable = false)
+    var transactionId: String,
 
-    @Column(name = "type", nullable = true)
-    val type: String?,
+    @get:Column(name = "type", nullable = true)
+    var type: String?,
 
-    @Column(name="encumbrance_data")
-    val encumbranceData: ByteArray,
+    @get:Column(name="encumbrance_data")
+    var encumbranceData: ByteArray,
 
-    @Column(name="state_data")
-    val stateData: ByteArray,
+    @get:Column(name="state_data")
+    var stateData: ByteArray,
 
-    @Id
-    @Column(name = "index", nullable = false)
-    val index: Int,
+    @get:Id
+    @get:Column(name = "index", nullable = false)
+    var index: Int,
 
-    @Column(name = "consumed", nullable = false)
+    @get:Column(name = "consumed", nullable = false)
     var isConsumed: Boolean,
 
 ): Serializable {
@@ -164,8 +164,8 @@ class UtxoTransactionOutputEntity(
 
 @Embeddable
 data class UtxoTransactionEntityId(
-    val transaction: UtxoTransactionEntity,
-    val index: Int
+    var transaction: UtxoTransactionEntity,
+    var index: Int
 ) : Serializable{
     override fun equals(other: Any?): Boolean {
         if(this === other) return true
@@ -184,8 +184,8 @@ data class UtxoTransactionEntityId(
 
 @Embeddable
 data class UtxoTransactionOutputEntityId(
-    val transactionId: String,
-    val index: Int
+    var transactionId: String,
+    var index: Int
 ) : Serializable{
     override fun equals(other: Any?): Boolean {
         if(this === other) return true

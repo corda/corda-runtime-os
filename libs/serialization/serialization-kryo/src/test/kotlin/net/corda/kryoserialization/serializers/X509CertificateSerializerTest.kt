@@ -10,7 +10,7 @@ import java.io.ByteArrayInputStream
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 
-internal class X509CertificateSerializerTest {
+class X509CertificateSerializerTest {
     @Test
     fun `serializer returns the correct X509 certificate back`() {
         val certificate = CertificateFactory
