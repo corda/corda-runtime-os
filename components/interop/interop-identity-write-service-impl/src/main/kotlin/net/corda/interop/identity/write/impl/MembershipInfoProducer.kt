@@ -16,10 +16,12 @@ import net.corda.virtualnode.toAvro
 import org.slf4j.LoggerFactory
 
 
+@Suppress("ForbiddenComment")
 class MembershipInfoProducer(val publisher: AtomicReference<Publisher?>) {
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
+        // TODO: CORE-15749 - Key generation and interop certificates
         private const val INTEROP_GROUP_ID = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
 
         private val DUMMY_CERTIFICATE =
@@ -31,7 +33,6 @@ class MembershipInfoProducer(val publisher: AtomicReference<Publisher?>) {
          * Creates member info record for each [newInteropIdentities] for publishing into the
          * view of [ownedInteropIdentity].
          */
-        @Suppress("ForbiddenComment")
         private fun createInteropIdentityMemberInfo(
             realHoldingIdentity: HoldingIdentity,
             ownedInteropIdentity: InteropIdentity,
