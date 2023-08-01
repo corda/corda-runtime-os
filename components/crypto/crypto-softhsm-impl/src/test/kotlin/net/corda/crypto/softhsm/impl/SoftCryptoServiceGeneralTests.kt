@@ -675,6 +675,12 @@ class SoftCryptoServiceGeneralTests {
         keysInCache: Int,
         longHashes: Boolean,
     ) {
+        // This is required in generating key pair, we invalidate cache afterward anyway, so any random mock would do
+        val randomSigningKeyInfo = mock<SigningKeyInfo> {
+            on { publicKey }.doReturn(mock())
+            on { publicKey.encoded }.doReturn(byteArrayOf())
+        }
+
         val indices = arrayOf(0,1)
         var repoCount = 0
         val shortHashCache = makeShortHashCache()
@@ -683,8 +689,10 @@ class SoftCryptoServiceGeneralTests {
         val hashCaptor = argumentCaptor<Set<SecureHash>>()
         val repo = if (longHashes) (mock<SigningRepository> {
             on { lookupByPublicKeyHashes(hashCaptor.capture()) }.thenReturn(mockDbResults)
+            on { savePrivateKey(any()) }.thenReturn(randomSigningKeyInfo)
         }) else (mock<SigningRepository> {
             on { lookupByPublicKeyShortHashes(shortHashCaptor.capture()) }.thenReturn(mockDbResults)
+            on { savePrivateKey(any()) }.thenReturn(randomSigningKeyInfo)
         })
         val signingKeyInfoCache = makeSigningKeyInfoCache()
         val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
@@ -702,7 +710,7 @@ class SoftCryptoServiceGeneralTests {
             wrappingKeyCache = null,
             privateKeyCache = null,
             signingKeyInfoCache = signingKeyInfoCache,
-            shortHashCache = null,
+            shortHashCache = shortHashCache,
             keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
                 KeyPairGenerator.getInstance(algorithm, provider)
             },
@@ -719,36 +727,51 @@ class SoftCryptoServiceGeneralTests {
                 alias = "key${it}"
             )
         }
+
+        shortHashCache.invalidateAll()
+        signingKeyInfoCache.invalidateAll()
+
         val fullHashes = indices.map { fullKeys[it].publicKey.fullIdHash() }
         val shortHashes = fullHashes.map { ShortHash.of(it) }
         val signingKeyInfos = indices.map { i ->
             mock<SigningKeyInfo> {
                 on { fullId } doReturn fullHashes.elementAt(i)
                 on { id } doReturn shortHashes.elementAt(i)
+                on { publicKey } doReturn fullKeys.elementAt(i).publicKey
+                on { tenantId } doReturn tenantId
             }
         }
     
-        mockDbResults.addAll(signingKeyInfos.slice(0..keysInCache))
+        mockDbResults.addAll(signingKeyInfos)
 
-        if (keysInCache >= 1) populateShortHashCache(shortHashCache, shortHashes.elementAt(0), fullKeys.elementAt(0).publicKey)
-        if (keysInCache >= 2) populateShortHashCache(shortHashCache, shortHashes.elementAt(1), fullKeys.elementAt(1).publicKey)
+        if (keysInCache >= 1) {
+            populateShortHashCache(shortHashCache, shortHashes.elementAt(0), fullKeys.elementAt(0).publicKey)
+            signingKeyInfoCache.put(fullKeys.elementAt(0).publicKey, signingKeyInfos.elementAt(0))
+        }
+        if (keysInCache >= 2) {
+            populateShortHashCache(shortHashCache, shortHashes.elementAt(1), fullKeys.elementAt(1).publicKey)
+            signingKeyInfoCache.put(fullKeys.elementAt(1).publicKey, signingKeyInfos.elementAt(1))
+        }
+
+        repoCount = 0
         fun doLookup() = if (longHashes)
             cryptoService.lookupSigningKeysByPublicKeyHashes(tenantId, fullHashes)
         else
             cryptoService.lookupSigningKeysByPublicKeyShortHash(tenantId, shortHashes)
 
         val r = doLookup()
+        Assertions.assertEquals(2, r.size)
         Assertions.assertEquals(
             fullHashes.map { it.toString() }.toSet(),
             r.map { it.fullId.toString() }.toSet()
         )
         assertThat(repoCount).isEqualTo(if (keysInCache == 2) 0 else 1)
         if (longHashes) {
-            if (keysInCache == 0) Assertions.assertEquals(fullHashes, hashCaptor.firstValue)
-            if (keysInCache == 1) Assertions.assertEquals(setOf(fullKeys.elementAt(1)), hashCaptor.firstValue)
+            if (keysInCache == 0) Assertions.assertEquals(fullHashes.toSet(), hashCaptor.firstValue.toSet())
+            if (keysInCache == 1) Assertions.assertEquals(setOf(fullKeys.elementAt(1).publicKey.fullIdHash()), hashCaptor.firstValue.toSet())
         } else {
-            if (keysInCache == 0) Assertions.assertEquals(shortHashes, shortHashCaptor.firstValue)
-            if (keysInCache == 1) Assertions.assertEquals(setOf(shortHashes.elementAt(1)), shortHashCaptor.firstValue)
+            if (keysInCache == 0) Assertions.assertEquals(shortHashes.toSet(), shortHashCaptor.firstValue.toSet())
+            if (keysInCache == 1) Assertions.assertEquals(setOf(shortHashes.elementAt(1)), shortHashCaptor.firstValue.toSet())
         }
         // looking again should result in no more database access
         val r2 = doLookup()
