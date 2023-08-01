@@ -32,7 +32,7 @@ fun ClusterInfo.conditionallyUploadCpiSigningCertificate() = cluster {
         it.code != ResponseCode.RESOURCE_NOT_FOUND.statusCode
     }
     if (!hasCertificateChain) {
-        assertWithRetry {
+        assertWithRetryIgnoringExceptions {
             // Certificate upload can be slow in the combined worker, especially after it has just started up.
             timeout(30.seconds)
             interval(2.seconds)
