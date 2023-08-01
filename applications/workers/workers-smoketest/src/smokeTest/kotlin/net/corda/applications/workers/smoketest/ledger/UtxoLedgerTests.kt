@@ -191,7 +191,8 @@ class UtxoLedgerTests {
             "currency" to "USD",
             "numberOfCoins" to 10,
             "valueOfCoin" to 5,
-            "tag" to "simple coin"
+            "tag" to "simple coin",
+            "ownerHash" to "SHA-256:54111C3F78233454D7F53AE7748F47298810B28F75FA652E42AA3FAA2E80049F"
         )
 
         val utxoFlowRequestId = startRpcFlow(

@@ -70,9 +70,12 @@ class CreateCoinFlow : ClientStartableFlow {
                 digestService.parseSecureHash(creationRequest.ownerHash)
             }
 
+            val issuerHash = digestService.parseSecureHash("SHA-256:54111C3F78233454D7F53AE7748F47298810B28F75FA652E42AA3FAA2E80049F")
+
+            log.info("FILIPE ${issuerHash.toHexString()}")
             val coins = IntRange(1, creationRequest.numberOfCoins).map {
                 CoinState(
-                    issuer = digestService.hash(creationRequest.issuerBankX500.toByteArray(), DigestAlgorithmName.SHA2_256),
+                    issuer =issuerHash,
                     currency = creationRequest.currency,
                     value = BigDecimal(creationRequest.valueOfCoin),
                     participants = participants,

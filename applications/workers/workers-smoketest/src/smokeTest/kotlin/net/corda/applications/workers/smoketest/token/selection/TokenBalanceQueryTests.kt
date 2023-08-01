@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import java.math.BigDecimal
 import java.util.UUID
+import net.corda.applications.workers.smoketest.ledger.UtxoLedgerTests
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
@@ -30,13 +31,15 @@ class TokenBalanceQueryTests {
         const val NOTARY_SERVICE_X500 = "O=MyNotaryService, L=London, C=GB"
 
         val testRunUniqueId = UUID.randomUUID().toString()
-        val groupId = UUID.randomUUID().toString()
-        val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
-        val notaryCpiName = "${TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
 
-        val aliceX500 = "CN=Alice-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
-        val bobX500 = "CN=Bob-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
-        val notaryX500 = "CN=Notary-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
+        private val groupId = "affd0fc8-2614-11ee-be56-0242ac120002"//UUID.randomUUID().toString()
+        private val cpiName = "ledger-utxo-demo-app"
+        private val notaryCpiName = "${TEST_NOTARY_CPI_NAME}"
+
+        private val aliceX500 = "CN=Alice, OU=Application, O=R3, L=London, C=GB"
+        private val bobX500 = "CN=Bob, OU=Application, O=R3, L=London, C=GB"
+        private val charlieX500 = "CN=Charlie, OU=Application, O=R3, L=London, C=GB"
+        private val notaryX500 = "CN=Notary-, OU=Application, O=R3, L=London, C=GB"
 
         val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
         val bobHoldingId: String = getHoldingIdShortHash(bobX500, groupId)

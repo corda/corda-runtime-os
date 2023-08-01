@@ -50,30 +50,31 @@ class AvailableTokenCacheServiceImpl @Activate constructor(
         val virtualNode = virtualNodeInfoService.getByHoldingIdentityShortHash(ShortHash.of(poolKey.shortHolderId))
             ?: throw VirtualNodeException("Could not get virtual node for ${poolKey.shortHolderId}")
 
-        // Create the per-sandbox EMF for all the entities
-        // NOTE: this is create and not getOrCreate as the dbConnectionManager does not cache vault EMFs.
-        // This is because sandboxes themselves are caches, so the EMF will be cached and cleaned up
-        // as part of that.
+
+        // Follow the repository pattern
         val entityManagerFactory = dbConnectionManager.createEntityManagerFactory(
             virtualNode.vaultDmlConnectionId,
-            jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
-                ?: throw IllegalStateException(
-                    "persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered."
-                )
+            JpaEntitiesSet.create("emptySet", emptySet()) // No entity set require
         )
 
         val entityManager = entityManagerFactory.createEntityManager()
 
+        // Follow the repository pattern
         val resultList = entityManager.createNativeQuery(
             """
                 SELECT
-                    parameters,
-                    signature_public_key,
-                    signature_content,
-                    signature_spec
-                FROM {h-schema}utxo_group_parameters""",
+                    transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash,
+                    token_symbol, token_tag, token_owner_hash, token_amount, created
+                FROM {h-schema}utxo_transaction_output
+                WHERE token_type = :tokenType AND
+                      token_issuer_hash = :issuerHash AND
+                      token_symbol = :symbol""",
             Tuple::class.java
-        ).resultList
+        )
+            .setParameter("tokenType", poolKey.tokenType)
+            .setParameter("issuerHash", poolKey.issuerHash)
+            .setParameter("symbol", poolKey.symbol)
+            .resultList
 
         log.info("Filipe: $resultList")
     }
