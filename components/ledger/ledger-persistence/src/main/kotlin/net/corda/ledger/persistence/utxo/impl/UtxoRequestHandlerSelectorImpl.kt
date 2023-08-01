@@ -49,7 +49,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
     init {
         jpaEntitiesRegistry.register(
             CordaDb.Vault.persistenceUnitName,
-            emptySet()
+            UtxoLedgerEntities.classes
         )
     }
 
