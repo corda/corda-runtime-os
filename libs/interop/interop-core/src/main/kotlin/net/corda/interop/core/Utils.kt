@@ -7,8 +7,7 @@ import net.corda.virtualnode.HoldingIdentity
 class Utils {
     companion object {
         fun computeShortHash(name: String, groupId: String): String {
-            val interopHoldingIdentity = HoldingIdentity(MemberX500Name.parse(name), groupId)
-            return interopHoldingIdentity.shortHash.value
+            return HoldingIdentity(MemberX500Name.parse(name), groupId).shortHash.value
         }
     }
 }

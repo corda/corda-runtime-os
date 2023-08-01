@@ -79,7 +79,7 @@ internal class InteropRestResourceImpl @Activate constructor(
     override fun getInterOpGroups(holdingIdentityShortHash: String): Map<UUID, String> {
         val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(holdingIdentityShortHash)
         val cacheView =
-            interopIdentityRegistryService.getVirtualNodeCacheView(vNodeInfo.getVNodeShortHash())
+            interopIdentityRegistryService.getVirtualNodeRegistryView(vNodeInfo.getVNodeShortHash())
         return cacheView.getOwnedIdentities().keys.associate {
             Pair(UUID.fromString(it), interopGroupPolicyReadService.getGroupPolicy(it) ?: "")
         }
@@ -145,7 +145,7 @@ internal class InteropRestResourceImpl @Activate constructor(
 
     override fun getInterOpIdentities(holdingIdentityShortHash: String): List<InteropIdentityResponse> {
         val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(holdingIdentityShortHash)
-        val cacheView = interopIdentityRegistryService.getVirtualNodeCacheView(holdingIdentityShortHash)
+        val cacheView = interopIdentityRegistryService.getVirtualNodeRegistryView(holdingIdentityShortHash)
         val interopIdentities = cacheView.getIdentities()
         return interopIdentities.map {
             InteropIdentityResponse(
@@ -166,7 +166,7 @@ internal class InteropRestResourceImpl @Activate constructor(
     ): ExportInteropIdentityRest.Response {
         val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(holdingIdentityShortHash)
         val vNodeShortHash = vNodeInfo.getVNodeShortHash()
-        val cacheView = interopIdentityRegistryService.getVirtualNodeCacheView(vNodeShortHash)
+        val cacheView = interopIdentityRegistryService.getVirtualNodeRegistryView(vNodeShortHash)
         val interopIdentityMap = cacheView.getIdentitiesByShortHash()
         val interopIdentityToExport = if (interopIdentityMap.containsKey(interopIdentityShortHash)) {
             interopIdentityMap[interopIdentityShortHash]!!

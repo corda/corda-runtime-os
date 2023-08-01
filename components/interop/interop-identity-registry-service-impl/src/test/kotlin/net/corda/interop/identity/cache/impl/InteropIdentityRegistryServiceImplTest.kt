@@ -35,7 +35,7 @@ class InteropIdentityRegistryServiceImplTest {
         val cache = InteropIdentityRegistryServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
 
         val shortHash = "1234567890"
-        val response = cache.getVirtualNodeCacheView(shortHash)
+        val response = cache.getVirtualNodeRegistryView(shortHash)
 
         assertThat(response.getIdentities().isEmpty()).isTrue
     }
@@ -59,8 +59,8 @@ class InteropIdentityRegistryServiceImplTest {
         val shortHash1 = "1234567890"
         val shortHash2 = "0987654321"
 
-        val view1 = cache.getVirtualNodeCacheView(shortHash1)
-        val view2 = cache.getVirtualNodeCacheView(shortHash2)
+        val view1 = cache.getVirtualNodeRegistryView(shortHash1)
+        val view2 = cache.getVirtualNodeRegistryView(shortHash2)
 
         val interopIdentity1 = InteropIdentity(
             groupId = UUID.randomUUID().toString(),

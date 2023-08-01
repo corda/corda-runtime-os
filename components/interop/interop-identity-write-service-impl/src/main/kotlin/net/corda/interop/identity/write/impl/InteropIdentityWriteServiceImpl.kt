@@ -74,6 +74,7 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
             writeHostedIdentitiesTopic(identity)
         }
     }
+
     override fun publishGroupPolicy(groupId: String, groupPolicy: String) : String {
         var returnId = groupId
         if(groupPolicy.contains(CREATE_ID)) {
@@ -87,7 +88,7 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
     }
 
     private fun writeMemberInfoTopic(vNodeShortHash: String, identity: InteropIdentity) {
-        val cacheView = interopIdentityRegistryService.getVirtualNodeCacheView(vNodeShortHash)
+        val cacheView = interopIdentityRegistryService.getVirtualNodeRegistryView(vNodeShortHash)
         val ownedInteropIdentities = cacheView.getOwnedIdentities()
 
         // If the new interop identity will become the owned one use that. Otherwise, retrieve an existing one from the cache.

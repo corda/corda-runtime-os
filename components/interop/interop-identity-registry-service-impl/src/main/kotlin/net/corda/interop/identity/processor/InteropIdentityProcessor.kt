@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory
 
 
 class InteropIdentityProcessor(
-    private val cacheService: InteropIdentityRegistryServiceImpl
+    private val registryService: InteropIdentityRegistryServiceImpl
 ) : CompactedProcessor<String, PersistentInteropIdentity> {
 
     override val keyClass = String::class.java
@@ -58,7 +58,7 @@ class InteropIdentityProcessor(
     }
 
     private fun updateCacheEntry(key: RecordKey, oldEntry: InteropIdentity, newEntry: InteropIdentity) {
-        val cacheView = cacheService.getVirtualNodeCacheView(key.holdingIdentityShortHash)
+        val cacheView = registryService.getVirtualNodeRegistryView(key.holdingIdentityShortHash)
         val interopIdentities = cacheView.getIdentities()
 
         // Short hash can be derived from x500 name and group ID. Might as well perform a quick sanity check!
@@ -67,16 +67,16 @@ class InteropIdentityProcessor(
 
         // Remove the old entry from the cache or print a warning if not present
         if (interopIdentities.contains(oldEntry)) {
-            cacheService.removeInteropIdentity(key.holdingIdentityShortHash, oldEntry)
+            registryService.removeInteropIdentity(key.holdingIdentityShortHash, oldEntry)
         } else {
             logger.warn("Update: Old record is not present in the cache. Ignoring old entry.")
         }
 
-        cacheService.putInteropIdentity(key.holdingIdentityShortHash, newEntry)
+        registryService.putInteropIdentity(key.holdingIdentityShortHash, newEntry)
     }
 
     private fun insertCacheEntry(key: RecordKey, newEntry: InteropIdentity) {
-        val cacheView = cacheService.getVirtualNodeCacheView(key.holdingIdentityShortHash)
+        val cacheView = registryService.getVirtualNodeRegistryView(key.holdingIdentityShortHash)
         val interopIdentities = cacheView.getIdentities()
 
         // Short hash can be derived from x500 name and group ID. Might as well perform a quick sanity check!
@@ -84,7 +84,7 @@ class InteropIdentityProcessor(
 
         // If the new value is already in the cache, log a warning.
         if (!interopIdentities.contains(newEntry)) {
-            cacheService.putInteropIdentity(key.holdingIdentityShortHash, newEntry)
+            registryService.putInteropIdentity(key.holdingIdentityShortHash, newEntry)
         } else {
             logger.warn("Insert: Cache entry already exists. Ignoring.")
             return
@@ -92,7 +92,7 @@ class InteropIdentityProcessor(
     }
 
     private fun removeCacheEntry(key: RecordKey, oldEntry: InteropIdentity) {
-        val cacheView = cacheService.getVirtualNodeCacheView(key.holdingIdentityShortHash)
+        val cacheView = registryService.getVirtualNodeRegistryView(key.holdingIdentityShortHash)
         val interopIdentities = cacheView.getIdentities()
 
         // Short hash can be derived from x500 name and group ID. Might as well perform a quick sanity check!
@@ -100,7 +100,7 @@ class InteropIdentityProcessor(
 
         // Remove the entry if present, log if not present when expected.
         if (interopIdentities.contains(oldEntry)) {
-            cacheService.putInteropIdentity(key.holdingIdentityShortHash, oldEntry)
+            registryService.putInteropIdentity(key.holdingIdentityShortHash, oldEntry)
         } else {
             logger.warn("Remove: No cache entry exists for the provided group ID. Ignoring.")
         }
@@ -142,7 +142,7 @@ class InteropIdentityProcessor(
         currentData.entries.forEach { topicEntry ->
             val keyInfo = RecordKey(topicEntry.key)
             val cacheEntry = InteropIdentity.of(keyInfo.holdingIdentityShortHash, topicEntry.value)
-            cacheService.putInteropIdentity(keyInfo.holdingIdentityShortHash, cacheEntry)
+            registryService.putInteropIdentity(keyInfo.holdingIdentityShortHash, cacheEntry)
         }
     }
 }

@@ -10,5 +10,5 @@ interface InteropIdentityRegistryService : Lifecycle {
      * @param virtualNodeShortHash Short hash of the virtual node to get the view for.
      * @return An object containing interop identities visible to the specified virtual node.
      */
-    fun getVirtualNodeCacheView(virtualNodeShortHash: String): InteropIdentityRegistryView
+    fun getVirtualNodeRegistryView(virtualNodeShortHash: String): InteropIdentityRegistryView
 }

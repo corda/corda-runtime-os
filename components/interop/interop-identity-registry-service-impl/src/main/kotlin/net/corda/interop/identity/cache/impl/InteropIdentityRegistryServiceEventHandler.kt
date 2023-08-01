@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory
 class InteropIdentityRegistryServiceEventHandler(
     private val configurationReadService: ConfigurationReadService,
     private val subscriptionFactory: SubscriptionFactory,
-    private val cacheService: InteropIdentityRegistryServiceImpl
+    private val registryService: InteropIdentityRegistryServiceImpl
 ) : LifecycleEventHandler {
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -67,7 +67,7 @@ class InteropIdentityRegistryServiceEventHandler(
         coordinator.createManagedResource("InteropIdentityProcessor.subscription") {
             subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig(GROUP_NAME, INTEROP_IDENTITY_TOPIC),
-                InteropIdentityProcessor(cacheService),
+                InteropIdentityProcessor(registryService),
                 messagingConfig
             ).also {
                 it.start()
