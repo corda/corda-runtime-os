@@ -11,7 +11,6 @@ import net.corda.v5.base.types.MemberX500Name
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 
@@ -29,7 +28,8 @@ class FlowSessionFactoryImpl @Activate constructor(
         contextProperties: Map<String, String>
     ): FlowSession {
         return try {
-            AccessController.doPrivileged(PrivilegedExceptionAction {
+            @Suppress("deprecation", "removal")
+            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
                 FlowSessionImpl(
                     counterparty = x500Name,
                     sessionId,
@@ -53,7 +53,8 @@ class FlowSessionFactoryImpl @Activate constructor(
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder?
     ): FlowSession {
         return try {
-            AccessController.doPrivileged(PrivilegedExceptionAction {
+            @Suppress("deprecation", "removal")
+            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
                 FlowSessionImpl(
                     counterparty = x500Name,
                     sessionId,

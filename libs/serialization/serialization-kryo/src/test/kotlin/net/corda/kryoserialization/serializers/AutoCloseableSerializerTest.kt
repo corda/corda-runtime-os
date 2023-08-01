@@ -6,7 +6,7 @@ import com.esotericsoftware.kryo.io.Output
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 
-internal class AutoCloseableSerializerTest {
+class AutoCloseableSerializerTest {
     @Test
     fun `AutoCloseable serializer detector throws exception on auto closeable`() {
         val kryo = Kryo()

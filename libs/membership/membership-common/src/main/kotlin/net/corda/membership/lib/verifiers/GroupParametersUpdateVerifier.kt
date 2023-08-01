@@ -1,17 +1,18 @@
 package net.corda.membership.lib.verifiers
 
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MPV_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 
 class GroupParametersUpdateVerifier {
 
     private companion object {
-        const val CUSTOM_KEY_PREFIX = "ext."
         const val MAX_KEY_LENGTH = 128
+        const val MAX_VALUE_LENGTH = 800
         const val MAX_CUSTOM_FIELDS = 100
     }
 
     fun verify(parameters: Map<String, String>): Result {
-        val customFields = parameters.filter { it.key.startsWith(CUSTOM_KEY_PREFIX) }
+        val customFields = parameters.filter { it.key.startsWith("$CUSTOM_KEY_PREFIX.") }
         if (customFields.size > MAX_CUSTOM_FIELDS ) {
             return Result.Failure("The number of custom fields (${customFields.size}) in the group parameters " +
                     "update is larger than the maximum allowed ($MAX_CUSTOM_FIELDS).")
@@ -22,6 +23,10 @@ class GroupParametersUpdateVerifier {
             if (it.key.length > MAX_KEY_LENGTH) {
                 errorMessages += "The key: ${it.key} has too many characters (${it.key.length}). Maximum of $MAX_KEY_LENGTH characters " +
                         "allowed.\n"
+            }
+            if (it.value.length > MAX_VALUE_LENGTH) {
+                errorMessages += "The key: ${it.key} has a value which has too many characters (${it.value.length}). Maximum of" +
+                        " $MAX_VALUE_LENGTH characters allowed.\n"
             }
         }
         parameters[MPV_KEY]?.let {

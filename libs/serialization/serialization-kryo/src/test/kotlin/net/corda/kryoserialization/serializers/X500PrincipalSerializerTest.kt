@@ -7,7 +7,7 @@ import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import javax.security.auth.x500.X500Principal
 
-internal class X500PrincipalSerializerTest {
+class X500PrincipalSerializerTest {
     @Test
     fun `X500Principal serializer returns the correct object back`() {
         val output = Output(500)
