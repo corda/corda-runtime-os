@@ -94,7 +94,7 @@ class MembershipPackageFactoryTest {
         }
     }
     private val signedMembers = members.map {
-        net.corda.membership.lib.SignedMemberInfo(
+        net.corda.membership.lib.MemberSignedMemberInfo(
             it,
             CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk-${it.name}".toByteArray()),

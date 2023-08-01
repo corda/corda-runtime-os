@@ -11,8 +11,6 @@ import net.corda.crypto.core.toCorda
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.MembershipPackage

@@ -8,7 +8,7 @@ import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.lifecycle.Lifecycle
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
@@ -26,7 +26,7 @@ interface MembershipQueryClient : Lifecycle {
     fun queryMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         statusFilter: List<String> = emptyList(),
-    ): MembershipQueryResult<Collection<SignedMemberInfo>>
+    ): MembershipQueryResult<Collection<MemberSignedMemberInfo>>
 
     /**
      * Query for all members matching the given holding identities and statuses as visible by a specific holding identity.
@@ -41,7 +41,7 @@ interface MembershipQueryClient : Lifecycle {
         viewOwningIdentity: HoldingIdentity,
         holdingIdentityFilter: Collection<HoldingIdentity>,
         statusFilter: List<String> = emptyList(),
-    ): MembershipQueryResult<Collection<SignedMemberInfo>>
+    ): MembershipQueryResult<Collection<MemberSignedMemberInfo>>
 
     /**
      * Query for a registration request for a specific holding identity based on the registration request ID.

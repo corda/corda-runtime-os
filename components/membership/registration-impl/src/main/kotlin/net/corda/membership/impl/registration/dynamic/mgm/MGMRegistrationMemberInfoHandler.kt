@@ -29,7 +29,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.utilities.time.Clock
@@ -62,9 +62,9 @@ internal class MGMRegistrationMemberInfoHandler(
     fun buildAndPersistMgmMemberInfo(
         holdingIdentity: HoldingIdentity,
         context: Map<String, String>
-    ): SignedMemberInfo {
+    ): MemberSignedMemberInfo {
         logger.info("Started building mgm member info.")
-        return SignedMemberInfo(
+        return MemberSignedMemberInfo(
             buildMgmInfo(holdingIdentity, context),
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(byteArrayOf()),
@@ -109,7 +109,7 @@ internal class MGMRegistrationMemberInfoHandler(
 
     private fun PublicKey.toPem(): String = keyEncodingService.encodeAsString(this)
 
-    private fun persistMemberInfo(holdingIdentity: HoldingIdentity, mgmInfo: SignedMemberInfo) {
+    private fun persistMemberInfo(holdingIdentity: HoldingIdentity, mgmInfo: MemberSignedMemberInfo) {
         val persistenceResult = membershipPersistenceClient.persistMemberInfo(holdingIdentity, listOf(mgmInfo))
             .execute()
         if (persistenceResult is MembershipPersistenceResult.Failure) {

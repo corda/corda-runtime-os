@@ -49,7 +49,7 @@ import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
@@ -122,7 +122,7 @@ class MembershipPersistenceClientImpl(
 
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
-        memberInfos: Collection<SignedMemberInfo>,
+        memberInfos: Collection<MemberSignedMemberInfo>,
     ): MembershipPersistenceOperation<Unit> {
         logger.info("Persisting ${memberInfos.size} member info(s).")
         val avroViewOwningIdentity = viewOwningIdentity.toAvro()

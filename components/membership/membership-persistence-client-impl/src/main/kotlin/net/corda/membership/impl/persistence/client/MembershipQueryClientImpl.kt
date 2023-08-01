@@ -29,7 +29,7 @@ import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -87,7 +87,7 @@ class MembershipQueryClientImpl(
     override fun queryMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         statusFilter: List<String>
-    ): MembershipQueryResult<Collection<SignedMemberInfo>> {
+    ): MembershipQueryResult<Collection<MemberSignedMemberInfo>> {
         logger.info("Querying for all member infos visible from holding identity [${viewOwningIdentity.shortHash}].")
         return queryMemberInfo(viewOwningIdentity, emptyList(), statusFilter)
     }
@@ -96,7 +96,7 @@ class MembershipQueryClientImpl(
         viewOwningIdentity: HoldingIdentity,
         holdingIdentityFilter: Collection<HoldingIdentity>,
         statusFilter: List<String>,
-    ): MembershipQueryResult<Collection<SignedMemberInfo>> {
+    ): MembershipQueryResult<Collection<MemberSignedMemberInfo>> {
         if (holdingIdentityFilter.isNotEmpty()) {
             logger.info("Querying for member infos represented by ${holdingIdentityFilter.size} holding identities")
         }
@@ -106,7 +106,7 @@ class MembershipQueryClientImpl(
         ).execute("query member info") { payload: MemberInfoQueryResponse ->
             logger.info("Found ${payload.signedMembers.size} results.")
             payload.signedMembers.map {
-                SignedMemberInfo(
+                MemberSignedMemberInfo(
                     memberInfoFactory.createMemberInfo(it.persistentMemberInfo),
                     it.memberSignature,
                     it.memberSignatureSpec,

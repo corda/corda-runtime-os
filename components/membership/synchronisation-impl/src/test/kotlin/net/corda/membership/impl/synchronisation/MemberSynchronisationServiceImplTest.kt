@@ -164,10 +164,11 @@ class MemberSynchronisationServiceImplTest {
         on { name } doReturn participantName
         on { groupId } doReturn GROUP_NAME
     }
+    private val persistentParticipant = mock<PersistentMemberInfo>()
     private val memberInfoFactory: MemberInfoFactory = mock {
         on { createMemberInfo(any()) } doReturn participant
         on { createMemberInfo(any<SortedMap<String, String?>>(), any()) } doReturn participant
-        on { createPersistentMemberInfo(any(), any()) } doReturn mock()
+        on { createPersistentMemberInfo(any(), any()) } doReturn persistentParticipant
     }
     private val memberName = MemberX500Name("Alice", "London", "GB")
     private val member = HoldingIdentity(memberName, GROUP_NAME)
@@ -367,18 +368,21 @@ class MemberSynchronisationServiceImplTest {
         synchronisationService.start()
 
         val producedRecords = synchronisationService.processMembershipUpdates(updates)
+        val publishedMemberInfo = argumentCaptor<MemberInfo>()
+        verify(memberInfoFactory).createPersistentMemberInfo(any(), publishedMemberInfo.capture())
 
         assertSoftly {
             it.assertThat(producedRecords).hasSize(2)
 
-            val publishedMember = producedRecords.first()
-            it.assertThat(publishedMember.topic).isEqualTo(MEMBER_LIST_TOPIC)
-            it.assertThat(publishedMember.key).isEqualTo("${member.shortHash}-${participant.id}")
-            it.assertThat(publishedMember.value).isInstanceOf(PersistentMemberInfo::class.java)
-            val value = publishedMember.value as? PersistentMemberInfo
-            val name = value?.memberContext?.items?.firstOrNull { item -> item.key == PARTY_NAME }?.value
+            val publishedPersistentMemberInfo = producedRecords.first()
+            it.assertThat(publishedPersistentMemberInfo.topic).isEqualTo(MEMBER_LIST_TOPIC)
+            it.assertThat(publishedPersistentMemberInfo.key).isEqualTo("${member.shortHash}-${participant.id}")
+            it.assertThat(publishedPersistentMemberInfo.value).isInstanceOf(PersistentMemberInfo::class.java)
+            val value = publishedPersistentMemberInfo.value as? PersistentMemberInfo
+            it.assertThat(value).isEqualTo(persistentParticipant)
+            val name = publishedMemberInfo.firstValue.memberProvidedContext.entries.firstOrNull { item -> item.key == PARTY_NAME }?.value
             it.assertThat(name).isEqualTo(participantName.toString())
-            it.assertThat(value?.mgmContext?.items).isEmpty()
+            it.assertThat(publishedMemberInfo.firstValue.mgmProvidedContext.entries).isEmpty()
         }
     }
 

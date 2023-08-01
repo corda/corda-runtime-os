@@ -53,6 +53,7 @@ import net.corda.v5.membership.MemberContext
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.verify
+import java.nio.ByteBuffer
 
 class SuspendMemberHandlerTest {
 

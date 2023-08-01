@@ -14,8 +14,11 @@ import javax.persistence.criteria.Predicate
 internal class QueryMemberInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<QueryMemberInfo, MemberInfoQueryResponse>(persistenceHandlerServices) {
+    override val operation = QueryMemberInfo::class.java
+
     @Suppress("SpreadOperator")
     override fun invoke(context: MembershipRequestContext, request: QueryMemberInfo): MemberInfoQueryResponse {
+        logger.info("Querying for ${request.queryIdentities.size} identities")
         val persistentSignedMemberInfos = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val criteriaBuilder = em.criteriaBuilder
             val memberQueryBuilder = criteriaBuilder.createQuery(MemberInfoEntity::class.java)

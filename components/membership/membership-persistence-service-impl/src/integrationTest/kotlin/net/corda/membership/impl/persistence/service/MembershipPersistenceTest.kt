@@ -82,7 +82,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedGroupParameters
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toMap
@@ -122,7 +122,6 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
@@ -230,7 +229,7 @@ class MembershipPersistenceTest {
         val membershipPersistenceClientWrapper = object : MembershipPersistenceClient {
             override fun persistMemberInfo(
                 viewOwningIdentity: HoldingIdentity,
-                memberInfos: Collection<SignedMemberInfo>
+                memberInfos: Collection<MemberSignedMemberInfo>
             ) = safeCall {
                 membershipPersistenceClient.persistMemberInfo(viewOwningIdentity, memberInfos)
             }
@@ -1457,7 +1456,7 @@ class MembershipPersistenceTest {
         val memberPersistenceResult1 = membershipPersistenceClientWrapper.persistMemberInfo(
             viewOwningHoldingIdentity,
             listOf(
-                SignedMemberInfo(
+                MemberSignedMemberInfo(
                     memberInfoFactory.createMemberInfo(
                         memberContext.toSortedMap(),
                         mgmContext.toSortedMap()
@@ -1608,7 +1607,7 @@ class MembershipPersistenceTest {
         val memberPersistenceResult1 = membershipPersistenceClientWrapper.persistMemberInfo(
             viewOwningHoldingIdentity,
             listOf(
-                SignedMemberInfo(
+                MemberSignedMemberInfo(
                     memberInfoFactory.createMemberInfo(
                         memberContext.toSortedMap(),
                         mgmContext.toSortedMap()
@@ -1848,7 +1847,7 @@ class MembershipPersistenceTest {
         return membershipPersistenceClientWrapper.persistMemberInfo(
             viewOwningHoldingIdentity,
             listOf(
-                SignedMemberInfo(
+                MemberSignedMemberInfo(
                     memberInfoFactory.createMemberInfo(
                         memberContext.toSortedMap(),
                         mgmContext.toSortedMap()

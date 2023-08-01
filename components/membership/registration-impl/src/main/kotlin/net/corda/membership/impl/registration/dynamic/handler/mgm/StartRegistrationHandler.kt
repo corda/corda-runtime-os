@@ -1,6 +1,5 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
@@ -8,7 +7,6 @@ import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
-import net.corda.data.p2p.app.MembershipStatusFilter.PENDING
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
@@ -31,7 +29,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequestHelpers.getPreAuthToken
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -95,11 +93,10 @@ internal class StartRegistrationHandler(
                 pendingMemberInfo.name == pendingMemberHoldingId.x500Name
             ) { "MemberX500Name in registration request does not match member sending request over P2P." }
 
-            val persistentMemberInfo = PersistentMemberInfo.newBuilder()
-                .setMemberContext(pendingMemberInfo.memberProvidedContext.toAvro())
-                .setViewOwningMember(mgmMemberInfo.holdingIdentity.toAvro())
-                .setMgmContext(pendingMemberInfo.mgmProvidedContext.toAvro())
-                .build()
+            val persistentMemberInfo = memberInfoFactory.createPersistentMemberInfo(
+                mgmMemberInfo.holdingIdentity.toAvro(),
+                pendingMemberInfo,
+            )
             val pendingMemberRecord = Record(
                 topic = Schemas.Membership.MEMBER_LIST_TOPIC,
                 key = "${mgmMemberInfo.holdingIdentity.shortHash}-${pendingMemberInfo.holdingIdentity.shortHash}" +
@@ -108,12 +105,12 @@ internal class StartRegistrationHandler(
             )
             // Persist pending member info so that we can notify the member of declined registration if failure occurs
             // after this point
-            val signedMemberInfo = SignedMemberInfo(
+            val memberSignedMemberInfo = MemberSignedMemberInfo(
                 pendingMemberInfo,
                 registrationRequest.memberSignature,
                 registrationRequest.memberSignatureSpec
             )
-            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(signedMemberInfo))
+            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(memberSignedMemberInfo))
                 .execute().also {
                     require(it as? MembershipPersistenceResult.Failure == null) {
                         "Failed to persist pending member info. Reason: " +
@@ -148,8 +145,8 @@ internal class StartRegistrationHandler(
                 mgmHoldingId,
                 listOf(pendingMemberHoldingId)
             ).getOrThrow().lastOrNull {
-                it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED
-            }.map { it.memberInfo }
+                it.memberInfo.status == MEMBER_STATUS_ACTIVE || it.memberInfo.status == MEMBER_STATUS_SUSPENDED
+            }?.memberInfo
             if (registrationRequest.serial!! > 0) { //re-registration
                 validateRegistrationRequest(activeOrSuspendedInfo != null) {
                     "Member has not registered previously so serial number should be 0."

@@ -8,7 +8,7 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedData
 import net.corda.data.membership.common.v2.RegistrationStatus
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -37,7 +37,7 @@ internal class MGMRegistrationRequestHandler(
     fun persistRegistrationRequest(
         registrationId: UUID,
         holdingIdentity: HoldingIdentity,
-        mgmInfo: SignedMemberInfo
+        mgmInfo: MemberSignedMemberInfo
     ) {
         val serializedMemberContext = serialize(mgmInfo.memberInfo.memberProvidedContext.toWire())
         val serializedRegistrationContext = serialize(KeyValuePairList(emptyList()))

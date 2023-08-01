@@ -334,11 +334,8 @@ class MGMRegistrationServiceTest {
             postUpEvent()
             registrationService.start()
             val capturedMemberInfo = argumentCaptor<MemberInfo>()
-            val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-
             val publishedList = registrationService.register(registrationRequest, mgm, properties)
 
-            verify(mockPublisher).publish(capturedPublishedList.capture())
             verify(memberInfoFactory).createPersistentMemberInfo(eq(mgm.toAvro()), capturedMemberInfo.capture())
             val publishedMgmInfo = publishedList.first()
             val publishedEvent = publishedList.last()

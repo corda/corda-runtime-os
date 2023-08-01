@@ -27,7 +27,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTI
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
@@ -209,7 +209,7 @@ class MgmSynchronisationServiceImpl internal constructor(
             ).getOrThrow().filterNot { it.memberInfo.isMgm }
             val groupParameters = groupReader.groupParameters
                 ?: throw CordaRuntimeException("Failed to retrieve group parameters for building membership packages.")
-            if (compareHashes(memberHashFromTheReq.toCorda(), requesterInfo.memberInfo)) {
+           val record = if (compareHashes(memberHashFromTheReq.toCorda(), requesterInfo.memberInfo)) {
                 // member has the latest updates regarding its own membership
                 // will send all membership data from MGM
                 if (requesterInfo.memberInfo.status == MEMBER_STATUS_SUSPENDED) {
@@ -258,7 +258,7 @@ class MgmSynchronisationServiceImpl internal constructor(
 
         private fun createMembershipPackage(
             mgm: MemberInfo,
-            signedMembers: Collection<SignedMemberInfo>,
+            signedMembers: Collection<MemberSignedMemberInfo>,
             groupParameters: InternalGroupParameters,
         ): MembershipPackage {
             val mgmSigner = services.signerFactory.createSigner(mgm)

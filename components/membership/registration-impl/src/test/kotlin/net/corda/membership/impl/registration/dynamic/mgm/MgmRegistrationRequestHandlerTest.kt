@@ -8,7 +8,7 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -50,7 +50,7 @@ class MgmRegistrationRequestHandlerTest {
     }
     private val signature = CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf()))
     private val signatureSpec = CryptoSignatureSpec("", null, null)
-    private val signedMemberInfo: SignedMemberInfo = SignedMemberInfo(memberInfo, signature, signatureSpec)
+    private val memberSignedMemberInfo: MemberSignedMemberInfo = MemberSignedMemberInfo(memberInfo, signature, signatureSpec)
     private val cordaAvroSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn "".toByteArray()
     }
@@ -85,7 +85,7 @@ class MgmRegistrationRequestHandlerTest {
             mgmRegistrationRequestHandler.persistRegistrationRequest(
                 registrationId,
                 holdingIdentity,
-                signedMemberInfo
+                memberSignedMemberInfo
             )
         }
 
@@ -126,7 +126,7 @@ class MgmRegistrationRequestHandlerTest {
             mgmRegistrationRequestHandler.persistRegistrationRequest(
                 registrationId,
                 holdingIdentity,
-                signedMemberInfo
+                memberSignedMemberInfo
             )
         }
     }
@@ -139,7 +139,7 @@ class MgmRegistrationRequestHandlerTest {
             mgmRegistrationRequestHandler.persistRegistrationRequest(
                 registrationId,
                 holdingIdentity,
-                signedMemberInfo
+                memberSignedMemberInfo
             )
         }
     }

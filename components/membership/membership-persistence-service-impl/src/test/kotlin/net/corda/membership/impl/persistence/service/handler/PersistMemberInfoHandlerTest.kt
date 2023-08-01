@@ -9,7 +9,6 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.PersistentSignedMemberInfo
-import net.corda.data.membership.SignedContexts
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.db.connection.manager.DbConnectionManager
@@ -150,12 +149,10 @@ class PersistMemberInfoHandlerTest {
     private fun getPersistentSignedMemberInfo() = PersistentSignedMemberInfo(
         PersistentMemberInfo(
             ourHoldingIdentity.toAvro(),
-            KeyValuePairList(emptyList()),
-            KeyValuePairList(emptyList()),
-            SignedContexts(
-                ByteBuffer.wrap(byteArrayOf(1)),
-                ByteBuffer.wrap(byteArrayOf(1)),
-            ),
+            null,
+            null,
+            ByteBuffer.wrap(byteArrayOf(1)),
+            ByteBuffer.wrap(byteArrayOf(1)),
         ),
         signature,
         signatureSpec,
@@ -263,12 +260,10 @@ class PersistMemberInfoHandlerTest {
         val memberInfo = PersistentSignedMemberInfo(
             PersistentMemberInfo(
                 ourHoldingIdentity.toAvro(),
-                memberContextPairList,
-                mgmContextPairList,
-                SignedContexts(
-                    ByteBuffer.wrap(memberContextBytes),
-                    ByteBuffer.wrap(mgmContextBytes),
-                )
+                null,
+                null,
+                ByteBuffer.wrap(memberContextBytes),
+                ByteBuffer.wrap(mgmContextBytes),
             ),
             signature,
             signatureSpec,
@@ -310,7 +305,7 @@ class PersistMemberInfoHandlerTest {
             on { it.name } doReturn ourX500Name
         }
         val memberInfo = getPersistentSignedMemberInfo()
-        whenever(memberInfoFactory.create(eq(memberInfo.persistentMemberInfo))).doReturn(newMemberInfo)
+        whenever(memberInfoFactory.createMemberInfo(eq(memberInfo.persistentMemberInfo))).doReturn(newMemberInfo)
 
         val requestContext = getMemberRequestContext()
 

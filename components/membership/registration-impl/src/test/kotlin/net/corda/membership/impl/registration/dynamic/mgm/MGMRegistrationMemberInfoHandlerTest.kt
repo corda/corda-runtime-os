@@ -31,7 +31,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -99,7 +99,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
     private val signature = CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf()))
     private val signatureSpec = CryptoSignatureSpec("", null, null)
-    private val signedMemberInfo: SignedMemberInfo = SignedMemberInfo(memberInfo, signature, signatureSpec)
+    private val memberSignedMemberInfo: MemberSignedMemberInfo = MemberSignedMemberInfo(memberInfo, signature, signatureSpec)
     private val memberContextCaptor = argumentCaptor<SortedMap<String, String?>>()
     private val memberContext
         get() = assertDoesNotThrow { memberContextCaptor.firstValue }
@@ -166,7 +166,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
     private val membershipPersistenceClient: MembershipPersistenceClient = mock {
         on {
-            persistMemberInfo(eq(holdingIdentity), eq(listOf(signedMemberInfo)))
+            persistMemberInfo(eq(holdingIdentity), eq(listOf(memberSignedMemberInfo)))
         } doReturn Operation(MembershipPersistenceResult.success())
 
         on {
@@ -221,7 +221,7 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         }
 
-        assertThat(result).isEqualTo(signedMemberInfo)
+        assertThat(result).isEqualTo(memberSignedMemberInfo)
     }
 
     @Test
@@ -372,7 +372,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     fun `expected exception thrown if member info persistence fails`() {
         whenever(
             membershipPersistenceClient.persistMemberInfo(
-                eq(holdingIdentity), eq(listOf(signedMemberInfo))
+                eq(holdingIdentity), eq(listOf(memberSignedMemberInfo))
             )
         ).doReturn(Operation(MembershipPersistenceResult.Failure("")))
 
@@ -384,7 +384,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         }
         verify(membershipPersistenceClient).persistMemberInfo(
             eq(holdingIdentity),
-            eq(listOf(signedMemberInfo))
+            eq(listOf(memberSignedMemberInfo))
         )
     }
 

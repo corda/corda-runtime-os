@@ -8,7 +8,6 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.SignedContexts
 import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
@@ -118,35 +117,34 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
     private val deserialisedMgmContext = KeyValuePairList(listOf(KeyValuePair("two", "2")))
     private val persistentMemberInfo = PersistentMemberInfo(
         member,
-        deserialisedMemberContext,
-        deserialisedMgmContext,
-        SignedContexts(
-            ByteBuffer.wrap(memberContextBytes),
-            ByteBuffer.wrap(mgmContextBytes),
-        ),
+        null,
+        null,
+        ByteBuffer.wrap(memberContextBytes),
+        ByteBuffer.wrap(mgmContextBytes),
     )
     private val memberInfoFactory = mock<MemberInfoFactory> {
         on { createPersistentMemberInfo(any(), any(), any()) } doReturn PersistentMemberInfo(
             member,
-            deserialisedMemberContext,
-            deserialisedMgmContext,
-            SignedContexts(
-                ByteBuffer.wrap(memberContextBytes),
-                ByteBuffer.wrap(mgmContextBytes)
-            ),
+            null,
+            null,
+            ByteBuffer.wrap(memberContextBytes),
+            ByteBuffer.wrap(mgmContextBytes),
         )
     }
 
+    private val transactionTimeFactory = { _: String -> transactionTimer }
     private val service = PersistenceHandlerServices(
         clock,
         dbConnectionManager,
         jpaEntitiesRegistry,
         memberInfoFactory,
         cordaAvroSerializationFactory,
-        virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
         mock(),
+        mock(),
+        mock(),
+        transactionTimeFactory,
     )
     private val handler = UpdateMemberAndRegistrationRequestToApprovedHandler(service)
 

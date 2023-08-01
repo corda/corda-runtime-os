@@ -62,8 +62,8 @@ internal class DeclineRegistrationHandler(
         val pendingMemberInfo = membershipQueryClient.queryMemberInfo(declinedBy.toCorda(), listOf(declinedMember.toCorda()))
             .getOrThrow()
             .firstOrNull {
-                it.status == MEMBER_STATUS_PENDING
-            }
+                it.memberInfo.status == MEMBER_STATUS_PENDING
+            }?.memberInfo
         val memberDeclinedMessage = if (pendingMemberInfo != null) {
             val statusUpdateMessage = retrieveRegistrationStatusMessage(
                 pendingMemberInfo.platformVersion,

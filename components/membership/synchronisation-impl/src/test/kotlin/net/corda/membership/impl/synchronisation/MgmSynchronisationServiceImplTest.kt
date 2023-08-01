@@ -43,7 +43,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
@@ -282,7 +282,7 @@ class MgmSynchronisationServiceImplTest {
             createAuthenticatedMessageRecord(
                 any(),
                 any(),
-                eq(membershipPackage2),
+                eq(bobMembershipPackage),
                 any(),
                 any(),
                 eq(MembershipStatusFilter.ACTIVE_OR_SUSPENDED),
@@ -332,7 +332,7 @@ class MgmSynchronisationServiceImplTest {
         )
     )
 
-    private fun createMemberInfo(name: String) = memberInfoFactory.createMemberInfo(
+    private fun createMemberInfo(name: String, status: String = MEMBER_STATUS_ACTIVE) = memberInfoFactory.createMemberInfo(
         sortedMapOf(
             GROUP_ID to GROUP,
             PARTY_NAME to name,
@@ -348,7 +348,7 @@ class MgmSynchronisationServiceImplTest {
 
     private fun createSignedInfos(members: List<MemberInfo>) = members.map {
         val name = it.name.toString()
-        SignedMemberInfo(
+        MemberSignedMemberInfo(
             it,
             CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk-$name".toByteArray()),
@@ -476,7 +476,7 @@ class MgmSynchronisationServiceImplTest {
     fun `all members are sent when member hash is matching`() {
         postConfigChangedEvent()
         synchronisationService.start()
-        val capturedList = argumentCaptor<List<SignedMemberInfo>>()
+        val capturedList = argumentCaptor<List<MemberSignedMemberInfo>>()
         val request = createRequest(alice)
         val records = synchronisationService.processSyncRequest(request)
         verify(membershipPackageFactory, times(1)).createMembershipPackage(
@@ -496,7 +496,7 @@ class MgmSynchronisationServiceImplTest {
     fun `only the requesting member's info is sent when member hash is not matching`() {
         postConfigChangedEvent()
         synchronisationService.start()
-        val capturedList = argumentCaptor<List<SignedMemberInfo>>()
+        val capturedList = argumentCaptor<List<MemberSignedMemberInfo>>()
         val request = createRequest(bob)
         val records = synchronisationService.processSyncRequest(request)
         verify(membershipPackageFactory, times(1)).createMembershipPackage(
@@ -516,7 +516,7 @@ class MgmSynchronisationServiceImplTest {
     fun `only the requesting member's info is sent when member is suspended`() {
         postConfigChangedEvent()
         synchronisationService.start()
-        val capturedList = argumentCaptor<List<SignedMemberInfo>>()
+        val capturedList = argumentCaptor<List<MemberSignedMemberInfo>>()
         val request = createRequest(simon)
         val records = synchronisationService.processSyncRequest(request)
         verify(membershipPackageFactory, times(1)).createMembershipPackage(

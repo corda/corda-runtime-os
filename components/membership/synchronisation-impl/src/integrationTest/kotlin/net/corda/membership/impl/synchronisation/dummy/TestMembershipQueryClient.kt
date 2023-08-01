@@ -12,14 +12,13 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -44,7 +43,7 @@ class TestMembershipQueryClientImpl @Activate constructor(
     companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service"
-        private lateinit var members: List<SignedMemberInfo>
+        private lateinit var members: List<MemberSignedMemberInfo>
     }
 
     private val coordinator =
@@ -56,7 +55,7 @@ class TestMembershipQueryClientImpl @Activate constructor(
 
     override fun loadMembers(memberList: List<MemberInfo>) {
         members = memberList.map {
-            SignedMemberInfo(
+            MemberSignedMemberInfo(
                 it,
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(it.holdingIdentity.x500Name.toString().toByteArray()),
@@ -70,14 +69,14 @@ class TestMembershipQueryClientImpl @Activate constructor(
     override fun queryMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         statusFilter: List<String>,
-    ): MembershipQueryResult<Collection<SignedMemberInfo>> = MembershipQueryResult.Success(members)
+    ): MembershipQueryResult<Collection<MemberSignedMemberInfo>> = MembershipQueryResult.Success(members)
 
     override fun queryMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         holdingIdentityFilter: Collection<HoldingIdentity>,
         statusFilter: List<String>,
-    ): MembershipQueryResult<Collection<SignedMemberInfo>> {
-        val result = mutableListOf<SignedMemberInfo>()
+    ): MembershipQueryResult<Collection<MemberSignedMemberInfo>> {
+        val result = mutableListOf<MemberSignedMemberInfo>()
         holdingIdentityFilter.forEach { id ->
             result.addAll(members.filter { it.memberInfo.holdingIdentity == id })
         }

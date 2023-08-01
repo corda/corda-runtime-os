@@ -1,7 +1,6 @@
 package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
@@ -23,7 +22,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -184,10 +182,7 @@ class QueryMemberInfoHandlerTest {
         verify(inHoldingId, never()).value(any<String>())
         verify(inStatus, never()).value(any<String>())
         verify(entityManager, never()).find<MemberInfoEntity>(any(), any())
-        with(argumentCaptor<ShortHash>()) {
-            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
-            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
-        }
+        verify(entityManager).createQuery(any<CriteriaQuery<MemberInfoEntity>>())
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
         verify(entityTransaction).begin()
@@ -197,7 +192,9 @@ class QueryMemberInfoHandlerTest {
 
     @Test
     fun `invoke with no query identity returns no results if no results are available`() {
-        whenever(actualQuery.resultList).thenReturn(emptyList())
+        val memberInfoQuery = mock<TypedQuery<MemberInfoEntity>>()
+        whenever(entityManager.createQuery(any(), eq(MemberInfoEntity::class.java))).thenReturn(memberInfoQuery)
+        whenever(memberInfoQuery.resultList).thenReturn(emptyList())
 
         val result = queryMemberInfoHandler.invoke(
             getMemberRequestContext(),
@@ -209,10 +206,6 @@ class QueryMemberInfoHandlerTest {
         verify(inStatus, never()).value(any<String>())
         verify(entityManager, never()).find<MemberInfoEntity>(any(), any())
         verify(memberInfoFactory, never()).createPersistentMemberInfo(any(), any(), any())
-        with(argumentCaptor<ShortHash>()) {
-            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
-            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
-        }
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
         verify(entityTransaction).begin()
@@ -242,10 +235,6 @@ class QueryMemberInfoHandlerTest {
                 CryptoSignatureSpec(memberInfoEntity.memberSignatureSpec, null, null)
             )
         }
-        with(argumentCaptor<ShortHash>()) {
-            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
-            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
-        }
         verify(inHoldingId).value(otherHoldingIdentity.x500Name.toString())
         verify(inStatus, never()).value(any<String>())
         verify(jpaEntitiesRegistry).get(any())
@@ -267,10 +256,6 @@ class QueryMemberInfoHandlerTest {
         verify(inHoldingId).value(otherHoldingIdentity.x500Name.toString())
         verify(inStatus, never()).value(any<String>())
         verify(memberInfoFactory, never()).createPersistentMemberInfo(any(), any(), any())
-        with(argumentCaptor<ShortHash>()) {
-            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
-            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
-        }
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
         verify(entityTransaction).begin()
@@ -300,16 +285,11 @@ class QueryMemberInfoHandlerTest {
                 CryptoSignatureSpec(memberInfoEntity.memberSignatureSpec, null, null)
             )
         }
-        with(argumentCaptor<ShortHash>()) {
-            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
-            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
-        }
         verify(inStatus).value(MEMBER_STATUS_ACTIVE)
         verify(inStatus).value(MEMBER_STATUS_SUSPENDED)
         verify(inHoldingId, never()).value(any<String>())
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityTransaction).begin()
         verify(entityTransaction).commit()
         verify(entityManager).close()
@@ -338,16 +318,11 @@ class QueryMemberInfoHandlerTest {
                 CryptoSignatureSpec(memberInfoEntity.memberSignatureSpec, null, null)
             )
         }
-        with(argumentCaptor<ShortHash>()) {
-            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
-            assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
-        }
         verify(inHoldingId).value(otherHoldingIdentity.x500Name.toString())
         verify(inStatus).value(MEMBER_STATUS_ACTIVE)
         verify(inStatus).value(MEMBER_STATUS_SUSPENDED)
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityTransaction).begin()
         verify(entityTransaction).commit()
         verify(entityManager).close()

@@ -9,7 +9,6 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.SignedContexts
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.db.connection.manager.DbConnectionManager
@@ -31,7 +30,6 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.notary.MemberNotaryKey
-import net.corda.membership.lib.toWire
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.time.TestClock
@@ -201,9 +199,10 @@ class AddNotaryToGroupParametersHandlerTest {
     }
     private val persistentNotary = PersistentMemberInfo(
         knownIdentity,
-        notaryInRequest.memberProvidedContext.toWire(),
-        notaryInRequest.mgmProvidedContext.toWire(),
-        SignedContexts(ByteBuffer.wrap(byteArrayOf(1)), ByteBuffer.wrap(byteArrayOf(2)))
+        null,
+        null,
+        ByteBuffer.wrap(byteArrayOf(1)),
+        ByteBuffer.wrap(byteArrayOf(2)),
     )
     private val request = mock<AddNotaryToGroupParameters> {
         on { notary } doReturn persistentNotary

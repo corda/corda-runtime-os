@@ -18,6 +18,7 @@ import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.SignedMemberships
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.lib.InternalGroupParameters
+import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
@@ -54,7 +55,7 @@ class MembershipPackageFactory(
 
     fun createMembershipPackage(
         mgmSigner: Signer,
-        membersToSend: Collection<net.corda.membership.lib.SignedMemberInfo>,
+        membersToSend: Collection<MemberSignedMemberInfo>,
         hashCheck: SecureHash,
         groupParameters: InternalGroupParameters,
     ): MembershipPackage {

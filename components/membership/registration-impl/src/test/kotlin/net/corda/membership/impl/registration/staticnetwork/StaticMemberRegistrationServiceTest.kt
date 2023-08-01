@@ -78,6 +78,7 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.membership.lib.toMap
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
@@ -575,20 +576,18 @@ class StaticMemberRegistrationServiceTest {
                 "$CUSTOM_KEY_PREFIX.key1" to "value1",
                 "$CUSTOM_KEY_PREFIX.key2" to "value2",
             )
-            val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
             val expectedContextEntries = mockContextWithCustomFields.filterNot { it.key == KEY_SCHEME }
             setUpPublisher()
             registrationService.start()
 
             registrationService.register(registrationId, alice, mockContextWithCustomFields)
 
-            verify(mockPublisher).publish(capturedPublishedList.capture())
-            val publishedInfo = capturedPublishedList.firstValue.first()
-            val memberPublished = (publishedInfo.value as PersistentMemberInfo).let {
-                memberInfoFactory.create(it)
-            }
-
-            assertThat(memberPublished.memberProvidedContext.toMap()).containsAllEntriesOf(expectedContextEntries)
+            val capturedMemberInfos = argumentCaptor<MemberInfo>()
+            verify(memberInfoFactory, times(3))
+                .createPersistentMemberInfo(any(), capturedMemberInfos.capture())
+            assertThat(
+                capturedMemberInfos.allValues.first { it.name == aliceName }.memberProvidedContext.toMap()
+            ).containsAllEntriesOf(expectedContextEntries)
         }
     }
 

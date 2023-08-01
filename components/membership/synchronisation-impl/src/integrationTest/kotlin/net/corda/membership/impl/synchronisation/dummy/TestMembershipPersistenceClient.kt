@@ -10,7 +10,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.membership.lib.InternalGroupParameters
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -60,7 +60,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
-        memberInfos: Collection<SignedMemberInfo>
+        memberInfos: Collection<MemberSignedMemberInfo>
     ): MembershipPersistenceOperation<Unit> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)

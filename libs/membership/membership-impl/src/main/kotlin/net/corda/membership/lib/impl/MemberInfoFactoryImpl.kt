@@ -6,13 +6,13 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.SignedContexts
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.toSortedMap
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -79,15 +79,15 @@ class MemberInfoFactoryImpl @Activate constructor(
     override fun createMemberInfo(
         memberInfo: PersistentMemberInfo
     ) = with(memberInfo) {
-        if (signedData == null) {
+        if (memberContextBytes == null || mgmContextBytes == null) {
             createMemberInfo(
                 memberContext.toSortedMap(),
                 mgmContext.toSortedMap(),
             )
         } else {
             createMemberInfo(
-                deserialize(signedData.memberContext.array()).toSortedMap(),
-                deserialize(signedData.mgmContext.array()).toSortedMap(),
+                deserialize(memberContextBytes.array()).toSortedMap(),
+                deserialize(mgmContextBytes.array()).toSortedMap(),
             )
         }
     }
@@ -97,14 +97,10 @@ class MemberInfoFactoryImpl @Activate constructor(
         memberInfo: MemberInfo,
     ): PersistentMemberInfo = PersistentMemberInfo.newBuilder()
         .setViewOwningMember(viewOwningMember)
-        .setMemberContext(memberInfo.memberProvidedContext.toAvro())
-        .setMgmContext(memberInfo.mgmProvidedContext.toAvro())
-        .setSignedData(
-            createSignedMembershipContexts(
-                serialize(memberInfo.memberProvidedContext.toAvro()),
-                serialize(memberInfo.mgmProvidedContext.toAvro()),
-            )
-        )
+        .setMemberContext(null)
+        .setMgmContext(null)
+        .setMemberContextBytes(convertToByteBuffer(memberInfo.memberProvidedContext))
+        .setMgmContextBytes(convertToByteBuffer(memberInfo.mgmProvidedContext))
         .build()
 
     override fun createPersistentMemberInfo(
@@ -113,16 +109,13 @@ class MemberInfoFactoryImpl @Activate constructor(
         mgmProvidedContext: ByteArray
     ): PersistentMemberInfo = PersistentMemberInfo.newBuilder()
         .setViewOwningMember(viewOwningMember)
-        .setMemberContext(deserialize(memberProvidedContext))
-        .setMgmContext(deserialize(mgmProvidedContext))
-        .setSignedData(createSignedMembershipContexts(memberProvidedContext, mgmProvidedContext))
+        .setMemberContext(null)
+        .setMgmContext(null)
+        .setMemberContextBytes(ByteBuffer.wrap(memberProvidedContext))
+        .setMgmContextBytes(ByteBuffer.wrap(mgmProvidedContext))
         .build()
 
-    private fun createSignedMembershipContexts(
-        memberProvidedContext: ByteArray,
-        mgmProvidedContext: ByteArray
-    ): SignedContexts = SignedContexts.newBuilder()
-        .setMemberContext(ByteBuffer.wrap(memberProvidedContext))
-        .setMgmContext(ByteBuffer.wrap(mgmProvidedContext))
-        .build()
+    private fun convertToByteBuffer(
+        context: LayeredPropertyMap
+    ) = ByteBuffer.wrap(serialize(context.toAvro()))
 }

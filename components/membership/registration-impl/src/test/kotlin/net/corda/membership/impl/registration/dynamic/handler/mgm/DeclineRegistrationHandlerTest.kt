@@ -16,6 +16,7 @@ import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.impl.registration.dynamic.handler.TestUtils.mockMemberInfo
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.membership.lib.VersionedMessageBuilder
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -48,7 +49,9 @@ class DeclineRegistrationHandlerTest {
 
     private val mgm = createTestHoldingIdentity("C=GB, L=London, O=MGM", GROUP_ID).toAvro()
     private val member = createTestHoldingIdentity("C=GB, L=London, O=Alice", GROUP_ID).toAvro()
-    private val memberInfo = mockMemberInfo(holdingIdentity = member.toCorda(), status = MEMBER_STATUS_PENDING)
+    private val memberInfo = MemberSignedMemberInfo(
+        mockMemberInfo(holdingIdentity = member.toCorda(), status = MEMBER_STATUS_PENDING), mock(), mock()
+    )
     private val command = DeclineRegistration()
     private val state = RegistrationState(
         REGISTRATION_ID,
@@ -96,7 +99,9 @@ class DeclineRegistrationHandlerTest {
         } doReturn record
     }
     private val membershipQueryClient = mock<MembershipQueryClient> {
-        on { queryMemberInfo(eq(mgm.toCorda()), eq(listOf(member.toCorda()))) } doReturn MembershipQueryResult.Success(listOf(memberInfo))
+        on {
+            queryMemberInfo(eq(mgm.toCorda()), eq(listOf(member.toCorda())), any())
+        } doReturn MembershipQueryResult.Success(listOf(memberInfo))
     }
 
     private val handler = DeclineRegistrationHandler(
@@ -165,8 +170,8 @@ class DeclineRegistrationHandlerTest {
 
     @Test
     fun `update registration status message is not sent when member's pending information cannot be found`() {
-        val activeInfo = mockMemberInfo(holdingIdentity = member.toCorda())
-        whenever(membershipQueryClient.queryMemberInfo(any(), any()))
+        val activeInfo = MemberSignedMemberInfo(mockMemberInfo(holdingIdentity = member.toCorda()), mock(), mock())
+        whenever(membershipQueryClient.queryMemberInfo(any(), any(), any()))
             .thenReturn(MembershipQueryResult.Success(listOf(activeInfo)))
         handler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
         verify(p2pRecordsFactory, never())

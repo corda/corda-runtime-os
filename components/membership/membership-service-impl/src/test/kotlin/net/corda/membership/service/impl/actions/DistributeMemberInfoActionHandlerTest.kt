@@ -10,18 +10,14 @@ import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.lib.InternalGroupParameters
-import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
-import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
-import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
-import net.corda.membership.lib.SignedMemberInfo
-import net.corda.membership.lib.notary.MemberNotaryDetails
+import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
@@ -43,7 +39,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -74,7 +69,7 @@ class DistributeMemberInfoActionHandlerTest {
     private val memberInfo = mockMemberInfo(member, MEMBER_INFO_SERIAL)
     private val memberInfoWithSignature = listOf(memberInfo).map {
         val name = it.name.toString()
-        SignedMemberInfo(
+        MemberSignedMemberInfo(
             it,
             CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk-$name".toByteArray()),
@@ -93,10 +88,9 @@ class DistributeMemberInfoActionHandlerTest {
         mockMemberInfo(createHoldingIdentity("member-$it", GROUP_ID), MEMBER_INFO_SERIAL)
     } + memberInfo + mgm
     private val activeMembersWithoutMgm = allActiveMembers - mgm
-    private val nonPendingMembersWithoutMgm = allActiveMembers + suspendedMemberInfo - mgm
-    private val allActiveMembersWithSignatures = allActiveMembers.associate {
+    private val allActiveMembersWithSignatures = allActiveMembers.map {
         val name = it.name.toString()
-        SignedMemberInfo(
+        MemberSignedMemberInfo(
             it,
             CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk-$name".toByteArray()),
@@ -108,7 +102,7 @@ class DistributeMemberInfoActionHandlerTest {
     private val activeMembersWithoutMgmWithSignatures = allActiveMembersWithSignatures.filterNot { it.memberInfo.isMgm }
     private val suspendMemberWithSignature = listOf(suspendedMemberInfo).map {
         val name = it.name.toString()
-        SignedMemberInfo(
+        MemberSignedMemberInfo(
             it,
             CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk-$name".toByteArray()),
@@ -162,8 +156,7 @@ class DistributeMemberInfoActionHandlerTest {
         on {
             createMembershipPackage(
                 eq(signer),
-                eq(activeMembersWithoutMgmWithSignatures + suspendMemberSignature),
-                any(),
+                eq(activeMembersWithoutMgmWithSignatures + suspendMemberWithSignature),
                 any(),
                 any(),
             )
@@ -205,7 +198,6 @@ class DistributeMemberInfoActionHandlerTest {
             membershipPackageFactory.createMembershipPackage(
                 signer,
                 activeMembersWithoutMgmWithSignatures + suspendMemberWithSignature,
-                nonPendingMembersWithoutMgm,
                 checkHash,
                 groupParameters,
             )
@@ -234,7 +226,6 @@ class DistributeMemberInfoActionHandlerTest {
             membershipPackageFactory.createMembershipPackage(
                 signer,
                 suspendMemberWithSignature,
-                listOf(suspendedMemberInfo),
                 checkHash,
                 groupParameters,
             )
@@ -263,9 +254,6 @@ class DistributeMemberInfoActionHandlerTest {
             membershipPackageFactory.createMembershipPackage(
                 eq(signer),
                 eq(memberInfoWithSignature),
-                argThat {
-                    this.size == 1
-                },
                 eq(checkHash),
                 eq(groupParameters),
             )

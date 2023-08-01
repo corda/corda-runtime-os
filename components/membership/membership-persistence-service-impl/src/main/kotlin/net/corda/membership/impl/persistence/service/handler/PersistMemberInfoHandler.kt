@@ -1,7 +1,7 @@
 package net.corda.membership.impl.persistence.service.handler
 
 import javax.persistence.LockModeType
-import net.corda.data.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistMemberInfo
@@ -79,12 +79,12 @@ internal class PersistMemberInfoHandler(
                         newMemberInfo.status == MEMBER_STATUS_PENDING,
                         newMemberInfo.status,
                         clock.instant(),
-                        it.persistentMemberInfo.signedData.memberContext.array(),
+                        it.persistentMemberInfo.memberContextBytes.array(),
                         it.memberSignature.publicKey.array(),
                         it.memberSignature.bytes.array(),
                         it.memberSignatureSpec.signatureName,
-                        it.persistentMemberInfo.signedData.mgmContext.array(),
-                        memberInfo.serial,
+                        it.persistentMemberInfo.mgmContextBytes.array(),
+                        newMemberInfo.serial,
                     )
                     em.merge(entity)
                 }
