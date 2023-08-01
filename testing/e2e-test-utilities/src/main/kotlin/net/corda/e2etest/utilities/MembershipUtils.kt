@@ -247,18 +247,20 @@ fun ClusterInfo.waitForRegistrationStatus(
  */
 fun registerStaticMember(
     holdingIdentityShortHash: String,
-    notaryServiceName: String? = null
-) = DEFAULT_CLUSTER.registerStaticMember(holdingIdentityShortHash, notaryServiceName)
+    notaryServiceName: String? = null,
+    customMetadata: Map<String, String> = emptyMap(),
+) = DEFAULT_CLUSTER.registerStaticMember(holdingIdentityShortHash, notaryServiceName, customMetadata)
 
 fun ClusterInfo.registerStaticMember(
     holdingIdentityShortHash: String,
-    notaryServiceName: String? = null
+    notaryServiceName: String? = null,
+    customMetadata: Map<String, String> = emptyMap(),
 ) {
     cluster {
         assertWithRetry {
             interval(1.seconds)
             timeout(10.seconds)
-            command { registerStaticMember(holdingIdentityShortHash, notaryServiceName) }
+            command { registerStaticMember(holdingIdentityShortHash, notaryServiceName, customMetadata) }
             condition {
                 it.code == ResponseCode.OK.statusCode
                         && it.toJson()["registrationStatus"].textValue() == REGISTRATION_SUBMITTED

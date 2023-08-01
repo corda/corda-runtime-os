@@ -25,7 +25,7 @@ import org.mockito.kotlin.mock
 import java.security.PrivateKey
 import java.security.PublicKey
 
-internal class KryoCheckpointSerializerBuilderImplTest {
+class KryoCheckpointSerializerBuilderImplTest {
 
     @Test
     fun `builder builds a serializer correctly`() {

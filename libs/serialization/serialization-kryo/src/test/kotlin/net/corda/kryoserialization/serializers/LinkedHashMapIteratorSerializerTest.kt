@@ -7,7 +7,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.objenesis.strategy.StdInstantiatorStrategy
 
-internal class LinkedHashMapIteratorSerializerTest {
+class LinkedHashMapIteratorSerializerTest {
     @Test
     fun `LinkedHashMapIterator serializer returns correct iterator`() {
         val kryo = Kryo().also {

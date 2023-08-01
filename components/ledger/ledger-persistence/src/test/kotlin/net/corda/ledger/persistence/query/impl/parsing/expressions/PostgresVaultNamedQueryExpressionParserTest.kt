@@ -110,7 +110,15 @@ class PostgresVaultNamedQueryExpressionParserTest {
             .contains(Parameter(":parameter"), Index.atIndex(0))
             .contains(Parameter(":another_one"), Index.atIndex(3))
             .contains(Parameter(":with-dashes"), Index.atIndex(6))
+    }
 
+    @Test
+    fun `parameter name in brackets is parsed as Parameter`() {
+        assertThat(expressionParser.parse("(:parameter)")).containsExactly(
+            LeftParentheses(),
+            Parameter(":parameter"),
+            RightParentheses()
+        )
     }
 
     @Test
@@ -346,6 +354,15 @@ class PostgresVaultNamedQueryExpressionParserTest {
             .contains(JsonCast("int"), Index.atIndex(4))
             .contains(JsonCast("int"), Index.atIndex(7))
             .contains(JsonCast("intz"), Index.atIndex(11))
+    }
+
+    @Test
+    fun `json cast in brackets is parsed as JsonCast`() {
+        assertThat(expressionParser.parse("(::int)")).containsExactly(
+            LeftParentheses(),
+            JsonCast("int"),
+            RightParentheses()
+        )
     }
 
     @Test
