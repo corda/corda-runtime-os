@@ -45,13 +45,13 @@ import javax.persistence.Version
 @Suppress("LongParameterList")
 internal class VirtualNodeEntity(
     @Id
-    @Column(name = "holding_identity_id")
-    val holdingIdentityId: String,
+    @Column(name = "holding_identity_id", nullable = false)
+    var holdingIdentityId: String,
 
     @MapsId
     @OneToOne(cascade = [CascadeType.ALL])
-    @JoinColumn(name = "holding_identity_id")
-    val holdingIdentity: HoldingIdentityEntity,
+    @JoinColumn(name = "holding_identity_id", nullable = false)
+    var holdingIdentity: HoldingIdentityEntity,
 
     @Column(name = "cpi_name", nullable = false)
     var cpiName: String,

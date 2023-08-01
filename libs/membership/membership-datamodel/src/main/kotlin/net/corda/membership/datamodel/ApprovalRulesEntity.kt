@@ -20,17 +20,17 @@ import javax.persistence.Table
 class ApprovalRulesEntity(
     @Id
     @Column(name = "rule_id", nullable = false, updatable = false)
-    val ruleId: String,
+    var ruleId: String,
 
     @Id
     @Column(name = "rule_type", nullable = false, updatable = false)
-    val ruleType: String,
+    var ruleType: String,
 
     @Column(name = "rule_regex", nullable = false, updatable = false)
-    val ruleRegex: String,
+    var ruleRegex: String,
 
     @Column(name = "rule_label", nullable = true, updatable = false)
-    val ruleLabel: String? = null
+    var ruleLabel: String? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (other === this) return true
@@ -47,6 +47,6 @@ class ApprovalRulesEntity(
 
 @Embeddable
 data class ApprovalRulesEntityPrimaryKey(
-    val ruleId: String,
-    val ruleType: String
+    var ruleId: String,
+    var ruleType: String
 ) : Serializable

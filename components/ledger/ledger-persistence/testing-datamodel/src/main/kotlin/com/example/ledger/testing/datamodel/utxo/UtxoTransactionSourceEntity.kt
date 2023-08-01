@@ -22,35 +22,35 @@ import javax.persistence.Table
 @Table(name = "utxo_transaction_sources")
 @IdClass(UtxoTransactionSourceEntityId::class)
 data class UtxoTransactionSourceEntity(
-    @Id
-    @ManyToOne
-    @JoinColumn(name = "transaction_id", nullable = false, updatable = false)
-    val transaction: UtxoTransactionEntity,
+    @get:Id
+    @get:ManyToOne
+    @get:JoinColumn(name = "transaction_id", nullable = false, updatable = false)
+    var transaction: UtxoTransactionEntity,
 
-    @Id
-    @Column(name = "group_idx", nullable = false)
-    val groupIndex: Int,
+    @get:Id
+    @get:Column(name = "group_idx", nullable = false)
+    var groupIndex: Int,
 
-    @Id
-    @Column(name = "leaf_idx", nullable = false)
-    val leafIndex: Int,
+    @get:Id
+    @get:Column(name = "leaf_idx", nullable = false)
+    var leafIndex: Int,
 
-    @Column(name = "ref_transaction_id", nullable = false)
-    val refTransactionId: String,
+    @get:Column(name = "ref_transaction_id", nullable = false)
+    var refTransactionId: String,
 
-    @Column(name = "ref_leaf_idx", nullable = false)
-    val refLeafIndex: Int,
+    @get:Column(name = "ref_leaf_idx", nullable = false)
+    var refLeafIndex: Int,
 
-    @Column(name = "is_ref_input", nullable = false)
-    val isRefInput: Boolean,
+    @get:Column(name = "is_ref_input", nullable = false)
+    var isRefInput: Boolean,
 
-    @Column(name = "created", nullable = false)
-    val created: Instant
+    @get:Column(name = "created", nullable = false)
+    var created: Instant
 )
 
 @Embeddable
 data class UtxoTransactionSourceEntityId(
-    val transaction: UtxoTransactionEntity,
-    val groupIndex: Int,
-    val leafIndex: Int
+    var transaction: UtxoTransactionEntity,
+    var groupIndex: Int,
+    var leafIndex: Int
 ) : Serializable

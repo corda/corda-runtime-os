@@ -5,8 +5,9 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import java.util.UUID
 import kotlin.text.Typography.quote
-import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
-import net.corda.applications.workers.smoketest.TEST_CPI_NAME
+import net.corda.applications.workers.smoketest.utils.TEST_CPB_LOCATION
+import net.corda.applications.workers.smoketest.utils.TEST_CPI_NAME
+import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.FlowResult
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_FAILED
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
@@ -15,6 +16,7 @@ import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
 import net.corda.e2etest.utilities.awaitRestFlowResult
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
+import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.configWithDefaultsNode
 import net.corda.e2etest.utilities.getConfig
 import net.corda.e2etest.utilities.getHoldingIdShortHash
@@ -68,6 +70,7 @@ class FlowTests {
             davidX500,
             notaryX500
         )
+        private const val NOTARY_SERVICE_X500 = "O=MyNotaryService, L=London, C=GB"
 
         val invalidConstructorFlowNames = listOf(
             "com.r3.corda.testing.smoketests.flow.errors.PrivateConstructorFlow",
@@ -99,6 +102,8 @@ class FlowTests {
         @BeforeAll
         @JvmStatic
         internal fun beforeAll() {
+            DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
+
             // Upload test flows if not already uploaded
             conditionallyUploadCordaPackage(
                 applicationCpiName, TEST_CPB_LOCATION, groupId, staticMemberList
@@ -126,7 +131,7 @@ class FlowTests {
 
             registerStaticMember(bobHoldingId)
             registerStaticMember(charlieHoldingId)
-            registerStaticMember(notaryHoldingId, isNotary = true)
+            registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
         }
 
         private val JsonNode?.command: String
@@ -193,6 +198,27 @@ class FlowTests {
         assertThat(flowResult.json.command).isEqualTo("start_sessions")
         assertThat(flowResult.json.result)
             .isEqualTo("${bobX500}=echo:m1; ${charlyX500}=echo:m2")
+    }
+
+    @Test
+    fun `Flow Session - Send and receive primitive values across a session`() {
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "flow_session_primitives"
+            data = mapOf("sessions" to bobX500)
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
+
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.json).isNotNull
+        assertThat(flowResult.flowError).isNull()
+        assertThat(flowResult.json.command).isEqualTo("flow_session_primitives")
+        assertThat(flowResult.json.result)
+            .isEqualTo("Successfully received 8 items.\n" +
+                    "Successfully received 8 items from receiveAll.\n" +
+                    "Successfully received 8 items from receiveAllMap.\n")
     }
 
     @Test

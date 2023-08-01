@@ -146,7 +146,7 @@ internal class CpiMetadataRepositoryImpl: CpiMetadataRepository {
         CpiMetadata(
             CpiIdentifier(name, version, parseSecureHash(signerSummaryHash)),
             parseSecureHash(fileChecksum),
-            cpks.map { it.metadata.toDto() }.toSet(),
+            cpks.mapTo(linkedSetOf()) { it.metadata.toDto() },
             groupPolicy,
             version = entityVersion,
             timestamp = insertTimestamp ?: Instant.now()

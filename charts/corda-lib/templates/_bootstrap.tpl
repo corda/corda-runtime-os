@@ -145,7 +145,7 @@ spec:
         {{- include "corda.generateAndExecuteSql" ( dict "name" "db" "Values" .Values "Chart" .Chart "Release" .Release "schema" "RBAC" "namePostfix" "schemas" "sequenceNumber" 1) | nindent 8 }}
         {{- include "corda.generateAndExecuteSql" ( dict "name" "rbac" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "RBAC_DB_USER" "schema" "RBAC" "sequenceNumber" 3) | nindent 8 }}
         {{- include "corda.generateAndExecuteSql" ( dict "name" "vnodes" "longName" "virtual-nodes" "dbName" "rbac" "admin" "true" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "DB_CLUSTER" "sequenceNumber" 5) | nindent 8 }}
-        {{- include "corda.generateAndExecuteSql" ( dict "name" "crypto" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "CRYPTO_DB_USER"  "schema" "CRYPTO" "sequenceNumber" 7) | nindent 8 }}                
+        {{- include "corda.generateAndExecuteSql" ( dict "name" "crypto" "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "CRYPTO_DB_USER"  "schema" "CRYPTO" "sequenceNumber" 7) | nindent 8 }}
         {{- include "corda.generateAndExecuteSql" ( dict "name" "rest"  "Values" .Values "Chart" .Chart "Release" .Release "environmentVariablePrefix" "REST_API_ADMIN"  "schema" "RBAC"  "searchPath" "RBAC" "subCommand" "create-user-config" "namePostfix" "admin" "sqlFile" "rbac-config.sql" "sequenceNumber" 9) | nindent 8 }}
         - name: 11-create-db-users-and-grant
           image: {{ include "corda.bootstrapDbClientImage" . }}
@@ -502,7 +502,7 @@ a second init container to execute the output SQL to the relevant database
   args: [ 'initial-config', '{{ .subCommand | default "create-db-config" }}',{{ " " -}}
   
          {{- /* request admin access in some cases, only when the optional admin argument to this function (named template) is specified as true */ -}}
-         {{- if eq .name "vnodes" -}} '-a',{{- end -}}
+         {{- if eq .admin "true" -}} '-a',{{- end -}}
          
          {{- if and (not (eq .name "db")) (not (eq .name "crypto-config")) -}}
            {{- /* specify DB user */ -}}
@@ -516,8 +516,8 @@ a second init container to execute the output SQL to the relevant database
              {{- " '--name'" -}}, 'corda-{{ .longName | default .name }}', 
              {{- " '--jdbc-url'" -}}, 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}{{- if .schema }}?currentSchema={{.schema }}{{- end -}}', 
              {{- " '--jdbc-pool-max-size'" -}}, {{ (index .Values.bootstrap.db (.dbName | default .name)).dbConnectionPool.maxSize | quote }},
-             {{- with (index .Values.bootstrap.db (.dbName | default .name)).dbConnectionPool.minSize -}}
-                {{- " '--jdbc-pool-min-size'" -}}, {{ . | quote }},
+             {{- if not (kindIs "invalid" (index .Values.bootstrap.db (.dbName | default .name)).dbConnectionPool.minSize) -}}
+                {{- " '--jdbc-pool-min-size'" -}}, {{ (index .Values.bootstrap.db (.dbName | default .name)).dbConnectionPool.minSize | quote }},
              {{- end -}}
              {{- " '--idle-timeout'" -}}, {{ (index .Values.bootstrap.db (.dbName | default .name)).dbConnectionPool.idleTimeoutSeconds | quote }},
              {{- " '--max-lifetime'" -}}, {{ (index .Values.bootstrap.db (.dbName | default .name)).dbConnectionPool.maxLifetimeSeconds | quote }},

@@ -39,14 +39,15 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.io.IOException
 import java.net.URI
-import java.security.KeyStore
 import java.security.cert.PKIXBuilderParameters
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.TrustManagerFactory
 
 class HttpClientTest {
-    private val trustStore = mock<KeyStore>()
+    private val trustStore = mock<TrustStoresMap.TrustedCertificates> {
+        on { trustStore } doReturn mock()
+    }
     private val destinationInfo = DestinationInfo(
         uri = URI("http://www.r3.com:3023"),
         sni = "sni",
