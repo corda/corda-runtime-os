@@ -64,6 +64,13 @@ allprojects {
 
         tasks.withType(Test).configureEach {
             useJUnitPlatform(){
+                if (project.hasProperty('runMultiClusterTests')) {
+                    includeTags 'MultiCluster'
+                } else if (project.hasProperty('runUnstableTests')) {
+                    includeTag 'runUnstableTests'
+                } else {
+                  excludeTags 'runAllTestsNoExclusions'
+                }
                 excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
                 excludeTags project.hasProperty('runMultiClusterTests') ? 'runAllTestsNoExclusions' : 'MultiCluster'
             }
