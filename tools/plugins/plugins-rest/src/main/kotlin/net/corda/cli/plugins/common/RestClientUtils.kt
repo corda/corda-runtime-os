@@ -20,7 +20,7 @@ object RestClientUtils {
 
     fun <I : RestResource> RestCommand.createRestClient(
         restResource: KClass<I>,
-        apiVersion: RestApiVersion = RestApiVersion.C5_0
+        apiVersion: RestApiVersion = RestApiVersion.C5_1
     ): RestClient<I> {
         val localTargetUrl = if(targetUrl.endsWith("/")) {
             targetUrl.dropLast(1)

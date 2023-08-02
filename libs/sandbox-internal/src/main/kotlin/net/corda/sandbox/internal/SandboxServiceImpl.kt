@@ -26,7 +26,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.io.InputStream
-import java.security.AccessController.doPrivileged
 import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.security.PrivilegedAction
@@ -132,7 +131,8 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     override fun getCallingSandboxGroup(): SandboxGroup? {
-        return doPrivileged(PrivilegedAction {
+        @Suppress("deprecation", "removal")
+        return java.security.AccessController.doPrivileged(PrivilegedAction {
             val stackWalkerInstance = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
 
             stackWalkerInstance.walk { stackFrameStream ->
