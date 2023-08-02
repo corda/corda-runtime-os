@@ -23,7 +23,7 @@ import java.time.Instant
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-class TestSigningRepository: SigningRepository {
+class TestSigningRepository(val tenantId: String = "test"): SigningRepository {
     private val lock = ReentrantLock()
     private val keys = mutableMapOf<ShortHash, SigningKeyInfo>()
 
@@ -32,7 +32,7 @@ class TestSigningRepository: SigningRepository {
         return SigningKeyInfo(
             id = publicKeyShortHashFromBytes(encodedKey),
             fullId = publicKeyHashFromBytes(encodedKey),
-            tenantId = "test",
+            tenantId = tenantId,
             category = context.category,
             alias = context.alias,
             hsmAlias = null,

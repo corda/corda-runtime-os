@@ -38,7 +38,7 @@ import kotlin.test.assertEquals
  * Provide instances of high level crypto services, with no database underneath, for
  * use for integration test cases that don't involve in-memory databases.
  */
-class TestServicesFactory {
+class TestServicesFactory(val tenantId:String = "test") {
     companion object {
         const val CTX_TRACKING = "ctxTrackingId"
         const val CUSTOM1_HSM_ID = "CUSTOM1"
@@ -138,7 +138,7 @@ class TestServicesFactory {
         }
     }
 
-    val signingRepository: TestSigningRepository by lazy { TestSigningRepository() }
+    val signingRepository: TestSigningRepository by lazy { TestSigningRepository(tenantId) }
 
     val tenantInfoService: TestTenantInfoService by lazy { TestTenantInfoService() }
 

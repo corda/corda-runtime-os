@@ -87,10 +87,10 @@ class CryptoOperationsTests {
         @JvmStatic
         @BeforeAll
         fun setup() {
-            factory = TestServicesFactory()
+            tenantId = UUID.randomUUID().toString()
+            factory = TestServicesFactory(tenantId)
             schemeMetadata = factory.schemeMetadata
             verifier = factory.verifier
-            tenantId = UUID.randomUUID().toString()
             category = CryptoConsts.Categories.LEDGER
             CryptoConsts.Categories.all.forEach {
                 factory.tenantInfoService.populate(tenantId, it, factory.cryptoService)
