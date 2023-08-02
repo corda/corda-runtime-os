@@ -98,8 +98,8 @@ class Ca {
                 )
             }
             Algorithm.EC -> {
-                val disabled = Security.getProperty("jdk.disabled.namedCurves")
-                    .split(",").map {
+                val disabledCurves = Security.getProperty("jdk.disabled.namedCurves") ?: ""
+                val disabled = disabledCurves.split(",").map {
                         it.trim()
                     }.contains(curveName)
                 if (disabled) {

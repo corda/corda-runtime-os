@@ -18,10 +18,10 @@ class ValidCurvedNames : Iterable<String> {
         }
     }
     override fun iterator(): Iterator<String> {
-        val disabled = Security.getProperty("jdk.disabled.namedCurves")
-            .split(",").map {
-                it.trim()
-            }.toSet()
+        val disabledCurves = Security.getProperty("jdk.disabled.namedCurves") ?: ""
+        val disabled = disabledCurves.split(",").map {
+            it.trim()
+        }.toSet()
 
         return ECNamedCurveTable.getNames()
             .toList()
