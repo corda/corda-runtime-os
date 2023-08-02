@@ -81,6 +81,8 @@ dependencies {
     runtimeOnly project(':components:virtual-node:virtual-node-write-service-impl')
     runtimeOnly project(':components:membership:certificates-service-impl')
     runtimeOnly project(':components:membership:group-policy-configuration-validation-impl')
+    runtimeOnly project(':components:membership:membership-client-impl')
+    runtimeOnly project(':components:membership:membership-persistence-client-impl')
 
     runtimeOnly project(":libs:application:application-impl")
     runtimeOnly project(':libs:crypto:cipher-suite-impl')
