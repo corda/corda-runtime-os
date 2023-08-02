@@ -3,7 +3,6 @@ package net.corda.p2p.fake.ca
 import org.bouncycastle.jce.ECNamedCurveTable
 import java.security.InvalidAlgorithmParameterException
 import java.security.KeyPairGenerator
-import java.security.Security
 import java.security.spec.ECGenParameterSpec
 
 class ValidCurvedNames : Iterable<String> {

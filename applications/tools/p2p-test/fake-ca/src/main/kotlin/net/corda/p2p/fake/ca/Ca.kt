@@ -7,7 +7,6 @@ import org.bouncycastle.jce.ECNamedCurveTable
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
-import java.security.Security
 import java.time.Duration
 
 @Command(
