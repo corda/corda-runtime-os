@@ -47,6 +47,8 @@ class OnboardMgm : Runnable, BaseOnboard() {
         "groupId.txt"
     )
 
+    private var cpiName: String = "MGM-${UUID.randomUUID()}"
+
     private val groupPolicy by lazy {
         mapOf(
             "fileFormatVersion" to 1,
@@ -138,7 +140,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
         cpiFile.parentFile.mkdirs()
         val creator = CreateCpiV2()
         creator.groupPolicyFileName = mgmGroupPolicyFile.absolutePath
-        creator.cpiName = x500Name
+        creator.cpiName = cpiName
         creator.cpiVersion = "1.0"
         creator.cpiUpgrade = false
         creator.outputFileName = cpiFile.absolutePath
@@ -150,20 +152,30 @@ class OnboardMgm : Runnable, BaseOnboard() {
 
     override val cpiFileChecksum: String by lazy {
         if (cpiHash != null) {
-            return@lazy cpiHash!!
+            val existingHash = getExistingCpiHash(cpiHash)
+            if (existingHash != null) {
+                return@lazy existingHash
+            } else {
+                throw IllegalArgumentException("Invalid CPI hash provided.")
+            }
+        } else {
+            val existingHash = getExistingCpiHash()
+            if (existingHash != null) {
+                return@lazy existingHash
+            }
+
+            uploadCpi(cpi.inputStream(), cpiName)
         }
-        val existingHash = createRestClient(CpiUploadRestResource::class).use { client ->
+    }
+
+    private fun getExistingCpiHash(hash: String? = null): String? {
+        return createRestClient(CpiUploadRestResource::class).use { client ->
             val response = client.start().proxy.getAllCpis()
             response.cpis
-                .filter { it.groupPolicy?.contains("CREATE_ID") ?: false }
+                .filter { it.cpiFileChecksum == hash || (hash == null && it.groupPolicy?.contains("CREATE_ID") ?: false) }
                 .map { it.cpiFileChecksum }
                 .firstOrNull()
         }
-        if (existingHash != null) {
-            return@lazy existingHash
-        }
-
-        uploadCpi(cpi.inputStream(), "MGM-" + UUID.randomUUID().toString())
     }
 
     override fun run() {

@@ -132,7 +132,7 @@ the [wiki](https://github.com/corda/corda-runtime-os/wiki/MGM-Onboarding) for mo
 
 This is a sub-command under the `dynamic` sub-command to onboard a new MGM member (and create a new group).
 
-To onboard on a Kubernetes cluster use the cluster name as parameter. By default, it will try to onboard on a combined
+By default, it will try to onboard on a combined
 worker.
 By default, the command will save the group policy file into `~/.corda/gp/groupPolicy.json` (and will overwrite any
 existing group policy file there).
@@ -142,7 +142,9 @@ create CPIs - [see here](../../../../../../../../../package/README.md))
 Examples of on-boarding an MGM can be:
 
 ```shell
-./corda-cli.sh network dynamic onboard-mgm demo-cluster-one --x500-name='O=MGM, L=London, C=GB'
+./corda-cli.sh network dynamic onboard-mgm --x500-name='O=MGM, L=London, C=GB'
+
+./corda-cli.sh network dynamic onboard-mgm --cpi-hash=D8AF6080C7B4 
 
 ./corda-cli.sh network dynamic onboard-mgm --save-group-policy-as /tmp/groupPolicy.json
 ```
