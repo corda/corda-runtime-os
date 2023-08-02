@@ -36,7 +36,7 @@ For more options to generate `GroupPolicy` file follow [this](https://github.com
 ## Custom Group Parameters (Optional)
 Certain properties may be defined in the group policy to be included in the group parameters of a static network. These include the minimum platform version and custom properties containing the prefix "ext.".
 
-To define such group parameters, include them in a `"groupParameters"` block under `"staticNetwork"`. For example:
+To define such group parameters, include them in a `groupParameters` block under `staticNetwork`. For example:
 ```bash
 "groupParameters": {
   "corda.minimum.platform.version": "50000",
