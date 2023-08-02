@@ -1,5 +1,4 @@
 package net.corda.libs.interop.endpoints.v1.types
-import net.corda.v5.application.interop.facade.FacadeId
 
 class ExportInteropIdentityRest {
 
