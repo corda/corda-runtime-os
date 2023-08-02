@@ -55,7 +55,7 @@ class WrappingRepositoryImplTests {
                     this.generation == 1 &&
                     this.parentKeyReference == "Enoch"
         })
-        assertThat (savedKey == wrappingKeyInfo)
+        assertThat (savedKey).isEqualTo(wrappingKeyInfo)
     }
 
     @Test
