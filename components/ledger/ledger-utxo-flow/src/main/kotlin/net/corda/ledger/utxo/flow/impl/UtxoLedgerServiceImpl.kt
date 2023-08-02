@@ -47,7 +47,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 
@@ -116,7 +115,8 @@ class UtxoLedgerServiceImpl @Activate constructor(
         Creating the executing the SubFlow must be independent otherwise the security manager causes issues with Quasar.
         */
         val utxoFinalityFlow = try {
-            AccessController.doPrivileged(PrivilegedExceptionAction {
+            @Suppress("deprecation", "removal")
+            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
                 UtxoFinalityFlow(
                     signedTransaction as UtxoSignedTransactionInternal,
                     sessions,
@@ -134,7 +134,8 @@ class UtxoLedgerServiceImpl @Activate constructor(
         session: FlowSession, validator: UtxoTransactionValidator
     ): FinalizationResult {
         val utxoReceiveFinalityFlow = try {
-            AccessController.doPrivileged(PrivilegedExceptionAction {
+            @Suppress("deprecation", "removal")
+            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
                 UtxoReceiveFinalityFlow(session, validator)
             })
         } catch (e: PrivilegedActionException) {

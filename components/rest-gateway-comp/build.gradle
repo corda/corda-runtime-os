@@ -21,6 +21,7 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(':libs:platform-info')
     implementation project(':libs:rest:rest')
     implementation project(':libs:rest:ssl-cert-read')
     implementation project(':libs:rest:rest-server')

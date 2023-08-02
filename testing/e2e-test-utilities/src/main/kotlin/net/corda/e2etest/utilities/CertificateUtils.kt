@@ -6,7 +6,9 @@ import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAuthority
 import net.corda.crypto.test.certificates.generation.KeysFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
+import net.corda.e2etest.utilities.config.SingleClusterTestConfigManager
 import net.corda.rest.ResponseCode
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
@@ -56,9 +58,9 @@ fun ClusterInfo.generateCsr(
         }
     }
 
-    assertWithRetry {
+    assertWithRetryIgnoringExceptions {
         interval(1.seconds)
-        command { post("/api/v1/certificates/$tenantId/$keyId", ObjectMapper().writeValueAsString(payload)) }
+        command { post("/api/${RestApiVersion.C5_1.versionPath}/certificate/$tenantId/$keyId", ObjectMapper().writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
     }.body
 }
@@ -72,7 +74,7 @@ fun ClusterInfo.importCertificate(
     alias: String
 ) {
     cluster {
-        assertWithRetry {
+        assertWithRetryIgnoringExceptions {
             interval(1.seconds)
             command { importCertificate(file, usage, alias) }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
@@ -82,10 +84,10 @@ fun ClusterInfo.importCertificate(
 
 /**
  * Disable certificate revocation checks.
+ * CRL checks disabled is the default for E2E tests so this doesn't attempt to revert after use.
  */
 fun ClusterInfo.disableCertificateRevocationChecks() {
-    updateConfig(
-        "{ \"sslConfig\": { \"revocationCheck\": { \"mode\": \"OFF\" }  }  }",
-        P2P_GATEWAY_CONFIG
-    )
+    SingleClusterTestConfigManager(this)
+        .load(P2P_GATEWAY_CONFIG, "sslConfig.revocationCheck.mode", "OFF")
+        .apply()
 }

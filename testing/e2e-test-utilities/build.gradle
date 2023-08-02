@@ -22,4 +22,5 @@ dependencies {
     implementation project(':tools:plugins:package')
     implementation project(":testing:packaging-test-utilities")
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation project(':libs:crypto:crypto-core')
 }

@@ -6,6 +6,7 @@ import net.corda.data.p2p.crypto.ProtocolMode
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -13,6 +14,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
+import java.security.Security
 import java.security.Signature
 import java.util.UUID
 
@@ -21,7 +23,7 @@ import java.util.UUID
  */
 class AuthenticationProtocolFailureTest {
 
-    private val provider = BouncyCastleProvider()
+    private val provider = BouncyCastleProvider.PROVIDER_NAME
     private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
     private val signature = Signature.getInstance(SignatureSpecs.ECDSA_SHA256.signatureName, provider)
     private val aliceX500Name = MemberX500Name.parse("CN=alice, OU=MyUnit, O=MyOrg, L=London, S=London, C=GB")
@@ -46,6 +48,14 @@ class AuthenticationProtocolFailureTest {
     private val partyBSessionKey = keyPairGenerator.generateKeyPair()
     private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, partyBMaxMessageSize)
     private val certificateValidator = mock<CertificateValidator>()
+
+    companion object {
+        @BeforeAll
+        @JvmStatic
+        fun setup() {
+            Security.addProvider(BouncyCastleProvider())
+        }
+    }
 
     @Test
     fun `session authentication fails if malicious actor changes initiator's handshake message`() {

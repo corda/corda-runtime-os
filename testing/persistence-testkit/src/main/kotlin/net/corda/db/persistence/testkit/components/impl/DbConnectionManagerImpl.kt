@@ -148,6 +148,13 @@ class DbConnectionManagerImpl @Activate constructor(
         )
     }
 
+    override fun getOrCreateEntityManagerFactory(
+        connectionId: UUID,
+        entitiesSet: JpaEntitiesSet
+    ): EntityManagerFactory {
+        TODO("Not yet implemented")
+    }
+
     override fun create(
         driverClass: String,
         jdbcUrl: String,

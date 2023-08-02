@@ -3,6 +3,7 @@ package net.corda.flow.application.services.impl
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
+import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.application.versioning.impl.RESET_VERSIONING_MARKER
 import net.corda.flow.application.versioning.impl.VERSIONING_PROPERTY_NAME
 import net.corda.flow.fiber.FlowFiberExecutionContext
@@ -21,7 +22,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 import java.util.UUID
@@ -45,7 +45,8 @@ class FlowEngineImpl @Activate constructor(
     override fun <R> subFlow(subFlow: SubFlow<R>): R {
 
         try {
-            AccessController.doPrivileged(PrivilegedExceptionAction {
+            @Suppress("deprecation", "removal")
+            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
                 getFiberExecutionContext().sandboxGroupContext.dependencyInjector.injectServices(subFlow)
             })
         } catch (e: PrivilegedActionException) {
@@ -99,7 +100,7 @@ class FlowEngineImpl @Activate constructor(
     @Suspendable
     private fun closeSessionsOnSubFlowFinish() {
         val currentSessionIds = this.currentSessionIds
-        if (currentSessionIds.isNotEmpty()) {
+        if (currentSessionIds.isNotEmpty() && anyActiveSessions(currentSessionIds)) {
             flowFiberService.getExecutingFiber()
                 .suspend(FlowIORequest.SubFlowFinished(currentSessionIds))
         }
@@ -108,9 +109,15 @@ class FlowEngineImpl @Activate constructor(
     @Suspendable
     private fun errorSessionsOnSubFlowFinish(t: Throwable) {
         val currentSessionIds = this.currentSessionIds
-        if (currentSessionIds.isNotEmpty()) {
-            flowFiberService.getExecutingFiber()
-                .suspend(FlowIORequest.SubFlowFailed(t, currentSessionIds))
+        if (currentSessionIds.isNotEmpty() && anyActiveSessions(currentSessionIds)) {
+           flowFiberService.getExecutingFiber()
+               .suspend(FlowIORequest.SubFlowFailed(t, currentSessionIds))
+        }
+    }
+    private fun anyActiveSessions(currentSessionIds: List<String>): Boolean {
+        val flowCheckPoint = getFiberExecutionContext().flowCheckpoint
+        return currentSessionIds.any {sessionId ->
+            flowCheckPoint.getSessionState(sessionId)?.status !in listOf(SessionStateType.CLOSED, SessionStateType.ERROR)
         }
     }
 

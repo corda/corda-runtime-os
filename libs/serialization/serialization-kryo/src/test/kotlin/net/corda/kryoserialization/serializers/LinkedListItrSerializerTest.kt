@@ -7,7 +7,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.util.LinkedList
 
-internal class LinkedListItrSerializerTest {
+class LinkedListItrSerializerTest {
     @Test
     fun `LinkedListItr serializer returns correct iterator`() {
         val kryo = Kryo().apply { isRegistrationRequired = false }

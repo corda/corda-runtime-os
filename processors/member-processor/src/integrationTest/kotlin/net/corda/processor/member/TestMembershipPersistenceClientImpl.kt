@@ -9,7 +9,7 @@ import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationRequestDetails
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -154,6 +154,11 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun updateStaticNetworkInfo(info: StaticNetworkInfo): MembershipPersistenceOperation<StaticNetworkInfo> {
         return Operation(MembershipPersistenceResult.Success(info))
     }
+
+    override fun updateGroupParameters(
+        viewOwningIdentity: HoldingIdentity, newGroupParameters: Map<String, String>
+    ): MembershipPersistenceOperation<InternalGroupParameters> =
+        throw NotImplementedError("Not implemented for test service")
 
     private val persistenceCoordinator =
         coordinatorFactory.createCoordinator(

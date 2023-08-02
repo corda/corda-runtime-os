@@ -19,11 +19,12 @@ abstract class ClusterInfo {
         private const val DEFAULT_P2P_PORT = 8080
     }
 
-    private val restHostPropertyName get() = "E2E_CLUSTER_${id}_REST_HOST"
-    private val restPortPropertyName get() = "E2E_CLUSTER_${id}_REST_PORT"
-    private val restPasswordPropertyName get() = "E2E_CLUSTER_${id}_REST_PASSWORD"
-    private val p2pHostPropertyName get() = "E2E_CLUSTER_${id}_P2P_HOST"
-    private val p2pPortPropertyName get() = "E2E_CLUSTER_${id}_P2P_PORT"
+    val name: String get() = "E2E_CLUSTER_${id}"
+    private val restHostPropertyName get() = "${name}_REST_HOST"
+    private val restPortPropertyName get() = "${name}_REST_PORT"
+    private val restPasswordPropertyName get() = "${name}_REST_PASSWORD"
+    private val p2pHostPropertyName get() = "${name}_P2P_HOST"
+    private val p2pPortPropertyName get() = "${name}_P2P_PORT"
 
 
     /**

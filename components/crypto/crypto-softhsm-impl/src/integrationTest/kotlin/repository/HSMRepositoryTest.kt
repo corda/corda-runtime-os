@@ -23,13 +23,12 @@ class HSMRepositoryTest : CryptoRepositoryTest() {
     @ParameterizedTest
     @MethodSource("emfs")
     fun associate(emf: EntityManagerFactory) {
-        val tenantId = "caesar${UUID.randomUUID().toString().take(6)}"
-        val repo = HSMRepositoryImpl(emf, tenantId)
+        val tenantId = UUID.randomUUID().toString().take(6)
+        val repo = HSMRepositoryImpl(emf)
 
         val ai = repo.associate(
             tenantId,
             category,
-            "hsm-id",
             MasterKeyPolicy.SHARED
         )
 
@@ -53,12 +52,11 @@ class HSMRepositoryTest : CryptoRepositoryTest() {
     @MethodSource("emfs")
     fun `when associate unique generate alias`(emf: EntityManagerFactory) {
         val tenantId = "caesar${UUID.randomUUID().toString().take(6)}"
-        val repo = HSMRepositoryImpl(emf, tenantId)
+        val repo = HSMRepositoryImpl(emf)
 
         val ai = repo.associate(
             tenantId,
             category,
-            "hsm-id",
             MasterKeyPolicy.UNIQUE
         )
 
@@ -69,12 +67,11 @@ class HSMRepositoryTest : CryptoRepositoryTest() {
     @MethodSource("emfs")
     fun `when associate twice should throw`(emf: EntityManagerFactory) {
         val tenantId = "caesar${UUID.randomUUID().toString().take(6)}"
-        val repo = HSMRepositoryImpl(emf, tenantId)
+        val repo = HSMRepositoryImpl(emf)
 
         repo.associate(
             tenantId,
             category,
-            "hsm-id",
             MasterKeyPolicy.SHARED
         )
 
@@ -82,7 +79,6 @@ class HSMRepositoryTest : CryptoRepositoryTest() {
             repo.associate(
                 tenantId,
                 category,
-                "hsm-id",
                 MasterKeyPolicy.SHARED
             )
         }
@@ -92,12 +88,11 @@ class HSMRepositoryTest : CryptoRepositoryTest() {
     @MethodSource("emfs")
     fun findTenantAssociation(emf: EntityManagerFactory) {
         val tenantId = "caesar${UUID.randomUUID().toString().take(6)}"
-        val repo = HSMRepositoryImpl(emf, tenantId)
+        val repo = HSMRepositoryImpl(emf)
 
         repo.associate(
             tenantId,
             category,
-            "hsm-id",
             MasterKeyPolicy.SHARED
         )
 
@@ -108,7 +103,6 @@ class HSMRepositoryTest : CryptoRepositoryTest() {
         assertSoftly {
             it.assertThat(loaded!!.tenantId).isEqualTo(tenantId)
             it.assertThat(loaded.category).isEqualTo(category)
-            it.assertThat(loaded.hsmId).isEqualTo("hsm-id")
             it.assertThat(loaded.masterKeyAlias).isNull()
         }
     }
@@ -117,53 +111,11 @@ class HSMRepositoryTest : CryptoRepositoryTest() {
     @MethodSource("emfs")
     fun `findTenantAssociation returns null when none found`(emf: EntityManagerFactory) {
         val tenantId = "caesar${UUID.randomUUID().toString().take(6)}"
-        val repo = HSMRepositoryImpl(emf, tenantId)
+        val repo = HSMRepositoryImpl(emf)
 
         val loaded = repo.findTenantAssociation(tenantId, category)
 
         assertThat(loaded).isNull()
-    }
-
-    @ParameterizedTest
-    @MethodSource("emfs")
-    fun getHSMUsage(emf: EntityManagerFactory) {
-        val tenantId = "caesar${UUID.randomUUID().toString().take(6)}"
-        val hsmId1 = "one-${UUID.randomUUID().toString().take(6)}"
-        val hsmId2 = "two-${UUID.randomUUID().toString().take(6)}"
-        val repo = HSMRepositoryImpl(emf, tenantId)
-
-        repo.associate(
-            "one-one",
-            category,
-            hsmId1,
-            MasterKeyPolicy.SHARED
-        )
-
-        repo.associate(
-            "one-two",
-            category,
-            hsmId1,
-            MasterKeyPolicy.SHARED
-        )
-
-        repo.associate(
-            "two-one",
-            category,
-            hsmId2,
-            MasterKeyPolicy.SHARED
-        )
-
-        val loaded = repo.getHSMUsage()
-
-        assertSoftly { assertions ->
-            assertions.assertThat(loaded.size).isGreaterThanOrEqualTo(2)
-            val one = loaded.singleOrNull { it.hsmId == hsmId1 }
-            assertions.assertThat(one).isNotNull
-            assertions.assertThat(one?.usages).isEqualTo(2)
-            val two = loaded.singleOrNull { it.hsmId == hsmId2 }
-            assertions.assertThat(two).isNotNull
-            assertions.assertThat(two?.usages).isEqualTo(1)
-        }
     }
 
     /**
@@ -177,13 +129,12 @@ class HSMRepositoryTest : CryptoRepositoryTest() {
     @MethodSource("emfs")
     fun `can save HSMCategoryAssociationEntity with duplicate category and hsm association`(emf: EntityManagerFactory) {
         val tenantId = "caesar${UUID.randomUUID().toString().take(6)}"
-        val repo = HSMRepositoryImpl(emf, tenantId)
+        val repo = HSMRepositoryImpl(emf)
 
         // save one
         repo.associate(
             tenantId,
             category,
-            "hsm-id",
             MasterKeyPolicy.SHARED
         )
 

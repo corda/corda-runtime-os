@@ -1,12 +1,17 @@
 package net.corda.testing.sandboxes.impl
 
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpk.read.CpkReadService
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandbox.SandboxCreationService
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.SandboxSetup
+import net.corda.testing.sandboxes.SandboxSetup.Companion.SANDBOX_SERVICE_FILTER
 import net.corda.testing.sandboxes.impl.SandboxSetupImpl.Companion.INSTALLER_NAME
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.framework.BundleContext
 import org.osgi.service.cm.ConfigurationAdmin
+import org.osgi.service.component.ComponentConstants.COMPONENT_NAME
 import org.osgi.service.component.ComponentContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -14,6 +19,7 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
 import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
+import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
 import java.util.Collections.unmodifiableSet
@@ -27,6 +33,7 @@ import java.util.concurrent.TimeoutException
     reference = [ Reference(
         name = INSTALLER_NAME,
         service = CpkReadService::class,
+        target = SANDBOX_SERVICE_FILTER,
         cardinality = OPTIONAL,
         policy = DYNAMIC
     )]
@@ -35,11 +42,14 @@ class SandboxSetupImpl @Activate constructor(
     @Reference
     private val configAdmin: ConfigurationAdmin,
     @Reference
+    private val scr: ServiceComponentRuntime,
+    @Reference
     private val sandboxCreator: SandboxCreationService,
     private val componentContext: ComponentContext
 ) : SandboxSetup {
     companion object {
         const val INSTALLER_NAME = "installer"
+        private const val NON_SANDBOX_COMPONENT_FILTER = "(&($COMPONENT_NAME=*)(!$SANDBOX_SERVICE_FILTER))"
         private const val WAIT_MILLIS = 100L
 
         // The names of the bundles to place as public bundles in the sandbox service's platform sandbox.
@@ -67,6 +77,14 @@ class SandboxSetupImpl @Activate constructor(
             "slf4j.api"
         ))
 
+        private val REPLACEMENT_SERVICES = unmodifiableSet(setOf(
+            CpiInfoReadService::class.java,
+            CpkReadService::class.java,
+            MembershipGroupReaderProvider::class.java,
+            VirtualNodeInfoReadService::class.java
+        ).mapTo(linkedSetOf(), Class<*>::getName) + setOf(
+            "net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent"
+        ))
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
@@ -79,6 +97,9 @@ class SandboxSetupImpl @Activate constructor(
         val testBundle = bundleContext.bundle
         logger.info("Configuring sandboxes for [{}]", testBundle.symbolicName)
 
+        // We are replacing these Corda services with our own versions.
+        REPLACEMENT_SERVICES.forEach(::disableNonSandboxServices)
+
         configAdmin.getConfiguration(CpiLoader.COMPONENT_NAME)?.also { config ->
             val properties = Hashtable<String, Any?>()
             properties[CpiLoader.BASE_DIRECTORY_KEY] = baseDirectory.toString()
@@ -90,6 +111,18 @@ class SandboxSetupImpl @Activate constructor(
             bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
         }
         sandboxCreator.createPublicSandbox(publicBundles, privateBundles)
+    }
+
+    private fun disableNonSandboxServices(serviceType: String) {
+        with(componentContext) {
+            bundleContext.getAllServiceReferences(serviceType, NON_SANDBOX_COMPONENT_FILTER)?.forEach { svcRef ->
+                val componentName = svcRef.properties[COMPONENT_NAME] ?: return@forEach
+                scr.getComponentDescriptionDTO(svcRef.bundle, componentName.toString())?.also { dto ->
+                    logger.info("Found and disabling service: {}", componentName)
+                    scr.disableComponent(dto)
+                }
+            }
+        }
     }
 
     /**

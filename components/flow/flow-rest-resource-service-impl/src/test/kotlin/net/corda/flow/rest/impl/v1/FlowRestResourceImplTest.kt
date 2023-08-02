@@ -164,7 +164,8 @@ class FlowRestResourceImplTest {
             publisherFactory,
             messageFactory,
             cpiInfoReadService,
-            permissionValidationService
+            permissionValidationService,
+            mock()
         ).apply { if (initialise) (initialise(SmartConfigImpl.empty(), fatalErrorFunction)) }
     }
 

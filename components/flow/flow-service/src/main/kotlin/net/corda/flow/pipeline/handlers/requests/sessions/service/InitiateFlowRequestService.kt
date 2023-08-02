@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.handlers.requests.sessions.service
 
-import net.corda.flow.application.sessions.SessionInfo
 import java.time.Instant
+import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
@@ -99,9 +99,9 @@ class InitiateFlowRequestService @Activate constructor(
             }
         )
 
-        val sessionsNotInitiatedIds = sessionsNotInitiated.map { it.sessionId }
+        val sessionsNotInitiatedIds = sessionsNotInitiated.map { it.sessionId }.toSet()
         initiatingFlowStackItem.sessions
             .filter { it.sessionId in sessionsNotInitiatedIds }
-            .map { it.initiated = true }
+            .forEach { it.initiated = true }
     }
 }

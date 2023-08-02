@@ -2,7 +2,6 @@ package net.corda.securitymanager.internal
 
 import java.io.FilePermission
 import java.nio.file.Paths
-import java.security.AccessControlException
 import net.corda.securitymanager.SecurityManagerService
 import net.corda.testing.securitymanager.denyPermissions
 import net.corda.testing.securitymanager.grantPermissions
@@ -38,17 +37,20 @@ class CanonicalTempDirectoryPermissionsTest {
             FilePermission(canonicalTempDir.resolve("-").toString(), "read"),
         ))
 
+        @Suppress("deprecation", "removal")
         val securityManager = System.getSecurityManager() ?: fail("Security not enabled")
 
         // Check we can access a temporary file via a non-canonical path.
         val tempFile = tempDir.resolve("file.tmp")
         assertDoesNotThrow("Cannot access $tempFile") {
+            @Suppress("deprecation", "removal")
             securityManager.checkPermission(FilePermission(tempFile.toString(), "read"))
         }
 
         // Check our "deny everything else" policy works too.
         val otherFile = otherDir.resolve("path").resolve("file.txt")
-        assertThrows<AccessControlException>("Unwanted access to $otherFile") {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException>("Unwanted access to $otherFile") {
             securityManager.checkPermission(FilePermission(otherFile.toString(), "read"))
         }
     }

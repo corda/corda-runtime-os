@@ -26,11 +26,13 @@ import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.schema.configuration.MessagingConfig.Subscription.POLL_TIMEOUT
 import net.corda.utilities.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.security.Security
 
 @Suppress("LongParameterList", "Unused")
 @Component(service = [LinkManagerProcessor::class])
@@ -94,6 +96,8 @@ class LinkManagerProcessorImpl @Activate constructor(
             }
             is BootConfigEvent -> {
                 configurationReadService.bootstrapConfig(event.config)
+
+                Security.addProvider(BouncyCastleProvider())
 
                 val linkManager = LinkManager(
                     subscriptionFactory,

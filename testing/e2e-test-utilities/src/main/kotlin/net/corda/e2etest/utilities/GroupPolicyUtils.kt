@@ -10,7 +10,8 @@ private fun createCertificate(certificateResource: String) = CpiLoader::class.ja
 fun getDefaultStaticNetworkGroupPolicy(
     groupId: String,
     staticMemberNames: List<String>,
-    certificateResource : String = "certificate.pem"
+    certificateResource : String = "certificate.pem",
+    customGroupParameters: Map<String, Any> = emptyMap(),
 ): String {
     val groupPolicy = mapOf(
         "fileFormatVersion" to 1,
@@ -29,7 +30,8 @@ fun getDefaultStaticNetworkGroupPolicy(
                         "endpointUrl-1" to "http://localhost:1080",
                         "endpointProtocol-1" to 1
                     )
-                }
+                },
+                "groupParameters" to customGroupParameters
             )
         ),
         "p2pParameters" to mapOf(

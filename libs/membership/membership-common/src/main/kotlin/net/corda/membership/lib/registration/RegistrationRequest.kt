@@ -1,7 +1,7 @@
 package net.corda.membership.lib.registration
 
 import net.corda.data.membership.SignedData
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.virtualnode.HoldingIdentity
 
 /**

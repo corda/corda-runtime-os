@@ -1,6 +1,6 @@
 package net.corda.membership.lib.registration
 
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 
 object RegistrationStatusExt {
 
@@ -10,6 +10,7 @@ object RegistrationStatusExt {
                 RegistrationStatus.NEW -> 0
                 RegistrationStatus.SENT_TO_MGM -> 1
                 RegistrationStatus.RECEIVED_BY_MGM -> 2
+                RegistrationStatus.STARTED_PROCESSING_BY_MGM -> 2
                 RegistrationStatus.PENDING_MEMBER_VERIFICATION -> 3
                 RegistrationStatus.PENDING_MANUAL_APPROVAL -> 4
                 RegistrationStatus.PENDING_AUTO_APPROVAL -> 4

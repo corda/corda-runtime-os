@@ -17,20 +17,22 @@ import javax.persistence.ManyToOne
 @Entity
 @IdClass(CatKey::class)
 data class Cat(
-    @Id
-    @Column
-    val id: UUID,
-    @Id
-    @Column
-    val name: String,
-    @Column
-    val colour: String,
+    @get:Id
+    @get:Column
+    var id: UUID,
 
-    @ManyToOne(fetch= FetchType.EAGER, cascade = [CascadeType.ALL])
-    @JoinColumns(
+    @get:Id
+    @get:Column
+    var name: String,
+
+    @get:Column
+    var colour: String,
+
+    @get:ManyToOne(fetch= FetchType.EAGER, cascade = [CascadeType.ALL])
+    @get:JoinColumns(
         JoinColumn(name = "owner_id", referencedColumnName = "id")
     )
-    val owner: Owner?
+    var owner: Owner?
 ) {
     constructor() : this(id = UUID.randomUUID(), name = "", colour = "sort-of-spotty", owner = null)
 }

@@ -14,4 +14,6 @@ cordaPipeline(
     publishToMavenS3Repository: true,
     // allow publishing an installer to a download site
     publishToDownloadSiteTask: ':tools:plugins:publish',
+    // TODO - remove this when J17 is the default in the pipeline
+    javaVersion: '17'
     )

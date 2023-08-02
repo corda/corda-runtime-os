@@ -40,6 +40,11 @@ helm.sh/chart: {{ include "corda.chart" . }}
 app.kubernetes.io/version: {{ . | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{-  if .Values.commonLabels }}
+{{- range $k, $v := .Values.commonLabels }}
+{{ $k }}: {{ $v | quote }}
+{{- end }}
+{{- end }}
 {{- end }}
 
 {{/*
@@ -75,6 +80,16 @@ securityContext:
   capabilities:
     drop:
       - "ALL"
+{{- end }}
+{{- end }}
+
+{{/*
+topologySpreadConstraints to achieve high availability
+*/}}
+{{- define "corda.topologySpreadConstraints" -}}
+{{- with .Values.topologySpreadConstraints }}
+topologySpreadConstraints:
+  {{- toYaml . | nindent 2 }}
 {{- end }}
 {{- end }}
 

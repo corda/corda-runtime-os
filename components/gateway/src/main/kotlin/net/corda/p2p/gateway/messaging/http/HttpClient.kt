@@ -14,12 +14,12 @@ import io.netty.util.concurrent.ScheduledFuture
 import net.corda.lifecycle.Resource
 import net.corda.p2p.gateway.certificates.RevocationChecker.Companion.getCertCheckingParameters
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
+import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
 import java.net.URI
-import java.security.KeyStore
-import java.util.*
+import java.util.LinkedList
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
@@ -239,7 +239,10 @@ internal class HttpClient(
 
         init {
             sslConfiguration.run {
-                val pkixParams = getCertCheckingParameters(destinationInfo.trustStore, revocationCheck)
+                val pkixParams = getCertCheckingParameters(
+                    destinationInfo.trustStore.trustStore,
+                    revocationCheck,
+                )
                 trustManagerFactory.init(CertPathTrustManagerParameters(pkixParams))
             }
         }
@@ -253,7 +256,7 @@ internal class HttpClient(
                     destinationInfo.uri,
                     destinationInfo.legalName,
                     trustManagerFactory,
-                    destinationInfo.clientCertificatesKeyStore,
+                    destinationInfo.clientCertificatesKeyStore?.keyStore,
                 )
             )
             pipeline.addLast(HttpClientCodec())
@@ -274,8 +277,8 @@ internal data class DestinationInfo(
     val uri: URI,
     val sni: String,
     val legalName: X500Name?,
-    val trustStore: KeyStore,
-    val clientCertificatesKeyStore: KeyStoreWithPassword?
+    val trustStore: TrustStoresMap.TrustedCertificates,
+    val clientCertificatesKeyStore: DynamicKeyStore.ClientKeyStore?
 )
 
 typealias HttpRequestPayload = ByteArray

@@ -10,7 +10,6 @@ import java.net.Socket
 import java.net.URI
 import java.net.http.HttpResponse.BodyHandlers
 import java.nio.ByteBuffer
-import java.security.KeyStore
 import java.security.cert.X509Certificate
 import java.time.Duration
 import java.time.Instant
@@ -31,7 +30,6 @@ import net.corda.crypto.test.certificates.generation.CertificateAuthority
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.PrivateKeyWithCertificate
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
-import net.corda.crypto.test.certificates.generation.toKeystore
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.GatewayTlsCertificates
@@ -75,6 +73,7 @@ import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.p2p.gateway.messaging.http.HttpWriter
 import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.p2p.gateway.messaging.http.SniCalculator
+import net.corda.p2p.gateway.messaging.http.TrustStoresMap
 import net.corda.p2p.gateway.messaging.internal.RequestListener
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.GATEWAY_ALLOWED_CLIENT_CERTIFICATE_SUBJECTS
@@ -248,7 +247,7 @@ class GatewayIntegrationTest : TestBase() {
 
             val tmf = TrustManagerFactory
                 .getInstance(TrustManagerFactory.getDefaultAlgorithm())
-            tmf.init(truststoreKeyStore)
+            tmf.init(truststoreKeyStore.trustStore)
 
             val myTm = tmf.trustManagers.filterIsInstance(X509TrustManager::class.java).first()
 
@@ -1192,11 +1191,12 @@ class GatewayIntegrationTest : TestBase() {
     inner class DynamicKeyStore {
         private fun testClientWith(
             server: URI,
-            trustStore: KeyStore,
+            trustStorePem: String,
         ) {
+            val truststore = TrustStoresMap.TrustedCertificates(listOf(trustStorePem))
             val serverInfo = DestinationInfo(
                 server, server.host, null,
-                trustStore, null
+                truststore, null
             )
             val linkInMessage = LinkInMessage(authenticatedP2PMessage(""))
             val gatewayMessage = GatewayMessage(UUID.randomUUID().toString(), linkInMessage.payload)
@@ -1269,7 +1269,7 @@ class GatewayIntegrationTest : TestBase() {
                     .createMemoryAuthority(RSA_TEMPLATE.toFactoryDefinitions())
                 // Client should fail without trust store certificates
                 assertThrows<RuntimeException> {
-                    testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                    testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toPem())
                 }
 
                 // Publish the trust store
@@ -1279,7 +1279,7 @@ class GatewayIntegrationTest : TestBase() {
 
                 // Client should fail without any keys
                 assertThrows<RuntimeException> {
-                    testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                    testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toPem())
                 }
 
                 // Publish the first key pair
@@ -1289,7 +1289,7 @@ class GatewayIntegrationTest : TestBase() {
 
                 // Client should now pass
                 eventually {
-                    testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                    testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toPem())
                 }
 
                 // Delete the first pair
@@ -1299,7 +1299,7 @@ class GatewayIntegrationTest : TestBase() {
                 // Client should fail again...
                 eventually {
                     assertThrows<RuntimeException> {
-                        testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                        testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toPem())
                     }
                 }
 
@@ -1308,7 +1308,7 @@ class GatewayIntegrationTest : TestBase() {
 
                 // Client should now pass
                 eventually {
-                    testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                    testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toPem())
                 }
 
                 // Delete the certificates
@@ -1324,14 +1324,14 @@ class GatewayIntegrationTest : TestBase() {
                 )
                 eventually {
                     assertThrows<RuntimeException> {
-                        testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                        testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toPem())
                     }
                 }
 
                 // publish it again
                 server.publishKeyStoreCertificatesAndKeys(keyStore, aliceHoldingIdentity)
                 eventually {
-                    testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                    testClientWith(aliceAddress, firstCertificatesAuthority.caCertificate.toPem())
                 }
 
                 // Change the host
@@ -1346,7 +1346,7 @@ class GatewayIntegrationTest : TestBase() {
 
                 // Client should pass with new host
                 eventually {
-                    testClientWith(bobAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                    testClientWith(bobAddress, firstCertificatesAuthority.caCertificate.toPem())
                 }
 
                 // new trust store...
@@ -1362,13 +1362,13 @@ class GatewayIntegrationTest : TestBase() {
                 server.publishKeyStoreCertificatesAndKeys(newKeyStore, aliceHoldingIdentity)
 
                 eventually {
-                    testClientWith(bobAddress, secondCertificatesAuthority.caCertificate.toKeystore())
+                    testClientWith(bobAddress, secondCertificatesAuthority.caCertificate.toPem())
                 }
 
                 // verify that the old trust store will fail
                 eventually {
                     assertThrows<RuntimeException> {
-                        testClientWith(bobAddress, firstCertificatesAuthority.caCertificate.toKeystore())
+                        testClientWith(bobAddress, firstCertificatesAuthority.caCertificate.toPem())
                     }
                 }
 
@@ -1385,7 +1385,7 @@ class GatewayIntegrationTest : TestBase() {
                 server.publishKeyStoreCertificatesAndKeys(newerKeyStore, aliceHoldingIdentity)
 
                 eventually {
-                    testClientWith(bobAddress, thirdCertificatesAuthority.caCertificate.toKeystore())
+                    testClientWith(bobAddress, thirdCertificatesAuthority.caCertificate.toPem())
                 }
             }
         }

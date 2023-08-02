@@ -1,7 +1,7 @@
 package net.corda.p2p.linkmanager.integration.stub
 
 import net.corda.data.membership.common.ApprovalRuleType
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
