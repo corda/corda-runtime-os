@@ -13,6 +13,7 @@ dependencies {
 
     api platform("net.corda:corda-api:$cordaApiVersion")
     api 'net.corda:corda-base'
+    api 'net.corda:corda-application'
     api project(':libs:virtual-node:virtual-node-info')
     api "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     implementation 'net.corda:corda-avro-schema'

@@ -27,6 +27,7 @@ import net.corda.testing.driver.function.ThrowingConsumer
 import net.corda.testing.driver.function.ThrowingSupplier
 import net.corda.testing.driver.node.EmbeddedNodeService
 import net.corda.testing.driver.node.Member
+import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -389,7 +390,7 @@ internal class DriverDSLImpl(
 
     override fun runFlow(
         virtualNodeInfo: VirtualNodeInfo,
-        flowClass: Class<*>,
+        flowClass: Class<out ClientStartableFlow>,
         flowArgMapper: ThrowingSupplier<String>
     ): String? {
         return FlowRunner(this).runFlow(virtualNodeInfo, flowClass, flowArgMapper, TIMEOUT)

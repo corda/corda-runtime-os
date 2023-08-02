@@ -6,6 +6,7 @@ import com.r3.corda.demo.mandelbrot.RequestMessage
 import java.util.concurrent.TimeUnit.MINUTES
 import java.util.stream.Stream
 import net.corda.testing.driver.DriverNodes
+import net.corda.testing.driver.runFlow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
@@ -57,14 +58,14 @@ class FlowDriverTest {
         }
 
         val aliceResult = driver.let { dsl ->
-            dsl.runFlow(mandelbrot.single { it.holdingIdentity.x500Name == alice }, CalculateBlockFlow::class.java) {
+            dsl.runFlow<CalculateBlockFlow>(mandelbrot.single { it.holdingIdentity.x500Name == alice }) {
                 jsonMapper.writeValueAsString(request)
             }
         } ?: fail("aliceResult must not be null")
         logger.info("Alice Mandelbrot Block={}", aliceResult)
 
         val bobResult = driver.let { dsl ->
-            dsl.runFlow(mandelbrot.single { it.holdingIdentity.x500Name == bob }, CalculateBlockFlow::class.java) {
+            dsl.runFlow<CalculateBlockFlow>(mandelbrot.single { it.holdingIdentity.x500Name == bob }) {
                 jsonMapper.writeValueAsString(request)
             }
         } ?: fail("bobResult must not be null")

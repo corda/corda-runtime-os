@@ -27,7 +27,10 @@ import net.corda.testing.driver.sandbox.VirtualNodeLoader.Companion.VNODE_LOADER
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
+import org.osgi.framework.Bundle
 import org.osgi.framework.Constants.FRAMEWORK_STORAGE
+import org.osgi.framework.wiring.BundleRevision.PACKAGE_NAMESPACE
+import org.osgi.framework.wiring.BundleWiring
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.ComponentConstants.COMPONENT_NAME
 import org.osgi.service.component.ComponentContext
@@ -69,6 +72,8 @@ class EmbeddedNodeServiceImpl @Activate constructor(
         private const val NON_DRIVER_COMPONENT_FILTER = "(&($COMPONENT_NAME=*)(!$DRIVER_SERVICE_FILTER))"
         private const val VNODE_LOADER_FILTER = "($COMPONENT_NAME=$VNODE_LOADER_NAME)"
         private const val DRIVER_CACHE_NAME = "corda-driver-cache"
+        private const val CORDA_API_PACKAGES = "net.corda.v5."
+        private const val CORDA_API_HEADER = "Corda-Api"
 
         // The names of the bundles to place as public bundles in the sandbox service's platform sandbox.
         private val PLATFORM_PUBLIC_BUNDLE_NAMES: Set<String> = unmodifiableSet(setOf(
@@ -76,17 +81,6 @@ class EmbeddedNodeServiceImpl @Activate constructor(
             "com.esotericsoftware.reflectasm",
             "javax.persistence-api",
             "jcl.over.slf4j",
-            "net.corda.application",
-            "net.corda.base",
-            "net.corda.crypto",
-            "net.corda.crypto-extensions",
-            "net.corda.ledger-common",
-            "net.corda.ledger-consensual",
-            "net.corda.ledger-utxo",
-            "net.corda.membership",
-            "net.corda.notary-plugin",
-            "net.corda.persistence",
-            "net.corda.serialization",
             "org.apache.aries.spifly.dynamic.framework.extension",
             "org.apache.felix.framework",
             "org.hibernate.orm.core",
@@ -152,12 +146,20 @@ class EmbeddedNodeServiceImpl @Activate constructor(
         }
 
         val (publicBundles, privateBundles) = bundleContext.bundles.partition { bundle ->
-            bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
+            bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES || bundle.isCordaApi
         }
         sandboxCreator.createPublicSandbox(publicBundles, privateBundles)
 
         virtualNodeService = serviceFactory.getService(VirtualNodeService::class.java, null, timeout)
     }
+
+    private val Bundle.isCordaApi: Boolean
+        get() = !isFragment && headers[CORDA_API_HEADER] != null && hasCordaApiPackage
+
+    private val Bundle.hasCordaApiPackage: Boolean
+        get() = adapt(BundleWiring::class.java).getCapabilities(PACKAGE_NAMESPACE).any { capability ->
+            capability.attributes[PACKAGE_NAMESPACE].let { it != null && it.toString().startsWith(CORDA_API_PACKAGES) }
+        }
 
     private fun disableNonDriverServices(serviceType: Class<*>) {
         with(componentContext) {

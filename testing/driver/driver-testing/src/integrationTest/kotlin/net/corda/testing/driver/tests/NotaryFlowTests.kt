@@ -5,6 +5,7 @@ import com.r3.corda.testing.testflows.NonValidatingNotaryTestFlow
 import java.util.concurrent.TimeUnit.MINUTES
 import net.corda.testing.driver.DriverNodes
 import net.corda.testing.driver.node.FlowErrorException
+import net.corda.testing.driver.runFlow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
@@ -49,7 +50,7 @@ class NotaryFlowTests {
     @Test
     fun `non-validating plugin executes successfully when using issuance transaction`() {
         val flowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, NonValidatingNotaryTestFlow::class.java) {
+            dsl.runFlow<NonValidatingNotaryTestFlow>(aliceCorDapp) {
                 val request = IssueStatesParameters(outputStateCount = 3)
                 jsonMapper.writeValueAsString(request)
             }
@@ -66,7 +67,7 @@ class NotaryFlowTests {
     fun `non-validating plugin returns error when time window invalid`() {
         val ex = assertThrows<FlowErrorException> {
             driver.let { dsl ->
-                dsl.runFlow(aliceCorDapp, NonValidatingNotaryTestFlow::class.java) {
+                dsl.runFlow<NonValidatingNotaryTestFlow>(aliceCorDapp) {
                     val request = IssueStatesParameters(
                         outputStateCount = 3,
                         timeWindowLowerBoundOffsetMs = -2000,
@@ -86,7 +87,7 @@ class NotaryFlowTests {
     fun `non-validating plugin executes successfully and returns signatures when consuming a valid transaction`() {
         // 1. Issue 1 state
         val issuanceFlowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, NonValidatingNotaryTestFlow::class.java) {
+            dsl.runFlow<NonValidatingNotaryTestFlow>(aliceCorDapp) {
                 val request = IssueStatesParameters(outputStateCount = 1)
                 jsonMapper.writeValueAsString(request)
             }
@@ -107,7 +108,7 @@ class NotaryFlowTests {
 
         // 4. Consume one of the issued states as an input state
         val consumeFlowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, NonValidatingNotaryTestFlow::class.java) {
+            dsl.runFlow<NonValidatingNotaryTestFlow>(aliceCorDapp) {
                 val request = ConsumeStatesParameters(issuedStates)
                 writeAsFlatMap(request)
             }
@@ -125,7 +126,7 @@ class NotaryFlowTests {
     fun `non-validating plugin returns error on double spend`() {
         // 1. Issue 1 state
         val issuanceFlowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, NonValidatingNotaryTestFlow::class.java) {
+            dsl.runFlow<NonValidatingNotaryTestFlow>(aliceCorDapp) {
                 val request = IssueStatesParameters(outputStateCount = 1)
                 jsonMapper.writeValueAsString(request)
             }
@@ -146,7 +147,7 @@ class NotaryFlowTests {
         val toConsume = issuanceResult["issuedStateRefs"] as List<String>
 
         val firstConsumeFlowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, NonValidatingNotaryTestFlow::class.java) {
+            dsl.runFlow<NonValidatingNotaryTestFlow>(aliceCorDapp) {
                 val request = ConsumeStatesParameters(toConsume)
                 writeAsFlatMap(request)
             }
@@ -156,7 +157,7 @@ class NotaryFlowTests {
         // 5. Try to spend the state again, and expect the error
         val ex = assertThrows<FlowErrorException> {
             driver.let { dsl ->
-                dsl.runFlow(aliceCorDapp, NonValidatingNotaryTestFlow::class.java) {
+                dsl.runFlow<NonValidatingNotaryTestFlow>(aliceCorDapp) {
                     val request = ConsumeStatesParameters(toConsume)
                     writeAsFlatMap(request)
                 }
@@ -175,7 +176,7 @@ class NotaryFlowTests {
 
         // 1. Issue 1 state
         val issuanceFlowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, NonValidatingNotaryTestFlow::class.java) {
+            dsl.runFlow<NonValidatingNotaryTestFlow>(aliceCorDapp) {
                 val request = IssueStatesParameters(outputStateCount = 1)
                 jsonMapper.writeValueAsString(request)
             }
@@ -197,7 +198,7 @@ class NotaryFlowTests {
         // 4. Spend a valid state and reference an unknown state
         val ex = assertThrows<FlowErrorException> {
             driver.let { dsl ->
-                dsl.runFlow(aliceCorDapp, NonValidatingNotaryTestFlow::class.java) {
+                dsl.runFlow<NonValidatingNotaryTestFlow>(aliceCorDapp) {
                     val request = ConsumeStatesParameters(
                         inputStateRefs = issuedStates,
                         referenceStateRefs = listOf(unknownStateRef)
@@ -216,7 +217,7 @@ class NotaryFlowTests {
     fun `non-validating plugin returns error when using the same state for input and ref`() {
         // 1. Issue 1 state
         val issuanceFlowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, NonValidatingNotaryTestFlow::class.java) {
+            dsl.runFlow<NonValidatingNotaryTestFlow>(aliceCorDapp) {
                 val request = IssueStatesParameters(outputStateCount = 1)
                 jsonMapper.writeValueAsString(request)
             }
@@ -240,7 +241,7 @@ class NotaryFlowTests {
         // to spend it and reference at the same time
         val ex = assertThrows<FlowErrorException> {
             driver.let { dsl ->
-                dsl.runFlow(aliceCorDapp, NonValidatingNotaryTestFlow::class.java) {
+                dsl.runFlow<NonValidatingNotaryTestFlow>(aliceCorDapp) {
                     val request = ConsumeStatesParameters(
                         inputStateRefs = issuedStates,
                         referenceStateRefs = issuedStates
@@ -262,7 +263,7 @@ class NotaryFlowTests {
 
         val ex = assertThrows<FlowErrorException> {
             driver.let { dsl ->
-                dsl.runFlow(aliceCorDapp, NonValidatingNotaryTestFlow::class.java) {
+                dsl.runFlow<NonValidatingNotaryTestFlow>(aliceCorDapp) {
                     val request = ConsumeStatesParameters(
                         inputStateRefs = listOf(unknownStateRef),
                         referenceStateRefs = emptyList()
@@ -280,7 +281,7 @@ class NotaryFlowTests {
     fun `non-validating plugin returns error when referencing spent state`() {
         // 1. Issue 2 states
         val issuanceFlowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, NonValidatingNotaryTestFlow::class.java) {
+            dsl.runFlow<NonValidatingNotaryTestFlow>(aliceCorDapp) {
                 val request = IssueStatesParameters(outputStateCount = 2)
                 jsonMapper.writeValueAsString(request)
             }
@@ -301,7 +302,7 @@ class NotaryFlowTests {
 
         // 4. Spend the issued state
         val firstConsumeFlowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, NonValidatingNotaryTestFlow::class.java) {
+            dsl.runFlow<NonValidatingNotaryTestFlow>(aliceCorDapp) {
                 val request = ConsumeStatesParameters(
                     inputStateRefs = listOf(issuedStates[0]),
                     referenceStateRefs = emptyList()
@@ -316,7 +317,7 @@ class NotaryFlowTests {
         // it because it's easier to do with `consumeStatesAndValidateResult`.
         val ex = assertThrows<FlowErrorException> {
             driver.let { dsl ->
-                dsl.runFlow(aliceCorDapp, NonValidatingNotaryTestFlow::class.java) {
+                dsl.runFlow<NonValidatingNotaryTestFlow>(aliceCorDapp) {
                     val request = ConsumeStatesParameters(
                         inputStateRefs = listOf(issuedStates[1]),
                         referenceStateRefs = listOf(issuedStates[0])

@@ -3,6 +3,7 @@ package net.corda.testing.driver.tests
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.r3.corda.demo.utxo.FindTransactionFlow
 import com.r3.corda.demo.utxo.FindTransactionParameters
 import com.r3.corda.demo.utxo.FindTransactionResponse
@@ -18,6 +19,7 @@ import com.r3.corda.demo.utxo.UtxoDemoFlow
 import java.util.concurrent.TimeUnit.MINUTES
 import net.corda.crypto.core.parseSecureHash
 import net.corda.testing.driver.DriverNodes
+import net.corda.testing.driver.runFlow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
@@ -83,7 +85,7 @@ class UtxoLedgerTests {
         // Issue some states and consume them
         for (i in 0 until 2) {
             val inputResult = driver.let { dsl ->
-                dsl.runFlow(utxoLedger[alice] ?: fail("Missing vNode for Alice"), UtxoDemoFlow::class.java) {
+                dsl.runFlow<UtxoDemoFlow>(utxoLedger[alice] ?: fail("Missing vNode for Alice")) {
                     val request = UtxoDemoFlow.InputMessage(
                         input = TEST_INPUT,
                         members = listOf(bob.toString(), charlie.toString()),
@@ -97,7 +99,7 @@ class UtxoLedgerTests {
         }
 
         val customQueryResult = driver.let { dsl ->
-            dsl.runFlow(utxoLedger[alice] ?: fail("Missing vNode for Alice"), UtxoCustomQueryDemoFlow::class.java) {
+            dsl.runFlow<UtxoCustomQueryDemoFlow>(utxoLedger[alice] ?: fail("Missing vNode for Alice")) {
                 val request = CustomQueryFlowRequest(
                     offset = 0,
                     limit = 100,
@@ -108,7 +110,7 @@ class UtxoLedgerTests {
         } ?: fail("customQueryResult must not be null")
         logger.info("customQueryResult: {}", customQueryResult)
 
-        val customQueryFlowResponse = jsonMapper.readValue(customQueryResult, CustomQueryFlowResponse::class.java)
+        val customQueryFlowResponse = jsonMapper.readValue<CustomQueryFlowResponse?>(customQueryResult)
             ?: fail("CustomQueryFlowResponse is null")
         assertThat(customQueryFlowResponse.results).hasSizeGreaterThan(1)
     }
@@ -116,7 +118,7 @@ class UtxoLedgerTests {
     @Test
     fun `create a transaction containing states and finalize it then evolve it`() {
         val inputResult = driver.let { dsl ->
-            dsl.runFlow(utxoLedger[alice] ?: fail("Missing vNode for Alice"), UtxoDemoFlow::class.java) {
+            dsl.runFlow<UtxoDemoFlow>(utxoLedger[alice] ?: fail("Missing vNode for Alice")) {
                 val request = UtxoDemoFlow.InputMessage(
                     input = TEST_INPUT,
                     members = listOf(bob.toString(), charlie.toString()),
@@ -130,14 +132,14 @@ class UtxoLedgerTests {
 
         for (member in listOf(alice, bob, charlie)) {
             val flowResult = driver.let { dsl ->
-                dsl.runFlow(utxoLedger[member] ?: fail("Missing vNode for ${member.commonName}"), FindTransactionFlow::class.java) {
+                dsl.runFlow<FindTransactionFlow>(utxoLedger[member] ?: fail("Missing vNode for ${member.commonName}")) {
                     val request = FindTransactionParameters(txnId.toString())
                     jsonMapper.writeValueAsString(request)
                 }
             } ?: fail("flowResult must not be null")
             logger.info("{}: {}", member.commonName, flowResult)
 
-            val transactionResponse = jsonMapper.readValue(flowResult, FindTransactionResponse::class.java)
+            val transactionResponse = jsonMapper.readValue<FindTransactionResponse?>(flowResult)
                 ?: fail("FindTransactionResponse for ${member.commonName} is null")
             assertThat(transactionResponse.errorMessage).isNull()
 
@@ -150,7 +152,7 @@ class UtxoLedgerTests {
         }
 
         val evolveResult = driver.let { dsl ->
-            dsl.runFlow(utxoLedger[bob] ?: fail("Missing vNode for Bob"), UtxoDemoEvolveFlow::class.java) {
+            dsl.runFlow<UtxoDemoEvolveFlow>(utxoLedger[bob] ?: fail("Missing vNode for Bob")) {
                 val request = UtxoDemoEvolveFlow.EvolveMessage(
                     update = EVOLVED_INPUT,
                     transactionId = txnId.toString(),
@@ -161,7 +163,7 @@ class UtxoLedgerTests {
         } ?: fail("evolveResult must not be null")
         logger.info("UTXO Evolve Demo={}", evolveResult)
 
-        val evolveFlowResponse = jsonMapper.readValue(evolveResult, UtxoDemoEvolveFlow.EvolveResponse::class.java)
+        val evolveFlowResponse = jsonMapper.readValue<UtxoDemoEvolveFlow.EvolveResponse>(evolveResult)
         assertThat(evolveFlowResponse.errorMessage).isNull()
 
         val evolveTxnId = parseSecureHash(evolveFlowResponse.transactionId
@@ -170,14 +172,14 @@ class UtxoLedgerTests {
         // Peek into the last transaction
 
         val peekResult = driver.let { dsl ->
-            dsl.runFlow(utxoLedger[bob] ?: fail("Missing vNode for Bob"), PeekTransactionFlow::class.java) {
+            dsl.runFlow<PeekTransactionFlow>(utxoLedger[bob] ?: fail("Missing vNode for Bob")) {
                 val request = PeekTransactionParameters(evolveTxnId.toString())
                 jsonMapper.writeValueAsString(request)
             }
         } ?: fail("peekResult must not be null")
         logger.info("UTXO Peek Transaction={}", peekResult)
 
-        val peekTransactionResponse = jsonMapper.readValue(peekResult, PeekTransactionResponse::class.java)
+        val peekTransactionResponse = jsonMapper.readValue<PeekTransactionResponse>(peekResult)
 
         assertThat(peekTransactionResponse.errorMessage).isNull()
         assertThat(peekTransactionResponse.inputs)
@@ -193,7 +195,7 @@ class UtxoLedgerTests {
     @Test
     fun `creating a transaction that fails custom validation causes finality to fail`() {
         val inputResult = driver.let { dsl ->
-            dsl.runFlow(utxoLedger[alice] ?: fail("Missing vNode for Alice"), UtxoDemoFlow::class.java) {
+            dsl.runFlow<UtxoDemoFlow>(utxoLedger[alice] ?: fail("Missing vNode for Alice")) {
                 val request = UtxoDemoFlow.InputMessage(
                     input = FAIL_INPUT,
                     members = listOf(bob.toString(), charlie.toString()),

@@ -6,6 +6,7 @@ import java.util.Set;
 import net.corda.testing.driver.function.ThrowingConsumer;
 import net.corda.testing.driver.function.ThrowingSupplier;
 import net.corda.testing.driver.node.Member;
+import net.corda.v5.application.flows.ClientStartableFlow;
 import net.corda.v5.base.annotations.DoNotImplement;
 import net.corda.v5.base.types.MemberX500Name;
 import net.corda.virtualnode.VirtualNodeInfo;
@@ -22,7 +23,7 @@ public interface DriverDSL {
     @Nullable
     String runFlow(
         @NotNull VirtualNodeInfo virtualNodeInfo,
-        @NotNull Class<?> flowClass,
+        @NotNull Class<? extends ClientStartableFlow> flowClass,
         @NotNull ThrowingSupplier<String> flowArgMapper
     );
 

@@ -3,6 +3,7 @@ package net.corda.testing.driver.tests
 import com.r3.corda.testing.smoketests.flow.AmqpSerializationTestFlow
 import java.util.concurrent.TimeUnit.MINUTES
 import net.corda.testing.driver.DriverNodes
+import net.corda.testing.driver.runFlow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
@@ -44,7 +45,7 @@ class AMQPSerializationTests {
         }
 
         val flowResult = driver.let { dsl ->
-            dsl.runFlow(testCorDapp, AmqpSerializationTestFlow::class.java) { "" }
+            dsl.runFlow<AmqpSerializationTestFlow>(testCorDapp) { "" }
         } ?: fail("flowResult must not be null")
         logger.info("AMQPSerializationTest result={}", flowResult)
 

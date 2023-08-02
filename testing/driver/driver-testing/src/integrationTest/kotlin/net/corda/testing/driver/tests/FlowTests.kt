@@ -6,6 +6,7 @@ import com.r3.corda.testing.smoketests.flow.messages.RpcSmokeTestInput
 import java.util.UUID
 import java.util.concurrent.TimeUnit.MINUTES
 import net.corda.testing.driver.DriverNodes
+import net.corda.testing.driver.runFlow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
@@ -49,7 +50,7 @@ class FlowTests {
     @Test
     fun `create an initiated session in an initiating flow and pass it to a inline subflow`() {
         val flowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, RpcSmokeTestFlow::class.java) {
+            dsl.runFlow<RpcSmokeTestFlow>(aliceCorDapp) {
                 val request = RpcSmokeTestInput().apply {
                     command = "subflow_passed_in_initiated_session"
                     data = mapOf(
@@ -70,7 +71,7 @@ class FlowTests {
     @Test
     fun `create an uninitiated session in an initiating flow and pass it to a inline subflow`() {
         val flowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, RpcSmokeTestFlow::class.java) {
+            dsl.runFlow<RpcSmokeTestFlow>(aliceCorDapp) {
                 val request = RpcSmokeTestInput().apply {
                     command = "subflow_passed_in_non_initiated_session"
                     data = mapOf(
@@ -91,7 +92,7 @@ class FlowTests {
     @Test
     fun `initiate multiple sessions and exercise the flow messaging apis`() {
         val flowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, RpcSmokeTestFlow::class.java) {
+            dsl.runFlow<RpcSmokeTestFlow>(aliceCorDapp) {
                 val request = RpcSmokeTestInput().apply {
                     command = "flow_messaging_apis"
                     data = mapOf("sessions" to bob.toString())
@@ -109,7 +110,7 @@ class FlowTests {
     @Test
     fun `crypto - sign and verify bytes`() {
         val flowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, RpcSmokeTestFlow::class.java) {
+            dsl.runFlow<RpcSmokeTestFlow>(aliceCorDapp) {
                 val request = RpcSmokeTestInput().apply {
                     command = "crypto_sign_and_verify"
                     data = mapOf("memberX500" to alice.toString())
@@ -127,7 +128,7 @@ class FlowTests {
     @Test
     fun `crypto - verify invalid signature`() {
         val flowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, RpcSmokeTestFlow::class.java) {
+            dsl.runFlow<RpcSmokeTestFlow>(aliceCorDapp) {
                 val request = RpcSmokeTestInput().apply {
                     command = "crypto_verify_invalid_signature"
                     data = mapOf("memberX500" to alice.toString())
@@ -146,7 +147,7 @@ class FlowTests {
     fun `serialize and deserialize an object`() {
         val dataToSerialize = "serialize this"
         val flowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, RpcSmokeTestFlow::class.java) {
+            dsl.runFlow<RpcSmokeTestFlow>(aliceCorDapp) {
                 val request = RpcSmokeTestInput().apply {
                     command = "serialization"
                     data = mapOf("data" to dataToSerialize)
@@ -164,7 +165,7 @@ class FlowTests {
     @Test
     fun `json serialization`() {
         val flowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, RpcSmokeTestFlow::class.java) {
+            dsl.runFlow<RpcSmokeTestFlow>(aliceCorDapp) {
                 val request = RpcSmokeTestInput().apply {
                     command = "json_serialization"
                     data = mapOf("vnode" to bob.toString())
@@ -208,7 +209,7 @@ class FlowTests {
         val id2 = UUID.randomUUID()
 
         val flowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, RpcSmokeTestFlow::class.java) {
+            dsl.runFlow<RpcSmokeTestFlow>(aliceCorDapp) {
                 val request = RpcSmokeTestInput().apply {
                     command = "persistence_persist_bulk"
                     data = mapOf("ids" to "$id1;$id2")
@@ -244,7 +245,7 @@ class FlowTests {
         persistDog(id2)
 
         val flowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, RpcSmokeTestFlow::class.java) {
+            dsl.runFlow<RpcSmokeTestFlow>(aliceCorDapp) {
                 val request = RpcSmokeTestInput().apply {
                     command = "persistence_merge_bulk"
                     data = mapOf(
@@ -268,7 +269,7 @@ class FlowTests {
         persistDog(id)
 
         val flowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, RpcSmokeTestFlow::class.java) {
+            dsl.runFlow<RpcSmokeTestFlow>(aliceCorDapp) {
                 val request = RpcSmokeTestInput().apply {
                     command = "persistence_delete"
                     data = mapOf("id" to id.toString())
@@ -291,7 +292,7 @@ class FlowTests {
         persistDog(id2)
 
         val flowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, RpcSmokeTestFlow::class.java) {
+            dsl.runFlow<RpcSmokeTestFlow>(aliceCorDapp) {
                 val request = RpcSmokeTestInput().apply {
                     command = "persistence_delete_bulk"
                     data = mapOf("ids" to "$id1;$id2")
@@ -314,7 +315,7 @@ class FlowTests {
         mergeDog(id, newName)
 
         val flowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, RpcSmokeTestFlow::class.java) {
+            dsl.runFlow<RpcSmokeTestFlow>(aliceCorDapp) {
                 val request = RpcSmokeTestInput().apply {
                     command = "persistence_find"
                     data = mapOf("id" to id.toString())
@@ -341,7 +342,7 @@ class FlowTests {
         mergeDog(id2, newName2)
 
         val flowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, RpcSmokeTestFlow::class.java) {
+            dsl.runFlow<RpcSmokeTestFlow>(aliceCorDapp) {
                 val request = RpcSmokeTestInput().apply {
                     command = "persistence_find_bulk"
                     data = mapOf("ids" to "$id1;$id2")
@@ -367,7 +368,7 @@ class FlowTests {
         persistDog(UUID.randomUUID())
 
         val flowResult = driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, RpcSmokeTestFlow::class.java) {
+            dsl.runFlow<RpcSmokeTestFlow>(aliceCorDapp) {
                 val request = RpcSmokeTestInput().apply {
                     command = "persistence_findall"
                 }
@@ -383,7 +384,7 @@ class FlowTests {
 
     private fun persistDog(id: UUID): String {
         return driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, RpcSmokeTestFlow::class.java) {
+            dsl.runFlow<RpcSmokeTestFlow>(aliceCorDapp) {
                 val request = RpcSmokeTestInput().apply {
                     command = "persistence_persist"
                     data = mapOf("id" to id.toString())
@@ -395,7 +396,7 @@ class FlowTests {
 
     private fun mergeDog(id: UUID, name: String): String {
         return driver.let { dsl ->
-            dsl.runFlow(aliceCorDapp, RpcSmokeTestFlow::class.java) {
+            dsl.runFlow<RpcSmokeTestFlow>(aliceCorDapp) {
                 val request = RpcSmokeTestInput().apply {
                     command = "persistence_merge"
                     data = mapOf(

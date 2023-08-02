@@ -3,6 +3,7 @@ package net.corda.testing.driver.tests
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.r3.corda.demo.consensual.ConsensualDemoFlow
 import com.r3.corda.demo.consensual.FindTransactionFlow
 import com.r3.corda.demo.consensual.FindTransactionParameters
@@ -11,6 +12,7 @@ import com.r3.corda.demo.consensual.TestConsensualStateResult
 import java.util.concurrent.TimeUnit.MINUTES
 import net.corda.crypto.core.parseSecureHash
 import net.corda.testing.driver.DriverNodes
+import net.corda.testing.driver.runFlow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
@@ -70,7 +72,7 @@ class ConsensualLedgerTests {
     @Test
     fun `create a transaction containing states and finalize it`() {
         val inputResult = driver.let { dsl ->
-            dsl.runFlow(consensualLedger[alice] ?: fail("Missing vNode for Alice"), ConsensualDemoFlow::class.java) {
+            dsl.runFlow<ConsensualDemoFlow>(consensualLedger[alice] ?: fail("Missing vNode for Alice")) {
                 val request = ConsensualDemoFlow.InputMessage(TEST_INPUT, listOf(bob.toString(), charlie.toString()))
                 jsonMapper.writeValueAsString(request)
             }
@@ -80,14 +82,14 @@ class ConsensualLedgerTests {
 
         for (member in listOf(alice, bob, charlie)) {
             val flowResult = driver.let { dsl ->
-                dsl.runFlow(consensualLedger[member] ?: fail("Missing vNode for ${member.commonName}"), FindTransactionFlow::class.java) {
+                dsl.runFlow<FindTransactionFlow>(consensualLedger[member] ?: fail("Missing vNode for ${member.commonName}")) {
                     val request = FindTransactionParameters(txnId.toString())
                     jsonMapper.writeValueAsString(request)
                 }
             } ?: fail("flowResult must not be null")
             logger.info("{}: {}", member.commonName, flowResult)
 
-            val transactionResponse = jsonMapper.readValue(flowResult, FindTransactionResponse::class.java)
+            val transactionResponse = jsonMapper.readValue<FindTransactionResponse?>(flowResult)
                 ?: fail("FindTransactionResponse for ${member.commonName} is null")
             assertThat(transactionResponse.errorMessage).isNull()
 
@@ -103,7 +105,7 @@ class ConsensualLedgerTests {
     @Test
     fun `creating a transaction that fails custom validation causes finality to fail`() {
         val inputResult = driver.let { dsl ->
-            dsl.runFlow(consensualLedger[alice] ?: fail("Missing vNode for Alice"), ConsensualDemoFlow::class.java) {
+            dsl.runFlow<ConsensualDemoFlow>(consensualLedger[alice] ?: fail("Missing vNode for Alice")) {
                 val request = ConsensualDemoFlow.InputMessage(FAIL_INPUT, listOf(bob.toString(), charlie.toString()))
                 jsonMapper.writeValueAsString(request)
             }
