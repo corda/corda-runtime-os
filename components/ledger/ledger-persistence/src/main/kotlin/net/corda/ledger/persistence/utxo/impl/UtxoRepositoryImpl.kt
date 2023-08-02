@@ -109,8 +109,8 @@ class UtxoRepositoryImpl @Activate constructor(
         return entityManager.createNativeQuery(
             """
                 SELECT tc_output.transaction_id, 
-				tc_output.leaf_idx, 
-				tc_output_info.data as output_info_data,
+			    tc_output.leaf_idx, 
+			    tc_output_info.data as output_info_data,
                 tc_output.data AS output_data FROM 
                 {h-schema}utxo_visible_transaction_state AS rts
                 JOIN {h-schema}utxo_transaction_component AS tc_output_info
@@ -125,7 +125,7 @@ class UtxoRepositoryImpl @Activate constructor(
                     ON ts.transaction_id = tc_output.transaction_id
                 AND rts.consumed IS NULL
                 AND ts.status = :verified
-                ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx, tc_output.group_idx
+                ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx
             """,
             Tuple::class.java
         )
@@ -162,7 +162,7 @@ class UtxoRepositoryImpl @Activate constructor(
                 AND (tc_output.transaction_id||':'|| tc_output.leaf_idx) in (:stateRefs)
                 AND ts.status = :verified
                 AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
-                ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx, tc_output.group_idx
+                ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx
             """,
             Tuple::class.java
         )
