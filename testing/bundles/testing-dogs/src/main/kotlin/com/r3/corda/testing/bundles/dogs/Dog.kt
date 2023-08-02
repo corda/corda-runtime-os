@@ -20,16 +20,18 @@ import javax.persistence.NamedQuery
     NamedQuery(name = "Dog.count", query = "SELECT COUNT(1) FROM Dog")
 )
 data class Dog(
-    @Id
+    @get:Id
+    @get:Column
+    var id: UUID,
+
     @Column
-    val id: UUID,
+    var name: String,
+
     @Column
-    val name: String,
+    var birthdate: Instant,
+
     @Column
-    val birthdate: Instant,
-    @Column
-    val owner: String?
+    var owner: String?
 ) {
     constructor() : this(id = UUID.randomUUID(), name = "", birthdate = Instant.now(), owner = "")
 }
-

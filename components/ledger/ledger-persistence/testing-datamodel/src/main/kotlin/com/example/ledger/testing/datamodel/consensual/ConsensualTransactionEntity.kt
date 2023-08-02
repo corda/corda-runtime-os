@@ -16,34 +16,34 @@ import net.corda.v5.base.annotations.CordaSerializable
 @Entity
 @Table(name = "consensual_transaction")
 data class ConsensualTransactionEntity(
-    @Id
-    @Column(name = "id", nullable = false, updatable = false)
-    val id: String,
+    @get:Id
+    @get:Column(name = "id", nullable = false, updatable = false)
+    var id: String,
 
-    @Column(name = "privacy_salt", nullable = false)
-    val privacySalt: ByteArray,
+    @get:Column(name = "privacy_salt", nullable = false)
+    var privacySalt: ByteArray,
 
-    @Column(name = "account_id", nullable = false)
-    val accountId: String,
+    @get:Column(name = "account_id", nullable = false)
+    var accountId: String,
 
-    @Column(name = "created", nullable = false)
-    val created: Instant,
+    @get:Column(name = "created", nullable = false)
+    var created: Instant,
 ) {
-    @OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
-    val components: MutableList<ConsensualTransactionComponentEntity> = mutableListOf()
+    @get:OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var components: MutableList<ConsensualTransactionComponentEntity> = mutableListOf()
 
-    @OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
-    val statuses: MutableList<ConsensualTransactionStatusEntity> = mutableListOf()
+    @get:OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var statuses: MutableList<ConsensualTransactionStatusEntity> = mutableListOf()
 
-    @OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
-    val signatures: MutableList<ConsensualTransactionSignatureEntity> = mutableListOf()
+    @get:OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var signatures: MutableList<ConsensualTransactionSignatureEntity> = mutableListOf()
 
-    @ManyToMany(cascade = [CascadeType.PERSIST, CascadeType.MERGE])
-    @JoinTable(name = "consensual_transaction_cpk",
+    @get:ManyToMany(cascade = [CascadeType.PERSIST, CascadeType.MERGE])
+    @get:JoinTable(name = "consensual_transaction_cpk",
         joinColumns = [JoinColumn(name = "transaction_id")],
         inverseJoinColumns = [JoinColumn(name = "file_checksum")]
     )
-    val cpks: MutableSet<ConsensualCpkEntity> = mutableSetOf()
+    var cpks: MutableSet<ConsensualCpkEntity> = mutableSetOf()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

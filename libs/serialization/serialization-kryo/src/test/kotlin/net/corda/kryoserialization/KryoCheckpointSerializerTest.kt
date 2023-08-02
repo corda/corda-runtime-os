@@ -7,6 +7,7 @@ import com.esotericsoftware.kryo.ClassResolver
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.util.MapReferenceResolver
 import net.corda.data.flow.state.checkpoint.FlowStackItem
+import net.corda.kryoserialization.KryoCheckpointSerializerTest.SerializableFunction
 import net.corda.kryoserialization.TestClass.Companion.TEST_INT
 import net.corda.kryoserialization.TestClass.Companion.TEST_STRING
 import net.corda.kryoserialization.resolver.CordaClassResolver
@@ -34,7 +35,7 @@ import java.util.LinkedList
 import java.util.concurrent.Executors
 import java.util.function.Function
 
-internal class KryoCheckpointSerializerTest {
+class KryoCheckpointSerializerTest {
 
     @Test
     fun `serialization of a simple object back a forth`() {

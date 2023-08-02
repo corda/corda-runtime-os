@@ -18,15 +18,15 @@ import javax.persistence.Table
 class RoleUserAssociation(
     @Id
     @Column(name = "id", nullable = false, updatable = false)
-    val id: String,
+    var id: String,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id")
-    val role: Role,
+    var role: Role,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    val user: User,
+    var user: User,
 
     @Column(name = "update_ts", nullable = false)
     var updateTimestamp: Instant,

@@ -48,8 +48,6 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO
 import org.slf4j.LoggerFactory
-import java.security.AccessControlContext
-import java.security.AccessControlException
 import java.time.Duration
 import java.util.Collections.singleton
 import java.util.Collections.unmodifiableSet
@@ -255,7 +253,8 @@ class SandboxGroupContextServiceImpl @Activate constructor(
 
         // Access control context for the sandbox's "main" bundles.
         // All "main" bundles are assumed to have equal access rights.
-        val accessControlContext = bundles.first().adapt(AccessControlContext::class.java)
+        @Suppress("deprecation", "removal")
+        val accessControlContext = bundles.first().adapt(java.security.AccessControlContext::class.java)
 
         val sandboxGroupType = vnc.sandboxGroupType
         val sandboxBundles = bundles + getCordaSystemBundles(sandboxGroupType)
@@ -748,12 +747,13 @@ fun closeSafely(closeable: AutoCloseable) {
 /**
  * Check whether this [AccessControlContext] is allowed to GET service [serviceType].
  */
-private fun AccessControlContext.checkServicePermission(serviceType: String): Boolean {
+@Suppress("deprecation", "removal")
+private fun java.security.AccessControlContext.checkServicePermission(serviceType: String): Boolean {
     val sm = System.getSecurityManager()
     if (sm != null) {
         try {
             sm.checkPermission(ServicePermission(serviceType, GET), this)
-        } catch (ace: AccessControlException) {
+        } catch (ace: java.security.AccessControlException) {
             return false
         }
     }

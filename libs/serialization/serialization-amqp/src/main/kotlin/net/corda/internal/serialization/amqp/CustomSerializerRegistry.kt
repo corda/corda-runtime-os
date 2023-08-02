@@ -19,8 +19,6 @@ import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
 import java.lang.reflect.Type
-import java.security.AccessControlContext
-import java.security.AccessControlException
 import java.security.BasicPermission
 import java.security.PrivateKey
 
@@ -153,10 +151,14 @@ class CachingCustomSerializerRegistry(
     override fun registerExternal(serializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {
         val customSerializer = CorDappCustomSerializer(serializer, factory)
 
+        @Suppress("deprecation", "removal")
         val sm = System.getSecurityManager()
         if (sm != null) {
-            val accessControlContext = sandboxGroup.metadata.keys.first().adapt(AccessControlContext::class.java)
+            @Suppress("deprecation", "removal")
+            val accessControlContext = sandboxGroup.metadata.keys.first().adapt(java.security.AccessControlContext::class.java)
             val customSerializerTargetBundle = FrameworkUtil.getBundle(customSerializer.type.asClass())
+
+            @Suppress("deprecation", "removal")
             try {
                 sm.checkPermission(
                     CustomSerializerPermission(
@@ -167,7 +169,7 @@ class CachingCustomSerializerRegistry(
                     ),
                     accessControlContext
                 )
-            } catch (ace: AccessControlException) {
+            } catch (ace: java.security.AccessControlException) {
                 logger.warn("Illegal custom serializer detected for ${customSerializer.type}", ace)
                 throw IllegalCustomSerializerException(serializer, serializer::class.java, ace)
             }

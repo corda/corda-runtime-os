@@ -10,24 +10,31 @@ ignore:
           identification algorithm set to “HTTPS”, which means a Corda gateway
           will always validate server certificate hostnames when establishing
           HTTPS connections with other gateways.
-        expires: 2023-06-19T12:08:30.514Z
+        expires: 2023-10-10T12:08:30.514Z
         created: 2022-12-20T12:08:30.517Z
-  SNYK-JAVA-COMFASTERXMLJACKSONCORE-3038426:
+
+  SNYK-JAVA-ORGECLIPSEJETTY-5769685:
     - '*':
         reason: >-
-          Corda5 Shippable artifacts do not make use of dokka-core, which is
-          where this dependency originates, this is used at compile / build time
-          only for Kdoc generation and not shipped in any of our releasable
-          artifacts
-        expires: 2023-06-19T12:13:21.424Z
-        created: 2022-12-20T12:13:21.430Z
-  SNYK-JAVA-COMFASTERXMLJACKSONCORE-3038424:
+          This vulnerability does not apply to C5 as we are not parsing XML configuration
+          when setting-up Jetty server. We are only using Jetty through Javalin which is
+          configuring Jetty programmatically.
+        expires: 2023-12-13T12:08:30.514Z
+        created: 2023-07-13T12:08:30.517Z
+
+  SNYK-JAVA-COMSQUAREUPOKIO-5773320:
     - '*':
-        reason: >
-          Corda5 Shippable artifacts do not make use of dokka-core, which is
-          where this dependency originates, this is used at compile / build time
-          only for Kdoc generation and not shipped in any of our releasable
-          artifacts
-        expires: 2023-06-19T12:17:21.108Z
-        created: 2022-12-20T12:17:21.129Z
+        reason: >-
+          Corda 5 is not vulnerable to a DoS attack as the exploitable library is used by
+          an HTTP client, not server.
+        expires: 2023-12-20T08:26:30.514Z
+        created: 2023-07-20T08:26:30.517Z
+
+  SNYK-JAVA-COMSQUAREUPOKHTTP3-2958044:
+    - '*':
+        reason: >-
+          Corda 5 is not vulnerable to this attack as users do not have control over the
+          HTTP headers used with the client.
+        expires: 2023-12-20T08:30:30.514Z
+        created: 2023-07-20T08:30:30.517Z
 patch: {}

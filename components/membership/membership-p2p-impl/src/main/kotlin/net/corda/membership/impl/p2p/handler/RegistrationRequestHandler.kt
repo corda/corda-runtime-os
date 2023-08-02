@@ -4,7 +4,7 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.registration.RegistrationCommand
-import net.corda.data.membership.command.registration.mgm.StartRegistration
+import net.corda.data.membership.command.registration.mgm.QueueRegistration
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.membership.lib.MemberInfoExtension
@@ -38,7 +38,7 @@ internal class RegistrationRequestHandler(
         payload: ByteBuffer
     ): Record<String, RegistrationCommand>? {
         try {
-            logger.info("Received registration request. Issuing StartRegistration command.")
+            logger.info("Received registration request. Issuing QueueRegistration command.")
             val (registrationRequest, mgm) = decryptPayload(payload)
             val memberName = avroSchemaRegistry.deserialize<KeyValuePairList>(registrationRequest.memberContext.data)
                 .items
@@ -49,20 +49,20 @@ internal class RegistrationRequestHandler(
                 MemberX500Name.parse(memberName),
                 mgm.groupId,
             )
-            val registrationId = registrationRequest.registrationId
             return Record(
                 REGISTRATION_COMMAND_TOPIC,
-                "$registrationId-${mgm.shortHash}",
+                "${member.x500Name}-${member.groupId}",
                 RegistrationCommand(
-                    StartRegistration(
+                    QueueRegistration(
                         mgm.toAvro(),
                         member.toAvro(),
                         registrationRequest,
+                        0
                     )
                 )
             )
         } catch (e: Exception) {
-            logger.warn("Could not create start registration command. Reason: ${e.message}", e)
+            logger.warn("Could not create QueueRegistration command. Reason: ${e.message}", e)
             return null
         }
     }

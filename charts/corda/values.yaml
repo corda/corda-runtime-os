@@ -4,6 +4,12 @@
 # -- override chart fullname
 fullnameOverride: ""
 
+# -- affinity for pod assignment
+affinity: {}
+
+# -- topology spread constraints
+topologySpreadConstraints: []
+
 # -- override chart name
 nameOverride: ""
 
@@ -13,6 +19,9 @@ image:
   registry: "corda-os-docker.software.r3.com"
   # -- worker image tag, defaults to Chart appVersion
   tag: ""
+
+# -- extra labels to add to all deployed objects
+commonLabels: {}
 
 # -- image pull secrets
 imagePullSecrets: []

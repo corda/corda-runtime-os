@@ -38,7 +38,11 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -51,6 +55,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.SortedMap
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
@@ -72,6 +77,7 @@ class AddNotaryToGroupParametersHandlerTest {
     }
 
     private val knownIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group")
+    private val otherName = MemberX500Name.parse("O=Other,L=London,C=GB")
     private val context = byteArrayOf(1, 2, 3)
     private val serializeCaptor = argumentCaptor<KeyValuePairList>()
     private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
@@ -83,6 +89,15 @@ class AddNotaryToGroupParametersHandlerTest {
     private val serializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
+    }
+    private val identity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group").toCorda()
+    private val vaultDmlConnectionId = UUID(1, 2)
+    private val nodeInfo = mock<VirtualNodeInfo> {
+        on { holdingIdentity } doReturn identity
+        on { vaultDmlConnectionId } doReturn vaultDmlConnectionId
+    }
+    private val nodeInfoReadService = mock<VirtualNodeInfoReadService> {
+        on { getByHoldingIdentityShortHash(any()) } doReturn nodeInfo
     }
     private val entitySet = mock<JpaEntitiesSet>()
     private val registry = mock<JpaEntitiesRegistry> {
@@ -114,11 +129,11 @@ class AddNotaryToGroupParametersHandlerTest {
     private val root = mock<Root<GroupParametersEntity>> {
         on { get<String>("epoch") } doReturn mock<Path<String>>()
     }
-    private val status = mock<Path<String>>()
-    private val memberX500Name = mock<Path<String>>()
+    private val statusPath = mock<Path<String>>()
+    private val memberX500NamePath = mock<Path<String>>()
     private val memberRoot = mock<Root<MemberInfoEntity>> {
-        on { get<String>("status") } doReturn status
-        on { get<String>("memberX500Name") } doReturn memberX500Name
+        on { get<String>("status") } doReturn statusPath
+        on { get<String>("memberX500Name") } doReturn memberX500NamePath
     }
     private val order = mock<Order>()
     private val query = mock<CriteriaQuery<GroupParametersEntity>> {
@@ -132,13 +147,14 @@ class AddNotaryToGroupParametersHandlerTest {
         on { from(MemberInfoEntity::class.java) } doReturn memberRoot
         on { select(memberRoot) } doReturn mock
         on { where(equalPredicate, notEqualPredicate) } doReturn mock
+        on { where(any(), any()) } doReturn mock
     }
     private val criteriaBuilder = mock<CriteriaBuilder> {
         on { createQuery(GroupParametersEntity::class.java) } doReturn query
         on { createQuery(MemberInfoEntity::class.java) } doReturn memberCriteriaQuery
         on { desc(any()) } doReturn order
-        on { equal(status, MEMBER_STATUS_ACTIVE) } doReturn equalPredicate
-        on { notEqual(memberX500Name, knownIdentity.x500Name.toString())} doReturn notEqualPredicate
+        on { equal(statusPath, MEMBER_STATUS_ACTIVE) } doReturn equalPredicate
+        on { notEqual(eq(memberX500NamePath), any<String>()) } doReturn notEqualPredicate
     }
     private val entityManager = mock<EntityManager> {
         on { persist(any<GroupParametersEntity>()) } doAnswer {}
@@ -150,12 +166,11 @@ class AddNotaryToGroupParametersHandlerTest {
     private val entityManagerFactory = mock<EntityManagerFactory> {
         on { createEntityManager() } doReturn entityManager
     }
-    private val connectionManager = mock<DbConnectionManager> {
+    private val dbConnectionManager = mock<DbConnectionManager> {
         on {
             getOrCreateEntityManagerFactory(
-                any(),
-                any(),
-                eq(entitySet),
+                vaultDmlConnectionId,
+                entitySet
             )
         } doReturn entityManagerFactory
     }
@@ -185,6 +200,8 @@ class AddNotaryToGroupParametersHandlerTest {
         on { name } doReturn MemberX500Name.parse(knownIdentity.x500Name)
         on { memberProvidedContext } doReturn notaryMemberContext
         on { mgmProvidedContext } doReturn notaryMgmContext
+        on { name } doReturn MemberX500Name.parse(knownIdentity.x500Name)
+        on { serial } doReturn 2L
     }
     private val memberInfoFactory = mock<MemberInfoFactory> {
         on { create(any()) } doReturn notaryInRequest
@@ -206,8 +223,9 @@ class AddNotaryToGroupParametersHandlerTest {
     private lateinit var otherNotary: MemberInfo
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
         on { cordaAvroSerializationFactory } doReturn serializationFactory
+        on { virtualNodeInfoReadService } doReturn nodeInfoReadService
         on { jpaEntitiesRegistry } doReturn registry
-        on { dbConnectionManager } doReturn connectionManager
+        on { dbConnectionManager } doReturn dbConnectionManager
         on { clock } doReturn clock
         on { keyEncodingService } doReturn keyEncodingService
         on { memberInfoFactory } doReturn memberInfoFactory
@@ -233,10 +251,11 @@ class AddNotaryToGroupParametersHandlerTest {
         otherNotary = mock {
             on { memberProvidedContext } doReturn otherNotaryContext
             on { mgmProvidedContext } doReturn notaryMgmContext
-            on { name } doReturn MemberX500Name.parse("O=Bob,L=London,C=GB")
+            on { name } doReturn MemberX500Name.parse(knownIdentity.x500Name)
+            on { serial } doReturn 1L
         }
         whenever(memberInfoFactory.create(any(), any<SortedMap<String, String?>>())).doReturn(otherNotary)
-        whenever(membersQuery.resultStream).doReturn(listOf(otherNotaryEntity).stream())
+        whenever(membersQuery.resultList).doReturn(listOf(otherNotaryEntity))
         whenever(keyValuePairListDeserializer.deserialize(any())).doReturn(
             KeyValuePairList(listOf(
                 KeyValuePair(EPOCH_KEY, EPOCH.toString()),
@@ -280,7 +299,7 @@ class AddNotaryToGroupParametersHandlerTest {
     }
 
     @Test
-    fun `invoke with notary keys adds keys to existing notary service`() {
+    fun `invoke as re-registration with notary keys adds keys to existing notary service`() {
         mockExistingNotary()
 
         handler.invoke(requestContext, request)
@@ -298,6 +317,7 @@ class AddNotaryToGroupParametersHandlerTest {
                     KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
                     KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 5, 1), "test-key"),
                     KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 0), "1"),
+                    KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 5, 1), "3"),
                 )
             )
         )
@@ -313,6 +333,26 @@ class AddNotaryToGroupParametersHandlerTest {
     }
 
     @Test
+    fun `existing notary service can only be updated in case of re-registration`() {
+        mockExistingNotary()
+        whenever(otherNotary.name).doReturn(otherName)
+
+        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
+        assertThat(ex.message).contains("already exists")
+    }
+
+    @Test
+    fun `notary to be added cannot have same service name as an existing virtual node`() {
+        mockExistingNotary()
+        whenever(otherNotary.name).doReturn(otherName)
+        whenever(notaryDetails.serviceName).doReturn(otherName)
+
+        val ex = assertFailsWith<MembershipPersistenceException> { handler.invoke(requestContext, request) }
+        assertThat(ex.message).contains("virtual node having the same name")
+    }
+
+    @Test
+    @Disabled("Until CORE-12934 adds support for multiple notary virtual nodes per notary service")
     fun `invoke sets notary protocol versions to intersection of protocol versions of individual notary vnodes`() {
         mockExistingNotary()
 
@@ -325,7 +365,7 @@ class AddNotaryToGroupParametersHandlerTest {
     }
 
     @Test
-    fun `invoke with nothing to add does nothing`() {
+    fun `invoke as re-registration with nothing to add does nothing`() {
         mockExistingNotary()
         val mockGroupParameters = KeyValuePairList(
             listOf(

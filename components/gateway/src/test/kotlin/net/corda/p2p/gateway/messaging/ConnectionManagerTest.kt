@@ -4,6 +4,7 @@ import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.util.concurrent.Future
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
+import net.corda.p2p.gateway.messaging.http.TrustStoresMap
 import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -16,7 +17,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.net.URI
-import java.security.KeyStore
 import java.util.concurrent.TimeUnit
 
 class ConnectionManagerTest {
@@ -25,7 +25,7 @@ class ConnectionManagerTest {
 
     private val connectionManager = ConnectionManager(sslConfiguration, connectionConfiguration)
     private val mockedClient = mockConstruction(HttpClient::class.java)
-    private val trustStore = mock<KeyStore>()
+    private val trustStore = mock<TrustStoresMap.TrustedCertificates>()
 
     @AfterEach
     fun cleanUp() {

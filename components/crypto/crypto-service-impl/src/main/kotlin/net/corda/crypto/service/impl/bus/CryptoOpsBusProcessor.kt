@@ -1,22 +1,19 @@
 package net.corda.crypto.service.impl.bus
 
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.concurrent.CompletableFuture
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.config.impl.RetryingConfig
+import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
+import net.corda.crypto.core.KeyOrderBy
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toSignatureSpec
-import net.corda.crypto.persistence.SigningKeyInfo
-import net.corda.crypto.service.KeyOrderBy
-import net.corda.crypto.service.SigningService
 import net.corda.data.crypto.SecureHashes
 import net.corda.data.crypto.ShortHashes
 import net.corda.data.crypto.wire.CryptoDerivedSharedSecret
@@ -26,7 +23,6 @@ import net.corda.data.crypto.wire.CryptoPublicKey
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
@@ -44,11 +40,15 @@ import net.corda.utilities.debug
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.concurrent.CompletableFuture
 
 @Suppress("LongParameterList")
 class CryptoOpsBusProcessor(
-    private val signingService: SigningService,
+    private val cryptoService: CryptoService,
     config: RetryingConfig,
+    private val keyEncodingService: KeyEncodingService
 ) :
     RPCResponderProcessor<RpcOpsRequest, RpcOpsResponse> {
     companion object {
@@ -75,7 +75,7 @@ class CryptoOpsBusProcessor(
         try {
             logger.info("Handling {} for tenant {}", request.request::class.java.name, request.context.tenantId)
             val response = executor.executeWithRetry {
-                handleRequest(request.request, request.context, signingService)
+                handleRequest(request.request, request.context)
             }
             val result = RpcOpsResponse(createResponseContext(request), response)
             logger.debug {
@@ -93,28 +93,22 @@ class CryptoOpsBusProcessor(
     }
 
     @Suppress("ComplexMethod")
-    private fun handleRequest(request: Any, context: CryptoRequestContext, signingService: SigningService): Any {
+    private fun handleRequest(request: Any, context: CryptoRequestContext): Any {
 
-        fun handleSupportedSchemesRpcQuery(request: SupportedSchemesRpcQuery): CryptoKeySchemes {
-            return CryptoKeySchemes(
-                signingService.getSupportedSchemes(
-                    context.tenantId,
-                    request.category
-                )
-            )
-        }
+        fun handleSupportedSchemesRpcQuery(): CryptoKeySchemes =
+            CryptoKeySchemes(cryptoService.supportedSchemes.map { it.key.codeName })
 
         fun handleByIdsRpcQuery(request: ByIdsRpcQuery): CryptoSigningKeys {
             val foundKeys =
                 when (val avroKeyIds = request.keyIds) {
                     is ShortHashes -> {
-                        signingService.lookupSigningKeysByPublicKeyShortHash(
+                        cryptoService.lookupSigningKeysByPublicKeyShortHash(
                             context.tenantId,
                             avroShortHashesToDto(avroKeyIds)
                         )
                     }
                     is SecureHashes -> {
-                        signingService.lookupSigningKeysByPublicKeyHashes(
+                        cryptoService.lookupSigningKeysByPublicKeyHashes(
                             context.tenantId,
                             avroSecureHashesToDto(avroKeyIds)
                         )
@@ -122,74 +116,64 @@ class CryptoOpsBusProcessor(
                     else -> throw IllegalArgumentException("Unexpected type for ${avroKeyIds::class.java.name}")
                 }
 
-            return CryptoSigningKeys(foundKeys.map { it.toAvro() })
+            return CryptoSigningKeys(foundKeys.map { it.toCryptoSigningKey(keyEncodingService) })
         }
 
         fun handleKeysRpcQuery(request: KeysRpcQuery): CryptoSigningKeys {
-            val found = signingService.querySigningKeys(
+            val found = cryptoService.querySigningKeys(
                 tenantId = context.tenantId,
                 skip = request.skip,
                 take = request.take,
                 orderBy = KeyOrderBy.valueOf(request.orderBy.name),
                 filter = request.filter.toMap()
             )
-            return CryptoSigningKeys(found.map { it.toAvro() })
+            return CryptoSigningKeys(found.map { it.toCryptoSigningKey(keyEncodingService) })
         }
 
         fun handleDeriveSharedSecretCommand(request: DeriveSharedSecretCommand): CryptoDerivedSharedSecret {
-            val sharedSecret = signingService.deriveSharedSecret(
+            val sharedSecret = cryptoService.deriveSharedSecret(
                 tenantId = context.tenantId,
-                publicKey = signingService.schemeMetadata.decodePublicKey(request.publicKey.array()),
-                otherPublicKey = signingService.schemeMetadata.decodePublicKey(request.otherPublicKey.array()),
+                publicKey = cryptoService.schemeMetadata.decodePublicKey(request.publicKey.array()),
+                otherPublicKey = cryptoService.schemeMetadata.decodePublicKey(request.otherPublicKey.array()),
                 context = request.context.items.toMap()
             )
             return CryptoDerivedSharedSecret(ByteBuffer.wrap(sharedSecret))
         }
 
         fun handleGenerateKeyPairCommand(request: GenerateKeyPairCommand): CryptoPublicKey {
-            val publicKey = if (request.externalId.isNullOrBlank()) {
-                signingService.generateKeyPair(
+            val keyPair = if (request.externalId.isNullOrBlank()) {
+                cryptoService.generateKeyPair(
                     tenantId = context.tenantId,
                     category = request.category,
                     alias = request.alias,
-                    scheme = signingService.schemeMetadata.findKeySchemeOrThrow(request.schemeCodeName),
+                    scheme = cryptoService.schemeMetadata.findKeySchemeOrThrow(request.schemeCodeName),
                     context = request.context.items.toMap()
                 )
             } else {
-                signingService.generateKeyPair(
+                cryptoService.generateKeyPair(
                     tenantId = context.tenantId,
                     category = request.category,
                     alias = request.alias,
                     externalId = request.externalId,
-                    scheme = signingService.schemeMetadata.findKeySchemeOrThrow(request.schemeCodeName),
+                    scheme = cryptoService.schemeMetadata.findKeySchemeOrThrow(request.schemeCodeName),
                     context = request.context.items.toMap()
                 )
             }
-            return CryptoPublicKey(ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(publicKey)))
+            return CryptoPublicKey(ByteBuffer.wrap(cryptoService.schemeMetadata.encodeAsByteArray(keyPair.publicKey)))
         }
 
-        fun handleGenerateFreshKeyRpcCommand(request: GenerateFreshKeyRpcCommand): CryptoPublicKey {
-            val publicKey = if (request.externalId.isNullOrBlank()) {
-                signingService.freshKey(
-                    tenantId = context.tenantId,
-                    category = request.category,
-                    scheme = signingService.schemeMetadata.findKeySchemeOrThrow(request.schemeCodeName),
-                    context = request.context.items.toMap()
-                )
-            } else {
-                signingService.freshKey(
-                    tenantId = context.tenantId,
-                    category = request.category,
-                    externalId = request.externalId,
-                    scheme = signingService.schemeMetadata.findKeySchemeOrThrow(request.schemeCodeName),
-                    context = request.context.items.toMap()
-                )
-            }
-            return CryptoPublicKey(ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(publicKey)))
-        }
+        fun handleGenerateFreshKeyRpcCommand(request: GenerateFreshKeyRpcCommand): CryptoPublicKey =
+            cryptoService.generateKeyPair(
+                tenantId = context.tenantId,
+                category = request.category,
+                alias = null,
+                externalId = request.externalId,
+                scheme = cryptoService.schemeMetadata.findKeySchemeOrThrow(request.schemeCodeName),
+                context = request.context.items.toMap()
+            ).let { CryptoPublicKey(ByteBuffer.wrap(cryptoService.schemeMetadata.encodeAsByteArray(it.publicKey))) }
 
         fun handleGenerateWrappingKeyRpcCommand(request: GenerateWrappingKeyRpcCommand): CryptoNoContentValue {
-            signingService.createWrappingKey(
+            cryptoService.createWrappingKey(
                 hsmId = request.hsmId,
                 failIfExists = request.failIfExists,
                 masterKeyAlias = request.masterKeyAlias,
@@ -199,16 +183,16 @@ class CryptoOpsBusProcessor(
         }
 
         fun handleSignRpcCommand(request: SignRpcCommand): CryptoSignatureWithKey {
-            val publicKey = signingService.schemeMetadata.decodePublicKey(request.publicKey.array())
-            val signature = signingService.sign(
+            val publicKey = cryptoService.schemeMetadata.decodePublicKey(request.publicKey.array())
+            val signature = cryptoService.sign(
                 context.tenantId,
                 publicKey,
-                request.signatureSpec.toSignatureSpec(signingService.schemeMetadata),
+                request.signatureSpec.toSignatureSpec(cryptoService.schemeMetadata),
                 request.bytes.array(),
                 request.context.toMap()
             )
             return CryptoSignatureWithKey(
-                ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(signature.by)),
+                ByteBuffer.wrap(cryptoService.schemeMetadata.encodeAsByteArray(signature.by)),
                 ByteBuffer.wrap(signature.bytes)
             )
         }
@@ -218,7 +202,7 @@ class CryptoOpsBusProcessor(
             .build()
             .recordCallable<Any> {
                 when (request) {
-                    is SupportedSchemesRpcQuery -> handleSupportedSchemesRpcQuery(request)
+                    is SupportedSchemesRpcQuery -> handleSupportedSchemesRpcQuery()
                     is ByIdsRpcQuery -> handleByIdsRpcQuery(request)
                     is KeysRpcQuery -> handleKeysRpcQuery(request)
                     is DeriveSharedSecretCommand -> handleDeriveSharedSecretCommand(request)
@@ -248,18 +232,3 @@ class CryptoOpsBusProcessor(
         }
     }
 }
-
-fun SigningKeyInfo.toAvro(): CryptoSigningKey =
-    CryptoSigningKey(
-        this.id.value,
-        this.tenantId,
-        this.category,
-        this.alias,
-        this.hsmAlias,
-        ByteBuffer.wrap(this.publicKey),
-        this.schemeCodeName,
-        this.masterKeyAlias,
-        this.encodingVersion,
-        this.externalId,
-        this.timestamp
-    )

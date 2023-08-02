@@ -28,6 +28,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_ASYNC_REQUEST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
+import net.corda.schema.configuration.VirtualNodeDatasourceConfig
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationHandler
@@ -53,8 +54,8 @@ internal class VirtualNodeWriterFactory(
     private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository(),
 ) {
 
-    private companion object {
-        const val ASYNC_OPERATION_GROUP = "virtual.node.async.operation.group"
+    companion object {
+        private const val ASYNC_OPERATION_GROUP = "virtual.node.async.operation.group"
     }
 
     /**
@@ -64,10 +65,15 @@ internal class VirtualNodeWriterFactory(
      *
      * @throws `CordaMessageAPIException` If the publisher cannot be set up.
      */
-    fun create(messagingConfig: SmartConfig, externalMsgConfig: SmartConfig): VirtualNodeWriter {
+    fun create(
+        messagingConfig: SmartConfig,
+        externalMsgConfig: SmartConfig,
+        vnodeDatasourceConfig: SmartConfig
+    ): VirtualNodeWriter {
         val publisher = createPublisher(messagingConfig)
         val rpcSubscription = createRPCSubscription(messagingConfig, publisher)
-        val asyncOperationSubscription = createAsyncOperationSubscription(messagingConfig, externalMsgConfig, publisher)
+        val asyncOperationSubscription =
+            createAsyncOperationSubscription(messagingConfig, externalMsgConfig, vnodeDatasourceConfig, publisher)
         return VirtualNodeWriter(rpcSubscription, asyncOperationSubscription, publisher)
     }
 
@@ -77,6 +83,7 @@ internal class VirtualNodeWriterFactory(
     private fun createAsyncOperationSubscription(
         messagingConfig: SmartConfig,
         externalMsgConfig: SmartConfig,
+        vnodeDatasourceConfig: SmartConfig,
         publisher: Publisher,
     ): Subscription<String, VirtualNodeAsynchronousRequest> {
         val subscriptionConfig = SubscriptionConfig(ASYNC_OPERATION_GROUP, VIRTUAL_NODE_ASYNC_REQUEST_TOPIC)
@@ -101,7 +108,18 @@ internal class VirtualNodeWriterFactory(
             publisher
         )
 
-        val virtualNodeDbFactory = VirtualNodeDbFactoryImpl(dbConnectionManager, virtualNodeDbAdmin, schemaMigrator)
+        val virtualNodesDdlPoolConfig = vnodeDatasourceConfig.getConfig(VirtualNodeDatasourceConfig.VNODE_DDL_POOL_CONFIG)
+        val virtualNodesDmlPoolConfig = vnodeDatasourceConfig.getConfig(VirtualNodeDatasourceConfig.VNODE_DML_POOL_CONFIG)
+
+        val virtualNodeDbFactory =
+            VirtualNodeDbFactoryImpl(
+                dbConnectionManager,
+                virtualNodeDbAdmin,
+                schemaMigrator,
+                virtualNodesDdlPoolConfig,
+                virtualNodesDmlPoolConfig
+            )
+
         val recordFactory = RecordFactoryImpl(UTCClock())
 
         val handlerMap = mutableMapOf<Class<*>, VirtualNodeAsyncOperationHandler<*>>(

@@ -134,9 +134,13 @@ class CryptoOpsBusProcessorTests {
         // if this is @BeforeEach.
         tenantId = UUID.randomUUID().toString()
         factory = TestServicesFactory()
-        processor = CryptoOpsBusProcessor(factory.signingService, configEvent.config.toCryptoConfig().retrying())
+        processor = CryptoOpsBusProcessor(
+            factory.cryptoService,
+            configEvent.config.toCryptoConfig().retrying(),
+            keyEncodingService = factory.keyEncodingService
+        )
         CryptoConsts.Categories.all.forEach {
-            factory.hsmService.assignSoftHSM(tenantId, it)
+            factory.tenantInfoService.populate(tenantId, it, factory.cryptoService)
         }
     }
 

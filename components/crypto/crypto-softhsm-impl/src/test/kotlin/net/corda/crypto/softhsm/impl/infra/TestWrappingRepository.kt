@@ -1,8 +1,9 @@
 package net.corda.crypto.softhsm.impl.infra
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.softhsm.WrappingRepository
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 class TestWrappingRepository(
     val keys: ConcurrentHashMap<String, WrappingKeyInfo> = ConcurrentHashMap(),
@@ -18,6 +19,8 @@ class TestWrappingRepository(
         findCounter[alias] = findCounter[alias]?.plus(1) ?: 1
         return keys[alias]
     }
+
+    override fun findKeyAndId(alias: String): Pair<UUID, WrappingKeyInfo>? = TODO("Not needed")
 
     override fun close() {
     }

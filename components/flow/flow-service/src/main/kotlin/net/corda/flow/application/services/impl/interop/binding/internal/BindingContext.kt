@@ -24,7 +24,6 @@ import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 import java.math.BigDecimal
 import java.nio.ByteBuffer
-import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 import java.time.ZonedDateTime
@@ -96,7 +95,8 @@ internal class InterfaceBindingContext(val facade: Facade, private val boundInte
         }
 
         val boundMethods = try {
-            AccessController.doPrivileged(PrivilegedExceptionAction {
+            @Suppress("deprecation", "removal")
+            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
                 boundInterface.declaredMethods.mapNotNull { method ->
                     getMethodBinding(method, defaultBoundVersions)
                 }

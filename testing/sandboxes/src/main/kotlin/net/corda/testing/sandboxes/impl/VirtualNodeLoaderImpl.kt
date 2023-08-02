@@ -23,7 +23,10 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Stream
 
 @Suppress("unused")
-@Component(service = [ VirtualNodeLoader::class, VirtualNodeInfoReadService::class ])
+@Component(
+    service = [ VirtualNodeLoader::class, VirtualNodeInfoReadService::class ],
+    property = [ SandboxSetup.SANDBOX_SERVICE ]
+)
 @ServiceRanking(SandboxSetup.SANDBOX_SERVICE_RANKING)
 class VirtualNodeLoaderImpl @Activate constructor(
     @Reference

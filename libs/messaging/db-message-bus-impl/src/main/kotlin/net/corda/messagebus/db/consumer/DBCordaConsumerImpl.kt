@@ -165,9 +165,10 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
 
         if (!recordsAvailable(fromOffset, topicPartition, timeout)) return emptyList()
 
-        val dbRecords = dbAccess.readRecords(fromOffset, topicPartition, maxPollRecords).takeWhile {
-            it.transactionId.state == TransactionState.COMMITTED
-        }
+        var latestOffset = fromOffset
+        val dbRecords = dbAccess.readRecords(fromOffset, topicPartition, maxPollRecords)
+            .takeWhile { it.transactionId.state != TransactionState.PENDING && it.recordOffset == latestOffset++ }
+            .filter { it.transactionId.state != TransactionState.ABORTED }
 
         val result = dbRecords.mapNotNull { dbRecord ->
             val deserializedValue = deserializeValue(dbRecord.value)

@@ -7,6 +7,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.observer.UtxoToken
 
 interface UtxoPersistenceService {
     fun findTransaction(id: String, transactionStatus: TransactionStatus): Pair<SignedTransactionContainer?, String?>
@@ -15,7 +16,10 @@ interface UtxoPersistenceService {
 
     fun resolveStateRefs(stateRefs: List<StateRef>): List<UtxoTransactionOutputDto>
 
-    fun persistTransaction(transaction: UtxoTransactionReader): List<CordaPackageSummary>
+    fun persistTransaction(
+        transaction: UtxoTransactionReader,
+        utxoTokenMap: Map<StateRef, UtxoToken> = emptyMap()
+    ): List<CordaPackageSummary>
 
     fun persistTransactionIfDoesNotExist(transaction: UtxoTransactionReader): Pair<String?, List<CordaPackageSummary>>
 

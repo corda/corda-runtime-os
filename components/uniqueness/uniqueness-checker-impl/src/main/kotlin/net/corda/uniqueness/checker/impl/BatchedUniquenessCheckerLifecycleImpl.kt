@@ -27,8 +27,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 
 /**
- * A batched implementation of the uniqueness checker component, which processes batches of requests
- * together in order to provide higher performance under load.
+ * Corda lifecycle integration for the underlying [UniquenessChecker] component.
  */
 @Component(service = [UniquenessCheckerLifecycle::class])
 @Suppress("LongParameterList")
@@ -42,7 +41,7 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
     @Reference(service = ExternalEventResponseFactory::class)
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     @Reference(service = BackingStoreLifecycle::class)
-    private val backingStore: BackingStoreLifecycle,
+    private val backingStoreLifecycle: BackingStoreLifecycle,
     @Reference(service = UniquenessChecker::class)
     uniquenessChecker: UniquenessChecker
 ) : UniquenessCheckerLifecycle, UniquenessChecker by uniquenessChecker {
@@ -59,7 +58,7 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
         coordinatorFactory.createCoordinator<UniquenessCheckerLifecycle>(::eventHandler)
 
     private val dependentComponents = DependentComponents.of(
-        ::backingStore
+        ::backingStoreLifecycle
     )
 
     override val isRunning: Boolean
