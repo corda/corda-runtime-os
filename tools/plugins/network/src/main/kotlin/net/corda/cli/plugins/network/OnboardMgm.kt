@@ -68,7 +68,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
             checkInvariant(
                 maxAttempts = MAX_ATTEMPTS,
                 waitInterval = WAIT_INTERVAL,
-                errorMessage = "Failed to save group policy after $MAX_ATTEMPTS."
+                errorMessage = "Failed to save group policy after $MAX_ATTEMPTS attempts."
             ) {
                 try {
                     val resource = client.start().proxy
