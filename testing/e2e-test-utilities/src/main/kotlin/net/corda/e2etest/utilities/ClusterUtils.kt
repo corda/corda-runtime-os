@@ -1,12 +1,12 @@
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.module.kotlin.contains
+import java.time.Duration
 import net.corda.rest.ResponseCode
 import net.corda.test.util.eventually
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
-import java.time.Duration
 
 /**
  * Transform a Corda Package Bundle (CPB) into a Corda Package Installer (CPI) by adding a group policy file and upload
@@ -21,7 +21,7 @@ fun ClusterInfo.conditionallyUploadCordaPackage(
 }
 
 fun ClusterInfo.conditionallyUploadCpiSigningCertificate() = cluster {
-    val hasCertificateChain = assertWithRetry {
+    val hasCertificateChain = assertWithRetryIgnoringExceptions {
         interval(1.seconds)
         command { getCertificateChain(CODE_SIGNER_CERT_USAGE, CODE_SIGNER_CERT_ALIAS) }
         condition {
@@ -32,7 +32,7 @@ fun ClusterInfo.conditionallyUploadCpiSigningCertificate() = cluster {
         it.code != ResponseCode.RESOURCE_NOT_FOUND.statusCode
     }
     if (!hasCertificateChain) {
-        assertWithRetry {
+        assertWithRetryIgnoringExceptions {
             // Certificate upload can be slow in the combined worker, especially after it has just started up.
             timeout(30.seconds)
             interval(2.seconds)
@@ -50,16 +50,18 @@ fun conditionallyUploadCordaPackage(
     cpiName: String,
     cpbResourceName: String,
     groupId: String,
-    staticMemberNames: List<String>
-) = DEFAULT_CLUSTER.conditionallyUploadCordaPackage(cpiName, cpbResourceName, groupId, staticMemberNames)
+    staticMemberNames: List<String>,
+    customGroupParameters: Map<String, Any> = emptyMap(),
+) = DEFAULT_CLUSTER.conditionallyUploadCordaPackage(cpiName, cpbResourceName, groupId, staticMemberNames, customGroupParameters)
 
 fun ClusterInfo.conditionallyUploadCordaPackage(
     cpiName: String,
     cpbResourceName: String,
     groupId: String,
-    staticMemberNames: List<String>
+    staticMemberNames: List<String>,
+    customGroupParameters: Map<String, Any> = emptyMap(),
 ) = conditionallyUploadCordaPackage(cpiName) {
-    cpiUpload(cpbResourceName, groupId, staticMemberNames, cpiName)
+    cpiUpload(cpbResourceName, groupId, staticMemberNames, cpiName, customGroupParameters = customGroupParameters)
 }
 
 fun ClusterInfo.conditionallyUploadCordaPackage(
@@ -73,7 +75,7 @@ fun ClusterInfo.conditionallyUploadCordaPackage(
             toJson()["id"].textValue()
         }
 
-        assertWithRetry {
+        assertWithRetryIgnoringExceptions {
             timeout(Duration.ofSeconds(100))
             interval(Duration.ofSeconds(2))
             command { cpiStatus(responseStatusId) }
@@ -104,7 +106,7 @@ fun ClusterInfo.getOrCreateVirtualNodeFor(
     }
     val hash = truncateLongHash(json["cpiFileChecksum"].textValue())
 
-    val vNodesJson = assertWithRetry {
+    val vNodesJson = assertWithRetryIgnoringExceptions {
         command { vNodeList() }
         condition { it.code == 200 }
         failMessage("Failed to retrieve virtual nodes")
@@ -123,14 +125,8 @@ fun ClusterInfo.getOrCreateVirtualNodeFor(
             failMessage("Failed to create the virtual node for '$x500'")
         }.toJson()
 
-        val holdingId = createVNodeRequest["requestId"].textValue()
-
-        // Wait for the vNode creation to propagate through the system before moving on
-        eventually(duration = Duration.ofSeconds(30)) {
-            assertThat(getVNode(holdingId).code).isNotEqualTo(404)
-        }
-
-        holdingId
+        val requestId = createVNodeRequest["requestId"].textValue()
+        awaitVirtualNodeOperationStatusCheck(requestId)
     }
 }
 
@@ -174,7 +170,7 @@ fun ClusterInfo.createKeyFor(
         }
         failMessage("Failed to create key for holding id '$tenantId'")
     }.toJson()
-    assertWithRetry {
+    assertWithRetryIgnoringExceptions {
         interval(1.seconds)
         command { getKey(tenantId, keyId["id"].textValue()) }
         condition { it.code == 200 }

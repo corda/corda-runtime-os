@@ -22,6 +22,7 @@ class PostgresDbSetup(
     private val dbAdmin: String,
     private val dbAdminPassword: String,
     private val dbName: String,
+    private val isDbBusType: Boolean,
     smartConfigFactory: SmartConfigFactory
 ) : DbSetup {
 
@@ -58,6 +59,11 @@ class PostgresDbSetup(
             populateConfigDb()
             createUserConfig("admin", "admin")
             createDbUsersAndGrants()
+            if (isDbBusType) {
+                messageBusConnection().use {
+                    DbMessageBusSetup.createTopicsOnDbMessageBus(it)
+                }
+            }
         } else {
             log.info("Table config.config exists in $dbSuperUserUrl, skipping DB initialisation.")
         }
@@ -111,6 +117,14 @@ class PostgresDbSetup(
             dbAdmin,
             dbAdminPassword
         ).connection
+
+    private fun messageBusConnection() =
+        OSGiDataSourceFactory.create(
+            DB_DRIVER,
+            dbAdminUrl + "&currentSchema=MESSAGEBUS",
+            dbAdmin,
+            dbAdminPassword
+        ).connection.also { it.autoCommit = false }
 
     private fun rbacConnection() =
         OSGiDataSourceFactory.create(DB_DRIVER, dbAdminUrl + "&currentSchema=RBAC", dbAdmin, dbAdminPassword).connection

@@ -18,6 +18,7 @@ import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.RevokePreAuthToken
 import net.corda.data.membership.db.request.command.SuspendMember
+import net.corda.data.membership.db.request.command.UpdateGroupParameters
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.data.membership.db.request.command.UpdateStaticNetworkInfo
@@ -41,6 +42,7 @@ import net.corda.membership.lib.metrics.getTimerMetric
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.utilities.time.Clock
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
 @Suppress("LongParameterList")
 internal class HandlerFactories(
@@ -49,6 +51,7 @@ internal class HandlerFactories(
     jpaEntitiesRegistry: JpaEntitiesRegistry,
     memberInfoFactory: MemberInfoFactory,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    virtualNodeInfoReadService: VirtualNodeInfoReadService,
     keyEncodingService: KeyEncodingService,
     platformInfoProvider: PlatformInfoProvider,
     groupParametersWriterService: GroupParametersWriterService,
@@ -61,6 +64,7 @@ internal class HandlerFactories(
         jpaEntitiesRegistry,
         memberInfoFactory,
         cordaAvroSerializationFactory,
+        virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
         allowedCertificatesReaderWriterService,
@@ -97,6 +101,7 @@ internal class HandlerFactories(
         ActivateMember::class.java to { ActivateMemberHandler(persistenceHandlerServices) },
         QueryStaticNetworkInfo::class.java to { QueryStaticNetworkInfoHandler(persistenceHandlerServices) },
         UpdateStaticNetworkInfo::class.java to { UpdateStaticNetworkInfoHandler(persistenceHandlerServices) },
+        UpdateGroupParameters::class.java to { UpdateGroupParametersHandler(persistenceHandlerServices) },
     )
 
     private fun getTransactionTimer(operation: String) = getTimerMetric(

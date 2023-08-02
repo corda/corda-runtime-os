@@ -12,7 +12,7 @@ import net.corda.data.membership.SignedData
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
 import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
-import net.corda.data.membership.command.registration.mgm.StartRegistration
+import net.corda.data.membership.command.registration.mgm.QueueRegistration
 import net.corda.data.membership.command.synchronisation.SynchronisationCommand
 import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
 import net.corda.data.membership.p2p.DistributionMetaData
@@ -41,6 +41,7 @@ import net.corda.schema.Schemas.Membership.SYNCHRONIZATION_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -100,7 +101,7 @@ class MembershipP2PProcessorTest {
     private val memberKey: PublicKey = mock()
     private val memberKeyPem = "-----BEGIN PUBLIC KEY-----encoded-memberKey-----END PUBLIC KEY-----"
     private val groupId = "1f5e558c-dd87-438f-a57f-21e69c1e0b88"
-    private val mgm = HoldingIdentity("C=GB, L=London, O=MGM", groupId)
+    private val mgm = HoldingIdentity(MemberX500Name.parse("C=GB, L=London, O=MGM").toString(), groupId)
     private val unauthenticatedRegistrationRequest = UnauthenticatedRegistrationRequest(
         UnauthenticatedRegistrationRequestHeader(
             mgm, ByteBuffer.wrap(SALT_BYTES), ByteBuffer.wrap(AAD_BYTES), memberKeyPem
@@ -108,7 +109,7 @@ class MembershipP2PProcessorTest {
         registrationReqMsgPayload
     )
     private val unauthenticatedRegMsgPayload = unauthenticatedRegistrationRequest.toByteBuffer()
-    private val member = HoldingIdentity("C=GB, L=London, O=Alice", groupId)
+    private val member = HoldingIdentity(MemberX500Name.parse("C=GB, L=London, O=Alice").toString(), groupId)
     private val mgmKey: PublicKey = mock()
     private val memberProvidedContext: MemberContext = mock()
     private val mgmProvidedContext: MGMContext = mock()
@@ -211,14 +212,15 @@ class MembershipP2PProcessorTest {
                     .hasSize(1)
                 it.assertThat(this.first().topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
                 it.assertThat(this.first().value).isInstanceOf(RegistrationCommand::class.java)
-                it.assertThat(this.first().key).isEqualTo("$registrationId-${mgm.toCorda().shortHash}")
+                it.assertThat(this.first().key).isEqualTo("${member.x500Name}-${member.groupId}")
 
                 val value = this.first().value as RegistrationCommand
-                it.assertThat(value.command).isInstanceOf(StartRegistration::class.java)
-                val command = value.command as StartRegistration
-                it.assertThat(command.destination.toCorda()).isEqualTo(mgm.toCorda())
-                it.assertThat(command.source.toCorda()).isEqualTo(member.toCorda())
+                it.assertThat(value.command).isInstanceOf(QueueRegistration::class.java)
+                val command = value.command as QueueRegistration
+                it.assertThat(command.mgm).isEqualTo(mgm)
+                it.assertThat(command.member).isEqualTo(member)
                 it.assertThat(command.memberRegistrationRequest).isEqualTo(registrationRequest)
+                it.assertThat(command.numberOfRetriesSoFar).isEqualTo(0)
             }
         }
     }
@@ -302,7 +304,7 @@ class MembershipP2PProcessorTest {
                 it.assertThat(this.first().topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
                 val command = this.first().value as? RegistrationCommand
                 it.assertThat(command?.command).isInstanceOf(ProcessMemberVerificationResponse::class.java)
-                it.assertThat(this.first().key).isEqualTo("$registrationId-${mgm.toCorda().shortHash}")
+                it.assertThat(this.first().key).isEqualTo("${member.x500Name}-${member.groupId}")
                 val response = command?.command as ProcessMemberVerificationResponse
                 it.assertThat(response.verificationResponse).isEqualTo(verificationResponse)
             }

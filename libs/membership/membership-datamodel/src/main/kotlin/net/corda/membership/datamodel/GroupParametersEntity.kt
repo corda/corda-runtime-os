@@ -32,19 +32,19 @@ fun EntityManager.getCurrentGroupParameters(): GroupParametersEntity? {
 class GroupParametersEntity(
     @Id
     @Column(name = "epoch", nullable = false, updatable = false)
-    val epoch: Int,
+    var epoch: Int,
 
     @Column(name = "parameters", nullable = false, updatable = false)
-    val parameters: ByteArray,
+    var parameters: ByteArray,
 
     @Column(name = "signature_public_key", nullable = true, updatable = false)
-    val signaturePublicKey: ByteArray?,
+    var signaturePublicKey: ByteArray?,
 
     @Column(name = "signature_content", nullable = true, updatable = false)
-    val signatureContent: ByteArray?,
+    var signatureContent: ByteArray?,
 
     @Column(name = "signature_spec", nullable = true, updatable = false)
-    val signatureSpec: String?,
+    var signatureSpec: String?,
 ) {
     fun isSigned(): Boolean {
         return signatureSpec != null

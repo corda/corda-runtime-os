@@ -40,6 +40,7 @@ import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -64,6 +65,8 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     memberInfoFactory: MemberInfoFactory,
     @Reference(service = CordaAvroSerializationFactory::class)
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = KeyEncodingService::class)
     keyEncodingService: KeyEncodingService,
     @Reference(service = PlatformInfoProvider::class)
@@ -90,7 +93,11 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     private var rpcSubscription: RPCSubscription<MembershipPersistenceRequest, MembershipPersistenceResponse>? = null
     private var asyncSubscription:
         StateAndEventSubscription<String, MembershipPersistenceAsyncRequestState, MembershipPersistenceAsyncRequest>? = null
-    private var retryManager: MembershipPersistenceAsyncRetryManager? = null
+    private val retryManager = MembershipPersistenceAsyncRetryManager(
+        coordinatorFactory,
+        publisherFactory,
+        clock,
+    )
 
     private var dependencyServiceHandle: RegistrationHandle? = null
     private var configHandle: AutoCloseable? = null
@@ -125,6 +132,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
             setOf(
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                 LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
+                LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                 LifecycleCoordinatorName.forComponent<AllowedCertificatesReaderWriterService>(),
             )
         )
@@ -144,8 +152,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
         rpcSubscription = null
         asyncSubscription?.close()
         asyncSubscription = null
-        retryManager?.close()
-        retryManager = null
+        retryManager.stop()
     }
 
     private fun handleRegistrationStatusChangedEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
@@ -171,6 +178,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
             jpaEntitiesRegistry,
             memberInfoFactory,
             cordaAvroSerializationFactory,
+            virtualNodeInfoReadService,
             keyEncodingService,
             platformInfoProvider,
             groupParametersWriterService,
@@ -200,14 +208,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
             it.start()
         }
         asyncSubscription?.close()
-        retryManager?.close()
-        retryManager =
-            MembershipPersistenceAsyncRetryManager(
-                coordinatorFactory = coordinatorFactory,
-                publisherFactory = publisherFactory,
-                messagingConfig = messagingConfig,
-                clock = clock,
-            )
+        retryManager.start(messagingConfig)
         subscriptionFactory.createStateAndEventSubscription(
             subscriptionConfig = SubscriptionConfig(
                 groupName = ASYNC_GROUP_NAME,

@@ -73,8 +73,6 @@ class FlowMessagingImpl @Activate constructor(
 
     @Suspendable
     override fun <R : Any> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R> {
-        requireBoxedType(receiveType)
-
         @Suppress("unchecked_cast")
         val flowSessionInternals = sessions as Set<FlowSessionInternal>
 
@@ -106,7 +104,6 @@ class FlowMessagingImpl @Activate constructor(
     @Suspendable
     override fun receiveAllMap(sessions: Map<FlowSession, Class<out Any>>): Map<FlowSession, Any> {
         val flowSessionInternals = sessions.mapKeys {
-            requireBoxedType(it.value)
             it.key as FlowSessionInternal
         }
 
@@ -143,7 +140,6 @@ class FlowMessagingImpl @Activate constructor(
 
     @Suspendable
     override fun sendAll(payload: Any, sessions: Set<FlowSession>) {
-        requireBoxedType(payload::class.java)
         if (sessions.isEmpty()) {
             return
         }
@@ -167,7 +163,6 @@ class FlowMessagingImpl @Activate constructor(
             return
         }
         val sessionPayload = payloadsPerSession.map { (session, payload) ->
-            requireBoxedType(payload::class.java)
             val flowSessionInternal = session as FlowSessionInternal
             verifySessionStatusNotErrorOrClose(session.getSessionId(), flowFiberService)
             flowSessionInternal.getSessionInfo() to when (session) {
@@ -234,13 +229,6 @@ class FlowMessagingImpl @Activate constructor(
         return serializationService.serialize(payload).bytes
     }
 
-    /**
-     * Required to prevent class cast exceptions during AMQP serialization of primitive types.
-     */
-    private fun requireBoxedType(type: Class<*>) {
-        require(!type.isPrimitive) { "Cannot receive primitive type $type" }
-    }
-
     private fun <R : Any> deserializeReceivedPayload(
         received: Map<String, ByteArray>,
         receiveType: Class<R>
@@ -271,11 +259,15 @@ class FlowMessagingImpl @Activate constructor(
         bytes: ByteArray,
         receiveType: Class<R>
     ) = try {
-        serializationService.deserializeAndCheckType(bytes, receiveType)
+        serializationService.deserializeAndCheckType(bytes, receiveType.kotlin.javaObjectType)
     } catch (e: DeserializedWrongAMQPObjectException) {
+        val expectedType = e.expectedType
+        val deserializedType = e.deserializedType
+        val deserializedObject = e.deserializedObject
+
         throw CordaRuntimeException(
-            "Expecting to receive a ${e.expectedType} but received a ${e.deserializedType} instead from session $sessionId, " +
-                    "payload: (${e.deserializedObject})"
+            "Expecting to receive a $expectedType but received a $deserializedType instead from session $sessionId, " +
+                    "payload: ($deserializedObject)"
         )
     }
 

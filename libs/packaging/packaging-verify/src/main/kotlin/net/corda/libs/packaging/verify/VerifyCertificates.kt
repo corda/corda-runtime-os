@@ -53,12 +53,16 @@ internal fun validateCertPath(
         certPathValidator.validate(certPath, params)
     } catch (e: CertPathValidatorException) {
         val index: String; val cert: X509Certificate?
+
+        // If CertPathValidatorException is thrown, it MAY include the index of the cert which caused the exception
+        // but is also does not have to. We should not rely on it too much.
         if (e.index >= 0) {
             index = ", certificate at index [${e.index}]"
             cert = certPath.certificates[e.index] as? X509Certificate
         } else {
             index = ""
-            cert = if (certPath.certificates.size == 1) certPath.certificates.first() as? X509Certificate else null
+            // We do not know which certificate exactly caused the exception, show the details of the first one
+            cert = if (certPath.certificates.size >= 1) certPath.certificates.first() as? X509Certificate else null
         }
 
         val name = cert?.subjectX500Principal?.name

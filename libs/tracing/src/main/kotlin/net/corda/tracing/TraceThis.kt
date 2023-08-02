@@ -39,9 +39,6 @@ private fun readSampleRateString(samplesPerSecond: String?): SampleRate = when {
  *
  */
 fun configureTracing(serviceName: String, zipkinHost: String?, samplesPerSecond: String?) {
-    if (zipkinHost.isNullOrEmpty()) {
-        return
-    }
 
     val sampleRate = readSampleRateString(samplesPerSecond)
 

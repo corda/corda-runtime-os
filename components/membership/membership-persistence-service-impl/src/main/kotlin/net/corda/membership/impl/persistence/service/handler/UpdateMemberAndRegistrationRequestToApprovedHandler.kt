@@ -6,7 +6,7 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
@@ -15,6 +15,7 @@ import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.registration.RegistrationStatusExt.canMoveToStatus
@@ -52,6 +53,15 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
         )
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val now = clock.instant()
+            val currentNonPendingMemberStatus = em.find(
+                MemberInfoEntity::class.java,
+                MemberInfoEntityPrimaryKey(request.member.groupId, request.member.x500Name, false),
+                LockModeType.PESSIMISTIC_WRITE,
+            )?.status
+            val newStatus = when (currentNonPendingMemberStatus) {
+                MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED -> currentNonPendingMemberStatus
+                else -> MEMBER_STATUS_ACTIVE
+            }
             val member = em.find(
                 MemberInfoEntity::class.java,
                 MemberInfoEntityPrimaryKey(request.member.groupId, request.member.x500Name, true),
@@ -62,7 +72,7 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
             val mgmContext = KeyValuePairList(
                 currentMgmContext.items.map {
                     if (it.key == STATUS) {
-                        KeyValuePair(it.key, MEMBER_STATUS_ACTIVE)
+                        KeyValuePair(it.key, newStatus)
                     } else {
                         it
                     }
@@ -80,7 +90,7 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
                     member.groupId,
                     member.memberX500Name,
                     false,
-                    MEMBER_STATUS_ACTIVE,
+                    newStatus,
                     now,
                     member.memberContext,
                     member.memberSignatureKey,

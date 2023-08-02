@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory
 import java.time.Instant
 import net.corda.flow.fiber.cache.FlowFiberCache
 
-@Suppress("Unused")
+@Suppress("Unused" , "TooManyFunctions")
 @Component(service = [FlowEventExceptionProcessor::class])
 class FlowEventExceptionProcessorImpl @Activate constructor(
     @Reference(service = FlowMessageFactory::class)
@@ -113,20 +113,41 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         exception: FlowFatalException,
         context: FlowEventContext<*>
     ): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
-        val msg = if (!context.checkpoint.doesExist) {
-            "Flow processing for flow ID ${context.checkpoint.flowId} has failed due to a fatal exception. " +
-                    "doesExist was false"
+
+        val exceptionHandlingStartTime = Instant.now()
+        val checkpoint = context.checkpoint
+
+        val msg = if (!checkpoint.doesExist) {
+            "Flow processing for flow ID ${checkpoint.flowId} has failed due to a fatal exception. " +
+                    "Checkpoint/Flow start context doesn't exist"
         } else {
-            "Flow processing for flow ID ${context.checkpoint.flowId} has failed due to a fatal exception. " +
-                    "Flow start context: ${context.checkpoint.flowStartContext}"
+            "Flow processing for flow ID ${checkpoint.flowId} has failed due to a fatal exception. " +
+                    "Flow start context: ${checkpoint.flowStartContext}"
         }
         log.warn(msg, exception)
 
-        removeCachedFlowFiber(context.checkpoint)
+        val activeSessionIds = getActiveSessionIds(checkpoint)
 
-        val records = createStatusRecord(context.checkpoint.flowId) {
+        if(activeSessionIds.isNotEmpty()) {
+            checkpoint.putSessionStates(
+                flowSessionManager.sendErrorMessages(
+                    context.checkpoint, activeSessionIds, exception, exceptionHandlingStartTime
+                )
+            )
+        }
+
+        val errorEvents = flowSessionManager.getSessionErrorEventRecords(checkpoint, context.config, exceptionHandlingStartTime)
+        val cleanupEvents = createCleanupEventsForSessions(
+            getScheduledCleanupExpiryTime(context, exceptionHandlingStartTime),
+            checkpoint.sessions.filterNot { it.hasScheduledCleanup }
+        )
+
+        removeCachedFlowFiber(checkpoint)
+        checkpoint.markDeleted()
+
+        val records = createStatusRecord(checkpoint.flowId) {
             flowMessageFactory.createFlowFailedStatusMessage(
-                context.checkpoint,
+                checkpoint,
                 FLOW_FAILED,
                 exception.message
             )
@@ -134,7 +155,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
         StateAndEventProcessor.Response(
             updatedState = null,
-            responseEvents = records,
+            responseEvents = records + errorEvents + cleanupEvents,
             markForDLQ = true
         )
     }
@@ -185,7 +206,10 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         }
     }
 
-    override fun process(exception: FlowMarkedForKillException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint> {
+    override fun process(
+        exception: FlowMarkedForKillException,
+        context: FlowEventContext<*>
+    ): StateAndEventProcessor.Response<Checkpoint> {
         return withEscalation {
             val exceptionHandlingStartTime = Instant.now()
             val checkpoint = context.checkpoint
@@ -205,9 +229,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 )
             }
 
-            val activeSessionIds = checkpoint.sessions.filterNot { sessionState ->
-                sessionState.status == SessionStateType.CLOSED || sessionState.status == SessionStateType.ERROR
-            }.map { it.sessionId }
+            val activeSessionIds = getActiveSessionIds(checkpoint)
 
             if (activeSessionIds.isNotEmpty()) {
                 checkpoint.putSessionStates(
@@ -216,12 +238,17 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                     )
                 )
             }
-            val errorEvents = flowSessionManager.getSessionErrorEventRecords(context.checkpoint, context.config, exceptionHandlingStartTime)
+            val errorEvents = flowSessionManager.getSessionErrorEventRecords(
+                context.checkpoint,
+                context.config,
+                exceptionHandlingStartTime
+            )
             val cleanupEvents = createCleanupEventsForSessions(
                 getScheduledCleanupExpiryTime(context, exceptionHandlingStartTime),
                 checkpoint.sessions.filterNot { it.hasScheduledCleanup }
             )
-            val statusRecord = createFlowKilledStatusRecord(checkpoint, exception.message ?: "No exception message provided.")
+            val statusRecord =
+                createFlowKilledStatusRecord(checkpoint, exception.message ?: "No exception message provided.")
 
             removeCachedFlowFiber(checkpoint)
 
@@ -235,6 +262,10 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             )
         }
     }
+
+    private fun getActiveSessionIds(checkpoint: FlowCheckpoint) = checkpoint.sessions.filterNot { sessionState ->
+        sessionState.status == SessionStateType.CLOSED || sessionState.status == SessionStateType.ERROR
+    }.map { it.sessionId }
 
     private fun withEscalation(handler: () -> StateAndEventProcessor.Response<Checkpoint>): StateAndEventProcessor.Response<Checkpoint> {
         return try {

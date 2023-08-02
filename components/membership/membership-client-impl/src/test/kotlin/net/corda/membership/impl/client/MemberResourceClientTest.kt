@@ -12,7 +12,7 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.common.RegistrationRequestDetails
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -312,6 +312,7 @@ class MemberResourceClientTest {
                     clock.instant().plusSeconds(7),
                     RegistrationStatus.APPROVED,
                     "registration id",
+                    "holdingId1",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key", "value"))),
                     signatureWithKey,
@@ -327,6 +328,7 @@ class MemberResourceClientTest {
                     clock.instant().plusSeconds(20),
                     RegistrationStatus.SENT_TO_MGM,
                     "registration id 2",
+                    "holdingId2",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
                     signatureWithKey,
@@ -342,6 +344,7 @@ class MemberResourceClientTest {
                     clock.instant().plusSeconds(70),
                     RegistrationStatus.DECLINED,
                     "registration id 3",
+                    "holdingId3",
                     1,
                     KeyValuePairList(listOf(KeyValuePair("key 3", "value 3"))),
                     signatureWithKey,
@@ -441,6 +444,7 @@ class MemberResourceClientTest {
                 clock.instant().plusSeconds(2),
                 status,
                 "registration id",
+                "holdingId1",
                 1,
                 KeyValuePairList(listOf(KeyValuePair("key", "value"))),
                 signatureWithKey,

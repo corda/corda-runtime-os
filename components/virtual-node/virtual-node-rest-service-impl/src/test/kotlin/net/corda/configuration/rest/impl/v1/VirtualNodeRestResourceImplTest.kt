@@ -23,7 +23,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rest.common.VirtualNodeSender
 import net.corda.virtualnode.rest.converters.MessageConverter
 import net.corda.virtualnode.rest.factories.RequestFactory
@@ -61,13 +60,6 @@ class VirtualNodeRestResourceImplTest {
     }
     private val mockCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
         whenever(createCoordinator(any(), any())) doReturn mockCoordinator
-    }
-    private val mockDownCoordinator = mock<LifecycleCoordinator>().apply {
-        whenever(isRunning) doReturn false
-    }
-
-    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>().apply {
-        whenever(getByHoldingIdentityShortHash(any())) doReturn mockVnode()
     }
 
     private val cpiInfoReadService = mock<CpiInfoReadService>()
@@ -143,7 +135,7 @@ class VirtualNodeRestResourceImplTest {
             whenever(fileChecksum).thenReturn(parseSecureHash("SHA-256:1234567890"))
         }
         whenever(virtualNodeValidationService.validateAndGetVirtualNode(any())).thenReturn(currentVNode)
-        whenever(cpiInfoReadService.get(currentVNode!!.cpiIdentifier)).thenReturn(currentCpi)
+        whenever(cpiInfoReadService.get(currentVNode.cpiIdentifier)).thenReturn(currentCpi)
 
         val vnodeResource = createVirtualNodeRestResourceImpl(mockCoordinatorFactory)
         vnodeResource.start()
@@ -195,7 +187,7 @@ class VirtualNodeRestResourceImplTest {
     @Test
     fun `get upgrade node status for request id returns status`() {
         val requestId = UUID.randomUUID().toString()
-        val avroStatus = getAvroVirtualNodeOperationStatus("a")
+        val avroStatus = getAvroVirtualNodeOperationStatus()
         val statusResponse = VirtualNodeOperationStatusResponse(requestId, listOf(avroStatus))
         val response = VirtualNodeManagementResponse(Instant.now(), statusResponse)
 
@@ -223,11 +215,12 @@ class VirtualNodeRestResourceImplTest {
             UTCClock(),
             virtualNodeValidationService,
             restContextProvider,
-            messageConverter
+            messageConverter,
+            mock()
         )
     }
 
-    private fun mockVnode(operational: OperationalStatus = OperationalStatus.ACTIVE): VirtualNodeInfo? {
+    private fun mockVnode(operational: OperationalStatus = OperationalStatus.ACTIVE): VirtualNodeInfo {
         return VirtualNodeInfo(
             HoldingIdentity(MemberX500Name("test", "IE", "IE"), "group"),
             CpiIdentifier("cpi", "1", parseSecureHash("SHA-256:1234567890")),
@@ -250,10 +243,10 @@ class VirtualNodeRestResourceImplTest {
         )
     }
 
-    private fun getAvroVirtualNodeOperationStatus(stateString: String): AvroVirtualNodeOperationStatus {
+    private fun getAvroVirtualNodeOperationStatus(): AvroVirtualNodeOperationStatus {
         return AvroVirtualNodeOperationStatus.newBuilder()
             .setRequestId("request1")
-            .setState(stateString)
+            .setState("a")
             .setRequestData("requestData1")
             .setRequestTimestamp(Instant.now())
             .setLatestUpdateTimestamp(Instant.now())

@@ -5,7 +5,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 
 fun ClusterBuilder.awaitVirtualNodeOperationStatusCheck(requestId: String): String {
-    val statusResponse = assertWithRetry {
+    val statusResponse = assertWithRetryIgnoringExceptions {
         timeout(1.minutes)
         command { getVNodeStatus(requestId) }
         condition {

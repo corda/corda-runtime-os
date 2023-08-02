@@ -5,8 +5,6 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpk.read.CpkReadService
 import net.corda.flow.p2p.filter.FlowP2PFilterService
 import net.corda.flow.service.FlowService
-import net.corda.ledger.utxo.token.cache.factories.TokenCacheComponentFactory
-import net.corda.ledger.utxo.token.cache.services.TokenCacheComponent
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -52,8 +50,6 @@ class FlowProcessorImpl @Activate constructor(
     private val sandboxGroupContextComponent: SandboxGroupContextComponent,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    @Reference(service = TokenCacheComponentFactory::class)
-    private val tokenCacheComponentFactory: TokenCacheComponentFactory,
     @Reference(service = GroupParametersReaderService::class)
     private val groupParametersReaderService: GroupParametersReaderService,
     @Reference(service = CpkReadService::class)
@@ -81,7 +77,7 @@ class FlowProcessorImpl @Activate constructor(
         ::cpkReadService,
         ::groupPolicyProvider,
         ::membershipQueryClient
-    ).with(tokenCacheComponentFactory.create(), TokenCacheComponent::class.java)
+    )
 
     private val lifecycleCoordinator =
         coordinatorFactory.createCoordinator<FlowProcessorImpl>(dependentComponents, ::eventHandler)

@@ -292,7 +292,6 @@ class UtxoRepositoryImpl @Activate constructor(
         type: String,
         tokenType: String?,
         tokenIssuerHash: String?,
-        tokenNotaryX500Name: String?,
         tokenSymbol: String?,
         tokenTag: String?,
         tokenOwnerHash: String?,
@@ -302,10 +301,10 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}utxo_transaction_output(
-                transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
+                transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash,
                 token_symbol, token_tag, token_owner_hash, token_amount, created)
             VALUES(
-                :transactionId, :groupIndex, :leafIndex, :type, :tokenType, :tokenIssuerHash, :tokenNotaryX500Name,
+                :transactionId, :groupIndex, :leafIndex, :type, :tokenType, :tokenIssuerHash,
                 :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, :createdAt)
             ON CONFLICT DO NOTHING"""
         )
@@ -315,7 +314,6 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("type", type)
             .setParameter("tokenType", tokenType)
             .setParameter("tokenIssuerHash", tokenIssuerHash)
-            .setParameter("tokenNotaryX500Name", tokenNotaryX500Name)
             .setParameter("tokenSymbol", tokenSymbol)
             .setParameter("tokenTag", tokenTag)
             .setParameter("tokenOwnerHash", tokenOwnerHash)

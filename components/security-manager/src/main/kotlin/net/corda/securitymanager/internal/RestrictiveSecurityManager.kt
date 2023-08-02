@@ -16,6 +16,7 @@ import java.security.Permission
 /** A [CordaSecurityManager] that provides control over what permissions are granted or denied. */
 class RestrictiveSecurityManager(
     private val conditionalPermissionAdmin: ConditionalPermissionAdmin,
+    @Suppress("deprecation", "removal")
     osgiSecurityManager: SecurityManager?
 ) : CordaSecurityManager {
     companion object {
@@ -24,6 +25,7 @@ class RestrictiveSecurityManager(
 
     init {
         // Ensure OSGi's SecurityManager is installed.
+        @Suppress("deprecation", "removal")
         if (System.getSecurityManager() !== osgiSecurityManager) {
             System.setSecurityManager(osgiSecurityManager)
         }

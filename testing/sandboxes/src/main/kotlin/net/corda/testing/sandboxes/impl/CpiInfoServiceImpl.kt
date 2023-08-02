@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory
 import java.util.stream.Stream
 
 @Suppress("unused")
-@Component
+@Component(property = [ SandboxSetup.SANDBOX_SERVICE ])
 @ServiceRanking(SandboxSetup.SANDBOX_SERVICE_RANKING)
 class CpiInfoServiceImpl @Activate constructor(
     @Reference

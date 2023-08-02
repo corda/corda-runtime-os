@@ -1,0 +1,7 @@
+{
+  "name": "Scenario D",
+  "workerReplicas": 8,
+  "kafkaBrokers": 7,
+  "partitionCount": 16,
+  "replicationFactor": 3
+}

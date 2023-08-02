@@ -7,7 +7,9 @@ import net.corda.libs.packaging.core.exception.InvalidSignatureException
 import net.corda.libs.packaging.testutils.TestUtils
 import net.corda.libs.packaging.testutils.TestUtils.ALICE
 import net.corda.libs.packaging.testutils.TestUtils.BOB
+import net.corda.libs.packaging.testutils.TestUtils.CA1
 import net.corda.libs.packaging.testutils.TestUtils.ROOT_CA
+import net.corda.libs.packaging.testutils.TestUtils.ROOT_CA_SIGNER
 import net.corda.libs.packaging.testutils.TestUtils.addFile
 import net.corda.libs.packaging.testutils.TestUtils.base64ToBytes
 import net.corda.libs.packaging.testutils.TestUtils.signedBy
@@ -26,11 +28,13 @@ import java.io.BufferedReader
 import java.io.ByteArrayInputStream
 import java.security.DigestInputStream
 import java.security.MessageDigest
+import java.security.cert.CertPathValidatorException
+import java.security.cert.X509Certificate
 
 class CpbV2VerifierTest {
-    private fun verify(cpb: InMemoryZipFile) {
+    private fun verify(cpb: InMemoryZipFile, trustedCerts: Collection<X509Certificate> = setOf(ROOT_CA)) {
         cpb.use {
-            CpbV2Verifier(JarReader("test.cpb", cpb.inputStream(), setOf(ROOT_CA))).verify()
+            CpbV2Verifier(JarReader("test.cpb", cpb.inputStream(), trustedCerts)).verify()
         }
     }
 
@@ -53,6 +57,30 @@ class CpbV2VerifierTest {
             verify(cpb)
         }
         assertEquals("File testCpk1-1.0.0.0.jar is not signed in package \"test.cpb\"", exception.message)
+    }
+
+    @Test
+    fun `successfully verifies if CPB signed by correct Root CA`() {
+        val cpb = TestCpbV2Builder()
+            .signers(ALICE, ROOT_CA_SIGNER)
+            .build()
+
+        assertDoesNotThrow {
+            verify(cpb, setOf(ROOT_CA))
+        }
+    }
+
+    @Test
+    fun `throws if CPB signed by different Root CA`() {
+        val cpb = TestCpbV2Builder()
+            .signers(ALICE, ROOT_CA_SIGNER)
+            .build()
+
+        val exception = assertThrows<CertPathValidatorException> {
+            verify(cpb, setOf(CA1))
+        }
+        assertEquals("Error validating code signer's certificate path, X.509 name: CN=Corda Dev Root CA,OU=R3," +
+                "O=Corda,L=Dublin,C=IE. Path does not chain with any of the trust anchors", exception.message)
     }
 
     @Test

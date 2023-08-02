@@ -16,6 +16,7 @@ import net.corda.kryoserialization.serializers.AvroRecordRejectSerializer
 import net.corda.kryoserialization.serializers.CertPathSerializer
 import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.kryoserialization.serializers.CordaClosureSerializer
+import net.corda.kryoserialization.serializers.InputStreamSerializer
 import net.corda.kryoserialization.serializers.IteratorSerializer
 import net.corda.kryoserialization.serializers.LazyMappedListSerializer
 import net.corda.kryoserialization.serializers.LinkedEntrySetSerializer
@@ -36,6 +37,9 @@ import org.objenesis.strategy.StdInstantiatorStrategy
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.lang.reflect.Method
+import java.io.BufferedInputStream
+import java.io.FileInputStream
+import java.io.InputStream
 import java.lang.reflect.Modifier.isPublic
 import java.security.cert.CertPath
 import java.security.cert.X509Certificate
@@ -112,6 +116,11 @@ class DefaultKryoCustomizer {
                 addDefaultSerializer(Throwable::class.java, object: BaseSerializerFactory<ThrowableSerializer<*>>() {
                     override fun newSerializer(kryo: Kryo, type: Class<*>) = ThrowableSerializer(kryo, type)
                 })
+
+                addDefaultSerializer(InputStream::class.java, InputStreamSerializer)
+                register(FileInputStream::class.java, InputStreamSerializer)
+                // InputStream subclasses whitelisting, required for attachments
+                register(BufferedInputStream::class.java, InputStreamSerializer)
 
                 //register loggers using an int ID to reduce information saved in kryo
                 //ensures Kryo does not write the name of the concrete logging impl class into the serialized stream

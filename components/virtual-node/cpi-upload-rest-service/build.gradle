@@ -26,10 +26,12 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-crypto'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "net.corda:corda-avro-schema"
+    implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-topic-schema'
-    implementation project(":libs:packaging:packaging")
-    implementation project(":libs:utilities")
+    implementation project(':libs:packaging:packaging')
+    implementation project(':libs:utilities')
+    implementation project(':libs:platform-info')
+
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(':libs:virtual-node:cpi-upload-manager-impl')

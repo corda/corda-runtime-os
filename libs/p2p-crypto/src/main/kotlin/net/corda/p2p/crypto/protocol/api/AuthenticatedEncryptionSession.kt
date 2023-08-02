@@ -33,7 +33,7 @@ class AuthenticatedEncryptionSession(override val sessionId: String,
                                      private val inboundNonce: ByteArray,
                                      val maxMessageSize: Int): Session {
 
-    private val provider = BouncyCastleProvider()
+    private val provider = BouncyCastleProvider.PROVIDER_NAME
     private val encryptionCipher = Cipher.getInstance(CIPHER_ALGO, provider)
     private val decryptionCipher = Cipher.getInstance(CIPHER_ALGO, provider)
     private val sequenceNo = AtomicLong(nextSequenceNo)

@@ -39,6 +39,7 @@ class NetworkRestResourceImplTest {
     private val networkRestResource = NetworkRestResourceImpl(
         lifecycleCoordinatorFactory,
         certificatesClient,
+        mock(),
     )
 
     @Nested
