@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package net.corda.cli.plugins.network
 
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
