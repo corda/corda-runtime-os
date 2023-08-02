@@ -27,11 +27,15 @@ class InteropIdentityProducer(
         val interopIdentityShortHash = computeShortHash(identity.x500Name, identity.groupId)
         val key = "$holdingIdentityShortHash:$interopIdentityShortHash"
 
+        val listOfFacades = mutableListOf<String>()
+            for (facade in identity.facadeIds) {
+                listOfFacades.add(facade.toString())
+            }
         val recordValue = PersistentInteropIdentity(
             identity.groupId,
             identity.x500Name,
             identity.owningVirtualNodeShortHash == holdingIdentityShortHash,
-            identity.facadeIds,
+            listOfFacades,
             identity.applicationName,
             identity.endpointUrl,
             identity.endpointProtocol

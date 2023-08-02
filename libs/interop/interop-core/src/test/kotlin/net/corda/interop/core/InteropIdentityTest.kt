@@ -1,5 +1,6 @@
 package net.corda.interop.core
 
+import net.corda.v5.application.interop.facade.FacadeId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -20,7 +21,7 @@ class InteropIdentityTest {
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_1,
             owningVirtualNodeShortHash = "101010101010",
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointProtocol = "https://alice.corda5.r3.com:10000",
             endpointUrl = "1"
@@ -30,7 +31,7 @@ class InteropIdentityTest {
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_1,
             owningVirtualNodeShortHash = "101010101010",
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointProtocol = "https://alice.corda5.r3.com:10000",
             endpointUrl = "1"
@@ -45,7 +46,7 @@ class InteropIdentityTest {
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_1,
             owningVirtualNodeShortHash = "101010101010",
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "https://alice.corda5.r3.com:10000",
             endpointProtocol = "1"
@@ -55,7 +56,7 @@ class InteropIdentityTest {
             x500Name = "C=GB, L=London, O=Bob",
             groupId = GROUP_ID_1,
             owningVirtualNodeShortHash = "101010101010",
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "https://bob.corda5.r3.com:10000",
             endpointProtocol = "1"
@@ -70,7 +71,7 @@ class InteropIdentityTest {
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_1,
             owningVirtualNodeShortHash = "101010101010",
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "https://alice.corda5.r3.com:10000",
             endpointProtocol = "1"
@@ -80,7 +81,7 @@ class InteropIdentityTest {
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_2,
             owningVirtualNodeShortHash = "101010101010",
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "https://alice.corda5.r3.com:10000",
             endpointProtocol = "1"
@@ -95,7 +96,7 @@ class InteropIdentityTest {
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_1,
             owningVirtualNodeShortHash = "101010101010",
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "https://alice.corda5.r3.com:10000",
             endpointProtocol = "1"
@@ -105,7 +106,7 @@ class InteropIdentityTest {
             x500Name = "C=GB, L=London, O=Alice",
             groupId = GROUP_ID_1,
             owningVirtualNodeShortHash = "010101010101",
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "https://alice.corda5.r3.com:10000",
             endpointProtocol = "1"

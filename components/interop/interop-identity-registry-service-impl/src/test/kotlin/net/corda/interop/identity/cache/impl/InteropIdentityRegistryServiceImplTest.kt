@@ -15,6 +15,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.util.UUID
 import net.corda.interop.core.InteropIdentity
+import net.corda.v5.application.interop.facade.FacadeId
 
 
 class InteropIdentityRegistryServiceImplTest {
@@ -66,7 +67,7 @@ class InteropIdentityRegistryServiceImplTest {
             groupId = UUID.randomUUID().toString(),
             x500Name = "C=GB, L=London, O=Alice",
             owningVirtualNodeShortHash = shortHash1,
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
             endpointProtocol = "https://alice.corda5.r3.com:10000"
@@ -76,7 +77,8 @@ class InteropIdentityRegistryServiceImplTest {
             groupId = UUID.randomUUID().toString(),
             x500Name = "C=GB, L=London, O=Bob",
             owningVirtualNodeShortHash = shortHash2,
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(
+                FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
             endpointProtocol = "https://bob.corda5.r3.com:10000"

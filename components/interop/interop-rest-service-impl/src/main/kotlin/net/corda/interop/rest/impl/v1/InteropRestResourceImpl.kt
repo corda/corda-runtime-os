@@ -38,6 +38,7 @@ import net.corda.libs.interop.endpoints.v1.types.InteropIdentityResponse
 import net.corda.libs.interop.endpoints.v1.types.ExportInteropIdentityRest
 import net.corda.libs.interop.endpoints.v1.types.ImportInteropIdentityRest
 import net.corda.rest.exception.BadRequestException
+import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
@@ -96,6 +97,11 @@ internal class InteropRestResourceImpl @Activate constructor(
         createInteropIdentityRestRequest: CreateInteropIdentityRest.Request,
         holdingIdentityShortHash: String
     ): CreateInteropIdentityRest.Response {
+        try {
+            ShortHash.parse(holdingIdentityShortHash)
+        } catch (e: ShortHashException) {
+            throw BadRequestException("Invalid holding identity short hash${e.message?.let { ": $it" }}")
+        }
         val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(holdingIdentityShortHash)
         val x500Name = MemberX500Name(
             createInteropIdentityRestRequest.applicationName,
@@ -109,27 +115,31 @@ internal class InteropRestResourceImpl @Activate constructor(
                 "X500 name \"$x500Name\" could not be parsed. Cause: ${e.message}"
             )
         }
-        try {
-            ShortHash.parse(holdingIdentityShortHash)
-        } catch (e: ShortHashException) {
-            throw BadRequestException("Invalid holding identity short hash${e.message?.let { ": $it" }}")
-        }
         val mapper = ObjectMapper()
         val result: Map<String, String> = mapper.readValue(
             createInteropIdentityRestRequest.groupPolicy,
             object : TypeReference<Map<String, String>>() {})
+        if (result.contains("CREATE_ID") && !createInteropIdentityRestRequest.members.isNullOrEmpty()) {
+            throw InvalidInputDataException(
+                "If the groupId doesn't exist, the members list should be empty."
+            )
+        }
         val groupId = interopIdentityWriteService.publishGroupPolicy(
             result["groupId"].toString(),
             createInteropIdentityRestRequest.groupPolicy
         )
-
+        if (groupId == "CREATE_ID") {
+            throw InvalidInputDataException(
+                "The groupId isn't a valid UUID string, group hasn't been properly created."
+            )
+        }
         interopIdentityWriteService.addInteropIdentity(
             holdingIdentityShortHash,
             InteropIdentity(
                 groupId = groupId,
                 x500Name = x500Name,
                 owningVirtualNodeShortHash = vNodeInfo.getVNodeShortHash(),
-                facadeIds = listOf("facadeIds"),
+                facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
                 applicationName = createInteropIdentityRestRequest.applicationName,
                 endpointUrl = "endpointUrl",
                 endpointProtocol = "endpointProtocol",

@@ -1,5 +1,5 @@
 package net.corda.libs.interop.endpoints.v1.types
-
+import net.corda.v5.application.interop.facade.FacadeId
 
 class ExportInteropIdentityRest {
 
@@ -9,7 +9,7 @@ class ExportInteropIdentityRest {
         val owningIdentityShortHash: String,
         val endpointUrl: String,
         val endpointProtocol: String,
-        val facadeIds: List<String>
+        val facadeIds: List<FacadeId>
     )
 
     class Response(

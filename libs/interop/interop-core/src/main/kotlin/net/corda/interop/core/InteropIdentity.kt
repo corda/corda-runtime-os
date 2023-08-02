@@ -1,13 +1,14 @@
 package net.corda.interop.core
 
 import net.corda.data.interop.PersistentInteropIdentity
+import net.corda.v5.application.interop.facade.FacadeId
 
 
 data class InteropIdentity(
     val x500Name: String,
     val groupId: String,
     val owningVirtualNodeShortHash: String,
-    val facadeIds: List<String>,
+    val facadeIds: List<FacadeId>,
     val applicationName: String,
     val endpointUrl: String,
     val endpointProtocol: String
@@ -16,11 +17,16 @@ data class InteropIdentity(
 
     companion object {
         fun of(virtualNodeShortHash: String, interopIdentity: PersistentInteropIdentity): InteropIdentity {
+            val listOfFacadeIds = mutableListOf<FacadeId>()
+            for (facadeId in interopIdentity.facadeIds) {
+                val facade = FacadeId.of(facadeId)
+                listOfFacadeIds.add(facade)
+            }
             return InteropIdentity(
                 interopIdentity.x500Name,
                 interopIdentity.groupId,
                 virtualNodeShortHash,
-                interopIdentity.facadeIds,
+                listOfFacadeIds,
                 interopIdentity.applicationName,
                 interopIdentity.endpointUrl,
                 interopIdentity.endpointProtocol

@@ -1,6 +1,7 @@
 package net.corda.interop.identity.cache.impl
 
 import net.corda.interop.core.InteropIdentity
+import net.corda.v5.application.interop.facade.FacadeId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.Test
@@ -20,7 +21,8 @@ class InteropIdentityRegistryViewImplTest {
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
             owningVirtualNodeShortHash = "101010101010",
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(
+                FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
             endpointProtocol = "https://alice.corda5.r3.com:10000"
@@ -32,7 +34,7 @@ class InteropIdentityRegistryViewImplTest {
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
             owningVirtualNodeShortHash = "101010101010",
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
             endpointProtocol = "https://alice.corda5.r3.com:10000"
@@ -47,7 +49,7 @@ class InteropIdentityRegistryViewImplTest {
             x500Name = "C=GB, L=London, O=Bob",
             groupId = INTEROP_GROUP_ID,
             owningVirtualNodeShortHash = "101010101010",
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
             endpointProtocol = "https://bob.corda5.r3.com:10000"
@@ -65,7 +67,7 @@ class InteropIdentityRegistryViewImplTest {
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
             owningVirtualNodeShortHash = "101010101010",
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
             endpointProtocol = "https://alice.corda5.r3.com:10000"
@@ -80,7 +82,7 @@ class InteropIdentityRegistryViewImplTest {
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
             owningVirtualNodeShortHash = "101010101010",
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
             endpointProtocol = "https://alice.corda5.r3.com:10000"
@@ -97,7 +99,7 @@ class InteropIdentityRegistryViewImplTest {
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
             owningVirtualNodeShortHash = "101010101010",
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
             endpointProtocol = "https://alice.corda5.r3.com:10000"
@@ -128,7 +130,7 @@ class InteropIdentityRegistryViewImplTest {
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
             owningVirtualNodeShortHash = VIEW_OWNER_SHORT_HASH,
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
             endpointProtocol = "https://alice.corda5.r3.com:10000"
@@ -138,7 +140,7 @@ class InteropIdentityRegistryViewImplTest {
             x500Name = "C=GB, L=London, O=Bob",
             groupId = INTEROP_GROUP_ID,
             owningVirtualNodeShortHash = "101010101010",
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
             endpointProtocol = "https://bob.corda5.r3.com:10000"
@@ -166,7 +168,7 @@ class InteropIdentityRegistryViewImplTest {
             x500Name = "C=GB, L=London, O=Alice1",
             groupId = INTEROP_GROUP_ID,
             owningVirtualNodeShortHash = VIEW_OWNER_SHORT_HASH,
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
             endpointProtocol = "https://alice1.corda5.r3.com:10000"
@@ -176,7 +178,7 @@ class InteropIdentityRegistryViewImplTest {
             x500Name = "C=GB, L=London, O=Alice2",
             groupId = INTEROP_GROUP_ID,
             owningVirtualNodeShortHash = VIEW_OWNER_SHORT_HASH,
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
             endpointProtocol = "https://alice2.corda5.r3.com:10000"

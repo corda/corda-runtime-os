@@ -4637,6 +4637,10 @@
         },
         "description" : "Details of the virtual node to be created"
       },
+      "FacadeId" : {
+        "type" : "object",
+        "properties" : { }
+      },
       "FlowResultResponse" : {
         "required" : [ "flowStatus", "holdingIdentityShortHash", "timestamp" ],
         "type" : "object",
@@ -4966,8 +4970,7 @@
             "type" : "array",
             "nullable" : false,
             "items" : {
-              "type" : "string",
-              "example" : "string"
+              "$ref" : "#/components/schemas/FacadeId"
             }
           },
           "groupId" : {
@@ -5054,8 +5057,7 @@
             "type" : "array",
             "nullable" : false,
             "items" : {
-              "type" : "string",
-              "example" : "string"
+              "$ref" : "#/components/schemas/FacadeId"
             }
           },
           "owningIdentityShortHash" : {
