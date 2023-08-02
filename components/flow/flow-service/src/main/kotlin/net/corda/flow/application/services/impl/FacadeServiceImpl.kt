@@ -21,7 +21,6 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
-import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 
@@ -76,7 +75,8 @@ class FacadeServiceImpl @Activate constructor(
         ).mapValues { (_, value) -> this::class.java.getResource(value)?.readText().toString().trimIndent() }
             .mapValues { (_, value) ->
                 try {
-                    AccessController.doPrivileged(PrivilegedExceptionAction {
+                    @Suppress("deprecation", "removal")
+                    java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
                         FacadeReaders.JSON.read(value)
                     })
                 } catch (e: PrivilegedActionException) {
