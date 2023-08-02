@@ -16,6 +16,7 @@ repositories {
 }
 
 dependencies {
+    implementation project(path: ':components:interop:web3j-service')
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly 'org.osgi:osgi.annotation'
 
