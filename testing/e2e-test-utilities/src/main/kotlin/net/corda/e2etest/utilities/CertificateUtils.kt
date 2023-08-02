@@ -58,7 +58,7 @@ fun ClusterInfo.generateCsr(
         }
     }
 
-    assertWithRetry {
+    assertWithRetryIgnoringExceptions {
         interval(1.seconds)
         command { post("/api/${RestApiVersion.C5_1.versionPath}/certificate/$tenantId/$keyId", ObjectMapper().writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
@@ -74,7 +74,7 @@ fun ClusterInfo.importCertificate(
     alias: String
 ) {
     cluster {
-        assertWithRetry {
+        assertWithRetryIgnoringExceptions {
             interval(1.seconds)
             command { importCertificate(file, usage, alias) }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }

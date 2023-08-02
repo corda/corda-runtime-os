@@ -11,6 +11,7 @@ import net.corda.e2etest.utilities.CODE_SIGNER_CERT_USAGE
 import net.corda.e2etest.utilities.RpcSmokeTestInput
 import net.corda.e2etest.utilities.SMOKE_TEST_CLASS_NAME
 import net.corda.e2etest.utilities.assertWithRetry
+import net.corda.e2etest.utilities.assertWithRetryIgnoringExceptions
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.cluster
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
@@ -48,7 +49,7 @@ class FlowStatusFeedSmokeTest {
         fun beforeAll() {
             // Certificate upload can be slow in the combined worker, especially after it has just started up.
             cluster {
-                assertWithRetry {
+                assertWithRetryIgnoringExceptions {
                     timeout(Duration.ofSeconds(100))
                     interval(Duration.ofSeconds(1))
                     command { importCertificate(CODE_SIGNER_CERT, CODE_SIGNER_CERT_USAGE, CODE_SIGNER_CERT_ALIAS) }

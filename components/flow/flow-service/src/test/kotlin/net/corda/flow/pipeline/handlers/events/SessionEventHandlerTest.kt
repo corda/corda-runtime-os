@@ -20,7 +20,6 @@ import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.pipeline.CheckpointInitializer
 import net.corda.flow.pipeline.exceptions.FlowEventException
-import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
@@ -153,15 +152,19 @@ class SessionEventHandlerTest {
     }
 
     @Test
-    fun `Receiving a session init payload throws an exception if there is no matching initiated flow`() {
+    fun `Receiving a session init payload sends an error message if there is no matching initiated flow`() {
         val sessionEvent = createSessionInit()
+        val inputContext = buildFlowEventContext(checkpoint = expectedCheckpoint, inputEventPayload = sessionEvent)
 
         whenever(sandboxGroupContext.protocolStore)
             .thenReturn(FlowProtocolStoreImpl(mapOf(), mapOf(), mapOf()))
         whenever(sessionManager.getNextReceivedEvent(any())).thenReturn(sessionEvent)
 
-        val inputContext = buildFlowEventContext(checkpoint = expectedCheckpoint, inputEventPayload = sessionEvent)
-        assertThrows<FlowFatalException> { sessionEventHandler.preProcess(inputContext) }
+        val sessionEventHandler = SessionEventHandler(
+            flowSandboxService, sessionManager, fakeCheckpointInitializerService, flowSessionManager)
+
+        sessionEventHandler.preProcess(inputContext)
+        verify(flowSessionManager, times(1)).sendErrorMessages(any(), any(), anyOrNull(), any())
     }
 
     @ParameterizedTest(name = "Receiving a {0} payload when a checkpoint does not exist throws an exception")
@@ -233,7 +236,6 @@ class SessionEventHandlerTest {
             assertThat(startContext.identity).isEqualTo(ALICE_X500_HOLDING_IDENTITY)
             assertThat(startContext.cpiId).isEqualTo(CPI_ID)
             assertThat(startContext.initiatedBy).isEqualTo(BOB_X500_HOLDING_IDENTITY)
-            assertThat(startContext.flowClassName).isEqualTo(INITIATED_FLOW_NAME)
         }
     }
 }

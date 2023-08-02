@@ -8,7 +8,7 @@ object RbacTestUtils {
 
     fun getAllRbacRoles(): List<RbacRole> {
         return DEFAULT_CLUSTER.cluster {
-            val bodyAsString = assertWithRetry {
+            val bodyAsString = assertWithRetryIgnoringExceptions {
                 command { getRbacRoles() }
                 condition { it.code == 200 }
                 failMessage("Failed to get all the RBAC roles in the cluster")

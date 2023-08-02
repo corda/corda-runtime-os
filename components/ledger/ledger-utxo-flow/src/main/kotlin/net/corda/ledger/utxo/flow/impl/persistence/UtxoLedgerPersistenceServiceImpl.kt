@@ -6,10 +6,14 @@ import net.corda.flow.fiber.metrics.recordSuspendable
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
+import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
+import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindSignedLedgerTransactionWithStatus
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindTransactionWithStatus
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransaction
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransactionIfDoesNotExist
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.UpdateTransactionStatus
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
@@ -18,7 +22,10 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransa
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.UpdateTransactionStatusExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.UpdateTransactionStatusParameters
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedLedgerTransaction
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
@@ -49,32 +56,51 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
+    @Reference(service = UtxoLedgerTransactionFactory::class)
+    private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
     @Reference(service = UtxoSignedTransactionFactory::class)
     private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory
 ) : UtxoLedgerPersistenceService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
-    override fun find(id: SecureHash, transactionStatus: TransactionStatus): UtxoSignedTransaction? {
-        return findTransactionWithStatus(id, transactionStatus)?.first
-    }
-
-    @Suspendable
-    override fun findTransactionWithStatus(
-        id: SecureHash,
-        transactionStatus: TransactionStatus
-    ): Pair<UtxoSignedTransaction?, TransactionStatus>? {
+    override fun findSignedTransaction(id: SecureHash, transactionStatus: TransactionStatus): UtxoSignedTransaction? {
         return recordSuspendable({ ledgerPersistenceFlowTimer(FindTransactionWithStatus) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     FindTransactionExternalEventFactory::class.java,
                     FindTransactionParameters(id.toString(), transactionStatus)
                 )
+            }.firstOrNull()?.let {
+                // Ignore the status returned from the database request. `FindTransaction` is an existing avro schema and discarding the
+                // returned status allows us to continue using it without upgrading issues.
+                val (transaction, _) = serializationService.deserialize<Pair<SignedTransactionContainer?, String?>>(it.array())
+                transaction?.toSignedTransaction()
+            }
+        }
+    }
+
+    @Suspendable
+    override fun findSignedLedgerTransaction(id: SecureHash): UtxoSignedLedgerTransaction? {
+        return findSignedLedgerTransactionWithStatus(id, TransactionStatus.VERIFIED)?.first
+    }
+
+    @Suspendable
+    override fun findSignedLedgerTransactionWithStatus(
+        id: SecureHash,
+        transactionStatus: TransactionStatus
+    ): Pair<UtxoSignedLedgerTransaction?, TransactionStatus>? {
+        return recordSuspendable({ ledgerPersistenceFlowTimer(FindSignedLedgerTransactionWithStatus) }) @Suspendable {
+            wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    FindSignedLedgerTransactionExternalEventFactory::class.java,
+                    FindSignedLedgerTransactionParameters(id.toString(), transactionStatus)
+                )
             }.firstOrNull().let {
                 if (it == null) return@let null
-                val (transaction, status) = serializationService.deserialize<Pair<SignedTransactionContainer?, String?>>(it.array())
+                val (transaction, status) = serializationService.deserialize<Pair<SignedLedgerTransactionContainer?, String?>>(it.array())
                 if (status == null)
                     return@let null
-                transaction?.toSignedTransaction() to status.toTransactionStatus()
+                transaction?.toSignedLedgerTransaction() to status.toTransactionStatus()
             }
         }
     }
@@ -130,15 +156,26 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         }
     }
 
-    private fun SignedTransactionContainer.toSignedTransaction()
-            : UtxoSignedTransaction { 
+    private fun SignedTransactionContainer.toSignedTransaction(): UtxoSignedTransaction {
         return utxoSignedTransactionFactory.create(wireTransaction, signatures)
     }
 
-    private fun UtxoSignedTransaction.toContainer() =
-        (this as UtxoSignedTransactionInternal).run {
+    private fun UtxoSignedTransaction.toContainer(): SignedTransactionContainer {
+        return (this as UtxoSignedTransactionInternal).run {
             SignedTransactionContainer(wireTransaction, signatures)
         }
+    }
+
+    private fun SignedLedgerTransactionContainer.toSignedLedgerTransaction(): UtxoSignedLedgerTransaction {
+        return UtxoSignedLedgerTransactionImpl(
+            utxoLedgerTransactionFactory.create(
+                wireTransaction,
+                serializedInputStateAndRefs,
+                serializedReferenceStateAndRefs
+            ),
+            utxoSignedTransactionFactory.create(wireTransaction, signatures)
+        )
+    }
 
     private fun serialize(payload: Any) = ByteBuffer.wrap(serializationService.serialize(payload).bytes)
 
