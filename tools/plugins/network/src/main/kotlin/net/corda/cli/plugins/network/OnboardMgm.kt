@@ -21,16 +21,17 @@ import java.util.UUID
 )
 class OnboardMgm : Runnable, BaseOnboard() {
     @Option(
-        names = ["--cpb-name"],
-        description = ["The name of the CPB. Default to random UUID"]
-    )
-    var cpbName: String = UUID.randomUUID().toString()
-
-    @Option(
         names = ["--x500-name"],
         description = ["The X500 name of the MGM. Default to a random name"]
     )
     override var x500Name: String = "O=Mgm, L=London, C=GB, OU=${UUID.randomUUID()}"
+
+    @Option(
+        names = ["--cpi-hash"],
+        description = ["The CPI hash of a previously uploaded CPI. " +
+                "If not specified, an auto-generated MGM CPI will be used."]
+    )
+    var cpiHash: String? = null
 
     @Option(
         names = ["--save-group-policy-as", "-s"],
@@ -39,17 +40,12 @@ class OnboardMgm : Runnable, BaseOnboard() {
     var groupPolicyFile: File =
         File(File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json")
 
-    @Option(
-        names = ["--cpi-file"],
-        description = [
-            "Location of the MGM CPI file.",
-            "To create the CPI use the package create-cpi command.",
-            "Leave empty to auto generate CPI file (not recommended)."
-        ]
-    )
-    var cpiFile: File? = null
+    private var cpiFile: File? = null
 
-    private var groupIdFile: File = File("groupId.txt")
+    private var groupIdFile: File = File(
+        File(File(File(System.getProperty("user.home")), ".corda"), "groupId"),
+        "groupId.txt"
+    )
 
     private val groupPolicy by lazy {
         mapOf(
@@ -73,20 +69,20 @@ class OnboardMgm : Runnable, BaseOnboard() {
                 errorMessage = "Save group policy: Invariant check failed after maximum attempts."
             ) {
                 try {
-                val resource = client.start().proxy
-                val response = resource.generateGroupPolicy(holdingId)
-                groupPolicyFile.parentFile.mkdirs()
-                json.writerWithDefaultPrettyPrinter()
-                    .writeValue(
-                        groupPolicyFile,
-                        json.readTree(response)
-                    )
-                println("Group policy file created at $groupPolicyFile")
-                // extract the groupId from the response
-                val groupId = json.readTree(response).get("groupId").asText()
+                    val resource = client.start().proxy
+                    val response = resource.generateGroupPolicy(holdingId)
+                    groupPolicyFile.parentFile.mkdirs()
+                    json.writerWithDefaultPrettyPrinter()
+                        .writeValue(
+                            groupPolicyFile,
+                            json.readTree(response)
+                        )
+                    println("Group policy file created at $groupPolicyFile")
+                    // extract the groupId from the response
+                    val groupId = json.readTree(response).get("groupId").asText()
 
-                // write the groupId to the file
-                groupIdFile.writeText(groupId)
+                    // write the groupId to the file
+                    groupIdFile.writeText(groupId)
                 } catch (e: Exception) {
                     null
                 }
@@ -153,6 +149,9 @@ class OnboardMgm : Runnable, BaseOnboard() {
     }
 
     override val cpiFileChecksum: String by lazy {
+        if (cpiHash != null) {
+            return@lazy cpiHash!!
+        }
         val existingHash = createRestClient(CpiUploadRestResource::class).use { client ->
             val response = client.start().proxy.getAllCpis()
             response.cpis
@@ -164,7 +163,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
             return@lazy existingHash
         }
 
-        uploadCpi(cpi.inputStream(), cpbName)
+        uploadCpi(cpi.inputStream(), "MGM-" + UUID.randomUUID().toString())
     }
 
     override fun run() {
