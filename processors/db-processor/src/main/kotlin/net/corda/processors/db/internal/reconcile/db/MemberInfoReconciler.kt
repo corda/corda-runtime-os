@@ -48,6 +48,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.slf4j.LoggerFactory
 
+@Suppress("LongParameterList")
 class MemberInfoReconciler(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     private val dbConnectionManager: DbConnectionManager,
@@ -134,12 +135,17 @@ class MemberInfoReconciler(
         }
 
         override fun put(recordKey: String, recordValue: PersistentMemberInfo) {
-            logger.info("Reconciling record for: ${recordValue.memberContext.toSortedMap()[PARTY_NAME]} in ${recordValue.viewOwningMember}'s member list.")
-            coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.publish(listOf(Record(topic = MEMBER_LIST_TOPIC, key = recordKey, value = recordValue)))
+            logger.info("Reconciling record for: ${recordValue.memberContext.toSortedMap()[PARTY_NAME]} in " +
+                    "${recordValue.viewOwningMember}'s member list.")
+            coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.publish(
+                listOf(Record(topic = MEMBER_LIST_TOPIC, key = recordKey, value = recordValue))
+            )
         }
 
         override fun remove(recordKey: String) {
-            coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.publish(listOf(Record(topic = MEMBER_LIST_TOPIC, key = recordKey, value = null)))
+            coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.publish(
+                listOf(Record(topic = MEMBER_LIST_TOPIC, key = recordKey, value = null))
+            )
         }
 
         private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -211,7 +217,9 @@ class MemberInfoReconciler(
             }
         }
 
-        private inner class Processor(val recordsMap: MutableMap<String, PersistentMemberInfo>): CompactedProcessor<String, PersistentMemberInfo> {
+        private inner class Processor(
+            val recordsMap: MutableMap<String, PersistentMemberInfo>
+        ): CompactedProcessor<String, PersistentMemberInfo> {
 
             override val keyClass = String::class.java
             override val valueClass = PersistentMemberInfo::class.java
