@@ -2,6 +2,7 @@ package net.corda.crypto.softhsm
 
 import net.corda.crypto.persistence.WrappingKeyInfo
 import java.io.Closeable
+import java.util.UUID
 
 /**
  *
@@ -27,4 +28,12 @@ interface WrappingRepository : Closeable {
      * @return The wrapping key material and metadata about version and algorithm.
      */
     fun findKey(alias: String): WrappingKeyInfo?
+
+    /**
+     * Find a wrapping key in the database
+     *
+     * @param alias The name for the  wrapping key, as previously passed into save.
+     * @return The pair of UUID and the wrapping key material with metadata about version and algorithm.
+     */
+    fun findKeyAndId(alias: String): Pair<UUID, WrappingKeyInfo>?
 }
