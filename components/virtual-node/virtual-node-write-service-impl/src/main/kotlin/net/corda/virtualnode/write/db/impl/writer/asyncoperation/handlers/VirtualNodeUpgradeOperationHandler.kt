@@ -12,7 +12,10 @@ import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
+import net.corda.membership.client.MemberResourceClient
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
@@ -38,6 +41,9 @@ internal class VirtualNodeUpgradeOperationHandler(
     private val oldVirtualNodeEntityRepository: VirtualNodeEntityRepository,
     private val virtualNodeInfoPublisher: Publisher,
     private val migrationUtility: MigrationUtility,
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    private val memberResourceClient: MemberResourceClient,
+    private val membershipQueryClient: MembershipQueryClient,
     private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository(),
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
     private val externalMessagingRouteConfigGenerator: ExternalMessagingRouteConfigGenerator,
@@ -139,6 +145,26 @@ internal class VirtualNodeUpgradeOperationHandler(
                     "name: ${upgradedVNodeInfo.cpiIdentifier.name}, version: ${upgradedVNodeInfo.cpiIdentifier.version} " +
                     "(request $requestId)"
         )
+
+        // Re-register the member once the virtual node has been upgraded, so that the member CPI version is up-to-date
+//        if(membershipQueryClient.isRunning) {
+//            val x500Name = membershipGroupReaderProvider.getGroupReader(upgradedVNodeInfo.holdingIdentity).owningMember
+//            val registrationRequest = membershipQueryClient
+//                .queryRegistrationRequests(upgradedVNodeInfo.holdingIdentity, x500Name, limit = 1)
+//                .getOrThrow()
+//                .first()
+//            val registrationContext = registrationRequest.memberProvidedContext.toMap()
+//
+//            var hasSubmitted = false
+//            while (!hasSubmitted) {
+//                val registrationResult =
+//                    memberResourceClient
+//                        .startRegistration(upgradedVNodeInfo.holdingIdentity.shortHash, registrationContext)
+//                if (registrationResult.registrationStatus == SubmittedRegistrationStatus.SUBMITTED) {
+//                    hasSubmitted = true
+//                }
+//            }
+//        }
 
         publishVirtualNodeInfo(completeVirtualNodeOperation(request.virtualNodeShortHash))
     }
