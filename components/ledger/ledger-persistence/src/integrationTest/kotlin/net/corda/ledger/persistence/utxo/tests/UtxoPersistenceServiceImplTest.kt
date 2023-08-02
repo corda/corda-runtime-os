@@ -10,14 +10,17 @@ import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
+import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.common.testkit.cpiPackageSummaryExample
+import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.common.testkit.getPrivacySalt
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
-import net.corda.ledger.common.testkit.transactionMetadataExample
 import net.corda.ledger.persistence.consensual.tests.datamodel.field
 import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
 import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
@@ -28,8 +31,12 @@ import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.persistence.utxo.impl.UtxoPersistenceServiceImpl
 import net.corda.ledger.persistence.utxo.tests.datamodel.UtxoEntityFactory
 import net.corda.ledger.utxo.data.state.StateAndRefImpl
+import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
+import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
+import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
+import net.corda.ledger.utxo.data.transaction.utxoComponentGroupStructure
 import net.corda.libs.packaging.hash
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.getEntityManagerFactory
@@ -124,8 +131,9 @@ class UtxoPersistenceServiceImplTest {
             }.genKeyPair().public
         private val notaryExampleName = notaryX500Name
         private val notaryExampleKey = publicKeyExample
-        private val transactionInputs = listOf(StateRef(SecureHashImpl("SHA-256", ByteArray(12)), 1))
-        private val transactionOutputs = listOf(TestContractState1(), TestContractState2())
+        private val defaultInputStateRefs = listOf(StateRef(SecureHashImpl("SHA-256", ByteArray(12)), 1))
+        private val defaultReferenceStateRefs = listOf(StateRef(SecureHashImpl("SHA-256", ByteArray(34)), 2))
+        private val defaultTransactionOutputs = listOf(TestContractState1(), TestContractState2())
     }
 
     @BeforeAll
@@ -184,7 +192,7 @@ class UtxoPersistenceServiceImplTest {
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction = persistTransactionViaEntity(entityFactory)
 
-        val retval = persistenceService.findTransaction(transaction.id.toString(), UNVERIFIED)
+        val retval = persistenceService.findSignedTransaction(transaction.id.toString(), UNVERIFIED)
 
         assertThat(retval).isEqualTo(transaction to "U")
     }
@@ -194,7 +202,50 @@ class UtxoPersistenceServiceImplTest {
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction = persistTransactionViaEntity(entityFactory)
 
-        val retval = persistenceService.findTransaction(transaction.id.toString(), VERIFIED)
+        val retval = persistenceService.findSignedTransaction(transaction.id.toString(), VERIFIED)
+
+        assertThat(retval).isEqualTo(null to "U")
+    }
+
+    @Test
+    fun `find ledger transaction that matches input status`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+
+        val transactions = listOf(
+            persistTransactionViaEntity(entityFactory, VERIFIED),
+            persistTransactionViaEntity(entityFactory, VERIFIED)
+        )
+
+        val inputStateRefs = listOf(StateRef(transactions[0].id, 0))
+        val referenceStateRefs = listOf(StateRef(transactions[1].id, 1))
+
+        val transaction = persistTransactionViaEntity(
+            entityFactory,
+            inputStateRefs = inputStateRefs,
+            referenceStateRefs = referenceStateRefs
+        )
+
+        val resolvedInputStateRefs = persistenceService.resolveStateRefs(inputStateRefs)
+        val resolvedReferenceStateRefs = persistenceService.resolveStateRefs(referenceStateRefs)
+
+        val retval = persistenceService.findSignedLedgerTransaction(transaction.id.toString(), UNVERIFIED)
+
+        assertThat(retval).isEqualTo(
+            SignedLedgerTransactionContainer(
+                transaction.wireTransaction,
+                resolvedInputStateRefs,
+                resolvedReferenceStateRefs,
+                transaction.signatures
+            ) to "U"
+        )
+    }
+
+    @Test
+    fun `find ledger transaction with different status returns null to Status`() {
+        val entityFactory = UtxoEntityFactory(entityManagerFactory)
+        val transaction = persistTransactionViaEntity(entityFactory)
+
+        val retval = persistenceService.findSignedLedgerTransaction(transaction.id.toString(), VERIFIED)
 
         assertThat(retval).isEqualTo(null to "U")
     }
@@ -398,10 +449,10 @@ class UtxoPersistenceServiceImplTest {
                 .setParameter("transactionId", signedTransaction.id.toString())
                 .resultList
             assertThat(dbTransactionSources).isNotNull
-                .hasSameSizeAs(transactionInputs)
+                .hasSameSizeAs(defaultInputStateRefs)
             dbTransactionSources
                 .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
-                .zip(transactionInputs)
+                .zip(defaultInputStateRefs)
                 .forEachIndexed { leafIndex, (dbInput, transactionInput) ->
                     assertThat(dbInput.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.INPUTS.ordinal)
                     assertThat(dbInput.field<Int>("leafIndex")).isEqualTo(leafIndex)
@@ -420,7 +471,7 @@ class UtxoPersistenceServiceImplTest {
                 .hasSameSizeAs(componentGroupLists.get(UtxoComponentGroup.OUTPUTS.ordinal))
             dbTransactionOutputs
                 .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
-                .zip(transactionOutputs)
+                .zip(defaultTransactionOutputs)
                 .forEachIndexed { leafIndex, (dbInput, transactionOutput) ->
                     assertThat(dbInput.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.OUTPUTS.ordinal)
                     assertThat(dbInput.field<Int>("leafIndex")).isEqualTo(leafIndex)
@@ -531,9 +582,12 @@ class UtxoPersistenceServiceImplTest {
 
     private fun persistTransactionViaEntity(
         entityFactory: UtxoEntityFactory,
-        status: TransactionStatus = UNVERIFIED
+        status: TransactionStatus = UNVERIFIED,
+        inputStateRefs: List<StateRef> = defaultInputStateRefs,
+        referenceStateRefs: List<StateRef> = defaultReferenceStateRefs
+
     ): SignedTransactionContainer {
-        val signedTransaction = createSignedTransaction()
+        val signedTransaction = createSignedTransaction(inputStateRefs = inputStateRefs, referenceStateRefs = referenceStateRefs)
         entityManagerFactory.transaction { em ->
             em.persist(createTransactionEntity(entityFactory, signedTransaction, status = status))
         }
@@ -613,11 +667,11 @@ class UtxoPersistenceServiceImplTest {
 
     private fun createSignedTransaction(
         createdTs: Instant = testClock.instant(),
-        seed: String = seedSequence.incrementAndGet().toString()
+        seed: String = seedSequence.incrementAndGet().toString(),
+        inputStateRefs: List<StateRef> = defaultInputStateRefs,
+        referenceStateRefs: List<StateRef> = defaultReferenceStateRefs
     ): SignedTransactionContainer {
-        val transactionMetadata = transactionMetadataExample(
-            cpkPackageSeed = seed
-        )
+        val transactionMetadata = utxoTransactionMetadataExample(cpkPackageSeed = seed,)
         val componentGroupLists: List<List<ByteArray>> = listOf(
             listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetadata)).toByteArray()),
             listOf("group1_component1".toByteArray()),
@@ -632,9 +686,9 @@ class UtxoPersistenceServiceImplTest {
             ),
             listOf("group4_component1".toByteArray()),
             listOf("group5_component1".toByteArray()),
-            transactionInputs.map { it.toBytes() },
-            listOf("group7_component1".toByteArray()),
-            transactionOutputs.map { it.toBytes() },
+            inputStateRefs.map { it.toBytes() },
+            referenceStateRefs.map { it.toBytes() },
+            defaultTransactionOutputs.map { it.toBytes() },
             listOf("group9_component1".toByteArray())
 
         )
@@ -749,4 +803,17 @@ class UtxoPersistenceServiceImplTest {
         val random = Random()
         return SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
     }
+
+    private fun utxoTransactionMetadataExample(cpkPackageSeed: String? = null) = TransactionMetadataImpl(mapOf(
+        TransactionMetadataImpl.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.name,
+        TransactionMetadataImpl.LEDGER_VERSION_KEY to UtxoTransactionMetadata.LEDGER_VERSION,
+        TransactionMetadataImpl.TRANSACTION_SUBTYPE_KEY to UtxoTransactionMetadata.TransactionSubtype.GENERAL,
+        TransactionMetadataImpl.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
+        TransactionMetadataImpl.PLATFORM_VERSION_KEY to 123,
+        TransactionMetadataImpl.CPI_METADATA_KEY to cpiPackageSummaryExample,
+        TransactionMetadataImpl.CPK_METADATA_KEY to cpkPackageSummaryListExample(cpkPackageSeed),
+        TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION,
+        TransactionMetadataImpl.COMPONENT_GROUPS_KEY to utxoComponentGroupStructure,
+        TransactionMetadataImpl.MEMBERSHIP_GROUP_PARAMETERS_HASH_KEY to "MEMBERSHIP_GROUP_PARAMETERS_HASH"
+    ))
 }

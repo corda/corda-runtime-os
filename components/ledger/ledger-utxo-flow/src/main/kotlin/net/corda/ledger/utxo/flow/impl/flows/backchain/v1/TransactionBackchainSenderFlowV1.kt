@@ -53,7 +53,7 @@ class TransactionBackchainSenderFlowV1(
             when (val request = session.receive(TransactionBackchainRequestV1::class.java)) {
                 is TransactionBackchainRequestV1.Get -> {
                     val transactions = request.transactionIds.map { id ->
-                        utxoLedgerPersistenceService.find(id)
+                        utxoLedgerPersistenceService.findSignedTransaction(id)
                             ?: throw CordaRuntimeException("Requested transaction does not exist locally")
                     }
                     // sending in batches of 1

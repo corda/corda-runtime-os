@@ -2,8 +2,8 @@ package net.corda.ledger.persistence.processor.impl
 
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
-import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
-import net.corda.ledger.persistence.processor.PersistenceRequestSubscriptionFactory
+import net.corda.ledger.persistence.processor.LedgerPersistenceRequestProcessor
+import net.corda.ledger.persistence.processor.LedgerPersistenceRequestSubscriptionFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -16,9 +16,9 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Component(service = [PersistenceRequestSubscriptionFactory::class])
+@Component(service = [LedgerPersistenceRequestSubscriptionFactory::class])
 @Suppress("LongParameterList")
-class PersistenceRequestSubscriptionFactoryImpl @Activate constructor(
+class LedgerPersistenceRequestSubscriptionFactoryImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class)
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = SubscriptionFactory::class)
@@ -29,7 +29,7 @@ class PersistenceRequestSubscriptionFactoryImpl @Activate constructor(
     private val delegatedRequestHandlerSelector: DelegatedRequestHandlerSelector,
     @Reference(service = ResponseFactory::class)
     private val responseFactory: ResponseFactory
-) : PersistenceRequestSubscriptionFactory {
+) : LedgerPersistenceRequestSubscriptionFactory {
     companion object {
         internal const val GROUP_NAME = "persistence.ledger.processor"
     }
@@ -37,7 +37,7 @@ class PersistenceRequestSubscriptionFactoryImpl @Activate constructor(
     override fun create(config: SmartConfig): Subscription<String, LedgerPersistenceRequest> {
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC)
 
-        val processor = PersistenceRequestProcessor(
+        val processor = LedgerPersistenceRequestProcessor(
             currentSandboxGroupContext ,
             entitySandboxService,
             delegatedRequestHandlerSelector,
