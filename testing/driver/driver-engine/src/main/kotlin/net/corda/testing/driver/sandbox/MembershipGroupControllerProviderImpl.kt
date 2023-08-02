@@ -8,10 +8,11 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.KeyMaterialSpec
 import net.corda.crypto.cipher.suite.SigningWrappedSpec
+import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.DigitalSignatureWithKey
+import net.corda.crypto.core.fullId
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.impl.toMap
 import net.corda.data.KeyValuePair
@@ -25,6 +26,8 @@ import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_STATIC_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATURE_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
@@ -192,6 +195,10 @@ class MembershipGroupControllerProviderImpl @Activate constructor(
                 this[GROUP_ID] = hid.groupId
                 membership[x500Name]?.also { publicKey ->
                     this[LEDGER_KEYS_KEY.format(0)] = schemeMetadata.encodeAsString(publicKey)
+                    this[LEDGER_KEY_HASHES_KEY.format(0)] = publicKey.fullId()
+                    schemeMetadata.defaultSignatureSpec(publicKey)?.also { spec ->
+                        this[LEDGER_KEY_SIGNATURE_SPEC.format(0)] = spec.signatureName
+                    }
                 }
                 this += baseMemberContext
 

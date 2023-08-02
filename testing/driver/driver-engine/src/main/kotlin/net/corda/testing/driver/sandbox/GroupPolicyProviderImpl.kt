@@ -4,8 +4,8 @@ import java.util.concurrent.ConcurrentHashMap
 import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
 import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
+import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.grouppolicy.GroupPolicy

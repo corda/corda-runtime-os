@@ -58,7 +58,7 @@ pipeline {
         stage('Publish / Publish Images') {
             environment {
                 BASE_IMAGE = 'docker-remotes.software.r3.com/azul/zulu-openjdk'
-                BASE_IMAGE_TAG = '11.0.15-11.56.19'
+                BASE_IMAGE_TAG = '17.0.4.1-17.36.17'
             }
             steps {
                 script {

@@ -1,10 +1,7 @@
 -runfw: org.apache.felix.framework
 -resolve.effective: resolve,active
--runee: JavaSE-11
+-runee: JavaSE-17
 -runtrace: true
-
--runvm: \
-    --illegal-access=deny
 
 # The driver does not use Corda's Lifecycle or Message Bus code,
 # so these services should not exist inside our OSGi framework.

@@ -180,6 +180,15 @@ class DbConnectionManagerImpl private constructor(
         }
     }
 
+    override fun getOrCreateEntityManagerFactory(
+        connectionId: UUID,
+        entitiesSet: JpaEntitiesSet
+    ): EntityManagerFactory {
+        return entityManagerFactories.computeIfAbsent(connectionId.toString()) { persistenceUnitName ->
+            createEntityManagerFactory(persistenceUnitName, entitiesSet)
+        }
+    }
+
     override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory {
         logger.info("Loading DB connection details for {}", connectionId)
         return createEntityManagerFactory(connectionId.toString(), entitiesSet)

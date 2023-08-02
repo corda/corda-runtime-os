@@ -50,16 +50,18 @@ fun conditionallyUploadCordaPackage(
     cpiName: String,
     cpbResourceName: String,
     groupId: String,
-    staticMemberNames: List<String>
-) = DEFAULT_CLUSTER.conditionallyUploadCordaPackage(cpiName, cpbResourceName, groupId, staticMemberNames)
+    staticMemberNames: List<String>,
+    customGroupParameters: Map<String, Any> = emptyMap(),
+) = DEFAULT_CLUSTER.conditionallyUploadCordaPackage(cpiName, cpbResourceName, groupId, staticMemberNames, customGroupParameters)
 
 fun ClusterInfo.conditionallyUploadCordaPackage(
     cpiName: String,
     cpbResourceName: String,
     groupId: String,
-    staticMemberNames: List<String>
+    staticMemberNames: List<String>,
+    customGroupParameters: Map<String, Any> = emptyMap(),
 ) = conditionallyUploadCordaPackage(cpiName) {
-    cpiUpload(cpbResourceName, groupId, staticMemberNames, cpiName)
+    cpiUpload(cpbResourceName, groupId, staticMemberNames, cpiName, customGroupParameters = customGroupParameters)
 }
 
 fun ClusterInfo.conditionallyUploadCordaPackage(

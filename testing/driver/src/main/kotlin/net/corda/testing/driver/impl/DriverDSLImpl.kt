@@ -59,7 +59,7 @@ internal class DriverDSLImpl(
         private const val CORDA_API_ATTRIBUTE = "Corda-Api"
         private const val JAR_PROTOCOL = "jar"
         private const val PAUSE_MILLIS = 100L
-        private const val quasarCacheLocations = "FLOW/*"
+        private const val QUASAR_CACHE_LOCATIONS = "FLOW/*"
 
         private val TIMEOUT = Duration.ofSeconds(60)
 
@@ -111,6 +111,7 @@ internal class DriverDSLImpl(
             "slf4j.api"
         )
         private val forbiddenSymbolicNames = setOf(
+            "de.javakaffee.kryo-serializers",
             "net.corda.configuration-read-service-impl",
             "net.corda.lifecycle-impl",
             "org.apache.commons.logging",
@@ -163,7 +164,8 @@ internal class DriverDSLImpl(
 
                         val cordaApi = mainAttributes.getValue(CORDA_API_ATTRIBUTE)
                         val bsn = mainAttributes.getValue(BUNDLE_SYMBOLICNAME)
-                        if (((cordaApi != null) && bsn.startsWith("net.corda.")) || bsn in systemBundleNames) {
+                        if (((cordaApi != null) && acceptCordaApi(bsn)) || bsn in systemBundleNames) {
+                            logger.debug("System Bundle: {}", bsn)
                             systemPackages += getPackageEntries(mainAttributes.getValue(EXPORT_PACKAGE))
                         } else if (acceptBundle(bsn)) {
                             bundles[url.fileURI] = mf
@@ -193,6 +195,13 @@ internal class DriverDSLImpl(
                 && !symbolicName.startsWith("org.mockito.")
                 && !symbolicName.startsWith("slf4j.")
                 && !symbolicName.startsWith("biz.aQute.bnd")
+        }
+
+        private fun acceptCordaApi(symbolicName: String?): Boolean {
+            return symbolicName != null && symbolicName.startsWith("net.corda.")
+                // Some Corda APIs have @Suspendable methods, and so Quasar must instrument those bundles.
+                // We therefore only share the bare minimum between the Driver and its Embedded OSGi framework.
+                && symbolicName.substring(10).let { it == "base" || it.startsWith("crypto") || it == "avro-schema" }
         }
 
         private fun createFrameworkFactory(): FrameworkFactory {
@@ -314,7 +323,13 @@ internal class DriverDSLImpl(
                 }
 
                 if (notaries.isNotEmpty()) {
-                    ens.loadSystemCpi(notaries.keys, notaryCPBs.single())
+                    if (notaryCPBs.size == 1) {
+                        ens.loadSystemCpi(notaries.keys, notaryCPBs.first())
+                    } else if (notaryCPBs.isEmpty()) {
+                        logger.warn("No system CPB not found on classpath")
+                    } else {
+                        logger.warn("Multiple system CPBs found on classpath: {}", notaryCPBs.joinToString())
+                    }
                 }
             }
 
@@ -340,7 +355,7 @@ internal class DriverDSLImpl(
             return DriverFrameworkImpl(linkedMapOf(
                 "co.paralleluniverse.quasar.suspendableAnnotation" to Suspendable::class.java.name,
                 "co.paralleluniverse.quasar.cacheDirectory" to quasarCacheDirectory.toString(),
-                "co.paralleluniverse.quasar.cacheLocations" to quasarCacheLocations,
+                "co.paralleluniverse.quasar.cacheLocations" to QUASAR_CACHE_LOCATIONS,
                 "co.paralleluniverse.quasar.excludeLocations" to quasarExcludeLocations,
                 "co.paralleluniverse.quasar.excludePackages" to quasarExcludePackages,
                 "co.paralleluniverse.quasar.verbose" to false.toString(),
