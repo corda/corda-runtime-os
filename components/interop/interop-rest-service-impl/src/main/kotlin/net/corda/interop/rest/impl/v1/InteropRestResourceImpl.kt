@@ -1,13 +1,22 @@
 package net.corda.interop.rest.impl.v1
 
 import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ObjectNode
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
+import net.corda.interop.core.InteropIdentity
+import net.corda.interop.core.Utils
+import net.corda.interop.group.policy.read.InteropGroupPolicyReadService
 import net.corda.interop.identity.cache.InteropIdentityRegistryService
 import net.corda.interop.identity.write.InteropIdentityWriteService
 import net.corda.libs.interop.endpoints.v1.InteropRestResource
+import net.corda.libs.interop.endpoints.v1.types.CreateInteropIdentityRest
+import net.corda.libs.interop.endpoints.v1.types.ExportInteropIdentityRest
+import net.corda.libs.interop.endpoints.v1.types.ImportInteropIdentityRest
+import net.corda.libs.interop.endpoints.v1.types.InteropIdentityResponse
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -19,28 +28,22 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.response.ResponseEntity
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.debug
+import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
-import net.corda.interop.core.InteropIdentity
-import net.corda.interop.core.Utils
-import net.corda.interop.group.policy.read.InteropGroupPolicyReadService
-import net.corda.libs.interop.endpoints.v1.types.CreateInteropIdentityRest
-import net.corda.libs.interop.endpoints.v1.types.InteropIdentityResponse
-import net.corda.libs.interop.endpoints.v1.types.ExportInteropIdentityRest
-import net.corda.libs.interop.endpoints.v1.types.ImportInteropIdentityRest
-import net.corda.rest.exception.BadRequestException
-import net.corda.v5.application.interop.facade.FacadeId
-import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
+
 
 @Suppress("LongParameterList")
 @Component(service = [PluggableRestResource::class])
@@ -133,18 +136,21 @@ internal class InteropRestResourceImpl @Activate constructor(
                 "The groupId isn't a valid UUID string, group hasn't been properly created."
             )
         }
-        interopIdentityWriteService.addInteropIdentity(
-            holdingIdentityShortHash,
-            InteropIdentity(
-                groupId = groupId,
-                x500Name = x500Name,
-                owningVirtualNodeShortHash = vNodeInfo.getVNodeShortHash(),
-                facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
-                applicationName = createInteropIdentityRestRequest.applicationName,
-                endpointUrl = "endpointUrl",
-                endpointProtocol = "endpointProtocol",
+        createInteropIdentityRestRequest.members?.forEach {
+            interopIdentityWriteService.addInteropIdentity(
+                holdingIdentityShortHash,
+                InteropIdentity(
+                    groupId = groupId,
+                    x500Name = x500Name,
+                    owningVirtualNodeShortHash = vNodeInfo.getVNodeShortHash(),
+                    facadeIds = it.facadeIds.map { facadeId -> FacadeId.of(facadeId) },
+                    applicationName = createInteropIdentityRestRequest.applicationName,
+                    endpointUrl = "endpointUrl",
+                    endpointProtocol = "endpointProtocol",
+                )
             )
-        )
+        }
+
 
         logger.info("InteropIdentity created.")
 
@@ -199,7 +205,7 @@ internal class InteropRestResourceImpl @Activate constructor(
                     interopIdentityToExport.owningVirtualNodeShortHash,
                     interopIdentityToExport.endpointUrl,
                     interopIdentityToExport.endpointProtocol,
-                    interopIdentityToExport.facadeIds
+                    interopIdentityToExport.facadeIds.map { it.toString() }
                 )
             ), groupPolicy
         )
@@ -226,22 +232,25 @@ internal class InteropRestResourceImpl @Activate constructor(
         val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(holdingIdentityShortHash)
         val vNodeShortHash = vNodeInfo.getVNodeShortHash()
         for (member in importInteropIdentityRestRequest.members) {
-
             val mapper = ObjectMapper()
-            val result: Map<String, String> = mapper.readValue(
-                importInteropIdentityRestRequest.groupPolicy,
-                object : TypeReference<Map<String, String>>() {})
-            val groupId = interopIdentityWriteService.publishGroupPolicy(
-                result["groupId"].toString(), importInteropIdentityRestRequest.groupPolicy
+            val actualObj: JsonNode = mapper.readTree(importInteropIdentityRestRequest.groupPolicy)
+            val groupId = actualObj.get("groupId")
+
+            val groupPolicy: ObjectNode = mapper
+                .createObjectNode()
+                .set("groupId", groupId)
+
+            val groupIdString = interopIdentityWriteService.publishGroupPolicy(
+                groupId.toPrettyString(), groupPolicy.toPrettyString()
             )
 
             interopIdentityWriteService.addInteropIdentity(
                 vNodeShortHash,
                 InteropIdentity(
-                    groupId = groupId,
+                    groupId = groupIdString,
                     x500Name = x500Name,
                     owningVirtualNodeShortHash = member.owningIdentityShortHash,
-                    facadeIds = member.facadeIds,
+                    facadeIds = member.facadeIds.map { FacadeId.of(it) },
                     applicationName = MemberX500Name.parse(x500Name).organization,
                     endpointUrl = member.endpointUrl,
                     endpointProtocol = member.endpointProtocol

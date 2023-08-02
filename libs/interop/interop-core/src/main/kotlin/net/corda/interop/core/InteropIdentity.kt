@@ -16,22 +16,15 @@ data class InteropIdentity(
     val shortHash = Utils.computeShortHash(x500Name, groupId)
 
     companion object {
-        fun of(virtualNodeShortHash: String, interopIdentity: PersistentInteropIdentity): InteropIdentity {
-            val listOfFacadeIds = mutableListOf<FacadeId>()
-            for (facadeId in interopIdentity.facadeIds) {
-                val facade = FacadeId.of(facadeId)
-                listOfFacadeIds.add(facade)
-            }
-            return InteropIdentity(
-                interopIdentity.x500Name,
-                interopIdentity.groupId,
-                virtualNodeShortHash,
-                listOfFacadeIds,
-                interopIdentity.applicationName,
-                interopIdentity.endpointUrl,
-                interopIdentity.endpointProtocol
-            )
-        }
+        fun of(virtualNodeShortHash: String, interopIdentity: PersistentInteropIdentity): InteropIdentity = InteropIdentity(
+            interopIdentity.x500Name,
+            interopIdentity.groupId,
+            virtualNodeShortHash,
+            interopIdentity.facadeIds.map { FacadeId.of(it) },
+            interopIdentity.applicationName,
+            interopIdentity.endpointUrl,
+            interopIdentity.endpointProtocol
+        )
     }
 
     override fun equals(other: Any?): Boolean {

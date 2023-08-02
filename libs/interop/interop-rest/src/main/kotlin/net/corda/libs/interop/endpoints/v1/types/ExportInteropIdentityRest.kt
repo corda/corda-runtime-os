@@ -9,7 +9,7 @@ class ExportInteropIdentityRest {
         val owningIdentityShortHash: String,
         val endpointUrl: String,
         val endpointProtocol: String,
-        val facadeIds: List<FacadeId>
+        val facadeIds: List<String>
     )
 
     class Response(
