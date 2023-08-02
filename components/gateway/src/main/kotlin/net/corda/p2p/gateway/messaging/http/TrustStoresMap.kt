@@ -55,11 +55,12 @@ internal class TrustStoresMap(
 
     fun getTrustStore(sourceX500Name: MemberX500Name, destinationGroupId: String) =
         trustRootsPerHoldingIdentity[TruststoreKey(sourceX500Name, destinationGroupId)]
-            ?.trustStore
             ?: throw IllegalArgumentException("Unknown trust store for source X500 name ($sourceX500Name) " +
                     "and group ID ($destinationGroupId)")
 
-    fun getTrustStores() = trustRootsPerHoldingIdentity.values.mapNotNull { it.trustStore }
+    fun getTrustStores() = trustRootsPerHoldingIdentity
+        .values
+        .toSet()
 
     private val blockingDominoTile = BlockingDominoTile(
         this::class.java.simpleName,
@@ -75,12 +76,17 @@ internal class TrustStoresMap(
     )
 
     class TrustedCertificates(
-        pemCertificates: Collection<String>,
+        val pemCertificates: Collection<String>,
         certificateFactory: CertificateFactory = CertificateFactory.getInstance("X.509"),
     ) {
-        val trustStore: KeyStore? by lazy {
-            convertToKeyStore(certificateFactory, pemCertificates, "gateway")
+        val trustStore: KeyStore by lazy {
+            convertToKeyStore(certificateFactory, pemCertificates, "gateway") ?:
+              throw IllegalArgumentException("Invalid trusted certificate")
         }
+
+        override fun hashCode() = pemCertificates.hashCode()
+        override fun equals(other: Any?) =
+            ((other is TrustedCertificates) && (other.pemCertificates == pemCertificates))
     }
 
     private inner class Processor : CompactedProcessor<String, GatewayTruststore> {

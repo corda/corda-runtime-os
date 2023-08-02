@@ -3,7 +3,6 @@ package net.corda.crypto.test.certificates.generation
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import java.io.StringWriter
 import java.security.Key
-import java.security.KeyStore
 import java.security.cert.Certificate
 
 /**
@@ -27,15 +26,5 @@ fun Key.toPem(): String {
             writer.writeObject(this)
         }
         str.toString()
-    }
-}
-
-/**
- * Convert a certificate to a key store object (with alias "alias")
- */
-fun Certificate.toKeystore(): KeyStore {
-    return KeyStore.getInstance("PKCS12").also { keyStore ->
-        keyStore.load(null)
-        keyStore.setCertificateEntry("alias", this)
     }
 }

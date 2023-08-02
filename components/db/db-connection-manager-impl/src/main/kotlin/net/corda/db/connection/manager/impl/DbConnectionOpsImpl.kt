@@ -92,6 +92,13 @@ class DbConnectionOpsImpl(
         )
     }
 
+    override fun getOrCreateEntityManagerFactory(
+        connectionId: UUID,
+        entitiesSet: JpaEntitiesSet
+    ): EntityManagerFactory {
+        throw UnsupportedOperationException("You should be using ${DbConnectionOpsImpl::createEntityManagerFactory} instead")
+    }
+
     private fun createManagerFactory(name: String, dataSource: CloseableDataSource): EntityManagerFactory {
         return entityManagerFactoryFactory.create(
             name,

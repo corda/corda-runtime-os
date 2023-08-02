@@ -11,12 +11,11 @@ import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.jvm.isAccessible
 import kotlin.reflect.jvm.javaField
 import kotlin.reflect.jvm.javaGetter
-import org.slf4j.LoggerFactory
 
 /**
  * Create the SQL insert statement to persist an object annotated as javax.persistence.Entity
  * into a database. It assumes that the table name is annotated on the object
- * and that all columns are either annotated as @Column, @JoinColumn or @Version.
+ * and that all columns are either annotated as @Column, @JoinColumn, @Version or @Id.
  */
 fun Any.toInsertStatement(): String {
     val values = this::class.declaredMemberProperties.mapNotNull { property ->
@@ -57,6 +56,9 @@ private fun getColumnInfo(property: KProperty1<out Any, *>): ColumnInfo? {
             ColumnInfo(name, true)
         }
     }
+    property.getVarAnnotation(Id::class.java)?.let {
+        return ColumnInfo(property.name, false)
+    }
     return property.getVarAnnotation(Version::class.java)?.let {
         ColumnInfo("version", false)
     }
@@ -65,8 +67,7 @@ private fun getColumnInfo(property: KProperty1<out Any, *>): ColumnInfo? {
 private fun <T : Annotation> KProperty1<*, *>.getVarAnnotation(type: Class<T>): T? {
     return (javaField?.getAnnotation(type) ?: javaGetter?.getAnnotation(type))?.also {
         if (this !is KMutableProperty1<*, *>) {
-            //throw IllegalArgumentException("Property '$this' must be var for JPA annotations.")
-            LoggerFactory.getLogger(this::class.java.name).warn("Property '$this' must be var for JPA annotations.")
+            throw IllegalArgumentException("Property '$this' must be var for JPA annotations.")
         }
     }
 }

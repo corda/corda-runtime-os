@@ -3,7 +3,8 @@ package net.corda.libs.virtualnode.datamodel.entities
 import net.corda.db.schema.DbSchema.HOLDING_IDENTITY_DB_TABLE
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
-import java.util.*
+import java.util.Objects
+import java.util.UUID
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
@@ -24,13 +25,17 @@ import javax.persistence.Table
 internal class HoldingIdentityEntity(
     @Id
     @Column(name = "holding_identity_id", nullable = false)
-    val holdingIdentityShortHash: String,
+    var holdingIdentityShortHash: String,
+
     @Column(name = "holding_identity_full_hash", nullable = false)
     var holdingIdentityFullHash: String,
+
     @Column(name = "x500_name", nullable = false)
     var x500Name: String,
+
     @Column(name = "mgm_group_id", nullable = false)
     var mgmGroupId: String,
+
     @Column(name = "hsm_connection_id", nullable = true)
     var hsmConnectionId: UUID?
 ) {

@@ -42,9 +42,11 @@ internal class CpkFileEntity(
     @Id
     @Column(name = "file_checksum", nullable = false, unique = true)
     var fileChecksum: String,
+
     @Lob
     @Column(name = "data", nullable = false)
     var data: ByteArray,
+
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false
 ) {

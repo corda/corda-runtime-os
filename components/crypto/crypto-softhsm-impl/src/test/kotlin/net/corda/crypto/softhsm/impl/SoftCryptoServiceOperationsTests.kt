@@ -1,15 +1,5 @@
 package net.corda.crypto.softhsm.impl
 
-import java.security.InvalidParameterException
-import java.security.KeyPairGenerator
-import java.security.Provider
-import java.security.PublicKey
-import java.util.*
-import java.util.concurrent.ConcurrentHashMap
-import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import net.corda.base.internal.OpaqueBytes
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
@@ -27,8 +17,10 @@ import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.softhsm.SigningRepository
 import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
+import net.corda.crypto.softhsm.impl.infra.makeShortHashCache
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
@@ -48,6 +40,17 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.kotlin.mock
+import java.security.InvalidParameterException
+import java.security.KeyPairGenerator
+import java.security.Provider
+import java.security.PublicKey
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 private val schemeMetadata = CipherSchemeMetadataImpl()
 
@@ -86,6 +89,8 @@ class SoftCryptoServiceOperationsTests {
             )
         )
         private val wrappingKeyCache = makeWrappingKeyCache()
+        private val shortHashCache = makeShortHashCache()
+        private val signingRepository: SigningRepository = mock()
         private val cryptoService = SoftCryptoService(
             wrappingRepositoryFactory = {
                 when (it) {
@@ -102,7 +107,10 @@ class SoftCryptoServiceOperationsTests {
                 KeyPairGenerator.getInstance(algorithm, provider)
             },
             wrappingKeyCache = wrappingKeyCache,
-            privateKeyCache = null
+            shortHashCache = shortHashCache,
+            signingRepositoryFactory = { signingRepository },
+            privateKeyCache = null,
+            tenantInfoService = mock()
         )
         private val category = CryptoConsts.Categories.LEDGER
         private val defaultContext = mapOf(CRYPTO_TENANT_ID to tenantId, CRYPTO_CATEGORY to category)

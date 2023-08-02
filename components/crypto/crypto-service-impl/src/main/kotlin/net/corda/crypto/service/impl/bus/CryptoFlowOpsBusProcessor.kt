@@ -1,7 +1,8 @@
 package net.corda.crypto.service.impl.bus
 
-import net.corda.crypto.cipher.suite.CryptoService
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.config.impl.RetryingConfig
+import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
@@ -10,7 +11,6 @@ import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toSignatureSpec
-import net.corda.crypto.service.SigningService
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoRequestContext
@@ -41,9 +41,9 @@ import java.time.Instant
 @Suppress("Unused")
 class CryptoFlowOpsBusProcessor(
     private val cryptoService: CryptoService,
-    private val signingService: SigningService,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     config: RetryingConfig,
+    private val keyEncodingService: KeyEncodingService
 ) : DurableProcessor<String, FlowOpsRequest> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -134,29 +134,29 @@ class CryptoFlowOpsBusProcessor(
         return when (request) {
             is FilterMyKeysFlowQuery -> {
                 val keys = request.keys.map { ShortHash.of(publicKeyIdFromBytes(it.array())) }
-                signingService.lookupSigningKeysByPublicKeyShortHash(context.tenantId, keys)
+                cryptoService.lookupSigningKeysByPublicKeyShortHash(context.tenantId, keys)
             }
 
             is SignFlowCommand -> {
-                val publicKey = signingService.schemeMetadata.decodePublicKey(request.publicKey.array())
-                val signature = signingService.sign(
+                val publicKey = cryptoService.schemeMetadata.decodePublicKey(request.publicKey.array())
+                val signature = cryptoService.sign(
                     context.tenantId,
                     publicKey,
-                    request.signatureSpec.toSignatureSpec(signingService.schemeMetadata),
+                    request.signatureSpec.toSignatureSpec(cryptoService.schemeMetadata),
                     request.bytes.array(),
                     request.context.toMap()
                 )
                 CryptoSignatureWithKey(
-                    ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(signature.by)),
+                    ByteBuffer.wrap(cryptoService.schemeMetadata.encodeAsByteArray(signature.by)),
                     ByteBuffer.wrap(signature.bytes)
                 )
             }
 
             is ByIdsFlowQuery ->
-                CryptoSigningKeys(signingService.lookupSigningKeysByPublicKeyHashes(
+                CryptoSigningKeys(cryptoService.lookupSigningKeysByPublicKeyHashes(
                     context.tenantId,
                     request.fullKeyIds.hashes.map { SecureHashImpl(it.algorithm, it.bytes.array()) }
-                ).map { it.toAvro() })
+                ).map { it.toCryptoSigningKey(keyEncodingService) })
 
             else -> throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
         }

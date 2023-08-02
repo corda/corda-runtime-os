@@ -12,7 +12,7 @@ import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
 import java.security.PublicKey
 
-internal class PublicKeySerializerTest {
+class PublicKeySerializerTest {
     @Test
     fun `PublicKey serializer returns the correct class back`() {
         // Most of the work in this serializer is actually done by the KeyEncodingService.

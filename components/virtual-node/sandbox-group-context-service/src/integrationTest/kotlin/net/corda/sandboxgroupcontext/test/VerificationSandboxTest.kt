@@ -23,7 +23,6 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
-import java.security.AccessControlException
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
@@ -80,7 +79,8 @@ class VerificationSandboxTest {
         ))
 
         val sandboxGroupContext = virtualNode.loadSandbox(CPB1, SandboxGroupType.VERIFICATION)
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             virtualNode.runFlow<Map<String, String>>(CPK1_ENVIRONMENT_FLOW, sandboxGroupContext)
         }
     }
@@ -97,7 +97,8 @@ class VerificationSandboxTest {
         }
 
         val sandboxGroupContext2 = virtualNode.loadSandbox(CPB1, SandboxGroupType.VERIFICATION)
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             virtualNode.runFlow<Map<String, String>>(CPK1_ENVIRONMENT_FLOW, sandboxGroupContext2)
         }
     }

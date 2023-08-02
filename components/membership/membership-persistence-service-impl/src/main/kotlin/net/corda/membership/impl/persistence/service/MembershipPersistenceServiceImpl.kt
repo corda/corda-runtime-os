@@ -40,6 +40,7 @@ import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -64,6 +65,8 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     memberInfoFactory: MemberInfoFactory,
     @Reference(service = CordaAvroSerializationFactory::class)
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = KeyEncodingService::class)
     keyEncodingService: KeyEncodingService,
     @Reference(service = PlatformInfoProvider::class)
@@ -129,6 +132,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
             setOf(
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                 LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
+                LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                 LifecycleCoordinatorName.forComponent<AllowedCertificatesReaderWriterService>(),
             )
         )
@@ -174,6 +178,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
             jpaEntitiesRegistry,
             memberInfoFactory,
             cordaAvroSerializationFactory,
+            virtualNodeInfoReadService,
             keyEncodingService,
             platformInfoProvider,
             groupParametersWriterService,

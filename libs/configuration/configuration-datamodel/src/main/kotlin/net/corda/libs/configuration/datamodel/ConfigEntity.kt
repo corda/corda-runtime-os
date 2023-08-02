@@ -26,7 +26,7 @@ import net.corda.db.schema.DbSchema.CONFIG_TABLE
 data class ConfigEntity(
     @Id
     @Column(name = "section", nullable = false)
-    val section: String,
+    var section: String,
     @Column(name = "config", nullable = false)
     var config: String,
     @Column(name = "schema_version_major", nullable = false)
@@ -38,7 +38,7 @@ data class ConfigEntity(
     @Column(name = "update_actor", nullable = false)
     var updateActor: String,
     @Column(name = "is_deleted", nullable = false)
-    val isDeleted: Boolean = false
+    var isDeleted: Boolean = false
 ) {
     @Version
     @Column(name = "version", nullable = false)

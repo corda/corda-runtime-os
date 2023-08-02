@@ -34,6 +34,7 @@ import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.hash
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -51,6 +52,7 @@ import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.MembershipEntities
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.datamodel.StaticNetworkInfoEntity
+import net.corda.membership.impl.persistence.service.dummy.TestVirtualNodeInfoReadService
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MPV_KEY
@@ -105,6 +107,7 @@ import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
+import net.corda.test.util.TestRandom
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
@@ -115,6 +118,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.NotaryInfo
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -212,6 +216,9 @@ class MembershipPersistenceTest {
 
         @InjectService(timeout = 5000)
         lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
+
+        @InjectService(timeout = 5000)
+        lateinit var virtualNodeReadService: TestVirtualNodeInfoReadService
 
         @InjectService(timeout = 5000)
         lateinit var layeredPropertyMapFactory: LayeredPropertyMapFactory
@@ -462,6 +469,7 @@ class MembershipPersistenceTest {
             setupConfig()
             dbConnectionManager.startAndWait()
             dbConnectionManager.bootstrap(dbConfig)
+            virtualNodeReadService.startAndWait()
 
             membershipPersistenceService.startAndWait()
             membershipPersistenceClientWrapper.startAndWait()
@@ -472,13 +480,22 @@ class MembershipPersistenceTest {
                 assertEquals(LifecycleStatus.UP, coordinator.status)
                 logger.info("Required services started.")
             }
-            dbConnectionManager.putConnection(
+            val connectionID = dbConnectionManager.putConnection(
                 name = vnodeDbInfo.name,
                 privilege = DbPrivilege.DML,
                 config = vnodeDbInfo.config,
                 description = null,
                 updateActor = "sa"
             )
+            val vnodeInfo = VirtualNodeInfo(
+                viewOwningHoldingIdentity,
+                CpiIdentifier("PLACEHOLDER", "PLACEHOLDER", TestRandom.secureHash()),
+                vaultDmlConnectionId = connectionID,
+                cryptoDmlConnectionId = connectionID,
+                uniquenessDmlConnectionId = connectionID,
+                timestamp = clock.instant()
+            )
+            virtualNodeReadService.putVNodeInfo(vnodeInfo)
         }
 
         @AfterAll
@@ -491,6 +508,7 @@ class MembershipPersistenceTest {
             dbConnectionManager.stop()
             membershipPersistenceService.stop()
             membershipPersistenceClientWrapper.stop()
+            virtualNodeReadService.stop()
         }
 
         private fun setupConfig() {
