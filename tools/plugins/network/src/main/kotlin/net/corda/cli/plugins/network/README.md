@@ -142,11 +142,11 @@ create CPIs - [see here](../../../../../../../../../package/README.md))
 Examples of on-boarding an MGM can be:
 
 ```shell
-./corda-cli.sh network dynamic onboard-mgm --x500-name='O=MGM, L=London, C=GB'
+./corda-cli.sh network dynamic onboard-mgm --x500-name='O=MGM, L=London, C=GB' --user=admin --password=admin --target=https://localhost:8888 --insecure
 
-./corda-cli.sh network dynamic onboard-mgm --cpi-hash=D8AF6080C7B4 
+./corda-cli.sh network dynamic onboard-mgm --cpi-hash=D8AF6080C7B4 --user=admin --password=admin --target=https://localhost:8888 --insecure
 
-./corda-cli.sh network dynamic onboard-mgm --save-group-policy-as /tmp/groupPolicy.json
+./corda-cli.sh network dynamic onboard-mgm --save-group-policy-as /tmp/groupPolicy.json --user=admin --password=admin --target=https://localhost:8888 --insecure
 ```
 
 Use the `--help` to view all the other options and defaults.

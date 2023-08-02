@@ -6,6 +6,7 @@ import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.membership.rest.v1.MGMRestResource
+import picocli.CommandLine.Parameters
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.ByteArrayOutputStream
@@ -20,9 +21,10 @@ import java.util.UUID
     ]
 )
 class OnboardMgm : Runnable, BaseOnboard() {
-    @Option(
-        names = ["--x500-name"],
-        description = ["The X500 name of the MGM. Default to a random name"]
+    @Parameters(
+        description = ["The X500 name of the MGM. Default to a random name"],
+        paramLabel = "--x500-name",
+        arity = "0..1",
     )
     override var x500Name: String = "O=Mgm, L=London, C=GB, OU=${UUID.randomUUID()}"
 
@@ -40,14 +42,12 @@ class OnboardMgm : Runnable, BaseOnboard() {
     var groupPolicyFile: File =
         File(File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json")
 
-    private var cpiFile: File? = null
-
-    private var groupIdFile: File = File(
+    private val groupIdFile: File = File(
         File(File(File(System.getProperty("user.home")), ".corda"), "groupId"),
         "groupId.txt"
     )
 
-    private var cpiName: String = "MGM-${UUID.randomUUID()}"
+    private val cpiName: String = "MGM-${UUID.randomUUID()}"
 
     private val groupPolicy by lazy {
         mapOf(
@@ -68,7 +68,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
             checkInvariant(
                 maxAttempts = MAX_ATTEMPTS,
                 waitInterval = WAIT_INTERVAL,
-                errorMessage = "Save group policy: Invariant check failed after maximum attempts."
+                errorMessage = "Failed to save group policy after $MAX_ATTEMPTS."
             ) {
                 try {
                     val resource = client.start().proxy
@@ -122,9 +122,6 @@ class OnboardMgm : Runnable, BaseOnboard() {
     }
 
     private val cpi by lazy {
-        if (cpiFile != null) {
-            return@lazy cpiFile!!
-        }
         val mgmGroupPolicyFile = File.createTempFile("mgm.groupPolicy.", ".json").also {
             it.deleteOnExit()
             it.writeBytes(groupPolicy)
@@ -133,10 +130,6 @@ class OnboardMgm : Runnable, BaseOnboard() {
             it.deleteOnExit()
             it.delete()
         }
-        println(
-            "Using the cpi file is recommended." +
-                    " It is advised to create CPI using the package create-cpi command."
-        )
         cpiFile.parentFile.mkdirs()
         val creator = CreateCpiV2()
         creator.groupPolicyFileName = mgmGroupPolicyFile.absolutePath
@@ -156,7 +149,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
             if (existingHash != null) {
                 return@lazy existingHash
             } else {
-                throw IllegalArgumentException("Invalid CPI hash provided.")
+                throw IllegalArgumentException("Invalid CPI hash provided. CPI hash does not exist on the Corda cluster.")
             }
         } else {
             val existingHash = getExistingCpiHash()
