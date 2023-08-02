@@ -134,7 +134,7 @@ public interface DriverDSL {
     @Nullable
     String runFlow(
         @NotNull VirtualNodeInfo virtualNodeInfo,
-        @NotNull Class<?> flowClass,
+        @NotNull Class<? extends ClientStartableFlow> flowClass,
         @NotNull ThrowingSupplier<String> flowArgMapper
     );
 
@@ -204,7 +204,7 @@ classes exist both inside and outside our framework. These classes must therefor
 belong to the framework's system bundle.
 
 We define our system bundle also to include these bundles:
-- All Corda API bundles, which we identify by a `Corda-Api` tag in their manifest.
+- Corda API bundles `net.corda.base`, `net.corda.crypto`, `net.corda.crypto-extensions` and `net.corda.avro-schema`.
 - Avro
 - Bouncy Castle
 - `slf4j.api`
@@ -215,6 +215,11 @@ We define our system bundle also to include these bundles:
 - `org.osgi.service.log`
 - `org.osgi.util.function`
 - `org.osgi.util.promise`
+
+Some Corda API bundles contain interfaces with `@Suspendable` default methods, which
+Quasar _must_ instrument using its OSGi `WeavingHook`. We therefore _deliberately_
+restrict the Corda API bundles to just the basic ones, because Quasar _cannot_
+instrument anything inside the system bundle.
 
 Our system bundle also needs to contain the `net.corda.testing.driver.node` and
 `net.corda.testing.driver.function` packages, which are defined by the Driver's
