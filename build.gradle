@@ -72,7 +72,6 @@ allprojects {
 
             doFirst {
                 systemProperty 'java.io.tmpdir', buildDir.absolutePath
-                jvmArgs '--illegal-access=deny'
             }
         }
     }
