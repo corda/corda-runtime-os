@@ -1,7 +1,5 @@
 package net.corda.crypto.softhsm.impl
 
-import java.time.Instant
-import javax.persistence.EntityManager
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.crypto.testkit.SecureHashUtils
@@ -13,13 +11,14 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
-import kotlin.collections.ArrayList
+import javax.persistence.EntityManager
 
 
-class TestWrappingRepository {
+class WrappingRepositoryImplTests {
 
     @Test
     fun `JPA equality on primary key only rule for WrappingKeyEntities`() {
