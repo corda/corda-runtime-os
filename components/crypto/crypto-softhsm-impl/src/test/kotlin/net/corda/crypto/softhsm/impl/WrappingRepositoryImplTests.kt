@@ -107,9 +107,56 @@ class WrappingRepositoryImplTests {
         assertThat(savedKey).isEqualTo(wrappingKeyInfo)
     }
 
+    @Test
+    fun `save a wrapping key with id`() {
+        val stored = ArrayList<WrappingKeyEntity>()
+        val wrappingKeyInfo = WrappingKeyInfo(
+            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch")
+        val savedWrappingKey = mock<WrappingKeyEntity>() {
+            on { encodingVersion } doReturn (wrappingKeyInfo.encodingVersion)
+            on { algorithmName } doReturn (wrappingKeyInfo.algorithmName)
+            on { keyMaterial } doReturn (wrappingKeyInfo.keyMaterial)
+            on { generation } doReturn (wrappingKeyInfo.generation)
+            on { parentKeyReference } doReturn (wrappingKeyInfo.parentKeyAlias)
+        }
+        val em = mock<EntityManager> {
+            on { merge(any<WrappingKeyEntity>()) } doReturn(savedWrappingKey)
+            on { find<WrappingKeyEntity>(any(), any()) } doAnswer { stored.first() }
+            on { transaction } doReturn mock()
+        }
+        val repo = WrappingRepositoryImpl(
+            mock {
+                on { createEntityManager() } doReturn em
+            },
+            "test"
+        )
+        val id = UUID.randomUUID()
+        val savedKey = repo.saveKeyWithId("a", wrappingKeyInfo, id)
+        verify(em).merge(argThat<WrappingKeyEntity>{
+            this.encodingVersion == 1 &&
+                    this.algorithmName == "caesar" &&
+                    this.keyMaterial.contentEquals(wrappingKeyInfo.keyMaterial) &&
+                    this.generation == 1 &&
+                    this.parentKeyReference == "Enoch" &&
+                    this.id == id
+        })
+
+        val savedKey2 = repo.saveKeyWithId("a", wrappingKeyInfo, null)
+        verify(em).merge(argThat<WrappingKeyEntity>{
+            this.encodingVersion == 1 &&
+                    this.algorithmName == "caesar" &&
+                    this.keyMaterial.contentEquals(wrappingKeyInfo.keyMaterial) &&
+                    this.generation == 1 &&
+                    this.parentKeyReference == "Enoch" &&
+                    this.id != id
+        })
+
+        assertThat(savedKey).isEqualTo(wrappingKeyInfo)
+
+    }
 
     @Test
-    fun `find a key and id`() {
+    fun `find a wrapping key and it's id`() {
         val wrappingKeyInfo = WrappingKeyInfo(
             1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch")
         val savedWrappingKey = mock<WrappingKeyEntity>() {
