@@ -33,6 +33,19 @@ To the `corda-cli-plugin-host` repo's `build/plugins` directory. Run the followi
 
 For more options to generate `GroupPolicy` file follow [this](https://github.com/corda/corda-runtime-os/blob/release/os/5.0/tools/plugins/mgm/README.md) readme.
 
+## Custom Group Parameters (Optional)
+Certain properties may be defined in the group policy to be included in the group parameters of a static network. These include the minimum platform version and custom properties containing the prefix "ext.".
+
+To define such group parameters, include them in a `"groupParameters"` block under `"staticNetwork"`. For example:
+```bash
+"groupParameters": {
+  "corda.minimum.platform.version": "50000",
+  "ext.group.key.0": "value0",
+  "ext.group.key.1": "value1"
+}
+```
+> Note: Custom group parameters defined in the group policy cannot be altered or removed. They have a character limit of 128 for keys and 800 for values. A maximum of 100 such key-value pairs may be defined.
+
 ## Create a CPI
 
 Create a CPI by following the steps outlined here: [CorDapp Packaging](../wiki/CorDapp-Packaging)
@@ -83,3 +96,15 @@ To register a member that is acting as a notary service representative, follow t
     "corda.notary.service.flow.protocol.version.0": "1"
 }
 ```
+
+### Registering a member with custom metadata
+A member may specify custom properties at the time of registration, which will be included in its MemberInfo. These must be included in the registration context of the member's request to join. Keys of custom properties must have the prefix "ext.". For example:
+
+```bash
+"context": {
+  "corda.key.scheme": "CORDA.ECDSA.SECP256R1",
+  "ext.member.key.0": "value0",
+  "ext.member.key.1": "value1"
+}
+```
+> Note: Custom properties have a character limit of 128 for keys and 800 for values. A maximum of 100 such key-value pairs may be defined in the registration context.

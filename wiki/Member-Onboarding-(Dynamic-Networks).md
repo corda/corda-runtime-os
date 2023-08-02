@@ -532,9 +532,14 @@ $REGISTRATION_CONTEXT = @{
 ```
 </details>
 
-It is possible to add custom key value pairs to the registration context JSON. Both the key and the value must be a 
-string and the key must be prefixed with `ext.`. The custom key value pairs can be viewed by other members of the group 
-by doing a member lookup.
+A member may specify custom properties at the time of registration, which will be included in its MemberInfo. These must be included in the registration context of the member's request to join. Keys of custom properties must have the prefix "ext.". For example:
+```bash
+"context": {
+  "ext.member.key.0": "value0",
+  "ext.member.key.1": "value1"
+}
+```
+> Note: Custom properties have a character limit of 128 for keys and 800 for values. A maximum of 100 such key-value pairs may be defined in the registration context.
 
 ## Register members
 
