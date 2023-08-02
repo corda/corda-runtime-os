@@ -6,6 +6,7 @@ import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAuthority
 import net.corda.crypto.test.certificates.generation.KeysFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
+import net.corda.e2etest.utilities.config.SingleClusterTestConfigManager
 import net.corda.rest.ResponseCode
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
@@ -83,10 +84,10 @@ fun ClusterInfo.importCertificate(
 
 /**
  * Disable certificate revocation checks.
+ * CRL checks disabled is the default for E2E tests so this doesn't attempt to revert after use.
  */
 fun ClusterInfo.disableCertificateRevocationChecks() {
-    updateConfig(
-        "{ \"sslConfig\": { \"revocationCheck\": { \"mode\": \"OFF\" }  }  }",
-        P2P_GATEWAY_CONFIG
-    )
+    SingleClusterTestConfigManager(this)
+        .load(P2P_GATEWAY_CONFIG, "sslConfig.revocationCheck.mode", "OFF")
+        .apply()
 }
