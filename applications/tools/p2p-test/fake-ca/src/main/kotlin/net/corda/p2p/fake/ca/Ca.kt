@@ -98,13 +98,6 @@ class Ca {
                 )
             }
             Algorithm.EC -> {
-                val disabledCurves = Security.getProperty("jdk.disabled.namedCurves") ?: ""
-                val disabled = disabledCurves.split(",").map {
-                        it.trim()
-                    }.contains(curveName)
-                if (disabled) {
-                    throw FakeCaException("Curve name: $curveName disabled")
-                }
                 val spec = ECNamedCurveTable.getParameterSpec(curveName) ?: throw FakeCaException("Unknown curve name: $curveName")
                 if (!ValidCurvedNames().contains(curveName)) {
                     throw FakeCaException("Invalid curve name: $curveName")
