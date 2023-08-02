@@ -42,8 +42,7 @@ class TenantInfoServiceTests {
     fun `Should assign SOFT HSM and retrieves assignment`() {
         val tenantId1 = UUID.randomUUID().toString()
         val tenantId2 = UUID.randomUUID().toString()
-
-        val association11 = factory.tenantInfoService.populate(tenantId1, CryptoConsts.Categories.LEDGER)
+        val association11 = factory.tenantInfoService.populate(tenantId1, CryptoConsts.Categories.LEDGER, factory.cryptoService)
         assertHSMAssociation(association11, tenantId1, CryptoConsts.Categories.LEDGER)
         val foundAssociation11 = factory.tenantInfoService.lookup(tenantId1, CryptoConsts.Categories.LEDGER)
         assertHSMAssociation(foundAssociation11, tenantId1, CryptoConsts.Categories.LEDGER)
@@ -51,7 +50,7 @@ class TenantInfoServiceTests {
         assertNull(factory.tenantInfoService.lookup(tenantId1, CryptoConsts.Categories.TLS))
         assertNull(factory.tenantInfoService.lookup(UUID.randomUUID().toString(), CryptoConsts.Categories.LEDGER))
 
-        val association12 = factory.tenantInfoService.populate(tenantId1, CryptoConsts.Categories.TLS)
+        val association12 = factory.tenantInfoService.populate(tenantId1, CryptoConsts.Categories.TLS, factory.cryptoService)
         assertHSMAssociation(association12, tenantId1, CryptoConsts.Categories.TLS)
         val foundAssociation12 = factory.tenantInfoService.lookup(tenantId1, CryptoConsts.Categories.TLS)
         assertHSMAssociation(foundAssociation12, tenantId1, CryptoConsts.Categories.TLS)
@@ -61,7 +60,7 @@ class TenantInfoServiceTests {
             "The master key alias must stay the same for the same tenant, even if categories are different"
         )
 
-        val association21 = factory.tenantInfoService.populate(tenantId2, CryptoConsts.Categories.LEDGER)
+        val association21 = factory.tenantInfoService.populate(tenantId2, CryptoConsts.Categories.LEDGER, factory.cryptoService)
         assertHSMAssociation(association21, tenantId2, CryptoConsts.Categories.LEDGER)
         val foundAssociation21 = factory.tenantInfoService.lookup(tenantId2, CryptoConsts.Categories.LEDGER)
         assertHSMAssociation(foundAssociation21, tenantId2, CryptoConsts.Categories.LEDGER)
@@ -75,9 +74,9 @@ class TenantInfoServiceTests {
     @Test
     fun `Should not fail assigning SOFT HSM twice`() {
         val tenantId = UUID.randomUUID().toString()
-        val association1 = factory.tenantInfoService.populate(tenantId, CryptoConsts.Categories.LEDGER)
+        val association1 = factory.tenantInfoService.populate(tenantId, CryptoConsts.Categories.LEDGER, factory.cryptoService)
         assertHSMAssociation(association1, tenantId, CryptoConsts.Categories.LEDGER)
-        val association2 = factory.tenantInfoService.populate(tenantId, CryptoConsts.Categories.LEDGER)
+        val association2 = factory.tenantInfoService.populate(tenantId, CryptoConsts.Categories.LEDGER, factory.cryptoService)
         assertHSMAssociation(association2, tenantId, CryptoConsts.Categories.LEDGER)
     }
 }

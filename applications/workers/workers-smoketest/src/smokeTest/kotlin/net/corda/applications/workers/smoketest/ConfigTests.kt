@@ -1,11 +1,10 @@
 package net.corda.applications.workers.smoketest
 
-import net.corda.e2etest.utilities.configWithDefaultsNode
-import net.corda.e2etest.utilities.getConfig
-import net.corda.e2etest.utilities.sourceConfigNode
-import net.corda.e2etest.utilities.toJsonString
-import net.corda.e2etest.utilities.updateConfig
-import net.corda.e2etest.utilities.waitForConfigurationChange
+import net.corda.e2etest.utilities.config.configWithDefaultsNode
+import net.corda.e2etest.utilities.config.getConfig
+import net.corda.e2etest.utilities.config.managedConfig
+import net.corda.e2etest.utilities.config.sourceConfigNode
+import net.corda.e2etest.utilities.config.waitForConfigurationChange
 import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 import net.corda.schema.configuration.ReconciliationConfig
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CONFIG_INTERVAL_MS
@@ -35,16 +34,13 @@ class ConfigTests {
     fun `can update config`() {
         val initialValue = getReconConfigValue(defaults = true)
         val newValue = (initialValue * 2)
-        updateConfig(mapOf(RECONCILIATION_CONFIG_INTERVAL_MS to newValue).toJsonString(), RECONCILIATION_CONFIG)
-        waitForConfigurationChange(RECONCILIATION_CONFIG, RECONCILIATION_CONFIG_INTERVAL_MS, newValue.toString(), false)
 
-        try {
+        managedConfig { configManager ->
+            configManager.load(RECONCILIATION_CONFIG, RECONCILIATION_CONFIG_INTERVAL_MS, newValue).apply()
+            waitForConfigurationChange(RECONCILIATION_CONFIG, RECONCILIATION_CONFIG_INTERVAL_MS, newValue.toString(), false)
+
             val updatedValue = getReconConfigValue(defaults = false)
             assertThat(updatedValue).isEqualTo(newValue)
-        } finally {
-            // Be a good neighbour and rollback the configuration change back to what it was
-            updateConfig(mapOf(RECONCILIATION_CONFIG_INTERVAL_MS to initialValue).toJsonString(), RECONCILIATION_CONFIG)
-            waitForConfigurationChange(RECONCILIATION_CONFIG, RECONCILIATION_CONFIG_INTERVAL_MS, initialValue.toString(), false)
         }
     }
 

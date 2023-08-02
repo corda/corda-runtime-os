@@ -1,15 +1,12 @@
 package net.corda.crypto.service.impl.infra
 
-import java.security.PublicKey
-import java.time.Instant
-import java.util.concurrent.locks.ReentrantLock
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.SigningKeyInfo
+import net.corda.crypto.core.SigningKeyStatus
 import net.corda.crypto.core.publicKeyHashFromBytes
 import net.corda.crypto.core.publicKeyShortHashFromBytes
 import net.corda.crypto.persistence.SigningKeyFilterMapImpl
-import net.corda.crypto.persistence.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
-import net.corda.crypto.persistence.SigningKeyStatus
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.alias
 import net.corda.crypto.persistence.category
@@ -21,8 +18,10 @@ import net.corda.crypto.softhsm.SigningRepository
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapImpl
 import net.corda.layeredpropertymap.impl.PropertyConverter
 import net.corda.v5.crypto.SecureHash
+import java.security.PublicKey
+import java.time.Instant
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
-import net.corda.crypto.core.CryptoConsts
 
 class TestSigningRepository: SigningRepository {
     private val lock = ReentrantLock()
@@ -37,14 +36,14 @@ class TestSigningRepository: SigningRepository {
             category = context.category,
             alias = context.alias,
             hsmAlias = null,
-            publicKey = encodedKey,
+            publicKey = context.key.publicKey,
             keyMaterial = context.key.keyMaterial,
             schemeCodeName = context.keyScheme.codeName,
             wrappingKeyAlias = context.wrappingKeyAlias,
             externalId = context.externalId,
             encodingVersion = context.key.encodingVersion,
             timestamp = Instant.now(),
-            hsmId = CryptoConsts.SOFT_HSM_ID,
+            "SOFT",
             status = SigningKeyStatus.NORMAL
         ).also {
             if (keys.putIfAbsent(it.id, it) != null) {

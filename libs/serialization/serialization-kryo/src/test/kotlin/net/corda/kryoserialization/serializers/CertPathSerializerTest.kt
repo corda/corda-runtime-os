@@ -11,7 +11,7 @@ import java.security.cert.CertPath
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 
-internal class CertPathSerializerTest {
+class CertPathSerializerTest {
     @Test
     fun `serializer returns the correct cert path back`() {
         val certificateFactory = CertificateFactory.getInstance("X.509")

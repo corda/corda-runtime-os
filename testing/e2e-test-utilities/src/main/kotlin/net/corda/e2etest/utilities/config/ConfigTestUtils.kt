@@ -1,13 +1,30 @@
-package net.corda.e2etest.utilities
+package net.corda.e2etest.utilities.config
 
 import com.fasterxml.jackson.databind.JsonNode
 import kong.unirest.UnirestException
+import net.corda.e2etest.utilities.ClusterInfo
+import net.corda.e2etest.utilities.DEFAULT_CLUSTER
+import net.corda.e2etest.utilities.assertWithRetryIgnoringExceptions
+import net.corda.e2etest.utilities.cluster
+import net.corda.e2etest.utilities.toJson
 import net.corda.rest.ResponseCode.OK
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Assertions.fail
 import java.io.IOException
 import java.time.Duration
+
+/**
+ * Runs a function in the scope of a managed configuration which is automatically reverted upon completion.
+ */
+fun managedConfig(vararg clusters: ClusterInfo, func: (TestConfigManager) -> Unit) {
+    val clusterDedup = clusters.toSet()
+    if(clusterDedup.size > 1) {
+        MultiClusterTestConfigManager(clusterDedup)
+    } else {
+        SingleClusterTestConfigManager(clusters.getOrNull(0) ?: DEFAULT_CLUSTER)
+    }.use(func)
+}
 
 fun JsonNode.sourceConfigNode(): JsonNode =
     this["sourceConfig"].textValue().toJson()
@@ -18,8 +35,10 @@ fun JsonNode.configWithDefaultsNode(): JsonNode =
 /**
  * Get the current configuration (as a [JsonNode]) for the specified [section].
  */
-fun getConfig(section: String): JsonNode {
-    return DEFAULT_CLUSTER.cluster {
+fun getConfig(section: String) = DEFAULT_CLUSTER.getConfig(section)
+
+fun ClusterInfo.getConfig(section: String): JsonNode {
+    return cluster {
         assertWithRetryIgnoringExceptions {
             command { getConfig(section) }
             condition { it.code == OK.statusCode }
@@ -104,21 +123,4 @@ fun ClusterInfo.waitForConfigurationChange(
             }
         }
     }
-}
-
-fun ClusterInfo.updateConfigAndWaitForChange(
-    section: String,
-    key: String,
-    value: Any
-) {
-    updateConfig(
-        mapOf(key to value).toJsonString(),
-        section
-    )
-    waitForConfigurationChange(
-        section,
-        key,
-        value.toString(),
-        expectServiceToBeDown = false
-    )
 }

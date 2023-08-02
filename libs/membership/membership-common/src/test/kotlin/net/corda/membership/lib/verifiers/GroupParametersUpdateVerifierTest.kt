@@ -11,7 +11,7 @@ class GroupParametersUpdateVerifierTest {
         const val CUSTOM_KEY = "ext.customKey"
         const val CUSTOM_VALUE = "customValue"
     }
-    private val longString = StringBuilder().apply { for(i in 0..256){ this.append("a") } }.toString()
+    private val longString = StringBuilder().apply { for(i in 0..800){ this.append("a") } }.toString()
 
     private val verifier = GroupParametersUpdateVerifier()
 
@@ -34,6 +34,13 @@ class GroupParametersUpdateVerifierTest {
         val result = verifier.verify(mapOf("ext.$longString" to CUSTOM_VALUE))
         assertThat(result).isInstanceOf(GroupParametersUpdateVerifier.Result.Failure::class.java)
         assertThat((result as GroupParametersUpdateVerifier.Result.Failure).reason).contains(longString)
+    }
+
+    @Test
+    fun `adding a long value causes verification to fail`() {
+        val result = verifier.verify(mapOf(CUSTOM_KEY to longString))
+        assertThat(result).isInstanceOf(GroupParametersUpdateVerifier.Result.Failure::class.java)
+        assertThat((result as GroupParametersUpdateVerifier.Result.Failure).reason).contains(CUSTOM_KEY)
     }
 
     @Test

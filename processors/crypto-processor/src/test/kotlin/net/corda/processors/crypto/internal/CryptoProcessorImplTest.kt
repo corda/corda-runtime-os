@@ -10,8 +10,8 @@ import net.corda.crypto.config.impl.PASSPHRASE
 import net.corda.crypto.config.impl.RETRYING
 import net.corda.crypto.config.impl.SALT
 import net.corda.crypto.config.impl.WRAPPING_KEYS
-import net.corda.crypto.service.TenantInfoService
-import net.corda.crypto.service.impl.TenantInfoServiceImpl
+import net.corda.crypto.softhsm.impl.HSMRepositoryImpl
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
@@ -33,7 +33,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
+import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
@@ -94,49 +94,50 @@ class CryptoProcessorImplTest {
         val flowOpsSubscription = mock<Subscription<String, FlowOpsRequest>>()
         val rpcOpsSubscription = mock<RPCSubscription<RpcOpsRequest, RpcOpsResponse>>()
         val hsmRegSubscription = mock<RPCSubscription<HSMRegistrationRequest, HSMRegistrationResponse>>()
-        val hsmServiceMock = Mockito.mockConstruction(TenantInfoServiceImpl::class.java)
-        try {
-            val subscriptionFactory = mock<SubscriptionFactory>().also {
-                whenever(it.createDurableSubscription<String, FlowOpsRequest>(any(), any(), any(), anyOrNull()))
-                    .thenReturn(flowOpsSubscription)
-                whenever(
-                    it.createRPCSubscription(
-                        eq(
-                            RPCConfig(
-                                "crypto.ops.rpc",
-                                "crypto.ops.rpc",
-                                Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC,
-                                RpcOpsRequest::class.java,
-                                RpcOpsResponse::class.java
-                            )
-                        ),
-                        any(),
-                        any()
-                    )
+        val subscriptionFactory = mock<SubscriptionFactory>().also {
+            whenever(it.createDurableSubscription<String, FlowOpsRequest>(any(), any(), any(), anyOrNull()))
+                .thenReturn(flowOpsSubscription)
+            whenever(
+                it.createRPCSubscription(
+                    eq(
+                        RPCConfig(
+                            "crypto.ops.rpc",
+                            "crypto.ops.rpc",
+                            Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC,
+                            RpcOpsRequest::class.java,
+                            RpcOpsResponse::class.java
+                        )
+                    ),
+                    any(),
+                    any()
                 )
-                    .thenReturn(rpcOpsSubscription)
-                whenever(
-                    it.createRPCSubscription(
-                        eq(
-                            RPCConfig(
-                                "crypto.hsm.rpc.registration",
-                                "crypto.hsm.rpc.registration",
-                                Schemas.Crypto.RPC_HSM_REGISTRATION_MESSAGE_TOPIC,
-                                HSMRegistrationRequest::class.java,
-                                HSMRegistrationResponse::class.java
-                            )
-                        ),
-                        any(),
-                        any()
-                    )
+            )
+                .thenReturn(rpcOpsSubscription)
+            whenever(
+                it.createRPCSubscription(
+                    eq(
+                        RPCConfig(
+                            "crypto.hsm.rpc.registration",
+                            "crypto.hsm.rpc.registration",
+                            Schemas.Crypto.RPC_HSM_REGISTRATION_MESSAGE_TOPIC,
+                            HSMRegistrationRequest::class.java,
+                            HSMRegistrationResponse::class.java
+                        )
+                    ),
+                    any(),
+                    any()
                 )
-                    .thenReturn(hsmRegSubscription)
-            }
+            )
+                .thenReturn(hsmRegSubscription)
+        }
+        val mockHsmAssociation = mock<HSMAssociationInfo>()
+        mockConstruction(HSMRepositoryImpl::class.java) { mock, _ ->
+            whenever(mock.findTenantAssociation(any(), any())).doReturn(mockHsmAssociation)
 
             LifecycleTest {
                 addDependency<LifecycleCoordinatorFactory>()
                 addDependency<ConfigurationReadService>()
-                addDependency<TenantInfoService>()
+
                 addDependency<JpaEntitiesRegistry>()
                 addDependency<DbConnectionManager>()
                 addDependency<VirtualNodeInfoReadService>()
@@ -144,6 +145,7 @@ class CryptoProcessorImplTest {
                 val virtualNodeInfo = mock<VirtualNodeInfo> {
                     on { cryptoDmlConnectionId } doReturn UUID.randomUUID()
                 }
+
                 val cryptoProcessor = CryptoProcessorImpl(
                     coordinatorFactory = coordinatorFactory,
                     configurationReadService = configReadService,
@@ -183,8 +185,6 @@ class CryptoProcessorImplTest {
                 verify(rpcOpsSubscription, times(2)).start()
                 verify(hsmRegSubscription, times(2)).start()
             }
-        } finally {
-            hsmServiceMock.close()
         }
     }
 }
