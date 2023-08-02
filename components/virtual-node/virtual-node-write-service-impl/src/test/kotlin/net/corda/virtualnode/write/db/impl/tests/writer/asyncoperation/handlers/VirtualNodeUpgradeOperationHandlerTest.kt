@@ -13,11 +13,8 @@ import net.corda.libs.virtualnode.common.exception.LiquibaseDiffCheckFailedExcep
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
-import net.corda.membership.client.MemberResourceClient
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
-import net.corda.membership.persistence.client.MembershipQueryClient
-import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC
@@ -56,9 +53,6 @@ class VirtualNodeUpgradeOperationHandlerTest {
     private val migrationUtility = mock<MigrationUtility> {
         whenever(it.areChangesetsDeployedOnVault(any(), any(), any())).thenReturn(false)
     }
-    private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider>()
-    private val memberResourceClient = mock<MemberResourceClient>()
-    private val membershipQueryClient = mock<MembershipQueryClient>()
     private val externalMessagingRouteConfig = """ { "dummy1":"dummy1" } """
     private val newExternalMessagingRouteConfig = """ { "dummy2":"dummy2" } """
 
@@ -97,9 +91,6 @@ class VirtualNodeUpgradeOperationHandlerTest {
         oldVirtualNodeEntityRepository,
         virtualNodeInfoPublisher,
         migrationUtility,
-        membershipGroupReaderProvider,
-        memberResourceClient,
-        membershipQueryClient,
         mockCpkDbChangeLogRepository,
         virtualNodeRepository,
         externalMessagingRouteConfigGenerator

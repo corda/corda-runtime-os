@@ -98,7 +98,7 @@ class VirtualNodeWriterFactoryTests {
             getSubscriptionFactory(),
             publisherFactory,
             getDbConnectionManager(),
-            mock(), mock(), mock(), mock(), mock(), mock(),
+            mock(), mock(), mock(),
             CpiCpkRepositoryFactory())
         virtualNodeWriterFactory.create(expectedConfig, externalMsgConfig, vnodeDatasourceConfig)
 
@@ -126,7 +126,7 @@ class VirtualNodeWriterFactoryTests {
             subscriptionFactory,
             getPublisherFactory(),
             getDbConnectionManager(),
-            mock(), mock(), mock(), mock(), mock(), mock(),
+            mock(), mock(), mock(),
             CpiCpkRepositoryFactory()
         )
 
