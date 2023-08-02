@@ -96,8 +96,8 @@ class VaultNamedQueryExecutorImpl(
             val query = em.createNativeQuery(
                 """
                     SELECT tc_output.transaction_id,
-                        tc_output.leaf_idx
-                        tc_output_info.data as output_info_data
+                        tc_output.leaf_idx,
+                        tc_output_info.data as output_info_data,
                         tc_output.data AS output_data FROM
                         $UTXO_VISIBLE_TX_TABLE AS visible_states
                         JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output_info
