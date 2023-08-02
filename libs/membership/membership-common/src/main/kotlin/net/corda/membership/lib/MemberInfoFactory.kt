@@ -83,18 +83,18 @@ interface MemberInfoFactory {
         memberSignatureSpec: CryptoSignatureSpec,
     ): PersistentMemberInfo
 
-    fun createSignedMemberInfo(
+    fun createSelfSignedMemberInfo(
         memberContext: ByteArray,
         mgmContext: ByteArray,
         memberSignature: CryptoSignatureWithKey,
         memberSignatureSpec: CryptoSignatureSpec,
-    ): SignedMemberInfo
+    ): SelfSignedMemberInfo
 
-    fun createSignedMemberInfo(
+    fun createSelfSignedMemberInfo(
         memberInfo: MemberInfo,
         memberSignature: CryptoSignatureWithKey,
         memberSignatureSpec: CryptoSignatureSpec,
-    ): SignedMemberInfo
+    ): SelfSignedMemberInfo
 
     /*fun createPersistentMemberInfo(
         viewOwningMember: HoldingIdentity,

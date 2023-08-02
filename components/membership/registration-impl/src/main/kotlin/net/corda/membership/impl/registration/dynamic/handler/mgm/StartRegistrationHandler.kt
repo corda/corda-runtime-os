@@ -106,7 +106,7 @@ internal class StartRegistrationHandler(
             )
             // Persist pending member info so that we can notify the member of declined registration if failure occurs
             // after this point
-            val memberSignedMemberInfo = MemberSignedMemberInfo(
+            val memberSignedMemberInfo = memberInfoFactory.createSelfSignedMemberInfo(
                 pendingMemberInfo,
                 registrationRequest.memberSignature,
                 registrationRequest.memberSignatureSpec
@@ -146,8 +146,8 @@ internal class StartRegistrationHandler(
                 mgmHoldingId,
                 listOf(pendingMemberHoldingId)
             ).getOrThrow().lastOrNull {
-                it.memberInfo.status == MEMBER_STATUS_ACTIVE || it.memberInfo.status == MEMBER_STATUS_SUSPENDED
-            }?.memberInfo
+                it.status == MEMBER_STATUS_ACTIVE || it.status == MEMBER_STATUS_SUSPENDED
+            }
             if (registrationRequest.serial!! > 0) { //re-registration
                 validateRegistrationRequest(activeOrSuspendedInfo != null) {
                     "Member has not registered previously so serial number should be 0."

@@ -5,7 +5,7 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.data.KeyValuePairList
 import net.corda.layeredpropertymap.toAvro
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
@@ -50,7 +50,7 @@ class MerkleTreeGenerator(
         return createTree(leaves)
     }
 
-    fun generateTreeUsingSignedMembers(members: Collection<SignedMemberInfo>): MerkleTree {
+    fun generateTreeUsingSignedMembers(members: Collection<SelfSignedMemberInfo>): MerkleTree {
         val leaves = members
             .sortedBy { member ->
                 member.name

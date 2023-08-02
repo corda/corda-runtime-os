@@ -16,7 +16,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
 import net.corda.membership.lib.InternalGroupParameters
-import net.corda.membership.lib.MemberSignedMemberInfo
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -57,7 +57,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
-        memberInfos: Collection<MemberSignedMemberInfo>,
+        memberInfos: Collection<SelfSignedMemberInfo>,
     ) : MembershipPersistenceOperation<Unit> = Operation(MembershipPersistenceResult.success())
 
     override fun persistGroupPolicy(
@@ -175,13 +175,13 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
     override fun queryMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         statusFilter: List<String>,
-    ): MembershipQueryResult<Collection<MemberSignedMemberInfo>> = MembershipQueryResult.Success(emptyList())
+    ): MembershipQueryResult<Collection<SelfSignedMemberInfo>> = MembershipQueryResult.Success(emptyList())
 
     override fun queryMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         holdingIdentityFilter: Collection<HoldingIdentity>,
         statusFilter: List<String>,
-    ): MembershipQueryResult<Collection<MemberSignedMemberInfo>> = MembershipQueryResult.Success(emptyList())
+    ): MembershipQueryResult<Collection<SelfSignedMemberInfo>> = MembershipQueryResult.Success(emptyList())
 
     override fun queryRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,

@@ -45,7 +45,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
-import net.corda.membership.lib.impl.SignedMemberInfoImpl
+import net.corda.membership.lib.impl.SelfSignedMemberInfoImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
@@ -345,7 +345,7 @@ class MgmSynchronisationServiceImplTest {
         val memberBytes = "member-$name".toByteArray()
         val mgmBytes = "mgm-$name".toByteArray()
         whenever(memberInfoFactory.createMemberInfo(memberBytes, mgmBytes)).doReturn(memberInfo)
-        return SignedMemberInfoImpl(
+        return SelfSignedMemberInfoImpl(
             memberBytes,
             mgmBytes,
             CryptoSignatureWithKey(

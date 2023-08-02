@@ -63,9 +63,10 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
         }
     }
 
-    private fun getEntityManagerFactory(info: VirtualNodeInfo): EntityManagerFactory {
-        return dbConnectionManager.createEntityManagerFactory(
-            connectionId = info.vaultDmlConnectionId,
+    private fun getEntityManagerFactory(holdingIdentityShortHash: ShortHash): EntityManagerFactory {
+        return dbConnectionManager.getOrCreateEntityManagerFactory(
+            name = VirtualNodeDbType.VAULT.getConnectionName(holdingIdentityShortHash),
+            privilege = DbPrivilege.DML,
             entitiesSet = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
                 ?: throw java.lang.IllegalStateException(
                     "persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered."

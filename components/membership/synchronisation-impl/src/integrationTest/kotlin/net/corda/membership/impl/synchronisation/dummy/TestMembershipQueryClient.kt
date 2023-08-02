@@ -58,7 +58,7 @@ class TestMembershipQueryClientImpl @Activate constructor(
 
     override fun loadMembers(memberList: List<MemberInfo>) {
         members = memberList.map {
-            memberInfoFactory.createSignedMemberInfo(
+            memberInfoFactory.createSelfSignedMemberInfo(
                 it,
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(it.holdingIdentity.x500Name.toString().toByteArray()),

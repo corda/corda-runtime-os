@@ -31,7 +31,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -99,7 +99,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
     private val signature = CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf()))
     private val signatureSpec = CryptoSignatureSpec("", null, null)
-    private val signedMemberInfo = mock<SignedMemberInfo> {
+    private val signedMemberInfo = mock<SelfSignedMemberInfo> {
         on { memberSignature } doReturn signature
         on { memberSignatureSpec } doReturn signatureSpec
     }
@@ -163,7 +163,7 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
     private val memberInfoFactory: MemberInfoFactory = mock {
         on { createMemberInfo(memberContextCaptor.capture(), mgmContextCaptor.capture()) } doReturn memberInfo
-        on { createSignedMemberInfo(memberInfo, signature, signatureSpec) } doReturn signedMemberInfo
+        on { createSelfSignedMemberInfo(memberInfo, signature, signatureSpec) } doReturn signedMemberInfo
     }
     private val operation = mock<MembershipPersistenceOperation<Unit>> {
         on { execute() } doReturn MembershipPersistenceResult.success()

@@ -10,7 +10,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
-import net.corda.membership.lib.MemberSignedMemberInfo
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -40,7 +40,7 @@ class TestMembershipQueryClient @Activate constructor(
     override fun queryMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         statusFilter: List<String>
-    ): MembershipQueryResult<Collection<MemberSignedMemberInfo>> {
+    ): MembershipQueryResult<Collection<SelfSignedMemberInfo>> {
         return MembershipQueryResult.Failure("oops")
     }
 
@@ -48,7 +48,7 @@ class TestMembershipQueryClient @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         holdingIdentityFilter: Collection<HoldingIdentity>,
         statusFilter: List<String>
-    ): MembershipQueryResult<Collection<MemberSignedMemberInfo>> {
+    ): MembershipQueryResult<Collection<SelfSignedMemberInfo>> {
         return MembershipQueryResult.Failure("oops")
     }
 

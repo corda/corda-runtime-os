@@ -4,7 +4,7 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.v5.membership.MemberInfo
 
-interface SignedMemberInfo : MemberInfo {
+interface SelfSignedMemberInfo : MemberInfo {
     val memberContextBytes: ByteArray
     val mgmContextBytes: ByteArray
     val memberSignature: CryptoSignatureWithKey

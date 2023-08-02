@@ -16,7 +16,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSP
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
@@ -181,7 +181,7 @@ class DistributeMemberInfoActionHandler(
             )
         }
 
-        return updatedMemberToAllActiveMembers + allMembersToUpdatedMember
+        return updatedMemberToAllMembers + allMembersToUpdatedMember
     }
 
     private fun recordToRequeueDistribution(
@@ -195,8 +195,8 @@ class DistributeMemberInfoActionHandler(
 
     private fun createMembershipPackageFactory(
         mgm: MemberInfo,
-        members: Collection<SignedMemberInfo>,
-    ): (Collection<SignedMemberInfo>, InternalGroupParameters) -> MembershipPackage {
+        members: Collection<SelfSignedMemberInfo>,
+    ): (Collection<SelfSignedMemberInfo>, InternalGroupParameters) -> MembershipPackage {
         val mgmSigner = signerFactory.createSigner(mgm)
         val membersTree = merkleTreeGenerator.generateTreeUsingSignedMembers(members)
 

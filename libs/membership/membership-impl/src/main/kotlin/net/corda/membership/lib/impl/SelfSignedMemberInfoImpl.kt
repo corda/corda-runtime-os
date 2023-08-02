@@ -3,21 +3,21 @@ package net.corda.membership.lib.impl
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.v5.membership.MemberInfo
 
-class SignedMemberInfoImpl(
+class SelfSignedMemberInfoImpl(
     override val memberContextBytes: ByteArray,
     override val mgmContextBytes: ByteArray,
     override val memberSignature: CryptoSignatureWithKey,
     override val memberSignatureSpec: CryptoSignatureSpec,
     private val memberInfoFactory: MemberInfoFactory
-) : SignedMemberInfo, MemberInfo by memberInfoFactory.createMemberInfo(memberContextBytes, mgmContextBytes) {
+) : SelfSignedMemberInfo, MemberInfo by memberInfoFactory.createMemberInfo(memberContextBytes, mgmContextBytes) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as SignedMemberInfoImpl
+        other as SelfSignedMemberInfoImpl
 
         if (!memberContextBytes.contentEquals(other.memberContextBytes)) return false
         if (!mgmContextBytes.contentEquals(other.mgmContextBytes)) return false

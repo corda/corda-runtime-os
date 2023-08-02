@@ -47,9 +47,9 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
-import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
@@ -121,7 +121,7 @@ class MembershipPersistenceClientImpl(
 
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
-        memberInfos: Collection<MemberSignedMemberInfo>,
+        memberInfos: Collection<SelfSignedMemberInfo>,
     ): MembershipPersistenceOperation<Unit> {
         logger.info("Persisting ${memberInfos.size} member info(s).")
         val avroViewOwningIdentity = viewOwningIdentity.toAvro()
@@ -139,7 +139,7 @@ class MembershipPersistenceClientImpl(
 
     private fun createSignedMemberList(
         viewOwningIdentity: net.corda.data.identity.HoldingIdentity,
-        memberInfos: Collection<SignedMemberInfo>
+        memberInfos: Collection<SelfSignedMemberInfo>
     ) = memberInfos.map {
             val persistentMemberInfo = memberInfoFactory.createPersistentMemberInfo(
                 viewOwningIdentity,

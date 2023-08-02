@@ -584,7 +584,7 @@ class StaticMemberRegistrationServiceTest {
 
             val capturedMemberInfos = argumentCaptor<MemberInfo>()
             verify(memberInfoFactory, times(3))
-                .createPersistentMemberInfo(any(), capturedMemberInfos.capture())
+                .createPersistentMemberInfo(any(), capturedMemberInfos.capture(), any(), any())
             assertThat(
                 capturedMemberInfos.allValues.first { it.name == aliceName }.memberProvidedContext.toMap()
             ).containsAllEntriesOf(expectedContextEntries)

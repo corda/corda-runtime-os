@@ -8,8 +8,8 @@ import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.InternalGroupParameters
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.approval.ApprovalRuleParams
-import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
@@ -36,7 +36,7 @@ interface MembershipPersistenceClient : Lifecycle {
      */
     fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
-        memberInfos: Collection<MemberSignedMemberInfo>
+        memberInfos: Collection<SelfSignedMemberInfo>
     ): MembershipPersistenceOperation<Unit>
 
     /**

@@ -8,7 +8,7 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -50,7 +50,7 @@ class MgmRegistrationRequestHandlerTest {
     }
     private val signature = CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf()))
     private val signatureSpec = CryptoSignatureSpec("", null, null)
-    private val signedMemberInfo: SignedMemberInfo = mock {
+    private val signedMemberInfo: SelfSignedMemberInfo = mock {
         on { memberContextBytes } doReturn "".toByteArray()
         on { signature } doReturn signature
         on { signatureSpec } doReturn signatureSpec

@@ -13,7 +13,6 @@ import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.retrieveSignatureSpec
 import net.corda.membership.lib.toSortedMap
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -153,12 +152,12 @@ class MemberInfoFactoryImpl @Activate constructor(
         .setSerializedMgmContext(serialize(memberInfo.mgmProvidedContext.toAvro()).toByteBuffer())
         .build()
 
-    override fun createSignedMemberInfo(
+    override fun createSelfSignedMemberInfo(
         memberContext: ByteArray,
         mgmContext: ByteArray,
         memberSignature: CryptoSignatureWithKey,
         memberSignatureSpec: CryptoSignatureSpec
-    ) = SignedMemberInfoImpl(
+    ) = SelfSignedMemberInfoImpl(
         memberContext,
         mgmContext,
         memberSignature,
@@ -166,11 +165,11 @@ class MemberInfoFactoryImpl @Activate constructor(
         this,
     )
 
-    override fun createSignedMemberInfo(
+    override fun createSelfSignedMemberInfo(
         memberInfo: MemberInfo,
         memberSignature: CryptoSignatureWithKey,
         memberSignatureSpec: CryptoSignatureSpec
-    ) = SignedMemberInfoImpl(
+    ) = SelfSignedMemberInfoImpl(
         serialize(memberInfo.memberProvidedContext.toAvro()),
         serialize(memberInfo.mgmProvidedContext.toAvro()),
         memberSignature,

@@ -27,7 +27,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTI
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
@@ -208,7 +208,7 @@ class MgmSynchronisationServiceImpl internal constructor(
             ).getOrThrow().filterNot { it.isMgm }
             val groupParameters = groupReader.groupParameters
                 ?: throw CordaRuntimeException("Failed to retrieve group parameters for building membership packages.")
-            if (compareHashes(memberHashFromTheReq.toCorda(), requesterInfo)) {
+            val record = if (compareHashes(memberHashFromTheReq.toCorda(), requesterInfo)) {
                 // member has the latest updates regarding its own membership
                 // will send all membership data from MGM
                 if (requesterInfo.status == MEMBER_STATUS_SUSPENDED) {
@@ -247,7 +247,7 @@ class MgmSynchronisationServiceImpl internal constructor(
             )
         }
 
-        private fun compareHashes(memberHashSeenByMember: SecureHash, requester: SignedMemberInfo):  Boolean {
+        private fun compareHashes(memberHashSeenByMember: SecureHash, requester: SelfSignedMemberInfo):  Boolean {
             val memberHashSeenByMgm = calculateHash(requester)
             if (memberHashSeenByMember != memberHashSeenByMgm) {
                 return false
@@ -255,13 +255,13 @@ class MgmSynchronisationServiceImpl internal constructor(
             return true
         }
 
-        private fun calculateHash(memberInfo: SignedMemberInfo): SecureHash {
+        private fun calculateHash(memberInfo: SelfSignedMemberInfo): SecureHash {
             return services.merkleTreeGenerator.generateTreeUsingSignedMembers(listOf(memberInfo)).root
         }
 
         private fun createMembershipPackage(
             mgm: MemberInfo,
-            members: Collection<SignedMemberInfo>,
+            members: Collection<SelfSignedMemberInfo>,
             groupParameters: InternalGroupParameters,
         ): MembershipPackage {
             val mgmSigner = services.signerFactory.createSigner(mgm)

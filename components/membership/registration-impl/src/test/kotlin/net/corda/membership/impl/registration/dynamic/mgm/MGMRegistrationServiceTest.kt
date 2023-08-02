@@ -57,8 +57,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.SignedGroupParameters
-import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -240,7 +240,7 @@ class MGMRegistrationServiceTest {
     }
 
     private val memberInfo = mock<MemberInfo>()
-    private val signedMemberInfo = mock<SignedMemberInfo> {
+    private val signedMemberInfo = mock<SelfSignedMemberInfo> {
         on { memberContextBytes } doReturn byteArrayOf(1)
         on { memberProvidedContext } doReturn mock()
         on { mgmProvidedContext } doReturn mock()
@@ -255,7 +255,7 @@ class MGMRegistrationServiceTest {
     private val signatureSpec = CryptoSignatureSpec("", null, null)
     private val memberInfoFactory: MemberInfoFactory = mock {
         on { createMemberInfo(any<SortedMap<String, String?>>(), any()) } doReturn memberInfo
-        on { createSignedMemberInfo(
+        on { createSelfSignedMemberInfo(
                 eq(memberInfo),
                 eq(signature),
                 eq(signatureSpec),
