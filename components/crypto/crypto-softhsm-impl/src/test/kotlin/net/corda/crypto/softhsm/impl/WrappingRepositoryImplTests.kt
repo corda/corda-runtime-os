@@ -12,9 +12,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
 import java.util.UUID
 import javax.persistence.EntityManager
 
@@ -25,44 +22,10 @@ class WrappingRepositoryImplTests {
     fun `JPA equality on primary key only rule for WrappingKeyEntities`() {
         val uuidAlpha = UUID.randomUUID()
         val uuidBeta = UUID.randomUUID()
-        val alpha1 = WrappingKeyEntity(
-            uuidAlpha,
-            "a1",
-            1,
-            Instant.now(),
-            1,
-            "DES",
-            byteArrayOf(),
-            LocalDate.parse("9999-12-31").atStartOfDay().toInstant(
-                ZoneOffset.UTC
-            ),
-            false,
-            "root"
-        )
-        val alpha2 = WrappingKeyEntity(
-            uuidAlpha,
-            "a1",
-            1,
-            Instant.now(),
-            2,
-            "AES",
-            byteArrayOf(),
-            LocalDate.parse("9999-12-31").atStartOfDay().toInstant(ZoneOffset.UTC),
-            false,
-            "root"
-        )
-        val beta = WrappingKeyEntity(
-            uuidBeta,
-            "a1",
-            1,
-            Instant.now(),
-            42,
-            "DES",
-            byteArrayOf(),
-            LocalDate.parse("9999-12-31").atStartOfDay().toInstant(ZoneOffset.UTC),
-            false,
-            "root"
-        )
+        val golden = WrappingKeyInfo(1, "DES", byteArrayOf(), 1, "root")
+        val alpha1 = makeWrappingKeyEntity(uuidAlpha, golden)
+        val alpha2 = makeWrappingKeyEntity(uuidAlpha, golden.copy(algorithmName = "AES", generation = 2))
+        val beta = makeWrappingKeyEntity(uuidBeta, golden)
         assertThat(alpha1).isEqualTo(alpha2)
         assertThat(alpha1).isNotEqualTo(beta)
     }
@@ -72,13 +35,7 @@ class WrappingRepositoryImplTests {
         val stored = ArrayList<WrappingKeyEntity>()
         val wrappingKeyInfo = WrappingKeyInfo(
             1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch")
-        val savedWrappingKey = mock<WrappingKeyEntity>() {
-            on { encodingVersion } doReturn (wrappingKeyInfo.encodingVersion)
-            on { algorithmName } doReturn (wrappingKeyInfo.algorithmName)
-            on { keyMaterial } doReturn (wrappingKeyInfo.keyMaterial)
-            on { generation } doReturn (wrappingKeyInfo.generation)
-            on { parentKeyReference } doReturn (wrappingKeyInfo.parentKeyAlias)
-        }
+        val savedWrappingKey = makeWrappingKeyEntity(UUID.randomUUID(), wrappingKeyInfo)
         val em = mock<EntityManager> {
             on { merge(any<WrappingKeyEntity>()) } doReturn(savedWrappingKey)
             on { find<WrappingKeyEntity>(any(), any()) } doAnswer { stored.first() }
@@ -98,13 +55,7 @@ class WrappingRepositoryImplTests {
                     this.generation == 1 &&
                     this.parentKeyReference == "Enoch"
         })
-        // not worth the assertion, verifying it's called is good enough
-//        val retrievedWrappingKeyInfo = repo.findKey("a")
-//        assertNotNull(retrievedWrappingKeyInfo)
-//        assertThat(wrappingKeyInfo.encodingVersion).isEqualTo(retrievedWrappingKeyInfo.encodingVersion)
-
-        // but you can assert the return info is effectively the same as mocked
-        assertThat(savedKey).isEqualTo(wrappingKeyInfo)
+        assertThat (savedKey == wrappingKeyInfo)
     }
 
     @Test
@@ -112,13 +63,7 @@ class WrappingRepositoryImplTests {
         val stored = ArrayList<WrappingKeyEntity>()
         val wrappingKeyInfo = WrappingKeyInfo(
             1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch")
-        val savedWrappingKey = mock<WrappingKeyEntity>() {
-            on { encodingVersion } doReturn (wrappingKeyInfo.encodingVersion)
-            on { algorithmName } doReturn (wrappingKeyInfo.algorithmName)
-            on { keyMaterial } doReturn (wrappingKeyInfo.keyMaterial)
-            on { generation } doReturn (wrappingKeyInfo.generation)
-            on { parentKeyReference } doReturn (wrappingKeyInfo.parentKeyAlias)
-        }
+        val savedWrappingKey = makeWrappingKeyEntity(UUID.randomUUID(), wrappingKeyInfo)
         val em = mock<EntityManager> {
             on { merge(any<WrappingKeyEntity>()) } doReturn(savedWrappingKey)
             on { find<WrappingKeyEntity>(any(), any()) } doAnswer { stored.first() }
@@ -159,14 +104,8 @@ class WrappingRepositoryImplTests {
     fun `find a wrapping key and it's id`() {
         val wrappingKeyInfo = WrappingKeyInfo(
             1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch")
-        val savedWrappingKey = mock<WrappingKeyEntity>() {
-            on { id } doReturn UUID.randomUUID()
-            on { encodingVersion } doReturn (wrappingKeyInfo.encodingVersion)
-            on { algorithmName } doReturn (wrappingKeyInfo.algorithmName)
-            on { keyMaterial } doReturn (wrappingKeyInfo.keyMaterial)
-            on { generation } doReturn (wrappingKeyInfo.generation)
-            on { parentKeyReference } doReturn (wrappingKeyInfo.parentKeyAlias)
-        }
+        val newId  = UUID.randomUUID()
+        val savedWrappingKey = makeWrappingKeyEntity(newId, wrappingKeyInfo)
         val em = mock<EntityManager> {
             on { createQuery(any(), eq(WrappingKeyEntity::class.java)) } doAnswer {
                 mock {
@@ -188,4 +127,20 @@ class WrappingRepositoryImplTests {
         assertThat(foundKey?.first.toString().length).isEqualTo(36)
         assertThat(foundKey?.second).isEqualTo(wrappingKeyInfo)
     }
+
+    private fun makeWrappingKeyEntity(
+        newId: UUID,
+        wrappingKeyInfo: WrappingKeyInfo,
+    ): WrappingKeyEntity = WrappingKeyEntity(
+        newId,
+        "alias1",
+        wrappingKeyInfo.generation, 
+        mock(), 
+        wrappingKeyInfo.encodingVersion, 
+        wrappingKeyInfo.algorithmName, 
+        wrappingKeyInfo.keyMaterial, 
+        mock(), 
+        false, 
+        wrappingKeyInfo.parentKeyAlias
+    ) 
 }
