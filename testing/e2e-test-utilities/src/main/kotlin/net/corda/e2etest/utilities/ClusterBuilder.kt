@@ -166,6 +166,9 @@ class ClusterBuilder {
     /** List all CPIs in the system */
     fun cpiList() = client!!.get("/api/$REST_API_VERSION_PATH/cpi")
 
+    /** Used to test RestApiVersion.C5_0 getAllCpis, remove after LTS */
+    fun deprecatedCpiList() = client!!.get("/api/${RestApiVersion.C5_0.versionPath}/cpi")
+
     private fun vNodeBody(cpiHash: String, x500Name: String) =
         """{ "cpiFileChecksum" : "$cpiHash", "x500Name" : "$x500Name"}"""
 
@@ -461,6 +464,10 @@ class ClusterBuilder {
         """{ "clientRequestId" : "$clientRequestId", "flowClassName" : "$flowClassName", "requestBody" : 
             |"$requestData" }
         """.trimMargin()
+
+    /** Used to test RestApiVersion.C5_0 getStartableFlows, remove after LTS */
+    fun deprecatedGetStartableFlows(holdingIdentityShortHash: String) =
+        get("/api/${RestApiVersion.C5_0}/flowclass/$holdingIdentityShortHash")
 
     /** Get cluster configuration for the specified section */
     fun getConfig(section: String) = get("/api/$REST_API_VERSION_PATH/config/$section")
