@@ -177,6 +177,8 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
         return resp.result.toString()
     }
 
+    // TODO: Add more loggin
+    // Talk to owen about tracing work
     private fun handleRequest(request: EvmRequest, respFuture: CompletableFuture<EvmResponse>) {
         log.info(request.schema.toString(true))
         // Parameters for the transaction/query
@@ -186,12 +188,14 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
         val flowId = request.flowId
         val isTransaction = request.isTransaction
 
-
-        println("REQUEST: $request")
-
         if (isTransaction) {
             // Transaction Being Sent
             val transactionOutput = sendTransaction(rpcConnection, contractAddress, payload)
+            // KAT Comments
+            // Start a thread, pass future to it, thread will compelte on it
+            // See if we have pattern on it
+            // Listener to the transaction
+            // Create a callback handler
             println("Transaction Output $transactionOutput")
             val result = EvmResponse(flowId, transactionOutput)
             respFuture.complete(result)
@@ -202,32 +206,37 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
         }
     }
 
+    // Work with Completable Futures:
+    private fun retry(request: EvmRequest, respFuture: CompletableFuture<EvmResponse>, e: Throwable) {
+        // try three more times, then complete exceptionally
 
+        var attempts = 0
+        while(attempts<3){
+            try {
+                handleRequest(request, respFuture)
+            }catch(error: Exception){
+                log.info("Failed on retry #${attempts}")
+            }
+            ++attempts
+        }
+        println("STARTING EXCEPTIONAL FAILURE")
+        respFuture.completeExceptionally(e)
+    }
+
+    // Stick back onto the queue
+    // Remove Blocking Code ->
 
     override fun onNext(request: EvmRequest, respFuture: CompletableFuture<EvmResponse>) {
-
         try{
             handleRequest(request,respFuture)
-
         } catch (e: Throwable) {
-            // Better error handling => Meaningful
             println("AT THIS ERROR")
             when(e){
                 is java.net.ConnectException -> {
-                    // try three more times, then complete exceptionally
-                    var attempts = 0
-                    while(attempts<3){
-                        try {
-                            handleRequest(request, respFuture)
-                        }catch(error: Exception){
-                            log.info("Failed on retry #${attempts}")
-                        }
-                        ++attempts
-                    }
-                    println("STARTING EXCEPTIONAL FAILURE")
-                    respFuture.completeExceptionally(e)
+                    retry(request,respFuture,e)
                 }
                 else -> {
+                    // We will Forward the Exceptions
                     respFuture.completeExceptionally(e)
                 }
             }

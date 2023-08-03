@@ -57,7 +57,7 @@ data class Response (
     val success: Boolean
 )
 
-data class ContractDeploymentResponse (
+data class TransactionResponse (
     val id: String,
     val jsonrpc: String,
     val result: TransactionData
@@ -147,7 +147,7 @@ class EthereumConnector {
         if (jsonStringContainsKey(json, "error")) {
             return JsonRpcError::class
         } else if (jsonStringContainsNestedKey(json, "contractAddress")) {
-            return ContractDeploymentResponse::class
+            return TransactionResponse::class
         } else {
             return JsonRpcResponse::class
         }
@@ -164,9 +164,9 @@ class EthereumConnector {
         println("INPUT ${input}")
         when (input) {
             is JsonRpcError -> {
-                return ProcessedResponse(true,input.error.data)
+                 throw CordaRuntimeException("Interop Error: ${input.error.code}: ${input.error.message}")
             }
-            is ContractDeploymentResponse -> {
+            is TransactionResponse -> {
                 try{
                     return ProcessedResponse(true, input.result.contractAddress)
                 }catch(e: Exception){
@@ -189,7 +189,7 @@ class EthereumConnector {
      */
     private fun rpcCall(rpcUrl: String, method: String, params: List<Any?>): RPCResponse {
         val body = RpcRequest(JSON_RPC_VERSION, "90.0", method, params)
-        val requestBase = ObjectMapper().writeValueAsString(body)
+        val requestBase = gson.toJson(body)
         val requestBody = requestBase.toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
             .url(rpcUrl)
@@ -241,7 +241,7 @@ class EthereumConnector {
         // If the base response is null and waitForResponse is true, wait for 2 seconds and make a recursive call
         // TODO: This is temporarily required for
 
-        if (baseResponse.result == null) {
+        if (baseResponse.result == null && waitForResponse) {
             TimeUnit.SECONDS.sleep(2)
             return makeRequest(rpcUrl, method, params, waitForResponse, requests + 1) // Return the recursive call
         }
