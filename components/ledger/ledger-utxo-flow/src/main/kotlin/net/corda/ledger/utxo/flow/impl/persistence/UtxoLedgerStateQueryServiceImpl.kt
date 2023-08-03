@@ -3,7 +3,7 @@ package net.corda.ledger.utxo.flow.impl.persistence
 import io.micrometer.core.instrument.Timer
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.metrics.recordSuspendable
-import net.corda.ledger.utxo.flow.impl.cache.StateRefCache
+import net.corda.ledger.utxo.flow.impl.cache.StateAndRefCache
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindUnconsumedStatesByType
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.ResolveStateRefs
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByTypeExternalEventFactory
@@ -36,8 +36,8 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
     private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
-    @Reference(service = StateRefCache::class)
-    private val stateRefCache: StateRefCache
+    @Reference(service = StateAndRefCache::class)
+    private val stateAndRefCache: StateAndRefCache
 ) : UtxoLedgerStateQueryService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -58,22 +58,20 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
             if (stateRefs.count() == 0) {
                 emptyList()
             } else {
-                val cachedStateRefs = stateRefCache.get(stateRefs.toSet())
-                val nonCachedStateRefs = stateRefs - cachedStateRefs.keys
+                val cachedStateAndRefs = stateAndRefCache.get(stateRefs.toSet())
+                val nonCachedStateRefs = stateRefs - cachedStateAndRefs.keys
 
                 if (nonCachedStateRefs.isNotEmpty()) {
                     val resolvedStateRefs = wrapWithPersistenceException {
                         externalEventExecutor.execute(
                             ResolveStateRefsExternalEventFactory::class.java,
-                            ResolveStateRefsParameters(
-                                stateRefs
-                            )
+                            ResolveStateRefsParameters(stateRefs)
                         )
                     }.map { it.toStateAndRef<ContractState>(serializationService) }
-                    stateRefCache.putAll(resolvedStateRefs.associateBy { it.ref })
-                    resolvedStateRefs
+                    stateAndRefCache.putAll(resolvedStateRefs)
+                    cachedStateAndRefs.values + resolvedStateRefs
                 } else {
-                    cachedStateRefs.values.mapNotNull { it?.deserializedStateAndRef }
+                    cachedStateAndRefs.values.toList()
                 }
             }
         }
