@@ -101,13 +101,6 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         }
     }
 
-    @Parameters(
-        description = ["The name of the k8s namespace (leave empty for combined worker on local host)"],
-        paramLabel = "NAME",
-        arity = "0..1",
-    )
-    var cordaClusterName: String? = null
-
     @Option(
         names = ["--ca"],
         description = ["The CA location (default to ~/.corda/ca)"]
@@ -249,19 +242,12 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     protected val ecdhKeyId by lazy {
         assignSoftHsmAndGenerateKey("PRE_AUTH")
     }
-    private val p2pHost by lazy {
-        if (cordaClusterName == null) {
-            "localhost"
-        } else {
-            "corda-p2p-gateway-worker.$cordaClusterName"
-        }
-    }
     protected val certificateSubject by lazy {
         tlsCertificateSubject ?: "O=P2P Certificate, OU=$p2pHost, L=London, C=GB"
     }
 
     protected val p2pUrl by lazy {
-        "https://$p2pHost:8080"
+        "https://$targetUrl:8080"
     }
     protected val ca by lazy {
         caHome.parentFile.mkdirs()

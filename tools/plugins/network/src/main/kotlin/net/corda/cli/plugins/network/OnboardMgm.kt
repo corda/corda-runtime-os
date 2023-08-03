@@ -64,6 +64,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
     }
 
     private fun saveGroupPolicy() {
+        var groupPolicyResponse = ""
         createRestClient(MGMRestResource::class).use { client ->
             checkInvariant(
                 maxAttempts = MAX_ATTEMPTS,
@@ -72,23 +73,23 @@ class OnboardMgm : Runnable, BaseOnboard() {
             ) {
                 try {
                     val resource = client.start().proxy
-                    val response = resource.generateGroupPolicy(holdingId)
-                    groupPolicyFile.parentFile.mkdirs()
-                    json.writerWithDefaultPrettyPrinter()
-                        .writeValue(
-                            groupPolicyFile,
-                            json.readTree(response)
-                        )
-                    println("Group policy file created at $groupPolicyFile")
-                    // extract the groupId from the response
-                    val groupId = json.readTree(response).get("groupId").asText()
-
-                    // write the groupId to the file
-                    groupIdFile.writeText(groupId)
+                    groupPolicyResponse = resource.generateGroupPolicy(holdingId)
                 } catch (e: Exception) {
                     null
                 }
             }
+            groupPolicyFile.parentFile.mkdirs()
+            json.writerWithDefaultPrettyPrinter()
+                .writeValue(
+                    groupPolicyFile,
+                    json.readTree(groupPolicyResponse)
+                )
+            println("Group policy file created at $groupPolicyFile")
+            // extract the groupId from the response
+            val groupId = json.readTree(groupPolicyResponse).get("groupId").asText()
+
+            // write the groupId to the file
+            groupIdFile.writeText(groupId)
         }
     }
 

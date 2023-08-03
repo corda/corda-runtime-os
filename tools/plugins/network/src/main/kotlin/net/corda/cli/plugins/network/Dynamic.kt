@@ -9,6 +9,6 @@ import picocli.CommandLine.Command
         OnBoardMember::class,
         AllowClientCertificate::class,
     ],
-    description = ["On board a member."]
+    description = ["For Onboarding Member and MGM"]
 )
 class Dynamic
