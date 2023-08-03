@@ -51,10 +51,12 @@ fun ClusterInfo.onboardMember(
     groupPolicy: String,
     x500Name: String,
     waitForApproval: Boolean = true,
-    getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null
+    cpiVersion: String = "1.0.0.0-SNAPSHOT",
+    getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
+
 ): NetworkOnboardingMetadata {
     conditionallyUploadCpiSigningCertificate()
-    conditionallyUploadCordaPackage(cpiName, cpb, groupPolicy)
+    conditionallyUploadCordaPackage(cpiName, cpb, groupPolicy, cpiVersion)
     val holdingId = getOrCreateVirtualNodeFor(x500Name, cpiName)
 
     addSoftHsmFor(holdingId, CAT_SESSION_INIT)
