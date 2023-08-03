@@ -5,8 +5,8 @@ import picocli.CommandLine.Command
 @Command(
     name = "lookup",
     subcommands = [
-        Members::class,
-        GroupParameters::class,
+        MemberLookup::class,
+        GroupParametersLookup::class,
     ],
     description = ["Lookup members or group parameters."]
 )

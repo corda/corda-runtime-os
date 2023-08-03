@@ -7,9 +7,8 @@ import net.corda.cli.plugins.network.output.Output
 import net.corda.cli.plugins.network.utils.PrintUtils.Companion.printJsonOutput
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.RestGroupParameters
-import net.corda.v5.base.types.MemberX500Name
 import picocli.CommandLine
-import java.io.File
+import net.corda.cli.plugins.network.utils.HoldingIdentityUtils.getHoldingIdentity
 
 @CommandLine.Command(
     name = "group-parameters",
@@ -40,34 +39,12 @@ class GroupParametersLookup(private val output: Output = ConsoleOutput()) : Rest
     var group: String? = null
 
     private fun performGroupParametersLookup(): RestGroupParameters {
-        val holdingIdentity = getHoldingIdentity()
+        val holdingIdentity = getHoldingIdentity(holdingIdentityShortHash, name, group)
         val result: RestGroupParameters = createRestClient(MemberLookupRestResource::class).use { client ->
             val groupParametersProxy = client.start().proxy
             groupParametersProxy.viewGroupParameters(holdingIdentity)
         }
         return result
-    }
-
-    private fun getHoldingIdentity(): String {
-        return holdingIdentityShortHash ?: name?.let {
-            val x500Name = MemberX500Name.parse(it)
-            val holdingIdentity = group?.let { group ->
-                net.corda.virtualnode.HoldingIdentity(x500Name, group)
-            } ?: net.corda.virtualnode.HoldingIdentity(x500Name, readDefaultGroup())
-            holdingIdentity.shortHash.toString()
-        } ?: throw IllegalArgumentException("Either 'holdingIdentityShortHash' or 'name' must be specified.")
-    }
-
-    private fun readDefaultGroup(): String {
-        val groupIdFile = File(
-            File(File(File(System.getProperty("user.home")), ".corda"), "groupId"),
-            "groupId.txt"
-        )
-        return if (groupIdFile.exists()) {
-            groupIdFile.readText().trim()
-        } else {
-            throw IllegalArgumentException("Group ID was not specified, and the last created group could not be found.")
-        }
     }
 
     override fun run() {

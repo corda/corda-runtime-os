@@ -6,13 +6,12 @@ import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfo
 import net.corda.cli.plugins.network.output.Output
+import net.corda.cli.plugins.network.utils.HoldingIdentityUtils.getHoldingIdentity
 import net.corda.cli.plugins.network.utils.PrintUtils.Companion.printJsonOutput
-import net.corda.v5.base.types.MemberX500Name
 import picocli.CommandLine
-import java.io.File
 
 @CommandLine.Command(name = "members", description = ["Shows the list of members on the network."])
-class Members(private val output: Output = ConsoleOutput()) : RestCommand(), Runnable {
+class MemberLookup(private val output: Output = ConsoleOutput()) : RestCommand(), Runnable {
 
     @CommandLine.Option(
         names = ["-h", "--holding-identity-short-hash"],
@@ -81,10 +80,11 @@ class Members(private val output: Output = ConsoleOutput()) : RestCommand(), Run
     var status: List<String>? = null
 
     private fun performMembersLookup(): List<RestMemberInfo> {
+        val holdingIdentity = getHoldingIdentity(holdingIdentityShortHash, commonName, group)
         val result: List<RestMemberInfo> = createRestClient(MemberLookupRestResource::class).use { client ->
             val memberLookupProxy = client.start().proxy
             memberLookupProxy.lookup(
-                getHoldingIdentity(),
+                holdingIdentity,
                 commonName,
                 organization,
                 organizationUnit,
@@ -96,28 +96,6 @@ class Members(private val output: Output = ConsoleOutput()) : RestCommand(), Run
         }
 
         return result
-    }
-
-    private fun getHoldingIdentity(): String {
-        return holdingIdentityShortHash ?: commonName?.let {
-            val x500Name = MemberX500Name.parse(it)
-            val holdingIdentity = group?.let { group ->
-                net.corda.virtualnode.HoldingIdentity(x500Name, group)
-            } ?: net.corda.virtualnode.HoldingIdentity(x500Name, readDefaultGroup())
-            holdingIdentity.shortHash.toString()
-        } ?: throw IllegalArgumentException("Either 'holdingIdentityShortHash' or 'name' must be specified.")
-    }
-
-    private fun readDefaultGroup(): String {
-        val groupIdFile = File(
-            File(File(File(System.getProperty("user.home")), ".corda"), "groupId"),
-            "groupId.txt"
-        )
-        return if (groupIdFile.exists()) {
-            groupIdFile.readText().trim()
-        } else {
-            throw IllegalArgumentException("Group ID was not specified, and the last created group could not be found.")
-        }
     }
 
     override fun run() {
