@@ -831,7 +831,7 @@ class SoftCryptoServiceGeneralTests {
     @Test
     fun `can rewrap a managed wrapping key`() {
         cryptoRepositoryWrapping.keys["root"] = sampleWrappingKeyInfo
-        // service has a mock root wrapping key so we have to make one with a real wrapping key
+        // service has a mock root wrapping key, so we have to make one with a real wrapping key
         val myCryptoService = makeSoftCryptoService(
             wrappingRepository = cryptoRepositoryWrapping,
             schemeMetadata = schemeMetadata,

@@ -26,7 +26,8 @@ interface WrappingRepository : Closeable {
      *
      * @param alias A name for the wrapping key, must be unique within the tenant.
      * @param key The key material and metadata about version and algorithm.
-     * @param id An id of the wrapping key to be updated.
+     * @param id An id of the wrapping key to be updated. If id is provided it updates the row,
+     *           otherwise it creates a new entry with random id.
      * @return The wrapping key that was persisted.
      */
     fun saveKeyWithId(alias: String, key: WrappingKeyInfo, id: UUID?): WrappingKeyInfo
