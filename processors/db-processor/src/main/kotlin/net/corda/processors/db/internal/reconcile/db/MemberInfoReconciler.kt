@@ -236,6 +236,7 @@ class MemberInfoReconciler(
                 currentData.forEach {
                     recordsMap[it.key] = it.value
                 }
+                coordinator.updateStatus(LifecycleStatus.UP)
             }
 
         }
