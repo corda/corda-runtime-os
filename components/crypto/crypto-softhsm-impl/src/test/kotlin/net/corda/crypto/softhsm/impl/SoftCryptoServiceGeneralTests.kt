@@ -856,7 +856,7 @@ class SoftCryptoServiceGeneralTests {
         assertThat(clearKey2).isEqualTo(clearKey1)
         assertThat(wrappedWithRoot1).isNotEqualTo(wrappedWithRoot2)
         
-        // now let's rotate back to parent key root, and the encrypted and clear material should be the same
+        // now let's rotate back to parent key root, and the clear material should be the same
         myCryptoService.rewrapWrappingKey(CryptoTenants.CRYPTO, "alpha", "root")
         val wrappedWithRoot1Again = checkNotNull(cryptoRepositoryWrapping.keys.get("alpha")).keyMaterial
         val clearKey3 = rootWrappingKey.unwrapWrappingKey(wrappedWithRoot1Again)
