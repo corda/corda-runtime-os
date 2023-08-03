@@ -44,6 +44,7 @@ class Web3JService @Activate constructor(
     private val publisherFactory: PublisherFactory,
 ) : Lifecycle {
 
+    // Companion Object
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val CONSUMER_GROUP = "InteropConsumer"
