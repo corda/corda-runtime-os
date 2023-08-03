@@ -35,6 +35,7 @@ class VerificationSandboxTest {
         private const val CPK1_ENVIRONMENT_FLOW = "$CPK1_FLOWS_PACKAGE.EnvironmentFlow"
     }
 
+    @Suppress("JUnitMalformedDeclaration")
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
 
