@@ -12,7 +12,8 @@ import org.web3j.utils.Numeric
 import java.math.BigInteger
 import java.util.concurrent.CompletableFuture
 import net.corda.interop.web3j.internal.EthereumConnector
-import net.corda.interop.web3j.internal.Response
+
+// GOING TO GET RID OF gson
 
 /**
  * EVMOpsProcessor is an implementation of the RPCResponderProcessor for handling Ethereum Virtual Machine (EVM) requests.
@@ -32,13 +33,13 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
      * @param receipt The receipt of the transaction.
      * @return The JSON representation of the transaction receipt, or null if not found.
      */
-    private fun getTransactionReceipt(rpcConnection: String, receipt: String): String? {
+    fun getTransactionReceipt(rpcConnection: String, receipt: String): String? {
         val resp = evmConnector.send(rpcConnection, "eth_getTransactionReceipt", listOf(receipt))
         return resp.result.toString()
     }
 
     /**
-     * Get the Chain Id from the Ethereum node.
+     * Get the Chain ID from the Ethereum node.
      *
      * @param rpcConnection The URL of the Ethereum RPC endpoint.
      * @return The chain Id as a Long.
@@ -76,7 +77,7 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
         rootObject.addProperty("input", payload)
         rootObject.addProperty("from", from)
         val resp = evmConnector.send(rpcConnection, "eth_estimateGas", listOf(rootObject, "latest"))
-        println("GAS RESP: ${resp}")
+        println("GAS RESP: $resp")
         return BigInteger.valueOf(Integer.decode(resp.result.toString()).toLong())
     }
 
@@ -94,18 +95,6 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
             listOf(address, "latest")
         )
         return BigInteger.valueOf(Integer.decode(transactionCountResponse.result.toString()).toLong())
-    }
-
-    /**
-     * Query the completion status of a transaction using the Ethereum node.
-     *
-     * @param rpcConnection The URL of the Ethereum RPC endpoint.
-     * @param transactionHash The hash of the transaction to query.
-     * @return The JSON representation of the transaction receipt.
-     */
-    private fun queryCompletion(rpcConnection: String, transactionHash: String): Response {
-        val res = evmConnector.send(rpcConnection, "eth_getTransactionReceipt", listOf(transactionHash), true)
-        return res
     }
 
     /**
@@ -129,22 +118,13 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
      * @return The receipt of the transaction.
      */
     private fun sendTransaction(rpcConnection: String, contractAddress: String, payload: String): String {
-        try {
             println("Fetching Count")
+            // Do this async
             val nonce = getTransactionCount(rpcConnection, "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73")
-            println("NONCE: ${nonce}")
-//            val estimatedGas = estimateGas(
-//                rpcConnection,
-//                "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73",
-//                contractAddress,
-//                payload
-//            )
-//
-//            // Use for pre EIP-1559 ones
-//            println("Estimated Gas: ${estimatedGas}")
-
+            println("NONCE: $nonce")
             val chainid = getChainId(rpcConnection)
-        println("Got Chain Id")
+
+
             val transaction = RawTransaction.createTransaction(
                 chainid,
                 nonce,
@@ -164,30 +144,20 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
             println(Numeric.toHexString(signed))
             val tReceipt =
                 evmConnector.send(rpcConnection, "eth_sendRawTransaction", listOf(Numeric.toHexString(signed)))
-            println("Receipt: ${tReceipt}")
+            println("Receipt: $tReceipt")
             if (!tReceipt.success) {
                 return tReceipt.result.toString()
             }
-            if (contractAddress.isEmpty()) {
-                val transactionOutput = queryCompletionContract(rpcConnection, tReceipt.result.toString())
-                println("Transaction Details: ${transactionOutput}")
-                return transactionOutput
 
-            } else {
-                val transactionOutput = queryCompletion(rpcConnection, tReceipt.result.toString())
-
-                println("Transaction Details: ${transactionOutput}")
-            }
-            return tReceipt.result.toString()
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-            if (e is java.net.ConnectException) {
-                return "Failed To Establish a Connection With The Ethereum Node"
-            }
-
-            return e.message.toString()
+            // Exception Case When Contract is Being Created we need to wait the address
+        println("CONTRACT ADDRESS EMPTY: $contractAddress")
+        return if (contractAddress.isEmpty()) {
+            queryCompletionContract(rpcConnection, tReceipt.result.toString())
+        } else {
+            tReceipt.result.toString()
         }
+
+
     }
 
     /**
@@ -207,7 +177,7 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
         return resp.result.toString()
     }
 
-    override fun onNext(request: EvmRequest, respFuture: CompletableFuture<EvmResponse>) {
+    private fun handleRequest(request: EvmRequest, respFuture: CompletableFuture<EvmResponse>) {
         log.info(request.schema.toString(true))
         // Parameters for the transaction/query
         val contractAddress = request.contractAddress
@@ -216,23 +186,51 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
         val flowId = request.flowId
         val isTransaction = request.isTransaction
 
-        try {
-            if (isTransaction) {
-                // Transaction Being Sent
-                val transactionOutput = sendTransaction(rpcConnection, contractAddress, payload)
-                println("Transaction Output ${transactionOutput}")
-                val result = EvmResponse(flowId, transactionOutput)
-                respFuture.complete(result)
-            } else {
-                // Call Being Sent
-                val callResult = sendCall(rpcConnection, contractAddress, payload)
-                respFuture.complete(EvmResponse(flowId, callResult))
-            }
+
+        println("REQUEST: $request")
+
+        if (isTransaction) {
+            // Transaction Being Sent
+            val transactionOutput = sendTransaction(rpcConnection, contractAddress, payload)
+            println("Transaction Output $transactionOutput")
+            val result = EvmResponse(flowId, transactionOutput)
+            respFuture.complete(result)
+        } else {
+            // Call Being Sent
+            val callResult = sendCall(rpcConnection, contractAddress, payload)
+            respFuture.complete(EvmResponse(flowId, callResult))
+        }
+    }
+
+
+
+    override fun onNext(request: EvmRequest, respFuture: CompletableFuture<EvmResponse>) {
+
+        try{
+            handleRequest(request,respFuture)
+
         } catch (e: Throwable) {
             // Better error handling => Meaningful
-            println(e)
-            println(e.message)
-            respFuture.completeExceptionally(e)
+            println("AT THIS ERROR")
+            when(e){
+                is java.net.ConnectException -> {
+                    // try three more times, then complete exceptionally
+                    var attempts = 0
+                    while(attempts<3){
+                        try {
+                            handleRequest(request, respFuture)
+                        }catch(error: Exception){
+                            log.info("Failed on retry #${attempts}")
+                        }
+                        ++attempts
+                    }
+                    println("STARTING EXCEPTIONAL FAILURE")
+                    respFuture.completeExceptionally(e)
+                }
+                else -> {
+                    respFuture.completeExceptionally(e)
+                }
+            }
         }
     }
 }

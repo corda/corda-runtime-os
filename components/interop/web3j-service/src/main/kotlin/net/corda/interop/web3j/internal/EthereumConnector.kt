@@ -182,30 +182,19 @@ class EthereumConnector {
      * @param params The parameters for the RPC call.
      * @return An RPCResponse object representing the result of the RPC call.
      */
-    fun rpcCall(rpcUrl: String, method: String, params: List<Any?>): RPCResponse {
-            val client = OkHttpClient()
-            val body = RpcRequest("2.0", "90.0", method, params)
-            val requestBase = gson.toJson(body)
-            val requestBody = requestBase.toRequestBody("application/json".toMediaType())
-
-            val request = Request.Builder()
-                .url(rpcUrl)
-                .post(requestBody)
-                .addHeader("Content-Type", "application/json")
-                .build()
-
-            val response = client.newCall(request).execute()
-            val responseBody = response.body?.string()
-            response.close()
-
-            if (responseBody == null) {
-                // Retry for network error
-                return RPCResponse(false, "RPC Response was null")
-            }
-            return RPCResponse(true, responseBody)
+    private fun rpcCall(rpcUrl: String, method: String, params: List<Any?>): RPCResponse {
+        val body = RpcRequest(JSON_RPC_VERSION, "90.0", method, params)
+        val requestBase = ObjectMapper().writeValueAsString(body)
+        val requestBody = requestBase.toRequestBody("application/json".toMediaType())
+        val request = Request.Builder()
+            .url(rpcUrl)
+            .post(requestBody)
+            .addHeader("Content-Type", "application/json")
+            .build()
+        return OkHttpClient().newCall(request).execute().body?.use {
+            RPCResponse(true, it.string())
+        } ?: throw CordaRuntimeException("Response was null")
     }
-
-
     /**
      * Makes an RPC request to the Ethereum node and waits for the response.
      *
