@@ -148,7 +148,7 @@ fun ClusterInfo.configureNetworkParticipant(
     sessionKeyId: String
 ) {
     return cluster {
-        assertWithRetry {
+        assertWithRetryIgnoringExceptions {
             interval(1.seconds)
             command { configureNetworkParticipant(holdingId, sessionKeyId) }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
@@ -208,7 +208,7 @@ fun ClusterInfo.waitForRegistrationStatus(
     registrationStatus: String
 ) {
     cluster {
-        assertWithRetry {
+        assertWithRetryIgnoringExceptions {
             // Use a fairly long timeout here to give plenty of time for the other side to respond. Longer
             // term this should be changed to not use the RPC message pattern and have the information available in a
             // cache on the REST worker, but for now this will have to suffice.
@@ -306,7 +306,7 @@ fun ClusterInfo.lookup(
     holdingId: String,
     statuses: List<String> = emptyList()
 ) = cluster {
-    assertWithRetry {
+    assertWithRetryIgnoringExceptions {
         timeout(15.seconds)
         interval(1.seconds)
         command {
@@ -323,7 +323,7 @@ fun ClusterInfo.lookup(
 fun ClusterInfo.lookupGroupParameters(
     holdingId: String
 ) = cluster {
-    assertWithRetry {
+    assertWithRetryIgnoringExceptions {
         timeout(15.seconds)
         interval(1.seconds)
         command {

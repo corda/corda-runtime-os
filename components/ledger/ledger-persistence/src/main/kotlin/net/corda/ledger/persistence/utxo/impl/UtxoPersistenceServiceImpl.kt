@@ -1,6 +1,7 @@
 package net.corda.ledger.persistence.utxo.impl
 
 import com.fasterxml.jackson.core.JsonProcessingException
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
@@ -11,8 +12,10 @@ import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
+import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.libs.packaging.hash
 import net.corda.orm.utils.transaction
 import net.corda.utilities.serialization.deserialize
@@ -20,12 +23,14 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -44,10 +49,10 @@ class UtxoPersistenceServiceImpl(
 ) : UtxoPersistenceService {
 
     private companion object {
-        val log = LoggerFactory.getLogger(UtxoPersistenceServiceImpl::class.java)
+        val log: Logger = LoggerFactory.getLogger(UtxoPersistenceServiceImpl::class.java)
     }
 
-    override fun findTransaction(
+    override fun findSignedTransaction(
         id: String,
         transactionStatus: TransactionStatus
     ): Pair<SignedTransactionContainer?, String?> {
@@ -56,6 +61,38 @@ class UtxoPersistenceServiceImpl(
             if (status == transactionStatus.value) {
                 repository.findTransaction(em, id)
                     ?: throw InconsistentLedgerStateException("Transaction $id in status $status has disappeared from the database")
+            } else {
+                null
+            } to status
+        }
+    }
+
+    override fun findSignedLedgerTransaction(
+        id: String,
+        transactionStatus: TransactionStatus
+    ): Pair<SignedLedgerTransactionContainer?, String?> {
+        return entityManagerFactory.transaction { em ->
+            val status = repository.findTransactionStatus(em, id)
+            if (status == transactionStatus.value) {
+                val (transaction, signatures) = repository.findTransaction(em, id)
+                    ?.let { WrappedUtxoWireTransaction(it.wireTransaction, serializationService) to it.signatures }
+                    ?: throw InconsistentLedgerStateException("Transaction $id in status $status has disappeared from the database")
+
+                val allStateRefs = (transaction.inputStateRefs + transaction.referenceStateRefs).distinct()
+
+                val stateRefsToStateAndRefs = resolveStateRefs(allStateRefs)
+                    .associateBy { StateRef(parseSecureHash(it.transactionId), it.leafIndex) }
+
+                val inputStateAndRefs = transaction.inputStateRefs.map {
+                    stateRefsToStateAndRefs[it]
+                        ?: throw CordaRuntimeException("Could not find input StateRef $it when finding transaction $id")
+                }
+                val referenceStateAndRefs = transaction.referenceStateRefs.map {
+                    stateRefsToStateAndRefs[it]
+                        ?: throw CordaRuntimeException("Could not find reference StateRef $it when finding transaction $id")
+                }
+
+                SignedLedgerTransactionContainer(transaction.wireTransaction, inputStateAndRefs, referenceStateAndRefs, signatures)
             } else {
                 null
             } to status
