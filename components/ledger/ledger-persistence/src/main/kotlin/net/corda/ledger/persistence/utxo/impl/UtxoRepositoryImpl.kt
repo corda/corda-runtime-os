@@ -114,12 +114,12 @@ class UtxoRepositoryImpl @Activate constructor(
                 tc_output.data AS output_data 
                 FROM {h-schema}utxo_visible_transaction_state AS rts
                 JOIN {h-schema}utxo_transaction_component AS tc_output_info
-                    ON rts.transaction_id = tc_output_info.transaction_id
-                    AND rts.leaf_idx = tc_output_info.leaf_idx
+                    ON tc_output_info.transaction_id = rts.transaction_id
+                    AND tc_output_info.leaf_idx = rts.leaf_idx
                     AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
                 JOIN {h-schema}utxo_transaction_component AS tc_output
-                	ON tc_output_info.transaction_id = tc_output.transaction_id
-                    AND tc_output_info.leaf_idx = tc_output.leaf_idx
+                	ON tc_output.transaction_id = tc_output_info.transaction_id
+                    AND tc_output.leaf_idx = tc_output_info.leaf_idx
                     AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
                 JOIN {h-schema}utxo_transaction_status AS ts
                     ON ts.transaction_id = tc_output.transaction_id
@@ -153,8 +153,8 @@ class UtxoRepositoryImpl @Activate constructor(
                 tc_output.data AS output_data 
                 FROM {h-schema}utxo_transaction_component AS tc_output_info  
                 JOIN {h-schema}utxo_transaction_component AS tc_output
-                	ON tc_output_info.transaction_id = tc_output.transaction_id
-                    AND tc_output_info.leaf_idx = tc_output.leaf_idx
+                	ON tc_output.transaction_id = tc_output_info.transaction_id
+                    AND tc_output.leaf_idx = tc_output_info.leaf_idx
                     AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
                 JOIN {h-schema}utxo_transaction_status AS ts
                     ON ts.transaction_id = tc_output.transaction_id

@@ -101,8 +101,8 @@ class VaultNamedQueryExecutorImpl(
                         tc_output.data AS output_data
                         FROM $UTXO_VISIBLE_TX_TABLE AS visible_states
                         JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output_info
-                             ON visible_states.transaction_id = tc_output_info.transaction_id
-                             AND visible_states.leaf_idx = tc_output_info.leaf_idx
+                             ON tc_output_info.transaction_id = visible_states.transaction_id
+                             AND tc_output_info.leaf_idx = visible_states.leaf_idx
                              AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
                         JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output
                              ON tc_output_info.transaction_id = tc_output.transaction_id
