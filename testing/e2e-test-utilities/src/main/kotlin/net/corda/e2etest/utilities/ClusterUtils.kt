@@ -138,7 +138,7 @@ fun ClusterInfo.getExistingCpi(
         condition { it.code == ResponseCode.OK.statusCode }
         failMessage("Failed to list CPIs")
     }.toJson().apply {
-            assertThat(contains("cpis"))
+            assertThat(contains("cpis")).isTrue
         }["cpis"]
         .toList()
         .firstOrNull {
