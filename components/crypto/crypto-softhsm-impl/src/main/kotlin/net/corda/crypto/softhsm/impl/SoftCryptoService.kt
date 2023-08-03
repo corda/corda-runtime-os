@@ -585,7 +585,10 @@ open class SoftCryptoService(
                 logger.trace { "Should decrypt key material in row $id with alias $targetAlias using " +
                         "${wrappingKeyInfo.parentKeyAlias} and encrypt key material using $newParentKeyAlias" }
                 val wrappedWithNewKey = newParentKey.wrap(wrappingKey)
-                wrappingRepo.saveKeyWithId(targetAlias, wrappingKeyInfo.copy(keyMaterial = wrappedWithNewKey, parentKeyAlias = newParentKeyAlias), id)
+                wrappingRepo.saveKeyWithId(
+                    targetAlias,
+                    wrappingKeyInfo.copy(keyMaterial = wrappedWithNewKey, parentKeyAlias = newParentKeyAlias),
+                    id)
             }
         }
     }
