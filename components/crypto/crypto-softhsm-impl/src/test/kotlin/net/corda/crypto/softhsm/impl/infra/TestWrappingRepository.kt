@@ -16,7 +16,8 @@ class TestWrappingRepository(
     }
 
     override fun saveKeyWithId(alias: String, key: WrappingKeyInfo, id: UUID?): WrappingKeyInfo {
-        TODO("Not yet implemented")
+        keys[alias] = key
+        return key
     }
 
     override fun findKey(alias: String): WrappingKeyInfo? {
