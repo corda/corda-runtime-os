@@ -6,10 +6,14 @@ import brave.baggage.BaggagePropagation
 import brave.baggage.BaggagePropagationConfig
 import brave.baggage.CorrelationScopeConfig
 import brave.context.slf4j.MDCScopeDecorator
+import brave.http.HttpRequest
+import brave.http.HttpRequestMatchers.pathStartsWith
+import brave.http.HttpTracing
 import brave.propagation.B3Propagation
 import brave.propagation.ThreadLocalCurrentTraceContext
 import brave.sampler.RateLimitingSampler
 import brave.sampler.Sampler
+import brave.sampler.SamplerFunction
 import brave.servlet.TracingFilter
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -45,13 +49,11 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
     private val resourcesToClose = Stack<AutoCloseable>()
 
     private val tracing: Tracing by lazy {
-      
-        val braveCurrentTraceContext = ThreadLocalCurrentTraceContext.newBuilder()
-            .addScopeDecorator(MDCScopeDecorator.newBuilder()
-                .add(CorrelationScopeConfig.SingleCorrelationField.create(BraveBaggageFields.REQUEST_ID))
-                .build())
-            .build()
 
+        val braveCurrentTraceContext = ThreadLocalCurrentTraceContext.newBuilder().addScopeDecorator(
+            MDCScopeDecorator.newBuilder()
+                .add(CorrelationScopeConfig.SingleCorrelationField.create(BraveBaggageFields.REQUEST_ID)).build()
+        ).build()
 
         val sampler = when (samplesPerSecond) {
             is PerSecond -> {
@@ -89,6 +91,11 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         tracingBuilder.addSpanHandler(spanHandler)
         tracingBuilder.build().also(resourcesToClose::push)
     }
+
+    private val serverSampler =
+        SamplerFunction<HttpRequest> { request -> !(request.method() == "POST" && request.path().startsWith("/flow")) }
+
+    private val httpTracing by lazy { HttpTracing.newBuilder(tracing).serverSampler(serverSampler).build() }
 
     private class LogReporter : Reporter<Span> {
         private val logger: Logger = Logger.getLogger(LogReporter::class.java.name)
@@ -167,7 +174,7 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
     }
 
     override fun getTracedServletFilter(): Filter {
-        return TracingFilter.create(tracing)
+        return TracingFilter.create(httpTracing)
     }
 
     override fun close() {
