@@ -42,7 +42,6 @@ import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder
 import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder
 import org.bouncycastle.operator.bc.BcRSAContentSignerBuilder
 import picocli.CommandLine.Option
-import picocli.CommandLine.Parameters
 import java.io.File
 import java.io.InputStream
 import java.math.BigInteger
@@ -121,6 +120,12 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         ]
     )
     var tlsCertificateSubject: String? = null
+
+    @Option(
+        names = ["--p2p-gateway-url"],
+        description = ["P2P Gateway URL. Multiple URLs may be provided. Defaults to https://localhost:8080."]
+    )
+    var p2pGatewayUrls: List<String> = listOf("https://localhost:8080")
 
     protected val json by lazy {
         ObjectMapper()
@@ -242,13 +247,12 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     protected val ecdhKeyId by lazy {
         assignSoftHsmAndGenerateKey("PRE_AUTH")
     }
+    private val p2pHost = "localhost"
+
     protected val certificateSubject by lazy {
         tlsCertificateSubject ?: "O=P2P Certificate, OU=$p2pHost, L=London, C=GB"
     }
 
-    protected val p2pUrl by lazy {
-        "https://$targetUrl:8080"
-    }
     protected val ca by lazy {
         caHome.parentFile.mkdirs()
         CertificateAuthorityFactory

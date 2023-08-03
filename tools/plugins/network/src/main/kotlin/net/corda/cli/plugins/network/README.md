@@ -147,6 +147,8 @@ Examples of on-boarding an MGM can be:
 ./corda-cli.sh network dynamic onboard-mgm --cpi-hash=D8AF6080C7B4 --user=admin --password=admin --target=https://localhost:8888 --insecure
 
 ./corda-cli.sh network dynamic onboard-mgm --save-group-policy-as /tmp/groupPolicy.json --user=admin --password=admin --target=https://localhost:8888 --insecure
+
+./corda-cli.sh network dynamic onboard-mgm --user=admin --password=admin --target=https://localhost:8888 --p2p-gateway-url=https://localhost:8888 --p2p-gateway-url=https://localhost:8886 --insecure
 ```
 
 Use the `--help` to view all the other options and defaults.
@@ -178,10 +180,10 @@ need to manually approve (or decline) your submitted registration to be fully on
 Few examples of on-boarding a member can be:
 
 ```shell
-./corda-cli.sh network dynamic member demo-cluster-two --x500-name='O=Alice, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb
-./corda-cli.sh network dynamic member demo-cluster-two --x500-name='O=Alice, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb --wait
-./corda-cli.sh network dynamic member demo-cluster-one --cpi-file /tmp/calculator.cpi
-./corda-cli.sh network dynamic member --cpi-hash 200E86176EF2
+./corda-cli.sh network dynamic member --x500-name='O=Alice, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb --user=admin --password=admin --target=https://localhost:8888 --insecure
+./corda-cli.sh network dynamic member --x500-name='O=Alice, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb --wait --user=admin --password=admin --target=https://localhost:8888 --insecure
+./corda-cli.sh network dynamic member --cpi-file /tmp/calculator.cpi --user=admin --password=admin --target=https://localhost:8888 --insecure
+./corda-cli.sh network dynamic member --cpi-hash 200E86176EF2 --user=admin --password=admin --target=https://localhost:8888 --insecure
 ```
 
 Use the `--help` to view all the other options and defaults.

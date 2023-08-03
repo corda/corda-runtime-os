@@ -103,6 +103,14 @@ class OnboardMgm : Runnable, BaseOnboard() {
         } else {
             "OneWay"
         }
+
+        val endpoints = mutableMapOf<String, String>()
+
+        p2pGatewayUrls.mapIndexed { index, url ->
+            endpoints["corda.endpoints.$index.connectionURL"] = url
+            endpoints["corda.endpoints.$index.protocolVersion"] = "1"
+        }
+
         mapOf(
             "corda.session.keys.0.id" to sessionKeyId,
             "corda.ecdh.key.id" to ecdhKeyId,
@@ -116,10 +124,8 @@ class OnboardMgm : Runnable, BaseOnboard() {
             "corda.group.pki.session" to "NoPKI",
             "corda.group.pki.tls" to "Standard",
             "corda.group.tls.version" to "1.3",
-            "corda.endpoints.0.connectionURL" to p2pUrl,
-            "corda.endpoints.0.protocolVersion" to "1",
             "corda.group.trustroot.tls.0" to tlsTrustRoot,
-        )
+        ) + endpoints
     }
 
     private val cpi by lazy {
