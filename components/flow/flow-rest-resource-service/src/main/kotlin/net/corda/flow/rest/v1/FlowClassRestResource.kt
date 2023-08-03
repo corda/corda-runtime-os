@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package net.corda.flow.rest.v1
 
 import net.corda.flow.rest.v1.types.response.StartableFlowsResponse

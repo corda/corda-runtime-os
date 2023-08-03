@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package net.corda.flow.rest.impl.v1
 
 import net.corda.cpiinfo.read.CpiInfoReadService
