@@ -37,7 +37,6 @@ class AvailableTokenCacheServiceImpl @Activate constructor(
     override fun find(poolKey: TokenPoolCacheKey, ownerHash: String?, regexTag: String?) {
         val virtualNode = getVirtualNodeInfo(poolKey)
 
-        // Follow the repository pattern
         val entityManagerFactory = createEntityManagerFactory(virtualNode)
 
         utxoTokenRepository.findTokens(entityManagerFactory.createEntityManager(), poolKey, ownerHash, regexTag)
