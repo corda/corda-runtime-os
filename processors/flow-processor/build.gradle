@@ -52,6 +52,7 @@ dependencies {
     runtimeOnly project(":components:membership:membership-group-read-impl")
     runtimeOnly project(":components:membership:membership-persistence-client-impl")
     runtimeOnly project(":components:membership:group-policy-impl")
+
     runtimeOnly project(":components:uniqueness:uniqueness-checker-client-service-impl")
     runtimeOnly project(":components:virtual-node:cpi-info-read-service-impl")
     runtimeOnly project(":components:virtual-node:cpk-read-service-impl")

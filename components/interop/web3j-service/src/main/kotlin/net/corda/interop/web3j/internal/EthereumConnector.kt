@@ -6,7 +6,27 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
 import com.google.gson.Gson
+import com.google.gson.JsonObject
 import kotlin.reflect.KClass
+import com.google.gson.JsonParser
+
+
+data class JsonRpcResponse(
+    val jsonrpc: String,
+    val id: String,
+    val result: String
+)
+data class JsonRpcError(
+    val jsonrpc: String,
+    val id: String,
+    val error: Error
+)
+
+data class Error(
+    val code: Int,
+    val message: String,
+    val data: String
+)
 
 data class RpcRequest(
     val jsonrpc: String,
@@ -16,15 +36,23 @@ data class RpcRequest(
 )
 
 
+data class ProcessedResponse(
+    val success: Boolean,
+    val payload: String
+)
+
 data class RPCResponse (
     val success:Boolean,
     val message: String
 )
 
+
+
 data class Response (
     val id: String,
     val jsonrpc: String,
-    val result: Any?
+    val result: Any?,
+    val success: Boolean
 )
 
 data class ContractDeploymentResponse (
@@ -67,25 +95,58 @@ class EthereumConnector {
     private val gson = Gson()
     private val maxLoopedRequests = 10
 
+    private fun checkNestedKey(jsonObject: JsonObject, nestedKey: String): Boolean {
+        if (jsonObject.has(nestedKey)) {
+            return true
+        }
 
+        for ((_, value) in jsonObject.entrySet()) {
+            if (value.isJsonObject) {
+                if (checkNestedKey(value.asJsonObject, nestedKey)) {
+                    return true
+                }
+            }
+        }
+
+        return false
+    }
+
+    fun jsonStringContainsNestedKey(jsonString: String, nestedKey: String): Boolean {
+        return try {
+            val jsonObject = JsonParser().parse(jsonString).asJsonObject
+            checkNestedKey(jsonObject, nestedKey)
+        } catch (e: Exception) {
+            // Handle any parsing errors here
+            false
+        }
+    }
+
+
+    fun jsonStringContainsKey(jsonString: String, key: String): Boolean {
+        return try {
+            val jsonObject = JsonParser().parse(jsonString).asJsonObject
+            jsonObject.has(key)
+        } catch (e: Exception) {
+            // Handle any parsing errors here
+            false
+        }
+    }
     /**
      * Finds the appropriate data class from the candidateDataClasses list that fits the JSON structure.
      *
      * @param json The JSON string to be parsed.
-     * @param candidateDataClasses The list of candidate data classes to try parsing the JSON.
      * @return The matching data class from candidateDataClasses, or null if no match is found.
      */
-    private fun findDataClassForJson(json: String, candidateDataClasses: List<KClass<*>>): KClass<*>? {
-        for (dataClass in candidateDataClasses) {
-            try {
-                gson.fromJson(json, dataClass.java)
-                return dataClass
-            } catch (e: Exception) {
-                println(e.message)
-                // Parsing failed, continue with the next candidate data class
-            }
+    private fun findDataClassForJson(json: String): KClass<*>? {
+
+        if (jsonStringContainsKey(json, "error")) {
+            return JsonRpcError::class
+        } else if (jsonStringContainsNestedKey(json, "contractAddress")) {
+            return ContractDeploymentResponse::class
+        } else {
+            return JsonRpcResponse::class
         }
-        return null // If no candidate data class fits the JSON structure
+
     }
 
     /**
@@ -94,12 +155,22 @@ class EthereumConnector {
      * @param input The input data object to process.
      * @return The useful data extracted from the input as a string, or an empty string if not applicable.
      */
-    private fun returnUsefulData(input: Any): String {
+    private fun returnUsefulData(input: Any): ProcessedResponse {
+        println("INPUT ${input}")
         when (input) {
-            is ContractDeploymentResponse -> return input.result.contractAddress
-            is Response -> return input.result.toString()
+            is JsonRpcError -> {
+                return ProcessedResponse(true,input.error.data)
+            }
+            is ContractDeploymentResponse -> {
+                println(input.result.contractAddress)
+                if(input.result.contractAddress=="null"){
+                    return ProcessedResponse(true,input.result.toString())
+                }
+                return ProcessedResponse(true,input.result.contractAddress)
+            }
+            is JsonRpcResponse -> return ProcessedResponse(true,input.result.toString())
         }
-        return ""
+        return ProcessedResponse(false,"")
     }
 
 
@@ -113,7 +184,6 @@ class EthereumConnector {
      * @return An RPCResponse object representing the result of the RPC call.
      */
     fun rpcCall(rpcUrl: String, method: String, params: List<Any?>): RPCResponse {
-        try {
             val client = OkHttpClient()
             val body = RpcRequest("2.0", "90.0", method, params)
             val requestBase = gson.toJson(body)
@@ -133,13 +203,7 @@ class EthereumConnector {
                 // Retry for network error
                 return RPCResponse(false, "RPC Response was null")
             }
-
             return RPCResponse(true, responseBody)
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return RPCResponse(false, e.message.toString())
-        }
     }
 
 
@@ -162,7 +226,7 @@ class EthereumConnector {
     ): Response {
         // Check if the maximum number of requests has been reached
         if (requests > maxLoopedRequests) {
-            return Response("90", "2.0", "Timed Out")
+            return Response("90", "2.0", "Timed Out",false)
         }
 
         // Make the RPC call to the Ethereum node
@@ -172,7 +236,8 @@ class EthereumConnector {
 
         // Handle the response based on success status
         if (!success) {
-            return Response("90", "2.0", "")
+            println("Request Failed")
+            return Response("90", "2.0", response.message,false)
         }
 
         // Parse the JSON response into the base response object
@@ -186,17 +251,24 @@ class EthereumConnector {
 
         // Find the appropriate data class for parsing the actual response
         val responseType = findDataClassForJson(
-            responseBody,
-            listOf(ContractDeploymentResponse::class, Response::class)
+            responseBody
         )
 
+        if(responseType==null){
+
+        }
+
+        println("RESPONSE BODY: ${responseBody}")
         // Parse the actual response using the determined data class
         val actualParsedResponse = gson.fromJson<Any>(responseBody, responseType?.java ?: Any::class.java)
 
         // Get the useful response data from the parsed response
         val usefulResponse = returnUsefulData(actualParsedResponse)
 
-        return Response("90", "2.0", usefulResponse)
+
+
+
+        return Response("90", "2.0", usefulResponse.payload, usefulResponse.success)
     }
 
     /**

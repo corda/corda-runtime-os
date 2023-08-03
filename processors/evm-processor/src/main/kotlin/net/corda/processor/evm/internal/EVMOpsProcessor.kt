@@ -12,6 +12,7 @@ import org.web3j.utils.Numeric
 import java.math.BigInteger
 import java.util.concurrent.CompletableFuture
 import net.corda.interop.web3j.internal.EthereumConnector
+import net.corda.interop.web3j.internal.Response
 
 /**
  * EVMOpsProcessor is an implementation of the RPCResponderProcessor for handling Ethereum Virtual Machine (EVM) requests.
@@ -75,6 +76,7 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
         rootObject.addProperty("input", payload)
         rootObject.addProperty("from", from)
         val resp = evmConnector.send(rpcConnection, "eth_estimateGas", listOf(rootObject, "latest"))
+        println("GAS RESP: ${resp}")
         return BigInteger.valueOf(Integer.decode(resp.result.toString()).toLong())
     }
 
@@ -101,9 +103,9 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
      * @param transactionHash The hash of the transaction to query.
      * @return The JSON representation of the transaction receipt.
      */
-    private fun queryCompletion(rpcConnection: String, transactionHash: String): String {
+    private fun queryCompletion(rpcConnection: String, transactionHash: String): Response {
         val res = evmConnector.send(rpcConnection, "eth_getTransactionReceipt", listOf(transactionHash), true)
-        return res.result.toString()
+        return res
     }
 
     /**
@@ -127,48 +129,65 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
      * @return The receipt of the transaction.
      */
     private fun sendTransaction(rpcConnection: String, contractAddress: String, payload: String): String {
-        val nonce = getTransactionCount(rpcConnection, "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73")
-        val estimatedGas = estimateGas(
-            rpcConnection,
-            "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73",
-            contractAddress,
-            payload
-        )
+        try {
+            println("Fetching Count")
+            val nonce = getTransactionCount(rpcConnection, "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73")
+            println("NONCE: ${nonce}")
+//            val estimatedGas = estimateGas(
+//                rpcConnection,
+//                "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73",
+//                contractAddress,
+//                payload
+//            )
+//
+//            // Use for pre EIP-1559 ones
+//            println("Estimated Gas: ${estimatedGas}")
 
-        // Use for pre EIP-1559 ones
-        println("Estimated Gas: ${estimatedGas}")
+            val chainid = getChainId(rpcConnection)
+        println("Got Chain Id")
+            val transaction = RawTransaction.createTransaction(
+                chainid,
+                nonce,
+                BigInteger.valueOf(10000000),
+                contractAddress,
+                BigInteger.valueOf(0),
+                payload,
+                BigInteger.valueOf(10000000),
+                BigInteger.valueOf(51581475500)
+            )
 
-        val chainid = getChainId(rpcConnection)
+            val signer = Credentials.create("0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63")
+            println("Passed Credentials")
 
-        val transaction = RawTransaction.createTransaction(
-            chainid,
-            nonce,
-            BigInteger.valueOf(10000000),
-            contractAddress,
-            BigInteger.valueOf(0),
-            payload,
-            BigInteger.valueOf(10000000),
-            BigInteger.valueOf(51581475500)
-        )
+            val signed = TxSignServiceImpl(signer).sign(transaction, "1337".toLong())
+            println("Passed Signing")
+            println(Numeric.toHexString(signed))
+            val tReceipt =
+                evmConnector.send(rpcConnection, "eth_sendRawTransaction", listOf(Numeric.toHexString(signed)))
+            println("Receipt: ${tReceipt}")
+            if (!tReceipt.success) {
+                return tReceipt.result.toString()
+            }
+            if (contractAddress.isEmpty()) {
+                val transactionOutput = queryCompletionContract(rpcConnection, tReceipt.result.toString())
+                println("Transaction Details: ${transactionOutput}")
+                return transactionOutput
 
-        val signer = Credentials.create("0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63")
-        println("Passed Credentials")
+            } else {
+                val transactionOutput = queryCompletion(rpcConnection, tReceipt.result.toString())
 
-        val signed = TxSignServiceImpl(signer).sign(transaction, "1337".toLong())
-        println("Passed Signing")
-        println(Numeric.toHexString(signed))
-        val tReceipt = evmConnector.send(rpcConnection, "eth_sendRawTransaction", listOf(Numeric.toHexString(signed))).result.toString()
-        println("Receipt: ${tReceipt}")
-        if (contractAddress.isEmpty()) {
-            val transactionOutput = queryCompletionContract(rpcConnection, tReceipt)
-            println("Transaction Details: ${transactionOutput}")
-            return transactionOutput
+                println("Transaction Details: ${transactionOutput}")
+            }
+            return tReceipt.result.toString()
 
-        } else {
-            val transactionOutput = queryCompletion(rpcConnection, tReceipt)
-            println("Transaction Details: ${transactionOutput}")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            if (e is java.net.ConnectException) {
+                return "Failed To Establish a Connection With The Ethereum Node"
+            }
+
+            return e.message.toString()
         }
-        return tReceipt
     }
 
     /**
@@ -201,7 +220,7 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
             if (isTransaction) {
                 // Transaction Being Sent
                 val transactionOutput = sendTransaction(rpcConnection, contractAddress, payload)
-
+                println("Transaction Output ${transactionOutput}")
                 val result = EvmResponse(flowId, transactionOutput)
                 respFuture.complete(result)
             } else {

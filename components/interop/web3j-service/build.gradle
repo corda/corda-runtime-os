@@ -13,6 +13,7 @@ dependencies {
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation project(":components:configuration:configuration-read-service")
+    implementation project(":components:membership:membership-group-read-impl")
     implementation project(":components:crypto:crypto-client")
     implementation project(":components:link-manager")
     implementation project(":libs:flows:session-manager")
