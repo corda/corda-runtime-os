@@ -162,8 +162,7 @@ the [wiki](https://github.com/corda/corda-runtime-os/wiki/Member-Onboarding-(Dyn
 
 This is a sub-command under the `dynamic` sub-command to onboard a new member to an existing group.
 
-To onboard on a Kubernetes cluster use the Corda cluster name as parameter. By default, it will try to on board on a
-combined worker.
+By default, it will try to on board on a combined worker.
 To decide which CPI to use, there are three options:
 
 * If you know the CPI hash, you can use it with the `--cpi-hash` option
