@@ -1,5 +1,6 @@
 package net.corda.interop.web3j.internal
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -9,6 +10,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import kotlin.reflect.KClass
 import com.google.gson.JsonParser
+import net.corda.v5.base.exceptions.CordaRuntimeException
 
 
 data class JsonRpcResponse(
@@ -92,6 +94,10 @@ data class TransactionLog(
 
 class EthereumConnector {
 
+    companion object {
+        private const val JSON_RPC_VERSION = "2.0"
+    }
+
     private val gson = Gson()
     private val maxLoopedRequests = 10
 
@@ -111,7 +117,7 @@ class EthereumConnector {
         return false
     }
 
-    fun jsonStringContainsNestedKey(jsonString: String, nestedKey: String): Boolean {
+    private fun jsonStringContainsNestedKey(jsonString: String, nestedKey: String): Boolean {
         return try {
             val jsonObject = JsonParser().parse(jsonString).asJsonObject
             checkNestedKey(jsonObject, nestedKey)
@@ -122,7 +128,7 @@ class EthereumConnector {
     }
 
 
-    fun jsonStringContainsKey(jsonString: String, key: String): Boolean {
+    private fun jsonStringContainsKey(jsonString: String, key: String): Boolean {
         return try {
             val jsonObject = JsonParser().parse(jsonString).asJsonObject
             jsonObject.has(key)
@@ -138,7 +144,6 @@ class EthereumConnector {
      * @return The matching data class from candidateDataClasses, or null if no match is found.
      */
     private fun findDataClassForJson(json: String): KClass<*>? {
-
         if (jsonStringContainsKey(json, "error")) {
             return JsonRpcError::class
         } else if (jsonStringContainsNestedKey(json, "contractAddress")) {
@@ -205,7 +210,7 @@ class EthereumConnector {
      * @param requests The number of requests made so far (used for recursive calls).
      * @return A Response object representing the result of the RPC call.
      */
-    fun makeRequest(
+    private fun makeRequest(
         rpcUrl: String,
         method: String,
         params: List<*>,
@@ -229,10 +234,14 @@ class EthereumConnector {
         }
 
         // Parse the JSON response into the base response object
+        println("Response Body: $responseBody ")
         val baseResponse = gson.fromJson<Response>(responseBody, Response::class.java)
 
+
         // If the base response is null and waitForResponse is true, wait for 2 seconds and make a recursive call
-        if (baseResponse.result == null && waitForResponse) {
+        // TODO: This is temporarily required for
+
+        if (baseResponse.result == null) {
             TimeUnit.SECONDS.sleep(2)
             return makeRequest(rpcUrl, method, params, waitForResponse, requests + 1) // Return the recursive call
         }
@@ -242,19 +251,11 @@ class EthereumConnector {
             responseBody
         )
 
-        if(responseType==null){
-
-        }
-
         println("RESPONSE BODY: ${responseBody}")
         // Parse the actual response using the determined data class
         val actualParsedResponse = gson.fromJson<Any>(responseBody, responseType?.java ?: Any::class.java)
-
         // Get the useful response data from the parsed response
         val usefulResponse = returnUsefulData(actualParsedResponse)
-
-
-
 
         return Response("90", "2.0", usefulResponse.payload, usefulResponse.success)
     }
