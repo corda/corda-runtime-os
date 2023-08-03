@@ -75,8 +75,8 @@ class CpiUploadRestResourceImplTest {
     }
 
     @Test
-    fun `getAllCpis calls CpiInfoReadService to retrieve all CPIs`() {
-        cpiUploadRestResourceImpl.getAllCpis()
+    fun `getAllCpisList calls CpiInfoReadService to retrieve all CPIs`() {
+        cpiUploadRestResourceImpl.getAllCpisList()
         verify(cpiInfoReadService).getAll()
     }
 

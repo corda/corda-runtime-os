@@ -94,7 +94,7 @@ fun E2eCluster.uploadCpi(
         with(client.start().proxy) {
             // Check if MGM CPI was already uploaded in previous run. Current validation only allows one MGM CPI.
             if (isMgm) {
-                getAllCpis().cpis.firstOrNull {
+                getAllCpisList().firstOrNull {
                     it.groupPolicy?.contains("CREATE_ID") ?: false
                 }?.let {
                     return it.cpiFileChecksum

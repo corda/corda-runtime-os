@@ -170,7 +170,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
 
     private fun getExistingCpiHash(hash: String? = null): String? {
         return createRestClient(CpiUploadRestResource::class).use { client ->
-            val response = client.start().proxy.getAllCpis()
+            val response = client.start().proxy.getAllCpis().responseBody
             response.cpis
                 .filter { it.cpiFileChecksum == hash || (hash == null && it.groupPolicy?.contains("CREATE_ID") ?: false) }
                 .map { it.cpiFileChecksum }

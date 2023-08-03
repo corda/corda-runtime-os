@@ -101,7 +101,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
     private fun checkIfCpiWasUploaded(cpiFileChecksum: String): Boolean {
         val currentCpis = createRestClient(CpiUploadRestResource::class)
             .use { client ->
-                client.start().proxy.getAllCpis().cpis
+                client.start().proxy.getAllCpis().responseBody.cpis
             }
 
         return currentCpis.any { it.cpiFileChecksum == cpiFileChecksum }
@@ -133,7 +133,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
         if (cpiHashesFile.canRead()) {
             val cpiFileChecksum = cpiHashesFile.readText()
             val currentCpis = createRestClient(CpiUploadRestResource::class).use { client ->
-                client.start().proxy.getAllCpis().cpis
+                client.start().proxy.getAllCpis().responseBody.cpis
             }
             if (currentCpis.any { it.cpiFileChecksum == cpiFileChecksum }) {
                 println("CPI was already uploaded in $cpiFile. CPI hash checksum is $cpiFileChecksum")

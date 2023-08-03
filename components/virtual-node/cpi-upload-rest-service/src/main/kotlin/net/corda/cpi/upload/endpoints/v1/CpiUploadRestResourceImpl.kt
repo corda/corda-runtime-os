@@ -111,6 +111,7 @@ class CpiUploadRestResourceImpl @Activate constructor(
         }
     }
 
+    @Deprecated("Deprecated in favour of getAllCpisList")
     override fun getAllCpis(): ResponseEntity<GetCPIsResponse> {
         "Deprecated, please use next version at ${RestApiVersion.C5_1} or above.".let { msg ->
             logger.warn(msg)
