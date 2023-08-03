@@ -2,17 +2,14 @@ package net.corda.ledger.utxo.token.cache.handlers
 
 import java.math.BigDecimal
 import net.corda.data.flow.event.FlowEvent
-import net.corda.ledger.utxo.flow.impl.persistence.GroupParametersCache
 import net.corda.ledger.utxo.token.cache.entities.BalanceQuery
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenBalance
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.services.AvailableTokenCacheService
-import net.corda.ledger.utxo.token.cache.services.AvailableTokenCacheServiceImpl
 import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
 import net.corda.messaging.api.records.Record
-import org.osgi.service.component.annotations.Reference
 
 class TokenBalanceQueryEventHandler(
     private val filterStrategy: TokenFilterStrategy,
