@@ -570,19 +570,22 @@ open class SoftCryptoService(
     }
     
     override fun rewrapWrappingKey(tenantId: String, targetAlias: String, newParentKeyAlias: String) {
-        require(unmanagedWrappingKeys.containsKey(newParentKeyAlias))
+        val newParentKey = checkNotNull(unmanagedWrappingKeys.get(newParentKeyAlias)) {
+            "Unable to find parent key $newParentKeyAlias in the configured unmanaged wrapping keys"
+        }
         wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
-            val (id, wrappingKeyInfo) = wrappingRepo.findKeyAndId(targetAlias)
-                ?: throw InvalidParamsException("Wrapping key with alias $targetAlias not found")
+            val (id, wrappingKeyInfo) = checkNotNull(wrappingRepo.findKeyAndId(targetAlias)) {
+                "Wrapping key with alias $targetAlias not found"
+            }
             // Find the current unmanaged parent key passed in via config, so we can decrypt the wrapping key
-            val oldParentKey = unmanagedWrappingKeys.get(wrappingKeyInfo.parentKeyAlias)
-            require(
-                oldParentKey != null,
-                { "Unable to find parent key ${wrappingKeyInfo.parentKeyAlias} in unmanaged wrapping keys" })
-            oldParentKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial).also {
-                logger.trace("Should decrypt key material in row $id with alias $targetAlias using "
-                    + "${wrappingKeyInfo.parentKeyAlias} and encrypt key material using $newParentKeyAlias")
-                // to be continued
+            val oldParentKey = checkNotNull(unmanagedWrappingKeys.get(wrappingKeyInfo.parentKeyAlias)) {
+                "Unable to find parent key ${wrappingKeyInfo.parentKeyAlias} in the configured unmanaged wrapping keys"
+            }
+            oldParentKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial).also { wrappingKey ->
+                logger.trace { "Should decrypt key material in row $id with alias $targetAlias using " +
+                        "${wrappingKeyInfo.parentKeyAlias} and encrypt key material using $newParentKeyAlias" }
+                val wrappedWithNewKey = newParentKey.wrap(wrappingKey)
+                wrappingRepo.saveKeyWithId(targetAlias, wrappingKeyInfo.copy(keyMaterial = wrappedWithNewKey), id)
             }
         }
     }
