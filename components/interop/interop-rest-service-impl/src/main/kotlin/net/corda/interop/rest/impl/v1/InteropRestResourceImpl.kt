@@ -27,6 +27,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.group.policy.validation.InteropGroupPolicyValidator
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InvalidInputDataException
@@ -44,7 +45,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
 
-
 @Suppress("LongParameterList")
 @Component(service = [PluggableRestResource::class])
 internal class InteropRestResourceImpl @Activate constructor(
@@ -59,7 +59,9 @@ internal class InteropRestResourceImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = InteropGroupPolicyReadService::class)
-    private val interopGroupPolicyReadService: InteropGroupPolicyReadService
+    private val interopGroupPolicyReadService: InteropGroupPolicyReadService,
+    @Reference(service = InteropGroupPolicyValidator::class)
+    private val interopGroupPolicyValidator: InteropGroupPolicyValidator
 ) : InteropRestResource, PluggableRestResource<InteropRestResource>, Lifecycle {
 
     private companion object {
@@ -111,6 +113,9 @@ internal class InteropRestResourceImpl @Activate constructor(
             vNodeInfo.holdingIdentity.x500Name.locality,
             vNodeInfo.holdingIdentity.x500Name.country
         ).toString()
+
+        interopGroupPolicyValidator.validateGroupPolicy(createInteropIdentityRestRequest.groupPolicy)
+
         try {
             MemberX500Name.parse(x500Name)
         } catch (e: Exception) {
@@ -297,7 +302,8 @@ internal class InteropRestResourceImpl @Activate constructor(
         ::configurationReadService,
         ::interopIdentityRegistryService,
         ::interopIdentityWriteService,
-        ::interopGroupPolicyReadService
+        ::interopGroupPolicyReadService,
+        ::interopGroupPolicyValidator
     )
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator(

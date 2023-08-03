@@ -92,6 +92,17 @@ interface GroupPolicyParser {
     ): MemberGroupPolicy?
 
     /**
+     * Parses a interop GroupPolicy from [String] to [GroupPolicy].
+     *
+     * @param groupPolicy Group policy file as a Json String
+     *
+     * @throws [BadGroupPolicyException] if the input string is blank or cannot be parsed.
+     */
+    fun parseInteropGroupPolicy(
+        groupPolicy: String
+    ): InteropGroupPolicy?
+
+    /**
      * Constructs MGM [MemberInfo] from details specified in [GroupPolicy].
      *
      * @param holdingIdentity The holding identity which owns this group policy file. This is mostly important for when
