@@ -71,7 +71,7 @@ fun awaitRpcFlowFinished(
 fun ClusterInfo.awaitRpcFlowFinished(holdingId: String, requestId: String): FlowStatus {
     return cluster {
         ObjectMapper().readValue(
-            assertWithRetry {
+            assertWithRetryIgnoringExceptions {
                 command { flowStatus(holdingId, requestId) }
                 //CORE-6118 - tmp increase this timeout to a large number to allow tests to pass while slow flow sessions are investigated
                 timeout(Duration.ofMinutes(6))
@@ -92,7 +92,7 @@ fun awaitRestFlowResult(
 fun ClusterInfo.awaitRestFlowResult(holdingId: String, requestId: String): FlowResult {
     return cluster {
         val jsonNode = ObjectMapper().readTree(
-            assertWithRetry {
+            assertWithRetryIgnoringExceptions {
                 command { flowResult(holdingId, requestId) }
                 timeout(Duration.ofMinutes(6))
                 condition {
@@ -126,7 +126,7 @@ fun getFlowStatus(
 fun ClusterInfo.getFlowStatus(holdingId: String, requestId: String, expectedCode: Int): FlowStatus {
     return cluster {
         ObjectMapper().readValue(
-            assertWithRetry {
+            assertWithRetryIgnoringExceptions {
                 command { flowStatus(holdingId, requestId) }
                 timeout(Duration.ofMinutes(6))
                 condition {
@@ -146,7 +146,7 @@ private fun JsonNode.asFlowError(): FlowError {
 
 fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
     return DEFAULT_CLUSTER.cluster {
-        assertWithRetry {
+        assertWithRetryIgnoringExceptions {
             command { multipleFlowStatus(holdingId) }
             timeout(Duration.ofSeconds(20))
             condition {
@@ -168,7 +168,7 @@ fun getFlowClasses(
 
 fun ClusterInfo.getFlowClasses(holdingId: String): List<String> {
     return cluster {
-        val vNodeJson = assertWithRetry {
+        val vNodeJson = assertWithRetryIgnoringExceptions {
             command { runnableFlowClasses(holdingId) }
             condition { it.code == 200 }
             failMessage("Failed to get flows for holdingId '$holdingId'")

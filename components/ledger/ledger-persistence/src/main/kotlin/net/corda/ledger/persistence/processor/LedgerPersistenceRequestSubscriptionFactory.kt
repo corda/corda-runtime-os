@@ -5,10 +5,10 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.subscription.Subscription
 
 /**
- * The [PersistenceRequestSubscriptionFactory] creates a new subscription to the durable topic used to receive
+ * The [LedgerPersistenceRequestSubscriptionFactory] creates a new subscription to the durable topic used to receive
  * [LedgerPersistenceRequest] messages.
  */
-interface PersistenceRequestSubscriptionFactory {
+interface LedgerPersistenceRequestSubscriptionFactory {
     /**
      * Create a new subscription
      *

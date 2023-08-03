@@ -80,7 +80,7 @@ class TransactionBackchainResolutionFlowV2Test {
             )
         )
 
-        whenever(utxoLedgerPersistenceService.find(any(), eq(TransactionStatus.VERIFIED))).thenReturn(mock())
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(any(), eq(TransactionStatus.VERIFIED))).thenReturn(mock())
 
         callTransactionBackchainResolutionFlow()
 
@@ -104,8 +104,8 @@ class TransactionBackchainResolutionFlowV2Test {
             )
         )
 
-        whenever(utxoLedgerPersistenceService.find(TX_ID_2, TransactionStatus.VERIFIED)).thenReturn(mock())
-        whenever(utxoLedgerPersistenceService.find(TX_ID_3, TransactionStatus.VERIFIED)).thenReturn(null)
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(TX_ID_2, TransactionStatus.VERIFIED)).thenReturn(mock())
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(TX_ID_3, TransactionStatus.VERIFIED)).thenReturn(null)
 
         whenever(flowEngine.subFlow(any<TransactionBackchainReceiverFlowV1>())).thenReturn(TopologicalSort())
 
@@ -140,8 +140,8 @@ class TransactionBackchainResolutionFlowV2Test {
             )
         )
 
-        whenever(utxoLedgerPersistenceService.find(TX_ID_2, TransactionStatus.VERIFIED)).thenReturn(mock())
-        whenever(utxoLedgerPersistenceService.find(TX_ID_3, TransactionStatus.VERIFIED)).thenReturn(null)
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(TX_ID_2, TransactionStatus.VERIFIED)).thenReturn(mock())
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(TX_ID_3, TransactionStatus.VERIFIED)).thenReturn(null)
         whenever(transactionBackchainVerifier.verify(eq(setOf(TX_ID_3)), any())).thenReturn(false)
 
         whenever(flowEngine.subFlow(any<TransactionBackchainReceiverFlowV1>())).thenReturn(TopologicalSort())
