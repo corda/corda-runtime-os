@@ -73,6 +73,7 @@ import java.security.PublicKey
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.TimeUnit
+import javax.crypto.AEADBadTagException
 import javax.persistence.QueryTimeoutException
 import kotlin.test.assertTrue
 
@@ -832,12 +833,36 @@ class SoftCryptoServiceGeneralTests {
     fun `can rewrap a managed wrapping key`() {
         cryptoRepositoryWrapping.keys["root"] = sampleWrappingKeyInfo
         // service has a mock root wrapping key, so we have to make one with a real wrapping key
+        val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
+        val rootWrappingKey2 = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         val myCryptoService = makeSoftCryptoService(
             wrappingRepository = cryptoRepositoryWrapping,
             schemeMetadata = schemeMetadata,
-            rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
+            rootWrappingKey = rootWrappingKey,
+            rootWrappingKey2 = rootWrappingKey2
         )
+        assertThat(cryptoRepositoryWrapping.keys.contains("alpha")).isFalse()
         myCryptoService.createWrappingKey("alpha", false, emptyMap())
+        val wrappedWithRoot1 = checkNotNull(cryptoRepositoryWrapping.keys.get("alpha")).keyMaterial
+        val clearKey1 = rootWrappingKey.unwrapWrappingKey(wrappedWithRoot1)
+        
+        // try rotating to parent key root2
         myCryptoService.rewrapWrappingKey(CryptoTenants.CRYPTO, "alpha", "root2")
+        val wrappedWithRoot2 = checkNotNull(cryptoRepositoryWrapping.keys.get("alpha")).keyMaterial
+        val clearKey2 = rootWrappingKey2.unwrapWrappingKey(wrappedWithRoot2)
+        assertThrows<AEADBadTagException> {
+            rootWrappingKey.unwrapWrappingKey(wrappedWithRoot2)
+        }
+        assertThat(clearKey2).isEqualTo(clearKey1)
+        assertThat(wrappedWithRoot1).isNotEqualTo(wrappedWithRoot2)
+        
+        // now let's rotate back to parent key root, and the clear material should be the same
+        myCryptoService.rewrapWrappingKey(CryptoTenants.CRYPTO, "alpha", "root")
+        val wrappedWithRoot1Again = checkNotNull(cryptoRepositoryWrapping.keys.get("alpha")).keyMaterial
+        val clearKey3 = rootWrappingKey.unwrapWrappingKey(wrappedWithRoot1Again)
+        assertThat(clearKey3).isEqualTo(clearKey1)
+        
+        // AES may have a different initialisation vector so wrappedWithRoot1Again will usually not equal
+        // wrappedWithRoot1
     }
 }
