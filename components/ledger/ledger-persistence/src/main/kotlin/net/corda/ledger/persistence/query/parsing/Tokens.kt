@@ -2,38 +2,34 @@ package net.corda.ledger.persistence.query.parsing
 
 interface Token
 
-class LeftParentheses : Token {
+interface HasLeftParenthesis
+
+class LeftParentheses : Token, HasLeftParenthesis {
     override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
+        return (this === other) || (other is LeftParentheses)
     }
 
     override fun hashCode(): Int {
-        return javaClass.hashCode()
+        return this::class.java.hashCode()
     }
 }
 
 class RightParentheses : Token {
     override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
+        return (this === other) || (other is RightParentheses)
     }
 
     override fun hashCode(): Int {
-        return javaClass.hashCode()
+        return this::class.java.hashCode()
     }
 }
 
 class ParameterEnd : Token {
     override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
+        return (this === other) || (other is ParameterEnd)
     }
 
     override fun hashCode(): Int {
-        return javaClass.hashCode()
+        return this::class.java.hashCode()
     }
 }

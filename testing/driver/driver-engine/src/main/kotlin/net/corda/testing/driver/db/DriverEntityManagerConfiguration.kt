@@ -12,5 +12,6 @@ class DriverEntityManagerConfiguration(
     override val formatSql: Boolean,
     override val jdbcTimezone: String,
     override val ddlManage: DdlManage,
-    override val transactionIsolationLevel: TransactionIsolationLevel
+    override val transactionIsolationLevel: TransactionIsolationLevel,
+    override val extraProperties: Map<String, Any>
 ) : EntityManagerConfiguration

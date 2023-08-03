@@ -23,7 +23,6 @@ import org.junit.jupiter.params.provider.ArgumentsProvider
 import org.junit.jupiter.params.provider.ArgumentsSource
 import org.slf4j.LoggerFactory
 
-@Suppress("JUnitMalformedDeclaration")
 @Timeout(5, unit = MINUTES)
 @TestInstance(PER_CLASS)
 class FlowDriverTest {
@@ -34,6 +33,7 @@ class FlowDriverTest {
     private val virtualNodes = mutableSetOf<VirtualNodeInfo>()
     private val jsonMapper = ObjectMapper()
 
+    @Suppress("JUnitMalformedDeclaration")
     @RegisterExtension
     private val driver = DriverNodes(alice, bob).forAllTests()
 

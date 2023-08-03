@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.slf4j.LoggerFactory
 
-@Suppress("FunctionName", "JUnitMalformedDeclaration")
+@Suppress("FunctionName")
 @Timeout(5, unit = MINUTES)
 @TestInstance(PER_CLASS)
 class ConsensualLedgerTests {
@@ -51,6 +51,7 @@ class ConsensualLedgerTests {
         registerModule(module)
     }
 
+    @Suppress("JUnitMalformedDeclaration")
     @RegisterExtension
     private val driver = DriverNodes(alice, bob, charlie).forAllTests()
 
