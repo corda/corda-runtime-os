@@ -71,7 +71,7 @@ allprojects {
                 } else if (project.hasProperty('runUnstableTests')) {
                     includeTags 'runUnstableTests'
                 } else {
-                    excludeTags 'runAllTestsNoExclusions'
+                    excludeTags 'MultiCluster', 'runUnstableTests'
                 }
             }
 
