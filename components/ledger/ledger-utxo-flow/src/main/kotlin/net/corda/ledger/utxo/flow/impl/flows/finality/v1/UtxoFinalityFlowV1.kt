@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
+import net.corda.crypto.core.fullId
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
@@ -27,7 +28,6 @@ import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.security.AccessController
 import java.security.PrivilegedExceptionAction
 
 @CordaSystemFlow
@@ -176,8 +176,8 @@ class UtxoFinalityFlowV1(
             } else {
                 "[]"
             }
-            val message = "Transaction $transactionId is missing signatures for signatories (encoded) " +
-                    "${e.missingSignatories.map { it.encoded }}. The following counterparties provided signatures while finalizing " +
+            val message = "Transaction $transactionId is missing signatures for signatories (key ids) " +
+                    "${e.missingSignatories.map { it.fullId() }}. The following counterparties provided signatures while finalizing " +
                     "the transaction: $counterpartiesToSignatoriesMessage"
             log.warn(message)
             persistInvalidTransaction(transaction)
@@ -293,7 +293,8 @@ class UtxoFinalityFlowV1(
     internal fun newPluggableNotaryClientFlowInstance(
         transaction: UtxoSignedTransactionInternal
     ): PluggableNotaryClientFlow {
-        return AccessController.doPrivileged(PrivilegedExceptionAction {
+        @Suppress("deprecation", "removal")
+        return java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
             pluggableNotaryClientFlow.getConstructor(UtxoSignedTransaction::class.java, MemberX500Name::class.java).newInstance(
                 transaction, virtualNodeSelectorService.selectVirtualNode(transaction.notaryName)
             )

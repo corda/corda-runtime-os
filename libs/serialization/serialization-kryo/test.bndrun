@@ -1,5 +1,5 @@
 -tester: biz.aQute.tester.junit-platform
--runee: JavaSE-11
+-runee: JavaSE-17
 -runfw: org.apache.felix.framework
 -resolve.effective: resolve,active
 -runtrace: true
@@ -7,8 +7,7 @@
 -runvm: \
     -Djava.io.tmpdir=${task.temporaryDir},\
     --add-opens, 'java.base/java.lang.invoke=ALL-UNNAMED',\
-    --add-opens, 'java.base/java.util=ALL-UNNAMED',\
-    --illegal-access=deny
+    --add-opens, 'java.base/java.util=ALL-UNNAMED'
 
 # Enable debugging.
 # -runjdb: 5005

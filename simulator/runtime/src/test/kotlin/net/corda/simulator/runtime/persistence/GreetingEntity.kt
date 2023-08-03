@@ -14,9 +14,10 @@ import javax.persistence.Table
 @Entity
 @Table(name="greetingentity")
 data class GreetingEntity (
-    @Id
-    @Column(name="id")
-    val id: UUID,
-    @Column(name="greeting")
-    val greeting: String
+    @get:Id
+    @get:Column(name="id")
+    var id: UUID,
+
+    @get:Column(name="greeting")
+    var greeting: String
 )

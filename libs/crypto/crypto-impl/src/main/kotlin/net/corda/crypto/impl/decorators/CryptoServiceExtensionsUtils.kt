@@ -1,7 +1,7 @@
 package net.corda.crypto.impl.decorators
 
-import net.corda.crypto.cipher.suite.CryptoService
 import net.corda.crypto.cipher.suite.CryptoServiceExtensions
+import net.corda.crypto.core.CryptoService
 
 val CryptoService.requiresWrappingKey: Boolean get() =
     extensions.contains(CryptoServiceExtensions.REQUIRE_WRAPPING_KEY)

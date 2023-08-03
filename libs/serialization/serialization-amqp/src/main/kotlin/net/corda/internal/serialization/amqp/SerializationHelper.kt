@@ -114,12 +114,22 @@ internal fun Type.isSubClassOf(type: Type): Boolean {
     return TypeToken.of(this).isSubtypeOf(TypeToken.of(type).rawType)
 }
 
+/**
+ * Enforces that the given [type] is Corda serializable (if it has or inherits the [CordaSerializable] annotation),
+ * or if it's an instance of the [java.lang.Comparable] interface. If not, an exception will be thrown.
+ *
+ * @param type The type to be checked for Corda serializability.
+ * @throws AMQPNotSerializableException if [type] is not annotated with [CordaSerializable]
+ *                                      and is not an instance of [java.lang.Comparable].
+ *
+ * @see [CORDA-2782] for the special exemption made for `Comparable`.
+ */
 fun requireCordaSerializable(type: Type) {
     // See CORDA-2782 for explanation of the special exemption made for Comparable
     if (!hasCordaSerializable(type.asClass()) && type.asClass() != java.lang.Comparable::class.java) {
         throw AMQPNotSerializableException(
-                type,
-                "Class \"$type\" is not annotated with @CordaSerializable.")
+            type,
+            "Class \"$type\" is not annotated with @CordaSerializable.")
     }
 }
 

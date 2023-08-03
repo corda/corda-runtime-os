@@ -16,7 +16,7 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.LoggerFactory
 
 @Suppress("unused")
-@Component
+@Component(property = [ SandboxSetup.SANDBOX_SERVICE ])
 @ServiceRanking(SandboxSetup.SANDBOX_SERVICE_RANKING)
 class MembershipGroupReaderProviderImpl : MembershipGroupReaderProvider {
     private val logger = LoggerFactory.getLogger(this::class.java)
@@ -29,11 +29,11 @@ class MembershipGroupReaderProviderImpl : MembershipGroupReaderProvider {
         get() = true
 
     override fun start() {
-        logger.info("Starting")
+        logger.info("Started")
     }
 
     override fun stop() {
-        logger.info("Stopping")
+        logger.info("Stopped")
     }
 
     private class MembershipGroupReaderImpl(holdingIdentity: HoldingIdentity) : MembershipGroupReader {

@@ -1,0 +1,19 @@
+kafka:
+  bootstrapServers: "localhost:9093"
+  topicPrefix: ""
+  tls:
+    enabled: true
+    truststore:
+      valueFrom:
+        secretKeyRef:
+          name: ""
+          key: ""
+      password:
+        valueFrom:
+          secretKeyRef:
+            name: ""
+            key: ""
+        value: ""
+      type: "PEM"
+  sasl:
+    enabled: false

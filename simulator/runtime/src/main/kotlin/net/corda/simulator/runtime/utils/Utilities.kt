@@ -20,7 +20,6 @@ import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import java.lang.reflect.Field
-import java.security.AccessController
 import java.security.PrivilegedExceptionAction
 
 /**
@@ -46,7 +45,8 @@ fun Flow.accessField(fieldClass: Class<*>): Field? {
     val field = getSuperClassesFor(this.javaClass)
         .flatMap { it.declaredFields.toSet() }
         .firstOrNull { it.type.equals(fieldClass) && it.isAnnotationPresent(CordaInject::class.java) }
-    AccessController.doPrivileged(PrivilegedExceptionAction {
+    @Suppress("deprecation", "removal")
+    java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
         field?.isAccessible = true
     })
     return field

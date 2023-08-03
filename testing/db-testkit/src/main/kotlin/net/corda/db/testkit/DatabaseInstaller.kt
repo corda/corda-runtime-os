@@ -113,21 +113,26 @@ class DatabaseInstaller(
         )
         val changeLog = ClassloaderChangeLog(linkedSetOf(changeLogFiles))
         if(schemaName.isNullOrBlank()) {
-            StringWriter().use { writer ->
-                schemaMigrator.createUpdateSql(cfg.dataSource.connection, changeLog, writer)
-                logger.info("Schema creation SQL: $writer")
+            cfg.dataSource.connection.use { connection ->
+                StringWriter().use { writer ->
+                    schemaMigrator.createUpdateSql(connection, changeLog, writer)
+                    logger.info("Schema creation SQL: $writer")
+                }
+                schemaMigrator.updateDb(connection, changeLog)
             }
-            schemaMigrator.updateDb(cfg.dataSource.connection, changeLog)
         } else {
-            cfg.dataSource.connection.use {
-                it.createStatement().execute("CREATE SCHEMA IF NOT EXISTS $schemaName")
-                it.commit()
+            cfg.dataSource.connection.use { connection ->
+                connection.createStatement().use { stmt ->
+                    stmt.execute("CREATE SCHEMA IF NOT EXISTS $schemaName")
+                }
+                connection.commit()
+
+                StringWriter().use { writer ->
+                    schemaMigrator.createUpdateSql(connection, changeLog, schemaName, writer)
+                    logger.info("Schema creation SQL: $writer")
+                }
+                schemaMigrator.updateDb(connection, changeLog, schemaName)
             }
-            StringWriter().use { writer ->
-                schemaMigrator.createUpdateSql(cfg.dataSource.connection, changeLog, schemaName, writer)
-                logger.info("Schema creation SQL: $writer")
-            }
-            schemaMigrator.updateDb(cfg.dataSource.connection, changeLog, schemaName)
         }
         logger.info("Create Entities".emphasise())
         val emf = factory.create(

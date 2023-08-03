@@ -11,9 +11,9 @@ import net.corda.crypto.core.fullPublicKeyIdFromBytes
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.SigningKeyFilterMapImpl
-import net.corda.crypto.persistence.SigningKeyInfo
+import net.corda.crypto.core.SigningKeyInfo
+import net.corda.crypto.core.SigningKeyStatus
 import net.corda.crypto.persistence.SigningKeyOrderBy
-import net.corda.crypto.persistence.SigningKeyStatus
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.alias
 import net.corda.crypto.persistence.category
@@ -117,7 +117,7 @@ class SigningRepositoryImpl(
             }
         }
 
-        return entityManagerFactory.createEntityManager().use { entity.joinSigningKeyInfo(it) }
+        return entityManagerFactory.createEntityManager().use { entity.joinSigningKeyInfo(it, keyEncodingService) }
     }
 
     override fun findKey(alias: String): SigningKeyInfo? {
@@ -134,7 +134,7 @@ class SigningRepositoryImpl(
             }
 
 
-            return result.firstOrNull()?.joinSigningKeyInfo(em)
+            return result.firstOrNull()?.joinSigningKeyInfo(em, keyEncodingService)
         }
     }
 
@@ -149,7 +149,7 @@ class SigningRepositoryImpl(
                     SigningKeyEntity::class.java
                 ).setParameter("tenantId", tenantId)
                     .setParameter("fullKeyId", requestedFullKeyId.toString())
-                    .resultList.singleOrNull()?.joinSigningKeyInfo(em)
+                    .resultList.singleOrNull()?.joinSigningKeyInfo(em, keyEncodingService)
             }
         }
     }
@@ -171,7 +171,7 @@ class SigningRepositoryImpl(
             builder.greaterThanOrEqualTo(SigningKeyEntity::created, map.createdAfter)
             builder.lessThanOrEqualTo(SigningKeyEntity::created, map.createdBefore)
             builder.build(skip, take, orderBy).resultList.map {
-                it.joinSigningKeyInfo(em)
+                it.joinSigningKeyInfo(em, keyEncodingService)
             }
         }
     }
@@ -192,7 +192,7 @@ class SigningRepositoryImpl(
                             SigningKeyEntity::class.java
                         ).setParameter("tenantId", tenantId)
                             .setParameter("keyIds", keyIdsStrings)
-                            .resultList.map { it.joinSigningKeyInfo(em) }
+                            .resultList.map { it.joinSigningKeyInfo(em, keyEncodingService) }
                     }
                 }
             }!!
@@ -220,7 +220,7 @@ class SigningRepositoryImpl(
                         )
                             .setParameter("tenantId", tenantId)
                             .setParameter("fullKeyIds", fullKeyIdsStrings)
-                            .resultList.map { it.joinSigningKeyInfo(em) }
+                            .resultList.map { it.joinSigningKeyInfo(em, keyEncodingService) }
                     }
                 }
             }!!
@@ -228,7 +228,7 @@ class SigningRepositoryImpl(
 }
 
 
-fun SigningKeyEntity.joinSigningKeyInfo(em: EntityManager): SigningKeyInfo {
+fun SigningKeyEntity.joinSigningKeyInfo(em: EntityManager, keyEncodingService: KeyEncodingService): SigningKeyInfo {
     val signingKeyMaterialEntity = checkNotNull(em.createQuery(
         "FROM ${SigningKeyMaterialEntity::class.java.simpleName} WHERE signingKeyId=:signingKeyId",
         SigningKeyMaterialEntity::class.java
@@ -247,7 +247,7 @@ fun SigningKeyEntity.joinSigningKeyInfo(em: EntityManager): SigningKeyInfo {
         category = category,
         alias = alias,
         hsmAlias = hsmAlias,
-        publicKey = publicKey,
+        publicKey = keyEncodingService.decodePublicKey(publicKey),
         keyMaterial = signingKeyMaterialEntity.keyMaterial,
         schemeCodeName = schemeCodeName,
         wrappingKeyAlias = wrappingKey.alias,

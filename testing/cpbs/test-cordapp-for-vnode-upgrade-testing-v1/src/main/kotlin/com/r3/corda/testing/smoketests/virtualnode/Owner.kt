@@ -9,13 +9,15 @@ import javax.persistence.Id
 @CordaSerializable
 @Entity
 data class Owner(
-    @Id
-    @Column
-    val id: UUID,
-    @Column
-    val name: String,
-    @Column
-    val age: Int
+    @get:Id
+    @get:Column
+    var id: UUID,
+
+    @get:Column
+    var name: String,
+
+    @get:Column
+    var age: Int
 ) {
     constructor() : this(id = UUID.randomUUID(), name = "anonymous", age = Int.MAX_VALUE)
 }
