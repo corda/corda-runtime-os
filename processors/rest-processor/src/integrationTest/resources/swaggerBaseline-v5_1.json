@@ -5174,7 +5174,8 @@
             "type" : "array",
             "nullable" : false,
             "items" : {
-              "$ref" : "#/components/schemas/FacadeId"
+              "type" : "string",
+              "example" : "string"
             }
           },
           "owningIdentityShortHash" : {
@@ -5500,6 +5501,21 @@
             "items" : {
               "$ref" : "#/components/schemas/MemberData"
             }
+          }
+        }
+      },
+      "RestGroupParameters" : {
+        "required" : [ "parameters" ],
+        "type" : "object",
+        "properties" : {
+          "parameters" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string",
+              "example" : "string"
+            },
+            "nullable" : false,
+            "example" : "No example available for this type"
           }
         }
       },
