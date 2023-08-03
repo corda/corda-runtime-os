@@ -63,14 +63,6 @@ fun ClusterInfo.conditionallyUploadCordaPackage(
 ) = conditionallyUploadCordaPackage(cpiName) {
     cpiUpload(cpbResourceName, groupId, staticMemberNames, cpiName, customGroupParameters = customGroupParameters)
 }
-fun ClusterInfo.conditionallyUploadCordaPackage(
-    cpiName: String,
-    cpbResourceName: String?,
-    groupPolicy: String,
-    cpiVersion: String = "1.0.0.0-SNAPSHOT",
-) = conditionallyUploadCordaPackage(cpiName) {
-    cpiUpload(cpbResourceName, groupPolicy, cpiName, cpiVersion)
-}
 
 fun ClusterInfo.conditionallyUploadCordaPackage(
     name: String,
