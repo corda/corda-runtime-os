@@ -14,7 +14,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.membership.read.MembershipGroupReaderProvider
+
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -42,10 +42,9 @@ class Web3JService @Activate constructor(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference(service = MembershipGroupReaderProvider::class)
-    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
 ) : Lifecycle {
 
+    // Companion Object
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val CONSUMER_GROUP = "InteropConsumer"
@@ -120,12 +119,12 @@ class Web3JService @Activate constructor(
 
     override fun start() {
         coordinator.start()
-        membershipGroupReaderProvider.start()
+//        membershipGroupReaderProvider.start()
     }
 
     override fun stop() {
         coordinator.stop()
-        membershipGroupReaderProvider.stop()
+//        membershipGroupReaderProvider.stop()
     }
 
     @Suppress("unused")
