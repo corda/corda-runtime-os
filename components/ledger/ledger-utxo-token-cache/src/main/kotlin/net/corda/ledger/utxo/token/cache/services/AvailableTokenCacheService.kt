@@ -24,5 +24,5 @@ interface AvailableTokenCacheService {
      * @throws CordaPersistenceException if an error happens during find operation.
      */
     @Suspendable
-    fun find(poolKey: TokenPoolCacheKey)
+    fun find(poolKey: TokenPoolCacheKey, ownerHash: String?, regexTag: String?)
 }

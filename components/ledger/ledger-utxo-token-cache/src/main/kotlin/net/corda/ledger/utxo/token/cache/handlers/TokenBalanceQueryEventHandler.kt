@@ -28,7 +28,7 @@ class TokenBalanceQueryEventHandler(
 
         val tokenBalance = calculateTokenBalance(tokenCache, state, event)
 
-        availableTokenCacheService.find(event.poolKey)
+        availableTokenCacheService.find(event.poolKey, event.ownerHash, event.tagRegex)
         return recordFactory.getBalanceResponse(
             event.flowId,
             event.externalEventRequestId,
