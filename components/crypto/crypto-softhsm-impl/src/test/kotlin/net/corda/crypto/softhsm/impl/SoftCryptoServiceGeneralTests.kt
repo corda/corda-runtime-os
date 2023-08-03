@@ -19,6 +19,7 @@ import net.corda.crypto.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.core.KeyOrderBy
 import net.corda.crypto.core.SecureHashImpl
@@ -825,5 +826,18 @@ class SoftCryptoServiceGeneralTests {
         assertThrows<KeyAlreadyExistsException> {
             service.generateKeyPair(tenantId, category, alias, scheme = scheme, context = context)
         }
+    }
+    
+    @Test
+    fun `can rewrap a managed wrapping key`() {
+        cryptoRepositoryWrapping.keys["root"] = sampleWrappingKeyInfo
+        // service has a mock root wrapping key so we have to make one with a real wrapping key
+        val myCryptoService = makeSoftCryptoService(
+            wrappingRepository = cryptoRepositoryWrapping,
+            schemeMetadata = schemeMetadata,
+            rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
+        )
+        myCryptoService.createWrappingKey("alpha", false, emptyMap())
+        myCryptoService.rewrapWrappingKey(CryptoTenants.CRYPTO, "alpha", "root2")
     }
 }

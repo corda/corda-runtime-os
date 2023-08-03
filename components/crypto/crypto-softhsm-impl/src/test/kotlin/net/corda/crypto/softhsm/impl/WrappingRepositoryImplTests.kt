@@ -1,7 +1,5 @@
 package net.corda.crypto.softhsm.impl
 
-import java.time.Instant
-import javax.persistence.EntityManager
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.crypto.testkit.SecureHashUtils
@@ -11,15 +9,17 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
-import kotlin.collections.ArrayList
+import javax.persistence.EntityManager
 
 
-class TestWrappingRepository {
+class WrappingRepositoryImplTests {
 
     @Test
     fun `JPA equality on primary key only rule for WrappingKeyEntities`() {
@@ -105,5 +105,40 @@ class TestWrappingRepository {
 
         // but you can assert the return info is effectively the same as mocked
         assertThat(savedKey).isEqualTo(wrappingKeyInfo)
+    }
+
+
+    @Test
+    fun `find a key and id`() {
+        val wrappingKeyInfo = WrappingKeyInfo(
+            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch")
+        val savedWrappingKey = mock<WrappingKeyEntity>() {
+            on { id } doReturn UUID.randomUUID()
+            on { encodingVersion } doReturn (wrappingKeyInfo.encodingVersion)
+            on { algorithmName } doReturn (wrappingKeyInfo.algorithmName)
+            on { keyMaterial } doReturn (wrappingKeyInfo.keyMaterial)
+            on { generation } doReturn (wrappingKeyInfo.generation)
+            on { parentKeyReference } doReturn (wrappingKeyInfo.parentKeyAlias)
+        }
+        val em = mock<EntityManager> {
+            on { createQuery(any(), eq(WrappingKeyEntity::class.java)) } doAnswer {
+                mock {
+                    on { setParameter(any<String>(), any()) } doReturn it
+                    on { setMaxResults(any()) } doReturn it
+                    on { resultList } doReturn listOf(savedWrappingKey)
+                    }
+                }
+            }
+
+        val repo = WrappingRepositoryImpl(
+            mock {
+                on { createEntityManager() } doReturn em
+            },
+            "test"
+        )
+        val foundKey = repo.findKeyAndId("a")
+
+        assertThat(foundKey?.first.toString().length).isEqualTo(36)
+        assertThat(foundKey?.second).isEqualTo(wrappingKeyInfo)
     }
 }

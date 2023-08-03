@@ -8,6 +8,8 @@ import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.common.UnsupportedRequestTypeException
 import net.corda.ledger.persistence.consensual.ConsensualRepository
 import net.corda.ledger.persistence.consensual.ConsensualRequestHandlerSelector
+import net.corda.ledger.persistence.consensual.impl.request.handlers.ConsensualFindTransactionRequestHandler
+import net.corda.ledger.persistence.consensual.impl.request.handlers.ConsensualPersistTransactionRequestHandler
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService

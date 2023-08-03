@@ -568,7 +568,25 @@ open class SoftCryptoService(
             encodingVersion = encodingVersion
         )
     }
-
+    
+    override fun rewrapWrappingKey(tenantId: String, targetAlias: String, newParentKeyAlias: String) {
+        require(unmanagedWrappingKeys.containsKey(newParentKeyAlias))
+        wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
+            val (id, wrappingKeyInfo) = wrappingRepo.findKeyAndId(targetAlias)
+                ?: throw InvalidParamsException("Wrapping key with alias $targetAlias not found")
+            // Find the current unmanaged parent key passed in via config, so we can decrypt the wrapping key
+            val oldParentKey = unmanagedWrappingKeys.get(wrappingKeyInfo.parentKeyAlias)
+            require(
+                oldParentKey != null,
+                { "Unable to find parent key ${wrappingKeyInfo.parentKeyAlias} in unmanaged wrapping keys" })
+            oldParentKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial).also {
+                logger.trace("Should decrypt key material in row $id with alias $targetAlias using "
+                    + "${wrappingKeyInfo.parentKeyAlias} and encrypt key material using $newParentKeyAlias")
+                // to be continued
+            }
+        }
+    }
+    
     override fun close() {
     }
 
