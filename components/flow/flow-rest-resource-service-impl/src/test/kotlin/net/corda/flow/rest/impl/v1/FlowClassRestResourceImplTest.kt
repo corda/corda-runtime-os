@@ -85,7 +85,7 @@ class FlowClassRestResourceImplTest {
             mock()
         )
         assertThrows<ResourceNotFoundException> {
-            flowClassRestResource.getStartableFlows("1234567890ab")
+            flowClassRestResource.getStartableFlowsList("1234567890ab")
         }
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(cpiInfoReadService, times(0)).get(any())
@@ -102,7 +102,7 @@ class FlowClassRestResourceImplTest {
             mock()
         )
         assertThrows<ResourceNotFoundException> {
-            flowClassRestResource.getStartableFlows("1234567890ab")
+            flowClassRestResource.getStartableFlowsList("1234567890ab")
         }
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(cpiInfoReadService, times(1)).get(any())
@@ -116,7 +116,7 @@ class FlowClassRestResourceImplTest {
             cpiInfoReadService,
             mock()
         )
-        flowClassRestResource.getStartableFlows("1234567890ab")
+        flowClassRestResource.getStartableFlowsList("1234567890ab")
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(cpiInfoReadService, times(1)).get(any())
     }

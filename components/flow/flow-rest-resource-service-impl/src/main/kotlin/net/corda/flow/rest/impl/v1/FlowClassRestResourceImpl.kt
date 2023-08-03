@@ -19,6 +19,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.rest.annotations.RestApiVersion
+import net.corda.rest.response.ResponseEntity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rest.extensions.getByHoldingIdentityShortHashOrThrow
 import net.corda.virtualnode.toAvro
@@ -78,7 +80,24 @@ class FlowClassRestResourceImpl @Activate constructor(
         }
     }
 
-    override fun getStartableFlows(holdingIdentityShortHash: String): StartableFlowsResponse {
+    @Deprecated("Deprecated in favour of getAllStartableFlowsList")
+
+    override fun getStartableFlows(holdingIdentityShortHash: String): ResponseEntity<StartableFlowsResponse> {
+        "Deprecated, please use next version at ${RestApiVersion.C5_1} or above.".let { msg ->
+            log.warn(msg)
+            val startableFlows = doGetStartableFlows(holdingIdentityShortHash)
+            return ResponseEntity.okButDeprecated(
+                StartableFlowsResponse(startableFlows),
+                msg
+            )
+        }
+    }
+
+    override fun getStartableFlowsList(holdingIdentityShortHash: String): List<String> {
+        return doGetStartableFlows(holdingIdentityShortHash)
+    }
+
+    private fun doGetStartableFlows(holdingIdentityShortHash: String): List<String> {
         val vNode = getVirtualNode(holdingIdentityShortHash)
         val cpiMeta = getCPIMeta(vNode, holdingIdentityShortHash)
         return getFlowClassesFromCPI(cpiMeta)
@@ -93,11 +112,11 @@ class FlowClassRestResourceImpl @Activate constructor(
             ?: throw ResourceNotFoundException("CPI", holdingIdentityShortHash)
     }
 
-    private fun getFlowClassesFromCPI(cpiMeta: CpiMetadata): StartableFlowsResponse {
+    private fun getFlowClassesFromCPI(cpiMeta: CpiMetadata): List<String> {
         val flowClasses = cpiMeta.cpksMetadata.flatMap {
             it.cordappManifest.clientStartableFlows
         }
-        return StartableFlowsResponse(flowClasses)
+        return flowClasses
     }
 
     private fun getVirtualNode(holdingIdentityShortHash: String): VirtualNodeInfo {
