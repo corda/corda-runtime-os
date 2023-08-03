@@ -162,12 +162,11 @@ class EthereumConnector {
                 return ProcessedResponse(true,input.error.data)
             }
             is ContractDeploymentResponse -> {
-                println(input.result.contractAddress)
-                if(input.result.contractAddress=="null"){
-                    return ProcessedResponse(true,input.result.toString())
-                }
-                return ProcessedResponse(true,input.result.contractAddress)
-            }
+                try{
+                    return ProcessedResponse(true, input.result.contractAddress)
+                }catch(e: Exception){
+                    return ProcessedResponse(true, input.result.toString())
+                }                }
             is JsonRpcResponse -> return ProcessedResponse(true,input.result.toString())
         }
         return ProcessedResponse(false,"")

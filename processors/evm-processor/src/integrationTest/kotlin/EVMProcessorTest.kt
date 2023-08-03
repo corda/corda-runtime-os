@@ -6,13 +6,9 @@ import org.junit.jupiter.api.TestInstance
 import java.util.concurrent.CompletableFuture
 import org.web3j.EVMTest
 import org.web3j.NodeType
-import net.corda.processor.evm.tokens.ERC20Token
 import org.junit.jupiter.api.BeforeAll
-import org.web3j.crypto.Credentials
-import org.web3j.protocol.Web3j
-import org.web3j.tx.TransactionManager
-import org.web3j.tx.gas.ContractGasProvider
-import org.web3j.utils.Numeric
+import org.web3j.abi.TypeDecoder
+import org.web3j.abi.datatypes.AbiTypes
 
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -105,7 +101,7 @@ class EvmProcessorTest {
     @Test
     fun `Handle Transfer Revert Method`(){
         val processor = EVMOpsProcessor()
-        val transferRevertMethod = "0xa9059cbb000000000000000000000000c5973ef0360fcd067dc5db140cd15b7e725c7c1a0000000000000000000000000000000000000000204fce5e3e25026110000000"
+        val transferRevertMethod = "0xa9059cbb000000000000000000000000c5973ef0360fcd067dc5db140cd15b7e725c7c1a000000000000000000000000000000000000007e37be2022c0914b2680000000"
         val evmRequest = EvmRequest(
             "RandomFlowId",
             contractAddress,
@@ -118,7 +114,8 @@ class EvmProcessorTest {
         processor.onNext(evmRequest,evmResponse)
         val returnedResponse = evmResponse.get()
         println("Returned Response ${returnedResponse}")
-//        assert(returnedResponse.payload=="Failed To Establish a Connection With The Ethereum Node")
+//        println(TypeDecoder.decode("0x1df58b969e1ee8179029f4b6549947e6a09d8b88ea3f86bcc2bb65f79cd9c60d",AbiTypes.getType("string")))
+
     }
 
 
