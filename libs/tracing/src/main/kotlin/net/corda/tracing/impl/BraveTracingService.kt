@@ -7,10 +7,13 @@ import brave.baggage.BaggagePropagationConfig
 import brave.baggage.CorrelationScopeConfig
 import brave.context.slf4j.MDCScopeDecorator
 import brave.http.HttpRequest
+import brave.http.HttpRequestMatchers.methodEquals
 import brave.http.HttpRequestMatchers.pathStartsWith
+import brave.http.HttpRuleSampler
 import brave.http.HttpTracing
 import brave.propagation.B3Propagation
 import brave.propagation.ThreadLocalCurrentTraceContext
+import brave.sampler.Matchers.and
 import brave.sampler.RateLimitingSampler
 import brave.sampler.Sampler
 import brave.sampler.SamplerFunction
@@ -55,17 +58,7 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
                 .add(CorrelationScopeConfig.SingleCorrelationField.create(BraveBaggageFields.REQUEST_ID)).build()
         ).build()
 
-        val sampler = when (samplesPerSecond) {
-            is PerSecond -> {
-                logger.info("Tracing will sample ${samplesPerSecond.samplesPerSecond} requests per second")
-                RateLimitingSampler.create(samplesPerSecond.samplesPerSecond)
-            }
-
-            is Unlimited -> {
-                logger.info("Tracing will sample unlimited requests per second")
-                Sampler.ALWAYS_SAMPLE
-            }
-        }
+        val sampler = sampler(samplesPerSecond)
 
         val tracingBuilder = Tracing.newBuilder().currentTraceContext(braveCurrentTraceContext).supportsJoin(false)
             .localServiceName(serviceName).traceId128Bit(true).sampler(sampler).propagationFactory(
@@ -92,8 +85,40 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         tracingBuilder.build().also(resourcesToClose::push)
     }
 
-    private val serverSampler =
-        SamplerFunction<HttpRequest> { request -> !(request.method() == "POST" && request.path().startsWith("/flow")) }
+    private fun sampler(samplesPerSecond: SampleRate): Sampler? =
+        when (samplesPerSecond) {
+            is PerSecond -> {
+                logger.info("Tracing will sample ${samplesPerSecond.samplesPerSecond} requests per second")
+                val sam = RateLimitingSampler.create(samplesPerSecond.samplesPerSecond)
+                object : Sampler(){
+                    override fun isSampled(traceId: Long): Boolean {
+                       return sam.isSampled(traceId).also { logger.info(it.toString() + traceId.toULong().toString(16)) }
+                    }
+                }
+            }
+
+            is Unlimited -> {
+                logger.info("Tracing will sample unlimited requests per second")
+                Sampler.ALWAYS_SAMPLE
+            }
+        }
+
+//    private val serverSampler =
+//        SamplerFunction<HttpRequest> { request -> !(request.method() == "POST" && request.path().startsWith("/flow")) }
+
+    private val serverSampler: SamplerFunction<HttpRequest> =
+        HttpRuleSampler.newBuilder()
+            .putRule({ p0 ->
+                logger.info(p0.toString())
+                logger.info(p0.path().toString())
+                val matches = and(methodEquals("POST"), pathStartsWith("/api/v5_1/flow")).matches(p0)
+                logger.info(matches.toString())
+                matches
+            }, sampler(samplesPerSecond))
+            .putRule(pathStartsWith("/"), sampler(samplesPerSecond))
+            .build()
+
+
 
     private val httpTracing by lazy { HttpTracing.newBuilder(tracing).serverSampler(serverSampler).build() }
 
