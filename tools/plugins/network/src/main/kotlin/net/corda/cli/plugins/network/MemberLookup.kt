@@ -29,7 +29,14 @@ class MemberLookup(private val output: Output = ConsoleOutput()) : RestCommand()
     var group: String? = null
 
     @CommandLine.Option(
-        names = ["-n"],
+        names = ["-n", "--name"],
+        arity = "0..1",
+        description = ["X.500 name of the holding identity performing the lookup"]
+    )
+    var name: String? = null
+
+    @CommandLine.Option(
+        names = ["-cn"],
         arity = "0..1",
         description = ["Optional. Common Name (CN) attribute of the X.500 name to filter members by."]
     )
@@ -80,7 +87,7 @@ class MemberLookup(private val output: Output = ConsoleOutput()) : RestCommand()
     var status: List<String>? = null
 
     private fun performMembersLookup(): List<RestMemberInfo> {
-        val holdingIdentity = getHoldingIdentity(holdingIdentityShortHash, commonName, group)
+        val holdingIdentity = getHoldingIdentity(holdingIdentityShortHash, name, group)
         val result: List<RestMemberInfo> = createRestClient(MemberLookupRestResource::class).use { client ->
             val memberLookupProxy = client.start().proxy
             memberLookupProxy.lookup(
