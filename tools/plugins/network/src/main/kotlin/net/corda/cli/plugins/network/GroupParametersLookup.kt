@@ -15,7 +15,7 @@ import java.io.File
     name = "group-parameters",
     description = ["Lookup group parameters."]
 )
-class GroupParameters(private val output: Output = ConsoleOutput()) : RestCommand(), Runnable {
+class GroupParametersLookup(private val output: Output = ConsoleOutput()) : RestCommand(), Runnable {
 
     @CommandLine.Option(
         names = ["-h", "--holding-identity-short-hash"],
