@@ -63,7 +63,6 @@ class UtxoTokenRepositoryImpl @Activate constructor() : UtxoTokenRepository
             )
         }
 
-        // Follow the repository pattern
         val query = entityManager.createNativeQuery(queryStrBuilder.toString(), Tuple::class.java)
             .setParameter("tokenType", poolKey.tokenType)
             .setParameter("issuerHash", poolKey.issuerHash)
