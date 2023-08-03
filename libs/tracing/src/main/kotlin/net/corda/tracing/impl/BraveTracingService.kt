@@ -85,40 +85,22 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         tracingBuilder.build().also(resourcesToClose::push)
     }
 
-    private fun sampler(samplesPerSecond: SampleRate): Sampler? =
-        when (samplesPerSecond) {
-            is PerSecond -> {
-                logger.info("Tracing will sample ${samplesPerSecond.samplesPerSecond} requests per second")
-                val sam = RateLimitingSampler.create(samplesPerSecond.samplesPerSecond)
-                object : Sampler(){
-                    override fun isSampled(traceId: Long): Boolean {
-                       return sam.isSampled(traceId).also { logger.info(it.toString() + traceId.toULong().toString(16)) }
-                    }
-                }
-            }
-
-            is Unlimited -> {
-                logger.info("Tracing will sample unlimited requests per second")
-                Sampler.ALWAYS_SAMPLE
-            }
+    private fun sampler(samplesPerSecond: SampleRate): Sampler? = when (samplesPerSecond) {
+        is PerSecond -> {
+            logger.info("Tracing will sample ${samplesPerSecond.samplesPerSecond} requests per second")
+            RateLimitingSampler.create(samplesPerSecond.samplesPerSecond)
         }
 
-//    private val serverSampler =
-//        SamplerFunction<HttpRequest> { request -> !(request.method() == "POST" && request.path().startsWith("/flow")) }
+        is Unlimited -> {
+            logger.info("Tracing will sample unlimited requests per second")
+            Sampler.ALWAYS_SAMPLE
+        }
+    }
 
-    private val serverSampler: SamplerFunction<HttpRequest> =
-        HttpRuleSampler.newBuilder()
-            .putRule({ p0 ->
-                logger.info(p0.toString())
-                logger.info(p0.path().toString())
-                val matches = and(methodEquals("POST"), pathStartsWith("/api/v5_1/flow")).matches(p0)
-                logger.info(matches.toString())
-                matches
-            }, sampler(samplesPerSecond))
-            .putRule(pathStartsWith("/"), sampler(samplesPerSecond))
-            .build()
-
-
+    private val serverSampler: SamplerFunction<HttpRequest> = HttpRuleSampler.newBuilder()
+        .putRule(and(methodEquals("POST"), pathStartsWith("/api/v5_1/flow")), sampler(samplesPerSecond))
+        .putRule(and(methodEquals("POST"), pathStartsWith("/api/v1/flow")), sampler(samplesPerSecond))
+        .putRule(pathStartsWith("/"), sampler(samplesPerSecond)).build()
 
     private val httpTracing by lazy { HttpTracing.newBuilder(tracing).serverSampler(serverSampler).build() }
 
