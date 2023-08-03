@@ -100,45 +100,18 @@ class UtxoPersistenceServiceImpl(
     }
 
     override fun <T: ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoTransactionOutputDto> {
-        val outputsInfoIdx = UtxoComponentGroup.OUTPUTS_INFO.ordinal
-        val outputsIdx = UtxoComponentGroup.OUTPUTS.ordinal
-        val componentGroups = entityManagerFactory.transaction { em ->
-            repository.findUnconsumedVisibleStatesByType(em, listOf(outputsInfoIdx, outputsIdx))
-        }.groupBy { it.groupIndex }
-        val outputInfos = componentGroups[outputsInfoIdx]
-            ?.associateBy { it.transactionId to it.leafIndex }
-            ?: emptyMap()
-        return componentGroups[outputsIdx]?.mapNotNull {
-            val info = outputInfos[it.transactionId to it.leafIndex]
-            requireNotNull(info) {
-                "Missing output info at index [${it.leafIndex}] for UTXO transaction with ID [${it.transactionId}]"
-            }
+        return entityManagerFactory.transaction { em ->
+            repository.findUnconsumedVisibleStatesByType(em)
+        }.filter {
             val contractState = serializationService.deserialize<ContractState>(it.data)
-            if (stateClass.isInstance(contractState)) {
-                UtxoTransactionOutputDto(it.transactionId, it.leafIndex, info.data, it.data)
-            } else {
-                null
-            }
-        } ?: emptyList()
+            stateClass.isInstance(contractState)
+        }
     }
 
     override fun resolveStateRefs(stateRefs: List<StateRef>): List<UtxoTransactionOutputDto> {
-        val outputsInfoIdx = UtxoComponentGroup.OUTPUTS_INFO.ordinal
-        val outputsIdx = UtxoComponentGroup.OUTPUTS.ordinal
-        val componentGroups = entityManagerFactory.transaction { em ->
-            repository.resolveStateRefs(em, stateRefs, listOf(outputsInfoIdx, outputsIdx))
-        }.groupBy { it.groupIndex }
-        val outputInfos = componentGroups[outputsInfoIdx]
-            ?.associateBy { it.transactionId to it.leafIndex }
-            ?: emptyMap()
-
-        return componentGroups[outputsIdx]?.map {
-            val info = outputInfos[it.transactionId to it.leafIndex]
-            requireNotNull(info) {
-                "Missing output info at index [${it.leafIndex}] for UTXO transaction with ID [${it.transactionId}]"
-            }
-            UtxoTransactionOutputDto(it.transactionId, it.leafIndex, info.data, it.data)
-        } ?: emptyList()
+        return entityManagerFactory.transaction { em ->
+            repository.resolveStateRefs(em, stateRefs)
+        }
     }
 
     override fun persistTransaction(transaction: UtxoTransactionReader, utxoTokenMap: Map<StateRef, UtxoToken>): List<CordaPackageSummary> {
