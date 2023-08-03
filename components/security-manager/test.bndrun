@@ -6,8 +6,7 @@
 
 # Canonicalise the permissions paths
 -runvm: \
-    -Djdk.io.permissionsUseCanonicalPath=true,\
-    --illegal-access=deny
+    -Djdk.io.permissionsUseCanonicalPath=true
 
 -runsystemcapabilities: \
     osgi.service;objectClass:List<String>='net.corda.lifecycle.LifecycleCoordinatorFactory';effective:=active,\
