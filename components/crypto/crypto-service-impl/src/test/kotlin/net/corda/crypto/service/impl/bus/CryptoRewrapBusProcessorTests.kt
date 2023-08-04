@@ -4,7 +4,10 @@ import net.corda.crypto.core.CryptoService
 import net.corda.data.crypto.wire.ops.rewrap.CryptoRewrapRequest
 import net.corda.messaging.api.records.Record
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import java.util.UUID
 
 class CryptoRewrapBusProcessorTests {
@@ -25,5 +28,6 @@ class CryptoRewrapBusProcessorTests {
                 )
             )
         )
+        verify(cryptoService, times(1)).rewrapWrappingKey(any(), any(), any())
     }
-}
+}   
