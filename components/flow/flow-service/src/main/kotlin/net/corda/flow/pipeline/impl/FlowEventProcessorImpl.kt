@@ -32,7 +32,7 @@ class FlowEventProcessorImpl(
 ) : StateAndEventProcessor<String, Checkpoint, FlowEvent> {
 
     private companion object {
-        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override val keyClass = String::class.java

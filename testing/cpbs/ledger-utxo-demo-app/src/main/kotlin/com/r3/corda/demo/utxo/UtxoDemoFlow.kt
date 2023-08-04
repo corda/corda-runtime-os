@@ -30,7 +30,7 @@ class UtxoDemoFlow : ClientStartableFlow {
     data class InputMessage(val input: String, val members: List<String>, val notary: String?)
 
     private companion object {
-        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject
@@ -74,10 +74,9 @@ class UtxoDemoFlow : ClientStartableFlow {
             }
             val txBuilder = utxoLedgerService.createTransactionBuilder()
 
-            val now = Instant.now()
             val signedTransaction = txBuilder
                 .setNotary(notary.name)
-                .setTimeWindowBetween(now, now.plus(Duration.ofDays(1)))
+                .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(Duration.ofDays(1).toMillis()))
                 .addOutputState(testUtxoState)
                 .addCommand(TestCommand())
                 .addSignatories(testUtxoState.participants)
@@ -109,7 +108,7 @@ class UtxoDemoFlow : ClientStartableFlow {
 class UtxoResponderFlow : ResponderFlow {
 
     private companion object {
-        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @CordaInject

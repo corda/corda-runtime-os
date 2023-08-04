@@ -10,9 +10,6 @@ import net.corda.flow.metrics.FlowIORequestTypeConverter
 import net.corda.flow.metrics.FlowMetricsFactory
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.factory.impl.FlowEventPipelineFactoryImpl
-import net.corda.flow.pipeline.factory.impl.FlowEventPipelineFactoryImpl.Companion.FLOW_EVENT_HANDLER_NAME
-import net.corda.flow.pipeline.factory.impl.FlowEventPipelineFactoryImpl.Companion.FLOW_REQUEST_HANDLER_NAME
-import net.corda.flow.pipeline.factory.impl.FlowEventPipelineFactoryImpl.Companion.FLOW_WAITING_FOR_HANDLER_NAME
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
@@ -24,10 +21,8 @@ import net.corda.flow.test.utils.buildFlowEventContext
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import org.osgi.service.component.ComponentContext
 
 class FlowEventPipelineFactoryImplTest {
 
@@ -63,11 +58,6 @@ class FlowEventPipelineFactoryImplTest {
     }
     private val flowFiberCache = mock<FlowFiberCache>()
 
-    private val componentContext = mock<ComponentContext>().apply {
-        whenever(locateServices(FLOW_EVENT_HANDLER_NAME)).doReturn(arrayOf(flowEventHandler))
-        whenever(locateServices(FLOW_WAITING_FOR_HANDLER_NAME)).doReturn(arrayOf(flowWaitingForHandler))
-        whenever(locateServices(FLOW_REQUEST_HANDLER_NAME)).doReturn(arrayOf(flowRequestHandler))
-    }
     private val factory = FlowEventPipelineFactoryImpl(
         flowRunner,
         flowGlobalPostProcessor,
@@ -76,7 +66,9 @@ class FlowEventPipelineFactoryImplTest {
         flowFiberCache,
         flowMetricsFactory,
         flowIORequestTypeConverter,
-        componentContext
+        listOf(flowEventHandler),
+        listOf(flowWaitingForHandler),
+        listOf(flowRequestHandler)
     )
 
     @Test

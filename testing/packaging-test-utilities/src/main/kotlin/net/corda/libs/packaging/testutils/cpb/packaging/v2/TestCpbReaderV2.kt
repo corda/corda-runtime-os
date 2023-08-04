@@ -1,5 +1,6 @@
 package net.corda.libs.packaging.testutils.cpb.packaging.v2
 
+import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.nio.file.Path
 import java.util.jar.JarInputStream
@@ -25,8 +26,9 @@ object TestCpbReaderV2 {
         // Read input stream, so we can process it through different classes that will consume the stream
         val cpbBytes = cpbInputStream.readAllBytes()
 
-        val manifest = JarInputStream(cpbBytes.inputStream()).use(JarInputStream::getManifest)
-            ?: throw CordappManifestException("No manifest in Jar file")
+        val manifest = JarInputStream(ByteArrayInputStream(cpbBytes)).use {
+            it.manifest
+        } ?: throw CordappManifestException("No manifest in Jar file")
 
         val formatVersion = readCpbFormatVersion(manifest)
         require(formatVersion == version2)
@@ -39,3 +41,4 @@ object TestCpbReaderV2 {
             )
     }
 }
+

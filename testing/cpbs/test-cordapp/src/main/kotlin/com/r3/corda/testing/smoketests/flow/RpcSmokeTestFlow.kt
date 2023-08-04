@@ -56,16 +56,12 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         "persistence_find_bulk" to this::persistenceFindDogs,
         "persistence_findall" to { persistenceFindAllDogs() },
         "persistence_query" to { persistenceQueryDogs() },
-        "subflow_passed_in_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, true) },
-        "subflow_passed_in_non_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, false) },
-        "flow_messaging_apis" to { createMultipleSessionsSingleFlowAndExerciseFlowMessaging(it) },
         "flow_session_primitives" to this::sendPrimitiveValuesAcrossFlowSession,
         "crypto_sign_and_verify" to this::signAndVerify,
         "crypto_verify_invalid_signature" to this::verifyInvalidSignature,
         "crypto_get_default_signature_spec" to this::getDefaultSignatureSpec,
         "crypto_get_compatible_signature_specs" to this::getCompatibleSignatureSpecs,
         "crypto_find_my_signing_keys" to this::findMySigningKeys,
-        "serialization" to this::serialization,
         "lookup_member_by_x500_name" to this::lookupMember,
         "json_serialization" to this::jsonSerialization,
         "get_cpi_metadata" to { getCpiMetadata() },
@@ -270,58 +266,6 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         }
 
         return outputs.joinToString("; ")
-    }
-
-    @Suspendable
-    private fun createSessionsInInitiatingFlowAndPassToInlineFlow(
-        input: RpcSmokeTestInput,
-        initiateSessionInInitiatingFlow: Boolean
-    ): String {
-        val sessions = input.getValue("sessions").split(";")
-        val messages = input.getValue("messages").split(";")
-        if (sessions.size != messages.size) {
-            throw IllegalStateException("Sessions test run with unmatched messages to sessions")
-        }
-
-        log.info("SubFlow - Starting sessions for '${input.getValue("sessions")}'")
-        val outputs = mutableListOf<String>()
-        sessions.forEachIndexed { idx, x500 ->
-            val response = flowEngine.subFlow(
-                InitiatingSubFlowSmokeTestFlow(
-                    MemberX500Name.parse(x500),
-                    initiateSessionInInitiatingFlow,
-                    messages[idx]
-                )
-            )
-
-            outputs.add("${x500}=${response.message}")
-        }
-
-        return outputs.joinToString("; ")
-    }
-
-    @Suspendable
-    private fun createMultipleSessionsSingleFlowAndExerciseFlowMessaging(
-        input: RpcSmokeTestInput
-    ): String {
-        val sessions = input.getValue("sessions").split(";")
-        log.info("SubFlow Flow Messaging - Starting sessions for '${input.getValue("sessions")}'")
-        val outputs = mutableListOf<String>()
-        sessions.forEachIndexed { _, x500 ->
-            val response = flowEngine.subFlow(
-                SendReceiveAllMessagingFlow(MemberX500Name.parse(x500))
-            )
-
-            outputs.add("${x500}=${response}")
-        }
-
-        return outputs.joinToString("; ")
-    }
-
-    @Suspendable
-    private fun serialization(input: RpcSmokeTestInput): String {
-        val serialized = serializationService.serialize(input.getValue("data"))
-        return serializationService.deserialize(serialized, String::class.java)
     }
 
     @Suspendable

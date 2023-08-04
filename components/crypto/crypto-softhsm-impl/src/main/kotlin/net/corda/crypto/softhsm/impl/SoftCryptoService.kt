@@ -92,7 +92,7 @@ open class SoftCryptoService(
     private val unmanagedWrappingKeys: Map<String, WrappingKey>,
     private val digestService: PlatformDigestService,
     private val wrappingKeyCache: Cache<String, WrappingKey>?,
-    private val shortHashCache: Cache<ShortHashCacheKey, SigningKeyInfo>?,
+    private val shortHashCache: Cache<ShortHashCacheKey, SigningKeyInfo>,
     private val privateKeyCache: Cache<PublicKey, PrivateKey>?,
     private val keyPairGeneratorFactory: (algorithm: String, provider: Provider) -> KeyPairGenerator,
     private val wrappingKeyFactory: (schemeMetadata: CipherSchemeMetadata) -> WrappingKey = {
@@ -441,15 +441,15 @@ open class SoftCryptoService(
         // uniqueness constraints to stop clashes from being created.
 
         val cachedKeys =
-            shortHashCache?.getAllPresent(keyIds.mapTo(mutableSetOf()) {
+            shortHashCache.getAllPresent(keyIds.mapTo(mutableSetOf()) {
                 ShortHashCacheKey(tenantId, it)
-            })?.mapTo(mutableSetOf()) { it.value } ?: mutableSetOf()
+            }).mapTo(mutableSetOf()) { it.value }
         val notFound: List<ShortHash> = keyIds - cachedKeys.map { it.id }.toSet()
         if (notFound.isEmpty()) return cachedKeys
         val fetchedKeys = signingRepositoryFactory.getInstance(tenantId).use {
             it.lookupByPublicKeyShortHashes(notFound.toMutableSet())
         }
-        fetchedKeys.forEach { shortHashCache?.put(ShortHashCacheKey(tenantId, it.id), it) }
+        fetchedKeys.forEach { shortHashCache.put(ShortHashCacheKey(tenantId, it.id), it) }
 
         return cachedKeys + fetchedKeys
     }
@@ -468,8 +468,8 @@ open class SoftCryptoService(
             }.filterNotNull()
 
         val keyIds = fullKeyIds.map { ShortHash.of(it) }
-        val cachedMap = shortHashCache?.getAllPresent(keyIds.mapTo(mutableSetOf()) { ShortHashCacheKey(tenantId, it) })
-        val cachedKeys = cachedMap?.map { it.value } ?: emptyList()
+        val cachedMap = shortHashCache.getAllPresent(keyIds.mapTo(mutableSetOf()) { ShortHashCacheKey(tenantId, it) })
+        val cachedKeys = cachedMap.map { it.value }
         val cachedMatchingKeys = filterOutMismatches(cachedKeys)
         if (cachedMatchingKeys.size == fullKeyIds.size) return cachedMatchingKeys
         val notFound = fullKeyIds.filter { hash -> cachedMatchingKeys.count { it.fullId == hash } == 0 }
@@ -482,7 +482,7 @@ open class SoftCryptoService(
         }
         val fetchedMatchingKeys = filterOutMismatches(fetchedKeys)
         fetchedMatchingKeys.forEach {
-            shortHashCache?.put(ShortHashCacheKey(tenantId, it.id), it)
+            shortHashCache.put(ShortHashCacheKey(tenantId, it.id), it)
         }
         return cachedMatchingKeys + fetchedMatchingKeys
     }
@@ -542,7 +542,7 @@ open class SoftCryptoService(
         val requestedFullKeyId = publicKey.fullIdHash(schemeMetadata, digestService)
         val keyId = ShortHash.of(requestedFullKeyId)
         val cacheKey = ShortHashCacheKey(tenantId, keyId)
-        val signingKeyInfo = shortHashCache?.getIfPresent(cacheKey) ?: run {
+        val signingKeyInfo = shortHashCache.getIfPresent(cacheKey) ?: run {
             val repo = signingRepositoryFactory.getInstance(tenantId)
             val result = repo.findKey(publicKey)
             if (result == null) throw IllegalArgumentException("The public key '${publicKey.publicKeyId()}' was not found")

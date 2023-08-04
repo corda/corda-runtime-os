@@ -52,13 +52,13 @@ class CpkLoaderV2(
     private fun writeAtomically(target: Path, writer: Consumer<SeekableByteChannel>): Path {
         val directory = target.parent
         @Suppress("SpreadOperator")
-        return Files.createTempFile(directory, ".cpk-", "", *directory.posixOptional(CPK_FILE_PERMISSIONS)).let { tempFile ->
+        Files.createTempFile(directory, ".cpk-", "", *directory.posixOptional(CPK_FILE_PERMISSIONS)).also { tempFile ->
             try {
                 Files.newByteChannel(tempFile, WRITE).use(writer::accept)
                 setReadOnly(tempFile)
 
                 // Rename our temporary file as the final step.
-                Files.move(tempFile, target, ATOMIC_MOVE)
+                return Files.move(tempFile, target, ATOMIC_MOVE)
             } catch (e: Exception) {
                 Files.delete(tempFile)
                 throw e
