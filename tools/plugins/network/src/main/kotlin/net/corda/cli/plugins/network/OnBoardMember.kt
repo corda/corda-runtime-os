@@ -129,12 +129,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
         val hash = listOf(cpbFile, groupPolicyFile).hash()
         val cpiRoot = File(cpisRoot, hash)
         val cpiFile = File(cpiRoot, "${cpbFile.name}.cpi")
-        val baseNetworkName = if (cordaClusterName == null) {
-            "combined-worker"
-        } else {
-            cordaClusterName
-        }
-        val cpiHashesFile = File(cpiRoot, "$baseNetworkName.shortHash")
+        val cpiHashesFile = File(cpiRoot, "$hash.shortHash")
         if (cpiHashesFile.canRead()) {
             val cpiFileChecksum = cpiHashesFile.readText()
             val currentCpis = createRestClient(CpiUploadRestResource::class).use { client ->
@@ -194,14 +189,19 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
     override val registrationContext by lazy {
         val preAuth = if (preAuthToken != null) mapOf("corda.auth.token" to preAuthToken) else emptyMap()
+        val endpoints = mutableMapOf<String, String>()
+
+        p2pGatewayUrls.mapIndexed { index, url ->
+            endpoints["corda.endpoints.$index.connectionURL"] = url
+            endpoints["corda.endpoints.$index.protocolVersion"] = "1"
+        }
+
         mapOf(
             "corda.session.keys.0.id" to sessionKeyId,
             "corda.session.keys.0.signature.spec" to "SHA256withECDSA",
             "corda.ledger.keys.0.id" to ledgerKeyId,
             "corda.ledger.keys.0.signature.spec" to "SHA256withECDSA",
-            "corda.endpoints.0.connectionURL" to p2pUrl,
-            "corda.endpoints.0.protocolVersion" to "1"
-        ) + preAuth
+        ) + endpoints + preAuth
     }
 
     override fun run() {

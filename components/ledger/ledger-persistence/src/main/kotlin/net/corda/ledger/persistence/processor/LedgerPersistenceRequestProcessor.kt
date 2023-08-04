@@ -20,6 +20,7 @@ import net.corda.utilities.translateFlowContextToMDC
 import net.corda.utilities.withMDC
 import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.virtualnode.toCorda
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
 
@@ -27,7 +28,7 @@ import java.time.Duration
  * Handles incoming requests, typically from the flow worker, and sends responses.
  */
 @Suppress("LongParameterList")
-class PersistenceRequestProcessor(
+class LedgerPersistenceRequestProcessor(
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     private val entitySandboxService: EntitySandboxService,
     private val delegatedRequestHandlerSelector: DelegatedRequestHandlerSelector,
@@ -35,7 +36,7 @@ class PersistenceRequestProcessor(
 ) : DurableProcessor<String, LedgerPersistenceRequest> {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log: Logger = LoggerFactory.getLogger(LedgerPersistenceRequestProcessor::class.java)
     }
 
     override val keyClass = String::class.java

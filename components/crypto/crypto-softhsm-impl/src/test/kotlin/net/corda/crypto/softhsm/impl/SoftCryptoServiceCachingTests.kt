@@ -197,6 +197,10 @@ class SoftCryptoServiceCachingTests {
                 return testCryptoRepositoryWrapping.saveKey(alias, key)
             }
 
+            override fun saveKeyWithId(alias: String, key: WrappingKeyInfo, id: UUID?): WrappingKeyInfo {
+                TODO("Not yet implemented")
+            }
+
             override fun findKey(alias: String): WrappingKeyInfo? {
                 findCount++
                 return testCryptoRepositoryWrapping.findKey(alias)

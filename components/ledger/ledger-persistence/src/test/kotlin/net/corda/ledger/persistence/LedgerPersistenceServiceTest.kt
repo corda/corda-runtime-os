@@ -3,7 +3,7 @@ package net.corda.ledger.persistence
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
-import net.corda.ledger.persistence.processor.PersistenceRequestSubscriptionFactory
+import net.corda.ledger.persistence.processor.LedgerPersistenceRequestSubscriptionFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.messaging.api.subscription.Subscription
@@ -38,7 +38,7 @@ class LedgerPersistenceServiceTest {
 
     private val subscription1 = mock<Subscription<String, LedgerPersistenceRequest>>()
     private val subscription2 = mock<Subscription<String, LedgerPersistenceRequest>>()
-    private val persistenceRequestSubscriptionFactory = mock<PersistenceRequestSubscriptionFactory>().apply {
+    private val ledgerPersistenceRequestSubscriptionFactory = mock<LedgerPersistenceRequestSubscriptionFactory>().apply {
         whenever(this.create(MINIMUM_SMART_CONFIG)).thenReturn(subscription1, subscription2)
     }
 
@@ -50,7 +50,7 @@ class LedgerPersistenceServiceTest {
     @Test
     fun `on configuration event creates and starts subscription`() {
         val subscription = mock<Subscription<String, LedgerPersistenceRequest>>()
-        whenever(persistenceRequestSubscriptionFactory.create(MINIMUM_SMART_CONFIG)).thenReturn(subscription)
+        whenever(ledgerPersistenceRequestSubscriptionFactory.create(MINIMUM_SMART_CONFIG)).thenReturn(subscription)
 
         getTokenCacheComponentTestContext().run {
             testClass.start()
@@ -58,7 +58,7 @@ class LedgerPersistenceServiceTest {
 
             sendConfigUpdate<LedgerPersistenceService>(exampleConfig)
 
-            verify(persistenceRequestSubscriptionFactory).create(MINIMUM_SMART_CONFIG)
+            verify(ledgerPersistenceRequestSubscriptionFactory).create(MINIMUM_SMART_CONFIG)
             verify(subscription).start()
         }
     }
@@ -71,7 +71,7 @@ class LedgerPersistenceServiceTest {
 
             sendConfigUpdate<LedgerPersistenceService>(exampleConfig)
 
-            verify(persistenceRequestSubscriptionFactory).create(MINIMUM_SMART_CONFIG)
+            verify(ledgerPersistenceRequestSubscriptionFactory).create(MINIMUM_SMART_CONFIG)
             verify(subscription1).start()
 
             sendConfigUpdate<LedgerPersistenceService>(exampleConfig)
@@ -137,7 +137,7 @@ class LedgerPersistenceServiceTest {
                 sandboxGroupContextComponent,
                 virtualNodeInfoReadService,
                 cpiInfoReadService,
-                persistenceRequestSubscriptionFactory
+                ledgerPersistenceRequestSubscriptionFactory
             )
         }
     }

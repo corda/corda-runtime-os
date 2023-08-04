@@ -6,8 +6,7 @@
 
 -runvm: \
     --add-opens, 'java.base/java.lang.invoke=ALL-UNNAMED',\
-    --add-opens, 'java.base/java.util=ALL-UNNAMED',\
-    --illegal-access=deny
+    --add-opens, 'java.base/java.util=ALL-UNNAMED'
 
 -runrequires: \
     bnd.identity;id='net.corda.ledger-common-flow',\

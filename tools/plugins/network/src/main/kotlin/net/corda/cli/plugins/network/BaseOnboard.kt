@@ -6,16 +6,16 @@ import net.corda.cli.plugins.common.RestCommand
 import net.corda.rest.HttpFileUpload
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
+import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
+import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.rest.v1.KeyRestResource
 import net.corda.membership.rest.v1.HsmRestResource
-import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
-import net.corda.membership.rest.v1.NetworkRestResource
+import net.corda.membership.rest.v1.CertificateRestResource
 import net.corda.membership.rest.v1.MemberRegistrationRestResource
-import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
+import net.corda.membership.rest.v1.NetworkRestResource
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import com.fasterxml.jackson.databind.node.ObjectNode
-import net.corda.membership.rest.v1.CertificateRestResource
 import net.corda.virtualnode.OperationalStatus
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
@@ -42,7 +42,6 @@ import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder
 import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder
 import org.bouncycastle.operator.bc.BcRSAContentSignerBuilder
 import picocli.CommandLine.Option
-import picocli.CommandLine.Parameters
 import java.io.File
 import java.io.InputStream
 import java.math.BigInteger
@@ -50,6 +49,7 @@ import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.util.Date
+import java.net.URI
 
 abstract class BaseOnboard : Runnable, RestCommand() {
     private companion object {
@@ -101,13 +101,6 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         }
     }
 
-    @Parameters(
-        description = ["The name of the k8s namespace (leave empty for combined worker on local host)"],
-        paramLabel = "NAME",
-        arity = "0..1",
-    )
-    var cordaClusterName: String? = null
-
     @Option(
         names = ["--ca"],
         description = ["The CA location (default to ~/.corda/ca)"]
@@ -128,6 +121,12 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         ]
     )
     var tlsCertificateSubject: String? = null
+
+    @Option(
+        names = ["--p2p-gateway-url"],
+        description = ["P2P Gateway URL. Multiple URLs may be provided. Defaults to https://localhost:8080."]
+    )
+    var p2pGatewayUrls: List<String> = listOf("https://localhost:8080")
 
     protected val json by lazy {
         ObjectMapper()
@@ -249,20 +248,20 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     protected val ecdhKeyId by lazy {
         assignSoftHsmAndGenerateKey("PRE_AUTH")
     }
-    private val p2pHost by lazy {
-        if (cordaClusterName == null) {
-            "localhost"
-        } else {
-            "corda-p2p-gateway-worker.$cordaClusterName"
-        }
-    }
     protected val certificateSubject by lazy {
-        tlsCertificateSubject ?: "O=P2P Certificate, OU=$p2pHost, L=London, C=GB"
+        tlsCertificateSubject ?: "O=P2P Certificate, OU=${p2pHosts}, L=London, C=GB"
     }
 
-    protected val p2pUrl by lazy {
-        "https://$p2pHost:8080"
+    private val p2pHosts = extractHostsFromUrls(p2pGatewayUrls)
+
+    private fun extractHostsFromUrls(urls: List<String>): List<String> {
+        return urls.map { extractHostFromUrl(it) }.distinct()
     }
+
+    private fun extractHostFromUrl(url: String): String {
+        return URI.create(url).host ?: throw IllegalArgumentException("Invalid URL: $url")
+    }
+
     protected val ca by lazy {
         caHome.parentFile.mkdirs()
         CertificateAuthorityFactory
@@ -305,7 +304,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                 tenantId = "p2p",
                 keyId = tlsKeyId,
                 x500Name = certificateSubject,
-                subjectAlternativeNames = listOf(p2pHost),
+                subjectAlternativeNames = p2pHosts,
                 contextMap = null
             )
         }
