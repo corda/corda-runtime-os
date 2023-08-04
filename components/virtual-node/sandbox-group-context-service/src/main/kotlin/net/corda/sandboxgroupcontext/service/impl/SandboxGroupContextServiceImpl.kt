@@ -260,8 +260,8 @@ class SandboxGroupContextServiceImpl @Activate constructor(
         val sandboxBundles = bundles + getCordaSystemBundles(sandboxGroupType)
 
         val serviceMarkerType = sandboxGroupType.serviceMarkerType
-        val serviceFilter = vnc.serviceFilter?.let { filter -> "(&$SANDBOX_FACTORY_FILTER$filter)" } ?: SANDBOX_FACTORY_FILTER
-        bundleContext.getServiceReferences(serviceMarkerType, serviceFilter).forEach { serviceRef ->
+        val sandboxFilter = vnc.serviceFilter?.let { filter -> "(&$SANDBOX_FACTORY_FILTER$filter)" } ?: SANDBOX_FACTORY_FILTER
+        bundleContext.getServiceReferences(serviceMarkerType, sandboxFilter).forEach { serviceRef ->
             try {
                 serviceRef.serviceClassNames
                     .filterNot(MARKER_INTERFACES::contains)
@@ -293,7 +293,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                         // We filtered on services having a component name, so we
                         // should be guaranteed to find its component description.
                         serviceComponentRuntime.getComponentDescriptionDTO(serviceRef)?.also { description ->
-                            injectables[serviceRef] = ServiceDefinition(injectableTypes, description)
+                            injectables[serviceRef] = ServiceDefinition(injectableTypes, description, vnc.serviceFilter)
                         }
                     }
             } catch (e: Exception) {
@@ -312,6 +312,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
 
         return SandboxServiceContext(
             sandboxId = sandboxId,
+            serviceFilter = vnc.serviceFilter,
             sourceContext = bundleContext,
             serviceComponentRuntime,
             serviceIndex,
@@ -475,8 +476,10 @@ class SandboxGroupContextServiceImpl @Activate constructor(
      * abort this process if we ever iterate over [injectables] without achieving
      * anything new.
      */
+    @Suppress("LongParameterList")
     private class SandboxServiceContext(
         private val sandboxId: UUID,
+        private val serviceFilter: String?,
         private val sourceContext: BundleContext,
         private val serviceComponentRuntime: ServiceComponentRuntime,
         private val serviceIndex: Map<String, MutableSet<ServiceReference<*>>>,
@@ -540,8 +543,15 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 val entry = iter.next()
                 val injectable = entry.value
                 val sandboxRequirements = injectable.sandboxReferences
-                if (sandboxRequirements.isEmpty()) {
-                    // This service doesn't use any of our prototypes, which means that
+
+                if (!injectable.isByConstructor) {
+                    logger.warn("{} must only use constructor injection - IGNORED", injectable)
+                    injectable.broken()
+                } else if (sandboxRequirements.isNotEmpty()) {
+                    sandboxRequirements.values.forEach(totalRequirements::addAll)
+                } else if (serviceFilter == null) {
+                    // This service doesn't use any of our prototypes, and we don't
+                    // need to filter the set of available services, which means that
                     // the OSGi framework can safely create our new service instance.
                     sourceContext.getServiceObjects(entry.key)?.also { serviceObj ->
                         registerInjectableSandboxService(
@@ -553,11 +563,6 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                             iter.remove()
                         } ?: run(injectable::broken)
                     }
-                } else if (!injectable.isByConstructor) {
-                    logger.warn("{} must only use constructor injection - IGNORED", injectable)
-                    injectable.broken()
-                } else {
-                    sandboxRequirements.values.forEach(totalRequirements::addAll)
                 }
             }
 
@@ -672,7 +677,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
         private fun addNonInjectable(serviceRef: ServiceReference<*>, closeables: Deque<AutoCloseable>): Boolean {
             var modified = false
             serviceComponentRuntime.getComponentDescriptionDTO(serviceRef)?.let { description ->
-                val nonInjectable = ServiceDefinition(description).initialise(serviceIndex)
+                val nonInjectable = ServiceDefinition(description, serviceFilter).initialise(serviceIndex)
                 if (nonInjectable.sandboxReferences.isEmpty()) {
                     // This service doesn't use any of our prototypes, which means that
                     // the OSGi framework can safely create our new service instance.
@@ -745,7 +750,7 @@ fun closeSafely(closeable: AutoCloseable) {
 }
 
 /**
- * Check whether this [AccessControlContext] is allowed to GET service [serviceType].
+ * Check whether this [AccessControlContext][java.security.AccessControlContext] is allowed to GET service [serviceType].
  */
 @Suppress("deprecation", "removal")
 private fun java.security.AccessControlContext.checkServicePermission(serviceType: String): Boolean {
