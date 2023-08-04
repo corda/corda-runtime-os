@@ -32,6 +32,7 @@ import net.corda.crypto.service.impl.TenantInfoServiceImpl
 import net.corda.crypto.service.impl.bus.CryptoFlowOpsBusProcessor
 import net.corda.crypto.service.impl.rpc.CryptoFlowOpsRpcProcessor
 import net.corda.crypto.service.impl.bus.CryptoOpsBusProcessor
+import net.corda.crypto.service.impl.bus.CryptoRewrapBusProcessor
 import net.corda.crypto.service.impl.bus.HSMRegistrationBusProcessor
 import net.corda.crypto.softhsm.TenantInfoService
 import net.corda.crypto.softhsm.impl.HSMRepositoryImpl
@@ -124,6 +125,7 @@ class CryptoProcessorImpl @Activate constructor(
         const val FLOW_OPS_SUBSCRIPTION = "FLOW_OPS_SUBSCRIPTION"
         const val RPC_OPS_SUBSCRIPTION = "RPC_OPS_SUBSCRIPTION"
         const val HSM_REG_SUBSCRIPTION = "HSM_REG_SUBSCRIPTION"
+        const val REWRAP_SUBSCRIPTION = "REWRAP_SUBSCRIPTION"
 
         const val RPC_SUBSCRIPTION = "RPC_SUBSCRIPTION"
         const val SUBSCRIPTION_NAME = "Crypto"
@@ -322,7 +324,7 @@ class CryptoProcessorImpl @Activate constructor(
         )
         val rpcOpsProcessor = CryptoOpsBusProcessor(cryptoService, retryingConfig, keyEncodingService)
         val hsmRegistrationProcessor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, retryingConfig)
-
+        val rewrapProcessor = CryptoRewrapBusProcessor(cryptoService)
         // create and start subscriptions
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val flowGroupName = "crypto.ops.flow"
@@ -372,10 +374,23 @@ class CryptoProcessorImpl @Activate constructor(
                 messagingConfig = messagingConfig
             )
         }
-        logger.trace("Starting processing on $hsmRegGroupName ${Schemas.Crypto.RPC_HSM_REGISTRATION_MESSAGE_TOPIC}")
+        logger.trace("Starting processing on $hsmRegGroupName ${Schemas.Crypto.REWRAP_MESSASGE_TOPIC}")
         coordinator.getManagedResource<SubscriptionBase>(HSM_REG_SUBSCRIPTION)!!.start()
+        val rewrapGroupName = "crypto.ops.rewrap"
+
+        coordinator.createManagedResource(REWRAP_SUBSCRIPTION) {
+            subscriptionFactory.createDurableSubscription(
+                subscriptionConfig = SubscriptionConfig(
+                    groupName = rewrapGroupName,
+                    eventTopic = Schemas.Crypto.REWRAP_MESSASGE_TOPIC
+                ),
+                processor = rewrapProcessor,
+                messagingConfig = messagingConfig,
+                partitionAssignmentListener = null
+            )
+        }
     }
-    
+
     private fun startBusProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
 
