@@ -1,8 +1,7 @@
 package net.corda.testing.ledger.query
 
 import net.corda.db.hsqldb.json.HsqldbJsonExtension.JSON_SQL_TYPE
-import net.corda.orm.DatabaseType
-import net.corda.orm.DatabaseTypeProvider
+import net.corda.ledger.persistence.query.parsing.VaultNamedQueryParserImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -14,11 +13,7 @@ import java.util.stream.Stream
 @Suppress("MaxLineLength")
 class HsqldbVaultNamedQueryParserIntegrationTest {
 
-    private val databaseTypeProvider = object : DatabaseTypeProvider {
-        override val databaseType: DatabaseType
-            get() = DatabaseType.HSQLDB
-    }
-    private val vaultNamedQueryParser = HsqldbVaultNamedQueryParserImpl(databaseTypeProvider)
+    private val vaultNamedQueryParser = VaultNamedQueryParserImpl(HsqldbVaultNamedQueryConverter(HsqldbProvider))
 
     private companion object {
         private fun cast(name: String) = "CAST($name AS $JSON_SQL_TYPE)"
@@ -122,5 +117,45 @@ class HsqldbVaultNamedQueryParserIntegrationTest {
     @Test
     fun `queries containing a from throws an exception`() {
         assertThatThrownBy { vaultNamedQueryParser.parseWhereJson("FROM table") }.isExactlyInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `with json fields inside brackets`() {
+        assertThat(vaultNamedQueryParser.parseWhereJson("WHERE :value = (a)->>(b)")).isEqualTo(
+            "WHERE :value = JsonFieldAsText( ${cast("a")}, ('b'))"
+        )
+    }
+
+    @Test
+    fun `cast json field to int`() {
+        assertThat(vaultNamedQueryParser.parseWhereJson("WHERE a->b->>c::int = 0")).isEqualTo(
+            "WHERE CAST( JsonFieldAsText( JsonFieldAsObject( ${cast("a")}, 'b'), 'c') AS int) = 0"
+        )
+    }
+
+    @Test
+    fun `json array index as parameter`() {
+        assertThat(vaultNamedQueryParser.parseWhereJson("WHERE (a)->(b)->>(:index) = :value")).isEqualTo(
+            "WHERE JsonFieldAsText( JsonFieldAsObject( ${cast("a")}, ('b')), (:index)) = :value"
+        )
+    }
+
+    @Test
+    fun `cast parameter as int`() {
+        assertThat(vaultNamedQueryParser.parseWhereJson(":index::int")).isEqualTo(
+            "CAST(:index AS int)"
+        )
+
+        assertThat(vaultNamedQueryParser.parseWhereJson("((:index)::int)")).isEqualTo(
+            "( CAST(:index AS int))"
+        )
+
+        assertThat(vaultNamedQueryParser.parseWhereJson("(a)->>(:index::int)")).isEqualTo(
+            "JsonFieldAsText( ${cast("a")}, ( CAST(:index AS int)))"
+        )
+
+        assertThat(vaultNamedQueryParser.parseWhereJson("(a)->>((:index)::int)")).isEqualTo(
+            "JsonFieldAsText( ${cast("a")}, ( CAST(:index AS int)))"
+        )
     }
 }

@@ -4,7 +4,7 @@ import java.util.Collections.singletonList
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
-import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
+import net.corda.ledger.persistence.processor.LedgerPersistenceRequestProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
@@ -29,7 +29,7 @@ class LedgerProcessor @Activate constructor(
 ) : ExternalProcessor {
     private val stringDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, String::class.java)
     private val anyDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
-    private val processor = PersistenceRequestProcessor(
+    private val processor = LedgerPersistenceRequestProcessor(
         currentSandboxGroupContext,
         entitySandboxService,
         delegatedRequestHandlerSelector,

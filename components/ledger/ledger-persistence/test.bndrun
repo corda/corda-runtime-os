@@ -9,8 +9,7 @@
     -DpostgresPort=${project.postgresPort},\
     -DpostgresDb=${project.postgresDb},\
     -DpostgresUser=${project.postgresUser},\
-    -DpostgresPassword=${project.postgresPassword},\
-    --illegal-access=deny
+    -DpostgresPassword=${project.postgresPassword}
 
 -runsystempackages: \
     javax.xml.stream;version=1.0.0,\

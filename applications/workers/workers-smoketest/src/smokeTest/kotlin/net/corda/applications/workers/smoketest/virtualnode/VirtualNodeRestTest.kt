@@ -17,11 +17,13 @@ import net.corda.e2etest.utilities.CODE_SIGNER_CERT_USAGE
 import net.corda.e2etest.utilities.ClusterBuilder
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.assertWithRetry
+import net.corda.e2etest.utilities.assertWithRetryIgnoringExceptions
 import net.corda.e2etest.utilities.cluster
 import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.getHoldingIdShortHash
+import net.corda.e2etest.utilities.toJson
 import net.corda.e2etest.utilities.truncateLongHash
-import net.corda.test.util.eventually
+import net.corda.rest.ResponseCode
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -73,7 +75,7 @@ class VirtualNodeRestTest {
     @SkipInitialization
     fun `can import codesigner certificate`() {
         cluster {
-            assertWithRetry {
+            assertWithRetryIgnoringExceptions {
                 // Certificate upload can be slow in the combined worker, especially after it has just started up.
                 timeout(retryTimeout)
                 interval(retryInterval)
@@ -111,7 +113,7 @@ class VirtualNodeRestTest {
     @Order(33)
     fun `list cpis`() {
         cluster {
-            val json = assertWithRetry {
+            val json = assertWithRetryIgnoringExceptions {
                 timeout(retryTimeout)
                 interval(retryInterval)
                 command { cpiList() }
@@ -135,7 +137,7 @@ class VirtualNodeRestTest {
     @Order(60)
     fun `list virtual nodes`() {
         cluster {
-            assertWithRetry {
+            assertWithRetryIgnoringExceptions {
                 timeout(retryTimeout)
                 interval(retryInterval)
                 command { vNodeList() }
@@ -153,7 +155,7 @@ class VirtualNodeRestTest {
     @Order(61)
     fun `get a virtual node`() {
         cluster {
-            assertWithRetry {
+            assertWithRetryIgnoringExceptions {
                 timeout(retryTimeout)
                 interval(retryInterval)
                 command { getVNode(aliceHoldingId) }
@@ -177,12 +179,13 @@ class VirtualNodeRestTest {
     }
 
     private fun ClusterBuilder.getCpiChecksum(cpiName: String): String {
-        val cpiFileChecksum = eventually(retryTimeout, retryInterval) {
-            val cpis = cpiList().toJson()["cpis"]
-            val cpiJson = cpis.toList().find { it["id"]["cpiName"].textValue() == cpiName }
-            assertNotNull(cpiJson, "Cpi with name $cpiName not yet found in cpi list.")
-            truncateLongHash(cpiJson!!["cpiFileChecksum"].textValue())
-        }
-        return cpiFileChecksum
+        val cpis = assertWithRetryIgnoringExceptions {
+            command { cpiList() }
+            condition { it.code == ResponseCode.OK.statusCode }
+        }.body.toJson()["cpis"]
+
+        val cpiJson = cpis.toList().find { it["id"]["cpiName"].textValue() == cpiName }
+        assertNotNull(cpiJson, "Cpi with name $cpiName not yet found in cpi list.")
+        return truncateLongHash(cpiJson!!["cpiFileChecksum"].textValue())
     }
 }

@@ -10,8 +10,7 @@
     -DpostgresPort=${project.postgresPort},\
     -DpostgresDb=${project.postgresDb},\
     -DpostgresUser=${project.postgresUser},\
-    -DpostgresPassword=${project.postgresPassword},\
-    --illegal-access=deny
+    -DpostgresPassword=${project.postgresPassword}
 
 -runsystempackages: \
     sun.security.x509

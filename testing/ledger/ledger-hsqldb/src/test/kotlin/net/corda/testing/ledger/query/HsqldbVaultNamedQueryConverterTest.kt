@@ -6,10 +6,6 @@ import net.corda.ledger.persistence.query.parsing.Equals
 import net.corda.ledger.persistence.query.parsing.From
 import net.corda.ledger.persistence.query.parsing.GreaterThan
 import net.corda.ledger.persistence.query.parsing.GreaterThanEquals
-import net.corda.ledger.persistence.query.parsing.HsqldbCast
-import net.corda.ledger.persistence.query.parsing.HsqldbJsonArrayOrObjectAsText
-import net.corda.ledger.persistence.query.parsing.HsqldbJsonField
-import net.corda.ledger.persistence.query.parsing.HsqldbJsonKeyExists
 import net.corda.ledger.persistence.query.parsing.In
 import net.corda.ledger.persistence.query.parsing.IsNotNull
 import net.corda.ledger.persistence.query.parsing.IsNull
@@ -38,7 +34,7 @@ class HsqldbVaultNamedQueryConverterTest {
         private val PATH_REFERENCE = PathReference("field")
     }
 
-    private val vaultNamedQueryConverter = HsqldbVaultNamedQueryConverter()
+    private val vaultNamedQueryConverter = HsqldbVaultNamedQueryConverter(HsqldbProvider)
 
     private val output = StringBuilder()
 

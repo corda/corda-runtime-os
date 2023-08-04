@@ -3,7 +3,7 @@ package net.corda.ledger.persistence.query.impl.parsing
 import net.corda.ledger.persistence.query.parsing.converters.VaultNamedQueryConverter
 import net.corda.ledger.persistence.query.parsing.expressions.VaultNamedQueryExpressionParser
 import net.corda.ledger.persistence.query.parsing.expressions.VaultNamedQueryExpressionValidator
-import net.corda.ledger.persistence.query.parsing.AbstractVaultNamedQueryParserImpl
+import net.corda.ledger.persistence.query.parsing.VaultNamedQueryParserImpl
 import net.corda.ledger.persistence.query.parsing.PathReference
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -25,9 +25,7 @@ class VaultNamedQueryParserImplTest {
     private val expressionValidator = mock<VaultNamedQueryExpressionValidator>()
     private val converter = mock<VaultNamedQueryConverter>()
     private val stringBuilderCaptor = argumentCaptor<StringBuilder>()
-    private val vaultNamedQueryParser = object : AbstractVaultNamedQueryParserImpl(
-        expressionParser, expressionValidator, converter
-    ) {}
+    private val vaultNamedQueryParser = VaultNamedQueryParserImpl(expressionParser, expressionValidator, converter)
 
     @Test
     fun `parses query and validates it`() {
