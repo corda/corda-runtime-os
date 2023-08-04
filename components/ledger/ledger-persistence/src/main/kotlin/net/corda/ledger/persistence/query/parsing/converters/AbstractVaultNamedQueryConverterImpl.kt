@@ -33,6 +33,11 @@ import net.corda.ledger.persistence.query.parsing.Where
 abstract class AbstractVaultNamedQueryConverterImpl : VaultNamedQueryConverter {
 
     /**
+     * Extra processing of the expression tokens before rewriting them as SQL.
+     */
+    protected abstract fun preProcess(outputTokens: List<Token>): List<Token>
+
+    /**
      * Conversion rules for extra database-specific tokens.
      */
     protected abstract fun customConvert(token: Token): String?
@@ -72,7 +77,7 @@ abstract class AbstractVaultNamedQueryConverterImpl : VaultNamedQueryConverter {
     }
 
     final override fun convert(output: StringBuilder, expression: List<Token>) {
-        for (token in expression) {
+        for (token in preProcess(expression)) {
             if (token is RightParentheses) {
                 if (output.lastOrNull()?.isWhitespace() == true) {
                     output.deleteAt(output.length - 1)

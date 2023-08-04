@@ -17,6 +17,8 @@ dependencies {
     implementation 'org.slf4j:slf4j-api'
     runtimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
 
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+
     integrationTestImplementation "net.corda:corda-db-schema"
     integrationTestImplementation project(':components:db:db-connection-manager')
     integrationTestImplementation project(':components:ledger:ledger-persistence:testing-datamodel')
@@ -28,5 +30,4 @@ dependencies {
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }

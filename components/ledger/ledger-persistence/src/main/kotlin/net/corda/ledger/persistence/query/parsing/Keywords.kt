@@ -102,29 +102,9 @@ class JsonField : Keyword {
     }
 }
 
-class HsqldbJsonField : Keyword, HasLeftParenthesis {
-    override fun equals(other: Any?): Boolean {
-        return (this === other) || (other is HsqldbJsonField)
-    }
-
-    override fun hashCode(): Int {
-        return this::class.java.hashCode()
-    }
-}
-
 class JsonArrayOrObjectAsText : Keyword {
     override fun equals(other: Any?): Boolean {
         return (this === other) || (other is JsonArrayOrObjectAsText)
-    }
-
-    override fun hashCode(): Int {
-        return this::class.java.hashCode()
-    }
-}
-
-class HsqldbJsonArrayOrObjectAsText : Keyword, HasLeftParenthesis {
-    override fun equals(other: Any?): Boolean {
-        return (this === other) || (other is HsqldbJsonArrayOrObjectAsText)
     }
 
     override fun hashCode(): Int {
@@ -202,16 +182,6 @@ class JsonKeyExists : Keyword {
     }
 }
 
-class HsqldbJsonKeyExists : Keyword, HasLeftParenthesis {
-    override fun equals(other: Any?): Boolean {
-        return (this === other) || (other is HsqldbJsonKeyExists)
-    }
-
-    override fun hashCode(): Int {
-        return this::class.java.hashCode()
-    }
-}
-
 class Like : Keyword {
     override fun equals(other: Any?): Boolean {
         return (this === other) || (other is Like)
@@ -223,15 +193,5 @@ class Like : Keyword {
 }
 
 data class JsonCast(val value: String) : Keyword
-
-class HsqldbCast : Keyword, HasLeftParenthesis {
-    override fun equals(other: Any?): Boolean {
-        return (this === other) || (other is HsqldbCast)
-    }
-
-    override fun hashCode(): Int {
-        return this::class.java.hashCode()
-    }
-}
 
 data class SqlType(val type: String) : Keyword

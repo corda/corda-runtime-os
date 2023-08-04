@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.query.impl.parsing.converters
 
+import net.corda.ledger.persistence.query.impl.parsing.PostgresProvider
 import net.corda.ledger.persistence.query.parsing.And
 import net.corda.ledger.persistence.query.parsing.As
 import net.corda.ledger.persistence.query.parsing.Equals
@@ -38,7 +39,7 @@ class PostgresVaultNamedQueryConverterTest {
         val PATH_REFERENCE = PathReference("field")
     }
 
-    private val postgresVaultNamedQueryConverter = PostgresVaultNamedQueryConverter()
+    private val postgresVaultNamedQueryConverter = PostgresVaultNamedQueryConverter(PostgresProvider)
 
     private val output = StringBuilder("")
 

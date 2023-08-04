@@ -30,7 +30,7 @@ import net.corda.ledger.persistence.query.parsing.Select
 import net.corda.ledger.persistence.query.parsing.Token
 import net.corda.ledger.persistence.query.parsing.Where
 
-abstract class AbstractVaultNamedQueryExpressionParserImpl : VaultNamedQueryExpressionParser {
+class VaultNamedQueryExpressionParserImpl : VaultNamedQueryExpressionParser {
     private val stringPattern = Regex(
         """(?<str>('[^']*)'|("[^"]*)")"""
     )
@@ -53,10 +53,8 @@ abstract class AbstractVaultNamedQueryExpressionParserImpl : VaultNamedQueryExpr
 
     private val parameterPattern = Regex("""(?<parameter>:[\w-]+)""")
 
-    protected abstract fun postProcess(outputTokens: MutableList<Token>): MutableList<Token>
-
     @Suppress("NestedBlockDepth")
-    final override fun parse(query: String): List<Token> {
+    override fun parse(query: String): List<Token> {
         val outputTokens = mutableListOf<Token>()
         var index = 0
         while (index < query.length) {
@@ -138,7 +136,7 @@ abstract class AbstractVaultNamedQueryExpressionParserImpl : VaultNamedQueryExpr
             }
             throw IllegalArgumentException("Unexpected input index: $index, value: (${query[index]}), query: ($query)")
         }
-        return postProcess(outputTokens)
+        return outputTokens
     }
 
     private fun toKeyword(keyword: String): Keyword {
