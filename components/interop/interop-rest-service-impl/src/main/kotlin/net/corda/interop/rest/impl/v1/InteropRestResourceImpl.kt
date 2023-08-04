@@ -98,6 +98,15 @@ internal class InteropRestResourceImpl @Activate constructor(
             )
     }
 
+    private fun requireValidUUID(uuidString: String, lazyMessage: () -> String): UUID {
+        return try {
+            UUID.fromString(uuidString)
+        } catch (e: Exception) {
+            throw IllegalArgumentException(lazyMessage())
+        }
+    }
+
+    @Suppress("IllegalComment")
     override fun createInterOpIdentity(
         createInteropIdentityRestRequest: CreateInteropIdentityRest.Request,
         holdingIdentityShortHash: String
@@ -107,8 +116,10 @@ internal class InteropRestResourceImpl @Activate constructor(
         } catch (e: ShortHashException) {
             throw BadRequestException("Invalid holding identity short hash${e.message?.let { ": $it" }}")
         }
+
         val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(holdingIdentityShortHash)
-        val x500Name = MemberX500Name(
+
+        val ownedInteropIdentityX500 = MemberX500Name(
             createInteropIdentityRestRequest.applicationName,
             vNodeInfo.holdingIdentity.x500Name.locality,
             vNodeInfo.holdingIdentity.x500Name.country
@@ -117,50 +128,78 @@ internal class InteropRestResourceImpl @Activate constructor(
         interopGroupPolicyValidator.validateGroupPolicy(createInteropIdentityRestRequest.groupPolicy)
 
         try {
-            MemberX500Name.parse(x500Name)
+            MemberX500Name.parse(ownedInteropIdentityX500)
         } catch (e: Exception) {
             throw InvalidInputDataException(
-                "X500 name \"$x500Name\" could not be parsed. Cause: ${e.message}"
+                "X500 name \"$ownedInteropIdentityX500\" could not be parsed. Cause: ${e.message}"
             )
         }
-        val mapper = ObjectMapper()
-        val result: Map<String, String> = mapper.readValue(
-            createInteropIdentityRestRequest.groupPolicy,
-            object : TypeReference<Map<String, String>>() {})
-        if (result.contains("CREATE_ID") && !createInteropIdentityRestRequest.members.isNullOrEmpty()) {
-            throw InvalidInputDataException(
-                "If the groupId doesn't exist, the members list should be empty."
-            )
+
+        val groupPolicyJson = ObjectMapper().readTree(createInteropIdentityRestRequest.groupPolicy)
+
+        check(groupPolicyJson.has("groupId")) {
+            "Malformed group policy json. Group ID field missing from policy."
         }
-        val groupId = interopIdentityWriteService.publishGroupPolicy(
-            result["groupId"].toString(),
+
+        check(groupPolicyJson["groupId"].isTextual) {
+            "Malformed group policy json. Group ID field is present but is not a text node."
+        }
+
+        val groupIdField = groupPolicyJson["groupId"].asText()
+
+        if (groupIdField == "CREATE_ID") {
+            if (!createInteropIdentityRestRequest.members.isNullOrEmpty()) {
+                throw InvalidInputDataException(
+                    "Cannot import members when creating a new interop group."
+                )
+            }
+        } else {
+            requireValidUUID(groupIdField) {
+                "Malformed group policy. Group ID must be a valid uuid or 'CREATE_ID', got: $groupIdField"
+            }
+        }
+
+        val interopGroupId = interopIdentityWriteService.publishGroupPolicy(
+            groupIdField,
             createInteropIdentityRestRequest.groupPolicy
         )
-        if (groupId == "CREATE_ID") {
-            throw InvalidInputDataException(
-                "The groupId isn't a valid UUID string, group hasn't been properly created."
+
+        // Create the owned interop identity
+        interopIdentityWriteService.addInteropIdentity(
+            vNodeInfo.getVNodeShortHash(),
+            InteropIdentity(
+                groupId = interopGroupId,
+                x500Name = ownedInteropIdentityX500,
+                owningVirtualNodeShortHash = vNodeInfo.getVNodeShortHash(),
+                // TODO: Determine initial facade IDs
+                facadeIds = listOf(),
+                applicationName = createInteropIdentityRestRequest.applicationName,
+                // TODO: Fetch these from the member info topic
+                endpointUrl = "endpointUrl",
+                endpointProtocol = "endpointProtocol"
             )
-        }
+        )
+
+        // If any exported members are present, import them
         createInteropIdentityRestRequest.members?.forEach {
             interopIdentityWriteService.addInteropIdentity(
-                holdingIdentityShortHash,
+                vNodeInfo.getVNodeShortHash(),
                 InteropIdentity(
-                    groupId = groupId,
-                    x500Name = x500Name,
-                    owningVirtualNodeShortHash = vNodeInfo.getVNodeShortHash(),
+                    groupId = interopGroupId,
+                    x500Name = it.x500Name,
+                    owningVirtualNodeShortHash = it.owningIdentityShortHash,
                     facadeIds = it.facadeIds.map { facadeId -> FacadeId.of(facadeId) },
-                    applicationName = createInteropIdentityRestRequest.applicationName,
-                    endpointUrl = "endpointUrl",
-                    endpointProtocol = "endpointProtocol",
+                    applicationName = MemberX500Name.parse(it.x500Name).organization,
+                    endpointUrl = it.endpointUrl,
+                    endpointProtocol = it.endpointProtocol,
                 )
             )
         }
 
-
         logger.info("InteropIdentity created.")
 
         return CreateInteropIdentityRest.Response(
-            Utils.computeShortHash(x500Name, groupId)
+            Utils.computeShortHash(ownedInteropIdentityX500, interopGroupId)
         )
     }
 
