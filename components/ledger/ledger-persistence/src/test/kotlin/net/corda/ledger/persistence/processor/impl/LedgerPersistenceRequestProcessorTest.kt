@@ -10,7 +10,7 @@ import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.ledger.persistence.ALICE_X500_HOLDING_ID
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
-import net.corda.ledger.persistence.processor.PersistenceRequestProcessor
+import net.corda.ledger.persistence.processor.LedgerPersistenceRequestProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
@@ -26,7 +26,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
 
-class PersistenceRequestProcessorTest {
+class LedgerPersistenceRequestProcessorTest {
 
     private val entitySandboxService = mock<EntitySandboxService>()
     private val delegatedRequestHandlerSelector = mock<DelegatedRequestHandlerSelector>()
@@ -37,7 +37,7 @@ class PersistenceRequestProcessorTest {
     private val virtualNodeContext = mock<VirtualNodeContext>()
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
 
-    private val target = PersistenceRequestProcessor(
+    private val target = LedgerPersistenceRequestProcessor(
         currentSandboxGroupContext,
         entitySandboxService,
         delegatedRequestHandlerSelector,

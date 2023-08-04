@@ -14,7 +14,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
-internal class PersistenceRequestSubscriptionFactoryImplTest {
+internal class LedgerPersistenceRequestSubscriptionFactoryImplTest {
     @Test
     fun `factory creates subscription`() {
         val subscriptionFactory = mock<SubscriptionFactory>()
@@ -35,7 +35,7 @@ internal class PersistenceRequestSubscriptionFactoryImplTest {
             )
         ).thenReturn(expectedSubscription)
 
-        val target = PersistenceRequestSubscriptionFactoryImpl(mock(), subscriptionFactory, mock(), mock(), mock())
+        val target = LedgerPersistenceRequestSubscriptionFactoryImpl(mock(), subscriptionFactory, mock(), mock(), mock())
 
         val result = target.create(config)
 

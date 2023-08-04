@@ -1,4 +1,4 @@
-package net.corda.ledger.persistence.utxo.impl
+package net.corda.ledger.persistence.utxo.impl.request.handlers
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
