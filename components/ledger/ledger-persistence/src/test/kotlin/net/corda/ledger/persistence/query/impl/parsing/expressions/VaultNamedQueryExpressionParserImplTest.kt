@@ -27,15 +27,15 @@ import net.corda.ledger.persistence.query.parsing.PathReferenceWithSpaces
 import net.corda.ledger.persistence.query.parsing.RightParentheses
 import net.corda.ledger.persistence.query.parsing.Select
 import net.corda.ledger.persistence.query.parsing.Where
-import net.corda.ledger.persistence.query.parsing.expressions.PostgresVaultNamedQueryExpressionParser
+import net.corda.ledger.persistence.query.parsing.expressions.VaultNamedQueryExpressionParserImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.data.Index
 import org.junit.jupiter.api.Test
 
-class PostgresVaultNamedQueryExpressionParserTest {
+class VaultNamedQueryExpressionParserImplTest {
 
-    private val expressionParser = PostgresVaultNamedQueryExpressionParser()
+    private val expressionParser = VaultNamedQueryExpressionParserImpl()
 
     @Test
     fun `field name not in quotes is parsed as PathReference`() {

@@ -25,7 +25,7 @@ class VaultNamedQueryParserImplTest {
     private val expressionValidator = mock<VaultNamedQueryExpressionValidator>()
     private val converter = mock<VaultNamedQueryConverter>()
     private val stringBuilderCaptor = argumentCaptor<StringBuilder>()
-    private val postgresVaultNamedQueryParser = VaultNamedQueryParserImpl(expressionParser, expressionValidator, converter)
+    private val vaultNamedQueryParser = VaultNamedQueryParserImpl(expressionParser, expressionValidator, converter)
 
     @Test
     fun `parses query and validates it`() {
@@ -38,7 +38,7 @@ class VaultNamedQueryParserImplTest {
                 any()
             )
         ).then { stringBuilderCaptor.firstValue.append(output) }
-        assertThat(postgresVaultNamedQueryParser.parseWhereJson(QUERY)).isEqualTo(output)
+        assertThat(vaultNamedQueryParser.parseWhereJson(QUERY)).isEqualTo(output)
         verify(expressionParser).parse(QUERY)
         verify(expressionValidator).validateWhereJson(QUERY, expression)
         verify(converter).convert(any(), eq(expression))
@@ -53,6 +53,6 @@ class VaultNamedQueryParserImplTest {
                 any()
             )
         ).then { stringBuilderCaptor.firstValue.append(" SELECT  FROM  WHERE  IS NOT NULL ") }
-        assertThat(postgresVaultNamedQueryParser.parseWhereJson(QUERY)).isEqualTo("SELECT FROM WHERE IS NOT NULL")
+        assertThat(vaultNamedQueryParser.parseWhereJson(QUERY)).isEqualTo("SELECT FROM WHERE IS NOT NULL")
     }
 }

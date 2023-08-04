@@ -112,10 +112,15 @@ class VerificationRequestProcessorTest {
     private lateinit var wireTransactionFactory: WireTransactionFactory
     private lateinit var jsonMarshallingService: JsonMarshallingService
     private lateinit var jsonValidator: JsonValidator
-    private lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
     private lateinit var groupParametersFactory: GroupParametersFactory
     private lateinit var keyValueSerializer: CordaAvroSerializer<KeyValuePairList>
     private lateinit var keyEncodingService: KeyEncodingService
+
+    @InjectService(timeout = TIMEOUT_MILLIS)
+    lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
+
+    @InjectService(timeout = TIMEOUT_MILLIS)
+    lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
     @BeforeAll
     fun setup(
@@ -131,17 +136,14 @@ class VerificationRequestProcessorTest {
             externalEventResponseFactory = setup.fetchService(TIMEOUT_MILLIS)
             cpiInfoReadService = setup.fetchService(TIMEOUT_MILLIS)
             virtualNodeService = setup.fetchService(TIMEOUT_MILLIS)
-            deserializer = setup.fetchService<CordaAvroSerializationFactory>(TIMEOUT_MILLIS)
-                .createAvroDeserializer({}, TransactionVerificationResponse::class.java)
             wireTransactionFactory = setup.fetchService(TIMEOUT_MILLIS)
             jsonMarshallingService = setup.fetchService(TIMEOUT_MILLIS)
             jsonValidator = setup.fetchService(TIMEOUT_MILLIS)
-            currentSandboxGroupContext = setup.fetchService(TIMEOUT_MILLIS)
             groupParametersFactory = setup.fetchService(TIMEOUT_MILLIS)
-            keyValueSerializer = setup.fetchService<CordaAvroSerializationFactory>(TIMEOUT_MILLIS)
-                .createAvroSerializer { }
             keyEncodingService = setup.fetchService(TIMEOUT_MILLIS)
         }
+        deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, TransactionVerificationResponse::class.java)
+        keyValueSerializer = cordaAvroSerializationFactory.createAvroSerializer { }
     }
 
     @Test

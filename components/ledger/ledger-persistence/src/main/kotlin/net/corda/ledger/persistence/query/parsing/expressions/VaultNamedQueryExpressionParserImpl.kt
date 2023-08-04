@@ -30,7 +30,7 @@ import net.corda.ledger.persistence.query.parsing.Select
 import net.corda.ledger.persistence.query.parsing.Token
 import net.corda.ledger.persistence.query.parsing.Where
 
-class PostgresVaultNamedQueryExpressionParser : VaultNamedQueryExpressionParser {
+class VaultNamedQueryExpressionParserImpl : VaultNamedQueryExpressionParser {
     private val stringPattern = Regex(
         """(?<str>('[^']*)'|("[^"]*)")"""
     )
