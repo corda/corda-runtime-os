@@ -4,9 +4,6 @@
 -runee: JavaSE-17
 -runtrace: true
 
--runvm: \
-    --illegal-access=deny
-
 -runproperties: \
     org.slf4j.simpleLogger.defaultLogLevel=info,\
     org.slf4j.simpleLogger.showShortLogName=true,\

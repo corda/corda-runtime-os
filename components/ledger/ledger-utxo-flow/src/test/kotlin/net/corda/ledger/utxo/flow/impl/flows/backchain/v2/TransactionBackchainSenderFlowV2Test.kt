@@ -44,9 +44,9 @@ class TransactionBackchainSenderFlowV2Test {
 
         whenever(transactionBackchainIsRequestedFor.id).thenReturn(TX_ID_0)
 
-        whenever(utxoLedgerPersistenceService.find(TX_ID_1)).thenReturn(transaction1)
-        whenever(utxoLedgerPersistenceService.find(TX_ID_2)).thenReturn(transaction2)
-        whenever(utxoLedgerPersistenceService.find(TX_ID_3)).thenReturn(transaction3)
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(TX_ID_1)).thenReturn(transaction1)
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(TX_ID_2)).thenReturn(transaction2)
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(TX_ID_3)).thenReturn(transaction3)
 
         whenever(transaction1.toLedgerTransaction()).thenReturn(ledgerTransaction1)
         whenever(transaction2.toLedgerTransaction()).thenReturn(ledgerTransaction2)

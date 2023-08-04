@@ -18,14 +18,13 @@ quasar {
         'com.typesafe.**',
         'de.javakaffee.kryoserializers**',
         'io.micrometer.**',
+        'io.zipkin.**',
         'javax.**',
         'kotlin**',
         'org.apache.**',
         'org.objectweb.asm',
         'org.objenesis**',
-        'org.osgi.**',
-        'io.zipkin.**',
-        'io.micrometer.**',
+        'org.osgi.**'
     ]
 }
 

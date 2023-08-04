@@ -2,6 +2,8 @@ package net.corda.ledger.utxo.flow.impl.transaction.factory.impl
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
+import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
+import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
@@ -9,6 +11,7 @@ import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -16,9 +19,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
 
-@Component(
-    service = [UtxoLedgerTransactionFactory::class, UsedByFlow::class], scope = ServiceScope.PROTOTYPE
-)
+@Component(service = [UtxoLedgerTransactionFactory::class, UsedByFlow::class], scope = ServiceScope.PROTOTYPE)
 class UtxoLedgerTransactionFactoryImpl @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
@@ -53,6 +54,18 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
             wrappedUtxoWireTransaction,
             inputStateAndRefs,
             referenceStateAndRefs
+        )
+    }
+
+    override fun create(
+        wireTransaction: WireTransaction,
+        inputStateAndRefs: List<UtxoTransactionOutputDto>,
+        referenceStateAndRefs: List<UtxoTransactionOutputDto>
+    ): UtxoLedgerTransactionInternal {
+        return UtxoLedgerTransactionImpl(
+            WrappedUtxoWireTransaction(wireTransaction, serializationService),
+            inputStateAndRefs.map { it.toStateAndRef<ContractState>(serializationService) },
+            referenceStateAndRefs.map { it.toStateAndRef<ContractState>(serializationService) }
         )
     }
 }

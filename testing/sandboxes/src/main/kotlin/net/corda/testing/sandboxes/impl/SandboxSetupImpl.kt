@@ -9,7 +9,12 @@ import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.SandboxSetup.Companion.SANDBOX_SERVICE_FILTER
 import net.corda.testing.sandboxes.impl.SandboxSetupImpl.Companion.INSTALLER_NAME
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
+import org.osgi.framework.wiring.BundleRevision
+import org.osgi.framework.wiring.BundleRevision.PACKAGE_NAMESPACE
+import org.osgi.framework.wiring.BundleRevision.TYPE_FRAGMENT
+import org.osgi.framework.wiring.BundleWiring
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.ComponentConstants.COMPONENT_NAME
 import org.osgi.service.component.ComponentContext
@@ -50,6 +55,8 @@ class SandboxSetupImpl @Activate constructor(
     companion object {
         const val INSTALLER_NAME = "installer"
         private const val NON_SANDBOX_COMPONENT_FILTER = "(&($COMPONENT_NAME=*)(!$SANDBOX_SERVICE_FILTER))"
+        private const val CORDA_API_PACKAGES = "net.corda.v5."
+        private const val CORDA_API_HEADER = "Corda-Api"
         private const val WAIT_MILLIS = 100L
 
         // The names of the bundles to place as public bundles in the sandbox service's platform sandbox.
@@ -108,10 +115,21 @@ class SandboxSetupImpl @Activate constructor(
         }
 
         val (publicBundles, privateBundles) = bundleContext.bundles.partition { bundle ->
-            bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
+            bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES || bundle.isCordaApi
         }
         sandboxCreator.createPublicSandbox(publicBundles, privateBundles)
     }
+
+    private val Bundle.isFragment: Boolean
+        get() = (adapt(BundleRevision::class.java).types and TYPE_FRAGMENT) != 0
+
+    private val Bundle.hasCordaApiPackage: Boolean
+        get() = adapt(BundleWiring::class.java).getCapabilities(PACKAGE_NAMESPACE).any { capability ->
+            capability.attributes[PACKAGE_NAMESPACE].let { it != null && it.toString().startsWith(CORDA_API_PACKAGES) }
+        }
+
+    private val Bundle.isCordaApi: Boolean
+        get() = !isFragment && headers[CORDA_API_HEADER] != null && hasCordaApiPackage
 
     private fun disableNonSandboxServices(serviceType: String) {
         with(componentContext) {
