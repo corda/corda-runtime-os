@@ -1,6 +1,7 @@
 package net.corda.ledger.persistence.utxo.impl
 
 import com.fasterxml.jackson.core.JsonProcessingException
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
@@ -11,8 +12,10 @@ import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
+import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.libs.packaging.hash
 import net.corda.orm.utils.transaction
 import net.corda.utilities.serialization.deserialize
@@ -20,12 +23,14 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -44,10 +49,10 @@ class UtxoPersistenceServiceImpl(
 ) : UtxoPersistenceService {
 
     private companion object {
-        val log = LoggerFactory.getLogger(UtxoPersistenceServiceImpl::class.java)
+        val log: Logger = LoggerFactory.getLogger(UtxoPersistenceServiceImpl::class.java)
     }
 
-    override fun findTransaction(
+    override fun findSignedTransaction(
         id: String,
         transactionStatus: TransactionStatus
     ): Pair<SignedTransactionContainer?, String?> {
@@ -62,46 +67,51 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    override fun <T: ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoTransactionOutputDto> {
-        val outputsInfoIdx = UtxoComponentGroup.OUTPUTS_INFO.ordinal
-        val outputsIdx = UtxoComponentGroup.OUTPUTS.ordinal
-        val componentGroups = entityManagerFactory.transaction { em ->
-            repository.findUnconsumedVisibleStatesByType(em, listOf(outputsInfoIdx, outputsIdx))
-        }.groupBy { it.groupIndex }
-        val outputInfos = componentGroups[outputsInfoIdx]
-            ?.associateBy { it.transactionId to it.leafIndex }
-            ?: emptyMap()
-        return componentGroups[outputsIdx]?.mapNotNull {
-            val info = outputInfos[it.transactionId to it.leafIndex]
-            requireNotNull(info) {
-                "Missing output info at index [${it.leafIndex}] for UTXO transaction with ID [${it.transactionId}]"
-            }
-            val contractState = serializationService.deserialize<ContractState>(it.data)
-            if (stateClass.isInstance(contractState)) {
-                UtxoTransactionOutputDto(it.transactionId, it.leafIndex, info.data, it.data)
+    override fun findSignedLedgerTransaction(
+        id: String,
+        transactionStatus: TransactionStatus
+    ): Pair<SignedLedgerTransactionContainer?, String?> {
+        return entityManagerFactory.transaction { em ->
+            val status = repository.findTransactionStatus(em, id)
+            if (status == transactionStatus.value) {
+                val (transaction, signatures) = repository.findTransaction(em, id)
+                    ?.let { WrappedUtxoWireTransaction(it.wireTransaction, serializationService) to it.signatures }
+                    ?: throw InconsistentLedgerStateException("Transaction $id in status $status has disappeared from the database")
+
+                val allStateRefs = (transaction.inputStateRefs + transaction.referenceStateRefs).distinct()
+
+                val stateRefsToStateAndRefs = resolveStateRefs(allStateRefs)
+                    .associateBy { StateRef(parseSecureHash(it.transactionId), it.leafIndex) }
+
+                val inputStateAndRefs = transaction.inputStateRefs.map {
+                    stateRefsToStateAndRefs[it]
+                        ?: throw CordaRuntimeException("Could not find input StateRef $it when finding transaction $id")
+                }
+                val referenceStateAndRefs = transaction.referenceStateRefs.map {
+                    stateRefsToStateAndRefs[it]
+                        ?: throw CordaRuntimeException("Could not find reference StateRef $it when finding transaction $id")
+                }
+
+                SignedLedgerTransactionContainer(transaction.wireTransaction, inputStateAndRefs, referenceStateAndRefs, signatures)
             } else {
                 null
-            }
-        } ?: emptyList()
+            } to status
+        }
+    }
+
+    override fun <T: ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoTransactionOutputDto> {
+        return entityManagerFactory.transaction { em ->
+            repository.findUnconsumedVisibleStatesByType(em)
+        }.filter {
+            val contractState = serializationService.deserialize<ContractState>(it.data)
+            stateClass.isInstance(contractState)
+        }
     }
 
     override fun resolveStateRefs(stateRefs: List<StateRef>): List<UtxoTransactionOutputDto> {
-        val outputsInfoIdx = UtxoComponentGroup.OUTPUTS_INFO.ordinal
-        val outputsIdx = UtxoComponentGroup.OUTPUTS.ordinal
-        val componentGroups = entityManagerFactory.transaction { em ->
-            repository.resolveStateRefs(em, stateRefs, listOf(outputsInfoIdx, outputsIdx))
-        }.groupBy { it.groupIndex }
-        val outputInfos = componentGroups[outputsInfoIdx]
-            ?.associateBy { it.transactionId to it.leafIndex }
-            ?: emptyMap()
-
-        return componentGroups[outputsIdx]?.map {
-            val info = outputInfos[it.transactionId to it.leafIndex]
-            requireNotNull(info) {
-                "Missing output info at index [${it.leafIndex}] for UTXO transaction with ID [${it.transactionId}]"
-            }
-            UtxoTransactionOutputDto(it.transactionId, it.leafIndex, info.data, it.data)
-        } ?: emptyList()
+        return entityManagerFactory.transaction { em ->
+            repository.resolveStateRefs(em, stateRefs)
+        }
     }
 
     override fun persistTransaction(transaction: UtxoTransactionReader, utxoTokenMap: Map<StateRef, UtxoToken>): List<CordaPackageSummary> {

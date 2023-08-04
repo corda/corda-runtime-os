@@ -66,13 +66,17 @@ allprojects {
 
         tasks.withType(Test).configureEach {
             useJUnitPlatform(){
-                excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
-                excludeTags project.hasProperty('runMultiClusterTests') ? 'runAllTestsNoExclusions' : 'MultiCluster'
+                if (project.hasProperty('runMultiClusterTests')) {
+                    includeTags 'MultiCluster'
+                } else if (project.hasProperty('runUnstableTests')) {
+                    includeTags 'runUnstableTests'
+                } else {
+                    excludeTags 'MultiCluster', 'Unstable'
+                }
             }
 
             doFirst {
                 systemProperty 'java.io.tmpdir', buildDir.absolutePath
-                jvmArgs '--illegal-access=deny'
             }
         }
     }

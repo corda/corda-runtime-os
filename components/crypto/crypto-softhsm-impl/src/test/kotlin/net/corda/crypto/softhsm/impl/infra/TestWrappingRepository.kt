@@ -15,13 +15,23 @@ class TestWrappingRepository(
         return key
     }
 
+    override fun saveKeyWithId(alias: String, key: WrappingKeyInfo, id: UUID?): WrappingKeyInfo {
+        keys[alias] = key
+        return key
+    }
+
     override fun findKey(alias: String): WrappingKeyInfo? {
         findCounter[alias] = findCounter[alias]?.plus(1) ?: 1
         return keys[alias]
     }
 
-    override fun findKeyAndId(alias: String): Pair<UUID, WrappingKeyInfo>? = TODO("Not needed")
-
+    override fun findKeyAndId(alias: String): Pair<UUID, WrappingKeyInfo>? {
+        findCounter[alias] = findCounter[alias]?.plus(1) ?: 1
+        return keys[alias]?.let {
+            UUID.randomUUID() to it
+        }
+    } 
+    
     override fun close() {
     }
 }

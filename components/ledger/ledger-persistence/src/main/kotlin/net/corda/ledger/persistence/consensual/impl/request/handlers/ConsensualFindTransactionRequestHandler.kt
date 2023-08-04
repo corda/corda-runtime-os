@@ -1,4 +1,4 @@
-package net.corda.ledger.persistence.consensual.impl
+package net.corda.ledger.persistence.consensual.impl.request.handlers
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
