@@ -75,7 +75,7 @@ internal class OutboundMessageProcessor(
             } else {
                 state.messages.flatMap {
                     listOf(
-                        Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), it.second),
+                        Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(it.first), it.second),
                         Record(Schemas.P2P.SESSION_OUT_PARTITIONS, it.first, SessionPartitions(partitions.toList()))
                     )
                 }
@@ -202,7 +202,15 @@ internal class OutboundMessageProcessor(
         )
         if (linkManagerHostingMap.isHostedLocally(message.header.destination.toCorda())) {
             recordInboundMessagesMetric(inboundMessage)
-            return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(inboundMessage)))
+            return listOf(
+                Record(
+                    Schemas.P2P.P2P_IN_TOPIC,
+                    LinkManager.generateKey(
+                        inboundMessage.header.messageId,
+                    ),
+                    AppMessage(inboundMessage),
+                ),
+            )
         } else if (destMemberInfo != null) {
             val source = message.header.source.toCorda()
             val groupPolicy = groupPolicyProvider.getGroupPolicy(source)
@@ -215,7 +223,7 @@ internal class OutboundMessageProcessor(
             }
 
             val linkOutMessage = MessageConverter.linkOutFromUnauthenticatedMessage(inboundMessage, source, destMemberInfo, groupPolicy)
-            return listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), linkOutMessage))
+            return listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(inboundMessage.header.messageId), linkOutMessage))
         } else {
             logger.warn("Trying to send unauthenticated message ${message.header.messageId} from ${message.header.source.toCorda()} " +
                     "to ${message.header.destination.toCorda()}, but destination is not part of the network. Message was discarded.")

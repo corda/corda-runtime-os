@@ -15,6 +15,7 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
+import net.corda.membership.p2p.helpers.MessageIdsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -41,6 +42,7 @@ internal class DeclineRegistrationHandler(
 ) : RegistrationHandler<DeclineRegistration> {
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val idsFactory = MessageIdsFactory("ApproveRegistrationHandler")
     }
     override fun invoke(
         state: RegistrationState?,
@@ -79,6 +81,7 @@ internal class DeclineRegistrationHandler(
                     minutesToWait = membershipConfig.getTtlMinutes(DECLINE_REGISTRATION),
                     content = statusUpdateMessage,
                     filter = MembershipStatusFilter.PENDING,
+                    id = idsFactory.createId(registrationId)
                 )
             } else { null }
         } else {

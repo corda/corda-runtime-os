@@ -47,8 +47,8 @@ class LinkManager(
 ) : LifecycleWithDominoTile {
 
     companion object {
-        internal fun generateKey(): String {
-            return UUID.randomUUID().toString()
+        internal fun generateKey(source: String): String {
+            return "$source:${UUID.randomUUID()}"
         }
     }
 

@@ -85,7 +85,7 @@ internal class InboundMessageProcessor(
                         listOf(
                             Record(
                                 Schemas.P2P.P2P_IN_TOPIC,
-                                LinkManager.generateKey(),
+                                LinkManager.generateKey(payload.header.messageId),
                                 AppMessage(payload)
                             )
                         )
@@ -111,7 +111,7 @@ internal class InboundMessageProcessor(
                         inboundAssignmentListener.getCurrentlyAssignedPartitions()
                     if (partitionsAssigned.isNotEmpty()) {
                         listOf(
-                            Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response),
+                            Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(payload.header.sessionId), response),
                             Record(
                                 Schemas.P2P.SESSION_OUT_PARTITIONS,
                                 payload.header.sessionId,
@@ -129,10 +129,10 @@ internal class InboundMessageProcessor(
                 }
                 is InitiatorHandshakeMessage -> {
                     sessionManager.sessionMessageReceived(payload.header.sessionId)
-                    listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response))
+                    listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(payload.header.sessionId), response))
                 }
                 else -> {
-                    listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response))
+                    listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey("?"), response))
                 }
             }
         } else {
@@ -266,7 +266,7 @@ internal class InboundMessageProcessor(
         ) ?: return null
         return Record(
             Schemas.P2P.LINK_OUT_TOPIC,
-            LinkManager.generateKey(),
+            LinkManager.generateKey("Ack"),
             ack
         )
     }
@@ -288,7 +288,7 @@ internal class InboundMessageProcessor(
         ) ?: return null
         return Record(
             Schemas.P2P.LINK_OUT_TOPIC,
-            LinkManager.generateKey(),
+            LinkManager.generateKey(message.header.messageId),
             ack
         )
     }

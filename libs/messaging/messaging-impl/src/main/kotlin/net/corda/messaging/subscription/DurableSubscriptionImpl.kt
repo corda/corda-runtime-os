@@ -12,6 +12,7 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.utils.toRecord
+import net.corda.utilities.withMDC
 
 /**
  * Implementation of a DurableSubscription.
@@ -69,7 +70,15 @@ internal class DurableSubscriptionImpl<K : Any, V : Any>(
         EventLogProcessor<K, V> {
         override fun onNext(events: List<EventLogRecord<K, V>>): List<Record<*, *>> {
             val records = events.map { it.toRecord() }
-            return durableProcessor.onNext(records)
+            val mdc = records.mapIndexed { index, record ->
+                listOf(
+                    "TOPIC $index" to record.topic,
+                    "KEY $index" to record.key.toString()
+                )
+            }.flatten().toMap()
+            return withMDC(mdc) {
+                durableProcessor.onNext(records)
+            }
         }
 
         override val keyClass: Class<K>

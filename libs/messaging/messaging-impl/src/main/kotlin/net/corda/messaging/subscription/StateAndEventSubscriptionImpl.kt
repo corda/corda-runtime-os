@@ -29,6 +29,7 @@ import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getDLQTopic
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.utilities.debug
+import net.corda.utilities.withMDC
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Clock
@@ -328,7 +329,16 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     private fun getUpdatesForEvent(state: S?, event: CordaConsumerRecord<K, E>): StateAndEventProcessor.Response<S>? {
         val future = stateAndEventConsumer.waitForFunctionToFinish(
-            { processor.onNext(state, event.toRecord()) }, config.processorTimeout.toMillis(),
+            {
+                withMDC(
+                    mapOf(
+                        "TOPIC" to event.topic,
+                        "KEY" to event.key.toString(),
+                    )
+                ) {
+                    processor.onNext(state, event.toRecord())
+                }
+            }, config.processorTimeout.toMillis(),
             "Failed to finish within the time limit for state: $state and event: $event"
         )
         @Suppress("unchecked_cast")

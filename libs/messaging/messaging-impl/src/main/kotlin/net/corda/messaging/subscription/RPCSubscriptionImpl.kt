@@ -31,6 +31,7 @@ import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.utils.ExceptionUtils
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
+import net.corda.utilities.withMDC
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
@@ -194,7 +195,14 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     log.warn("Error publishing response", ex)
                 }
             }
-            processorMeter.recordCallable { responderProcessor.onNext(request!!, future) }
+            withMDC(
+                mapOf(
+                    "TOPIC" to it.topic,
+                    "KEY" to it.key,
+                )
+            ) {
+                processorMeter.recordCallable { responderProcessor.onNext(request!!, future) }
+            }
         }
     }
 

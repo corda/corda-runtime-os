@@ -13,6 +13,7 @@ import net.corda.membership.impl.registration.VerificationResponseKeys.VERIFIED
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
+import net.corda.membership.p2p.helpers.MessageIdsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.utilities.time.Clock
@@ -31,6 +32,7 @@ internal class ProcessMemberVerificationRequestHandler(
 ) : RegistrationHandler<ProcessMemberVerificationRequest> {
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val idsFactory = MessageIdsFactory("ProcessMemberVerificationRequestHandler")
     }
 
     override val commandType = ProcessMemberVerificationRequest::class.java
@@ -66,7 +68,8 @@ internal class ProcessMemberVerificationRequestHandler(
                     VerificationResponse(
                         registrationId,
                         KeyValuePairList(payload)
-                    )
+                    ),
+                    id = idsFactory.createId(registrationId)
                 )
             ) + commands
         )

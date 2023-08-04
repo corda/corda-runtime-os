@@ -18,6 +18,7 @@ import net.corda.messaging.subscription.consumer.listener.PubSubConsumerRebalanc
 import net.corda.messaging.utils.toRecord
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
+import net.corda.utilities.withMDC
 import net.corda.v5.base.util.ByteArrays.toHexString
 import org.slf4j.LoggerFactory
 
@@ -155,7 +156,14 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
     private fun processPubSubRecords(cordaConsumerRecords: List<CordaConsumerRecord<K, V>>) {
         val futures = cordaConsumerRecords.mapNotNull {
             try {
-                processorMeter.recordCallable { processor.onNext(it.toRecord()) }
+                withMDC(
+                    mapOf(
+                        "TOPIC" to it.topic,
+                        "KEY" to it.key.toString(),
+                    )
+                ) {
+                    processorMeter.recordCallable { processor.onNext(it.toRecord()) }
+                }
             } catch (except: Exception) {
                 log.warn("PubSubConsumer from group ${config.group} failed to process records from topic ${config.topic}.", except)
                 null

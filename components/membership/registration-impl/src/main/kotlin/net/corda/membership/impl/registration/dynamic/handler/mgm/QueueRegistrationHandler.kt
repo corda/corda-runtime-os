@@ -14,6 +14,7 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.VersionedMessageBuilder
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.p2p.helpers.MessageIdsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.messaging.api.records.Record
@@ -35,6 +36,7 @@ internal class QueueRegistrationHandler(
 ) : RegistrationHandler<QueueRegistration> {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val idsFactory = MessageIdsFactory("QueueRegistrationHandler")
         const val MAX_RETRIES = 10
     }
 
@@ -105,7 +107,8 @@ internal class QueueRegistrationHandler(
                 destination = command.member,
                 content = statusUpdateMessage,
                 minutesToWait = 5,
-                filter = MembershipStatusFilter.PENDING
+                filter = MembershipStatusFilter.PENDING,
+                id = idsFactory.createId(registrationId),
             )
         }
 

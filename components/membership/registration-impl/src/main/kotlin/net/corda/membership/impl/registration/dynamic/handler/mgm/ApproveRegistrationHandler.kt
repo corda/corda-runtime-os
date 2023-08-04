@@ -21,6 +21,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
+import net.corda.membership.p2p.helpers.MessageIdsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -51,6 +52,7 @@ internal class ApproveRegistrationHandler(
 ) : RegistrationHandler<ApproveRegistration> {
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val idsFactory = MessageIdsFactory("ApproveRegistrationHandler")
     }
 
     override val commandType = ApproveRegistration::class.java
@@ -140,7 +142,8 @@ internal class ApproveRegistrationHandler(
                     source = approvedBy,
                     destination = approvedMember,
                     content = statusUpdateMessage,
-                    filter = MembershipStatusFilter.ACTIVE_OR_SUSPENDED
+                    filter = MembershipStatusFilter.ACTIVE_OR_SUSPENDED,
+                    id = idsFactory.createId(registrationId)
                 )
             } else { null }
 

@@ -23,6 +23,7 @@ import net.corda.membership.lib.approval.RegistrationRulesEngine
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
 import net.corda.membership.lib.toMap
+import net.corda.membership.p2p.helpers.MessageIdsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -55,6 +56,7 @@ internal class ProcessMemberVerificationResponseHandler(
 ) : RegistrationHandler<ProcessMemberVerificationResponse> {
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val idsFactory = MessageIdsFactory("ProcessMemberVerificationResponseHandler")
     }
 
     override val commandType = ProcessMemberVerificationResponse::class.java
@@ -110,6 +112,7 @@ internal class ProcessMemberVerificationResponseHandler(
                     content = statusUpdateMessage,
                     minutesToWait = membershipConfig.getTtlMinutes(UPDATE_TO_PENDING_AUTO_APPROVAL),
                     filter = MembershipStatusFilter.PENDING,
+                    id = idsFactory.createId(registrationId)
                 )
             } else { null }
             val approveRecord = if (status == RegistrationStatus.PENDING_AUTO_APPROVAL) {

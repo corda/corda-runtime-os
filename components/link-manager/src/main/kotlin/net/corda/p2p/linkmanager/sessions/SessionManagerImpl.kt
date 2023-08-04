@@ -360,7 +360,7 @@ internal class SessionManagerImpl(
             membershipGroupReaderProvider,
             serial
         )?.let { message ->
-            val key = LinkManager.generateKey()
+            val key = LinkManager.generateKey(message.header.sourceIdentity.x500Name)
             val messageRecord = Record(LINK_OUT_TOPIC, key, message)
             val marker = AppMessageMarker(LinkManagerSentMarker(), clock.instant().toEpochMilli())
             val markerRecord = Record(P2P_OUT_MARKERS, messageAndKey.message.header.messageId, marker)

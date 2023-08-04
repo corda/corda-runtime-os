@@ -19,6 +19,7 @@ import net.corda.messaging.utils.ExceptionUtils
 import net.corda.messaging.utils.toRecord
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
+import net.corda.utilities.withMDC
 import org.slf4j.LoggerFactory
 
 internal class CompactedSubscriptionImpl<K : Any, V : Any>(
@@ -195,7 +196,14 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
                 currentData[it.key] = newValue
             }
 
-            processorMeter.recordCallable { processor.onNext(it.toRecord(), oldValue, currentData) }
+            withMDC(
+                mapOf(
+                    "TOPIC" to it.topic,
+                    "KEY" to it.key.toString(),
+                )
+            ) {
+                processorMeter.recordCallable { processor.onNext(it.toRecord(), oldValue, currentData) }
+            }
         }
     }
 }

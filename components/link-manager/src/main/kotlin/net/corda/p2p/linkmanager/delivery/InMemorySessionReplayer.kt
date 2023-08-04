@@ -155,7 +155,7 @@ internal class InMemorySessionReplayer(
             networkType
         )
         logger.debug { "Replaying session message ${message.payload.javaClass} for session ${messageReplay.sessionId}." }
-        publisher.publish(listOf(Record(LINK_OUT_TOPIC, LinkManager.generateKey(), message)))
+        publisher.publish(listOf(Record(LINK_OUT_TOPIC, LinkManager.generateKey(messageId), message)))
         messageReplay.sentSessionMessageCallback(
             messageReplay.sessionCounterparties,
             messageReplay.sessionId
