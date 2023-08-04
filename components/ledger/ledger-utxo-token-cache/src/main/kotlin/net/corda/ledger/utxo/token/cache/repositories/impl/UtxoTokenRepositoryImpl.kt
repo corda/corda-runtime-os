@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.token.cache.repositories.impl
 
+import java.math.BigDecimal
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
@@ -7,7 +8,8 @@ import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
 import javax.persistence.Query
 import javax.persistence.Tuple
-import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
+import net.corda.ledger.utxo.token.cache.entities.AvailTokenQueryResult
+import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.ledger.utxo.token.cache.repositories.UtxoTokenRepository
 import net.corda.ledger.utxo.token.cache.services.UtxoTokenMapper
 import net.corda.ledger.utxo.token.cache.services.mapToToken
@@ -32,10 +34,11 @@ class UtxoTokenRepositoryImpl @Activate constructor() : UtxoTokenRepository
 
     override fun findTokens(
         entityManager: EntityManager,
-        poolKey: TokenPoolCacheKey,
+        poolKey: TokenPoolKey,
         ownerHash: String?,
         regexTag: String?
-    ) {
+    ): AvailTokenQueryResult {
+
         val queryStrBuilder = StringBuilder()
             .append(
                 """
@@ -49,12 +52,52 @@ class UtxoTokenRepositoryImpl @Activate constructor() : UtxoTokenRepository
                 """.trimIndent()
             )
 
+        addFilterIfNecessaryOwnerHash(ownerHash, queryStrBuilder)
+        addFilterIfNecessaryRegexTag(regexTag, queryStrBuilder)
+
+        val query = entityManager.createNativeQuery(queryStrBuilder.toString(), Tuple::class.java)
+            .setParameter("tokenType", poolKey.tokenType)
+            .setParameter("issuerHash", poolKey.issuerHash)
+            .setParameter("symbol", poolKey.symbol)
+
+        setParameterIfNecessaryOwnerHash(ownerHash, query)
+        setParameterIfNecessaryRegexTag(regexTag, query)
+
+        val availTokenBucket = query.resultListAsTuples().mapToToken(UtxoTokenMapper())
+        logger.info("Filipe: $availTokenBucket")
+
+        return AvailTokenQueryResult(poolKey, listOf(availTokenBucket))
+
+    }
+
+    override fun queryAvailableBalance(
+        entityManager: EntityManager,
+        poolKey: TokenPoolKey,
+        ownerHash: String?,
+        regexTag: String?,
+        stateRefClaimedTokens: Collection<String>
+    ): BigDecimal {
+        return BigDecimal(1)
+    }
+
+    override fun queryTotalBalance(
+        entityManager: EntityManager,
+        poolKey: TokenPoolKey,
+        ownerHash: String?,
+        regexTag: String?
+    ): BigDecimal {
+        return BigDecimal(1)
+    }
+
+    private fun addFilterIfNecessaryOwnerHash(ownerHash: String?, queryStrBuilder: StringBuilder) {
         if(ownerHash != null) {
             queryStrBuilder.append(" ").append("""
                 AND token_owner_hash = :ownerHash
             """.trimIndent())
         }
+    }
 
+    private fun addFilterIfNecessaryRegexTag(regexTag: String?, queryStrBuilder: StringBuilder) {
         if(regexTag != null) {
             queryStrBuilder.append(" ").append(
                 """
@@ -62,23 +105,18 @@ class UtxoTokenRepositoryImpl @Activate constructor() : UtxoTokenRepository
                 """.trimIndent()
             )
         }
+    }
 
-        val query = entityManager.createNativeQuery(queryStrBuilder.toString(), Tuple::class.java)
-            .setParameter("tokenType", poolKey.tokenType)
-            .setParameter("issuerHash", poolKey.issuerHash)
-            .setParameter("symbol", poolKey.symbol)
-
+    private fun setParameterIfNecessaryOwnerHash(ownerHash: String?, query: Query) {
         if(ownerHash != null) {
             query.setParameter("ownerHash", ownerHash)
         }
+    }
 
+    private fun setParameterIfNecessaryRegexTag(regexTag: String?, query: Query) {
         if(regexTag != null) {
             query.setParameter("regexTag", regexTag)
         }
-
-        val resultList = query.resultListAsTuples().mapToToken(UtxoTokenMapper())
-        logger.info("Filipe: $resultList")
-
     }
 
     @Suppress("UNCHECKED_CAST")

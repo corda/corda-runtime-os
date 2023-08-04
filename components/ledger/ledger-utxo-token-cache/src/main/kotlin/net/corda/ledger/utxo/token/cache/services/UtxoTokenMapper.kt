@@ -1,15 +1,36 @@
 package net.corda.ledger.utxo.token.cache.services
 
 import javax.persistence.Tuple
+import net.corda.ledger.utxo.token.cache.entities.AvailTokenBucket
+import net.corda.ledger.utxo.token.cache.entities.CachedToken
 
 /**
  * Used by [UtxoRepositoryImpl.findTransactionSignatures] to map DB rows to transaction's components group lists
  */
 class UtxoTokenMapper() : TokenMapper {
-    override fun map(tuples: List<Tuple>): Map<Int, List<ByteArray>> {
-        val componentGroupLists: MutableMap<Int, MutableList<ByteArray>> = mutableMapOf()
+    private enum class Column {
+        TRANSACTION_ID,
+        GROUP_IDX,
+        LEAF_IDX,
+        TYPE,
+        TOKEN_TYPE,
+        TOKEN_ISSUER_HASH,
+        TOKEN_NOTARY_X500_NAME,
+        TOKEN_SYMBOL,
+        TOKEN_TAG,
+        TOKEN_OWNER_HASH,
+        TOKEN_AMOUNT,
+        CREATED
+    }
+    override fun map(tuples: List<Tuple>): AvailTokenBucket {
+        val tokens: MutableList<CachedToken> = ArrayList()
         tuples.forEach { columns ->
-            println(columns[0])
+            val transactionId = columns[0]
+            val leafIdx = columns[1] as Int
+//            val stateRef = StateRef(parseSecureHash(transactionId), leafIdx)
+//
+//            Token(stateRef.toString(), )
+            println()
             println(columns[1])
             println(columns[2])
             println(columns[3])
@@ -24,6 +45,6 @@ class UtxoTokenMapper() : TokenMapper {
       //      val leafIdx = (columns[1] as Number).toInt()
 //            val data = columns[2] as ByteArray
         }
-        return componentGroupLists
+        return AvailTokenBucket(tokens)
     }
 }

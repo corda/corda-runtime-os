@@ -2,19 +2,21 @@ package net.corda.ledger.utxo.token.cache.handlers
 
 import java.math.BigDecimal
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.ledger.utxo.token.cache.entities.BalanceQuery
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenBalance
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
+import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
-import net.corda.ledger.utxo.token.cache.services.AvailableTokenCacheService
+import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
 import net.corda.messaging.api.records.Record
 
 class TokenBalanceQueryEventHandler(
     private val filterStrategy: TokenFilterStrategy,
     private val recordFactory: RecordFactory,
-    private val availableTokenCacheService: AvailableTokenCacheService
+    private val availableTokenService: AvailableTokenService
 ) : TokenEventHandler<BalanceQuery> {
 
     override fun handle(
@@ -25,7 +27,10 @@ class TokenBalanceQueryEventHandler(
 
         val tokenBalance = calculateTokenBalance(tokenCache, state, event)
 
-        availableTokenCacheService.find(event.poolKey, event.ownerHash, event.tagRegex)
+        val tokenBalance1 = availableTokenService.queryBalance(event.poolKey.toDto(), event.ownerHash, event.tagRegex, state.claimedTokens())
+
+        println(tokenBalance1)
+
         return recordFactory.getBalanceResponse(
             event.flowId,
             event.externalEventRequestId,
@@ -33,6 +38,9 @@ class TokenBalanceQueryEventHandler(
             tokenBalance
         )
     }
+
+    private fun TokenPoolCacheKey.toDto() =
+        TokenPoolKey(shortHolderId, tokenType, issuerHash, notaryX500Name, symbol)
 
     private fun calculateTokenBalance(tokenCache: TokenCache, state: PoolCacheState, event: BalanceQuery): TokenBalance {
         var availableBalance = BigDecimal.ZERO

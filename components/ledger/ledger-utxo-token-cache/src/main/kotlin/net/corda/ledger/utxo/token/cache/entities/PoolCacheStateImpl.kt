@@ -11,6 +11,9 @@ class PoolCacheStateImpl(private val cacheState: TokenPoolCacheState) : PoolCach
         claimedTokens = createClaimedTokenSet()
     }
 
+    override fun claimedTokens(): Collection<String> {
+        return claimedTokens
+    }
     override fun isTokenClaimed(stateRef: String): Boolean {
         return claimedTokens.contains(stateRef)
     }

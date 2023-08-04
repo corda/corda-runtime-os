@@ -1,16 +1,15 @@
 package net.corda.ledger.utxo.token.cache.services
 
-import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
+import net.corda.ledger.utxo.token.cache.entities.AvailTokenQueryResult
 import net.corda.v5.application.persistence.CordaPersistenceException
-import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.ledger.utxo.token.cache.entities.TokenBalance
+import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 
 /**
- * [AvailableTokenCacheService] allows to insert and find UTXO signed transactions in the persistent store provided
+ * [AvailableTokenService] allows to insert and find UTXO signed transactions in the persistent store provided
  * by the platform.
  */
-interface AvailableTokenCacheService {
+interface AvailableTokenService {
 
     /**
      * TODO - UPDATE THIS COMMENT
@@ -23,6 +22,8 @@ interface AvailableTokenCacheService {
      *
      * @throws CordaPersistenceException if an error happens during find operation.
      */
-    @Suspendable
-    fun find(poolKey: TokenPoolCacheKey, ownerHash: String?, regexTag: String?)
+    fun findAvailTokens(poolKey: TokenPoolKey, ownerHash: String?, regexTag: String?): AvailTokenQueryResult
+
+    fun queryBalance(poolKey: TokenPoolKey, ownerHash: String?, regexTag: String?, stateRefClaimedTokens: Collection<String>): TokenBalance
+
 }

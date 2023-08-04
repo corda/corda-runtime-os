@@ -10,7 +10,7 @@ import net.corda.ledger.utxo.token.cache.handlers.TokenClaimQueryEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenClaimReleaseEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenLedgerChangeEventHandler
-import net.corda.ledger.utxo.token.cache.services.AvailableTokenCacheService
+import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.ledger.utxo.token.cache.services.SimpleTokenFilterStrategy
 import net.corda.ledger.utxo.token.cache.services.TokenCacheComponent
 import net.corda.ledger.utxo.token.cache.services.TokenCacheSubscriptionHandlerImpl
@@ -33,8 +33,8 @@ class TokenCacheComponentFactory @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = ExternalEventResponseFactory::class)
     private val externalEventResponseFactory: ExternalEventResponseFactory,
-    @Reference(service = AvailableTokenCacheService::class)
-    private val availableTokenCacheService: AvailableTokenCacheService
+    @Reference(service = AvailableTokenService::class)
+    private val availableTokenService: AvailableTokenService
 ) {
     fun create(): TokenCacheComponent {
 
@@ -47,7 +47,7 @@ class TokenCacheComponentFactory @Activate constructor(
             createHandler(TokenClaimQueryEventHandler(tokenFilterStrategy, recordFactory)),
             createHandler(TokenClaimReleaseEventHandler(recordFactory)),
             createHandler(TokenLedgerChangeEventHandler()),
-            createHandler(TokenBalanceQueryEventHandler(tokenFilterStrategy, recordFactory, availableTokenCacheService)),
+            createHandler(TokenBalanceQueryEventHandler(tokenFilterStrategy, recordFactory, availableTokenService)),
         )
 
         val tokenCacheEventHandlerFactory = TokenCacheEventProcessorFactoryImpl(
