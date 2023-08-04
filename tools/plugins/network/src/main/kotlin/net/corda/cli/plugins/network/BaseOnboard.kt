@@ -50,6 +50,7 @@ import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.util.Date
+import java.net.URI
 
 abstract class BaseOnboard : Runnable, RestCommand() {
     private companion object {
@@ -248,10 +249,18 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     protected val ecdhKeyId by lazy {
         assignSoftHsmAndGenerateKey("PRE_AUTH")
     }
-    private val p2pHost = "localhost"
-
     protected val certificateSubject by lazy {
-        tlsCertificateSubject ?: "O=P2P Certificate, OU=$p2pHost, L=London, C=GB"
+        tlsCertificateSubject ?: "O=P2P Certificate, OU=${p2pHosts}, L=London, C=GB"
+    }
+
+    private val p2pHosts = extractHostsFromUrls(p2pGatewayUrls)
+
+    private fun extractHostsFromUrls(urls: List<String>): List<String> {
+        return urls.map { extractHostFromUrl(it) }.distinct()
+    }
+
+    private fun extractHostFromUrl(url: String): String {
+        return URI.create(url).host ?: throw IllegalArgumentException("Invalid URL: $url")
     }
 
     protected val ca by lazy {
@@ -296,7 +305,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                 tenantId = "p2p",
                 keyId = tlsKeyId,
                 x500Name = certificateSubject,
-                subjectAlternativeNames = listOf(p2pHost),
+                subjectAlternativeNames = p2pHosts,
                 contextMap = null
             )
         }

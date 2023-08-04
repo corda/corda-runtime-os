@@ -129,8 +129,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
         val hash = listOf(cpbFile, groupPolicyFile).hash()
         val cpiRoot = File(cpisRoot, hash)
         val cpiFile = File(cpiRoot, "${cpbFile.name}.cpi")
-        val baseNetworkName = "combined-worker"
-        val cpiHashesFile = File(cpiRoot, "$baseNetworkName.shortHash")
+        val cpiHashesFile = File(cpiRoot, "$hash.shortHash")
         if (cpiHashesFile.canRead()) {
             val cpiFileChecksum = cpiHashesFile.readText()
             val currentCpis = createRestClient(CpiUploadRestResource::class).use { client ->

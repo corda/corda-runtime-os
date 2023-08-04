@@ -108,7 +108,7 @@ This command should only be used for internal development. See the [wiki](https:
 This command should only be used for internal development. See
 the [wiki](https://github.com/corda/corda-runtime-os/wiki/MGM-Onboarding) for more details.
 
-This is a sub-command under the `dynamic` sub-command to onboard a new MGM member (and create a new group). By default, it will try to onboard on a combined worker. By default, the command will save the group policy file into `~/.corda/gp/groupPolicy.json` (and will overwrite any
+This is a sub-command under the `dynamic` sub-command to onboard a new MGM member (and create a new group). By default, the command will save the group policy file into `~/.corda/gp/groupPolicy.json` (and will overwrite any
 existing group policy file there).
 Use the `--save-group-policy-as` to indicate another location to save the MGM group policy file (that can be used to
 create CPIs - [see here](../../../../../../../../../package/README.md))
@@ -136,7 +136,6 @@ the [wiki](https://github.com/corda/corda-runtime-os/wiki/Member-Onboarding-(Dyn
 
 This is a sub-command under the `dynamic` sub-command to onboard a new member to an existing group.
 
-By default, it will try to on board on a combined worker.
 To decide which CPI to use, there are three options:
 * If you know the CPI hash, you can use it with the `--cpi-hash` option
 * If you have the CPI file (for example, from the [package command](../../../../../../../../../package/README.md)), you
