@@ -1,5 +1,6 @@
 package net.corda.interop.identity.write.impl
 
+import java.util.concurrent.ExecutionException
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.interop.core.Utils.Companion.computeShortHash
@@ -30,7 +31,14 @@ class HostedIdentityProducer(private val publisher: AtomicReference<Publisher?>)
 
         val record = createHostedIdentityRecord(identity)
 
-        publisher.get()!!.publish(listOf(record))
+        val futures = publisher.get()!!.publish(listOf(record))
+
+        try {
+            futures.single().get()
+        } catch (e: ExecutionException) {
+            logger.error("Failed to publish interop identity to hosted identities topic.", e)
+        }
+
         logger.info("Interop hosted identity published with key : ${record.key} and value : ${record.value}")
     }
 

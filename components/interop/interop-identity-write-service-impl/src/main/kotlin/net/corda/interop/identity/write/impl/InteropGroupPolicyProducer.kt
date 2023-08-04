@@ -1,5 +1,6 @@
 package net.corda.interop.identity.write.impl
 
+import java.util.concurrent.ExecutionException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.INTEROP_GROUP_POLICY_TOPIC
@@ -22,7 +23,11 @@ class InteropGroupPolicyProducer(
 
         val futures = publisher.get()!!.publish(listOf(Record(INTEROP_GROUP_POLICY_TOPIC, groupId, groupPolicy)))
 
-        futures.forEach { it.get() }
+        try {
+            futures.single().get()
+        } catch (e: ExecutionException) {
+            logger.error("Failed to publish interop group policy.", e)
+        }
 
         logger.info("Interop group policy published with key : $groupId and value : $groupPolicy")
     }
