@@ -48,6 +48,7 @@ open class InMemoryEntityManagerConfiguration(dbName: String) : EntityManagerCon
                 .applySqlFunction("JsonFieldAsObject", StandardSQLFunction("JsonFieldAsObject", STRING))
                 .applySqlFunction("JsonFieldAsText", StandardSQLFunction("JsonFieldAsText", STRING))
                 .applySqlFunction("HasJsonKey", StandardSQLFunction("HasJsonKey", BOOLEAN))
+                .applySqlFunction("REGEXP_MATCHES",  StandardSQLFunction("REGEXP_LIKE", BOOLEAN))
         }
     }
 }

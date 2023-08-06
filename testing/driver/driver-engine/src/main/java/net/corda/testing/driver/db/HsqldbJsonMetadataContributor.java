@@ -14,6 +14,7 @@ final class HsqldbJsonMetadataContributor implements MetadataBuilderContributor 
         metadataBuilder
             .applySqlFunction("JsonFieldAsObject", new StandardSQLFunction("JsonFieldAsObject", STRING))
             .applySqlFunction("JsonFieldAsText", new StandardSQLFunction("JsonFieldAsText", STRING))
-            .applySqlFunction("HasJsonKey", new StandardSQLFunction("HasJsonKey", BOOLEAN));
+            .applySqlFunction("HasJsonKey", new StandardSQLFunction("HasJsonKey", BOOLEAN))
+            .applySqlFunction("REGEXP_MATCHES", new StandardSQLFunction("REGEXP_LIKE", BOOLEAN));
     }
 }
