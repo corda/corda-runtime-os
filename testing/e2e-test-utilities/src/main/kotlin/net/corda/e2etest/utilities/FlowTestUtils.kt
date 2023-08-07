@@ -151,12 +151,11 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
             timeout(Duration.ofSeconds(20))
             condition {
                 val json = it.toJson()
-                val flowStatuses = json["flowStatusResponses"]
-                val allStatusComplete = flowStatuses.map { flowStatus ->
+                val allStatusComplete = json.map { flowStatus ->
                     flowStatus["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
                             flowStatus["flowStatus"].textValue() == RPC_FLOW_STATUS_FAILED
                 }.all { true }
-                it.code == 200 && flowStatuses.size() == expectedFlowCount && allStatusComplete
+                it.code == 200 && json.size() == expectedFlowCount && allStatusComplete
             }
         }
     }

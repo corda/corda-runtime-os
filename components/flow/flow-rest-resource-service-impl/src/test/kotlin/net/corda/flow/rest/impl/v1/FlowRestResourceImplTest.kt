@@ -222,7 +222,7 @@ class FlowRestResourceImplTest {
     fun `get multiple flow status`() {
         whenever(flowStatusCacheService.getStatusesPerIdentity(any())).thenReturn(listOf(FlowStatus(), FlowStatus()))
         val flowRestResource = createFlowRestResource()
-        flowRestResource.getMultipleFlowStatus(VALID_SHORT_HASH)
+        flowRestResource.getMultipleFlowStatusList(VALID_SHORT_HASH)
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatusesPerIdentity(any())
@@ -237,7 +237,7 @@ class FlowRestResourceImplTest {
         val flowRestResource = createFlowRestResource()
 
         assertThrows<ResourceNotFoundException> {
-            flowRestResource.getMultipleFlowStatus(VALID_SHORT_HASH)
+            flowRestResource.getMultipleFlowStatusList(VALID_SHORT_HASH)
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
@@ -252,7 +252,7 @@ class FlowRestResourceImplTest {
         val flowRestResource = createFlowRestResource()
 
         assertThrows<BadRequestException> {
-            flowRestResource.getMultipleFlowStatus(invalidShortHash)
+            flowRestResource.getMultipleFlowStatusList(invalidShortHash)
         }
 
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())

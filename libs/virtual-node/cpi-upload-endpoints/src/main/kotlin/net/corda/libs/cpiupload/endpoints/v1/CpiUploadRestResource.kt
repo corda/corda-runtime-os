@@ -73,6 +73,7 @@ interface CpiUploadRestResource : RestResource {
      *
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
+    @Suppress("DEPRECATION")
     @Deprecated("Deprecated in favour of getAllCpisList")
     @HttpGET(
         title = "CPI info",

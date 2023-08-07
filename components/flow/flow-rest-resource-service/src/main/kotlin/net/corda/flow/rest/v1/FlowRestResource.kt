@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package net.corda.flow.rest.v1
 
 import net.corda.flow.rest.v1.types.request.StartFlowParameters
@@ -14,6 +15,7 @@ import net.corda.rest.annotations.HttpWS
 import net.corda.rest.response.ResponseEntity
 import net.corda.rest.ws.DuplexChannel
 import net.corda.libs.configuration.SmartConfig
+import net.corda.rest.annotations.RestApiVersion
 
 /** Rest operations for flow management. */
 @HttpRestResource(
@@ -88,6 +90,7 @@ interface FlowRestResource : RestResource {
         clientRequestId: String
     ): FlowStatusResponse
 
+    @Deprecated("Deprecated in favour of getMultipleFlowStatusList")
     @HttpGET(
         path = "{holdingIdentityShortHash}",
         title = "Get Multiple Flow Status",
@@ -103,12 +106,37 @@ interface FlowRestResource : RestResource {
             flowResult: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null
             flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null
             timestamp: The timestamp of when the status was last updated (in UTC)
-            """
+            """,
+        minVersion = RestApiVersion.C5_0,
+        maxVersion = RestApiVersion.C5_0
     )
     fun getMultipleFlowStatus(
         @RestPathParameter(description = "The short hash of the holding identity; obtained during node registration")
         holdingIdentityShortHash: String
-    ): FlowStatusResponses
+    ): ResponseEntity<FlowStatusResponses>
+
+    @HttpGET(
+        path = "{holdingIdentityShortHash}",
+        title = "Get Multiple Flow Status",
+        description = "This method returns an array containing the statuses of all flows running for a specified " +
+                "holding identity. An empty array is returned if there are no flows running.",
+        responseDescription = """
+            A collection of statuses for the flow instances, including:
+            
+            holdingIdentityShortHash: The short form hash of the Holding Identity
+            clientRequestId: The unique ID supplied by the client when the flow was created.
+            flowId: The internal unique ID for the flow.
+            flowStatus: The current state of the executing flow.
+            flowResult: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null
+            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null
+            timestamp: The timestamp of when the status was last updated (in UTC)
+            """,
+        minVersion = RestApiVersion.C5_1
+    )
+    fun getMultipleFlowStatusList(
+        @RestPathParameter(description = "The short hash of the holding identity; obtained during node registration")
+        holdingIdentityShortHash: String
+    ): List<FlowStatusResponse>
 
     @HttpGET(
         path = "{holdingIdentityShortHash}/{clientRequestId}/result",

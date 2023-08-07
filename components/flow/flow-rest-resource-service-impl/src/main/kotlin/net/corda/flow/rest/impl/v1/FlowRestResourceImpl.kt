@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package net.corda.flow.rest.impl.v1
 
 import net.corda.cpiinfo.read.CpiInfoReadService
@@ -12,6 +13,7 @@ import net.corda.flow.rest.v1.types.request.StartFlowParameters
 import net.corda.flow.rest.v1.types.response.FlowResultResponse
 import net.corda.flow.rest.v1.types.response.FlowStatusResponse
 import net.corda.flow.rest.v1.types.response.FlowStatusResponses
+import net.corda.flow.rest.v1.types.response.StartableFlowsResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
@@ -27,6 +29,7 @@ import net.corda.rbac.schema.RbacKeys
 import net.corda.rbac.schema.RbacKeys.PREFIX_SEPARATOR
 import net.corda.rbac.schema.RbacKeys.START_FLOW_PREFIX
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.ForbiddenException
 import net.corda.rest.exception.InternalServerException
@@ -258,10 +261,26 @@ class FlowRestResourceImpl @Activate constructor(
         return messageFactory.createFlowStatusResponse(flowStatus)
     }
 
-    override fun getMultipleFlowStatus(holdingIdentityShortHash: String): FlowStatusResponses {
+    @Deprecated("Deprecated in favour of getMultipleFlowStatusList")
+    override fun getMultipleFlowStatus(holdingIdentityShortHash: String): ResponseEntity<FlowStatusResponses> {
+        "Deprecated, please use next version at ${RestApiVersion.C5_1} or above.".let { msg ->
+            FlowClassRestResourceImpl.log.warn(msg)
+            val flowStatusList = doGetMultipleFlowStatusList(holdingIdentityShortHash)
+            return ResponseEntity.okButDeprecated(
+                FlowStatusResponses(flowStatusList),
+                msg
+            )
+        }
+    }
+
+    override fun getMultipleFlowStatusList(holdingIdentityShortHash: String): List<FlowStatusResponse> {
+        return doGetMultipleFlowStatusList(holdingIdentityShortHash)
+    }
+
+    private fun doGetMultipleFlowStatusList(holdingIdentityShortHash: String): List<FlowStatusResponse> {
         val vNode = getVirtualNode(holdingIdentityShortHash)
         val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
-        return FlowStatusResponses(flowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
+        return flowStatuses.map { messageFactory.createFlowStatusResponse(it) }
     }
 
     override fun getFlowResult(
