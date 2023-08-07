@@ -38,6 +38,10 @@ import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.atomic.AtomicInteger
 
 @Suppress("LongParameterList")
 internal class InboundMessageProcessor(
@@ -51,17 +55,37 @@ internal class InboundMessageProcessor(
 ) :
     EventLogProcessor<String, LinkInMessage> {
 
-    private var logger = LoggerFactory.getLogger(this::class.java.name)
+    private val logger = LoggerFactory.getLogger(this::class.java.name)
+    private val scheduler = Executors.newFixedThreadPool(10, object: ThreadFactory {
+        val index = AtomicInteger(0)
+        override fun newThread(r: Runnable): Thread {
+            return Thread(r).also {
+                it.name = "QQQ InboundMessageProcessor ${index.incrementAndGet()}"
+            }
+        }
+
+    })
 
     override fun onNext(events: List<EventLogRecord<String, LinkInMessage>>): List<Record<*, *>> {
-        val records = mutableListOf<Record<*, *>>()
-        for (event in events) {
+        val futures = events.mapNotNull { event ->
+            scheduler.submit(HandleEvent(event))
+        }
+        val records = futures.flatMap {
+            it.get()
+        }
+        return records
+    }
+
+    private inner class HandleEvent(
+        private val event: EventLogRecord<String, LinkInMessage>,
+    ): Callable<Collection<Record<*, *>>> {
+        override fun call(): Collection<Record<*, *>> {
             val message = event.value
             if (message == null) {
                 logger.error("Received null message. The message was discarded.")
-                continue
+                return emptyList()
             }
-            records += traceEventProcessing(event, "P2P Link Manager Inbound Event") {
+            return traceEventProcessing(event, "P2P Link Manager Inbound Event") {
                 when (val payload = message.payload) {
                     is AuthenticatedDataMessage -> processDataMessage(
                         payload.header.sessionId,
@@ -98,7 +122,6 @@ internal class InboundMessageProcessor(
                 }
             }
         }
-        return records
     }
 
     private fun processSessionMessage(message: LinkInMessage): List<Record<String, *>> {

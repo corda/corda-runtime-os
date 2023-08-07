@@ -30,7 +30,6 @@ import net.corda.messaging.utils.toEventLogRecord
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getDLQTopic
 import net.corda.utilities.debug
-import net.corda.utilities.withMDC
 import org.slf4j.LoggerFactory
 
 /**
@@ -233,16 +232,8 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
             log.debug { "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
                     "size: ${cordaConsumerRecords.size})" }
             producer.beginTransaction()
-            val mdc = cordaConsumerRecords.mapIndexed { index, record ->
-                listOf(
-                    "TOPIC $index" to record.topic,
-                    "KEY $index" to record.key.toString()
-                )
-            }.flatten().toMap()
-            val outputs = withMDC(mdc) {
-                processorMeter.recordCallable { processor.onNext(cordaConsumerRecords.map { it.toEventLogRecord() })
-                    .toCordaProducerRecords() }!!
-            }
+            val outputs = processorMeter.recordCallable { processor.onNext(cordaConsumerRecords.map { it.toEventLogRecord() })
+                .toCordaProducerRecords() }!!
             producer.sendRecords(outputs)
             if(deadLetterRecords.isNotEmpty()) {
                 producer.sendRecords(deadLetterRecords.map {

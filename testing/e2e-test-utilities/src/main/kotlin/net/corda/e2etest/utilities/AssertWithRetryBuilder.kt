@@ -129,7 +129,7 @@ fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> U
 
             retry++
             timeTried = args.interval.toMillis() * retry
-            println("Failed after $retry retry ($timeTried ms): $result")
+            //println("Failed after $retry retry ($timeTried ms): $result")
         } while (timeTried < args.timeout.toMillis())
 
         when (result) {
