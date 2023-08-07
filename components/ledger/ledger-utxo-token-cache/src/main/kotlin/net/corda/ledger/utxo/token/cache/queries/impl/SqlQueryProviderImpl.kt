@@ -1,8 +1,16 @@
 package net.corda.ledger.utxo.token.cache.queries.impl
 
 import net.corda.ledger.utxo.token.cache.queries.SqlQueryProvider
+import net.corda.ledger.utxo.token.cache.repositories.UtxoTokenRepository
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.ServiceScope
 
-class SqlQueryProviderImpl : SqlQueryProvider {
+@Component(
+    service = [ SqlQueryProvider::class],
+    scope = ServiceScope.PROTOTYPE
+)
+class SqlQueryProviderImpl @Activate constructor() : SqlQueryProvider {
 
     companion object {
         val SQL_PARAMETER_TOKEN_TYPE = "tokenType"

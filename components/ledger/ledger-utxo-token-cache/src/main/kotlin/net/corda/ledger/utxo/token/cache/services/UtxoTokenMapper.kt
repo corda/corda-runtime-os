@@ -1,49 +1,56 @@
 package net.corda.ledger.utxo.token.cache.services
 
+import java.math.BigDecimal
 import javax.persistence.Tuple
+import net.corda.crypto.core.parseSecureHash
+import net.corda.data.ledger.utxo.token.selection.data.Token
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
+import net.corda.v5.ledger.utxo.StateRef
 
 /**
  * Used by [UtxoRepositoryImpl.findTransactionSignatures] to map DB rows to transaction's components group lists
  */
 class UtxoTokenMapper() : TokenMapper {
-    private enum class Column {
-        TRANSACTION_ID,
-        GROUP_IDX,
-        LEAF_IDX,
-        TYPE,
-        TOKEN_TYPE,
-        TOKEN_ISSUER_HASH,
-        TOKEN_NOTARY_X500_NAME,
-        TOKEN_SYMBOL,
-        TOKEN_TAG,
-        TOKEN_OWNER_HASH,
-        TOKEN_AMOUNT,
-        CREATED
+    private object Column {
+        const val TRANSACTION_ID = 0
+        const val LEAF_IDX = 1
+        const val TOKEN_TAG = 2
+        const val TOKEN_OWNER_HASH = 3
+        const val TOKEN_AMOUNT = 4
     }
-    override fun map(tuples: List<Tuple>): Collection<CachedToken> {
-        val tokens: MutableList<CachedToken> = ArrayList()
-        tuples.forEach { columns ->
-            val transactionId = columns[0]
-            val leafIdx = columns[1] as Int
-//            val stateRef = StateRef(parseSecureHash(transactionId), leafIdx)
-//
-//            Token(stateRef.toString(), )
-            println()
-            println(columns[1])
-            println(columns[2])
-            println(columns[3])
-            println(columns[4])
-            println(columns[5])
-            println(columns[6])
-            println(columns[7])
-            println(columns[8])
-            println(columns[9])
-            println(columns[10])
-//            val groupIdx = (columns[0] as Number).toInt()
-      //      val leafIdx = (columns[1] as Number).toInt()
-//            val data = columns[2] as ByteArray
+
+    override fun map(tuples: List<Tuple>): CachedToken {
+        return DbCachedToken(
+            StateRef(
+                parseSecureHash(tuples.getString(Column.TRANSACTION_ID)),
+                tuples.getInt(Column.LEAF_IDX)
+            ).toString(),
+            tuples.getBigDecimal(Column.TOKEN_AMOUNT),
+            tuples.getString(Column.TOKEN_TAG),
+            tuples.getString(Column.TOKEN_OWNER_HASH)
+        )
+    }
+
+    private fun List<Tuple>.getString(column: Int): String {
+        return this[column].toString()
+    }
+
+    private fun List<Tuple>.getInt(column: Int): Int {
+        return (this[column] as Number).toInt()
+    }
+
+    private fun List<Tuple>.getBigDecimal(column: Int): BigDecimal {
+        return this[column] as BigDecimal
+    }
+
+    private data class DbCachedToken(
+        override val stateRef: String,
+        override val amount: BigDecimal,
+        override val tag: String,
+        override val ownerHash: String
+    ) : CachedToken {
+        override fun toAvro(): Token {
+            TODO("Not yet implemented")
         }
-        return tokens
     }
 }

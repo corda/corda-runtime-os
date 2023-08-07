@@ -19,6 +19,7 @@ import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderImpl.Compa
 import net.corda.ledger.utxo.token.cache.repositories.UtxoTokenRepository
 import net.corda.ledger.utxo.token.cache.services.UtxoTokenMapper
 import net.corda.ledger.utxo.token.cache.services.mapToToken
+import org.osgi.service.component.annotations.Reference
 
 @Suppress("TooManyFunctions")
 /**
@@ -32,7 +33,8 @@ import net.corda.ledger.utxo.token.cache.services.mapToToken
     scope = PROTOTYPE
 )
 class UtxoTokenRepositoryImpl @Activate constructor(
-    val sqlQueryProvider: SqlQueryProvider
+    @Reference
+    private val sqlQueryProvider: SqlQueryProvider
 ) : UtxoTokenRepository
 {
     private companion object {
@@ -62,11 +64,10 @@ class UtxoTokenRepositoryImpl @Activate constructor(
         setParameterIfNecessaryOwnerHash(ownerHash, query)
         setParameterIfNecessaryRegexTag(regexTag, query)
 
-        val availTokenBucket = query.resultListAsTuples().mapToToken(UtxoTokenMapper())
-        logger.info("Filipe: $availTokenBucket")
+        val tokens = query.resultListAsTuples().mapToToken(UtxoTokenMapper())
+        logger.info("Filipe: $tokens")
 
-        return AvailTokenQueryResult(poolKey, availTokenBucket)
-
+        return AvailTokenQueryResult(poolKey, emptySet())
     }
 
     override fun queryAvailableBalance(

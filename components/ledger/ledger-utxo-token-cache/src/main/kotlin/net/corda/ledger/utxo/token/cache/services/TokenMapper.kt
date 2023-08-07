@@ -6,7 +6,7 @@ import net.corda.ledger.utxo.token.cache.entities.CachedToken
 
 interface TokenMapper {
     @Throws(SQLException::class)
-    fun map(tuples: List<Tuple>): Collection<CachedToken>
+    fun map(tuples: List<Tuple>): CachedToken
 }
 
-fun List<Tuple>.mapToToken(mapper: TokenMapper): Collection<CachedToken> = mapper.map(this)
+fun List<Tuple>.mapToToken(mapper: TokenMapper): CachedToken = mapper.map(this)
