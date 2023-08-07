@@ -16,7 +16,7 @@ interface StateAndRefCache {
     fun get(stateRefs: Set<StateRef>): Map<StateRef, StateAndRef<*>>
 
     /**
-     * Inserts the provided [stateRefs] list to the cache. It will be keyed on the [StateRef].
+     * Inserts the provided [stateAndRefs] list to the cache. It will be keyed on the [StateRef].
      */
-    fun putAll(stateRefs: List<StateAndRef<*>>)
+    fun putAll(stateAndRefs: List<StateAndRef<*>>)
 }

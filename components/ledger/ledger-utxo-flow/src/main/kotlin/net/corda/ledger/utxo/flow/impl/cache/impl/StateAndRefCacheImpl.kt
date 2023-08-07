@@ -32,13 +32,13 @@ class StateAndRefCacheImpl @Activate constructor(
     // TODO Access configuration to setup the cache
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(StateAndRefCacheImpl::class.java)
-        private const val STATE_REF_CACHE_SIZE_PROPERTY_NAME = "net.corda.ledger.utxo.flow.state.cache.maximumSize"
+        private const val STATE_AND_REF_CACHE_SIZE_PROPERTY_NAME = "net.corda.ledger.utxo.flow.stateandref.cache.maximumSize"
     }
 
-    private val maximumSize = java.lang.Long.getLong(STATE_REF_CACHE_SIZE_PROPERTY_NAME, 10000)
+    private val maximumSize = java.lang.Long.getLong(STATE_AND_REF_CACHE_SIZE_PROPERTY_NAME, 10000)
 
     private val cache: Cache<SandboxedCache.CacheKey<StateRef>, StateAndRef<*>> = CacheFactoryImpl().build(
-        "State-Ref-Cache",
+        "State-And-Ref-Cache",
         Caffeine.newBuilder().maximumSize(maximumSize)
     )
 
@@ -53,10 +53,10 @@ class StateAndRefCacheImpl @Activate constructor(
         }
     }
 
-    override fun putAll(stateRefs: List<StateAndRef<*>>) {
-        if (stateRefs.isNotEmpty()) {
+    override fun putAll(stateAndRefs: List<StateAndRef<*>>) {
+        if (stateAndRefs.isNotEmpty()) {
             val virtualNodeContext = currentSandboxGroupContext.get().virtualNodeContext
-            cache.putAll(stateRefs.associateBy {
+            cache.putAll(stateAndRefs.associateBy {
                 SandboxedCache.CacheKey(virtualNodeContext, it.ref)
             })
         }
