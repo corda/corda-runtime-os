@@ -374,7 +374,7 @@ class CryptoProcessorImpl @Activate constructor(
                 messagingConfig = messagingConfig
             )
         }
-        logger.trace("Starting processing on $hsmRegGroupName ${Schemas.Crypto.REWRAP_MESSASGE_TOPIC}")
+        logger.trace("Starting processing on $hsmRegGroupName ${Schemas.Crypto.REWRAP_MESSAGE_TOPIC}")
         coordinator.getManagedResource<SubscriptionBase>(HSM_REG_SUBSCRIPTION)!!.start()
         val rewrapGroupName = "crypto.ops.rewrap"
 
@@ -382,7 +382,7 @@ class CryptoProcessorImpl @Activate constructor(
             subscriptionFactory.createDurableSubscription(
                 subscriptionConfig = SubscriptionConfig(
                     groupName = rewrapGroupName,
-                    eventTopic = Schemas.Crypto.REWRAP_MESSASGE_TOPIC
+                    eventTopic = Schemas.Crypto.REWRAP_MESSAGE_TOPIC
                 ),
                 processor = rewrapProcessor,
                 messagingConfig = messagingConfig,
