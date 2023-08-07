@@ -27,6 +27,7 @@ fun makeSoftCryptoService(
     shortHashCache: Cache<ShortHashCacheKey, SigningKeyInfo>? = null,
     schemeMetadata: CipherSchemeMetadataImpl = CipherSchemeMetadataImpl(),
     rootWrappingKey: WrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata),
+    rootWrappingKey2: WrappingKey? = null,
     wrappingKeyFactory: (schemeMetadata: CipherSchemeMetadata) -> WrappingKey = { it ->
         WrappingKeyImpl.generateWrappingKey(it)
     },
@@ -39,7 +40,8 @@ fun makeSoftCryptoService(
         signingRepositoryFactory = { signingRepository },
         schemeMetadata = schemeMetadata,
         defaultUnmanagedWrappingKeyName = "root",
-        unmanagedWrappingKeys = mapOf("root" to rootWrappingKey),
+        unmanagedWrappingKeys = mapOf("root" to rootWrappingKey)
+                + (if (rootWrappingKey2 != null) mapOf("root2" to rootWrappingKey2) else emptyMap()),
         digestService = PlatformDigestServiceImpl(schemeMetadata),
         wrappingKeyCache = wrappingKeyCache,
         privateKeyCache = privateKeyCache,

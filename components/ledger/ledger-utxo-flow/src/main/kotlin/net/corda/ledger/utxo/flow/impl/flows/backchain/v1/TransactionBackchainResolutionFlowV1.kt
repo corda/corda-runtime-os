@@ -46,7 +46,7 @@ class TransactionBackchainResolutionFlowV1(
     @Suspendable
     override fun call() {
         val alreadyVerifiedTransactions =
-            initialTransactionIds.filter { utxoLedgerPersistenceService.find(it, VERIFIED) != null }.toSet()
+            initialTransactionIds.filter { utxoLedgerPersistenceService.findSignedTransaction(it, VERIFIED) != null }.toSet()
         val originalTransactionsToRetrieve = initialTransactionIds - alreadyVerifiedTransactions
         if (originalTransactionsToRetrieve.isNotEmpty()) {
             log.debug {

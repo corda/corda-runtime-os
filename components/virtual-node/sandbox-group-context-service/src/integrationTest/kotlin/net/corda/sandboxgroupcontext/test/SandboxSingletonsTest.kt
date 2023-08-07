@@ -33,6 +33,7 @@ class SandboxSingletonsTest {
         private const val MAP_PROVIDER_FLOW = "com.example.singletons.TestDataProvider"
     }
 
+    @Suppress("JUnitMalformedDeclaration")
     @RegisterExtension
     private val lifecycle = AllTestsLifecycle()
 

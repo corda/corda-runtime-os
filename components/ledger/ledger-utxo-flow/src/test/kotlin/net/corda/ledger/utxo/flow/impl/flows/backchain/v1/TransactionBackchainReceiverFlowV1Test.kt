@@ -57,7 +57,7 @@ class TransactionBackchainReceiverFlowV1Test {
 
     @Test
     fun `a resolved transaction has its dependencies retrieved from its peer and persisted`() {
-        whenever(utxoLedgerPersistenceService.find(any(), any())).thenReturn(null)
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(any(), any())).thenReturn(null)
 
         whenever(session.sendAndReceive(eq(List::class.java), any())).thenReturn(
             listOf(retrievedTransaction1),
@@ -110,7 +110,7 @@ class TransactionBackchainReceiverFlowV1Test {
 
     @Test
     fun `receiving a transaction that is stored locally as UNVERIFIED has its dependencies added to the transactions to retrieve`() {
-        whenever(utxoLedgerPersistenceService.find(any(), any())).thenReturn(null)
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(any(), any())).thenReturn(null)
 
         whenever(session.sendAndReceive(eq(List::class.java), any())).thenReturn(
             listOf(retrievedTransaction1),
@@ -149,7 +149,7 @@ class TransactionBackchainReceiverFlowV1Test {
 
     @Test
     fun `receiving a transaction that is stored locally as VERIFIED does not have its dependencies added to the transactions to retrieve`() {
-        whenever(utxoLedgerPersistenceService.find(TX_ID_1)).thenReturn(retrievedTransaction1)
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(TX_ID_1)).thenReturn(retrievedTransaction1)
 
         whenever(session.sendAndReceive(eq(List::class.java), any())).thenReturn(
             listOf(retrievedTransaction1),
@@ -186,7 +186,7 @@ class TransactionBackchainReceiverFlowV1Test {
 
     @Test
     fun `receiving a transaction that was not included in the requested batch of transactions throws an exception`() {
-        whenever(utxoLedgerPersistenceService.find(TX_ID_1)).thenReturn(retrievedTransaction1)
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(TX_ID_1)).thenReturn(retrievedTransaction1)
 
         whenever(session.sendAndReceive(eq(List::class.java), any())).thenReturn(
             listOf(retrievedTransaction1),
@@ -263,7 +263,7 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(transaction1.id).thenReturn(transactionId1)
         whenever(transaction1.inputStateRefs).thenReturn(emptyList())
 
-        whenever(utxoLedgerPersistenceService.find(any(), any())).thenReturn(null)
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(any(), any())).thenReturn(null)
 
         whenever(session.sendAndReceive(eq(List::class.java), any())).thenReturn(
             listOf(transaction3),

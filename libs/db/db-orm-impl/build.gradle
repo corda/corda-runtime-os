@@ -26,6 +26,7 @@ dependencies {
         //  org.osgi ones are added above as compileOnly
         exclude group: 'org.osgi'
     }
+    runtimeOnly project(':libs:antlr')
 
     implementation project(":libs:db:db-core")
     implementation project(":libs:db:db-orm")

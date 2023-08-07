@@ -23,7 +23,8 @@ import org.osgi.service.component.runtime.dto.ReferenceDTO
  */
 class ServiceDefinition(
     val serviceClassNames: Set<String>,
-    private val description: ComponentDescriptionDTO
+    private val description: ComponentDescriptionDTO,
+    serviceFilter: String?
 ) {
     private companion object {
         private const val PROTOTYPE_REQUIRED = "prototype_required"
@@ -32,11 +33,12 @@ class ServiceDefinition(
         private val activationFields = setOf(BundleContext::class.java, Map::class.java)
     }
 
-    constructor(serviceClasses: List<Class<*>>, description: ComponentDescriptionDTO)
-        : this(serviceClasses.mapTo(LinkedHashSet(), Class<*>::getName), description)
+    constructor(serviceClasses: List<Class<*>>, description: ComponentDescriptionDTO, serviceFilter: String?)
+        : this(serviceClasses.mapTo(LinkedHashSet(), Class<*>::getName), description, serviceFilter)
 
-    constructor(description: ComponentDescriptionDTO) : this(emptySet(), description)
+    constructor(description: ComponentDescriptionDTO, serviceFilter: String?) : this(emptySet(), description, serviceFilter)
 
+    private val baseFilter = serviceFilter?.let { filter -> "(&$NOT_IN_SANDBOX$filter)" } ?: NOT_IN_SANDBOX
     private val referencedServiceTypes = description.references.mapTo(LinkedHashSet(), ReferenceDTO::interfaceName)
     private val _references = mutableMapOf<String, Set<ServiceReference<*>>>()
     private var broken: Boolean = false
@@ -106,6 +108,7 @@ class ServiceDefinition(
                 val parameterFactory = ParameterFactory(
                     sandboxServices,
                     bundle.bundleContext,
+                    baseFilter,
                     properties,
                     closeables
                 )
@@ -165,11 +168,12 @@ class ServiceDefinition(
     private class ParameterFactory(
         private val sandboxServices: SatisfiedServiceReferences,
         private val bundleContext: BundleContext,
+        private val baseFilter: String,
         private val properties: Map<String, Any>,
         private val closeables: Deque<AutoCloseable>
     ) {
-        private fun getServiceFilter(target: String?): String {
-            return target?.let { filter -> "(&$NOT_IN_SANDBOX$filter)" } ?: NOT_IN_SANDBOX
+        private fun getPlatformServiceFilter(target: String?): String {
+            return target?.let { filter -> "(&$baseFilter$filter)" } ?: baseFilter
         }
 
         private fun findSandboxServices(reference: ReferenceDTO): Collection<Any>? {
@@ -181,13 +185,13 @@ class ServiceDefinition(
             }?.values
         }
 
-        private fun findServiceReferences(reference: ReferenceDTO): Set<ServiceReference<*>> {
+        private fun findPlatformServiceReferences(reference: ReferenceDTO): Set<ServiceReference<*>> {
             return if (reference.scope == PROTOTYPE_REQUIRED) {
-                // Our service filter can only select non-prototype services,
-                // which this reference doesn't want to receive.
+                // Our platform service filter can only select non-prototype
+                // services, which this reference doesn't want to receive.
                 emptySet()
             } else {
-                bundleContext.getServiceReferences(reference.interfaceName, getServiceFilter(reference.target))
+                bundleContext.getServiceReferences(reference.interfaceName, getPlatformServiceFilter(reference.target))
                     ?.toSortedSet(reverseOrder())
                     ?: emptySet()
             }
@@ -201,7 +205,7 @@ class ServiceDefinition(
 
         fun getSingleService(reference: ReferenceDTO): Any? {
             return findSandboxServices(reference)?.firstOrNull() ?: run {
-                findServiceReferences(reference).firstOrNull()
+                findPlatformServiceReferences(reference).firstOrNull()
                     ?.let(::getService)
                     .also { svc ->
                         if (svc == null && !reference.cardinality.startsWith("0..")) {
@@ -215,7 +219,7 @@ class ServiceDefinition(
             // Accept services from both inside and outside the sandbox,
             // subject to our sandbox visibility rules.
             return ((findSandboxServices(reference) ?: emptyList()) +
-                findServiceReferences(reference).mapNotNull(::getService)).also { svcs ->
+                findPlatformServiceReferences(reference).mapNotNull(::getService)).also { svcs ->
                     if (svcs.isEmpty() && !reference.cardinality.startsWith("0..")) {
                         throw IllegalArgumentException("Missing mandatory reference for ${reference.interfaceName}")
                     }

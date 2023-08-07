@@ -67,6 +67,7 @@ class AMQPSerializationTest {
     @InjectService(timeout = TIMEOUT_MILLIS)
     lateinit var cipherSchemeMetadata: CipherSchemeMetadata
 
+    @Suppress("JUnitMalformedDeclaration")
     @RegisterExtension
     private val lifecycle = AllTestsLifecycle()
 
