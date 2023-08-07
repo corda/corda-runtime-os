@@ -69,7 +69,9 @@ class TokenBalanceQueryTests {
         val tokenBalanceQueryRpcStartArgs = mapOf(
             "tokenType" to "com.r3.corda.demo.utxo.contract.CoinState",
             "issuerBankX500" to bobX500,
-            "currency" to "USD"
+            "currency" to "USD",
+            "regexTag" to "coin",
+            "ownerHash" to "SHA-256:54111C3F78233454D7F53AE7748F47298810B28F75FA652E42AA3FAA2E80049F"
         )
 
         val flowRequestId = startRpcFlow(aliceHoldingId, tokenBalanceQueryRpcStartArgs, tokenBalanceQueryFlowName)
