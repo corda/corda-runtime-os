@@ -168,6 +168,8 @@ class OnboardMgm : Runnable, BaseOnboard() {
         }
     }
 
+    @Suppress("DEPRECATION")
+    // using deprecated getAllCpis to support CLI compatibility with Corda 5.0
     private fun getExistingCpiHash(hash: String? = null): String? {
         return createRestClient(CpiUploadRestResource::class).use { client ->
             val response = client.start().proxy.getAllCpis().responseBody
