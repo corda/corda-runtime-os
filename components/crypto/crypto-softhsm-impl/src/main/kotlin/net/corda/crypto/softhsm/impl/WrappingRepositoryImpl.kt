@@ -23,12 +23,12 @@ class WrappingRepositoryImpl(
 
     override fun close() = entityManagerFactory.close()
 
-    override fun saveKey(alias: String, key: WrappingKeyInfo): WrappingKeyInfo =
+    override fun saveKeyWithId(alias: String, key: WrappingKeyInfo, id: UUID?): WrappingKeyInfo =
         entityManagerFactory.createEntityManager().use {
             return it.transaction {
                 it.merge(
                     WrappingKeyEntity(
-                        id = UUID.randomUUID(),
+                        id = id?:UUID.randomUUID(),
                         generation = key.generation,
                         alias = alias,
                         created = Instant.now(),
@@ -44,6 +44,9 @@ class WrappingRepositoryImpl(
                 logger.info("Storing wrapping key with alias $alias in tenant $tenantId")
             }
         }
+
+    override fun saveKey(alias: String, key: WrappingKeyInfo): WrappingKeyInfo =
+        saveKeyWithId(alias, key, null)
 
     override fun findKey(alias: String): WrappingKeyInfo? = findKeyAndId(alias)?.second
     override fun findKeyAndId(alias: String): Pair<UUID, WrappingKeyInfo>? =

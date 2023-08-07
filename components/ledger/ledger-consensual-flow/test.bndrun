@@ -10,8 +10,7 @@
     --add-opens, 'java.base/java.security=ALL-UNNAMED',\
     --add-opens, 'java.base/java.time=ALL-UNNAMED',\
     --add-opens, 'java.base/java.util=ALL-UNNAMED',\
-    --add-opens, 'jdk.crypto.ec/sun.security.ec=ALL-UNNAMED',\
-    --illegal-access=deny
+    --add-opens, 'jdk.crypto.ec/sun.security.ec=ALL-UNNAMED'
 
 -runrequires: \
     bnd.identity;id='${project.archivesBaseName}-tests',\

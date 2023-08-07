@@ -10,7 +10,6 @@
 -runvm: \
     -Djava.util.logging.config.file=${.}/logging.properties,\
     -Djava.io.tmpdir=${task.temporaryDir},\
-    --illegal-access=deny,\
     --add-opens, 'java.base/java.lang=ALL-UNNAMED'
 
 -runsystempackages: \

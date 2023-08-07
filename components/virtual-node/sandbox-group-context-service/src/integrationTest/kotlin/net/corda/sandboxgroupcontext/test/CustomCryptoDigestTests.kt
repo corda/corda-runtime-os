@@ -41,6 +41,7 @@ class CustomCryptoDigestTests {
         private const val DIGEST_CPB_TWO = "META-INF/crypto-custom-digest-two-consumer.cpb"
     }
 
+    @Suppress("JUnitMalformedDeclaration")
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
 
