@@ -5356,7 +5356,7 @@
         }
       },
       "SuspensionActivationParameters" : {
-        "required" : [ "x500Name" ],
+        "required" : [ "serialNumber", "x500Name" ],
         "type" : "object",
         "properties" : {
           "reason" : {
@@ -5367,7 +5367,7 @@
           "serialNumber" : {
             "type" : "integer",
             "format" : "int64",
-            "nullable" : true,
+            "nullable" : false,
             "example" : 0
           },
           "x500Name" : {
