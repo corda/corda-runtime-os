@@ -80,7 +80,7 @@ internal class HandlerFactories(
         PersistGroupParameters::class.java to { PersistGroupParametersHandler(persistenceHandlerServices) },
         PersistGroupParametersInitialSnapshot::class.java to { PersistGroupParametersInitialSnapshotHandler(persistenceHandlerServices) },
         AddNotaryToGroupParameters::class.java to { AddNotaryToGroupParametersHandler(persistenceHandlerServices) },
-        QueryMemberSignature::class.java to { QueryMemberInfoHandler(persistenceHandlerServices) },
+        QueryMemberSignature::class.java to { QueryMemberSignatureHandler(persistenceHandlerServices) },
         UpdateMemberAndRegistrationRequestToApproved::class.java to
                 { UpdateMemberAndRegistrationRequestToApprovedHandler(persistenceHandlerServices) },
         UpdateRegistrationRequestStatus::class.java to { UpdateRegistrationRequestStatusHandler(persistenceHandlerServices) },

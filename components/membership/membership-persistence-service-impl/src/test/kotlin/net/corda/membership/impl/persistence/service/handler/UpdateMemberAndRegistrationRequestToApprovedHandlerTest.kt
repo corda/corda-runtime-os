@@ -169,12 +169,13 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         jpaEntitiesRegistry,
         memberInfoFactory,
         cordaAvroSerializationFactory,
+        virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
         mock(),
         mock(),
         mock(),
-        transactionTimeFactory,
+        transactionTimeFactory
     )
     private val handler = UpdateMemberAndRegistrationRequestToApprovedHandler(service)
 

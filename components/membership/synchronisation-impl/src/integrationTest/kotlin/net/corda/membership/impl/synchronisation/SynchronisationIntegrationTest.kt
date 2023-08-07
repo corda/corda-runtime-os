@@ -63,6 +63,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.locally.hosted.identities.IdentityInfo
 import net.corda.membership.p2p.MembershipP2PReadService
@@ -421,7 +422,7 @@ class SynchronisationIntegrationTest {
             mgm.toCorda(),
             listOf(mgmInfo, requesterInfo, participantInfo)
         )
-        val requesterHash = merkleTreeGenerator.generateTreeUsingSignedMembers(listOf(requesterInfo)).root
+        val requesterHash = merkleTreeGenerator.generateTreeUsingMembers(listOf(requesterInfo)).root
         val byteBuffer = ByteBuffer.wrap("123".toByteArray())
         val secureHash = SecureHash("algorithm", byteBuffer)
 
@@ -503,6 +504,7 @@ class SynchronisationIntegrationTest {
 
         // Create membership package to be published
         val members: List<MemberInfo> = mutableListOf(participantInfo)
+        val selfSignedMembers = mutableListOf<SelfSignedMemberInfo>()
         val signedMembers = members.map {
             val memberInfo = keyValueSerializer.serialize(it.memberProvidedContext.toAvro())
             val memberSignatureSpec = SignatureSpecs.ECDSA_SHA256
@@ -517,12 +519,18 @@ class SynchronisationIntegrationTest {
                     ByteBuffer.wrap(withKey.bytes)
                 )
             }
+            val selfSignedMemberInfo = memberInfoFactory.createSelfSignedMemberInfo(
+                it,
+                memberSignature,
+                CryptoSignatureSpec(memberSignatureSpec.signatureName, null, null)
+            )
+            selfSignedMembers.add(selfSignedMemberInfo)
             val mgmSignatureSpec = SignatureSpecs.ECDSA_SHA256
             val mgmSignature = cryptoOpsClient.sign(
                 mgm.toCorda().shortHash.value,
                 mgmSessionKey,
                 mgmSignatureSpec,
-                merkleTreeGenerator.generateTreeUsingSignedMembers(listOf(it)).root.bytes
+                merkleTreeGenerator.generateTreeUsingSignedMembers(listOf(selfSignedMemberInfo)).root.bytes
             ).let { withKey ->
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(withKey.by)),
@@ -546,7 +554,7 @@ class SynchronisationIntegrationTest {
                 )
                 .build()
         }
-        val hash = merkleTreeGenerator.generateTreeUsingSignedMembers(members).root
+        val hash = merkleTreeGenerator.generateTreeUsingSignedMembers(selfSignedMembers).root
         val membership = SignedMemberships.newBuilder()
             .setMemberships(signedMembers)
             .setHashCheck(hash.toAvro())

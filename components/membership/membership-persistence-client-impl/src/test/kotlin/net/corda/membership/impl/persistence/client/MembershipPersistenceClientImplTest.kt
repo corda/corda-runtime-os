@@ -47,6 +47,7 @@ import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.StaticNetworkInfoQueryResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
 import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -59,8 +60,8 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.SignedGroupParameters
-import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -76,7 +77,6 @@ import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -146,10 +146,6 @@ class MembershipPersistenceClientImplTest {
 
     private val memberProvidedContext: MemberContext = mock()
     private val mgmProvidedContext: MGMContext = mock()
-    private val ourMemberInfo: MemberInfo = mock {
-        on { memberProvidedContext } doReturn memberProvidedContext
-        on { mgmProvidedContext } doReturn mgmProvidedContext
-    }
     private val signature = CryptoSignatureWithKey(
         ByteBuffer.wrap("456".toByteArray()),
         ByteBuffer.wrap("789".toByteArray()),
@@ -157,16 +153,21 @@ class MembershipPersistenceClientImplTest {
     private val signatureSpec = CryptoSignatureSpec(null, null, null)
     private val ourPersistentMemberInfo = PersistentMemberInfo(
         ourHoldingIdentity.toAvro(),
-        KeyValuePairList(emptyList()),
-        KeyValuePairList(emptyList()),
+        null,
+        null,
         SignedData(
-            ourMemberInfo.memberProvidedContext.toAvro().toByteBuffer(),
+            memberProvidedContext.toAvro().toByteBuffer(),
             signature,
             signatureSpec,
         ),
-        ourMemberInfo.mgmProvidedContext.toAvro().toByteBuffer(),
+        mgmProvidedContext.toAvro().toByteBuffer(),
     )
-    private val ourSignedMemberInfo = SignedMemberInfo(ourMemberInfo, signature, signatureSpec)
+    private val ourSignedMemberInfo = mock<SelfSignedMemberInfo> {
+        on { memberContextBytes } doReturn byteArrayOf(1)
+        on { mgmContextBytes } doReturn byteArrayOf(2)
+        on { memberSignature } doReturn signature
+        on { memberSignatureSpec } doReturn signatureSpec
+    }
     private val registrationId = "Group ID 1"
     private val ourRegistrationRequest = RegistrationRequest(
         RegistrationStatus.SENT_TO_MGM,
@@ -396,13 +397,14 @@ class MembershipPersistenceClientImplTest {
         whenever(
             memberInfoFactory.createPersistentMemberInfo(
                 ourHoldingIdentity.toAvro(),
-                ourSignedMemberInfo.memberInfo,
+                ourSignedMemberInfo.memberContextBytes,
+                ourSignedMemberInfo.mgmContextBytes,
                 ourSignedMemberInfo.memberSignature,
                 ourSignedMemberInfo.memberSignatureSpec,
             )
         ).doReturn(ourPersistentMemberInfo)
 
-        membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourMemberSignedMemberInfo))
+        membershipPersistenceClient.persistMemberInfo(ourHoldingIdentity, listOf(ourSignedMemberInfo))
             .execute()
 
         with(argumentCaptor<MembershipPersistenceRequest>()) {

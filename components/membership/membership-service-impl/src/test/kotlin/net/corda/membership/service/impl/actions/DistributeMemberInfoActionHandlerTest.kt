@@ -4,8 +4,6 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.p2p.MembershipPackage
@@ -16,8 +14,6 @@ import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
-import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
-import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
@@ -45,7 +41,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
 import java.time.Instant
 
 class DistributeMemberInfoActionHandlerTest {
@@ -66,61 +61,27 @@ class DistributeMemberInfoActionHandlerTest {
         null,
         null
     )
-    private val memberInfo = mockMemberInfo(member, MEMBER_INFO_SERIAL)
-    private val memberInfoWithSignature = listOf(memberInfo).map {
-        val name = it.name.toString()
-        MemberSignedMemberInfo(
-            it,
-            CryptoSignatureWithKey(
-                ByteBuffer.wrap("pk-$name".toByteArray()),
-                ByteBuffer.wrap("sig-$name".toByteArray()),
-            ),
-            CryptoSignatureSpec("dummy", null, null)
-        )
-    }
-    private val suspendedMemberInfo = mockMemberInfo(suspendMember, MEMBER_INFO_SERIAL, status = MEMBER_STATUS_SUSPENDED)
-    private val mgm = mockMemberInfo(
+    private val memberInfo = mockSignedMemberInfo(member, MEMBER_INFO_SERIAL)
+    private val suspendedMemberInfo = mockSignedMemberInfo(suspendMember, MEMBER_INFO_SERIAL, status = MEMBER_STATUS_SUSPENDED)
+    private val mgm = mockSignedMemberInfo(
         createHoldingIdentity("mgm", GROUP_ID),
         MEMBER_INFO_SERIAL,
         isMgm = true,
     )
     private val allActiveMembers = (1..3).map {
-        mockMemberInfo(createHoldingIdentity("member-$it", GROUP_ID), MEMBER_INFO_SERIAL)
+        mockSignedMemberInfo(createHoldingIdentity("member-$it", GROUP_ID), MEMBER_INFO_SERIAL)
     } + memberInfo + mgm
     private val activeMembersWithoutMgm = allActiveMembers - mgm
-    private val allActiveMembersWithSignatures = allActiveMembers.map {
-        val name = it.name.toString()
-        MemberSignedMemberInfo(
-            it,
-            CryptoSignatureWithKey(
-                ByteBuffer.wrap("pk-$name".toByteArray()),
-                ByteBuffer.wrap("sig-$name".toByteArray()),
-            ),
-            CryptoSignatureSpec("dummy", null, null)
-        )
-    }
-    private val activeMembersWithoutMgmWithSignatures = allActiveMembersWithSignatures.filterNot { it.memberInfo.isMgm }
-    private val suspendMemberWithSignature = listOf(suspendedMemberInfo).map {
-        val name = it.name.toString()
-        MemberSignedMemberInfo(
-            it,
-            CryptoSignatureWithKey(
-                ByteBuffer.wrap("pk-$name".toByteArray()),
-                ByteBuffer.wrap("sig-$name".toByteArray()),
-            ),
-            CryptoSignatureSpec("dummy", null, null)
-        )
-    }
     private val membershipQueryClient = mock<MembershipQueryClient> {
         on { queryMemberInfo(owner, listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)) } doReturn MembershipQueryResult.Success(
-            allActiveMembersWithSignatures + suspendMemberWithSignature
+            allActiveMembers + suspendedMemberInfo
         )
         on {
             queryMemberInfo(owner, listOf(member), listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED))
-        } doReturn MembershipQueryResult.Success(memberInfoWithSignature)
+        } doReturn MembershipQueryResult.Success(listOf(memberInfo))
         on {
             queryMemberInfo(owner, listOf(suspendMember), listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED))
-        } doReturn MembershipQueryResult.Success(suspendMemberWithSignature)
+        } doReturn MembershipQueryResult.Success(listOf(suspendedMemberInfo))
     }
     private val cipherSchemeMetadata = mock<CipherSchemeMetadata>()
     private val clock = TestClock(Instant.ofEpochMilli(0))
@@ -156,7 +117,7 @@ class DistributeMemberInfoActionHandlerTest {
         on {
             createMembershipPackage(
                 eq(signer),
-                eq(activeMembersWithoutMgmWithSignatures + suspendMemberWithSignature),
+                eq(activeMembersWithoutMgm + suspendedMemberInfo),
                 any(),
                 any(),
             )
@@ -197,7 +158,7 @@ class DistributeMemberInfoActionHandlerTest {
         whenever(
             membershipPackageFactory.createMembershipPackage(
                 signer,
-                activeMembersWithoutMgmWithSignatures + suspendMemberWithSignature,
+                activeMembersWithoutMgm + suspendedMemberInfo,
                 checkHash,
                 groupParameters,
             )
@@ -225,7 +186,7 @@ class DistributeMemberInfoActionHandlerTest {
         whenever(
             membershipPackageFactory.createMembershipPackage(
                 signer,
-                suspendMemberWithSignature,
+                listOf(suspendedMemberInfo),
                 checkHash,
                 groupParameters,
             )
@@ -253,7 +214,7 @@ class DistributeMemberInfoActionHandlerTest {
         whenever(
             membershipPackageFactory.createMembershipPackage(
                 eq(signer),
-                eq(memberInfoWithSignature),
+                eq(listOf(memberInfo)),
                 eq(checkHash),
                 eq(groupParameters),
             )
@@ -363,7 +324,7 @@ class DistributeMemberInfoActionHandlerTest {
     fun `process republishes the distribute command if creating membership package to send to updated member fails`() {
         whenever(membershipPackageFactory.createMembershipPackage(
             any(),
-            eq(activeMembersWithoutMgmWithSignatures + suspendMemberWithSignature),
+            eq(activeMembersWithoutMgm + suspendedMemberInfo),
             any(),
             any()
         )).thenThrow(CordaRuntimeException(""))
@@ -381,7 +342,7 @@ class DistributeMemberInfoActionHandlerTest {
 
     @Test
     fun `process republishes the distribute command if create membership package to send to all other member fails`() {
-        whenever(membershipPackageFactory.createMembershipPackage(any(), eq(memberInfoWithSignature), any(), any()))
+        whenever(membershipPackageFactory.createMembershipPackage(any(), eq(listOf(memberInfo)), any(), any()))
             .thenThrow(CordaRuntimeException(""))
 
         val reply = handler.process(KEY, action)

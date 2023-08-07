@@ -20,7 +20,7 @@ class RegistrationRequestHelpersTest {
     @Test
     fun `Pre-auth token can be parsed from registration request if present`() {
         whenever(
-            registrationRequestDetails.registrationContext
+            registrationRequestDetails.deserializedRegistrationContext
         ) doReturn context
 
         val result = assertDoesNotThrow {

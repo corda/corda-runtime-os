@@ -68,6 +68,7 @@ class RegistrationProcessor(
             membershipQueryClient,
         ),
         StartRegistration::class.java to StartRegistrationHandler(
+            cordaAvroSerializationFactory,
             clock,
             memberInfoFactory,
             memberTypeChecker,

@@ -1,5 +1,9 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
@@ -29,6 +33,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequestHelpers.getPreAuthToken
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -49,9 +54,11 @@ import net.corda.virtualnode.toCorda
 import org.apache.avro.specific.SpecificRecordBase
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.SortedMap
 
 @Suppress("LongParameterList")
 internal class StartRegistrationHandler(
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val clock: Clock,
     private val memberInfoFactory: MemberInfoFactory,
     private val memberTypeChecker: MemberTypeChecker,
@@ -63,6 +70,15 @@ internal class StartRegistrationHandler(
 
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
+    private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
+        cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize key value pair list.") }
+
+    private fun serialize(context: KeyValuePairList): ByteArray {
+        return keyValuePairListSerializer.serialize(context) ?: throw CordaRuntimeException(
+            "Failed to serialize key value pair list."
+        )
     }
 
     override val commandType = StartRegistration::class.java
@@ -95,8 +111,8 @@ internal class StartRegistrationHandler(
             val persistentMemberInfo = memberInfoFactory.createPersistentMemberInfo(
                 mgmMemberInfo.holdingIdentity.toAvro(),
                 pendingMemberInfo,
-                registrationRequest.memberSignature,
-                registrationRequest.memberSignatureSpec,
+                registrationRequest.memberProvidedContext.signature,
+                registrationRequest.memberProvidedContext.signatureSpec,
             )
             val pendingMemberRecord = Record(
                 topic = Schemas.Membership.MEMBER_LIST_TOPIC,
@@ -106,12 +122,7 @@ internal class StartRegistrationHandler(
             )
             // Persist pending member info so that we can notify the member of declined registration if failure occurs
             // after this point
-            val memberSignedMemberInfo = memberInfoFactory.createSelfSignedMemberInfo(
-                pendingMemberInfo,
-                registrationRequest.memberSignature,
-                registrationRequest.memberSignatureSpec
-            )
-            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(memberSignedMemberInfo))
+            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(pendingMemberInfo))
                 .execute().also {
                     require(it as? MembershipPersistenceResult.Failure == null) {
                         "Failed to persist pending member info. Reason: " +
@@ -226,8 +237,8 @@ internal class StartRegistrationHandler(
         }
     }
 
-    private fun buildPendingMemberInfo(registrationRequest: RegistrationRequestDetails): MemberInfo {
-        val memberContext = registrationRequest.memberProvidedContext
+    private fun buildPendingMemberInfo(registrationRequest: RegistrationRequestDetails): SelfSignedMemberInfo {
+        val memberContext = registrationRequest.deserializedMemberProvidedContext
             ?.items?.associate { it.key to it.value }
             ?: emptyMap()
         validateRegistrationRequest(memberContext.isNotEmpty()) {
@@ -240,16 +251,22 @@ internal class StartRegistrationHandler(
         }
 
         val now = clock.instant().toString()
-        return memberInfoFactory.createMemberInfo(
-            memberContext.toSortedMap(),
-            sortedMapOf(
-                CREATION_TIME to now,
-                MODIFIED_TIME to now,
-                STATUS to MEMBER_STATUS_PENDING,
-                SERIAL to (registrationRequest.serial!! + 1).toString(),
-            )
+        val mgmContext = sortedMapOf(
+            CREATION_TIME to now,
+            MODIFIED_TIME to now,
+            STATUS to MEMBER_STATUS_PENDING,
+            SERIAL to (registrationRequest.serial!! + 1).toString(),
+        ).toKeyValuePairList()
+        return memberInfoFactory.createSelfSignedMemberInfo(
+            registrationRequest.memberProvidedContext.data.array(),
+            serialize(mgmContext),
+            registrationRequest.memberProvidedContext.signature,
+            registrationRequest.memberProvidedContext.signatureSpec,
         )
     }
+
+    private fun SortedMap<String, String>.toKeyValuePairList() =
+        KeyValuePairList(entries.map { KeyValuePair(it.key, it.value) }.toList())
 
     private fun getMGMMemberInfo(mgm: HoldingIdentity): MemberInfo {
         return memberTypeChecker.getMgmMemberInfo(mgm).apply {

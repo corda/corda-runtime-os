@@ -4,7 +4,6 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.ShortHash
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -75,8 +74,7 @@ class PersistMemberInfoHandlerTest {
     )
     private val ourRegistrationId = UUID.randomUUID().toString()
     private val clock = TestClock(Instant.ofEpochSecond(0))
-    private val byteBuffer = ByteBuffer.wrap(byteArrayOf(1))
-    private val emptyKeyValuePairList = KeyValuePairList(emptyList())
+    private val serializedContexts = ByteBuffer.wrap(byteArrayOf(1))
 
     private val memberProvidedContext: MemberContext = mock()
     private val signature = CryptoSignatureWithKey(
@@ -170,11 +168,11 @@ class PersistMemberInfoHandlerTest {
         null,
         null,
         SignedData(
-            byteBuffer,
+            serializedContexts,
             signature,
             signatureSpec,
         ),
-        byteBuffer,
+        serializedContexts,
     )
 
     @Test
@@ -328,8 +326,8 @@ class PersistMemberInfoHandlerTest {
             on { it.serial } doReturn serialNumber
             on { it.name } doReturn ourX500Name
         }
-        val memberInfo = getPersistentSignedMemberInfo()
-        whenever(memberInfoFactory.createMemberInfo(eq(memberInfo.persistentMemberInfo))).doReturn(newMemberInfo)
+        val memberInfo = getPersistentMemberInfo()
+        whenever(memberInfoFactory.createMemberInfo(eq(memberInfo))).doReturn(newMemberInfo)
 
         val requestContext = getMemberRequestContext()
 
@@ -348,7 +346,7 @@ class PersistMemberInfoHandlerTest {
 
         persistMemberInfoHandler.invoke(
             requestContext,
-            PersistMemberInfo(listOf(memberInfo))
+            PersistMemberInfo(null, listOf(memberInfo))
         )
 
         verify(entityManager).merge(any<MemberInfoEntity>())
@@ -394,6 +392,9 @@ class PersistMemberInfoHandlerTest {
         whenever(
             keyValuePairListDeserializer.deserialize(serializedMemberContext)
         ).doReturn(deserialised)
+        whenever(
+            keyValuePairListDeserializer.deserialize(serializedContexts.array())
+        ).doReturn(deserialised)
     }
 
     private fun mockMgmContext(
@@ -401,6 +402,9 @@ class PersistMemberInfoHandlerTest {
     ) {
         whenever(
             keyValuePairListDeserializer.deserialize(serializedMgmContext)
+        ).doReturn(deserialised)
+        whenever(
+            keyValuePairListDeserializer.deserialize(serializedContexts.array())
         ).doReturn(deserialised)
     }
 }

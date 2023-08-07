@@ -13,7 +13,7 @@ object RegistrationRequestHelpers {
     @Throws(IllegalArgumentException::class)
     fun RegistrationRequestDetails.getPreAuthToken(
     ): UUID? {
-        return registrationContext?.items?.find {
+        return deserializedRegistrationContext?.items?.find {
             it.key == PRE_AUTH_TOKEN
         }?.let {
             UUID.fromString(it.value)

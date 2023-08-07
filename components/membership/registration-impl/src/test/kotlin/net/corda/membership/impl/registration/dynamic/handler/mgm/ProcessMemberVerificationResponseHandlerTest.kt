@@ -133,8 +133,8 @@ class ProcessMemberVerificationResponseHandlerTest {
         on { items } doReturn registrationContextKeyValues
     }
     private val requestStatus = mock<RegistrationRequestDetails> {
-        on { memberProvidedContext } doReturn memberContext
-        on { registrationContext } doReturn registrationContext
+        on { deserializedMemberProvidedContext } doReturn memberContext
+        on { deserializedRegistrationContext } doReturn registrationContext
     }
     private val membershipQueryClient = mock<MembershipQueryClient> {
         on {

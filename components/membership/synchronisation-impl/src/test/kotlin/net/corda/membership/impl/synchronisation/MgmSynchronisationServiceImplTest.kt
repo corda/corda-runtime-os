@@ -1,13 +1,9 @@
 package net.corda.membership.impl.synchronisation
 
-import com.typesafe.config.ConfigFactory
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.toCorda
-import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -20,9 +16,7 @@ import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.sync.BloomFilter
-import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -34,19 +28,12 @@ import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.InternalGroupParameters
-import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
-import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
-import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
-import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
-import net.corda.membership.lib.SignedMemberInfo
-import net.corda.membership.lib.impl.MemberInfoFactoryImpl
-import net.corda.membership.lib.impl.SelfSignedMemberInfoImpl
-import net.corda.membership.lib.impl.converter.EndpointInfoConverter
+import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.MemberInfoExtension.Companion.softwareVersion
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
@@ -125,8 +112,6 @@ class MgmSynchronisationServiceImplTest {
         on { registerComponentForUpdates(eq(coordinator), any()) } doReturn configHandle
     }
 
-    private val testConfig =
-        SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("instanceId=1"))
     private val membershipConfig = mock<SmartConfig> {
         on { getIsNull(any()) } doReturn false
         on { getLong(any()) } doReturn 3
@@ -145,22 +130,11 @@ class MgmSynchronisationServiceImplTest {
     private val simonName = "C=GB, L=London, O=Simon"
     private val simon = HoldingIdentity(simonName, GROUP)
 
-    private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>>()
-    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
-        on {
-            createAvroSerializer<KeyValuePairList>(any())
-        } doReturn keyValuePairListSerializer
-    }
-    private val memberInfoFactory = MemberInfoFactoryImpl(
-        LayeredPropertyMapMocks.createFactory(listOf(EndpointInfoConverter())),
-        cordaAvroSerializationFactory,
-    )
-
     private val mgmInfo = createSignedMemberInfo(mgmName)
     private val aliceInfo = createSignedMemberInfo(aliceName)
     private val bobInfo = createSignedMemberInfo(bobName)
     private val daisyInfo = createSignedMemberInfo(daisyName)
-    private val simonInfo = createSignedMemberInfo(simonName, status = MEMBER_STATUS_SUSPENDED)
+    private val simonInfo = createSignedMemberInfo(simonName, membershipStatus = MEMBER_STATUS_SUSPENDED)
 
     private val memberInfosWithoutMgm = listOf(aliceInfo, bobInfo, daisyInfo)
     private val groupParameters: InternalGroupParameters = mock()
@@ -328,33 +302,25 @@ class MgmSynchronisationServiceImplTest {
         )
     )
 
-    private fun createSignedMemberInfo(name: String, status: String = MEMBER_STATUS_ACTIVE): SignedMemberInfo {
-        val memberInfo = memberInfoFactory.createMemberInfo(
-            sortedMapOf(
-                GROUP_ID to GROUP,
-                PARTY_NAME to name,
-                Pair(String.format(URL_KEY, "0"), "http://localhost:8080"),
-                Pair(String.format(PROTOCOL_VERSION, "0"), "1"),
-                PLATFORM_VERSION to "5000",
-                SOFTWARE_VERSION to "5.0.0"
-            ),
-            sortedMapOf(
-                STATUS to status
+    private fun createSignedMemberInfo(memberName: String, membershipStatus: String = MEMBER_STATUS_ACTIVE): SelfSignedMemberInfo {
+        val memberBytes = "member-$memberName".toByteArray()
+        val mgmBytes = "mgm-$memberName".toByteArray()
+        return mock {
+            on { memberProvidedContext } doReturn mock()
+            on { mgmProvidedContext } doReturn mock()
+            on { groupId } doReturn GROUP
+            on { name } doReturn MemberX500Name.parse(memberName)
+            on { status } doReturn membershipStatus
+            on { platformVersion } doReturn 5000
+            on { softwareVersion } doReturn "5.0.0"
+            on { memberContextBytes } doReturn memberBytes
+            on { mgmContextBytes } doReturn mgmBytes
+            on { memberSignature } doReturn CryptoSignatureWithKey(
+                ByteBuffer.wrap("pk-$memberName".toByteArray()),
+                ByteBuffer.wrap("sig-$memberName".toByteArray()),
             )
-        )
-        val memberBytes = "member-$name".toByteArray()
-        val mgmBytes = "mgm-$name".toByteArray()
-        whenever(memberInfoFactory.createMemberInfo(memberBytes, mgmBytes)).doReturn(memberInfo)
-        return SelfSignedMemberInfoImpl(
-            memberBytes,
-            mgmBytes,
-            CryptoSignatureWithKey(
-                ByteBuffer.wrap("pk-$name".toByteArray()),
-                ByteBuffer.wrap("sig-$name".toByteArray()),
-            ),
-            CryptoSignatureSpec("dummy", null, null),
-            memberInfoFactory,
-        )
+            on { memberSignatureSpec } doReturn CryptoSignatureSpec("dummy", null, null)
+        }
     }
 
     private fun postStartEvent() {
@@ -475,7 +441,7 @@ class MgmSynchronisationServiceImplTest {
     fun `all members are sent when member hash is matching`() {
         postConfigChangedEvent()
         synchronisationService.start()
-        val capturedList = argumentCaptor<List<SignedMemberInfo>>()
+        val capturedList = argumentCaptor<List<SelfSignedMemberInfo>>()
         val request = createRequest(alice)
         val records = synchronisationService.processSyncRequest(request)
         verify(membershipPackageFactory, times(1)).createMembershipPackage(
@@ -495,7 +461,7 @@ class MgmSynchronisationServiceImplTest {
     fun `only the requesting member's info is sent when member hash is not matching`() {
         postConfigChangedEvent()
         synchronisationService.start()
-        val capturedList = argumentCaptor<List<SignedMemberInfo>>()
+        val capturedList = argumentCaptor<List<SelfSignedMemberInfo>>()
         val request = createRequest(bob)
         val records = synchronisationService.processSyncRequest(request)
         verify(membershipPackageFactory, times(1)).createMembershipPackage(
@@ -507,7 +473,7 @@ class MgmSynchronisationServiceImplTest {
         assertThat(records).containsExactly(bobMembershipPackageRecord)
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(1)
-        assertThat(membersPublished).isEqualTo(bobInfo)
+        assertThat(membersPublished.first()).isEqualTo(bobInfo)
         synchronisationService.stop()
     }
 
@@ -515,7 +481,7 @@ class MgmSynchronisationServiceImplTest {
     fun `only the requesting member's info is sent when member is suspended`() {
         postConfigChangedEvent()
         synchronisationService.start()
-        val capturedList = argumentCaptor<List<SignedMemberInfo>>()
+        val capturedList = argumentCaptor<List<SelfSignedMemberInfo>>()
         val request = createRequest(simon)
         val records = synchronisationService.processSyncRequest(request)
         verify(membershipPackageFactory, times(1)).createMembershipPackage(
@@ -527,7 +493,7 @@ class MgmSynchronisationServiceImplTest {
         assertThat(records).containsExactly(simonMembershipPackageRecord)
         val membersPublished = capturedList.firstValue
         assertThat(membersPublished.size).isEqualTo(1)
-        assertThat(membersPublished).isEqualTo(simonInfo)
+        assertThat(membersPublished.first()).isEqualTo(simonInfo)
         synchronisationService.stop()
     }
 

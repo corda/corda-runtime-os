@@ -44,6 +44,7 @@ import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.publisher.RPCSender
@@ -53,7 +54,6 @@ import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_RPC_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -81,7 +81,7 @@ class MembershipQueryClientImplTest {
     private val ourX500Name = MemberX500Name.parse("O=Alice,L=London,C=GB")
     private val ourGroupId = "Group ID 1"
     private val ourHoldingIdentity = HoldingIdentity(ourX500Name, ourGroupId)
-    private val ourMemberInfo: MemberInfo = mock()
+    private val ourMemberInfo: SelfSignedMemberInfo = mock()
 
     private val lifecycleEventCaptor = argumentCaptor<LifecycleEventHandler>()
 
@@ -110,21 +110,22 @@ class MembershipQueryClientImplTest {
         on { registerComponentForUpdates(eq(coordinator), any()) } doReturn configHandle
     }
     private val memberInfoFactory: MemberInfoFactory = mock {
-        on { createMemberInfo(any()) } doReturn ourMemberInfo
+        on { createSelfSignedMemberInfo(any(), any(), any(), any()) } doReturn ourMemberInfo
     }
     private val layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory(emptyList())
 
     private val testConfig =
         SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.parseString("instanceId=1"))
 
-    private val signedMemberContext = mock<SignedData> {
-        on { data } doReturn mock()
+    private val serializedData = ByteBuffer.wrap(byteArrayOf(1))
+    private val signedData = mock<SignedData> {
+        on { data } doReturn serializedData
         on { signature } doReturn mock()
         on { signatureSpec } doReturn mock()
     }
     private val persistentMemberInfo: PersistentMemberInfo = mock {
-        on { signedMemberContext } doReturn signedMemberContext
-        on { serializedMgmContext } doReturn mock()
+        on { signedMemberContext } doReturn signedData
+        on { serializedMgmContext } doReturn serializedData
     }
 
     private fun postStartEvent() {
@@ -494,18 +495,24 @@ class MembershipQueryClientImplTest {
                     "id",
                     "holdingId1",
                     1,
+                    SignedData(
+                        ByteBuffer.wrap(byteArrayOf(0)),
+                        CryptoSignatureWithKey(
+                            ByteBuffer.wrap("pk1".toByteArray()),
+                            ByteBuffer.wrap("ct1".toByteArray())
+                        ),
+                        CryptoSignatureSpec("dummy", null, null),
+                    ),
                     KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                    CryptoSignatureWithKey(
-                        ByteBuffer.wrap("pk1".toByteArray()),
-                        ByteBuffer.wrap("ct1".toByteArray())
+                    SignedData(
+                        ByteBuffer.wrap(byteArrayOf(1)),
+                        CryptoSignatureWithKey(
+                            ByteBuffer.wrap("pk2".toByteArray()),
+                            ByteBuffer.wrap("ct2".toByteArray())
+                        ),
+                        CryptoSignatureSpec("dummy2", null, null),
                     ),
-                    CryptoSignatureSpec("dummy", null, null),
                     KeyValuePairList(emptyList()),
-                    CryptoSignatureWithKey(
-                        ByteBuffer.wrap("pk2".toByteArray()),
-                        ByteBuffer.wrap("ct2".toByteArray())
-                    ),
-                    CryptoSignatureSpec("dummy2", null, null),
                     "test reason",
                     0L,
                 )
@@ -642,18 +649,24 @@ class MembershipQueryClientImplTest {
                     "id 1",
                     "holdingId1",
                     1,
+                    SignedData(
+                        ByteBuffer.wrap(byteArrayOf(0)),
+                        CryptoSignatureWithKey(
+                            ByteBuffer.wrap("pk1".toByteArray()),
+                            ByteBuffer.wrap("ct1".toByteArray())
+                        ),
+                        CryptoSignatureSpec("dummy1", null, null),
+                    ),
                     KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                    CryptoSignatureWithKey(
-                        ByteBuffer.wrap("pk1".toByteArray()),
-                        ByteBuffer.wrap("ct1".toByteArray())
+                    SignedData(
+                        ByteBuffer.wrap(byteArrayOf(1)),
+                        CryptoSignatureWithKey(
+                            ByteBuffer.wrap("pk3".toByteArray()),
+                            ByteBuffer.wrap("ct3".toByteArray())
+                        ),
+                        CryptoSignatureSpec("dummy3", null, null),
                     ),
-                    CryptoSignatureSpec("dummy1", null, null),
                     KeyValuePairList(emptyList()),
-                    CryptoSignatureWithKey(
-                        ByteBuffer.wrap("pk3".toByteArray()),
-                        ByteBuffer.wrap("ct3".toByteArray())
-                    ),
-                    CryptoSignatureSpec("dummy3", null, null),
                     "test reason 1",
                     0L,
                 ),
@@ -664,18 +677,24 @@ class MembershipQueryClientImplTest {
                     "id 2",
                     "holdingId2",
                     1,
+                    SignedData(
+                        ByteBuffer.wrap(byteArrayOf(0)),
+                        CryptoSignatureWithKey(
+                            ByteBuffer.wrap("pk2".toByteArray()),
+                            ByteBuffer.wrap("ct2".toByteArray())
+                        ),
+                        CryptoSignatureSpec("dummy2", null, null),
+                    ),
                     KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
-                    CryptoSignatureWithKey(
-                        ByteBuffer.wrap("pk2".toByteArray()),
-                        ByteBuffer.wrap("ct2".toByteArray())
+                    SignedData(
+                        ByteBuffer.wrap(byteArrayOf(1)),
+                        CryptoSignatureWithKey(
+                            ByteBuffer.wrap("pk4".toByteArray()),
+                            ByteBuffer.wrap("ct4".toByteArray())
+                        ),
+                        CryptoSignatureSpec("dummy4", null, null),
                     ),
-                    CryptoSignatureSpec("dummy2", null, null),
                     KeyValuePairList(emptyList()),
-                    CryptoSignatureWithKey(
-                        ByteBuffer.wrap("pk4".toByteArray()),
-                        ByteBuffer.wrap("ct4".toByteArray())
-                    ),
-                    CryptoSignatureSpec("dummy4", null, null),
                     "test reason 2",
                     1L,
                 ),

@@ -382,7 +382,7 @@ class MGMRegistrationServiceTest {
                 it.assertThat(memberProvidedContext.entries.map { item -> item.key })
                     .containsExactlyInAnyOrderElementsOf(
                         listOf(
-                            GROUP_ID,
+                            MemberInfoExtension.GROUP_ID,
                             PARTY_NAME,
                             PARTY_SESSION_KEYS_PEM.format(0),
                             SESSION_KEYS_HASH.format(0),

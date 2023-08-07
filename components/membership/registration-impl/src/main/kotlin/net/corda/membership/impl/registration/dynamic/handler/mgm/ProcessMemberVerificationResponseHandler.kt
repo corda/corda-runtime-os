@@ -152,13 +152,13 @@ internal class ProcessMemberVerificationResponseHandler(
             .queryRegistrationRequest(mgm, registrationId)
             .getOrThrow()
         val proposedMemberInfo = registrationRequest
-            ?.memberProvidedContext
+            ?.deserializedMemberProvidedContext
             ?.toMap()
             ?: throw CordaRuntimeException(
                 "Could not read the proposed MemberInfo for registration request " +
                         "(ID=$registrationId) submitted by ${member.x500Name}."
             )
-        val registrationContext = registrationRequest.registrationContext.toMap()
+        val registrationContext = registrationRequest.deserializedRegistrationContext.toMap()
 
         val activeMemberInfo = groupReader
             .lookup(member.x500Name)

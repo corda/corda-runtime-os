@@ -389,7 +389,7 @@ class MemberResourceClientImpl @Activate constructor(
                 MemberInfoSubmittedDto(
                     mapOf(
                         "registrationProtocolVersion" to this.registrationProtocolVersion.toString(),
-                        *this.memberProvidedContext.items.map { it.key to it.value }.toTypedArray(),
+                        *this.deserializedMemberProvidedContext.items.map { it.key to it.value }.toTypedArray(),
                     )
                 ),
                 this.reason,

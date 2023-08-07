@@ -5,7 +5,6 @@ import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.DigitalSignatureWithKey
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -17,12 +16,12 @@ import net.corda.data.membership.p2p.DistributionType
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
-import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
@@ -52,9 +51,6 @@ class MembershipPackageFactoryTest {
     private val serializer = mock<CordaAvroSerializer<KeyValuePairList>> {
         on { serialize(eq(groupParameters.toAvro())) } doReturn groupParametersBytes
     }
-    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
-        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
-    }
     private val cipherSchemeMetadata = mock<CipherSchemeMetadata> {
         on { encodeAsByteArray(any()) } doAnswer {
             val pk = it.arguments[0] as PublicKey
@@ -66,9 +62,10 @@ class MembershipPackageFactoryTest {
         on { sign(eq(groupParametersBytes)) } doReturn signedGroupParameters
         on { this.signatureSpec } doReturn SignatureSpecImpl("dummy")
     }
+    private val signatureSpec = CryptoSignatureSpec("dummy", null, null)
     private val membersCount = 4
     private val members = (1..membersCount).map {
-        mockMemberInfo("name-$it")
+        mockSignedMemberInfo("name-$it", it)
     }.also { members ->
         members.associateWith { member ->
             val hashBytes = "root-${member.name}".toByteArray()
@@ -93,22 +90,11 @@ class MembershipPackageFactoryTest {
             whenever(mgmSigner.sign(hash)).thenReturn(signature)
         }
     }
-    private val signedMembers = members.map {
-        net.corda.membership.lib.MemberSignedMemberInfo(
-            it,
-            CryptoSignatureWithKey(
-                ByteBuffer.wrap("pk-${it.name}".toByteArray()),
-                ByteBuffer.wrap("sig-${it.name}".toByteArray())
-            ),
-            CryptoSignatureSpec("dummy", null, null),
-        )
-    }
     private val allAlg = "all-alg"
     private val checkHash = SecureHashImpl(allAlg, "all".toByteArray())
 
     private val factory = MembershipPackageFactory(
         clock,
-        cordaAvroSerializationFactory,
         cipherSchemeMetadata,
         DistributionType.STANDARD,
         merkleTreeGenerator
@@ -118,7 +104,7 @@ class MembershipPackageFactoryTest {
     fun `createMembershipPackage create the correct membership package meta data`() {
         val membershipPackage = factory.createMembershipPackage(
             mgmSigner,
-            signedMembers,
+            members,
             checkHash,
             groupParameters,
         )
@@ -149,7 +135,7 @@ class MembershipPackageFactoryTest {
     fun `createMembershipPackage create the correct membership hash check`() {
         val hashCheck = factory.createMembershipPackage(
             mgmSigner,
-            signedMembers,
+            members,
             checkHash,
             groupParameters,
         ).memberships.hashCheck
@@ -164,7 +150,7 @@ class MembershipPackageFactoryTest {
     fun `createMembershipPackage create the correct memberships`() {
         val memberships = factory.createMembershipPackage(
             mgmSigner,
-            signedMembers,
+            members,
             checkHash,
             groupParameters,
         ).memberships.memberships
@@ -174,23 +160,21 @@ class MembershipPackageFactoryTest {
                 ByteBuffer.wrap("pk-O=name-$index, L=London, C=GB".toByteArray()),
                 ByteBuffer.wrap("sig-O=name-$index, L=London, C=GB".toByteArray())
             )
-            val memberSignatureSpec = CryptoSignatureSpec("dummy", null, null)
             val mgmSignature = CryptoSignatureWithKey(
                 ByteBuffer.wrap("pk-O=name-$index, L=London, C=GB".toByteArray()),
                 ByteBuffer.wrap("bytes-O=name-$index, L=London, C=GB".toByteArray())
             )
-            val mgmSignatureSpec = CryptoSignatureSpec("dummy", null, null)
 
             SignedMemberInfo(
                 SignedData(
                     ByteBuffer.wrap("memberContext-name-$index".toByteArray()),
                     memberSignature,
-                    memberSignatureSpec
+                    signatureSpec
                 ),
                 SignedData(
                     ByteBuffer.wrap("mgmContext-name-$index".toByteArray()),
                     mgmSignature,
-                    mgmSignatureSpec
+                    signatureSpec
                 )
             )
         }
@@ -200,9 +184,10 @@ class MembershipPackageFactoryTest {
             )
     }
 
-    private fun mockMemberInfo(
+    private fun mockSignedMemberInfo(
         memberName: String,
-    ): MemberInfo {
+        index: Int,
+    ): SelfSignedMemberInfo {
         val mgmContext = mock<MGMContext>()
         whenever(mgmContext.entries).thenReturn(
             mapOf("mgmContext" to "mgm+$memberName").entries
@@ -215,10 +200,18 @@ class MembershipPackageFactoryTest {
             mapOf("memberContext" to "member+$memberName").entries
         )
         whenever(serializer.serialize(memberContext.toAvro())).doReturn("memberContext-$memberName".toByteArray())
+        val x500Name = MemberX500Name.parse("C=GB,L=London,O=$memberName")
         return mock {
+            on { memberContextBytes } doReturn "memberContext-name-$index".toByteArray()
+            on { mgmContextBytes } doReturn "mgmContext-name-$index".toByteArray()
             on { mgmProvidedContext } doReturn mgmContext
             on { memberProvidedContext } doReturn memberContext
-            on { name } doReturn MemberX500Name.parse("C=GB,L=London,O=$memberName")
+            on { name } doReturn x500Name
+            on { memberSignature } doReturn CryptoSignatureWithKey(
+                ByteBuffer.wrap("pk-$x500Name".toByteArray()),
+                ByteBuffer.wrap("sig-$x500Name".toByteArray())
+            )
+            on { memberSignatureSpec } doReturn signatureSpec
         }
     }
 }

@@ -1,6 +1,11 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.core.ShortHash
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
@@ -27,6 +32,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -73,6 +79,9 @@ class QueryMemberInfoHandlerTest {
 
     private val memberContextBytes = "123".toByteArray()
     private val mgmContextBytes = "456".toByteArray()
+    private val testKey = "KEY"
+    private val testMgmVal = "MGM"
+    private val testMemberVal = "MEMBER"
 
     private val entityTransaction: EntityTransaction = mock()
 
@@ -140,6 +149,20 @@ class QueryMemberInfoHandlerTest {
                 signatureName,
             )
         } doReturn persistentInfo
+    }
+    private val keyValueDeserializer: CordaAvroDeserializer<KeyValuePairList> = mock {
+        on { deserialize(eq(memberContextBytes)) } doReturn KeyValuePairList(
+            listOf(
+                KeyValuePair(
+                    testKey,
+                    testMemberVal
+                )
+            )
+        )
+        on { deserialize(eq(mgmContextBytes)) } doReturn KeyValuePairList(listOf(KeyValuePair(testKey, testMgmVal)))
+    }
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
+        on { createAvroDeserializer<KeyValuePairList>(any(), any()) } doReturn keyValueDeserializer
     }
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo

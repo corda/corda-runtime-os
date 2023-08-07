@@ -40,13 +40,13 @@ class MemberInfoFactoryImpl @Activate constructor(
 
     private val serializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer {
-            logger.error("Failed to create serializer for key value pair list.")
+            logger.error("Failed to serialize key value pair list.")
         }
 
     private val deserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
             {
-                logger.error("Failed to create deserializer for key value pair list.")
+                logger.error("Failed to deserialize key value pair list.")
             },
             KeyValuePairList::class.java
         )
@@ -104,10 +104,10 @@ class MemberInfoFactoryImpl @Activate constructor(
         mgmContext: ByteArray,
         memberSignature: CryptoSignatureWithKey,
         memberSignatureSpec: CryptoSignatureSpec,
-    ) = PersistentMemberInfo.newBuilder()
+    ): PersistentMemberInfo = PersistentMemberInfo.newBuilder()
         .setViewOwningMember(viewOwningMember)
-        .setMemberContext(deserialize(memberContext))
-        .setMgmContext(deserialize(mgmContext))
+        .setMemberContext(null)
+        .setMgmContext(null)
         .setSignedMemberContext(createSignedData(memberContext, memberSignature, memberSignatureSpec))
         .setSerializedMgmContext(mgmContext.toByteBuffer())
         .build()
@@ -119,10 +119,10 @@ class MemberInfoFactoryImpl @Activate constructor(
         memberSignatureKey: ByteArray,
         memberSignatureContent: ByteArray,
         memberSignatureSpec: String
-    ) = PersistentMemberInfo.newBuilder()
+    ): PersistentMemberInfo = PersistentMemberInfo.newBuilder()
         .setViewOwningMember(viewOwningMember)
-        .setMemberContext(deserialize(memberContext))
-        .setMgmContext(deserialize(mgmContext))
+        .setMemberContext(null)
+        .setMgmContext(null)
         .setSignedMemberContext(
             createSignedData(
                 memberContext,
@@ -138,10 +138,10 @@ class MemberInfoFactoryImpl @Activate constructor(
         memberInfo: MemberInfo,
         memberSignature: CryptoSignatureWithKey,
         memberSignatureSpec: CryptoSignatureSpec,
-    ) = PersistentMemberInfo.newBuilder()
+    ): PersistentMemberInfo = PersistentMemberInfo.newBuilder()
         .setViewOwningMember(viewOwningMember)
-        .setMemberContext(memberInfo.memberProvidedContext.toAvro())
-        .setMgmContext(memberInfo.mgmProvidedContext.toAvro())
+        .setMemberContext(null)
+        .setMgmContext(null)
         .setSignedMemberContext(
             createSignedData(
                 serialize(memberInfo.memberProvidedContext.toAvro()),
@@ -188,56 +188,4 @@ class MemberInfoFactoryImpl @Activate constructor(
         .build()
 
     private fun ByteArray.toByteBuffer() = ByteBuffer.wrap(this)
-
-    /*override fun createPersistentMemberInfo(
-        viewOwningMember: HoldingIdentity,
-        signedMemberInfo: SignedMemberInfo
-    ): PersistentMemberInfo = PersistentMemberInfo.newBuilder()
-        .setMemberContext(signedMemberInfo.memberInfo.memberProvidedContext.toAvro())
-        .setMgmContext(signedMemberInfo.memberInfo.mgmProvidedContext.toAvro())
-        .setSignedMemberContext(
-            SignedData(
-                ByteBuffer.wrap(serializeKeyValuePairList(signedMemberInfo.memberInfo.memberProvidedContext.toAvro())),
-                signedMemberInfo.memberSignature,
-                signedMemberInfo.memberSignatureSpec,
-            )
-        )
-        .setSerializedMgmContext(ByteBuffer.wrap(serializeKeyValuePairList(signedMemberInfo.memberInfo.mgmProvidedContext.toAvro())))
-        .build()
-
-    override fun createPersistentMemberInfo(
-        viewOwningMember: HoldingIdentity,
-        memberInfo: MemberInfo,
-    ): PersistentMemberInfo = PersistentMemberInfo.newBuilder()
-        .setViewOwningMember(viewOwningMember)
-        .setMemberContext(null)
-        .setMgmContext(null)
-        .setMemberContextBytes(convertToByteBuffer(memberInfo.memberProvidedContext))
-        .setMgmContextBytes(convertToByteBuffer(memberInfo.mgmProvidedContext))
-        .build()
-
-    override fun createPersistentMemberInfo(
-        viewOwningMember: HoldingIdentity,
-        memberProvidedContext: ByteArray,
-        mgmProvidedContext: ByteArray
-    ): PersistentMemberInfo = PersistentMemberInfo.newBuilder()
-        .setViewOwningMember(viewOwningMember)
-        .setMemberContext(null)
-        .setMgmContext(null)
-        .setMemberContextBytes(ByteBuffer.wrap(memberProvidedContext))
-        .setMgmContextBytes(ByteBuffer.wrap(mgmProvidedContext))
-        .build()
-
-    private fun convertToByteBuffer(
-        context: LayeredPropertyMap
-    ) = ByteBuffer.wrap(serialize(context.toAvro()))
-
-    private fun createSignedMembershipContexts(
-        memberProvidedContext: ByteArray,
-        mgmProvidedContext: ByteArray
-    ): SignedContexts = SignedContexts.newBuilder()
-        .setMemberContext(ByteBuffer.wrap(memberProvidedContext))
-        .setMgmContext(ByteBuffer.wrap(mgmProvidedContext))
-        .build()
-     */
 }

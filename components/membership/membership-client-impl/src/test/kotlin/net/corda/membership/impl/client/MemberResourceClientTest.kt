@@ -10,6 +10,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus
@@ -128,8 +129,14 @@ class MemberResourceClientTest {
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on { persistRegistrationRequest(any(), any()) } doReturn operation
     }
+    private val bytes = byteArrayOf(1, 2, 3)
     private val signatureWithKey: CryptoSignatureWithKey = mock()
     private val signatureSpec: CryptoSignatureSpec = mock()
+    private val signedContext = SignedData(
+        ByteBuffer.wrap(bytes),
+        signatureWithKey,
+        signatureSpec,
+    )
     private val holdingIdentity = mock<HoldingIdentity>()
     private val virtualNodeInfo = mock<VirtualNodeInfo> {
         on { holdingIdentity } doReturn holdingIdentity
@@ -138,7 +145,7 @@ class MemberResourceClientTest {
         on { getByHoldingIdentityShortHash(ShortHash.of(HOLDING_IDENTITY_ID)) } doReturn virtualNodeInfo
     }
     private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
-        on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
+        on { serialize(any()) } doReturn bytes
     }
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
@@ -314,12 +321,10 @@ class MemberResourceClientTest {
                     "registration id",
                     "holdingId1",
                     1,
+                    signedContext,
                     KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                    signatureWithKey,
-                    signatureSpec,
+                    signedContext,
                     KeyValuePairList(emptyList()),
-                    signatureWithKey,
-                    signatureSpec,
                     null,
                     SERIAL,
                 ),
@@ -330,12 +335,10 @@ class MemberResourceClientTest {
                     "registration id 2",
                     "holdingId2",
                     1,
+                    signedContext,
                     KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
-                    signatureWithKey,
-                    signatureSpec,
+                    signedContext,
                     KeyValuePairList(emptyList()),
-                    signatureWithKey,
-                    signatureSpec,
                     null,
                     SERIAL,
                 ),
@@ -346,12 +349,10 @@ class MemberResourceClientTest {
                     "registration id 3",
                     "holdingId3",
                     1,
+                    signedContext,
                     KeyValuePairList(listOf(KeyValuePair("key 3", "value 3"))),
-                    signatureWithKey,
-                    signatureSpec,
+                    signedContext,
                     KeyValuePairList(emptyList()),
-                    signatureWithKey,
-                    signatureSpec,
                     null,
                     SERIAL,
                 ),
@@ -446,12 +447,10 @@ class MemberResourceClientTest {
                 "registration id",
                 "holdingId1",
                 1,
+                signedContext,
                 KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                signatureWithKey,
-                signatureSpec,
+                signedContext,
                 KeyValuePairList(emptyList()),
-                signatureWithKey,
-                signatureSpec,
                 null,
                 SERIAL,
             )

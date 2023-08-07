@@ -1,6 +1,5 @@
 package net.corda.membership.impl.synchronisation
 
-import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
@@ -10,7 +9,6 @@ import net.corda.crypto.core.bytes
 import net.corda.crypto.core.toAvro
 import net.corda.crypto.core.toCorda
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.MembershipPackage
@@ -36,7 +34,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.toSortedMap
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.Verifier
@@ -77,7 +74,6 @@ class MemberSynchronisationServiceImpl internal constructor(
     private val publisherFactory: PublisherFactory,
     private val configurationReadService: ConfigurationReadService,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val serializationFactory: CordaAvroSerializationFactory,
     private val memberInfoFactory: MemberInfoFactory,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val verifier: Verifier,
@@ -119,7 +115,6 @@ class MemberSynchronisationServiceImpl internal constructor(
         publisherFactory,
         configurationReadService,
         coordinatorFactory,
-        cordaAvroSerializationFactory,
         memberInfoFactory,
         membershipGroupReaderProvider,
         Verifier(
@@ -240,11 +235,6 @@ class MemberSynchronisationServiceImpl internal constructor(
                 TimeUnit.MINUTES.toMillis(it)
             }
 
-        private val deserializer: CordaAvroDeserializer<KeyValuePairList> =
-            serializationFactory.createAvroDeserializer({
-                logger.error("Deserialization of KeyValuePairList from MembershipPackage failed while processing membership updates.")
-            }, KeyValuePairList::class.java)
-
         private fun delayToNextRequestInMilliSeconds(): Long {
             // Add noise to prevent all the members to ask for sync in the same time
             return maxDelayBetweenRequestsInMillis -
@@ -289,17 +279,15 @@ class MemberSynchronisationServiceImpl internal constructor(
             return try {
                 cancelCurrentRequestAndScheduleNewOne(viewOwningMember, mgm)
                 val updateMembersInfo = updates.membershipPackage.memberships?.memberships?.map { update ->
-                    val memberContext = deserializer.deserialize(update.memberContext.data.array())
-                        ?: throw CordaRuntimeException("Invalid member context")
-                    val mgmContext = deserializer.deserialize(update.mgmContext.data.array())
-                        ?: throw CordaRuntimeException("Invalid MGM context")
-                    val memberInfo = memberInfoFactory.createMemberInfo(
-                        memberContext.toSortedMap(),
-                        mgmContext.toSortedMap()
+                    val selfSignedMemberInfo = memberInfoFactory.createSelfSignedMemberInfo(
+                        update.memberContext.data.array(),
+                        update.mgmContext.data.array(),
+                        update.memberContext.signature,
+                        update.memberContext.signatureSpec,
                     )
 
                     verifier.verify(
-                        memberInfo.sessionInitiationKeys,
+                        selfSignedMemberInfo.sessionInitiationKeys,
                         update.memberContext.signature,
                         update.memberContext.signatureSpec,
                         update.memberContext.data.array()
@@ -320,25 +308,24 @@ class MemberSynchronisationServiceImpl internal constructor(
                             .bytes
                     )
 
-                    val persistentMemberInfo = memberInfoFactory.createPersistentMemberInfo(
-                        viewOwningMember.toAvro(),
-                        update.memberContext.data.array(),
-                        update.mgmContext.data.array(),
-                        update.memberContext.signature,
-                        update.memberContext.signatureSpec,
-                    )
-                    memberInfo to  persistentMemberInfo
-                }.orEmpty().toMap()
+                    selfSignedMemberInfo
+                }?.associateBy { it.id } ?: emptyMap()
 
-                val persistentMemberInfoRecords = updateMembersInfo.map { (memberInfo, persistentMemberInfo) ->
+                val persistentMemberInfoRecords = updateMembersInfo.map { (_, memberInfo) ->
                     Record(
                         MEMBER_LIST_TOPIC,
                         "${viewOwningMember.shortHash}-${memberInfo.id}",
-                        persistentMemberInfo
+                        memberInfoFactory.createPersistentMemberInfo(
+                            viewOwningMember.toAvro(),
+                            memberInfo.memberContextBytes,
+                            memberInfo.mgmContextBytes,
+                            memberInfo.memberSignature,
+                            memberInfo.memberSignatureSpec,
+                        )
                     )
                 }
 
-                val packageHash = updates.membershipPackage.memberships.hashCheck?.toCorda()
+                val packageHash = updates.membershipPackage.memberships?.hashCheck?.toCorda()
                 val allRecords = if (packageHash == null) {
                     persistentMemberInfoRecords + createSynchronisationRequestMessage(
                         groupReader,
@@ -350,12 +337,12 @@ class MemberSynchronisationServiceImpl internal constructor(
                         .filter { !it.isMgm }.associateBy { it.id }
                     val viewOwnerShortHash = viewOwningMember.shortHash.value
                     val latestViewOwnerMemberInfo =
-                        updateMembersInfo.entries.find { it.key.id == viewOwnerShortHash }?.key ?: knownMembers[viewOwnerShortHash]
+                        updateMembersInfo[viewOwnerShortHash] ?: knownMembers[viewOwnerShortHash]
                     val expectedHash = if (latestViewOwnerMemberInfo?.status == MEMBER_STATUS_SUSPENDED) {
                         merkleTreeGenerator.generateTreeUsingMembers(listOf(latestViewOwnerMemberInfo)).root
                     } else {
-                        val allMembers = knownMembers.values + updateMembersInfo.map { it.key }
-                        merkleTreeGenerator.generateTreeUsingMembers(allMembers).root
+                        val allMembers = knownMembers + updateMembersInfo
+                        merkleTreeGenerator.generateTreeUsingMembers(allMembers.values).root
                     }
                     if (packageHash != expectedHash) {
                         persistentMemberInfoRecords + createSynchronisationRequestMessage(

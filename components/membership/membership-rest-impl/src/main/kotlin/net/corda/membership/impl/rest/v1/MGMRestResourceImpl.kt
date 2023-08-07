@@ -649,7 +649,7 @@ class MGMRestResourceImpl internal constructor(
                 registrationSent,
                 registrationLastModified,
                 registrationStatus.fromAvro(),
-                MemberInfoSubmitted(memberProvidedContext.toMap()),
+                MemberInfoSubmitted(deserializedMemberProvidedContext.toMap()),
                 reason,
                 serial,
             )

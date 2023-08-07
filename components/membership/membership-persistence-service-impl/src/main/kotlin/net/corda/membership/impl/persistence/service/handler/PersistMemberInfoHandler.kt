@@ -28,10 +28,9 @@ internal class PersistMemberInfoHandler(
 
     private fun deserialize(data: ByteArray): KeyValuePairList {
         return keyValuePairListDeserializer.deserialize(data) ?: throw MembershipPersistenceException(
-            "Failed to serialize key value pair list."
+            "Failed to deserialize key value pair list."
         )
     }
-
 
     override fun invoke(context: MembershipRequestContext, request: PersistMemberInfo) {
         if (request.signedMembers.isNotEmpty()) {
@@ -57,13 +56,15 @@ internal class PersistMemberInfoHandler(
                     if (!newPendingVersion && oldMemberInfo?.serialNumber == newMemberInfo.serial) {
                         val currentMemberContext = deserialize(oldMemberInfo.memberContext)
                         val currentMgmContext = deserialize(oldMemberInfo.mgmContext)
-                        if (currentMemberContext.items != it.memberContext.items) {
+                        val updatedMemberContext = deserialize(it.signedMemberContext.data.array())
+                        val updatedMGMContext = deserialize(it.serializedMgmContext.array())
+                        if (currentMemberContext.items != updatedMemberContext.items) {
                             throw MembershipPersistenceException(
                                 "Cannot update member info with same serial number " +
                                         "(${newMemberInfo.serial}): member context differs from original."
                             )
                         }
-                        if (currentMgmContext.toMap().removeTime() != it.mgmContext.toMap()
+                        if (currentMgmContext.toMap().removeTime() != updatedMGMContext.toMap()
                                 .removeTime()
                         ) {
                             throw MembershipPersistenceException(

@@ -84,8 +84,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.SignedGroupParameters
-import net.corda.membership.lib.MemberSignedMemberInfo
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toMap
@@ -237,7 +237,7 @@ class MembershipPersistenceTest {
         val membershipPersistenceClientWrapper = object : MembershipPersistenceClient {
             override fun persistMemberInfo(
                 viewOwningIdentity: HoldingIdentity,
-                memberInfos: Collection<MemberSignedMemberInfo>
+                memberInfos: Collection<SelfSignedMemberInfo>
             ) = safeCall {
                 membershipPersistenceClient.persistMemberInfo(viewOwningIdentity, memberInfos)
             }
@@ -766,7 +766,7 @@ class MembershipPersistenceTest {
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
         )
 
-        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(notary)
             .execute()
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
@@ -850,7 +850,7 @@ class MembershipPersistenceTest {
             KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 1), "2"),
         )
 
-        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(notary)
             .execute()
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
@@ -964,7 +964,7 @@ class MembershipPersistenceTest {
             KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 1), notaryKeyAsString),
         )
 
-        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
+        val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(notary)
             .execute()
 
         assertThat(persisted).isInstanceOf(MembershipPersistenceResult.Success::class.java)
@@ -1504,11 +1504,9 @@ class MembershipPersistenceTest {
         val memberPersistenceResult1 = membershipPersistenceClientWrapper.persistMemberInfo(
             viewOwningHoldingIdentity,
             listOf(
-                MemberSignedMemberInfo(
-                    memberInfoFactory.createMemberInfo(
-                        memberContext.toSortedMap(),
-                        mgmContext.toSortedMap()
-                    ),
+                memberInfoFactory.createSelfSignedMemberInfo(
+                    cordaAvroSerializer.serialize(memberContext)!!,
+                    cordaAvroSerializer.serialize(mgmContext)!!,
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap(signatureKey),
                         ByteBuffer.wrap(signatureContent)
@@ -1655,11 +1653,9 @@ class MembershipPersistenceTest {
         val memberPersistenceResult1 = membershipPersistenceClientWrapper.persistMemberInfo(
             viewOwningHoldingIdentity,
             listOf(
-                MemberSignedMemberInfo(
-                    memberInfoFactory.createMemberInfo(
-                        memberContext.toSortedMap(),
-                        mgmContext.toSortedMap()
-                    ),
+                memberInfoFactory.createSelfSignedMemberInfo(
+                    cordaAvroSerializer.serialize(memberContext)!!,
+                    cordaAvroSerializer.serialize(mgmContext)!!,
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap(signatureKey),
                         ByteBuffer.wrap(signatureContent)
@@ -1895,11 +1891,9 @@ class MembershipPersistenceTest {
         return membershipPersistenceClientWrapper.persistMemberInfo(
             viewOwningHoldingIdentity,
             listOf(
-                MemberSignedMemberInfo(
-                    memberInfoFactory.createMemberInfo(
-                        memberContext.toSortedMap(),
-                        mgmContext.toSortedMap()
-                    ),
+                memberInfoFactory.createSelfSignedMemberInfo(
+                    cordaAvroSerializer.serialize(memberContext)!!,
+                    cordaAvroSerializer.serialize(mgmContext)!!,
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap(memberSignatureKey),
                         ByteBuffer.wrap(memberSignatureContent)

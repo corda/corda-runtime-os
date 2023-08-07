@@ -140,26 +140,28 @@ class QueryRegistrationRequestHandlerTest {
         assertThat(result.registrationRequest?.registrationId)
             .isNotNull
             .isEqualTo(registrationId)
-        assertThat(result.registrationRequest.memberProvidedContext).isEqualTo(memberContext)
-        assertThat(result.registrationRequest.memberSignature).isEqualTo(
+        assertThat(result.registrationRequest.memberProvidedContext.data.array()).isEqualTo(serialisedMemberContext)
+        assertThat(result.registrationRequest.memberProvidedContext.signature).isEqualTo(
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(memberSignatureKey),
                 ByteBuffer.wrap(memberSignatureContent)
             )
         )
-        assertThat(result.registrationRequest.memberSignatureSpec).isEqualTo(
+        assertThat(result.registrationRequest.memberProvidedContext.signatureSpec).isEqualTo(
             CryptoSignatureSpec(memberSignatureSpec, null, null)
         )
-        assertThat(result.registrationRequest.registrationContext).isEqualTo(registrationContext)
-        assertThat(result.registrationRequest.registrationContextSignature).isEqualTo(
+        assertThat(result.registrationRequest.deserializedMemberProvidedContext).isEqualTo(memberContext)
+        assertThat(result.registrationRequest.registrationContext.data.array()).isEqualTo(serialisedRegistrationContext)
+        assertThat(result.registrationRequest.registrationContext.signature).isEqualTo(
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(registrationSignatureKey),
                 ByteBuffer.wrap(registrationSignatureContent)
             )
         )
-        assertThat(result.registrationRequest.registrationContextSignatureSpec).isEqualTo(
+        assertThat(result.registrationRequest.registrationContext.signatureSpec).isEqualTo(
             CryptoSignatureSpec(registrationContextSignatureSpec, null, null)
         )
+        assertThat(result.registrationRequest.deserializedRegistrationContext).isEqualTo(registrationContext)
     }
 
     @Test

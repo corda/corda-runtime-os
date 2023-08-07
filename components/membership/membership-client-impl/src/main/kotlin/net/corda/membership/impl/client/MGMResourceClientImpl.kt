@@ -576,7 +576,7 @@ class MGMResourceClientImpl @Activate constructor(
             require(requestStatus.registrationStatus == RegistrationStatus.PENDING_MANUAL_APPROVAL) {
                 "Registration request must be in ${RegistrationStatus.PENDING_MANUAL_APPROVAL} status to perform this action."
             }
-            val memberName = requestStatus.memberProvidedContext.items.first { it.key == PARTY_NAME }.value
+            val memberName = requestStatus.deserializedMemberProvidedContext.items.first { it.key == PARTY_NAME }.value
             if (approve) {
                 publishRegistrationCommand(ApproveRegistration(), memberName, mgm.groupId)
             } else {
@@ -599,7 +599,7 @@ class MGMResourceClientImpl @Activate constructor(
 
             publishRegistrationCommand(
                 DeclineRegistration(FORCE_DECLINE_MESSAGE),
-                requestStatus.memberProvidedContext.items.first { it.key == PARTY_NAME }.value,
+                requestStatus.deserializedMemberProvidedContext.items.first { it.key == PARTY_NAME }.value,
                 mgm.groupId
             )
         }

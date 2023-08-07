@@ -102,24 +102,26 @@ class BaseRequestStatusHandlerTest {
             softly.assertThat(details.registrationLastModified).isEqualTo(modified)
             softly.assertThat(details.registrationStatus).isEqualTo(RegistrationStatus.SENT_TO_MGM)
             softly.assertThat(details.registrationProtocolVersion).isEqualTo(PROTOCOL_VERSION)
-            softly.assertThat(details.memberProvidedContext).isEqualTo(deserializedContext)
-            softly.assertThat(details.memberSignature).isEqualTo(
+            softly.assertThat(details.memberProvidedContext.data.array()).isEqualTo(memberContext)
+            softly.assertThat(details.memberProvidedContext.signature).isEqualTo(
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(memberSignatureKey),
                     ByteBuffer.wrap(memberSignatureContent)
                 )
             )
-            softly.assertThat(details.memberSignatureSpec)
+            softly.assertThat(details.memberProvidedContext.signatureSpec)
                 .isEqualTo(CryptoSignatureSpec(SIGNATURE_SPEC, null, null))
-            softly.assertThat(details.registrationContext).isEqualTo(deserializedRegistrationContext)
-            softly.assertThat(details.registrationContextSignature).isEqualTo(
+            softly.assertThat(details.deserializedMemberProvidedContext).isEqualTo(deserializedContext)
+            softly.assertThat(details.registrationContext.data.array()).isEqualTo(registrationContext)
+            softly.assertThat(details.registrationContext.signature).isEqualTo(
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(registrationSignatureKey),
                     ByteBuffer.wrap(registrationSignatureContent)
                 )
             )
-            softly.assertThat(details.registrationContextSignatureSpec)
+            softly.assertThat(details.registrationContext.signatureSpec)
                 .isEqualTo(CryptoSignatureSpec(REG_SIGNATURE_SPEC, null, null))
+            softly.assertThat(details.deserializedRegistrationContext).isEqualTo(deserializedRegistrationContext)
             softly.assertThat(details.reason).isEqualTo(REASON)
         }
     }
@@ -148,7 +150,7 @@ class BaseRequestStatusHandlerTest {
         val details = with(handler) {
             entityWithEmptySignatureSpec.toDetails()
         }
-        assertThat(details.memberSignatureSpec)
+        assertThat(details.memberProvidedContext.signatureSpec)
             .isEqualTo(CryptoSignatureSpec(emptySpec, null, null))
     }
 

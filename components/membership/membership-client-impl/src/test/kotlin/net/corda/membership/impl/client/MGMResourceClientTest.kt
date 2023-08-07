@@ -852,7 +852,8 @@ class MGMResourceClientTest {
             whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
             val mockStatus = mock<RegistrationRequestDetails> {
                 on { registrationStatus } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
-                on { memberProvidedContext } doReturn KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
+                on { deserializedMemberProvidedContext } doReturn
+                        KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
             }
             whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(mockStatus)
@@ -884,7 +885,8 @@ class MGMResourceClientTest {
             whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
             val mockStatus = mock<RegistrationRequestDetails> {
                 on { registrationStatus } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
-                on { memberProvidedContext } doReturn KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
+                on { deserializedMemberProvidedContext } doReturn
+                        KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
             }
             whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(mockStatus)
@@ -1011,7 +1013,8 @@ class MGMResourceClientTest {
             whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
             val mockStatus = mock<RegistrationRequestDetails> {
                 on { registrationStatus } doReturn RegistrationStatus.PENDING_MEMBER_VERIFICATION
-                on { memberProvidedContext } doReturn KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
+                on { deserializedMemberProvidedContext }doReturn
+                        KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
             }
             whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(mockStatus)
@@ -1040,7 +1043,8 @@ class MGMResourceClientTest {
         fun `forceDeclineRegistrationRequest should fail for completed requests`() {
             val mockStatus = mock<RegistrationRequestDetails> {
                 on { registrationStatus } doReturn RegistrationStatus.APPROVED
-                on { memberProvidedContext } doReturn KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
+                on { deserializedMemberProvidedContext } doReturn
+                        KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
             }
             whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(mockStatus)

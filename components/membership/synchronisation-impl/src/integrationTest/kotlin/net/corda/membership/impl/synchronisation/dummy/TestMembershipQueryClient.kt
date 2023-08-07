@@ -13,7 +13,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -46,7 +46,7 @@ class TestMembershipQueryClientImpl @Activate constructor(
     companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service"
-        private lateinit var members: List<SignedMemberInfo>
+        private lateinit var members: List<SelfSignedMemberInfo>
     }
 
     private val coordinator =
@@ -72,14 +72,14 @@ class TestMembershipQueryClientImpl @Activate constructor(
     override fun queryMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         statusFilter: List<String>,
-    ): MembershipQueryResult<Collection<SignedMemberInfo>> = MembershipQueryResult.Success(members)
+    ): MembershipQueryResult<Collection<SelfSignedMemberInfo>> = MembershipQueryResult.Success(members)
 
     override fun queryMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         holdingIdentityFilter: Collection<HoldingIdentity>,
         statusFilter: List<String>,
-    ): MembershipQueryResult<Collection<SignedMemberInfo>> {
-        val result = mutableListOf<SignedMemberInfo>()
+    ): MembershipQueryResult<Collection<SelfSignedMemberInfo>> {
+        val result = mutableListOf<SelfSignedMemberInfo>()
         holdingIdentityFilter.forEach { id ->
             result.addAll(members.filter { it.holdingIdentity == id })
         }
