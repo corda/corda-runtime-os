@@ -10,6 +10,12 @@ import javax.persistence.Query
 import javax.persistence.Tuple
 import net.corda.ledger.utxo.token.cache.entities.AvailTokenQueryResult
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
+import net.corda.ledger.utxo.token.cache.queries.SqlQueryProvider
+import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderImpl.Companion.SQL_PARAMETER_ISSUER_HASH
+import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderImpl.Companion.SQL_PARAMETER_OWNER_HASH
+import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderImpl.Companion.SQL_PARAMETER_SYMBOL
+import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderImpl.Companion.SQL_PARAMETER_TAG_FILTER
+import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderImpl.Companion.SQL_PARAMETER_TOKEN_TYPE
 import net.corda.ledger.utxo.token.cache.repositories.UtxoTokenRepository
 import net.corda.ledger.utxo.token.cache.services.UtxoTokenMapper
 import net.corda.ledger.utxo.token.cache.services.mapToToken
@@ -25,10 +31,13 @@ import net.corda.ledger.utxo.token.cache.services.mapToToken
     service = [ UtxoTokenRepository::class],
     scope = PROTOTYPE
 )
-class UtxoTokenRepositoryImpl @Activate constructor() : UtxoTokenRepository
+class UtxoTokenRepositoryImpl @Activate constructor(
+    val sqlQueryProvider: SqlQueryProvider
+) : UtxoTokenRepository
 {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val QUERY_RESULT_TOKEN_LIMIT = 1500
     }
 
 
@@ -39,26 +48,16 @@ class UtxoTokenRepositoryImpl @Activate constructor() : UtxoTokenRepository
         regexTag: String?
     ): AvailTokenQueryResult {
 
-        val queryStrBuilder = StringBuilder()
-            .append(
-                """
-                SELECT
-                    transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash,
-                    token_symbol, token_tag, token_owner_hash, token_amount, created
-                FROM {h-schema}utxo_transaction_output
-                WHERE token_type = :tokenType AND
-                      token_issuer_hash = :issuerHash AND
-                      token_symbol = :symbol
-                """.trimIndent()
-            )
+        val sqlQuery = sqlQueryProvider.getPagedSelectQuery(
+            QUERY_RESULT_TOKEN_LIMIT,
+            regexTag != null,
+            ownerHash != null
+        )
 
-        addFilterIfNecessaryOwnerHash(ownerHash, queryStrBuilder)
-        addFilterIfNecessaryRegexTag(regexTag, queryStrBuilder)
-
-        val query = entityManager.createNativeQuery(queryStrBuilder.toString(), Tuple::class.java)
-            .setParameter("tokenType", poolKey.tokenType)
-            .setParameter("issuerHash", poolKey.issuerHash)
-            .setParameter("symbol", poolKey.symbol)
+        val query = entityManager.createNativeQuery(sqlQuery, Tuple::class.java)
+            .setParameter(SQL_PARAMETER_TOKEN_TYPE, poolKey.tokenType)
+            .setParameter(SQL_PARAMETER_ISSUER_HASH, poolKey.issuerHash)
+            .setParameter(SQL_PARAMETER_SYMBOL, poolKey.symbol)
 
         setParameterIfNecessaryOwnerHash(ownerHash, query)
         setParameterIfNecessaryRegexTag(regexTag, query)
@@ -89,33 +88,15 @@ class UtxoTokenRepositoryImpl @Activate constructor() : UtxoTokenRepository
         return BigDecimal(1)
     }
 
-    private fun addFilterIfNecessaryOwnerHash(ownerHash: String?, queryStrBuilder: StringBuilder) {
-        if(ownerHash != null) {
-            queryStrBuilder.append(" ").append("""
-                AND token_owner_hash = :ownerHash
-            """.trimIndent())
-        }
-    }
-
-    private fun addFilterIfNecessaryRegexTag(regexTag: String?, queryStrBuilder: StringBuilder) {
-        if(regexTag != null) {
-            queryStrBuilder.append(" ").append(
-                """
-                    AND token_tag ~ :regexTag
-                """.trimIndent()
-            )
-        }
-    }
-
     private fun setParameterIfNecessaryOwnerHash(ownerHash: String?, query: Query) {
         if(ownerHash != null) {
-            query.setParameter("ownerHash", ownerHash)
+            query.setParameter(SQL_PARAMETER_OWNER_HASH, ownerHash)
         }
     }
 
     private fun setParameterIfNecessaryRegexTag(regexTag: String?, query: Query) {
         if(regexTag != null) {
-            query.setParameter("regexTag", regexTag)
+            query.setParameter(SQL_PARAMETER_TAG_FILTER, regexTag)
         }
     }
 
