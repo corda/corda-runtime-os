@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package net.corda.cpi.upload.endpoints.v1
 
 import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY

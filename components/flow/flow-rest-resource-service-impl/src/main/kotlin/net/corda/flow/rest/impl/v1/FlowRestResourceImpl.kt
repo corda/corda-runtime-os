@@ -13,7 +13,6 @@ import net.corda.flow.rest.v1.types.request.StartFlowParameters
 import net.corda.flow.rest.v1.types.response.FlowResultResponse
 import net.corda.flow.rest.v1.types.response.FlowStatusResponse
 import net.corda.flow.rest.v1.types.response.FlowStatusResponses
-import net.corda.flow.rest.v1.types.response.StartableFlowsResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
@@ -59,7 +58,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [FlowRestResource::class, PluggableRestResource::class])
 class FlowRestResourceImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
