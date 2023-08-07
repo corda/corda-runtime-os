@@ -98,9 +98,11 @@ class OnBoardMember : Runnable, BaseOnboard() {
         )
     }
 
+    @Suppress("DEPRECATION")
     private fun checkIfCpiWasUploaded(cpiFileChecksum: String): Boolean {
         val currentCpis = createRestClient(CpiUploadRestResource::class)
             .use { client ->
+                // using deprecated getAllCpis to support CLI compatibility with Corda 5.0
                 client.start().proxy.getAllCpis().responseBody.cpis
             }
 
@@ -125,6 +127,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun uploadCpb(cpbFile: File): String {
         val hash = listOf(cpbFile, groupPolicyFile).hash()
         val cpiRoot = File(cpisRoot, hash)
@@ -133,6 +136,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
         if (cpiHashesFile.canRead()) {
             val cpiFileChecksum = cpiHashesFile.readText()
             val currentCpis = createRestClient(CpiUploadRestResource::class).use { client ->
+                // using deprecated getAllCpis to support CLI compatibility with Corda 5.0
                 client.start().proxy.getAllCpis().responseBody.cpis
             }
             if (currentCpis.any { it.cpiFileChecksum == cpiFileChecksum }) {
