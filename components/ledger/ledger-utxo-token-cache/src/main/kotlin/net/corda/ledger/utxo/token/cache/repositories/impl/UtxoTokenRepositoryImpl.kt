@@ -67,7 +67,7 @@ class UtxoTokenRepositoryImpl @Activate constructor(
         val tokens = query.resultListAsTuples().mapToToken(UtxoTokenMapper())
         logger.info("Filipe: $tokens")
 
-        return AvailTokenQueryResult(poolKey, emptySet())
+        return AvailTokenQueryResult(poolKey, tokens)
     }
 
     override fun queryAvailableBalance(

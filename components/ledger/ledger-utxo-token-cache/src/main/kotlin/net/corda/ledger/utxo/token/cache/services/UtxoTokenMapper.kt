@@ -19,27 +19,29 @@ class UtxoTokenMapper() : TokenMapper {
         const val TOKEN_AMOUNT = 4
     }
 
-    override fun map(tuples: List<Tuple>): CachedToken {
-        return DbCachedToken(
-            StateRef(
-                parseSecureHash(tuples.getString(Column.TRANSACTION_ID)),
-                tuples.getInt(Column.LEAF_IDX)
-            ).toString(),
-            tuples.getBigDecimal(Column.TOKEN_AMOUNT),
-            tuples.getString(Column.TOKEN_TAG),
-            tuples.getString(Column.TOKEN_OWNER_HASH)
-        )
+    override fun map(tuples: List<Tuple>): Collection<CachedToken> {
+        return tuples.map {
+            DbCachedToken(
+                StateRef(
+                    parseSecureHash(it.getString(Column.TRANSACTION_ID)),
+                    it.getInt(Column.LEAF_IDX)
+                ).toString(),
+                it.getBigDecimal(Column.TOKEN_AMOUNT),
+                it.getString(Column.TOKEN_TAG),
+                it.getString(Column.TOKEN_OWNER_HASH)
+            )
+        }
     }
 
-    private fun List<Tuple>.getString(column: Int): String {
+    private fun Tuple.getString(column: Int): String {
         return this[column].toString()
     }
 
-    private fun List<Tuple>.getInt(column: Int): Int {
+    private fun Tuple.getInt(column: Int): Int {
         return (this[column] as Number).toInt()
     }
 
-    private fun List<Tuple>.getBigDecimal(column: Int): BigDecimal {
+    private fun Tuple.getBigDecimal(column: Int): BigDecimal {
         return this[column] as BigDecimal
     }
 

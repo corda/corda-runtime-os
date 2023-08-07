@@ -49,6 +49,7 @@ class AvailableTokenServiceImpl @Activate constructor(
         val entityManagerFactory = createEntityManagerFactory(virtualNode)
 
         val totalBalance = utxoTokenRepository.queryTotalBalance(entityManagerFactory.createEntityManager(), poolKey, ownerHash, regexTag)
+        utxoTokenRepository.findTokens(entityManagerFactory.createEntityManager(), poolKey, ownerHash, regexTag)
         //val claimedTokensBalance = claimedTokens.for_each() { }
         //val availableToken = totalBalance - claimedTokensBalance
         val availableToken = BigDecimal(1)
