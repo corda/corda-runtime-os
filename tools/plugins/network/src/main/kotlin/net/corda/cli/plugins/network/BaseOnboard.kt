@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package net.corda.cli.plugins.network
 
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
@@ -51,7 +53,6 @@ import java.security.cert.CertificateFactory
 import java.util.Date
 import java.net.URI
 
-@Suppress("DEPRECATION")
 abstract class BaseOnboard : Runnable, RestCommand() {
     private companion object {
         const val P2P_TLS_KEY_ALIAS = "p2p-tls-key"
