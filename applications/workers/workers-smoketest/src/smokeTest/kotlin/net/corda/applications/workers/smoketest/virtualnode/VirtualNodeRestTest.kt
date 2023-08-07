@@ -120,7 +120,7 @@ class VirtualNodeRestTest {
                 condition { it.code == 200 }
             }.toJson()
 
-            assertThat(json["cpis"].size()).isGreaterThan(0)
+            assertThat(json.size()).isGreaterThan(0)
         }
     }
 
@@ -142,7 +142,7 @@ class VirtualNodeRestTest {
                 interval(retryInterval)
                 command { vNodeList() }
                 condition { response ->
-                    val nodes = vNodeList().toJson()["virtualNodes"].map {
+                    val nodes = vNodeList().toJson().map {
                         it["holdingIdentity"]["x500Name"].textValue()
                     }
                     response.code == 200 && nodes.contains(aliceX500)
@@ -182,7 +182,7 @@ class VirtualNodeRestTest {
         val cpis = assertWithRetryIgnoringExceptions {
             command { cpiList() }
             condition { it.code == ResponseCode.OK.statusCode }
-        }.body.toJson()["cpis"]
+        }.body.toJson()
 
         val cpiJson = cpis.toList().find { it["id"]["cpiName"].textValue() == cpiName }
         assertNotNull(cpiJson, "Cpi with name $cpiName not yet found in cpi list.")

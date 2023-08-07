@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package net.corda.libs.virtualnode.endpoints.v1
 
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
@@ -11,6 +12,7 @@ import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpPUT
 import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.asynchronous.v1.AsyncOperationStatus
 import net.corda.rest.asynchronous.v1.AsyncResponse
@@ -44,12 +46,28 @@ interface VirtualNodeRestResource : RestResource {
      *
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
+    @Deprecated("Deprecated in favour of getAllVirtualNodesList")
     @HttpGET(
         title = "Lists all virtual nodes",
         description = "This method lists all virtual nodes in the cluster.",
-        responseDescription = "List of virtual node details."
+        responseDescription = "List of virtual node details.",
+        minVersion = RestApiVersion.C5_0,
+        maxVersion = RestApiVersion.C5_0
     )
-    fun getAllVirtualNodes(): VirtualNodes
+    fun getAllVirtualNodes(): ResponseEntity<VirtualNodes>
+
+    /**
+     * Lists all virtual nodes onboarded to the cluster.
+     *
+     * @throws `HttpApiException` If the request returns an exceptional response.
+     */
+    @HttpGET(
+        title = "Lists all virtual nodes",
+        description = "This method lists all virtual nodes in the cluster.",
+        responseDescription = "List of virtual node details.",
+        minVersion = RestApiVersion.C5_1
+    )
+    fun getAllVirtualNodesList(): List<VirtualNodeInfo>
 
     /**
      * Updates a virtual nodes state.

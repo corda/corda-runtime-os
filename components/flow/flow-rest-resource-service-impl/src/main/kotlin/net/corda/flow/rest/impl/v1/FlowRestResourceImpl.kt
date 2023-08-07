@@ -263,7 +263,7 @@ class FlowRestResourceImpl @Activate constructor(
     @Deprecated("Deprecated in favour of getMultipleFlowStatusList")
     override fun getMultipleFlowStatus(holdingIdentityShortHash: String): ResponseEntity<FlowStatusResponses> {
         "Deprecated, please use next version at ${RestApiVersion.C5_1} or above.".let { msg ->
-            FlowClassRestResourceImpl.log.warn(msg)
+            log.warn(msg)
             val flowStatusList = doGetMultipleFlowStatusList(holdingIdentityShortHash)
             return ResponseEntity.okButDeprecated(
                 FlowStatusResponses(flowStatusList),

@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package net.corda.virtualnode.rest.impl.v1
 
 import net.corda.configuration.read.ConfigChangedEvent
@@ -42,6 +43,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.asynchronous.v1.AsyncOperationState
 import net.corda.rest.asynchronous.v1.AsyncOperationStatus
 import net.corda.rest.asynchronous.v1.AsyncResponse
@@ -240,8 +242,34 @@ internal class VirtualNodeRestResourceImpl(
      * @see VirtualNodes
      * @see VirtualNodeInfo
      */
-    override fun getAllVirtualNodes(): VirtualNodes {
-        return VirtualNodes(virtualNodeInfoReadService.getAll().map(messageConverter::convert))
+    @Deprecated("Deprecated in favour of getAllVirtualNodesList")
+
+    override fun getAllVirtualNodes(): ResponseEntity<VirtualNodes> {
+        "Deprecated, please use next version at ${RestApiVersion.C5_1} or above.".let { msg ->
+            logger.warn(msg)
+            val virtualNodes = doGetAllVirtualNodes()
+            return ResponseEntity.okButDeprecated(
+                VirtualNodes(virtualNodes),
+                msg
+            )
+        }
+    }
+
+    /**
+     * Retrieves the list of virtual nodes stored on the message bus
+     *
+     * @throws IllegalStateException is thrown if the component isn't running and therefore able to service requests.
+     * @return [VirtualNodes] which is a list of [VirtualNodeInfo]
+     *
+     * @see VirtualNodes
+     * @see VirtualNodeInfo
+     */
+    override fun getAllVirtualNodesList(): List<VirtualNodeInfo> {
+        return doGetAllVirtualNodes()
+    }
+
+    private fun doGetAllVirtualNodes(): List<VirtualNodeInfo> {
+        return virtualNodeInfoReadService.getAll().map(messageConverter::convert)
     }
 
     /**

@@ -10,6 +10,7 @@ package net.corda.libs.virtualnode.endpoints.v1.types
  *
  * @param virtualNodes List of [VirtualNodeInfo].
  */
+@Deprecated("Deprecated, unused in newer endpoint getAllStartableFlowsList, remove once out of LTS")
 data class VirtualNodes(
     val virtualNodes: List<VirtualNodeInfo>
 )
