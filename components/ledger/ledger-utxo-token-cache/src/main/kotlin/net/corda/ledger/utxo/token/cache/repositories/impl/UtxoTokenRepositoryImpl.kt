@@ -66,7 +66,7 @@ class UtxoTokenRepositoryImpl @Activate constructor() : UtxoTokenRepository
         val availTokenBucket = query.resultListAsTuples().mapToToken(UtxoTokenMapper())
         logger.info("Filipe: $availTokenBucket")
 
-        return AvailTokenQueryResult(poolKey, listOf(availTokenBucket))
+        return AvailTokenQueryResult(poolKey, availTokenBucket)
 
     }
 

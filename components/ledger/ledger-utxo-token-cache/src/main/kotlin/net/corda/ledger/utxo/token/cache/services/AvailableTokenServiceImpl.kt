@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.token.cache.services
 
+import java.math.BigDecimal
 import net.corda.crypto.core.ShortHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -47,10 +48,13 @@ class AvailableTokenServiceImpl @Activate constructor(
 
         val entityManagerFactory = createEntityManagerFactory(virtualNode)
 
-        val availableToken = utxoTokenRepository.queryAvailableBalance(entityManagerFactory.createEntityManager(), poolKey, ownerHash, regexTag, stateRefClaimedTokens)
         val totalBalance = utxoTokenRepository.queryTotalBalance(entityManagerFactory.createEntityManager(), poolKey, ownerHash, regexTag)
+        //val claimedTokensBalance = claimedTokens.for_each() { }
+        //val availableToken = totalBalance - claimedTokensBalance
+        val availableToken = BigDecimal(1)
 
-        return TokenBalance(availableToken, totalBalance)
+
+            return TokenBalance(availableToken, totalBalance)
     }
 
     private fun createEntityManagerFactory(virtualNode: VirtualNodeInfo) =

@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.token.cache.services
 
 import javax.persistence.Tuple
-import net.corda.ledger.utxo.token.cache.entities.AvailTokenBucket
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 
 /**
@@ -22,7 +21,7 @@ class UtxoTokenMapper() : TokenMapper {
         TOKEN_AMOUNT,
         CREATED
     }
-    override fun map(tuples: List<Tuple>): AvailTokenBucket {
+    override fun map(tuples: List<Tuple>): Collection<CachedToken> {
         val tokens: MutableList<CachedToken> = ArrayList()
         tuples.forEach { columns ->
             val transactionId = columns[0]
@@ -45,6 +44,6 @@ class UtxoTokenMapper() : TokenMapper {
       //      val leafIdx = (columns[1] as Number).toInt()
 //            val data = columns[2] as ByteArray
         }
-        return AvailTokenBucket(tokens)
+        return tokens
     }
 }
