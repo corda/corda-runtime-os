@@ -236,7 +236,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             }
         }
 
-        val response = createRestClient(KeysRestResource::class).use { keyClient ->
+        val response = createRestClient(KeyRestResource::class).use { keyClient ->
             keyClient.start().proxy.generateKeyPair(
                 holdingId, "$holdingId-$category", category, "CORDA.ECDSA.SECP256R1"
             )
@@ -274,7 +274,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     protected fun createTlsKeyIdNeeded() {
-        val hasKeys = createRestClient(KeysRestResource::class).use { client ->
+        val hasKeys = createRestClient(KeyRestResource::class).use { client ->
             client.start().proxy.listKeys(
                 tenantId = "p2p",
                 skip = 0,
@@ -292,7 +292,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
 
         if (hasKeys) return
 
-        val tlsKeyId = createRestClient(KeysRestResource::class).use { client ->
+        val tlsKeyId = createRestClient(KeyRestResource::class).use { client ->
             client.start().proxy.generateKeyPair(
                 tenantId = "p2p",
                 alias = P2P_TLS_KEY_ALIAS,
@@ -301,7 +301,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             ).id
         }
 
-        val csr = createRestClient(CertificatesRestResource::class).use { client ->
+        val csr = createRestClient(CertificateRestResource::class).use { client ->
             client.start().proxy.generateCsr(
                 tenantId = "p2p",
                 keyId = tlsKeyId,
@@ -317,7 +317,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             }
         } as? PKCS10CertificationRequest ?: throw OnboardException("CSR is not a valid CSR: $csr")
 
-        createRestClient(CertificatesRestResource::class).use { client ->
+        createRestClient(CertificateRestResource::class).use { client ->
             val certificate = ca.signCsr(csrCertRequest).toPem().byteInputStream()
             client.start().proxy.importCertificateChain(
                 usage = "p2p-tls",
@@ -476,7 +476,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             ?.toPem()
             ?.byteInputStream()
             ?.use { certificate ->
-                createRestClient(CertificatesRestResource::class).use { client ->
+                createRestClient(CertificateRestResource::class).use { client ->
                     client.start().proxy.importCertificateChain(
                         usage = "code-signer",
                         alias = GRADLE_PLUGIN_DEFAULT_KEY_ALIAS,
@@ -493,7 +493,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             ?.toPem()
             ?.byteInputStream()
             ?.use { certificate ->
-                createRestClient(CertificatesRestResource::class).use { client ->
+                createRestClient(CertificateRestResource::class).use { client ->
                     client.start().proxy.importCertificateChain(
                         usage = "code-signer",
                         alias = "signingkey1-2022",
