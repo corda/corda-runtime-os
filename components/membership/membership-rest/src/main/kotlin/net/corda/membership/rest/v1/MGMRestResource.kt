@@ -13,11 +13,13 @@ import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
 import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.rest.v1.types.request.ManualDeclinationReason
-import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
+import net.corda.membership.rest.v5_1.types.request.SuspensionActivationParameters
 import net.corda.membership.rest.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.rest.v1.types.response.PreAuthToken
 import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
+import net.corda.rest.annotations.RestApiVersion
+import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters as DeprecatedSuspensionActivationParameters
 
 /**
  * The MGM API consists of a number of endpoints used to manage membership groups. A membership group is a logical
@@ -433,10 +435,40 @@ interface MGMRestResource : RestResource {
      * ```
      *
      * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param suspensionParams Parameters for suspending a member. See [DeprecatedSuspensionActivationParameters] for more details.
+     */
+    @Deprecated("Deprecated in favour of suspendMember")
+    @HttpPOST(
+        path = "{holdingIdentityShortHash}/suspend",
+        minVersion = RestApiVersion.C5_0,
+        maxVersion = RestApiVersion.C5_0,
+    )
+    fun suspendMember(
+        @RestPathParameter(
+            description = "The holding identity ID of the MGM of the membership group"
+        )
+        holdingIdentityShortHash: String,
+        @ClientRequestBodyParameter(
+            description = "Parameters for suspending a member."
+        )
+        suspensionParams: DeprecatedSuspensionActivationParameters
+    )
+
+    /**
+     * The [suspendMember] method enables you to suspend a member. A suspended member is blocked from communicating
+     * with other members of the group, and will not see any updates related to the group or the other members.
+     *
+     * Example usage:
+     * ```
+     * mgmOps.suspendMember("58B6030FABDD", SuspendMemberParameters("O=Alice, L=London, C=GB"))
+     * ```
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
      * @param suspensionParams Parameters for suspending a member. See [SuspensionActivationParameters] for more details.
      */
     @HttpPOST(
-        path = "{holdingIdentityShortHash}/suspend"
+        path = "{holdingIdentityShortHash}/suspend",
+        minVersion = RestApiVersion.C5_1
     )
     fun suspendMember(
         @RestPathParameter(
@@ -447,6 +479,37 @@ interface MGMRestResource : RestResource {
             description = "Parameters for suspending a member."
         )
         suspensionParams: SuspensionActivationParameters
+    )
+
+    /**
+     * The [activateMember] method enables you to activate a previously suspended member. An activated member is
+     * allowed to communicate with other members of the group again, and is able to receive updates related to the
+     * group or the other members.
+     *
+     * Example usage:
+     * ```
+     * mgmOps.activateMember("58B6030FABDD", SuspendMemberParameters("O=Alice, L=London, C=GB"))
+     * ```
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
+     * @param activationParams Parameters for activating a member. See [DeprecatedSuspensionActivationParameters] for more details.
+     */
+    @HttpPOST(
+        path = "{holdingIdentityShortHash}/activate",
+        minVersion = RestApiVersion.C5_0,
+        maxVersion = RestApiVersion.C5_0,
+    )
+    @Deprecated("Deprecated in favour of activateMember")
+    fun activateMember(
+        @RestPathParameter(
+            description = "The holding identity ID of the MGM of the membership group"
+        )
+        holdingIdentityShortHash: String,
+
+        @ClientRequestBodyParameter(
+            description = "Parameters for suspending or activating a member."
+        )
+        activationParams: DeprecatedSuspensionActivationParameters
     )
 
     /**
