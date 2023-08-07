@@ -12,6 +12,9 @@ import org.web3j.utils.Numeric
 import java.math.BigInteger
 import java.util.concurrent.CompletableFuture
 import net.corda.interop.web3j.internal.EthereumConnector
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import kotlinx.coroutines.*
 
 // GOING TO GET RID OF gson
 
@@ -22,6 +25,8 @@ import net.corda.interop.web3j.internal.EthereumConnector
 class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
 
     private val evmConnector = EthereumConnector()
+    private val scheduledExecutorService = Executors.newFixedThreadPool(20)
+
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -33,9 +38,11 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
      * @param receipt The receipt of the transaction.
      * @return The JSON representation of the transaction receipt, or null if not found.
      */
-    fun getTransactionReceipt(rpcConnection: String, receipt: String): String? {
-        val resp = evmConnector.send(rpcConnection, "eth_getTransactionReceipt", listOf(receipt))
-        return resp.result.toString()
+    fun getTransactionReceipt(rpcConnection: String, receipt: String): CompletableFuture<String> {
+        return CompletableFuture.supplyAsync<String>{
+            val resp = evmConnector.send(rpcConnection, "eth_getTransactionReceipt", listOf(receipt))
+            resp.result.toString()
+        }
     }
 
     /**
@@ -56,9 +63,16 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
      * @param rpcConnection The URL of the Ethereum RPC endpoint.
      * @return The Gas Price as a BigInteger.
      */
-    private fun getGasPrice(rpcConnection: String): BigInteger {
-        val resp = evmConnector.send(rpcConnection, "eth_gasPrice", listOf(""))
-        return BigInteger.valueOf(Integer.decode(resp.result.toString()).toLong())
+    private fun getGasPrice(rpcConnection: String): CompletableFuture<BigInteger> {
+        return CompletableFuture.supplyAsync<BigInteger> {
+            val resp = evmConnector.send(rpcConnection, "eth_gasPrice", listOf(""))
+            BigInteger.valueOf(Integer.decode(resp.result.toString()).toLong())
+        }
+    }
+
+
+    fun main() {
+
     }
 
     /**
@@ -109,6 +123,16 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
         return resp.result.toString()
     }
 
+    private suspend fun prepareTransaction(rpcConnection: String): Pair<BigInteger, Long> = coroutineScope {
+        val nonceDeferred = async { getTransactionCount(rpcConnection, "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73") }
+        val chainIdDeferred = async { getChainId(rpcConnection) }
+
+        val nonce = nonceDeferred.await()
+        val chainId = chainIdDeferred.await()
+
+        nonce to chainId
+    }
+
     /**
      * Send a transaction to the Ethereum network.
      *
@@ -117,16 +141,12 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
      * @param payload The payload data for the transaction.
      * @return The receipt of the transaction.
      */
-    private fun sendTransaction(rpcConnection: String, contractAddress: String, payload: String): String {
-            println("Fetching Count")
-            // Do this async
-            val nonce = getTransactionCount(rpcConnection, "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73")
-            println("NONCE: $nonce")
-            val chainid = getChainId(rpcConnection)
+    private suspend fun sendTransaction(rpcConnection: String, contractAddress: String, payload: String): String {
+        // Do this async
+        val (nonce, chainId) = prepareTransaction(rpcConnection)
 
-
-            val transaction = RawTransaction.createTransaction(
-                chainid,
+        val transaction = RawTransaction.createTransaction(
+                chainId,
                 nonce,
                 BigInteger.valueOf(10000000),
                 contractAddress,
@@ -179,6 +199,11 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
 
     // TODO: Add more loggin
     // Talk to owen about tracing work
+
+    // Joining in a thread pool is an option
+    // Transient Error gets added back on the queue
+
+
     private fun handleRequest(request: EvmRequest, respFuture: CompletableFuture<EvmResponse>) {
         log.info(request.schema.toString(true))
         // Parameters for the transaction/query
@@ -190,13 +215,10 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
 
         if (isTransaction) {
             // Transaction Being Sent
-            val transactionOutput = sendTransaction(rpcConnection, contractAddress, payload)
-            // KAT Comments
-            // Start a thread, pass future to it, thread will compelte on it
-            // See if we have pattern on it
-            // Listener to the transaction
-            // Create a callback handler
-            println("Transaction Output $transactionOutput")
+            var transactionOutput: String;
+            runBlocking {
+                transactionOutput = sendTransaction(rpcConnection, contractAddress, payload)
+            }
             val result = EvmResponse(flowId, transactionOutput)
             respFuture.complete(result)
         } else {
@@ -206,40 +228,10 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
         }
     }
 
-    // Work with Completable Futures:
-    private fun retry(request: EvmRequest, respFuture: CompletableFuture<EvmResponse>, e: Throwable) {
-        // try three more times, then complete exceptionally
-
-        var attempts = 0
-        while(attempts<3){
-            try {
-                handleRequest(request, respFuture)
-            }catch(error: Exception){
-                log.info("Failed on retry #${attempts}")
-            }
-            ++attempts
-        }
-        println("STARTING EXCEPTIONAL FAILURE")
-        respFuture.completeExceptionally(e)
-    }
-
-    // Stick back onto the queue
-    // Remove Blocking Code ->
 
     override fun onNext(request: EvmRequest, respFuture: CompletableFuture<EvmResponse>) {
-        try{
+        scheduledExecutorService.submit({
             handleRequest(request,respFuture)
-        } catch (e: Throwable) {
-            println("AT THIS ERROR")
-            when(e){
-                is java.net.ConnectException -> {
-                    retry(request,respFuture,e)
-                }
-                else -> {
-                    // We will Forward the Exceptions
-                    respFuture.completeExceptionally(e)
-                }
-            }
-        }
+        })
     }
 }
