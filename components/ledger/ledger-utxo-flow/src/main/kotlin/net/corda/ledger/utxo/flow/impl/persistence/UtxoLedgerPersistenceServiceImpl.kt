@@ -7,6 +7,7 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
+import net.corda.ledger.utxo.flow.impl.cache.StateAndRefCache
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindSignedLedgerTransactionWithStatus
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindTransactionWithStatus
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransaction
@@ -59,7 +60,9 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     @Reference(service = UtxoLedgerTransactionFactory::class)
     private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
     @Reference(service = UtxoSignedTransactionFactory::class)
-    private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory
+    private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
+    @Reference(service = StateAndRefCache::class)
+    private val stateAndRefCache: StateAndRefCache
 ) : UtxoLedgerPersistenceService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -100,7 +103,20 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                 val (transaction, status) = serializationService.deserialize<Pair<SignedLedgerTransactionContainer?, String?>>(it.array())
                 if (status == null)
                     return@let null
-                transaction?.toSignedLedgerTransaction() to status.toTransactionStatus()
+
+                val signedLedgerTransaction = transaction?.toSignedLedgerTransaction()
+
+                // Add resolved input state and refs to the cache, so it can be used in other places
+                signedLedgerTransaction?.inputStateAndRefs?.let { inputStateAndRefs ->
+                    stateAndRefCache.putAll(inputStateAndRefs)
+                }
+
+                // Add resolved reference state and refs to the cache, so it can be used in other places
+                signedLedgerTransaction?.referenceStateAndRefs?.let { referenceStateAndRefs ->
+                    stateAndRefCache.putAll(referenceStateAndRefs)
+                }
+
+                signedLedgerTransaction to status.toTransactionStatus()
             }
         }
     }
