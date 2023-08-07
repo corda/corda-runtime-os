@@ -526,7 +526,8 @@ interface MGMRestResource : RestResource {
      * @param activationParams Parameters for activating a member. See [SuspensionActivationParameters] for more details.
      */
     @HttpPOST(
-        path = "{holdingIdentityShortHash}/activate"
+        path = "{holdingIdentityShortHash}/activate",
+        minVersion = RestApiVersion.C5_1
     )
     fun activateMember(
         @RestPathParameter(
