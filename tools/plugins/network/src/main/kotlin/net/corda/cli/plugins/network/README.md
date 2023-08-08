@@ -157,16 +157,66 @@ Few examples of on-boarding a member can be:
 ```
 Use the `--help` to view all the other options and defaults.
 
-See [here](https://github.com/corda/corda-runtime-os/wiki/Member-Onboarding-(Dynamic-Networks)) for details on how to do it manually.
+See [here](https://github.com/corda/corda-runtime-os/wiki/Member-Onboarding-(Dynamic-Networks)) for details on how to do
+it manually.
 
-# Get Members List
+## Lookup Members
 
-> Use `--help` to see information about commands and available options.
+Use either `--holding-identity-short-hash` or `--name` (optionally with `--group`) to lookup members.
 
-This is a sub-command under the `network` plugin to view the member list via HTTP.
+### Samples
 
-For example,
+To look up all members visible to member `3B8DECDDD6E2`:
 
 ```shell
-./corda-cli.sh network members-list --user=admin --password=admin --target=https://localhost:8888 --insecure members-list -h=<holding-identity-short-hash>
+./corda-cli.sh network lookup members -h "3B8DECDDD6E2"
+```
+
+To look up members visible to member `3B8DECDDD6E2` filtered by attributes Organization (O) `Alice` and Country (C) `
+IE`:
+
+```shell
+./corda-cli.sh network lookup members -h "3B8DECDDD6E2" -o "Alice" -c "IE"
+```
+
+To look up all members visible to `C=GB, L=London, O=Member1` from the default (last created) group:
+
+```shell
+./corda-cli.sh network lookup members -n "C=GB, L=London, O=Member1"
+```
+
+To look up all members visible to `C=GB, L=London, O=Member1` from group `b0a0f381-e0d6-49d2-abba-6094992cef02`:
+
+```shell
+./corda-cli.sh network lookup members -n "C=GB, L=London, O=Member1" -g "b0a0f381-e0d6-49d2-abba-6094992cef02"
+```
+
+To look up suspended members as the MGM (`1B8DECDDD6E2`) from the default group:
+
+```shell
+./corda-cli.sh network lookup members -h "1B8DECDDD6E2" -s "SUSPENDED"
+```
+
+## Lookup Group Parameters
+
+Use either `--holding-identity-short-hash` or `--name` (optionally with `--group`) to lookup group parameters.
+
+### Samples
+
+To look up group parameters visible to member `3B8DECDDD6E2`:
+
+```shell
+./corda-cli.sh network lookup group-parameters -h "3B8DECDDD6E2"
+```
+
+To look up group parameters visible to `C=GB, L=London, O=Member1` from the default (last created) group:
+
+```shell
+./corda-cli.sh network lookup group-parameters -n "C=GB, L=London, O=Member1"
+```
+
+To look up group parameters visible to `C=GB, L=London, O=Member1` from group `b0a0f381-e0d6-49d2-abba-6094992cef02`:
+
+```shell
+./corda-cli.sh network lookup group-parameters -n "C=GB, L=London, O=Member1" -g "b0a0f381-e0d6-49d2-abba-6094992cef02"
 ```
