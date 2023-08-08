@@ -26,7 +26,7 @@ class NetworkPluginWrapper : Plugin() {
         name = "network",
         subcommands = [
             GenerateGroupPolicy::class,
-            OnBoard::class,
+            Dynamic::class,
             GetRegistrations::class,
             Lookup::class
         ],
