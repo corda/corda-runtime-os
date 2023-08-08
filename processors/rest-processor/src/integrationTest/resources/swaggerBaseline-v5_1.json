@@ -3788,7 +3788,12 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/VirtualNodes"
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "$ref" : "#/components/schemas/VirtualNodeInfo"
+                  }
                 }
               }
             }
@@ -5592,20 +5597,6 @@
             "type" : "string",
             "nullable" : false,
             "example" : "string"
-          }
-        }
-      },
-      "VirtualNodes" : {
-        "required" : [ "virtualNodes" ],
-        "type" : "object",
-        "properties" : {
-          "virtualNodes" : {
-            "uniqueItems" : false,
-            "type" : "array",
-            "nullable" : false,
-            "items" : {
-              "$ref" : "#/components/schemas/VirtualNodeInfo"
-            }
           }
         }
       }
