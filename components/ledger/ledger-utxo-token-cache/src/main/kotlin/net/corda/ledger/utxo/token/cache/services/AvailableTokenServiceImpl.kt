@@ -35,21 +35,21 @@ class AvailableTokenServiceImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun findAvailTokens(poolKey: TokenPoolKey, ownerHash: String?, regexTag: String?): AvailTokenQueryResult {
+    override fun findAvailTokens(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?): AvailTokenQueryResult {
         val virtualNode = getVirtualNodeInfo(poolKey)
 
         val entityManagerFactory = createEntityManagerFactory(virtualNode)
 
-        return utxoTokenRepository.findTokens(entityManagerFactory.createEntityManager(), poolKey, ownerHash, regexTag)
+        return utxoTokenRepository.findTokens(entityManagerFactory.createEntityManager(), poolKey, ownerHash, tagRegex)
     }
 
-    override fun queryBalance(poolKey: TokenPoolKey, ownerHash: String?, regexTag: String?, stateRefClaimedTokens: Collection<String>): TokenBalance {
+    override fun queryBalance(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?, stateRefClaimedTokens: Collection<String>): TokenBalance {
         val virtualNode = getVirtualNodeInfo(poolKey)
 
         val entityManagerFactory = createEntityManagerFactory(virtualNode)
 
-        val totalBalance = utxoTokenRepository.queryTotalBalance(entityManagerFactory.createEntityManager(), poolKey, ownerHash, regexTag)
-        utxoTokenRepository.findTokens(entityManagerFactory.createEntityManager(), poolKey, ownerHash, regexTag)
+        val totalBalance = utxoTokenRepository.queryTotalBalance(entityManagerFactory.createEntityManager(), poolKey, ownerHash, tagRegex)
+        utxoTokenRepository.findTokens(entityManagerFactory.createEntityManager(), poolKey, ownerHash, tagRegex)
         //val claimedTokensBalance = claimedTokens.for_each() { }
         //val availableToken = totalBalance - claimedTokensBalance
         val availableToken = BigDecimal(1)

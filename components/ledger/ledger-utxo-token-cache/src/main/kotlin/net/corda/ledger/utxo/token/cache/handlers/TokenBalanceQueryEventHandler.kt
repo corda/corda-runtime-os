@@ -2,7 +2,7 @@ package net.corda.ledger.utxo.token.cache.handlers
 
 import java.math.BigDecimal
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
+import net.corda.ledger.utxo.token.cache.Helper.toDto
 import net.corda.ledger.utxo.token.cache.entities.BalanceQuery
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenBalance
@@ -38,9 +38,6 @@ class TokenBalanceQueryEventHandler(
             tokenBalance
         )
     }
-
-    private fun TokenPoolCacheKey.toDto() =
-        TokenPoolKey(shortHolderId, tokenType, issuerHash, notaryX500Name, symbol)
 
     private fun calculateTokenBalance(tokenCache: TokenCache, state: PoolCacheState, event: BalanceQuery): TokenBalance {
         var availableBalance = BigDecimal.ZERO

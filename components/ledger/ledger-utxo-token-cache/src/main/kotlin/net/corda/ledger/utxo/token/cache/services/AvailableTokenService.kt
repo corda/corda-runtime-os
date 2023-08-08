@@ -22,8 +22,8 @@ interface AvailableTokenService {
      *
      * @throws CordaPersistenceException if an error happens during find operation.
      */
-    fun findAvailTokens(poolKey: TokenPoolKey, ownerHash: String?, regexTag: String?): AvailTokenQueryResult
+    fun findAvailTokens(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?): AvailTokenQueryResult
 
-    fun queryBalance(poolKey: TokenPoolKey, ownerHash: String?, regexTag: String?, stateRefClaimedTokens: Collection<String>): TokenBalance
+    fun queryBalance(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?, stateRefClaimedTokens: Collection<String>): TokenBalance
 
 }
