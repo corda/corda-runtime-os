@@ -115,6 +115,7 @@ class Create(
     private val workersForProcessor = mapOf(
         "crypto" to listOf("crypto", "combined"),
         "db" to listOf("db", "combined"),
+        "evm" to listOf("evm", "combined"),
         "flow" to listOf("flow", "combined"),
         "flowMapper" to listOf("flowMapper", "combined"),
         "verification" to listOf("verification", "combined"),
