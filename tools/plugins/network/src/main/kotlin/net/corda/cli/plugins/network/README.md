@@ -138,8 +138,6 @@ This is a sub-command under the `dynamic` sub-command to onboard a new member to
 
 To decide which CPI to use, there are three options:
 * If you know the CPI hash, you can use it with the `--cpi-hash` option
-* If you have the CPI file (for example, from the [package command](../../../../../../../../../package/README.md)), you
-  can use it with the `--cpi-file` option.
 * If you have a CPB and a group policy file (from the `dynamic onboard-mgm` command), you can use the `--cpb-file`
   and `--group-policy-file` option. This will create an unsigned CPI and save it in your home directory.
 
@@ -150,10 +148,10 @@ need to manually approve (or decline) your submitted registration to be fully on
 
 Few examples of on-boarding a member can be:
 ```shell
-./corda-cli.sh network dynamic member --x500-name='O=Alice, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb --user=admin --password=admin --target=https://localhost:8888 --insecure
-./corda-cli.sh network dynamic member --x500-name='O=Alice, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb --wait --user=admin --password=admin --target=https://localhost:8888 --insecure
-./corda-cli.sh network dynamic member --cpi-file /tmp/calculator.cpi --user=admin --password=admin --target=https://localhost:8888 --insecure
-./corda-cli.sh network dynamic member --cpi-hash 200E86176EF2 --user=admin --password=admin --target=https://localhost:8888 --insecure
+./corda-cli.sh network dynamic onboard-member --x500-name='O=Alice, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb --user=admin --password=admin --target=https://localhost:8888 --insecure
+./corda-cli.sh network dynamic onboard-member --x500-name='O=Alice, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb --wait --user=admin --password=admin --target=https://localhost:8888 --insecure
+./corda-cli.sh network dynamic onboard-member --cpi-hash 8CBD8A9C6318 --wait --user=admin --password=admin --target=https://localhost:8888 --insecure -r "notary" -s "corda.notary.service.name"="C=GB, L=London, O=Arish"
+./corda-cli.sh network dynamic onboard-member --cpi-hash 200E86176EF2 --user=admin --password=admin --target=https://localhost:8888 --insecure
 ```
 Use the `--help` to view all the other options and defaults.
 
