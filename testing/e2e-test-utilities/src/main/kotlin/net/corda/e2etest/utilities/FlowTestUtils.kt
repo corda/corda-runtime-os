@@ -173,7 +173,7 @@ fun ClusterInfo.getFlowClasses(holdingId: String): List<String> {
             failMessage("Failed to get flows for holdingId '$holdingId'")
         }.toJson()
 
-        vNodeJson["flowClassNames"].map { it.textValue() }
+        vNodeJson.map { it.textValue() }
     }
 }
 
