@@ -81,7 +81,7 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
 
     @ParameterizedTest
     @MethodSource("emfs")
-    fun `findKeyWithId returns UUID and saved key`(emf: EntityManagerFactory) {
+    fun `findKeyWithId returns the UUID and the key`(emf: EntityManagerFactory) {
         val keyAlias = "find-key-${UUID.randomUUID()}"
         val repo = WrappingRepositoryImpl(emf, "test")
         repo.saveKey(keyAlias, wrappingKeyInfo)
@@ -95,7 +95,7 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
 
     @ParameterizedTest
     @MethodSource("emfs")
-    fun `saveKeyWithId with existing UUID updates the recored`(emf: EntityManagerFactory) {
+    fun `saveKeyWithId with existing UUID updates the record`(emf: EntityManagerFactory) {
         val keyAlias = "save-key-with-ID-${UUID.randomUUID()}"
 
         val wrappingKeyInfo2 = WrappingKeyInfo(
