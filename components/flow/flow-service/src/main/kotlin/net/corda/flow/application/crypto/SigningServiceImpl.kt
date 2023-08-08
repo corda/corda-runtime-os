@@ -1,7 +1,6 @@
 package net.corda.flow.application.crypto
 
 import io.micrometer.core.instrument.Timer
-import java.security.PublicKey
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.fullIdHash
@@ -25,6 +24,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.security.PublicKey
 
 @Component(
     service = [SigningService::class, UsedByFlow::class],
@@ -118,6 +118,22 @@ class SigningServiceImpl @Activate constructor(
             return@operation cachedKeys + plainKeysReqResp + compositeKeysReqResp
         }
         return recordSuspendable({ cryptoFlowTimer("findMySigningKeys") }, operation)
+    }
+
+    override fun signWithMyKeys(
+        bytes: ByteArray,
+        keys: MutableSet<PublicKey>,
+        signatureSpec: SignatureSpec
+    ): MutableSet<DigitalSignature.WithKeyId> {
+        TODO("Not yet implemented")
+    }
+
+    override fun signWithMyCategoryKeys(
+        bytes: ByteArray,
+        category: String,
+        signatureSpec: SignatureSpec
+    ): MutableSet<DigitalSignature.WithKeyId> {
+        TODO("Not yet implemented")
     }
 
     private fun cryptoFlowTimer(operationName: String): Timer {
