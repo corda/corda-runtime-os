@@ -11,6 +11,8 @@ import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.PersistEntities
+import net.corda.db.admin.LiquibaseSchemaMigrator
+import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
@@ -56,6 +58,7 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.nio.file.Path
 import java.util.UUID
+import javax.sql.DataSource
 
 
 /**
@@ -84,6 +87,9 @@ class PersistenceExceptionTests {
     private lateinit var entitySandboxService: EntitySandboxService
 
     private lateinit var virtualNodeInfo: VirtualNodeInfo
+
+    @InjectService
+    lateinit var lbm: LiquibaseSchemaMigrator
 
     @BeforeAll
     fun setup(
@@ -274,8 +280,17 @@ class PersistenceExceptionTests {
         val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
         // create dog using dog-aware sandbox
-        val dog = sandbox.createDog("Stray", owner = "Not Known")
-        val serialisedDog = sandbox.getSerializationService().serialize(dog.instance).bytes
+        val dog =
+            sandbox
+                .createDog("Stray", owner = "Not Known")
+                .instance
+                .also {
+                    createDBTables(
+                        it::class.java,
+                        dbConnectionManager.getDataSource(virtualNodeInfo.vaultDmlConnectionId)
+                    )
+                }
+        val serialisedDog = sandbox.getSerializationService().serialize(dog).bytes
 
         // create persist request for the sandbox that isn't dog-aware
         val requestId = UUID.randomUUID().toString()
@@ -291,5 +306,19 @@ class PersistenceExceptionTests {
                 )
             )
         )
+    }
+
+    private fun createDBTables(clazz: Class<*>, ds: DataSource) {
+        val cl = ClassloaderChangeLog(
+            linkedSetOf(
+                ClassloaderChangeLog.ChangeLogResourceFiles(
+                    clazz.packageName,
+                    listOf("migration/db.changelog-master.xml"),
+                    clazz.classLoader
+                )
+            )
+        )
+
+        lbm.updateDb(ds.connection, cl)
     }
 }

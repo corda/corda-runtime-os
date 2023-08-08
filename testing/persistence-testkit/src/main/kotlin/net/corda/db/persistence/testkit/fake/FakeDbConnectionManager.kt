@@ -50,10 +50,7 @@ class FakeDbConnectionManager(
         return emff.create(
             source.name,
             entitiesSet.classes.toList(),
-            DbEntityManagerConfiguration(
-                source.dataSource,
-                ddlManage = DdlManage.CREATE
-            ),
+            DbEntityManagerConfiguration(source.dataSource),
         )
     }
 
