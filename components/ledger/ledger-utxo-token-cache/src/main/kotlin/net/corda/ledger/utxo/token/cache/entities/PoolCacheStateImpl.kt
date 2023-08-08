@@ -3,19 +3,18 @@ package net.corda.ledger.utxo.token.cache.entities
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaim
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 
-class PoolCacheStateImpl(private val cacheState: TokenPoolCacheState) : PoolCacheState {
+class PoolCacheStateImpl() : PoolCacheState {
 
-    private var claimedTokens: Set<String>
+    private val cacheState = TokenPoolCacheState()
+    private val claimedTokensMap: MutableMap<String, CachedToken> = mutableMapOf()
 
-    init {
-        claimedTokens = createClaimedTokenSet()
+
+    override fun claimedTokens(): Collection<CachedToken> {
+        return claimedTokensMap.values
     }
 
-    override fun claimedTokens(): Collection<String> {
-        return claimedTokens
-    }
     override fun isTokenClaimed(stateRef: String): Boolean {
-        return claimedTokens.contains(stateRef)
+        return claimedTokensMap.contains(stateRef)
     }
 
     override fun claimExists(claimId: String): Boolean {
@@ -23,18 +22,35 @@ class PoolCacheStateImpl(private val cacheState: TokenPoolCacheState) : PoolCach
     }
 
     override fun removeClaim(claimId: String) {
-        cacheState.tokenClaims = cacheState.tokenClaims.filterNot { it.claimId == claimId }
-        claimedTokens = createClaimedTokenSet()
+        cacheState.tokenClaims = cacheState.tokenClaims.filterNot { tokenClaim ->
+            if(tokenClaim.claimId == claimId) {
+                removeFromClaimedTokenMap(tokenClaim.claimedTokenStateRefs)
+                true
+            }
+            else {
+                false
+            }
+        }
     }
 
     override fun addNewClaim(claimId: String, selectedTokens: List<CachedToken>) {
         cacheState.tokenClaims = cacheState
             .tokenClaims
             .toMutableList().apply {
-                removeIf { it.claimId == claimId }
+                removeIf {
+                    tokenClaim ->
+                    if(tokenClaim.claimId == claimId) {
+                        removeFromClaimedTokenMap(tokenClaim.claimedTokenStateRefs)
+                        true
+                    }
+                    else {
+                        false
+                    }
+                }
                 add(createClaim(claimId, selectedTokens))
             }
-        claimedTokens = createClaimedTokenSet()
+
+        addToClaimedTokenMap(selectedTokens)
     }
 
     override fun tokensRemovedFromCache(stateRefs: Set<String>) {
@@ -46,20 +62,27 @@ class PoolCacheStateImpl(private val cacheState: TokenPoolCacheState) : PoolCach
         }
 
         cacheState.tokenClaims = cacheState.tokenClaims.filter { it.claimedTokenStateRefs.isNotEmpty() }
+        removeFromClaimedTokenMap(stateRefs)
     }
 
     override fun toAvro(): TokenPoolCacheState {
         return cacheState
     }
 
-    private fun createClaim(claimId: String, selectedTokens: List<CachedToken>): TokenClaim {
+    private fun createClaim(claimId: String, selectedTokens: Collection<CachedToken>): TokenClaim {
         return TokenClaim().apply {
             this.claimId = claimId
             this.claimedTokenStateRefs = selectedTokens.map { it.stateRef }
         }
     }
 
-    private fun createClaimedTokenSet(): Set<String> {
-        return cacheState.tokenClaims.flatMap { it.claimedTokenStateRefs }.toSet()
+    private fun addToClaimedTokenMap(selectedTokens: Collection<CachedToken>) {
+        selectedTokens.forEach { claimedTokensMap[it.stateRef] = it }
+    }
+
+    private fun removeFromClaimedTokenMap(claimedTokenStateRefs: Collection<String>) {
+        claimedTokenStateRefs.forEach { stateRef ->
+            claimedTokensMap.remove(stateRef)
+        }
     }
 }

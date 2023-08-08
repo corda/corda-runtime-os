@@ -24,17 +24,15 @@ class TokenBalanceQueryEventHandler(
         event: BalanceQuery
     ): Record<String, FlowEvent> {
 
-        val tokenBalance = calculateTokenBalance(tokenCache, state, event)
-
-        val tokenBalance1 = availableTokenService.queryBalance(event.poolKey.toDto(), event.ownerHash, event.tagRegex, state.claimedTokens())
-
-        println(tokenBalance1)
+        val totalBalance = availableTokenService.queryBalance(event.poolKey.toDto(), event.ownerHash, event.tagRegex)
+        val claimedBalance = state.claimedTokens().sumOf { it.amount }
+        val availableBalance = totalBalance - claimedBalance
 
         return recordFactory.getBalanceResponse(
             event.flowId,
             event.externalEventRequestId,
             event.poolKey,
-            tokenBalance
+            TokenBalance(availableBalance, totalBalance)
         )
     }
 

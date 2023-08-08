@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.token.cache.services
 
+import java.math.BigDecimal
 import net.corda.ledger.utxo.token.cache.entities.AvailTokenQueryResult
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.ledger.utxo.token.cache.entities.TokenBalance
@@ -24,6 +25,6 @@ interface AvailableTokenService {
      */
     fun findAvailTokens(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?): AvailTokenQueryResult
 
-    fun queryBalance(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?, stateRefClaimedTokens: Collection<String>): TokenBalance
+    fun queryBalance(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?): BigDecimal
 
 }

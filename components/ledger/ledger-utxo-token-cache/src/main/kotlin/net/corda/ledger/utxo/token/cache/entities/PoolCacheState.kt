@@ -51,7 +51,7 @@ interface PoolCacheState {
      */
     fun tokensRemovedFromCache(stateRefs: Set<String>)
 
-    fun claimedTokens(): Collection<String>
+    fun claimedTokens(): Collection<CachedToken>
 
     /**
      * Creates an Avro representation of the [PoolCacheState].
