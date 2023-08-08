@@ -83,7 +83,6 @@ class EVMProcessorImpl @Activate constructor(
             is StopEvent -> {
                 log.trace("Stopping EVM Processor")
             }
-
             is BootConfigEvent -> {
                 val bootstrapConfig = event.config
                 log.trace("Bootstrapping {}", configurationReadService::class.simpleName)
@@ -105,7 +104,7 @@ class EVMProcessorImpl @Activate constructor(
                         rpcConfig = RPCConfig(
                             groupName = "evm.ops.rpc",
                             clientName = "evm.ops.rpc",
-                            requestTopic = Schemas.Interop.INTEROP_EVM_REQUEST,
+                            requestTopic = Schemas.Interop.EVM_REQUEST,
                             requestType = EvmRequest::class.java,
                             responseType = EvmResponse::class.java
                         ),

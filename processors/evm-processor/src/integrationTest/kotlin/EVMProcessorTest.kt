@@ -1,7 +1,12 @@
 import net.corda.data.interop.evm.EvmRequest
 import net.corda.data.interop.evm.EvmResponse
+import net.corda.data.interop.evm.request.Call
+import net.corda.data.interop.evm.request.ChainId
+import net.corda.data.interop.evm.request.EstimateGas
+import net.corda.data.interop.evm.request.GasPrice
+import net.corda.data.interop.evm.request.GetCode
+import net.corda.data.interop.evm.request.SendRawTransaction
 import net.corda.processors.evm.internal.EVMOpsProcessor
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.util.concurrent.CompletableFuture
@@ -26,18 +31,17 @@ class EvmProcessorTest {
         val processor = EVMOpsProcessor()
         val evmRequest = EvmRequest(
             "RandomFlowId",
+            "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73",
             "",
             "http://127.0.0.1:8545",
-            "0",
-            true,
-            ERC20ByteCode
+            SendRawTransaction(0.toString(),ERC20ByteCode)
         )
-
         val evmResponse = CompletableFuture<EvmResponse>()
         processor.onNext(evmRequest,evmResponse)
         val returnedResponse = evmResponse.get()
         println(returnedResponse.payload)
         contractAddress = returnedResponse.payload
+        println(contractAddress)
     }
 
     // Checking that the balance can be correctly called
@@ -47,18 +51,16 @@ class EvmProcessorTest {
         // Define this
         val evmRequest = EvmRequest(
             "RandomFlowId",
+            "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73",
             contractAddress,
             "http://127.0.0.1:8545",
-            "0",
-            false,
-            queryBalanceForAddress
+            Call(queryBalanceForAddress)
         )
+
         val evmResponse = CompletableFuture<EvmResponse>()
         processor.onNext(evmRequest,evmResponse)
         val returnedResponse = evmResponse.get()
-
         assert("0x00000000000000000000000000000000000000000000d3c21bcecceda1000000"==returnedResponse.payload)
-
     }
 
 
@@ -68,19 +70,15 @@ class EvmProcessorTest {
 
         val evmRequest = EvmRequest(
             "RandomFlowId",
+            "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73",
             contractAddress,
             "http://127.0.0.1:8545",
-            "0",
-            true,
-            transfer100Encoded
+            SendRawTransaction(0.toString(),transfer100Encoded)
         )
         val evmResponse = CompletableFuture<EvmResponse>()
         processor.onNext(evmRequest,evmResponse)
         val returnedResponse = evmResponse.get()
         println("Returned Response ${returnedResponse}")
-
-        // Query the balance
-        // Starting
     }
 
     @Test
@@ -88,12 +86,12 @@ class EvmProcessorTest {
         val processor = EVMOpsProcessor()
         val evmRequest = EvmRequest(
             "RandomFlowId",
+            "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73",
             contractAddress,
             "http://127.0.0.1:9545",
-            "0",
-            true,
-            transfer100Encoded
+            SendRawTransaction(0.toString(),transfer100Encoded)
         )
+
         val evmResponse = CompletableFuture<EvmResponse>()
         processor.onNext(evmRequest,evmResponse)
         try{
@@ -109,11 +107,10 @@ class EvmProcessorTest {
         val processor = EVMOpsProcessor()
         val evmRequest = EvmRequest(
             "RandomFlowId",
+            "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73",
             contractAddress,
             "http://127.0.0.1:8545",
-            "0",
-            true,
-            transferRevertMethod
+            SendRawTransaction(0.toString(),transferRevertMethod)
         )
         val evmResponse = CompletableFuture<EvmResponse>()
         processor.onNext(evmRequest,evmResponse)
@@ -129,11 +126,10 @@ class EvmProcessorTest {
         val processor = EVMOpsProcessor()
         val evmRequest = EvmRequest(
             "RandomFlowId",
-            "Random Text String",
+            "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73",
+            contractAddress,
             "http://127.0.0.1:8545",
-            "0",
-            true,
-            transferRevertMethod
+            SendRawTransaction(0.toString(),transfer100Encoded)
         )
         val evmResponse = CompletableFuture<EvmResponse>()
         processor.onNext(evmRequest,evmResponse)
@@ -143,4 +139,70 @@ class EvmProcessorTest {
             assert(e is ExecutionException)
         }
     }
+
+    @Test
+    fun `Retrieve the ChainId`(){
+        val processor = EVMOpsProcessor()
+        val evmRequest = EvmRequest(
+            "RandomFlowId",
+            "",
+            "",
+            "http://127.0.0.1:8545",
+            ChainId()
+        )
+        val evmResponse = CompletableFuture<EvmResponse>()
+        processor.onNext(evmRequest,evmResponse)
+        val response = evmResponse.get()
+        assert(response.payload=="2018")
+    }
+
+    @Test
+    fun `Estimate Gas`(){
+        val processor = EVMOpsProcessor()
+        val evmRequest = EvmRequest(
+            "RandomFlowId",
+            "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73",
+            contractAddress,
+            "http://127.0.0.1:8545",
+            EstimateGas(transfer100Encoded)
+        )
+        val evmResponse = CompletableFuture<EvmResponse>()
+        processor.onNext(evmRequest,evmResponse)
+        val response = evmResponse.get()
+        assert(response.payload=="52117")
+    }
+
+    @Test
+    fun `Get Gas Price`(){
+        val processor = EVMOpsProcessor()
+        val evmRequest = EvmRequest(
+            "RandomFlowId",
+            "",
+            "",
+            "http://127.0.0.1:8545",
+            GasPrice()
+        )
+        val evmResponse = CompletableFuture<EvmResponse>()
+        processor.onNext(evmRequest,evmResponse)
+        val response = evmResponse.get()
+        assert(response.payload=="1000")
+    }
+
+    @Test
+    fun `Get Code`(){
+        val processor = EVMOpsProcessor()
+        val evmRequest = EvmRequest(
+            "RandomFlowId",
+            "",
+            "",
+            "http://127.0.0.1:8545",
+            GetCode("0xfe3b557e8fb62b89f4916b721be55ceb828dbd73","1")
+        )
+        val evmResponse = CompletableFuture<EvmResponse>()
+        processor.onNext(evmRequest,evmResponse)
+        val response = evmResponse.get()
+        println(response)
+    }
+
+
 }

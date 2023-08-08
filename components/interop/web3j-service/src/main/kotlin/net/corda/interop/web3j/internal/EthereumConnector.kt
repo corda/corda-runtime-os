@@ -18,6 +18,10 @@ data class JsonRpcResponse(
     val id: String,
     val result: String
 )
+
+
+class EVMErrorException(val errorResponse: JsonRpcError) : Exception("Custom error")
+
 data class JsonRpcError(
     val jsonrpc: String,
     val id: String,
@@ -164,7 +168,7 @@ class EthereumConnector {
         println("INPUT ${input}")
         when (input) {
             is JsonRpcError -> {
-                 throw CordaRuntimeException("Interop Error: ${input.error.code}: ${input.error.message}")
+                 throw EVMErrorException(input)
             }
             is TransactionResponse -> {
                 try{

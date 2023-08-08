@@ -2,6 +2,7 @@ package net.corda.processors.evm.internal
 
 import com.google.gson.JsonObject
 import net.corda.data.interop.evm.EvmRequest
+import net.corda.data.interop.evm.request.SendRawTransaction
 import net.corda.data.interop.evm.EvmResponse
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import org.slf4j.LoggerFactory
@@ -13,8 +14,21 @@ import java.math.BigInteger
 import java.util.concurrent.CompletableFuture
 import net.corda.interop.web3j.internal.EthereumConnector
 import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
 import kotlinx.coroutines.*
+import net.corda.data.interop.evm.request.Call
+import net.corda.data.interop.evm.request.ChainId
+import net.corda.data.interop.evm.request.EstimateGas
+import net.corda.data.interop.evm.request.GasPrice
+import net.corda.data.interop.evm.request.GetBalance
+import net.corda.data.interop.evm.request.GetCode
+import net.corda.data.interop.evm.request.GetTransactionByHash
+import net.corda.data.interop.evm.request.GetTransactionReceipt
+import net.corda.data.interop.evm.request.MaxPriorityFeePerGas
+import net.corda.data.interop.evm.request.Syncing
+import net.corda.interop.web3j.internal.EVMErrorException
+import java.util.concurrent.TimeUnit
+
+class TransientErrorException(message: String) : Exception(message)
 
 // GOING TO GET RID OF gson
 
@@ -24,12 +38,54 @@ import kotlinx.coroutines.*
  */
 class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
 
+    private val MAX_RETRIES = 3
+    private val RETRY_DELAY_MS = 1000L // 1 second
     private val evmConnector = EthereumConnector()
     private val scheduledExecutorService = Executors.newFixedThreadPool(20)
-
+    private val transientEthereumErrorCodes = listOf(
+        -32000, -32005, -32010, -32016, -32002,
+        -32003, -32004, -32007, -32008, -32009,
+        -32011, -32012, -32014, -32015, -32019,
+        -32020, -32021
+    )
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
+
+
+    inner class RetryPolicy(private val maxRetries: Int, private val delayMs: Long) {
+        fun execute(action: () -> Unit): Unit {
+            var retries = 0
+            while (retries <= maxRetries) {
+                try {
+                    return action()
+                } catch (e: EVMErrorException) {
+                    if(transientEthereumErrorCodes.contains(e.errorResponse.error.code)){
+                        // Log or handle the error if needed
+                        println("AT EVM ERROR EXCEPTION")
+                        retries++
+                        if (retries <= maxRetries) {
+                            TimeUnit.MILLISECONDS.sleep(delayMs)
+                        } else {
+                            throw e // If retries exhausted, rethrow the exception
+                        }
+                    }else{
+                        throw e
+                    }
+                }
+            }
+            throw IllegalStateException("Execution should not reach here")
+        }
+    }
+
+
+    fun getBalance(rpcConnection: String, from: String): CompletableFuture<String> {
+        return CompletableFuture.supplyAsync<String>{
+            val resp = evmConnector.send(rpcConnection, "eth_getBalance", listOf(from,"latest"))
+            resp.result.toString()
+        }
+    }
+
 
     /**
      * Get the transaction receipt details from the Ethereum node.
@@ -44,6 +100,15 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
             resp.result.toString()
         }
     }
+
+
+    fun getTransactionByHash(rpcConnection: String, hash: String): CompletableFuture<String> {
+        return CompletableFuture.supplyAsync<String>{
+            val resp = evmConnector.send(rpcConnection, "eth_getTransactionByHash", listOf(hash))
+            resp.result.toString()
+        }
+    }
+
 
     /**
      * Get the Chain ID from the Ethereum node.
@@ -63,17 +128,25 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
      * @param rpcConnection The URL of the Ethereum RPC endpoint.
      * @return The Gas Price as a BigInteger.
      */
-    private fun getGasPrice(rpcConnection: String): CompletableFuture<BigInteger> {
-        return CompletableFuture.supplyAsync<BigInteger> {
-            val resp = evmConnector.send(rpcConnection, "eth_gasPrice", listOf(""))
-            BigInteger.valueOf(Integer.decode(resp.result.toString()).toLong())
-        }
+    private fun getGasPrice(rpcConnection: String): BigInteger {
+        val resp = evmConnector.send(rpcConnection, "eth_gasPrice", listOf(""))
+        return BigInteger.valueOf(Integer.decode(resp.result.toString()).toLong())
     }
 
 
-    fun main() {
-
+    private fun maxPriorityFeePerGas(rpcConnection: String): BigInteger {
+        val resp = evmConnector.send(rpcConnection, "eth_maxPriorityFeePerGas", listOf(""))
+        return BigInteger.valueOf(Integer.decode(resp.result.toString()).toLong())
     }
+
+
+    private fun getCode(rpcConnection: String, address: String, blockNumber: String): String {
+            val resp = evmConnector.send(rpcConnection, "eth_getCode", listOf(address,blockNumber))
+            return resp.result.toString()
+    }
+
+
+
 
     /**
      * Estimate the Gas price for a transaction.
@@ -176,8 +249,6 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
         } else {
             tReceipt.result.toString()
         }
-
-
     }
 
     /**
@@ -207,31 +278,101 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
     private fun handleRequest(request: EvmRequest, respFuture: CompletableFuture<EvmResponse>) {
         log.info(request.schema.toString(true))
         // Parameters for the transaction/query
-        val contractAddress = request.contractAddress
         val rpcConnection = request.rpcUrl
-        val payload = request.payload
+        val data = request.specificData.toString()
         val flowId = request.flowId
-        val isTransaction = request.isTransaction
+        val from = request.from
+        val to = request.to
+        val payload = request.payload
 
-        if (isTransaction) {
-            // Transaction Being Sent
-            var transactionOutput: String;
-            runBlocking {
-                transactionOutput = sendTransaction(rpcConnection, contractAddress, payload)
+
+
+        when (payload) {
+            is Call -> {
+                // Handle the Call
+                println("PAYLOAD: ${payload.payload}")
+                val callResult = sendCall(rpcConnection, to, payload.payload)
+                respFuture.complete(EvmResponse(flowId, callResult))
+             }
+            is ChainId -> {
+                // Handle the Chain Id
+                val chainId = getChainId(rpcConnection)
+                respFuture.complete(EvmResponse(flowId,chainId.toString()))
             }
-            val result = EvmResponse(flowId, transactionOutput)
-            respFuture.complete(result)
-        } else {
-            // Call Being Sent
-            val callResult = sendCall(rpcConnection, contractAddress, payload)
-            respFuture.complete(EvmResponse(flowId, callResult))
+            is EstimateGas -> {
+                val estimateGas = estimateGas(rpcConnection,from,to,payload.payload.toString())
+                respFuture.complete(EvmResponse(flowId,estimateGas.toString()))
+            }
+            is GasPrice -> {
+                val gasPrice = getGasPrice(rpcConnection)
+                respFuture.complete(EvmResponse(flowId,gasPrice.toString()))
+            }
+            is GetBalance -> {
+                val balance = getBalance(rpcConnection,from)
+                respFuture.complete(EvmResponse(flowId,balance.toString()))
+            }
+            is GetCode -> {
+                val code = getCode(rpcConnection,payload.address,payload.blockNumber)
+                respFuture.complete(EvmResponse(flowId, code))
+            }
+            is GetTransactionByHash -> {
+                val transaction = getTransactionByHash(rpcConnection,data)
+                respFuture.complete(EvmResponse(flowId, transaction.toString()))
+
+            }
+            is GetTransactionReceipt -> {
+                val receipt = getTransactionReceipt(rpcConnection,data)
+                respFuture.complete(EvmResponse(flowId,receipt.toString()))
+            }
+            is MaxPriorityFeePerGas -> {
+                val maxPriority = maxPriorityFeePerGas(rpcConnection)
+                respFuture.complete(EvmResponse(flowId,maxPriority.toString()))
+            }
+            is SendRawTransaction -> {
+                var transactionOutput: String;
+                runBlocking {
+                    transactionOutput = sendTransaction(rpcConnection, to, payload.payload)
+                }
+                val result = EvmResponse(flowId, transactionOutput)
+                respFuture.complete(result)
+            }
+            is Syncing -> {
+
+            }
+
         }
+
+//
+//        if (isTransaction) {
+//            // Transaction Being Sentx
+//            var transactionOutput: String;
+//            runBlocking {
+//                transactionOutput = sendTransaction(rpcConnection, contractAddress, payload)
+//            }
+//            val result = EvmResponse(flowId, transactionOutput)
+//            respFuture.complete(result)
+//        } else {
+//            // Call Being Sent
+//            val callResult = sendCall(rpcConnection, contractAddress, payload)
+//            respFuture.complete(EvmResponse(flowId, callResult))
+//        }
     }
 
 
     override fun onNext(request: EvmRequest, respFuture: CompletableFuture<EvmResponse>) {
-        scheduledExecutorService.submit({
-            handleRequest(request,respFuture)
-        })
+        val retryPolicy = RetryPolicy(MAX_RETRIES, RETRY_DELAY_MS)
+
+        scheduledExecutorService.submit {
+            try {
+                retryPolicy.execute {
+                    handleRequest(request,respFuture)
+                }
+            } catch (e: Exception) {
+                respFuture.completeExceptionally(e)
+            }
+        }
+
     }
+
+
 }
