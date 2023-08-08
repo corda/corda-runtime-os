@@ -3,11 +3,9 @@ package net.corda.ledger.utxo.token.cache.entities
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaim
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 
-class PoolCacheStateImpl : PoolCacheState {
+class PoolCacheStateImpl(val cacheState: TokenPoolCacheState) : PoolCacheState {
 
-    private val cacheState = TokenPoolCacheState()
     private val claimedTokensMap: MutableMap<String, CachedToken> = mutableMapOf()
-
 
     override fun claimedTokens(): Collection<CachedToken> {
         return claimedTokensMap.values

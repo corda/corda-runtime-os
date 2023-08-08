@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.token.cache.handlers
 
-import java.math.BigDecimal
 import net.corda.data.flow.event.FlowEvent
 import net.corda.ledger.utxo.token.cache.Helper.toDto
 import net.corda.ledger.utxo.token.cache.entities.BalanceQuery

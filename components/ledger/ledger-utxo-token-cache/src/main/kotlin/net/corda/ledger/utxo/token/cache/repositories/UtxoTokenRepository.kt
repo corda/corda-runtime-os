@@ -16,15 +16,7 @@ interface UtxoTokenRepository {
         regexTag: String?
     ): AvailTokenQueryResult
 
-    fun queryAvailableBalance(
-        entityManager: EntityManager,
-        poolKey: TokenPoolKey,
-        ownerHash: String?,
-        regexTag: String?,
-        stateRefClaimedTokens: Collection<String>
-    ): BigDecimal
-
-    fun queryTotalBalance(
+    fun queryBalance(
         entityManager: EntityManager,
         poolKey: TokenPoolKey,
         ownerHash: String?,

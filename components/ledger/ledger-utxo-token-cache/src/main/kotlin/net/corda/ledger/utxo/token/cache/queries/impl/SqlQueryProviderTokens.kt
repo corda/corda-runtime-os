@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.token.cache.queries.impl
 
 import net.corda.ledger.utxo.token.cache.queries.SqlQueryProvider
-import net.corda.ledger.utxo.token.cache.repositories.UtxoTokenRepository
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope
@@ -10,7 +9,7 @@ import org.osgi.service.component.annotations.ServiceScope
     service = [ SqlQueryProvider::class],
     scope = ServiceScope.PROTOTYPE
 )
-class SqlQueryProviderImpl @Activate constructor() : SqlQueryProvider {
+class SqlQueryProviderTokens @Activate constructor() : SqlQueryProvider {
 
     companion object {
         val SQL_PARAMETER_TOKEN_TYPE = "tokenType"
@@ -18,6 +17,30 @@ class SqlQueryProviderImpl @Activate constructor() : SqlQueryProvider {
         val SQL_PARAMETER_SYMBOL = "symbol"
         val SQL_PARAMETER_OWNER_HASH = "ownerHash"
         val SQL_PARAMETER_TAG_FILTER = "tag"
+    }
+
+    override fun getBalanceQuery(limit: Int, includeTagFilter: Boolean, includeOwnerFilter: Boolean): String {
+        val tagFilter = if(includeTagFilter){
+            "AND   token_tag ~ :$SQL_PARAMETER_TAG_FILTER"
+        }else{
+            ""
+        }
+        val ownerFilter = if(includeTagFilter){
+            "AND   token_owner_hash = :$SQL_PARAMETER_OWNER_HASH"
+        }else{
+            ""
+        }
+
+        return """
+                SELECT
+                    SUM(token_amount)
+                FROM {h-schema}utxo_transaction_output
+                WHERE token_type = :$SQL_PARAMETER_TOKEN_TYPE
+                AND   token_issuer_hash = :$SQL_PARAMETER_ISSUER_HASH
+                AND   token_symbol = :$SQL_PARAMETER_SYMBOL
+                $tagFilter
+                $ownerFilter
+                """.trimIndent()
     }
 
     override fun getPagedSelectQuery(limit: Int, includeTagFilter: Boolean, includeOwnerFilter: Boolean): String {
