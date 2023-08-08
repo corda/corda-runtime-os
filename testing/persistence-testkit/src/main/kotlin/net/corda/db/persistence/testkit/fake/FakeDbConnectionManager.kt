@@ -9,6 +9,7 @@ import net.corda.db.schema.CordaDb
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.DbEntityManagerConfiguration
+import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
@@ -49,7 +50,10 @@ class FakeDbConnectionManager(
         return emff.create(
             source.name,
             entitiesSet.classes.toList(),
-            DbEntityManagerConfiguration(source.dataSource),
+            DbEntityManagerConfiguration(
+                source.dataSource,
+                ddlManage = DdlManage.CREATE
+            ),
         )
     }
 

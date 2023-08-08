@@ -39,7 +39,9 @@ import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
@@ -233,6 +235,39 @@ class PersistenceExceptionTests {
         assertThat(response.error.exception.errorType).isEqualTo(CordaRuntimeException::class.java.name)
     }
 
+    @Disabled("This test is disabled for now because currently we do execute duplicate persistence requests." +
+            "It should be re-enabled after deduplication work is done in epic CORE-5909")
+    @Test
+    fun `on duplicate persistence request don't execute it`() {
+        val (dbConnectionManager, persistEntitiesRequest) = setupExceptionHandlingTests()
+
+        val entitySandboxService =
+            EntitySandboxServiceFactory().create(
+                virtualNode.sandboxGroupContextComponent,
+                cpkReadService,
+                virtualNodeInfoReadService,
+                dbConnectionManager
+            )
+
+        val processor = EntityMessageProcessor(
+            currentSandboxGroupContext,
+            entitySandboxService,
+            responseFactory,
+            this::noOpPayloadCheck
+        )
+
+        val record1 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
+        assertNull(((record1.single().value as FlowEvent).payload as ExternalEventResponse).error)
+        println(record1)
+
+        // duplicate request
+        val record2 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
+        // The below should not contain a PK violation error as it should be identified it is the same persistence request
+        // and therefore not executed
+        assertNull(((record2.single().value as FlowEvent).payload as ExternalEventResponse).error)
+        println(record2)
+    }
+
     private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
 
     /**
@@ -246,10 +281,18 @@ class PersistenceExceptionTests {
         val serialisedDog = sandbox.getSerializationService().serialize(dog.instance).bytes
 
         // create persist request for the sandbox that isn't dog-aware
+        val requestId = UUID.randomUUID().toString()
+        val flowId = UUID.randomUUID().toString()
         return EntityRequest(
             virtualNodeInfo.holdingIdentity.toAvro(),
             PersistEntities(listOf(ByteBuffer.wrap(serialisedDog))),
-            ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
+            ExternalEventContext(
+                requestId,
+                flowId,
+                KeyValuePairList(
+                    cpkFileHashes.map { KeyValuePair(CPK_FILE_CHECKSUM, it.toString()) }
+                )
+            )
         )
     }
 }
