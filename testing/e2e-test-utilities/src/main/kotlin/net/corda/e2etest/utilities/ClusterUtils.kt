@@ -137,11 +137,7 @@ fun ClusterInfo.getExistingCpi(
         command { cpiList() }
         condition { it.code == ResponseCode.OK.statusCode }
         failMessage("Failed to list CPIs")
-    }.toJson().apply {
-            assertThat(contains("cpis")).isTrue
-        }["cpis"]
-        .toList()
-        .firstOrNull {
+    }.toJson().firstOrNull {
             it["id"]["cpiName"].textValue() == cpiName
         }
 }
