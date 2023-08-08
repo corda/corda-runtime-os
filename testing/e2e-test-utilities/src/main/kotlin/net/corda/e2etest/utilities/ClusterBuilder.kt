@@ -363,7 +363,6 @@ class ClusterBuilder {
     fun deprecatedMultipleFlowStatus(holdingIdentityShortHash: String) =
         get("/api/${RestApiVersion.C5_0.versionPath}/flow/$holdingIdentityShortHash")
 
-
     /** Get result of a flow execution */
     fun flowResult(holdingIdentityShortHash: String, clientRequestId: String) =
         get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash/$clientRequestId/result")
