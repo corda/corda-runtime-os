@@ -102,7 +102,6 @@ class PersistenceExceptionTests {
             responseFactory = setup.fetchService(timeout = 5000)
             currentSandboxGroupContext = setup.fetchService(timeout = 5000)
 
-
             virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
             dbConnectionManager = FakeDbConnectionManager(
                 listOf(Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node")),
