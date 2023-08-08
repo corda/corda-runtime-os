@@ -258,14 +258,11 @@ class PersistenceExceptionTests {
 
         val record1 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
         assertNull(((record1.single().value as FlowEvent).payload as ExternalEventResponse).error)
-        println(record1)
-
         // duplicate request
         val record2 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
         // The below should not contain a PK violation error as it should be identified it is the same persistence request
         // and therefore not executed
         assertNull(((record2.single().value as FlowEvent).payload as ExternalEventResponse).error)
-        println(record2)
     }
 
     private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
