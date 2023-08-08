@@ -6,6 +6,7 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistGroupParameters
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.membership.datamodel.GroupParametersEntity
+import net.corda.membership.impl.persistence.service.RecoverableException
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
@@ -72,6 +73,16 @@ internal class PersistGroupParametersHandler(
                 .resultList
                 .first()
                 .toAvro()
+        }
+
+        try {
+            val parameters = groupParametersFactory.create(persistedGroupParameters)
+            groupParametersWriterService.put(
+                context.holdingIdentity.toCorda(),
+                parameters,
+            )
+        } catch (e: Exception) {
+            throw RecoverableException("Could not write the group parameters to the message bus.", e)
         }
 
         return PersistGroupParametersResponse(persistedGroupParameters)

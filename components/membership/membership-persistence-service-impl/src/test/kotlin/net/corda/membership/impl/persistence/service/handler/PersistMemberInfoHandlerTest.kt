@@ -1,10 +1,10 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.core.ShortHash
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
-import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.core.ShortHash
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -66,6 +66,7 @@ class PersistMemberInfoHandlerTest {
         val serializedMemberContext = "123".toByteArray()
         val serializedMgmContext = "456".toByteArray()
     }
+
     private val ourX500Name = MemberX500Name.parse("O=Alice,L=London,C=GB")
     private val ourGroupId = UUID.randomUUID().toString()
     private val ourHoldingIdentity = HoldingIdentity(
@@ -110,12 +111,9 @@ class PersistMemberInfoHandlerTest {
     }
 
     private val dbConnectionManager: DbConnectionManager = mock {
-        on {
-            createEntityManagerFactory(
-                eq(vaultDmlConnectionId),
-                any()
-            )
-        } doReturn entityManagerFactory
+        on { getOrCreateEntityManagerFactory(
+            eq(vaultDmlConnectionId),
+            any()) } doReturn entityManagerFactory
     }
     private val jpaEntitiesRegistry: JpaEntitiesRegistry = mock {
         on { get(eq(CordaDb.Vault.persistenceUnitName)) } doReturn mock()
@@ -146,6 +144,8 @@ class PersistMemberInfoHandlerTest {
         virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
+        mock(),
+        mock(),
         mock(),
         transactionTimerFactory
     )
@@ -204,7 +204,6 @@ class PersistMemberInfoHandlerTest {
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityManager).transaction
         verify(jpaEntitiesRegistry).get(eq(CordaDb.Vault.persistenceUnitName))
         with(argumentCaptor<PersistentMemberInfo>()) {

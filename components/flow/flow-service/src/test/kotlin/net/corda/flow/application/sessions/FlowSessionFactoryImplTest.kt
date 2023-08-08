@@ -99,13 +99,14 @@ class FlowSessionFactoryImplTest {
 
     @Test
     fun `can create an initiating session and mutate its context with a builder`() {
-        val session =
-            flowSessionFactory.createInitiatingFlowSession(SESSION_ID, BOB_X500_NAME) { flowContextProperties ->
-                // Additional user context
-                flowContextProperties.put("extraUserKey", "extraUserValue")
-                // Addition platform context via the Corda internal extension function
-                flowContextProperties.asFlowContext.platformProperties["extraPlatformKey"] = "extraPlatformValue"
-            }
+        val propertiesBuilder = FlowContextPropertiesBuilder { flowContextProperties ->
+            // Additional user context
+            flowContextProperties.put("extraUserKey", "extraUserValue")
+            // Addition platform context via the Corda internal extension function
+            flowContextProperties.asFlowContext.platformProperties["extraPlatformKey"] = "extraPlatformValue"
+        }
+
+        val session = flowSessionFactory.createInitiatingFlowSession(SESSION_ID, BOB_X500_NAME, propertiesBuilder)
 
         // Validate mutated
         assertEquals("extraUserValue", session.contextProperties["extraUserKey"])

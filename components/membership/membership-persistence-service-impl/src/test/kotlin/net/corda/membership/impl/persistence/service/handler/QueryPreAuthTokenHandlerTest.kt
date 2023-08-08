@@ -88,7 +88,7 @@ class QueryPreAuthTokenHandlerTest {
         on { createEntityManager() } doReturn entityManager
     }
     private val dbConnectionManager = mock<DbConnectionManager> {
-        on { createEntityManagerFactory(any(), any()) } doReturn entityManagerFactory
+        on { getOrCreateEntityManagerFactory(any<UUID>(), any()) } doReturn entityManagerFactory
     }
     private val entitySet = mock<JpaEntitiesSet>()
     private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry> {

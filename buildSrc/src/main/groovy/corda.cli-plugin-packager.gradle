@@ -23,7 +23,6 @@ configurations {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.databind'
         exclude group: 'com.fasterxml.jackson.annotation'
-        exclude group: 'org.apache.servicemix.bundles'
         exclude group: 'info.picocli.picocli'
     }
 }

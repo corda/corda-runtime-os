@@ -30,6 +30,8 @@ import java.security.PublicKey
 import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
 import javax.crypto.AEADBadTagException
+import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
+import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 
 /**
  * The initiator side of the session authentication protocol.
@@ -51,13 +53,18 @@ import javax.crypto.AEADBadTagException
  * This class is not thread-safe, which means clients that want to use it from different threads need to perform external synchronisation.
  */
 @Suppress("LongParameterList")
-class AuthenticationProtocolInitiator(val sessionId: String,
-                                      private val supportedModes: Set<ProtocolMode>,
-                                      private val ourMaxMessageSize: Int,
-                                      private val ourPublicKey: PublicKey,
-                                      private val groupId: String,
-                                      private val certificateCheckMode: CertificateCheckMode
-): AuthenticationProtocol(certificateCheckMode) {
+class AuthenticationProtocolInitiator(
+    val sessionId: String,
+    private val supportedModes: Set<ProtocolMode>,
+    private val ourMaxMessageSize: Int,
+    private val ourPublicKey: PublicKey,
+    private val groupId: String,
+    private val certificateCheckMode: CertificateCheckMode,
+    certificateValidatorFactory: (revocationCheckMode: RevocationCheckMode,
+                                  pemTrustStore: List<PemCertificate>,
+                                  checkRevocation: (RevocationCheckRequest) -> RevocationCheckResponse) -> CertificateValidator =
+    { revocationCheckMode, pemTrustStore, checkRevocation -> CertificateValidator(revocationCheckMode, pemTrustStore, checkRevocation) }
+): AuthenticationProtocol(certificateValidatorFactory) {
 
     init {
         require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
@@ -226,25 +233,13 @@ class AuthenticationProtocolInitiator(val sessionId: String,
                 throw InvalidSelectedModeError("The mode selected by the responder ($selectedMode) " +
                         "was not amongst the ones we proposed ($supportedModes).")
             }
-            validateCertificate(responderHandshakePayload, theirX500Name, theirPublicKey)
-        }
-    }
-
-    private fun validateCertificate(
-        responderHandshakePayload: ResponderHandshakePayload,
-        theirX500Name: MemberX500Name,
-        theirPublicKey: PublicKey,
-    ) {
-        if (certificateCheckMode != CertificateCheckMode.NoCertificate) {
-            if (responderHandshakePayload.responderEncryptedExtensions.responderCertificate != null) {
-                certificateValidator!!.validate(
-                    responderHandshakePayload.responderEncryptedExtensions.responderCertificate,
-                    theirX500Name,
-                    theirPublicKey
-                )
-            } else {
-                throw InvalidPeerCertificate("No peer certificate was sent in the responder handshake message.")
-            }
+            validateCertificate(
+                certificateCheckMode,
+                responderHandshakePayload.responderEncryptedExtensions.responderCertificate,
+                theirX500Name,
+                theirPublicKey,
+                "responder handshake message"
+            )
         }
     }
 

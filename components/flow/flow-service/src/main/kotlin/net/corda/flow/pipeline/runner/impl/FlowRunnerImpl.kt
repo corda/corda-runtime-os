@@ -20,6 +20,7 @@ import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.session.manager.Constants
 import net.corda.v5.application.flows.FlowContextPropertyKeys
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -100,13 +101,18 @@ class FlowRunnerImpl @Activate constructor(
             mapOf("corda.account" to "account-zero")
         )
 
+        val isInteropSessionInit = sessionInitEvent.contextSessionProperties?.let { sessionProperties ->
+            KeyValueStore(sessionProperties)[Constants.FLOW_SESSION_IS_INTEROP]?.equals("true")
+        } ?: false
+
         return startFlow(
             context,
             createFlow = { sgc ->
                 flowFactory.createInitiatedFlow(
                     flowStartContext,
                     sgc,
-                    localContext.counterpartySessionProperties
+                    localContext.counterpartySessionProperties,
+                    isInteropSessionInit
                 )
             },
             updateFlowStackItem = { fsi -> addFlowStackItemSession(fsi, sessionId) },

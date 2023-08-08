@@ -8,18 +8,18 @@ import net.corda.v5.crypto.SignatureSpec
 import java.util.Objects
 
 class SignedGroupParametersImpl(
-    override val bytes: ByteArray,
-    override val signature: DigitalSignatureWithKey,
-    override val signatureSpec: SignatureSpec,
+    override val groupParameters: ByteArray,
+    override val mgmSignature: DigitalSignatureWithKey,
+    override val mgmSignatureSpec: SignatureSpec,
     private val deserializer: (serialisedParams: ByteArray) -> LayeredPropertyMap
-) : SignedGroupParameters, InternalGroupParameters by UnsignedGroupParametersImpl(bytes, deserializer) {
+) : SignedGroupParameters, InternalGroupParameters by UnsignedGroupParametersImpl(groupParameters, deserializer) {
     override fun equals(other: Any?): Boolean {
         if (other == null || other !is SignedGroupParametersImpl) return false
         if (this === other) return true
-        return bytes.contentEquals(other.bytes) &&
-                signature == other.signature &&
-                signatureSpec == other.signatureSpec
+        return groupParameters.contentEquals(other.groupParameters) &&
+                mgmSignature == other.mgmSignature &&
+                mgmSignatureSpec == other.mgmSignatureSpec
     }
 
-    override fun hashCode(): Int = Objects.hash(bytes, signature, signatureSpec)
+    override fun hashCode(): Int = Objects.hash(groupParameters, mgmSignature, mgmSignatureSpec)
 }

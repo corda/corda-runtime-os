@@ -14,7 +14,6 @@ import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -34,36 +33,39 @@ class UtxoLedgerGroupParametersPersistenceServiceImpl @Activate constructor(
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
-    @Reference(service = SerializationService::class)
-    private val serializationService: SerializationService
+    @Reference(service = GroupParametersCache::class)
+    private val groupParametersCache: GroupParametersCache
 ) : UtxoLedgerGroupParametersPersistenceService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
     override fun find(hash: SecureHash): SignedGroupParameters? {
         return recordSuspendable({ ledgerPersistenceFlowTimer(FindGroupParameters) }) @Suspendable {
-            wrapWithPersistenceException {
+            groupParametersCache.get(hash) ?: wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     FindSignedGroupParametersExternalEventFactory::class.java,
                     FindSignedGroupParametersParameters(hash.toString())
                 )
-            }.singleOrNull()
+            }.singleOrNull()?.also { signedGroupParameters ->
+                groupParametersCache.put(signedGroupParameters)
+            }
         }
     }
 
     @Suspendable
     override fun persistIfDoesNotExist(signedGroupParameters: SignedGroupParameters) {
         recordSuspendable({ ledgerPersistenceFlowTimer(PersistSignedGroupParametersIfDoNotExist) }) @Suspendable {
-            wrapWithPersistenceException {
+            groupParametersCache.get(signedGroupParameters.hash) ?: wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     PersistSignedGroupParametersIfDoNotExistExternalEventFactory::class.java,
                     with(signedGroupParameters) {
                         PersistSignedGroupParametersIfDoNotExistParameters(
-                            bytes,
-                            signature,
-                            signatureSpec
+                            groupParameters,
+                            mgmSignature,
+                            mgmSignatureSpec
                         )
                     }
                 )
+                groupParametersCache.put(signedGroupParameters)
             }
         }
     }

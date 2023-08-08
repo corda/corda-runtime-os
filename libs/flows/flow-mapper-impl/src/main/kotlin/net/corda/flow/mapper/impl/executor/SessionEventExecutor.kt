@@ -7,6 +7,7 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
+import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
@@ -34,7 +35,6 @@ class SessionEventExecutor(
     }
 
     private val messageDirection = sessionEvent.messageDirection
-    private val outputTopic = getSessionEventOutputTopic(messageDirection)
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
@@ -92,6 +92,7 @@ class SessionEventExecutor(
                 log.warn("FlowMapperState with null status. Key: $eventKey, Event: $sessionEvent.")
                 FlowMapperResult(null, listOf())
             }
+
             FlowMapperStateType.CLOSING -> {
                 if (messageDirection == MessageDirection.OUTBOUND) {
                     log.warn("Attempted to send a message but flow mapper state is in CLOSING. Session ID: ${sessionEvent.sessionId}")
@@ -113,18 +114,25 @@ class SessionEventExecutor(
                     }
                 }
             }
+
             FlowMapperStateType.OPEN -> {
+                val outputTopic = getSessionEventOutputTopic(messageDirection, flowMapperState.isInteropSession)
                 val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
-                    Record(
-                        outputTopic,
-                        sessionEvent.sessionId,
-                        appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig)
-                    )
+                    if (!flowMapperState.isInteropSession) {
+                        Record(
+                            outputTopic,
+                            sessionEvent.sessionId,
+                            appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig)
+                        )
+                    } else {
+                        Record(outputTopic, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))
+                    }
                 } else {
                     Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
                 }
                 FlowMapperResult(flowMapperState, listOf(outputRecord))
             }
+
             FlowMapperStateType.ERROR -> {
                 log.warn(errorMsg + "Ignoring event.")
                 FlowMapperResult(flowMapperState, listOf())

@@ -79,7 +79,7 @@ class QueryMemberSignatureHandlerTest {
     }
     private val dbConnectionManager = mock<DbConnectionManager> {
         on {
-            createEntityManagerFactory(
+            getOrCreateEntityManagerFactory(
                 vaultDmlConnectionId,
                 jpaEntitiesSet
             )
@@ -97,6 +97,8 @@ class QueryMemberSignatureHandlerTest {
         virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
+        mock(),
+        mock(),
         mock(),
         transactionTimerFactory
     )

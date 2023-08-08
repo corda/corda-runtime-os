@@ -1,6 +1,6 @@
-import static org.gradle.api.JavaVersion.VERSION_11
+import static org.gradle.api.JavaVersion.VERSION_17
 import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
-import static org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+import static org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
 import static org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_8
 import org.jetbrains.dokka.gradle.DokkaTask
 
@@ -28,6 +28,7 @@ plugins {
     id 'jacoco'
     id 'com.github.ben-manes.versions' // discover possible dependency version upgrades
     id 'org.jetbrains.dokka' apply false
+    id 'org.cyclonedx.bom' apply false
 }
 
 tasks.named("wrapper") {
@@ -35,7 +36,8 @@ tasks.named("wrapper") {
     distributionType = Wrapper.DistributionType.BIN
 }
 
-def javaVersion = VERSION_11
+def javaVersion = VERSION_17
+def javaVersionNumber = javaVersion.majorVersion.toInteger()
 
 snyk {
     api = project.findProperty("snykApiToken") ?: System.getenv('SNYK_TOKEN')
@@ -50,37 +52,54 @@ allprojects {
     pluginManager.withPlugin('java') {
         java {
             toolchain {
-                languageVersion = of(javaVersion.majorVersion.toInteger())
+                languageVersion = of(javaVersionNumber)
             }
 
             withSourcesJar()
         }
 
         tasks.withType(JavaCompile).configureEach {
+            options.release = javaVersionNumber
             options.encoding = 'UTF-8'
             options.compilerArgs += [ '-XDenableSunApiLintControl', '-parameters' ]
         }
 
         tasks.withType(Test).configureEach {
             useJUnitPlatform(){
-                excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
+                if (project.hasProperty('runMultiClusterTests')) {
+                    includeTags 'MultiCluster'
+                } else if (project.hasProperty('runUnstableTests')) {
+                    includeTags 'runUnstableTests'
+                } else {
+                    excludeTags 'MultiCluster', 'Unstable'
+                }
             }
 
             doFirst {
                 systemProperty 'java.io.tmpdir', buildDir.absolutePath
-                jvmArgs '--illegal-access=deny'
             }
         }
     }
 
     apply plugin: 'org.jetbrains.kotlin.jvm'
 
+    if (it.toString().contains(":applications:workers:release:")) {
+        apply plugin: 'org.cyclonedx.bom'
+        cyclonedxBom.dependsOn("assemble")
+        cyclonedxBom {
+            includeConfigs = ["runtimeClasspath"]
+            skipProjects = [rootProject.name]
+            destination = file("${buildDir}/reports/SBOM")
+            outputName = "${project.name}-corda-runtime-os-sbom"
+        }
+    }
+
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         compilerOptions {
             allWarningsAsErrors = true
             languageVersion = KOTLIN_1_8
             apiVersion = KOTLIN_1_8
-            jvmTarget = JVM_11
+            jvmTarget = JVM_17
             javaParameters = true   // Useful for reflection.
             freeCompilerArgs.addAll([
                 "-Xjvm-default=all"
@@ -97,7 +116,7 @@ allprojects {
     pluginManager.withPlugin('biz.aQute.bnd.builder') {
         tasks.withType(aQute.bnd.gradle.TestOSGi).configureEach {
             javaLauncher = javaToolchains.launcherFor {
-                languageVersion = of(javaVersion.getMajorVersion().toInteger())
+                languageVersion = of(javaVersionNumber)
             }
         }
     }
@@ -131,9 +150,9 @@ allprojects {
         mavenLocal()
 
         maven {
-            url = "${publicArtifactURL}/corda-dependencies"
+            url = "${publicArtifactURL}/corda-dependencies-dev"
             content {
-                // For Quasar release.
+                // For Quasar SNAPSHOT.
                 includeGroup 'co.paralleluniverse'
             }
         }
@@ -195,19 +214,6 @@ allprojects {
                 filter {
                     includeGroup 'org.mule.distributions'
                     includeGroup 'antlr'
-                }
-            }
-
-            // NOTE: this block needs to be removed once Micrometer release 1.11.0 
-            // and code in this project is updated to use this version rather than the forked version.
-            exclusiveContent {
-                forRepository {
-                    maven {
-                        url "${publicArtifactURL}/corda-dependencies"
-                    }
-                }
-                filter {
-                    includeGroup 'net.corda.micrometer'
                 }
             }
         }
@@ -278,6 +284,39 @@ allprojects {
         testImplementation "org.assertj:assertj-core:$assertjVersion"
         testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+    }
+}
+
+tasks.register('createSBOMZip', Zip) {
+    description = 'Create SBOM zip file for release'
+    group = 'documentation'
+    String sourceDestFolder = buildDir.toString() + "/archive/SBOM/"
+    archiveFileName = "${project.name}-SBOM-${project.version}.zip"
+    subprojects.each {
+        if (it.toString().contains(":applications:workers:release:")) {
+            String srcPath = it.buildDir.toString() + "/reports/SBOM/"
+            it.copy{
+                from srcPath
+                into sourceDestFolder
+            }
+        }
+    }
+    from sourceDestFolder
+    destinationDirectory = (file(buildDir.toString() + "/archive/corda-runtime-os-SBOM/"))
+}
+
+if (project.hasProperty('generateSBOM')) {
+    publishing {
+        publications {
+            sbom(MavenPublication) {
+                artifact createSBOMZip
+                artifactId "${project.name}-sbom"
+                groupId 'net.corda'
+            }
+        }
+    }
+    artifactoryPublish {
+        publications('sbom')
     }
 }
 

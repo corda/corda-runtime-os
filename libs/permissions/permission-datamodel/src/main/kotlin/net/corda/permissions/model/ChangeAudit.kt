@@ -13,20 +13,20 @@ import javax.persistence.Table
 class ChangeAudit(
     @Id
     @Column(name = "id", nullable = false)
-    val id: String,
+    var id: String,
 
     @Column(name = "update_ts", nullable = false)
-    val updateTimestamp: Instant,
+    var updateTimestamp: Instant,
 
     @Column(name = "actor_user", nullable = false)
-    val actorUser: String,
+    var actorUser: String,
 
     @Enumerated(value = EnumType.STRING)
     @Column(name = "change_type", nullable = false)
-    val changeType: RestPermissionOperation,
+    var changeType: RestPermissionOperation,
 
     @Column(name = "details", nullable = false)
-    val details: String,
+    var details: String,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

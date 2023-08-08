@@ -26,8 +26,6 @@ class RestServerObjectSettingsProvider(
         log.info("REST config instantiated:\n${restServerSettings}, devMode=$devMode")
     }
 
-    override fun getApiVersion() = restServerSettings.context.version
-
     override fun getHostAndPort() = restServerSettings.address
 
     override fun getBasePath() = restServerSettings.context.basePath

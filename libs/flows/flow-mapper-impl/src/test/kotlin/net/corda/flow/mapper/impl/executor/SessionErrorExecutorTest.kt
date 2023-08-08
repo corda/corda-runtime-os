@@ -54,7 +54,7 @@ class SessionErrorExecutorTest {
         val result = SessionErrorExecutor(
             sessionId, payload,
             FlowMapperState(
-                "flowId1", null, FlowMapperStateType.CLOSING
+                "flowId1", null, FlowMapperStateType.CLOSING, false
             ),
             Instant.now(),
             sessionEventSerializer,
@@ -76,7 +76,7 @@ class SessionErrorExecutorTest {
         val result = SessionErrorExecutor(
             sessionId, payload,
             FlowMapperState(
-                "flowId1", null, FlowMapperStateType.ERROR
+                "flowId1", null, FlowMapperStateType.ERROR, false
             ),
             Instant.now(),
             sessionEventSerializer,
@@ -98,7 +98,7 @@ class SessionErrorExecutorTest {
         val result = SessionErrorExecutor(
             sessionId, payload,
             FlowMapperState(
-                "flowId1", null, FlowMapperStateType.OPEN
+                "flowId1", null, FlowMapperStateType.OPEN, false
             ),
             Instant.now(),
             sessionEventSerializer,

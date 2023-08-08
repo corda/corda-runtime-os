@@ -50,6 +50,7 @@ pluginManagement {
         id "com.jfrog.artifactory" version artifactoryPluginVersion
         id 'io.snyk.gradle.plugin.snykplugin' version snykVersion
         id 'org.jetbrains.dokka' version dokkaVersion
+        id "org.cyclonedx.bom" version cyclonedxVersion
     }
 }
 
@@ -107,6 +108,8 @@ include 'components:flow:flow-rest-resource-service'
 include 'components:flow:flow-rest-resource-service-impl'
 include 'components:flow:flow-service'
 include 'components:gateway'
+include 'components:interop:interop-rest-service-impl'
+include 'components:interop:interop-service'
 include 'components:rest-gateway-comp'
 include 'components:kafka-topic-admin'
 include 'components:ledger:ledger-common-flow'
@@ -239,6 +242,7 @@ include 'libs:flows:flow-mapper-impl'
 include 'libs:flows:session-manager'
 include 'libs:flows:session-manager-impl'
 include 'libs:flows:flow-utils'
+include 'libs:interop:interop-rest'
 include 'libs:rest:rest'
 include 'libs:rest:rest-security-read'
 include 'libs:rest:rest-tools'
@@ -357,6 +361,7 @@ include 'libs:virtual-node:virtual-node-datamodel'
 include 'libs:virtual-node:virtual-node-endpoints'
 include 'libs:virtual-node:virtual-node-endpoints-maintenance'
 include 'libs:virtual-node:virtual-node-info'
+include 'libs:interop:interop-core'
 include 'notary-plugins:notary-plugin-common'
 include 'notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-api'
 include 'notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-client'
@@ -367,9 +372,11 @@ include 'processors:crypto-processor'
 include 'processors:db-processor'
 include 'processors:flow-processor'
 include 'processors:gateway-processor'
+include 'processors:interop-processor'
 include 'processors:link-manager-processor'
 include 'processors:member-processor'
 include 'processors:rest-processor'
+include 'processors:token-cache-processor'
 include 'processors:uniqueness-processor'
 include 'processors:verification-processor'
 include 'simulator:api'
@@ -391,6 +398,8 @@ include 'testing:cpbs:ledger-utxo-demo-app'
 include 'testing:cpbs:ledger-utxo-demo-contract'
 include 'testing:cpbs:extendable-cpb'
 include 'testing:cpbs:test-cordapp'
+include 'testing:cpbs:test-invocation-cordapp'
+include 'testing:cpbs:test-responder-cordapp'
 include 'testing:cpbs:mandelbrot'
 include 'testing:cpbs:sandbox-scr-cpk'
 include 'testing:cpbs:sandbox-security-manager-one'
@@ -409,6 +418,7 @@ include 'testing:crypto-testkit'
 include 'testing:db-message-bus-testkit'
 include 'testing:db-testkit'
 include 'testing:e2e-test-utilities'
+include 'testing:evm-interop-contracts'
 include 'testing:flow:dummy-link-manager'
 include 'testing:flow:external-events'
 include 'testing:flow:flow-utilities'
@@ -439,16 +449,27 @@ include 'testing:uniqueness:backing-store-fake'
 include 'testing:uniqueness:uniqueness-utilities'
 include 'testing:cpi-info-read-service-fake'
 include 'testing:virtual-node-info-read-service-fake'
+include 'testing:group-policy-test-common'
 include 'tools:plugins:plugins-rest'
 include 'tools:plugins:db-config'
 include 'tools:plugins:initial-config'
 include 'tools:plugins:initial-rbac'
-include 'tools:plugins:mgm'
 include 'tools:plugins:network'
 include 'tools:plugins:package'
+include 'tools:plugins:preinstall'
 include 'tools:plugins:secret-config'
 include 'tools:plugins:topic-config'
 include 'tools:plugins:virtual-node'
+include 'testing:cpbs:interop-token-demo-contracts'
+include 'testing:cpbs:interop-token-demo-workflows'
+include 'components:interop:interop-identity-read-service'
+include 'components:interop:interop-identity-read-service-impl'
+include 'components:interop:interop-identity-write-service'
+include 'components:interop:interop-identity-write-service-impl'
+include 'components:interop:interop-identity-registry-service'
+include 'components:interop:interop-identity-registry-service-impl'
+include 'components:interop:interop-group-policy-read-service'
+include 'components:interop:interop-group-policy-read-service-impl'
 
 // The following logic dictates if we use the composite build gradle functionality,
 // If this evaluates to true local source code will be used in place of binary dependencies.
@@ -471,6 +492,7 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
             substitute module('net.corda:corda-ledger-consensual') using project(':ledger:ledger-consensual')
             substitute module('net.corda:corda-ledger-utxo') using project(':ledger:ledger-utxo')
             substitute module('net.corda:corda-membership') using project(':membership')
+            substitute module('net.corda:corda-interop') using project(':interop')
             substitute module('net.corda:corda-serialization') using project(':serialization')
             substitute module('net.corda:corda-notary-plugin') using project(':ledger:notary-plugin')
         }

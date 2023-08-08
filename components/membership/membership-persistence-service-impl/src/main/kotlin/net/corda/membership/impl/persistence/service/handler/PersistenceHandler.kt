@@ -9,6 +9,8 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
@@ -49,6 +51,9 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     val platformInfoProvider get() = persistenceHandlerServices.platformInfoProvider
     val allowedCertificatesReaderWriterService get() = persistenceHandlerServices.allowedCertificatesReaderWriterService
 
+    val groupParametersWriterService get() = persistenceHandlerServices.groupParametersWriterService
+    val groupParametersFactory get() = persistenceHandlerServices.groupParametersFactory
+
     fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R {
         val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
             ?: throw MembershipPersistenceException(
@@ -56,13 +61,8 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
                         "holding identity ID $holdingIdentityShortHash"
             )
         val factory = getEntityManagerFactory(virtualNodeInfo)
-        return try {
-            transactionTimer.recordCallable { factory.transaction(block) }!!
-        } finally {
-            factory.close()
-        }
+        return transactionTimer.recordCallable { factory.transaction(block) }!!
     }
-
     fun <R> transaction(block: (EntityManager) -> R): R {
         return dbConnectionManager.getClusterEntityManagerFactory().let {
             transactionTimer.recordCallable { it.transaction(block) }!!
@@ -76,7 +76,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     }
 
     private fun getEntityManagerFactory(info: VirtualNodeInfo): EntityManagerFactory {
-        return dbConnectionManager.createEntityManagerFactory(
+        return dbConnectionManager.getOrCreateEntityManagerFactory(
             connectionId = info.vaultDmlConnectionId,
             entitiesSet = jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
                 ?: throw java.lang.IllegalStateException(
@@ -96,5 +96,7 @@ internal data class PersistenceHandlerServices(
     val keyEncodingService: KeyEncodingService,
     val platformInfoProvider: PlatformInfoProvider,
     val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
+    val groupParametersWriterService: GroupParametersWriterService,
+    val groupParametersFactory: GroupParametersFactory,
     val transactionTimerFactory: (String) -> Timer
 )

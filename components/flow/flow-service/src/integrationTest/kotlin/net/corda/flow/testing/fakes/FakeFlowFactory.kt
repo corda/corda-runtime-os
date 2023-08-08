@@ -26,7 +26,8 @@ class FakeFlowFactory : FlowFactory {
     override fun createInitiatedFlow(
         flowStartContext: FlowStartContext,
         sandboxGroupContext: SandboxGroupContext,
-        contextProperties: Map<String, String>
+        contextProperties: Map<String, String>,
+        isInteropFlow: Boolean
     ): FlowLogicAndArgs {
         return InitiatedFlow(FakeInitiatedFlow(), FakeFlowSession())
     }

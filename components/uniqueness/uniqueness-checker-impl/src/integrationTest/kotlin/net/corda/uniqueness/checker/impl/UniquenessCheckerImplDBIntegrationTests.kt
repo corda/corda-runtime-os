@@ -11,8 +11,6 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.testkit.DbUtils
 import net.corda.db.testkit.TestDbInfo
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
@@ -47,7 +45,8 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.util.*
+import java.util.LinkedList
+import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import kotlin.test.assertEquals
 
@@ -73,7 +72,7 @@ class UniquenessCheckerImplDBIntegrationTests {
         VirtualNodeDbType.UNIQUENESS.getSchemaName(defaultHoldingIdentity.shortHash)
     private val defaultHoldingIdentityDb: EntityManagerFactory
 
-    // Additional holding identites
+    // Additional holding identities
     private val bobHoldingIdentity = createTestHoldingIdentity(
         "C=GB, L=London, O=Bob", groupId)
     private val bobHoldingIdentityDbName =
@@ -195,7 +194,6 @@ class UniquenessCheckerImplDBIntegrationTests {
         testClock = AutoTickTestClock(baseTime, Duration.ofSeconds(1))
 
         val backingStore = JPABackingStoreImpl(
-            mock(),
             JpaEntitiesRegistryImpl(),
             mock<DbConnectionManager>().apply {
                 whenever(getOrCreateEntityManagerFactory(
@@ -210,15 +208,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             }
         )
 
-        uniquenessChecker = BatchedUniquenessCheckerImpl(
-            mock(),
-            mock(),
-            mock(),
-            mock(),
-            testClock,
-            backingStore)
-
-        backingStore.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
+        uniquenessChecker = BatchedUniquenessCheckerImpl(backingStore, testClock)
     }
 
     @Nested

@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
 
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
+import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackChainResolutionVersion
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainVerifier
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.sandbox.CordaSystemFlow
@@ -16,10 +17,17 @@ import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+/**
+ * The V2 protocol is an extension of the V1 protocol, which can be enabled via a switch (on both sides).
+ * In order to avoid huge code duplication, we kept V1 class implementing both protocols and added a switch that makes
+ * it behave according to the V2 protocol.
+ */
+
 @CordaSystemFlow
 class TransactionBackchainResolutionFlowV1(
     private val initialTransactionIds: Set<SecureHash>,
     private val session: FlowSession,
+    val version: TransactionBackChainResolutionVersion
 ) : SubFlow<Unit> {
 
     private companion object {
@@ -38,7 +46,7 @@ class TransactionBackchainResolutionFlowV1(
     @Suspendable
     override fun call() {
         val alreadyVerifiedTransactions =
-            initialTransactionIds.filter { utxoLedgerPersistenceService.find(it, VERIFIED) != null }.toSet()
+            initialTransactionIds.filter { utxoLedgerPersistenceService.findSignedTransaction(it, VERIFIED) != null }.toSet()
         val originalTransactionsToRetrieve = initialTransactionIds - alreadyVerifiedTransactions
         if (originalTransactionsToRetrieve.isNotEmpty()) {
             log.debug {
@@ -49,7 +57,8 @@ class TransactionBackchainResolutionFlowV1(
                 TransactionBackchainReceiverFlowV1(
                     initialTransactionIds = initialTransactionIds,
                     originalTransactionsToRetrieve,
-                    session
+                    session,
+                    version
                 )
             )
             log.debug {

@@ -98,8 +98,12 @@ import java.time.Duration
 import java.time.Instant
 import java.util.Collections
 import java.util.concurrent.CompletableFuture
+import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
 import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
 import net.corda.p2p.crypto.protocol.api.NoCommonModeError
+import net.corda.p2p.linkmanager.grouppolicy.protocolModes
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 class SessionManagerTest {
 
@@ -276,7 +280,7 @@ class SessionManagerTest {
     }
     private val protocolFactory = mock<ProtocolFactory> {
         on { createInitiator(any(), any(), any(), any(), any(), any()) } doReturn protocolInitiator doReturn secondProtocolInitiator
-        on { createResponder(any(), any(), any(), any()) } doReturn protocolResponder
+        on { createResponder(any(), any()) } doReturn protocolResponder
     }
     private val resources = ResourcesHolder()
 
@@ -843,9 +847,7 @@ class SessionManagerTest {
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
         whenever(
             protocolResponder.validatePeerHandshakeMessage(
-                initiatorHandshakeMessage,
-                PEER_MEMBER_INFO.holdingIdentity.x500Name,
-                listOf(PEER_KEY.public to SignatureSpecs.ECDSA_SHA256)
+                initiatorHandshakeMessage, listOf(PEER_KEY.public to SignatureSpecs.ECDSA_SHA256)
             )
         ).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         val responderHandshakeMsg = mock<ResponderHandshakeMessage>()
@@ -888,7 +890,6 @@ class SessionManagerTest {
         whenever(
             protocolResponder.validatePeerHandshakeMessage(
                 initiatorHandshakeMessage,
-                PEER_MEMBER_INFO.holdingIdentity.x500Name,
                 listOf(PEER_KEY.public to SignatureSpecs.ECDSA_SHA256),
             )
         ).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
@@ -924,7 +925,6 @@ class SessionManagerTest {
         whenever(
             protocolResponder.validatePeerHandshakeMessage(
                 initiatorHandshakeMessage,
-                PEER_MEMBER_INFO.holdingIdentity.x500Name,
                 listOf(PEER_KEY.public to SignatureSpecs.ECDSA_SHA256),
             )
         ).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
@@ -1042,7 +1042,6 @@ class SessionManagerTest {
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
-            PEER_MEMBER_INFO.holdingIdentity.x500Name,
             listOf(PEER_KEY.public to SignatureSpecs.ECDSA_SHA256),
         )).thenThrow(WrongPublicKeyHashException(initiatorPublicKeyHash.reversedArray(), listOf(initiatorPublicKeyHash)))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
@@ -1068,7 +1067,6 @@ class SessionManagerTest {
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
-            PEER_MEMBER_INFO.holdingIdentity.x500Name,
             listOf(PEER_KEY.public to SignatureSpecs.ECDSA_SHA256),
         )).thenThrow(InvalidHandshakeMessageException())
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
@@ -1092,10 +1090,15 @@ class SessionManagerTest {
         val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
         whenever(protocolResponder.getInitiatorIdentity())
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
+        val responderPublicKeyHash = messageDigest.hash(OUR_KEY.public.encoded)
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
-            PEER_MEMBER_INFO.holdingIdentity.x500Name,
             listOf(PEER_KEY.public to SignatureSpecs.ECDSA_SHA256),
+        )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
+        whenever(protocolResponder.validateEncryptedExtensions(
+            CertificateCheckMode.NoCertificate,
+            groupPolicy.protocolModes,
+            PEER_MEMBER_INFO.name
         )).thenThrow(InvalidPeerCertificate("Invalid peer certificate"))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
@@ -1118,10 +1121,15 @@ class SessionManagerTest {
         val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
         whenever(protocolResponder.getInitiatorIdentity())
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
+        val responderPublicKeyHash = messageDigest.hash(OUR_KEY.public.encoded)
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
-            PEER_MEMBER_INFO.holdingIdentity.x500Name,
             listOf(PEER_KEY.public to SignatureSpecs.ECDSA_SHA256),
+        )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
+        whenever(protocolResponder.validateEncryptedExtensions(
+            CertificateCheckMode.NoCertificate,
+            groupPolicy.protocolModes,
+            PEER_MEMBER_INFO.name
         )).thenThrow(NoCommonModeError(setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), setOf(ProtocolMode.AUTHENTICATION_ONLY)))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
@@ -1147,7 +1155,6 @@ class SessionManagerTest {
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
-            PEER_MEMBER_INFO.holdingIdentity.x500Name,
             listOf(PEER_KEY.public to SignatureSpecs.ECDSA_SHA256),
         )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         whenever(linkManagerHostingMap.getInfo(responderPublicKeyHash, GROUP_ID)).thenReturn(null)
@@ -1177,7 +1184,6 @@ class SessionManagerTest {
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
-            PEER_MEMBER_INFO.holdingIdentity.x500Name,
             listOf(PEER_KEY.public to SignatureSpecs.ECDSA_SHA256),
         )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         whenever(groupPolicyProvider.getGroupPolicy(OUR_PARTY)).thenReturn(null)
@@ -1207,7 +1213,6 @@ class SessionManagerTest {
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
-            PEER_MEMBER_INFO.holdingIdentity.x500Name,
             listOf(PEER_KEY.public to SignatureSpecs.ECDSA_SHA256),
         )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         whenever(protocolResponder.generateOurHandshakeMessage(eq(OUR_KEY.public), eq(null), any()))
@@ -1237,7 +1242,6 @@ class SessionManagerTest {
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
-            PEER_MEMBER_INFO.holdingIdentity.x500Name,
             listOf(PEER_KEY.public to SignatureSpecs.ECDSA_SHA256),
         )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
@@ -2074,5 +2078,135 @@ class SessionManagerTest {
                 assertThat(record.key).isEqualTo("messageId")
                 assertThat(record.value).isInstanceOf(AppMessageMarker::class.java)
             }
+    }
+
+    @Test
+    fun `first dataMessageReceived call schedules a timeout on the inbound session`() {
+        val sessionId = UUID(0, 1).toString()
+        sessionManager.dataMessageReceived(sessionId)
+
+        verify(mockTimeFacilitiesProvider.mockScheduledExecutor).schedule(
+            any(),
+            eq(sixDaysInMillis),
+            eq(TimeUnit.MILLISECONDS)
+        )
+    }
+
+    @Test
+    fun `dataMessageReceived calls after the first do not schedule a timeout on the inbound session`() {
+        val sessionId = UUID(0, 1).toString()
+
+        // call twice
+        sessionManager.dataMessageReceived(sessionId)
+        sessionManager.dataMessageReceived(sessionId)
+
+        // verify schedule called only once
+        verify(mockTimeFacilitiesProvider.mockScheduledExecutor).schedule(
+            any(),
+            eq(sixDaysInMillis),
+            eq(TimeUnit.MILLISECONDS)
+        )
+    }
+
+    @Test
+    fun `inbound session timeout is not rescheduled if session has timed out after dataMessageReceived`() {
+        val sessionId = UUID(0, 1).toString()
+        sessionManager.dataMessageReceived(sessionId)
+
+        mockTimeFacilitiesProvider.advanceTime(Duration.ofMillis(sixDaysInMillis))
+
+        loggingInterceptor.assertInfoContains("Inbound session $sessionId has not received any messages for the " +
+                "configured timeout threshold ($sixDaysInMillis ms) so it will be cleaned up.")
+
+        // Check timeout was not rescheduled (only scheduled once initially but not again after session timeout)
+        verify(mockTimeFacilitiesProvider.mockScheduledExecutor).schedule(
+            any(),
+            eq(sixDaysInMillis),
+            eq(TimeUnit.MILLISECONDS)
+        )
+    }
+
+    @Test
+    fun `inbound session timeout is rescheduled if session has not timed out after dataMessageReceived`() {
+        val sessionId = UUID(0, 1).toString()
+        sessionManager.dataMessageReceived(sessionId)
+
+        mockTimeFacilitiesProvider.advanceTime(Duration.ofMillis(sixDaysInMillis / 2))
+
+        sessionManager.dataMessageReceived(sessionId)
+
+        mockTimeFacilitiesProvider.advanceTime(Duration.ofMillis(sixDaysInMillis / 2))
+
+        // Check timeout was rescheduled
+        verify(mockTimeFacilitiesProvider.mockScheduledExecutor).schedule(
+            any(),
+            eq(sixDaysInMillis / 2),
+            eq(TimeUnit.MILLISECONDS)
+        )
+    }
+
+    @Test
+    fun `first sessionMessageReceived call schedules a timeout on the inbound session`() {
+        val sessionId = UUID(0, 1).toString()
+        sessionManager.sessionMessageReceived(sessionId)
+
+        verify(mockTimeFacilitiesProvider.mockScheduledExecutor).schedule(
+            any(),
+            eq(sixDaysInMillis),
+            eq(TimeUnit.MILLISECONDS)
+        )
+    }
+
+    @Test
+    fun `sessionMessageReceived calls after the first do not schedule a timeout on the inbound session`() {
+        val sessionId = UUID(0, 1).toString()
+
+        // call twice
+        sessionManager.sessionMessageReceived(sessionId)
+        sessionManager.sessionMessageReceived(sessionId)
+
+        // verify schedule called only once
+        verify(mockTimeFacilitiesProvider.mockScheduledExecutor).schedule(
+            any(),
+            eq(sixDaysInMillis),
+            eq(TimeUnit.MILLISECONDS)
+        )
+    }
+
+    @Test
+    fun `inbound session timeout is not rescheduled if session has timed out after sessionMessageReceived`() {
+        val sessionId = UUID(0, 1).toString()
+        sessionManager.sessionMessageReceived(sessionId)
+
+        mockTimeFacilitiesProvider.advanceTime(Duration.ofMillis(sixDaysInMillis))
+
+        loggingInterceptor.assertInfoContains("Inbound session $sessionId has not received any messages for the " +
+                "configured timeout threshold ($sixDaysInMillis ms) so it will be cleaned up.")
+
+        // Check timeout was not rescheduled (only scheduled once initially but not again after session timeout)
+        verify(mockTimeFacilitiesProvider.mockScheduledExecutor).schedule(
+            any(),
+            eq(sixDaysInMillis),
+            eq(TimeUnit.MILLISECONDS)
+        )
+    }
+
+    @Test
+    fun `inbound session timeout is rescheduled if session has not timed out after sessionMessageReceived`() {
+        val sessionId = UUID(0, 1).toString()
+        sessionManager.sessionMessageReceived(sessionId)
+
+        mockTimeFacilitiesProvider.advanceTime(Duration.ofMillis(sixDaysInMillis / 2))
+
+        sessionManager.sessionMessageReceived(sessionId)
+
+        mockTimeFacilitiesProvider.advanceTime(Duration.ofMillis(sixDaysInMillis / 2))
+
+        // Check timeout was rescheduled
+        verify(mockTimeFacilitiesProvider.mockScheduledExecutor).schedule(
+            any(),
+            eq(sixDaysInMillis / 2),
+            eq(TimeUnit.MILLISECONDS)
+        )
     }
 }

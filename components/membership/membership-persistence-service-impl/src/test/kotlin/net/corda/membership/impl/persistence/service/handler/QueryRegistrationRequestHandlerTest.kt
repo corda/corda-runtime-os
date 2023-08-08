@@ -87,7 +87,7 @@ class QueryRegistrationRequestHandlerTest {
         on { createEntityManager() } doReturn entityManager
     }
     private val dbConnectionManager = mock<DbConnectionManager> {
-        on { createEntityManagerFactory(any(), any()) } doReturn entityManagerFactory
+        on { getOrCreateEntityManagerFactory(any<UUID>(), any()) } doReturn entityManagerFactory
     }
     private val nodeInfo = mock<VirtualNodeInfo> {
         on { vaultDmlConnectionId } doReturn UUID(0, 0)

@@ -148,6 +148,13 @@ class DbConnectionManagerImpl @Activate constructor(
         )
     }
 
+    override fun getOrCreateEntityManagerFactory(
+        connectionId: UUID,
+        entitiesSet: JpaEntitiesSet
+    ): EntityManagerFactory {
+        TODO("Not yet implemented")
+    }
+
     override fun create(
         driverClass: String,
         jdbcUrl: String,
@@ -156,7 +163,7 @@ class DbConnectionManagerImpl @Activate constructor(
         isAutoCommit: Boolean,
         isReadOnly: Boolean,
         maximumPoolSize: Int,
-        minimumPoolSize: Int,
+        minimumPoolSize: Int?,
         idleTimeout: Duration,
         maxLifetime: Duration,
         keepaliveTime: Duration,

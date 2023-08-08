@@ -1,6 +1,8 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.FlowInitiatorType
+import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
@@ -126,6 +128,7 @@ class FlowGlobalPostProcessorImplTest {
         whenever(checkpoint.flowKey).thenReturn(FlowKey(FLOW_ID_1, ALICE_X500_HOLDING_IDENTITY))
         whenever(checkpoint.doesExist).thenReturn(true)
         whenever(checkpoint.pendingPlatformError).thenReturn(null)
+        whenever(checkpoint.flowStartContext).thenReturn(FlowStartContext().apply { initiatorType = FlowInitiatorType.P2P })
         whenever(
             sessionManager.getMessagesToSend(
                 eq(sessionState1),

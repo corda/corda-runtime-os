@@ -1,7 +1,8 @@
-@Library('corda-shared-build-pipeline-steps@5.0.1') _
+@Library('corda-shared-build-pipeline-steps@5.1') _
 
 windowsCompatibility(
     runIntegrationTests: true,
     createPostgresDb: true,
-    dailyBuildCron: 'H 03 * * *'
+    dailyBuildCron: 'H 03 * * *',
+    runCombinedWorker: true
     )

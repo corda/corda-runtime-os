@@ -23,50 +23,47 @@ import javax.persistence.Table
 @Table(name = "utxo_transaction_output")
 @IdClass(UtxoTransactionOutputEntityId::class)
 data class UtxoTransactionOutputEntity(
-    @Id
-    @ManyToOne
-    @JoinColumn(name = "transaction_id", nullable = false, updatable = false)
-    val transaction: UtxoTransactionEntity,
+    @get:Id
+    @get:ManyToOne
+    @get:JoinColumn(name = "transaction_id", nullable = false, updatable = false)
+    var transaction: UtxoTransactionEntity,
 
-    @Id
-    @Column(name = "group_idx", nullable = false)
-    val groupIndex: Int,
+    @get:Id
+    @get:Column(name = "group_idx", nullable = false)
+    var groupIndex: Int,
 
-    @Id
-    @Column(name = "leaf_idx", nullable = false)
-    val leafIndex: Int,
+    @get:Id
+    @get:Column(name = "leaf_idx", nullable = false)
+    var leafIndex: Int,
 
-    @Column(name = "type", nullable = true)
-    val type: String?,
+    @get:Column(name = "type", nullable = true)
+    var type: String?,
 
-    @Column(name = "token_type", nullable = true)
-    val tokenType: String?,
+    @get:Column(name = "token_type", nullable = true)
+    var tokenType: String?,
 
-    @Column(name = "token_issuer_hash", nullable = true)
-    val tokenIssuerHash: String?,
+    @get:Column(name = "token_issuer_hash", nullable = true)
+    var tokenIssuerHash: String?,
 
-    @Column(name = "token_notary_x500_name", nullable = true)
-    val tokenNotaryX500Name: String?,
+    @get:Column(name = "token_symbol", nullable = true)
+    var tokenSymbol: String?,
 
-    @Column(name = "token_symbol", nullable = true)
-    val tokenSymbol: String?,
+    @get:Column(name = "token_tag", nullable = true)
+    var tokenTag: String?,
 
-    @Column(name = "token_tag", nullable = true)
-    val tokenTag: String?,
+    @get:Column(name = "token_owner_hash", nullable = true)
+    var tokenOwnerHash: String?,
 
-    @Column(name = "token_owner_hash", nullable = true)
-    val tokenOwnerHash: String?,
+    @get:Column(name = "token_amount", nullable = true)
+    var tokenAmount: BigDecimal?,
 
-    @Column(name = "token_amount", nullable = true)
-    val tokenAmount: BigDecimal?,
-
-    @Column(name = "created", nullable = false)
-    val created: Instant
+    @get:Column(name = "created", nullable = false)
+    var created: Instant
 )
 
 @Embeddable
 data class UtxoTransactionOutputEntityId(
-    val transaction: UtxoTransactionEntity,
-    val groupIndex: Int,
-    val leafIndex: Int
+    var transaction: UtxoTransactionEntity,
+    var groupIndex: Int,
+    var leafIndex: Int
 ) : Serializable

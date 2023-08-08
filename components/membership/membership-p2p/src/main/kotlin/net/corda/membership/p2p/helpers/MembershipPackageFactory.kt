@@ -90,8 +90,8 @@ class MembershipPackageFactory(
                 .build()
         }
         val signedGroupParameters = SignedGroupParameters(
-            ByteBuffer.wrap(groupParameters.bytes),
-            mgmSigner.sign(groupParameters.bytes).toAvro(),
+            ByteBuffer.wrap(groupParameters.groupParameters),
+            mgmSigner.sign(groupParameters.groupParameters).toAvro(),
             mgmSigner.signatureSpec.toAvro()
         )
         val membership = SignedMemberships.newBuilder()
@@ -106,6 +106,30 @@ class MembershipPackageFactory(
             .setMemberships(
                 membership
             )
+            .setDistributionMetaData(
+                DistributionMetaData(
+                    idFactory(),
+                    clock.instant(),
+                )
+            )
+            .build()
+    }
+
+    fun createGroupParametersPackage(
+        mgmSigner: Signer,
+        groupParameters: InternalGroupParameters,
+    ): MembershipPackage {
+        val signedGroupParameters = SignedGroupParameters(
+            ByteBuffer.wrap(groupParameters.groupParameters),
+            mgmSigner.sign(groupParameters.groupParameters).toAvro(),
+            mgmSigner.signatureSpec.toAvro()
+        )
+        return MembershipPackage.newBuilder()
+            .setDistributionType(type)
+            .setCurrentPage(0)
+            .setPageCount(1)
+            .setGroupParameters(signedGroupParameters)
+            .setMemberships(null)
             .setDistributionMetaData(
                 DistributionMetaData(
                     idFactory(),

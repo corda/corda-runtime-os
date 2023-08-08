@@ -6,9 +6,9 @@ import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
+import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
-import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.p2p.SetOwnRegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.layeredpropertymap.toAvro
@@ -20,10 +20,12 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
@@ -78,7 +80,13 @@ internal class ApproveRegistrationHandler(
                     "The registration request: '$registrationId' cannot be approved by ${approvedMember.x500Name} as it is an MGM."
                 )
             }
-
+            val groupParameters = groupReaderProvider.getGroupReader(approvedBy.toCorda()).groupParameters
+                ?: throw CordaRuntimeException("Failed to retrieve persisted group parameters.")
+            require(groupParameters.notaries.none { it.name.toString() == approvedMember.x500Name }) {
+                throw InvalidMembershipRegistrationException(
+                    "Registering member's name '${approvedMember.x500Name}' is already in use as a notary service name."
+                )
+            }
             val memberInfo = membershipPersistenceClient.setMemberAndRegistrationRequestAsApproved(
                 viewOwningIdentity = approvedBy.toCorda(),
                 approvedMember = approvedMember.toCorda(),
@@ -101,9 +109,8 @@ internal class ApproveRegistrationHandler(
                 groupParametersWriterService.put(mgmHoldingIdentity, persistedGroupParameters)
                 persistedGroupParameters.epoch
             } else {
-                val reader = groupReaderProvider.getGroupReader(approvedBy.toCorda())
-                reader.groupParameters?.epoch
-            } ?: throw CordaRuntimeException("Failed to get epoch of persisted group parameters.")
+                groupParameters.epoch
+            }
 
             val distributionAction = Record(
                 MEMBERSHIP_ACTIONS_TOPIC,
@@ -123,32 +130,37 @@ internal class ApproveRegistrationHandler(
                 value = persistentMemberInfo,
             )
 
-            val persistApproveMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
-                source = approvedBy,
-                destination = approvedMember,
-                content = SetOwnRegistrationStatus(
-                    registrationId,
-                    RegistrationStatus.APPROVED
-                ),
-                filter = MembershipStatusFilter.ACTIVE_OR_SUSPENDED
+            val statusUpdateMessage = retrieveRegistrationStatusMessage(
+                memberInfo.platformVersion,
+                registrationId,
+                RegistrationStatus.APPROVED.name
+            )
+            val persistApproveMessage = if (statusUpdateMessage != null) {
+                p2pRecordsFactory.createAuthenticatedMessageRecord(
+                    source = approvedBy,
+                    destination = approvedMember,
+                    content = statusUpdateMessage,
+                    filter = MembershipStatusFilter.ACTIVE_OR_SUSPENDED
+                )
+            } else { null }
+
+            val commandToStartProcessingTheNextRequest = Record(
+                topic = REGISTRATION_COMMAND_TOPIC,
+                key = key,
+                value = RegistrationCommand(CheckForPendingRegistration(approvedBy, approvedMember, 0))
             )
 
-            listOf(memberRecord, persistApproveMessage, distributionAction)
+            listOfNotNull(memberRecord, persistApproveMessage, distributionAction, commandToStartProcessingTheNextRequest)
         } catch (e: Exception) {
             logger.warn("Could not approve registration request: '$registrationId'", e)
-            listOf(
-                Record(
-                    REGISTRATION_COMMAND_TOPIC,
-                    key,
-                    RegistrationCommand(
-                        DeclineRegistration(e.message)
-                    )
-                ),
+            return RegistrationHandlerResult(
+                state,
+                listOf(Record(REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(DeclineRegistration(e.message))))
             )
         }
 
         return RegistrationHandlerResult(
-            RegistrationState(registrationId, approvedMember, approvedBy),
+            null,
             messages
         )
     }

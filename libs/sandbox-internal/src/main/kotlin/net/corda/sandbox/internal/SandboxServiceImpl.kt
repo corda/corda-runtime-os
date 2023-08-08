@@ -26,7 +26,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.io.InputStream
-import java.security.AccessController.doPrivileged
 import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.security.PrivilegedAction
@@ -91,15 +90,15 @@ internal class SandboxServiceImpl @Activate constructor(
         createSandboxes(cpks, securityDomain, startBundles = false)
 
     override fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
-        val sandboxGroupInternal = sandboxGroup as SandboxGroupInternal
-
-        sandboxGroupInternal.cpkSandboxes.forEach { sandbox ->
-            val unloaded = sandbox.unload()
-            unloaded[false]?.also(zombieBundles::addAll)
-            unloaded[true]?.forEach { bundle ->
-                val bundleId = bundle.bundleId
-                bundleIdToSandbox.remove(bundleId)
-                bundleIdToSandboxGroup.remove(bundleId)
+        (sandboxGroup as SandboxGroupInternal).also { sandboxGroupInternal ->
+            sandboxGroupInternal.cpkSandboxes.forEach { sandbox ->
+                val unloaded = sandbox.unload()
+                unloaded[false]?.also(zombieBundles::addAll)
+                unloaded[true]?.forEach { bundle ->
+                    val bundleId = bundle.bundleId
+                    bundleIdToSandbox.remove(bundleId)
+                    bundleIdToSandboxGroup.remove(bundleId)
+                }
             }
         }
 
@@ -132,7 +131,8 @@ internal class SandboxServiceImpl @Activate constructor(
     }
 
     override fun getCallingSandboxGroup(): SandboxGroup? {
-        return doPrivileged(PrivilegedAction {
+        @Suppress("deprecation", "removal")
+        return java.security.AccessController.doPrivileged(PrivilegedAction {
             val stackWalkerInstance = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
 
             stackWalkerInstance.walk { stackFrameStream ->

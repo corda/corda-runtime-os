@@ -7,7 +7,7 @@ description 'Corda Sandbox Irresolvable CPK'
 group 'com.example.sandbox'
 
 cordapp {
-    targetPlatformVersion 50000 as Integer
+    targetPlatformVersion platformVersion.toInteger()
     workflow {
         name 'Sandbox Irresolvable-CPK'
         versionId 1

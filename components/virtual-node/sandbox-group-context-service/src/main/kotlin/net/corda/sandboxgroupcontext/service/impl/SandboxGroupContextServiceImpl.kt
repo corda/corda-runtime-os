@@ -48,8 +48,6 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO
 import org.slf4j.LoggerFactory
-import java.security.AccessControlContext
-import java.security.AccessControlException
 import java.time.Duration
 import java.util.Collections.singleton
 import java.util.Collections.unmodifiableSet
@@ -60,6 +58,9 @@ import java.util.SortedMap
 import java.util.TreeMap
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
 typealias SatisfiedServiceReferences = Map<String, SortedMap<ServiceReference<*>, Any>>
 
@@ -252,7 +253,8 @@ class SandboxGroupContextServiceImpl @Activate constructor(
 
         // Access control context for the sandbox's "main" bundles.
         // All "main" bundles are assumed to have equal access rights.
-        val accessControlContext = bundles.first().adapt(AccessControlContext::class.java)
+        @Suppress("deprecation", "removal")
+        val accessControlContext = bundles.first().adapt(java.security.AccessControlContext::class.java)
 
         val sandboxGroupType = vnc.sandboxGroupType
         val sandboxBundles = bundles + getCordaSystemBundles(sandboxGroupType)
@@ -265,6 +267,9 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                     .filterNot(MARKER_INTERFACES::contains)
                     .onEach { serviceType ->
                         serviceIndex.computeIfAbsent(serviceType) { HashSet() }.add(serviceRef)
+                    }.takeIfElse(emptyList()) {
+                        // Services are only "injectable" if this sandbox type supports injection.
+                        sandboxGroupType.hasInjection
                     }.mapNotNullTo(ArrayList()) { serviceType ->
                         if (systemFilter.match(serviceRef)) {
                             // We always load interfaces for system services.
@@ -742,12 +747,13 @@ fun closeSafely(closeable: AutoCloseable) {
 /**
  * Check whether this [AccessControlContext] is allowed to GET service [serviceType].
  */
-private fun AccessControlContext.checkServicePermission(serviceType: String): Boolean {
+@Suppress("deprecation", "removal")
+private fun java.security.AccessControlContext.checkServicePermission(serviceType: String): Boolean {
     val sm = System.getSecurityManager()
     if (sm != null) {
         try {
             sm.checkPermission(ServicePermission(serviceType, GET), this)
-        } catch (ace: AccessControlException) {
+        } catch (ace: java.security.AccessControlException) {
             return false
         }
     }
@@ -795,6 +801,14 @@ private fun Bundle.loadMetadataService(serviceClassName: String, isMetadataServi
     } catch (_: ClassNotFoundException) {
     }
     return null
+}
+
+@OptIn(ExperimentalContracts::class)
+private inline fun <T> T.takeIfElse(otherwise: T, predicate: (T) -> Boolean): T {
+    contract {
+        callsInPlace(predicate, InvocationKind.EXACTLY_ONCE)
+    }
+    return if (predicate(this)) this else otherwise
 }
 
 private val ServiceReference<*>.serviceClassNames: Array<String>

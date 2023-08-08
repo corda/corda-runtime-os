@@ -241,6 +241,7 @@ class FlowSessionImplTest {
     private fun createInitiatedSession() = FlowSessionImpl(
         counterparty = ALICE_X500_NAME,
         sourceSessionId = SESSION_ID,
+        isInteropSession = false,
         mockFlowFiberService,
         serializationService,
         flowContext,
@@ -250,6 +251,7 @@ class FlowSessionImplTest {
     private fun createInitiatingSession() = FlowSessionImpl(
         counterparty = ALICE_X500_NAME,
         sourceSessionId = SESSION_ID,
+        isInteropSession = false,
         mockFlowFiberService,
         serializationService,
         flowContext,

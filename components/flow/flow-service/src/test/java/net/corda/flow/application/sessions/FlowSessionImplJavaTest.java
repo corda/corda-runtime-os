@@ -11,24 +11,22 @@ import net.corda.flow.fiber.FlowIORequest;
 import net.corda.flow.fiber.FlowLogicAndArgs;
 import net.corda.flow.pipeline.metrics.FlowMetrics;
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext;
-import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector;
 import net.corda.flow.state.FlowCheckpoint;
 import net.corda.flow.state.FlowContext;
 import net.corda.internal.serialization.SerializedBytesImpl;
 import net.corda.membership.read.MembershipGroupReader;
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext;
+import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector;
 import net.corda.serialization.checkpoint.CheckpointSerializer;
 import net.corda.v5.application.messaging.FlowSession;
 import net.corda.v5.base.types.MemberX500Name;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Future;
-
 import static net.corda.test.util.identity.IdentityUtilsKt.createTestHoldingIdentity;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -57,6 +55,7 @@ public class FlowSessionImplJavaTest {
     private final FlowSession session = new FlowSessionImpl(
             new MemberX500Name("Alice", "Alice Corp", "LDN", "GB"),
             "session id",
+            false,
             flowFiberService,
             serializationService,
             flowContext,
@@ -117,25 +116,5 @@ public class FlowSessionImplJavaTest {
         when(flowSandboxGroupContext.getDependencyInjector()).thenReturn(sandboxDependencyInjector);
         when(flowSandboxGroupContext.getCheckpointSerializer()).thenReturn(checkpointSerializer);
         when(flowFiberService.getExecutingFiber()).thenReturn(flowFiber);
-    }
-
-    @Test
-    public void passingABoxedTypeToSendAndReceiveWillNotThrowAnException() {
-        session.sendAndReceive(Integer.class, 1);
-    }
-
-    @Test
-    public void passingAPrimitiveReceiveTypeToSendAndReceiveWillThrowAnException() {
-        assertThrows(IllegalArgumentException.class, () -> session.sendAndReceive(int.class, 1));
-    }
-
-    @Test
-    public void passingABoxedTypeToReceiveWillNotThrowAnException() {
-        session.receive(Integer.class);
-    }
-
-    @Test
-    public void passingAPrimitiveReceiveTypeToReceiveWillThrowAnException() {
-        assertThrows(IllegalArgumentException.class, () -> session.receive(int.class));
     }
 }

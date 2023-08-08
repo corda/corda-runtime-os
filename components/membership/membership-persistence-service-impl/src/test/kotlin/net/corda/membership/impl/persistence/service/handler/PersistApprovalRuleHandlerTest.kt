@@ -88,9 +88,9 @@ class PersistApprovalRuleHandlerTest {
     private val entityManagerFactory = mock<EntityManagerFactory> {
         on { createEntityManager() } doReturn entityManager
     }
-    private val connectionManager = mock<DbConnectionManager> {
+    private val dbConnectionManager = mock<DbConnectionManager> {
         on {
-            createEntityManagerFactory(
+            getOrCreateEntityManagerFactory(
                 vaultDmlConnectionId,
                 entitySet
             )
@@ -99,7 +99,7 @@ class PersistApprovalRuleHandlerTest {
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
         on { virtualNodeInfoReadService } doReturn nodeInfoReadService
         on { jpaEntitiesRegistry } doReturn registry
-        on { dbConnectionManager } doReturn connectionManager
+        on { dbConnectionManager } doReturn dbConnectionManager
         on { transactionTimerFactory } doReturn { transactionTimer }
     }
     private lateinit var handler: PersistApprovalRuleHandler

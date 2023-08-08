@@ -10,6 +10,5 @@ internal interface ProtocolFactory {
     @Suppress("LongParameterList")
     fun createInitiator(sessionId: String, supportedModes: Set<ProtocolMode>, ourMaxMessageSize: Int,
                         ourPublicKey: PublicKey, groupId: String, mode: CertificateCheckMode): AuthenticationProtocolInitiator
-    fun createResponder(sessionId: String, supportedModes: Set<ProtocolMode>, ourMaxMessageSize: Int,
-                        mode: CertificateCheckMode): AuthenticationProtocolResponder
+    fun createResponder(sessionId: String, ourMaxMessageSize: Int): AuthenticationProtocolResponder
 }

@@ -1,36 +1,36 @@
 package net.corda.applications.workers.smoketest.flow
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import java.util.UUID
 import kotlin.text.Typography.quote
-import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
-import net.corda.applications.workers.smoketest.TEST_CPI_NAME
-import net.corda.e2etest.utilities.FlowStatus
+import net.corda.applications.workers.smoketest.utils.TEST_CPB_LOCATION
+import net.corda.applications.workers.smoketest.utils.TEST_CPI_NAME
+import net.corda.e2etest.utilities.DEFAULT_CLUSTER
+import net.corda.e2etest.utilities.FlowResult
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_FAILED
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.RpcSmokeTestInput
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
+import net.corda.e2etest.utilities.awaitRestFlowResult
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
-import net.corda.e2etest.utilities.configWithDefaultsNode
-import net.corda.e2etest.utilities.getConfig
-import net.corda.e2etest.utilities.getFlowClasses
+import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
+import net.corda.e2etest.utilities.config.configWithDefaultsNode
+import net.corda.e2etest.utilities.config.getConfig
+import net.corda.e2etest.utilities.config.managedConfig
+import net.corda.e2etest.utilities.config.waitForConfigurationChange
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
-import net.corda.e2etest.utilities.getRpcFlowResult
 import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRpcFlow
-import net.corda.e2etest.utilities.toJsonString
-import net.corda.e2etest.utilities.updateConfig
-import net.corda.e2etest.utilities.waitForConfigurationChange
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.v5.crypto.DigestAlgorithmName
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertAll
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
@@ -71,6 +71,7 @@ class FlowTests {
             davidX500,
             notaryX500
         )
+        private const val NOTARY_SERVICE_X500 = "O=MyNotaryService, L=London, C=GB"
 
         val invalidConstructorFlowNames = listOf(
             "com.r3.corda.testing.smoketests.flow.errors.PrivateConstructorFlow",
@@ -102,6 +103,8 @@ class FlowTests {
         @BeforeAll
         @JvmStatic
         internal fun beforeAll() {
+            DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
+
             // Upload test flows if not already uploaded
             conditionallyUploadCordaPackage(
                 applicationCpiName, TEST_CPB_LOCATION, groupId, staticMemberList
@@ -129,8 +132,21 @@ class FlowTests {
 
             registerStaticMember(bobHoldingId)
             registerStaticMember(charlieHoldingId)
-            registerStaticMember(notaryHoldingId, isNotary = true)
+            registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
         }
+
+        private val JsonNode?.command: String
+            get() {
+                return this!!["command"].textValue()
+            }
+
+        private val JsonNode?.result: String
+            get() {
+                return this!!["result"].textValue()
+            }
+
+        private fun FlowResult.mapFlowJsonResult(): Map<*, *> =
+            json!!.traverse(jacksonObjectMapper).readValueAs(Map::class.java)
     }
 
     /**
@@ -154,68 +170,12 @@ class FlowTests {
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
 
-        val flowResult = result.getRpcFlowResult()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result.flowError).isNull()
-        assertThat(flowResult.command).isEqualTo("echo")
-        assertThat(flowResult.result).isEqualTo("hello")
-    }
-
-    @Test
-    fun `start multiple RPC flow and validate they complete`() {
-        val requestBody = RpcSmokeTestInput().apply {
-            command = "echo"
-            data = mapOf("echo_value" to "hello")
-        }
-
-        val flowIds = mutableListOf(
-            startRpcFlow(davidHoldingId, requestBody),
-            startRpcFlow(davidHoldingId, requestBody)
-        )
-
-        flowIds.forEach {
-            val flowResult = awaitRpcFlowFinished(davidHoldingId, it)
-            assertThat(flowResult.flowError).isNull()
-            assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        }
-    }
-
-    @Test
-    fun `start RPC flow twice, second returns an error code of 409`() {
-        val requestBody = RpcSmokeTestInput().apply {
-            command = "echo"
-            data = mapOf("echo_value" to "hello")
-        }
-
-        startRpcFlow(bobHoldingId, requestBody)
-        startRpcFlow(bobHoldingId, requestBody, 409)
-    }
-
-    @Test
-    fun `start RPC flow for flow not in startable list, returns an error code of 400`() {
-        startRpcFlow(bobHoldingId, emptyMap(), "InvalidFlow", 400)
-    }
-
-    @Test
-    fun `start RPC flow - flow failure test`() {
-        // 1) Start the flow but signal it to throw an exception when it starts
-        val requestBody = RpcSmokeTestInput().apply {
-            command = "throw_error"
-            data = mapOf("error_message" to "oh no!")
-        }
-
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        // 3) check the flow completes as expected
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-        assertThat(result.flowResult).isNull()
-        assertThat(result.flowError).isNotNull
-        assertThat(result.flowError?.type).isEqualTo("FLOW_FAILED")
-        assertThat(result.flowError?.message).isEqualTo("oh no!")
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.flowError).isNull()
+        assertThat(flowResult.json.command).isEqualTo("echo")
+        assertThat(flowResult.json.result).isEqualTo("hello")
     }
 
     @Test
@@ -231,69 +191,42 @@ class FlowTests {
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
 
-        val flowResult = result.getRpcFlowResult()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result.flowResult).isNotNull
-        assertThat(result.flowError).isNull()
-        assertThat(flowResult.command).isEqualTo("start_sessions")
-        assertThat(flowResult.result)
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.json).isNotNull
+        assertThat(flowResult.flowError).isNull()
+        assertThat(flowResult.json.command).isEqualTo("start_sessions")
+        assertThat(flowResult.json.result)
             .isEqualTo("${bobX500}=echo:m1; ${charlyX500}=echo:m2")
     }
 
     @Test
-    fun `Platform Error - user code receives platform errors`() {
+    fun `Flow Session - Send and receive primitive values across a session`() {
         val requestBody = RpcSmokeTestInput().apply {
-            command = "throw_platform_error"
-            data = mapOf("x500" to bobX500)
+            command = "flow_session_primitives"
+            data = mapOf("sessions" to bobX500)
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
 
-        val flowResult = result.getRpcFlowResult()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(flowResult.command).isEqualTo("throw_platform_error")
-        assertThat(flowResult.result).startsWith("Type='PLATFORM_ERROR'")
-    }
-
-    @Test
-    fun `Session Error - Closed Or Error sessions throw`() {
-        val requestBody = RpcSmokeTestInput().apply {
-            command = "throw_session_error"
-            data = mapOf("x500" to bobX500)
-        }
-
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        val flowResult = result.getRpcFlowResult()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(flowResult.command).isEqualTo("throw_session_error")
-        assertThat(flowResult.result).endsWith("Status is CLOSED")
-    }
-
-    @Test
-    fun `error is thrown when flow with invalid constructor is executed`() {
-        invalidConstructorFlowNames.forEach {
-            val requestID = startRpcFlow(bobHoldingId, mapOf(), it)
-            val result = awaitRpcFlowFinished(bobHoldingId, requestID)
-
-            assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
-            assertThat(result.flowError).isNotNull
-            assertThat(result.flowError!!.message).contains(it)
-        }
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.json).isNotNull
+        assertThat(flowResult.flowError).isNull()
+        assertThat(flowResult.json.command).isEqualTo("flow_session_primitives")
+        assertThat(flowResult.json.result)
+            .isEqualTo("Successfully received 8 items.\n" +
+                    "Successfully received 8 items from receiveAll.\n" +
+                    "Successfully received 8 items from receiveAllMap.\n")
     }
 
     @Test
     fun `Persistence - persist a single entity`() {
         val id = UUID.randomUUID()
-        val result = persistDog(id)
-        val flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.result).isEqualTo("dog '${id}' saved")
+        val flowResult = persistDog(id)
+        assertThat(flowResult.json.result).isEqualTo("dog '${id}' saved")
     }
 
     @Test
@@ -308,20 +241,18 @@ class FlowTests {
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
 
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        val flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.result).isEqualTo("dogs ${listOf(id, id2)} saved")
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.json.result).isEqualTo("dogs ${listOf(id, id2)} saved")
     }
 
     @Test
     fun `Persistence - merge a single entity`() {
         val id = UUID.randomUUID()
         persistDog(id)
-        val result = mergeDog(id, "dog2")
-        val flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.result).isEqualTo("dog '${id}' merged")
+        val flowResult = mergeDog(id, "dog2")
+        assertThat(flowResult.json.result).isEqualTo("dog '${id}' merged")
     }
 
     @Test
@@ -341,12 +272,11 @@ class FlowTests {
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
 
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
 
-        val flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.result).isEqualTo("dogs ${listOf(id, id2)} merged")
+        assertThat(flowResult.json.result).isEqualTo("dogs ${listOf(id, id2)} merged")
     }
 
     @Test
@@ -365,11 +295,10 @@ class FlowTests {
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
 
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        val flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.result).isEqualTo("found dog id='$id' name='$name")
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.json.result).isEqualTo("found dog id='$id' name='$name'")
     }
 
     @Test
@@ -389,12 +318,11 @@ class FlowTests {
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
 
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        val flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.result).contains("id='$id' name='$name")
-        assertThat(flowResult.result).contains("id='$id2' name='$name")
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.json.result).contains("id='$id' name='$name'")
+        assertThat(flowResult.json.result).contains("id='$id2' name='$name'")
     }
 
     @Test
@@ -407,11 +335,10 @@ class FlowTests {
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
 
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        val flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.result).isEqualTo("found one or more dogs")
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.json.result).isEqualTo("found one or more dogs")
     }
 
     @Test
@@ -429,11 +356,10 @@ class FlowTests {
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
 
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        val flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.result).isEqualTo("dog '${id}' deleted")
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.json.result).isEqualTo("dog '${id}' deleted")
     }
 
     @Test
@@ -451,11 +377,10 @@ class FlowTests {
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
 
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        val flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.result).isEqualTo("dogs ${listOf(id, id2)} deleted")
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.json.result).isEqualTo("dogs ${listOf(id, id2)} deleted")
     }
 
     @Test
@@ -466,7 +391,7 @@ class FlowTests {
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
-        val flowResult = awaitRpcFlowFinished(bobHoldingId, requestId).mapFlowJsonResult()
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId).mapFlowJsonResult()
         val result = jacksonObjectMapper.readValue<Map<String, Any>>(flowResult["result"] as String)
 
         assertThat(result["cpiName"] as String).isEqualTo(applicationCpiName)
@@ -477,7 +402,7 @@ class FlowTests {
         assertThat(result["initialSoftwareVersion"] as String).isNotNull.isNotEmpty
     }
 
-    private fun persistDog(id: UUID): FlowStatus {
+    private fun persistDog(id: UUID): FlowResult {
         val requestBody = RpcSmokeTestInput().apply {
             command = "persistence_persist"
             data = mapOf("id" to id.toString())
@@ -485,14 +410,14 @@ class FlowTests {
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val result = awaitRestFlowResult(bobHoldingId, requestId)
 
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
 
         return result
     }
 
-    private fun mergeDog(id: UUID, name: String): FlowStatus {
+    private fun mergeDog(id: UUID, name: String): FlowResult {
         val requestBody = RpcSmokeTestInput().apply {
             command = "persistence_merge"
             data = mapOf(
@@ -503,89 +428,11 @@ class FlowTests {
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val result = awaitRestFlowResult(bobHoldingId, requestId)
 
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
 
         return result
-    }
-
-    @Test
-    fun `Get runnable flows for a holdingId`() {
-        val flows = getFlowClasses(bobHoldingId)
-
-        assertThat(flows.size).isEqualTo(expectedFlows.size)
-        assertTrue(flows.containsAll(expectedFlows))
-    }
-
-    @Test
-    fun `SubFlow - Create an initiated session in an initiating flow and pass it to a inline subflow`() {
-
-        val requestBody = RpcSmokeTestInput().apply {
-            command = "subflow_passed_in_initiated_session"
-            data = mapOf(
-                "sessions" to "${bobX500};${charlyX500}",
-                "messages" to "m1;m2"
-            )
-        }
-
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        val flowResult = result.getRpcFlowResult()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result.flowResult).isNotNull
-        assertThat(result.flowError).isNull()
-        assertThat(flowResult.command).isEqualTo("subflow_passed_in_initiated_session")
-        assertThat(flowResult.result)
-            .isEqualTo("${bobX500}=echo:m1; ${charlyX500}=echo:m2")
-    }
-
-    @Test
-    fun `SubFlow - Create an uninitiated session in an initiating flow and pass it to a inline subflow`() {
-
-        val requestBody = RpcSmokeTestInput().apply {
-            command = "subflow_passed_in_non_initiated_session"
-            data = mapOf(
-                "sessions" to "${bobX500};${charlyX500}",
-                "messages" to "m1;m2"
-            )
-        }
-
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        val flowResult = result.getRpcFlowResult()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result.flowResult).isNotNull
-        assertThat(result.flowError).isNull()
-        assertThat(flowResult.command).isEqualTo("subflow_passed_in_non_initiated_session")
-        assertThat(flowResult.result)
-            .isEqualTo("${bobX500}=echo:m1; ${charlyX500}=echo:m2")
-    }
-
-    @Test
-    @Disabled
-    fun `Flow Session - Initiate multiple sessions and exercise the flow messaging apis`() {
-
-        val requestBody = RpcSmokeTestInput().apply {
-            command = "flow_messaging_apis"
-            data = mapOf("sessions" to bobX500)
-        }
-
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        val flowResult = result.getRpcFlowResult()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result.flowResult).isNotNull
-        assertThat(result.flowError).isNull()
-        assertThat(flowResult.command).isEqualTo("flow_messaging_apis")
-        assertThat(flowResult.result)
-            .isEqualTo("${bobX500}=Completed. Sum:18")
     }
 
     @Test
@@ -597,14 +444,13 @@ class FlowTests {
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
 
-        val flowResult = result.getRpcFlowResult()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result.flowResult).isNotNull
-        assertThat(result.flowError).isNull()
-        assertThat(flowResult.command).isEqualTo("crypto_sign_and_verify")
-        assertThat(flowResult.result).isEqualTo(true.toString())
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.json).isNotNull
+        assertThat(flowResult.flowError).isNull()
+        assertThat(flowResult.json.command).isEqualTo("crypto_sign_and_verify")
+        assertThat(flowResult.json.result).isEqualTo(true.toString())
     }
 
     @Test
@@ -616,14 +462,13 @@ class FlowTests {
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
 
-        val flowResult = result.getRpcFlowResult()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result.flowResult).isNotNull
-        assertThat(result.flowError).isNull()
-        assertThat(flowResult.command).isEqualTo("crypto_verify_invalid_signature")
-        assertThat(flowResult.result).isEqualTo(true.toString())
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.json).isNotNull
+        assertThat(flowResult.flowError).isNull()
+        assertThat(flowResult.json.command).isEqualTo("crypto_verify_invalid_signature")
+        assertThat(flowResult.json.result).isEqualTo(true.toString())
     }
 
     @Test
@@ -637,26 +482,24 @@ class FlowTests {
         )
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-        val flowResult = result.getRpcFlowResult()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result.flowResult).isNotNull
-        assertThat(result.flowError).isNull()
-        assertThat(flowResult.command).isEqualTo("crypto_get_default_signature_spec")
-        assertThat(flowResult.result).isEqualTo("SHA256withECDSA")
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.json).isNotNull
+        assertThat(flowResult.flowError).isNull()
+        assertThat(flowResult.json.command).isEqualTo("crypto_get_default_signature_spec")
+        assertThat(flowResult.json.result).isEqualTo("SHA256withECDSA")
 
         // Call get default signature spec api with public key only
         requestBody.data = mapOf(
             "memberX500" to bobX500
         )
         val requestId1 = startRpcFlow(bobHoldingId, requestBody)
-        val result1 = awaitRpcFlowFinished(bobHoldingId, requestId1)
-        val flowResult1 = result1.getRpcFlowResult()
-        assertThat(result1.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result1.flowResult).isNotNull
-        assertThat(result1.flowError).isNull()
-        assertThat(flowResult1.command).isEqualTo("crypto_get_default_signature_spec")
-        assertThat(flowResult1.result).isEqualTo("SHA256withECDSA")
+        val flowResult1 = awaitRestFlowResult(bobHoldingId, requestId1)
+        assertThat(flowResult1.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult1.json).isNotNull
+        assertThat(flowResult1.flowError).isNull()
+        assertThat(flowResult1.json.command).isEqualTo("crypto_get_default_signature_spec")
+        assertThat(flowResult1.json.result).isEqualTo("SHA256withECDSA")
     }
 
     @Test
@@ -667,13 +510,12 @@ class FlowTests {
         requestBody.data = mapOf("memberX500" to bobX500)
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-        val flowResult = result.getRpcFlowResult()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result.flowResult).isNotNull
-        assertThat(result.flowError).isNull()
-        assertThat(flowResult.command).isEqualTo("crypto_get_compatible_signature_specs")
-        val flowOutputs = requireNotNull(flowResult.result).split("; ")
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.json).isNotNull
+        assertThat(flowResult.flowError).isNull()
+        assertThat(flowResult.json.command).isEqualTo("crypto_get_compatible_signature_specs")
+        val flowOutputs = requireNotNull(flowResult.json.result).split("; ")
         assertThat(flowOutputs).containsAll(
             listOf(
                 "SHA256withECDSA",
@@ -689,13 +531,12 @@ class FlowTests {
         )
 
         val requestId1 = startRpcFlow(bobHoldingId, requestBody)
-        val result1 = awaitRpcFlowFinished(bobHoldingId, requestId1)
-        val flowResult1 = result1.getRpcFlowResult()
-        assertThat(result1.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result1.flowResult).isNotNull
-        assertThat(result1.flowError).isNull()
-        assertThat(flowResult1.command).isEqualTo("crypto_get_compatible_signature_specs")
-        val flowOutputs1 = requireNotNull(flowResult1.result).split("; ")
+        val flowResult1 = awaitRestFlowResult(bobHoldingId, requestId1)
+        assertThat(flowResult1.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult1.json).isNotNull
+        assertThat(flowResult1.flowError).isNull()
+        assertThat(flowResult1.json.command).isEqualTo("crypto_get_compatible_signature_specs")
+        val flowOutputs1 = requireNotNull(flowResult1.json.result).split("; ")
         assertThat(flowOutputs1).containsAll(listOf("SHA256withECDSA"))
     }
 
@@ -704,12 +545,11 @@ class FlowTests {
         val requestBody = RpcSmokeTestInput()
         requestBody.command = "crypto_find_my_signing_keys"
         val requestId = startRpcFlow(bobHoldingId, requestBody)
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-        val flowResult = result.getRpcFlowResult()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result.flowResult).isNotNull
-        assertThat(flowResult.command).isEqualTo("crypto_find_my_signing_keys")
-        assertThat(flowResult.result).isEqualTo("success")
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.json).isNotNull
+        assertThat(flowResult.json.command).isEqualTo("crypto_find_my_signing_keys")
+        assertThat(flowResult.json.result).isEqualTo("success")
     }
 
     @Test
@@ -717,12 +557,11 @@ class FlowTests {
         val requestBody = RpcSmokeTestInput()
         requestBody.command = "crypto_CompositeKeyGenerator_works_in_flows"
         val requestId = startRpcFlow(bobHoldingId, requestBody)
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-        val flowResult = result.getRpcFlowResult()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result.flowResult).isNotNull
-        assertThat(flowResult.command).isEqualTo("crypto_CompositeKeyGenerator_works_in_flows")
-        assertThat(flowResult.result).isEqualTo("SUCCESS")
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.json).isNotNull
+        assertThat(flowResult.json.command).isEqualTo("crypto_CompositeKeyGenerator_works_in_flows")
+        assertThat(flowResult.json.result).isEqualTo("SUCCESS")
     }
 
     @Test
@@ -730,12 +569,11 @@ class FlowTests {
         val requestBody = RpcSmokeTestInput()
         requestBody.command = "crypto_get_default_digest_algorithm"
         val requestId = startRpcFlow(bobHoldingId, requestBody)
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-        val flowResult = result.getRpcFlowResult()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result.flowResult).isNotNull
-        assertThat(flowResult.command).isEqualTo("crypto_get_default_digest_algorithm")
-        assertThat(flowResult.result).isEqualTo("SUCCESS")
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.json).isNotNull
+        assertThat(flowResult.json.command).isEqualTo("crypto_get_default_digest_algorithm")
+        assertThat(flowResult.json.result).isEqualTo("SUCCESS")
     }
 
     @Test
@@ -743,107 +581,11 @@ class FlowTests {
         val requestBody = RpcSmokeTestInput()
         requestBody.command = "crypto_get_supported_digest_algorithms"
         val requestId = startRpcFlow(bobHoldingId, requestBody)
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-        val flowResult = result.getRpcFlowResult()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result.flowResult).isNotNull
-        assertThat(flowResult.command).isEqualTo("crypto_get_supported_digest_algorithms")
-        assertThat(flowResult.result).isEqualTo("SUCCESS")
-    }
-
-    @Test
-    fun `Context is propagated to initiated and sub flows`() {
-        val requestBody = RpcSmokeTestInput().apply {
-            command = "context_propagation"
-        }
-
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        val flowResult = result.getRpcFlowResult()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result.flowResult).isNotNull
-        assertThat(result.flowError).isNull()
-        assertThat(flowResult.command).isEqualTo("context_propagation")
-
-        val contextJson =
-            """
-            {
-              "rpcFlow": {
-                "platform": "account-zero",
-                "user1": "user1-set",
-                "user2": "null",
-                "user3": "null",
-                "cpiName": "$applicationCpiName",
-                "initiatingCpiName": "null"
-              },
-              "rpcSubFlow": {
-                "platform": "account-zero",
-                "user1": "user1-set",
-                "user2": "user2-set",
-                "user3": "null",
-                "cpiName": "$applicationCpiName",
-                "initiatingCpiName": "null"
-              },
-              "initiatedFlow": {
-                "platform": "account-zero",
-                "user1": "user1-set",
-                "user2": "user2-set",
-                "user3": "user3-set",
-                "cpiName": "$applicationCpiName",
-                "initiatingCpiName": "$applicationCpiName"
-              },
-              "initiatedSubFlow": {
-                "platform": "account-zero",
-                "user1": "user1-set",
-                "user2": "user2-set-ContextPropagationInitiatedFlow",
-                "user3": "user3-set",
-                "cpiName": "$applicationCpiName",
-                "initiatingCpiName": "$applicationCpiName"
-              },
-              "rpcFlowAtComplete": {
-                "platform": "account-zero",
-                "user1": "user1-set",
-                "user2": "null",
-                "user3": "null",
-                "cpiName": "$applicationCpiName",
-                "initiatingCpiName": "null"
-              }
-            }
-            """.trimJson()
-
-        assertThat(flowResult.result).isEqualTo(contextJson)
-    }
-
-    @Test
-    fun `flows can use inheritance and platform dependencies are correctly injected`() {
-        dependencyInjectionFlowNames.forEach {
-            val requestId = startRpcFlow(bobHoldingId, mapOf("id" to charlyX500), it)
-            val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-            assertThat(result.flowError).isNull()
-            assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-            assertThat(result.flowResult).isEqualTo(charlyX500)
-        }
-    }
-
-    @Test
-    fun `Serialize and deserialize an object`() {
-        val dataToSerialize = "serialize this"
-        val requestBody = RpcSmokeTestInput().apply {
-            command = "serialization"
-            data = mapOf("data" to dataToSerialize)
-        }
-
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        val flowResult = result.getRpcFlowResult()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result.flowError).isNull()
-        assertThat(flowResult.result).isEqualTo(dataToSerialize)
-        assertThat(flowResult.command).isEqualTo("serialization")
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.json).isNotNull
+        assertThat(flowResult.json.command).isEqualTo("crypto_get_supported_digest_algorithms")
+        assertThat(flowResult.json.result).isEqualTo("SUCCESS")
     }
 
     @Test
@@ -1137,13 +879,13 @@ class FlowTests {
         val currentConfigValue = getConfig(MESSAGING_CONFIG).configWithDefaultsNode()[MAX_ALLOWED_MSG_SIZE].asInt()
         val newConfigurationValue = (currentConfigValue * 1.5).toInt()
 
-        // Update cluster configuration (ConfigProcessor should kick off on all workers at this point)
-        updateConfig(mapOf(MAX_ALLOWED_MSG_SIZE to newConfigurationValue).toJsonString(), MESSAGING_CONFIG)
+        managedConfig { configManager ->
+            configManager
+                .load(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue)
+                .apply()
+            // Wait for the rpc-worker to reload the configuration and come back up
+            waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue.toString(), false)
 
-        // Wait for the rpc-worker to reload the configuration and come back up
-        waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue.toString())
-
-        try {
             // Execute some flows which require functionality from different workers and make sure they succeed
             val flowIds = mutableListOf(
                 startRpcFlow(
@@ -1172,14 +914,10 @@ class FlowTests {
             )
 
             flowIds.forEach {
-                val flowResult = awaitRpcFlowFinished(bobHoldingId, it)
+                val flowResult = awaitRestFlowResult(bobHoldingId, it)
                 assertThat(flowResult.flowError).isNull()
                 assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
             }
-        } finally {
-            // Be a good neighbour and rollback the configuration change back to what it was
-            updateConfig(mapOf(MAX_ALLOWED_MSG_SIZE to currentConfigValue).toJsonString(), MESSAGING_CONFIG)
-            waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, currentConfigValue.toString())
         }
     }
 
@@ -1192,13 +930,12 @@ class FlowTests {
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
 
-        val flowResult = result.getRpcFlowResult()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result.flowResult).isNotNull
-        assertThat(result.flowError).isNull()
-        assertThat(flowResult.command).isEqualTo("json_serialization")
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.json).isNotNull
+        assertThat(flowResult.flowError).isNull()
+        assertThat(flowResult.json.command).isEqualTo("json_serialization")
 
         val expectedOutputJson =
             """
@@ -1210,7 +947,27 @@ class FlowTests {
             }
             """.trimJson()
 
-        assertThat(flowResult.result).isEqualTo(expectedOutputJson)
+        assertThat(flowResult.json.result).isEqualTo(expectedOutputJson)
+    }
+
+    @Disabled("Fails in e2e because require a single cluster.") //TODO CORE-12469
+    @Test
+    fun `Interoperability - facade call returns payload back to caller`() {
+        val payload = "Hello world!"
+
+        val args = mapOf(
+            "facadeId" to "None",
+            "methodName" to "None",
+            "payload" to payload,
+            "alias" to charlyX500.replace("$testRunUniqueId", "$testRunUniqueId Alias")
+        )
+
+        val requestId = startRpcFlow(bobHoldingId, args, "net.cordapp.testing.testflows.FacadeInvocationFlow")
+        val flowStatus = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(flowStatus.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowStatus.flowError).isNull()
+        assertThat(flowStatus.flowResult).isEqualTo(payload)
     }
 
     /**
@@ -1221,7 +978,7 @@ class FlowTests {
         outputStateCount: Int,
         timeWindowLowerBoundOffsetMs: Long? = null,
         timeWindowUpperBoundOffsetMs: Long? = null,
-        validateResult: (flowResult: FlowStatus) -> Unit
+        validateResult: (flowResult: FlowResult) -> Unit
     ) {
         val paramMap = mutableMapOf("outputStateCount" to "$outputStateCount")
         timeWindowLowerBoundOffsetMs?.let {
@@ -1237,7 +994,7 @@ class FlowTests {
             "com.r3.corda.testing.testflows.NonValidatingNotaryTestFlow"
         )
 
-        val issuanceResult = awaitRpcFlowFinished(bobHoldingId, issuanceRequestID)
+        val issuanceResult = awaitRestFlowResult(bobHoldingId, issuanceRequestID)
 
         validateResult(issuanceResult)
     }
@@ -1249,7 +1006,7 @@ class FlowTests {
     private fun consumeStatesAndValidateResult(
         inputStates: List<String>,
         refStates: List<String>,
-        validateResult: (flowResult: FlowStatus) -> Unit
+        validateResult: (flowResult: FlowResult) -> Unit
     ) {
         val consumeRequestID = startRpcFlow(
             bobHoldingId,
@@ -1260,10 +1017,8 @@ class FlowTests {
             "com.r3.corda.testing.testflows.NonValidatingNotaryTestFlow"
         )
 
-        val consumeResult = awaitRpcFlowFinished(bobHoldingId, consumeRequestID)
+        val consumeResult = awaitRestFlowResult(bobHoldingId, consumeRequestID)
 
         validateResult(consumeResult)
     }
-
-    private fun FlowStatus.mapFlowJsonResult() = jacksonObjectMapper.readValue<Map<String, Any>>(this.flowResult!!)
 }

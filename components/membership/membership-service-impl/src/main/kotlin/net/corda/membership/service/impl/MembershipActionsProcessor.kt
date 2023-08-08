@@ -5,6 +5,7 @@ import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.membership.actions.request.DistributeGroupParameters
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.libs.configuration.SmartConfig
@@ -13,6 +14,7 @@ import net.corda.membership.lib.metrics.getTimerMetric
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.service.impl.actions.DistributeGroupParametersActionHandler
 import net.corda.membership.service.impl.actions.DistributeMemberInfoActionHandler
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
@@ -48,6 +50,17 @@ class MembershipActionsProcessor(
         locallyHostedIdentitiesService,
     )
 
+    private val distributeGroupParametersActionHandler = DistributeGroupParametersActionHandler(
+        cipherSchemeMetadata,
+        clock,
+        cryptoOpsClient,
+        cordaAvroSerializationFactory,
+        merkleTreeProvider,
+        membershipConfig,
+        groupReaderProvider,
+        locallyHostedIdentitiesService,
+    )
+
     override fun onNext(events: List<Record<String, MembershipActionsRequest>>): List<Record<String, *>> {
         return events.flatMap { event -> processEvent(event) }.toList()
     }
@@ -57,6 +70,7 @@ class MembershipActionsProcessor(
             return recordTimerMetric(request) {
                 when (it) {
                     is DistributeMemberInfo -> distributeMemberInfoActionHandler.process(event.key, it)
+                    is DistributeGroupParameters -> distributeGroupParametersActionHandler.process(event.key, it)
                     else -> {
                         logger.error("Received unimplemented membership action request.")
                         emptyList()

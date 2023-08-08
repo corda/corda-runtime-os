@@ -1,6 +1,7 @@
 package net.corda.flow.rest.v1
 
 import net.corda.flow.rest.v1.types.request.StartFlowParameters
+import net.corda.flow.rest.v1.types.response.FlowResultResponse
 import net.corda.flow.rest.v1.types.response.FlowStatusResponse
 import net.corda.flow.rest.v1.types.response.FlowStatusResponses
 import net.corda.rest.RestResource
@@ -108,6 +109,29 @@ interface FlowRestResource : RestResource {
         @RestPathParameter(description = "The short hash of the holding identity; obtained during node registration")
         holdingIdentityShortHash: String
     ): FlowStatusResponses
+
+    @HttpGET(
+        path = "{holdingIdentityShortHash}/{clientRequestId}/result",
+        title = "Get Flow Result",
+        description = "This method gets the result of the specified flow instance execution.",
+        responseDescription = """
+            The result of the flow instance, including:
+            
+            holdingIdentityShortHash: The short form hash of the Holding Identity
+            clientRequestId: The unique ID supplied by the client when the flow was created.
+            flowId: The internal unique ID for the flow.
+            flowStatus: The current state of the executing flow.
+            json: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null.
+            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null.
+            timestamp: The timestamp of when the status was last updated (in UTC)
+            """
+    )
+    fun getFlowResult(
+        @RestPathParameter(description = "The short hash of the holding identity; obtained during node registration")
+        holdingIdentityShortHash: String,
+        @RestPathParameter(description = "Client provided flow identifier")
+        clientRequestId: String
+    ): ResponseEntity<FlowResultResponse>
 
     @HttpWS(
         path = "{holdingIdentityShortHash}/{clientRequestId}",

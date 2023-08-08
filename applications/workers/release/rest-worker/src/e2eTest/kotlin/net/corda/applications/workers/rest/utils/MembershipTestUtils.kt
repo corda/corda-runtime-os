@@ -135,7 +135,11 @@ val RestMemberInfo.name get() = memberContext["corda.name"] ?: fail("Could not f
 fun E2eCluster.assertOnlyMgmIsInMemberList(
     holdingId: String,
     mgmName: String
-) = eventually(duration = 1.minutes, retryAllExceptions = true) {
+) = eventually(
+    duration = 2.minutes,
+    waitBetween = 2.seconds,
+    retryAllExceptions = true
+) {
     lookupMembers(holdingId).also { result ->
         assertThat(result)
             .hasSize(1)
@@ -148,7 +152,11 @@ fun E2eCluster.assertOnlyMgmIsInMemberList(
 
 fun E2eCluster.getGroupId(
     holdingId: String
-): String = eventually(retryAllExceptions = true) {
+): String = eventually(
+    duration = 1.minutes,
+    waitBetween = 1.seconds,
+    retryAllExceptions = true
+) {
     lookupMembers(holdingId).let { result ->
         assertThat(result)
             .isNotEmpty

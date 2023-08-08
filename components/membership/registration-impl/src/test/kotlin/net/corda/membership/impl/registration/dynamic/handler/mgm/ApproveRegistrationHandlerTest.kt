@@ -7,9 +7,10 @@ import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
+import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
-import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.p2p.SetOwnRegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
+import net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
@@ -20,6 +21,7 @@ import net.corda.membership.impl.registration.dynamic.handler.TestUtils.createHo
 import net.corda.membership.impl.registration.dynamic.handler.TestUtils.mockMemberInfo
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.SignedGroupParameters
+import net.corda.membership.lib.VersionedMessageBuilder
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -31,11 +33,13 @@ import net.corda.schema.Schemas.Membership.MEMBERSHIP_ACTIONS_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.test.util.time.TestClock
+import net.corda.v5.membership.NotaryInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
@@ -207,17 +211,18 @@ class ApproveRegistrationHandlerTest {
             viewOwningIdentity = mgm.holdingIdentity,
             notary = notaryInfo,
         )
-        verify(groupReaderProvider, never()).getGroupReader(any())
         assertThat(results.outputStates)
-            .hasSize(3)
-            .anySatisfy {
-                assertThat(it.topic).isEqualTo(MEMBERSHIP_ACTIONS_TOPIC)
-                val value = (it.value as? MembershipActionsRequest)?.request
-                assertThat(value)
-                    .isNotNull
-                    .isInstanceOf(DistributeMemberInfo::class.java)
-                assertThat((value as? DistributeMemberInfo)?.minimumGroupParametersEpoch).isEqualTo(6)
-            }
+            .hasSize(4)
+
+        val actionsRequest = results.outputStates.single { it.topic == MEMBERSHIP_ACTIONS_TOPIC }
+        val distributeMemberInfo = (actionsRequest.value as? MembershipActionsRequest)?.request as? DistributeMemberInfo
+        assertThat(distributeMemberInfo?.minimumGroupParametersEpoch).isEqualTo(6)
+
+        val registrationCommand = results.outputStates.single { it.topic == REGISTRATION_COMMAND_TOPIC }
+        val checkForPendingRegistration = (registrationCommand.value as? RegistrationCommand)?.command as? CheckForPendingRegistration
+        assertThat(checkForPendingRegistration?.mgm).isEqualTo(owner.toAvro())
+        assertThat(checkForPendingRegistration?.member).isEqualTo(notary.toAvro())
+        assertThat(checkForPendingRegistration?.numberOfRetriesSoFar).isEqualTo(0)
     }
 
     @Test
@@ -231,16 +236,19 @@ class ApproveRegistrationHandlerTest {
             notary = memberInfo,
         )
         verify(groupReaderProvider, times(1)).getGroupReader(any())
+        assertThat(results.updatedState).isNull()
         assertThat(results.outputStates)
-            .hasSize(3)
-            .anySatisfy {
-                assertThat(it.topic).isEqualTo(MEMBERSHIP_ACTIONS_TOPIC)
-                val value = (it.value as? MembershipActionsRequest)?.request
-                assertThat(value)
-                    .isNotNull
-                    .isInstanceOf(DistributeMemberInfo::class.java)
-                assertThat((value as? DistributeMemberInfo)?.minimumGroupParametersEpoch).isEqualTo(5)
-            }
+            .hasSize(4)
+
+        val actionsRequest = results.outputStates.single { it.topic == MEMBERSHIP_ACTIONS_TOPIC }
+        val distributeMemberInfo = (actionsRequest.value as? MembershipActionsRequest)?.request as? DistributeMemberInfo
+        assertThat(distributeMemberInfo?.minimumGroupParametersEpoch).isEqualTo(5)
+
+        val registrationCommand = results.outputStates.single { it.topic == REGISTRATION_COMMAND_TOPIC }
+        val checkForPendingRegistration = (registrationCommand.value as? RegistrationCommand)?.command as? CheckForPendingRegistration
+        assertThat(checkForPendingRegistration?.mgm).isEqualTo(owner.toAvro())
+        assertThat(checkForPendingRegistration?.member).isEqualTo(member.toAvro())
+        assertThat(checkForPendingRegistration?.numberOfRetriesSoFar).isEqualTo(0)
     }
 
     @Test
@@ -254,6 +262,23 @@ class ApproveRegistrationHandlerTest {
         verify(writerService).put(holdingIdentityCaptor.capture(), groupParametersCaptor.capture())
         assertThat(groupParametersCaptor.firstValue).isEqualTo(mockSignedGroupParameters)
         assertThat(holdingIdentityCaptor.firstValue).isEqualTo(mgm.holdingIdentity)
+    }
+
+    @Test
+    fun `invoke does not send registration status update message when status cannot be retrieved`() {
+        val mockedBuilder = Mockito.mockStatic(VersionedMessageBuilder::class.java).also {
+            it.`when`<VersionedMessageBuilder> {
+                VersionedMessageBuilder.retrieveRegistrationStatusMessage(any(), any(), any())
+            } doReturn null
+        }
+
+        val results = handler.invoke(state, key, command)
+        verify(p2pRecordsFactory, never()).createAuthenticatedMessageRecord(any(), any(), any(), anyOrNull(), any(), any())
+        assertThat(results.outputStates)
+            .hasSize(3)
+        results.outputStates.forEach { assertThat(it.value).isNotInstanceOf(AppMessage::class.java) }
+
+        mockedBuilder.close()
     }
 
     @Test
@@ -301,5 +326,27 @@ class ApproveRegistrationHandlerTest {
         assertThrows<MissingRegistrationStateException> {
             handler.invoke(null, key, command)
         }
+    }
+
+    @Test
+    fun `fails when member name is already in use as notary service name`() {
+        val state = RegistrationState(registrationId, member.toAvro(), owner.toAvro())
+        val mockNotary = mock<NotaryInfo> {
+            on { name } doReturn member.x500Name
+        }
+        whenever(mockGroupParameters.notaries).doReturn(setOf(mockNotary))
+
+        val results = handler.invoke(state, key, command)
+
+        assertThat(results.outputStates)
+            .hasSize(1)
+            .allSatisfy {
+                assertThat(it.topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
+                val value = (it.value as? RegistrationCommand)?.command
+                assertThat(value)
+                    .isNotNull
+                    .isInstanceOf(DeclineRegistration::class.java)
+                assertThat((value as? DeclineRegistration)?.reason).isNotBlank()
+            }
     }
 }

@@ -4,7 +4,7 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.db.connection.manager.DbConnectionManager
@@ -75,7 +75,7 @@ class UpdateRegistrationRequestStatusHandlerTest {
 
     private val dbConnectionManager: DbConnectionManager = mock {
         on {
-            createEntityManagerFactory(
+            getOrCreateEntityManagerFactory(
                 eq(vaultDmlConnectionId),
                 any()
             )
@@ -106,6 +106,8 @@ class UpdateRegistrationRequestStatusHandlerTest {
         virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
+        mock(),
+        mock(),
         mock(),
         transactionTimerFactory
     )

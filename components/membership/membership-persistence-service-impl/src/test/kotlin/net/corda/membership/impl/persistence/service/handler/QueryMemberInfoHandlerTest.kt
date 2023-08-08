@@ -81,9 +81,9 @@ class QueryMemberInfoHandlerTest {
         on { createEntityManager() } doReturn entityManager
     }
 
-    private val dbConnectionManager: DbConnectionManager = mock {
+    private val dbConnectionManager = mock<DbConnectionManager> {
         on {
-            createEntityManagerFactory(
+            getOrCreateEntityManagerFactory(
                 eq(vaultDmlConnectionId),
                 any(),
             )
@@ -122,6 +122,8 @@ class QueryMemberInfoHandlerTest {
         virtualNodeInfoReadService,
         keyEncodingService,
         platformInfoProvider,
+        mock(),
+        mock(),
         mock(),
         transactionTimerFactory
     )
@@ -189,7 +191,6 @@ class QueryMemberInfoHandlerTest {
         }
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityTransaction).begin()
         verify(entityTransaction).commit()
         verify(entityManager).close()
@@ -217,7 +218,6 @@ class QueryMemberInfoHandlerTest {
         }
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityTransaction).begin()
         verify(entityTransaction).commit()
         verify(entityManager).close()
@@ -256,7 +256,6 @@ class QueryMemberInfoHandlerTest {
         }
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityTransaction).begin()
         verify(entityTransaction).commit()
         verify(entityManager).close()
@@ -285,7 +284,6 @@ class QueryMemberInfoHandlerTest {
         }
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
-        verify(entityManagerFactory).close()
         verify(entityTransaction).begin()
         verify(entityTransaction).commit()
         verify(entityManager).close()

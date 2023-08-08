@@ -18,6 +18,7 @@ import net.corda.ledger.persistence.LedgerPersistenceService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.cpi.datamodel.CpiEntities
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -112,7 +113,7 @@ class DBProcessorImpl @Activate constructor(
     @Reference(service = MembershipGroupPolicyValidator::class)
     private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
     @Reference(service = AllowedCertificatesReaderWriterService::class)
-    private val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
+    private val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -163,7 +164,7 @@ class DBProcessorImpl @Activate constructor(
         ::groupParametersWriterService,
         ::groupParametersReaderService,
         ::membershipGroupPolicyValidator,
-        ::allowedCertificatesReaderWriterService,
+        ::allowedCertificatesReaderWriterService
     )
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(dependentComponents, ::eventHandler)
 
@@ -181,6 +182,7 @@ class DBProcessorImpl @Activate constructor(
         reconcilerFactory,
         entitiesRegistry,
         groupParametersFactory,
+        CpiCpkRepositoryFactory(),
         allowedCertificatesReaderWriterService,
     )
 

@@ -5,9 +5,11 @@ import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.lifecycle.Lifecycle
 
 /**
- * Interface for the uniqueness checking component.
+ * Interface for the uniqueness checking components.
  */
-interface UniquenessChecker : Lifecycle {
+interface UniquenessCheckerLifecycle : UniquenessChecker, Lifecycle
+
+interface UniquenessChecker {
     /**
      * Performs uniqueness checking against a list of requests and returns a map of requests and
      * their corresponding responses.

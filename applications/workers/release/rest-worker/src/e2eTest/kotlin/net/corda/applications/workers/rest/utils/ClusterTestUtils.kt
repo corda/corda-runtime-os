@@ -11,9 +11,9 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.packaging.testutils.TestUtils
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
-import net.corda.membership.rest.v1.CertificatesRestResource
+import net.corda.membership.rest.v1.CertificateRestResource
 import net.corda.membership.rest.v1.HsmRestResource
-import net.corda.membership.rest.v1.KeysRestResource
+import net.corda.membership.rest.v1.KeyRestResource
 import net.corda.membership.rest.v1.MGMRestResource
 import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.NetworkRestResource
@@ -73,7 +73,7 @@ fun E2eCluster.uploadCpi(
     ).write(keystore.readAllBytes())
 
     // first upload certificate to corda
-    clusterHttpClientFor(CertificatesRestResource::class.java).use { client ->
+    clusterHttpClientFor(CertificateRestResource::class.java).use { client ->
         with(client.start().proxy) {
             val pem = TestUtils.ROOT_CA.toPem().toByteArray()
 
@@ -196,7 +196,7 @@ fun E2eCluster.keyExists(
     tenantId: String,
     cat: String
 ): Boolean {
-    return clusterHttpClientFor(KeysRestResource::class.java)
+    return clusterHttpClientFor(KeyRestResource::class.java)
         .use { client ->
             with(client.start().proxy) {
                 val keyAlias = "$tenantId-$cat"
@@ -221,7 +221,7 @@ fun E2eCluster.generateKeyPairIfNotExists(
     tenantId: String,
     cat: String
 ): String {
-    return clusterHttpClientFor(KeysRestResource::class.java)
+    return clusterHttpClientFor(KeyRestResource::class.java)
         .use { client ->
             with(client.start().proxy) {
                 val keyAlias = "$tenantId-$cat"
@@ -259,6 +259,7 @@ fun E2eCluster.assignSoftHsm(
         .use { client ->
             eventually(
                 duration = 10.seconds,
+                waitBetween = 1.seconds,
                 retryAllExceptions = true
             ) {
                 client.start().proxy.assignSoftHsm(holdingId, cat)
@@ -281,7 +282,12 @@ fun E2eCluster.register(
             ).apply {
                 assertThat(registrationStatus).isEqualTo("SUBMITTED")
 
-                eventually(duration = 3.minutes, retryAllExceptions = true) {
+                eventually(
+                    duration = 3.minutes,
+                    waitBefore = 4.seconds,
+                    waitBetween = 4.seconds,
+                    retryAllExceptions = true
+                ) {
                     val registrationStatus = proxy.checkSpecificRegistrationProgress(member.holdingId, registrationId)
                     assertThat(registrationStatus.registrationStatus)
                         .withFailMessage {
@@ -572,8 +578,8 @@ fun E2eCluster.assertAllMembersAreInMemberList(
     allMembers: List<E2eClusterMember>
 ) {
     eventually(
-        waitBetween = 2.seconds,
-        duration = 60.seconds,
+        waitBetween = 3.seconds,
+        duration = 2.minutes,
         retryAllExceptions = true,
     ) {
         val groupId = getGroupId(member.holdingId)

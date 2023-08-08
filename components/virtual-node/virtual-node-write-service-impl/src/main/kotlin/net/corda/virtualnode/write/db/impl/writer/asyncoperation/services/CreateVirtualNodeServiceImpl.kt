@@ -183,16 +183,14 @@ internal class CreateVirtualNodeServiceImpl(
     ): UUID? {
         return vNodeDbs[dbType]?.let { vNodeDb ->
             vNodeDb.dbConnections[dbPrivilege]?.let { dbConnection ->
-                with(dbConnection) {
-                    dbConnectionManager.putConnection(
-                        entityManager,
-                        name,
-                        dbPrivilege,
-                        config,
-                        description,
-                        updateActor
-                    )
-                }
+                dbConnectionManager.putConnection(
+                    entityManager,
+                    dbConnection.name,
+                    dbPrivilege,
+                    dbConnection.config,
+                    dbConnection.description,
+                    updateActor
+                )
             }
         }
     }

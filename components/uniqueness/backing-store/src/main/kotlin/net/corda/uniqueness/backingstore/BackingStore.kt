@@ -45,8 +45,9 @@ import net.corda.virtualnode.HoldingIdentity
  * }
  * ```
  */
+interface BackingStoreLifecycle : BackingStore, Lifecycle
 
-interface BackingStore : Lifecycle {
+interface BackingStore {
 
     /**
      * Opens a new session with the backing store and runs the supplied block of code in the

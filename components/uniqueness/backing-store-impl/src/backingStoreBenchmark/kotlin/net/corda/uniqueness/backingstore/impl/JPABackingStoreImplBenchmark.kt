@@ -116,15 +116,18 @@ class JPABackingStoreImplBenchmark {
             JPABackingStoreEntities.classes
         )
 
-        backingStore = JPABackingStoreImpl(
+        val jpaEntitiesRegistry = JpaEntitiesRegistryImpl()
+        val dbConnectionManager = mock<DbConnectionManager>().apply {
+            whenever(getOrCreateEntityManagerFactory(
+                eq(holdingIdentityDbName), any(), any()
+            )) doReturn holdingIdentityDb
+            whenever(getClusterDataSource()) doReturn clusterDbConfig.dataSource
+        }
+        backingStore = JPABackingStoreLifecycleImpl(
             mock(),
-            JpaEntitiesRegistryImpl(),
-            mock<DbConnectionManager>().apply {
-                whenever(getOrCreateEntityManagerFactory(
-                    eq(holdingIdentityDbName), any(), any()
-                )) doReturn holdingIdentityDb
-                whenever(getClusterDataSource()) doReturn clusterDbConfig.dataSource
-            }
+            jpaEntitiesRegistry,
+            dbConnectionManager,
+            JPABackingStoreImpl(jpaEntitiesRegistry, dbConnectionManager)
         ).apply {
             eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
         }

@@ -16,6 +16,7 @@ import net.corda.kryoserialization.serializers.AvroRecordRejectSerializer
 import net.corda.kryoserialization.serializers.CertPathSerializer
 import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.kryoserialization.serializers.CordaClosureSerializer
+import net.corda.kryoserialization.serializers.InputStreamSerializer
 import net.corda.kryoserialization.serializers.IteratorSerializer
 import net.corda.kryoserialization.serializers.LazyMappedListSerializer
 import net.corda.kryoserialization.serializers.LinkedEntrySetSerializer
@@ -23,6 +24,7 @@ import net.corda.kryoserialization.serializers.LinkedHashMapEntrySerializer
 import net.corda.kryoserialization.serializers.LinkedHashMapIteratorSerializer
 import net.corda.kryoserialization.serializers.LinkedListItrSerializer
 import net.corda.kryoserialization.serializers.LoggerSerializer
+import net.corda.kryoserialization.serializers.MethodSerializer
 import net.corda.kryoserialization.serializers.NonSerializableSerializer
 import net.corda.kryoserialization.serializers.ThrowableSerializer
 import net.corda.kryoserialization.serializers.X509CertificateSerializer
@@ -34,6 +36,10 @@ import org.objenesis.strategy.InstantiatorStrategy
 import org.objenesis.strategy.StdInstantiatorStrategy
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.lang.reflect.Method
+import java.io.BufferedInputStream
+import java.io.FileInputStream
+import java.io.InputStream
 import java.lang.reflect.Modifier.isPublic
 import java.security.cert.CertPath
 import java.security.cert.X509Certificate
@@ -111,6 +117,11 @@ class DefaultKryoCustomizer {
                     override fun newSerializer(kryo: Kryo, type: Class<*>) = ThrowableSerializer(kryo, type)
                 })
 
+                addDefaultSerializer(InputStream::class.java, InputStreamSerializer)
+                register(FileInputStream::class.java, InputStreamSerializer)
+                // InputStream subclasses whitelisting, required for attachments
+                register(BufferedInputStream::class.java, InputStreamSerializer)
+
                 //register loggers using an int ID to reduce information saved in kryo
                 //ensures Kryo does not write the name of the concrete logging impl class into the serialized stream
                 //See CORE-812 for more details
@@ -124,6 +135,9 @@ class DefaultKryoCustomizer {
                 addDefaultSerializer(SpecificRecord::class.java, AvroRecordRejectSerializer)
                 // Register a serializer to reject the serialization of NonSerializable classes
                 addDefaultSerializer(NonSerializable::class.java, NonSerializableSerializer)
+
+                //TODO CORE-15338 remove this serializer
+                kryo.register(Method::class.java, MethodSerializer())
             }
         }
     }

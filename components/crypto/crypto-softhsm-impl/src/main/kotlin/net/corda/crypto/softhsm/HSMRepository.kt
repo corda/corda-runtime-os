@@ -22,7 +22,6 @@ interface HSMRepository : Closeable {
     fun associate(
         tenantId: String,
         category: String,
-        hsmId: String,
         masterKeyPolicy: MasterKeyPolicy,
     ): HSMAssociationInfo
 }

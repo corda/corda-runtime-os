@@ -104,8 +104,9 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         /**
          * If the counterparty doesn't exist in our network, don't send our queued messages yet.
          * If we've also exceeded the [SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW], throw a [FlowPlatformException]
+         * This check is not performed for interop sessions, where the counterparty exists on another cluster.
          */
-        if (!counterpartyExists) {
+        if (!counterpartyExists && !sessionState.isInteropSession) {
             val timeoutWindow = context.config.getLong(SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW)
             val expiryTime = maxOf(
                 sessionState.lastReceivedMessageTime,

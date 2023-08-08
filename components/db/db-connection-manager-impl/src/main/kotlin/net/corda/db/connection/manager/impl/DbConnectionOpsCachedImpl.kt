@@ -17,8 +17,12 @@ class DbConnectionOpsCachedImpl(
     private val entitiesRegistry: JpaEntitiesRegistry
     ): DbConnectionOps by delegate {
 
-    // TODO - replace with caffeine cache
+    // We should try merging the below two caches into one to, like so, make sure each connection gets one EMF only,
+    //  otherwise (i.e. if we get duplicate EMFs for same connection) we end up leaking memory with
+    //  duplicate entity proxies loaded in the class loader as identified in CORE-15806.
     private val cache = ConcurrentHashMap<Pair<String,DbPrivilege>, EntityManagerFactory>()
+
+    private val cacheByConnectionId = ConcurrentHashMap<UUID, EntityManagerFactory>()
 
     private fun removeFromCache(name: String, privilege: DbPrivilege) {
         val entityManagerFactory = cache.remove(Pair(name,privilege))
@@ -55,6 +59,15 @@ class DbConnectionOpsCachedImpl(
     ): EntityManagerFactory {
         return cache.computeIfAbsent(Pair(name,privilege)) {
             delegate.getOrCreateEntityManagerFactory(name, privilege, entitiesSet)
+        }
+    }
+
+    override fun getOrCreateEntityManagerFactory(
+        connectionId: UUID,
+        entitiesSet: JpaEntitiesSet
+    ): EntityManagerFactory {
+        return cacheByConnectionId.computeIfAbsent(connectionId) {
+            delegate.createEntityManagerFactory(connectionId, entitiesSet)
         }
     }
 }

@@ -19,7 +19,6 @@ import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.gateway.messaging.http.KeyStoreWithPassword
 import net.corda.schema.Schemas
 import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
@@ -27,6 +26,7 @@ import java.io.ByteArrayInputStream
 import java.security.InvalidKeyException
 import java.security.PublicKey
 import java.security.cert.CertificateFactory
+import java.util.Objects
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
@@ -57,7 +57,7 @@ internal class DynamicKeyStore(
         keyStoreFactory(this, this).createDelegatedKeyStore()
     }
 
-    private inner class ClientKeyStore(
+    inner class ClientKeyStore(
         private val certificates: CertificateChain,
         private val tenantId: String,
     ): DelegatedCertificateStore, DelegatedSigner {
@@ -76,10 +76,16 @@ internal class DynamicKeyStore(
             }
             return cryptoOpsClient.sign(tenantId, publicKey, spec, data).bytes
         }
+
+        override fun hashCode() = Objects.hash(certificates, tenantId)
+        override fun equals(other: Any?) =
+            ((other is ClientKeyStore) &&
+                    (other.certificates == certificates) &&
+                    (other.tenantId == tenantId))
     }
 
-    fun getClientKeyStore(clientIdentity: HoldingIdentity) : KeyStoreWithPassword?  =
-        holdingIdentityToClientKeyStore[clientIdentity]?.keyStore
+    fun getClientKeyStore(clientIdentity: HoldingIdentity) : ClientKeyStore?  =
+        holdingIdentityToClientKeyStore[clientIdentity]
 
     private val subscriptionConfig = SubscriptionConfig(CONSUMER_GROUP_ID, Schemas.P2P.GATEWAY_TLS_CERTIFICATES)
     private val subscription = {

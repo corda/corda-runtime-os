@@ -15,9 +15,10 @@ import javax.persistence.Table
 class MutualTlsAllowedClientCertificateEntity(
     @Id
     @Column(name = "subject", nullable = false, updatable = false)
-    val subject: String,
+    var subject: String,
+
     @Column(name = "is_deleted", nullable = false, updatable = true)
-    val isDeleted: Boolean,
+    var isDeleted: Boolean,
 ) {
     override fun equals(other: Any?): Boolean {
         if (other === this) return true

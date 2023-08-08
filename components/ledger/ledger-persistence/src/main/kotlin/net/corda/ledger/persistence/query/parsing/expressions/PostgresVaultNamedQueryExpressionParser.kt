@@ -49,9 +49,9 @@ class PostgresVaultNamedQueryExpressionParser : VaultNamedQueryExpressionParser 
         """(?<op>(->>)|(->)|[+-/*=?]|<(=)?|>(=)?|==|!(=)?|(?i)\bas\b|(?i)\bfrom\b|(?i)\bselect\b|(?i)\bwhere\b|(?i)\band\b|(?i)\bor\b|(?i)\bis null\b|(?i)\bis not null\b|(?i)\bin\b|(?i)\blike\b)"""
     )
 
-    private val jsonCastPattern = Regex("""::(?<cast>.*?)((->>)|[+*=]|&&|\|\||<(=)?|>(=)?|==|!(=)?|\s|$)""")
+    private val jsonCastPattern = Regex("""::(?<cast>.*?)((->>)|[+*=()\s]|&&|\|\||<(=)?|>(=)?|==|!(=)?|$)""")
 
-    private val parameterPattern = Regex("""(?<parameter>:[^:]\S+)""")
+    private val parameterPattern = Regex("""(?<parameter>:[\w-]+)""")
 
     @Suppress("NestedBlockDepth")
     override fun parse(query: String): List<Token> {

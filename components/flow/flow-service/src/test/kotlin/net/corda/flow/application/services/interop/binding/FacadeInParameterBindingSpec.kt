@@ -1,0 +1,98 @@
+package net.corda.flow.application.services.interop.binding
+
+import net.corda.flow.application.services.impl.interop.binding.BoundParameter
+import net.corda.flow.application.services.impl.interop.binding.creation.bindTo
+import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
+import net.corda.flow.application.services.interop.example.TokensFacade
+import net.corda.v5.application.interop.binding.BindsFacade
+import net.corda.v5.application.interop.binding.BindsFacadeMethod
+import net.corda.v5.application.interop.binding.BindsFacadeParameter
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Test
+import java.math.BigDecimal
+import kotlin.reflect.KClass
+
+// Binding will fail because denomination should be a String
+@BindsFacade("org.corda.interop/platform/tokens")
+interface ParameterHasIncorrectType {
+    @BindsFacadeMethod
+    fun getBalance(denomination: Long): Long
+}
+
+// Binding will fail because currencyName is not the name of the parameter
+@BindsFacade("org.corda.interop/platform/tokens")
+interface ParameterHasIncorrectName {
+
+    @BindsFacadeMethod
+    fun getBalance(currencyName: String): Long
+}
+
+// Binding will fail because the annotation gives an incorrect alias to the parameter
+@BindsFacade("org.corda.interop/platform/tokens")
+interface ParameterIsAnnotatedWithIncorrectName {
+
+    @BindsFacadeMethod
+    fun getBalance(@BindsFacadeParameter("currency-name") denomination: String): Long
+}
+
+class FacadeInParameterBindingSpec {
+    val facadeV2 =
+        FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade_v2.json")!!)
+    val bindingV2 = facadeV2.bindTo<TokensFacade>()
+
+    infix fun <T : Any> KClass<T>.shouldFailToBindWith(expectedMessage: String) =
+        facadeV2.assertBindingFails(java, expectedMessage)
+
+    @Test
+    fun `should bind all in-parameters in the example Tokens facade`() {
+        val reserveTokensV2 = facadeV2.method("reserve-tokens")
+
+        val binding = bindingV2.bindingFor(TokensFacade::reserveTokensV2)
+        assertNotNull(binding)
+        assertNotNull(binding!!.bindingForMethodParameter(0))
+        assertEquals(
+            BoundParameter(0, String::class.java),
+            binding.bindingForMethodParameter(0)!!.boundParameter
+        )
+        assertEquals(
+            reserveTokensV2.inParameter("denomination", String::class.java),
+            binding.bindingForMethodParameter(0)!!.facadeParameter
+        )
+
+        assertNotNull(binding.bindingForMethodParameter(1))
+        assertEquals(
+            BoundParameter(1, BigDecimal::class.java),
+            binding.bindingForMethodParameter(1)!!.boundParameter
+        )
+        assertEquals(
+            reserveTokensV2.inParameter("amount", BigDecimal::class.java),
+            binding.bindingForMethodParameter(1)!!.facadeParameter
+        )
+
+        assertNotNull(binding.bindingForMethodParameter(2))
+        assertEquals(
+            BoundParameter(2, Long::class.java),
+            binding.bindingForMethodParameter(2)!!.boundParameter
+        )
+        assertEquals(
+            reserveTokensV2.inParameter("ttl-ms", BigDecimal::class.java),
+            binding.bindingForMethodParameter(2)!!.facadeParameter
+        )
+    }
+
+    @Test
+    fun `should fail if an interface method parameter has the wrong type`() {
+        ParameterHasIncorrectType::class shouldFailToBindWith
+                "Type of parameter is not compatible with facade in-parameter type"
+    }
+
+    @Test
+    fun `should fail if an interface method parameter has the wrong name`() {
+        ParameterHasIncorrectType::class shouldFailToBindWith
+                "Type of parameter is not compatible with facade in-parameter type"
+
+        ParameterIsAnnotatedWithIncorrectName::class shouldFailToBindWith
+                "There is no input parameter named currency-name in this facade method"
+    }
+}

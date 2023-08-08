@@ -43,6 +43,7 @@ dependencies {
     testImplementation project(':testing:layered-property-map-testkit')
     testImplementation project(':testing:test-utilities')
 
+    integrationTestImplementation project(":testing:group-policy-test-common")
     integrationTestImplementation project(':components:membership:membership-group-read')
     integrationTestImplementation project(':components:membership:membership-p2p')
     integrationTestImplementation project(':testing:db-message-bus-testkit')

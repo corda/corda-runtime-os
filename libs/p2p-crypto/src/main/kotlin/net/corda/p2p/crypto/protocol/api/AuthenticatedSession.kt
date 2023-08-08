@@ -24,7 +24,7 @@ class AuthenticatedSession(override val sessionId: String,
                            private val inboundSecretKey: SecretKey,
                            val maxMessageSize: Int): Session {
 
-    private val provider = BouncyCastleProvider()
+    private val provider = BouncyCastleProvider.PROVIDER_NAME
     private val generationHMac = Mac.getInstance(HMAC_ALGO, provider).apply {
         this.init(outboundSecretKey)
     }

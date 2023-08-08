@@ -50,7 +50,7 @@ class DbClientImplTest {
     private val dbConnectionManager = mock<DbConnectionManager> {
         on { getClusterEntityManagerFactory() } doReturn clusterFactory
         on {
-            createEntityManagerFactory(
+            getOrCreateEntityManagerFactory(
                 eq(dmlConnectionId),
                 eq(registry)
             )
@@ -156,18 +156,7 @@ class DbClientImplTest {
     }
 
     @Test
-    fun `retrieveCertificates will close the node factory`() {
-        client.retrieveCertificates(
-            nodeTenantId,
-            CertificateUsage.P2P_TLS,
-            "alias"
-        )
-
-        verify(nodeFactory).close()
-    }
-
-    @Test
-    fun `retrieveCertificates will not close the node factory`() {
+    fun `retrieveCertificates will not close the cluster factory`() {
         client.retrieveCertificates(
             null,
             CertificateUsage.P2P_TLS,

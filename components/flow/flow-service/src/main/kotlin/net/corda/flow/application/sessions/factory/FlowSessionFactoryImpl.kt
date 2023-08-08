@@ -11,7 +11,6 @@ import net.corda.v5.base.types.MemberX500Name
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 
@@ -26,13 +25,16 @@ class FlowSessionFactoryImpl @Activate constructor(
     override fun createInitiatedFlowSession(
         sessionId: String,
         x500Name: MemberX500Name,
-        contextProperties: Map<String, String>
+        contextProperties: Map<String, String>,
+        isInteropSession: Boolean
     ): FlowSession {
         return try {
-            AccessController.doPrivileged(PrivilegedExceptionAction {
+            @Suppress("deprecation", "removal")
+            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
                 FlowSessionImpl(
                     counterparty = x500Name,
                     sessionId,
+                    isInteropSession,
                     flowFiberService,
                     serializationService,
                     FlatSerializableContext(
@@ -50,13 +52,16 @@ class FlowSessionFactoryImpl @Activate constructor(
     override fun createInitiatingFlowSession(
         sessionId: String,
         x500Name: MemberX500Name,
-        flowContextPropertiesBuilder: FlowContextPropertiesBuilder?
+        flowContextPropertiesBuilder: FlowContextPropertiesBuilder?,
+        isInteropSession: Boolean
     ): FlowSession {
         return try {
-            AccessController.doPrivileged(PrivilegedExceptionAction {
+            @Suppress("deprecation", "removal")
+            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
                 FlowSessionImpl(
                     counterparty = x500Name,
                     sessionId,
+                    isInteropSession,
                     flowFiberService,
                     serializationService,
                     createInitiatingFlowContextProperties(

@@ -497,22 +497,25 @@ class SynchronisationProxyImplTest {
     }
 
     class MemberSyncProtocol1 : AbstractMemberSyncProtocol() {
-        override fun processMembershipUpdates(updates: ProcessMembershipUpdates) {
+        override fun processMembershipUpdates(updates: ProcessMembershipUpdates): List<Record<*, *>> {
             classes.add(MemberSyncProtocol1::class.java)
+            return emptyList()
         }
     }
 
     class MemberSyncProtocol2 : AbstractMemberSyncProtocol() {
-        override fun processMembershipUpdates(updates: ProcessMembershipUpdates) {
+        override fun processMembershipUpdates(updates: ProcessMembershipUpdates): List<Record<*, *>> {
             classes.add(MemberSyncProtocol2::class.java)
+            return emptyList()
         }
     }
 
     abstract class AbstractMemberSyncProtocol : MemberSynchronisationService {
         var started = 0
 
-        override fun processMembershipUpdates(updates: ProcessMembershipUpdates) {
+        override fun processMembershipUpdates(updates: ProcessMembershipUpdates): List<Record<*, *>> {
             classes.add(AbstractMemberSyncProtocol::class.java)
+            return emptyList()
         }
 
         override val isRunning = true
@@ -521,16 +524,18 @@ class SynchronisationProxyImplTest {
     }
 
     class MgmSyncProtocol1 : AbstractMgmSyncProtocol() {
-        override fun processSyncRequest(request: ProcessSyncRequest) {
+        override fun processSyncRequest(request: ProcessSyncRequest): List<Record<*, *>> {
             classes.add(MgmSyncProtocol1::class.java)
+            return emptyList()
         }
     }
 
     abstract class AbstractMgmSyncProtocol : MgmSynchronisationService {
         var started = 0
 
-        override fun processSyncRequest(request: ProcessSyncRequest) {
+        override fun processSyncRequest(request: ProcessSyncRequest) : List<Record<*, *>> {
             classes.add(AbstractMgmSyncProtocol::class.java)
+            return emptyList()
         }
 
         override val isRunning = true

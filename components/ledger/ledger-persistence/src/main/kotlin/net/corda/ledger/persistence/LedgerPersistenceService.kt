@@ -4,7 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
-import net.corda.ledger.persistence.processor.PersistenceRequestSubscriptionFactory
+import net.corda.ledger.persistence.processor.LedgerPersistenceRequestSubscriptionFactory
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
@@ -41,8 +41,8 @@ class LedgerPersistenceService @Activate constructor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService,
-    @Reference(service = PersistenceRequestSubscriptionFactory::class)
-    private val persistenceRequestSubscriptionFactory: PersistenceRequestSubscriptionFactory
+    @Reference(service = LedgerPersistenceRequestSubscriptionFactory::class)
+    private val ledgerPersistenceRequestSubscriptionFactory: LedgerPersistenceRequestSubscriptionFactory
 ) : Lifecycle {
     private var configHandle: Resource? = null
     private var ledgerProcessorSubscription: Subscription<String, LedgerPersistenceRequest>? = null
@@ -79,7 +79,7 @@ class LedgerPersistenceService @Activate constructor(
             }
             is ConfigChangedEvent -> {
                 ledgerProcessorSubscription?.close()
-                val newLedgerProcessorSubscription = persistenceRequestSubscriptionFactory.create(
+                val newLedgerProcessorSubscription = ledgerPersistenceRequestSubscriptionFactory.create(
                     event.config.getConfig(MESSAGING_CONFIG)
                 )
                 logger.debug("Starting LedgerPersistenceService.")

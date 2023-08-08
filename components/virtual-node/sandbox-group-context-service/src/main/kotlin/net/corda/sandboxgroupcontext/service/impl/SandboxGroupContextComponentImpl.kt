@@ -25,6 +25,10 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.debug
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
+import org.osgi.framework.wiring.BundleRevision
+import org.osgi.framework.wiring.BundleRevision.PACKAGE_NAMESPACE
+import org.osgi.framework.wiring.BundleRevision.TYPE_FRAGMENT
+import org.osgi.framework.wiring.BundleWiring
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
@@ -55,6 +59,9 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     private val bundleContext: BundleContext
 ) : SandboxGroupContextComponent, SandboxGroupContextService by sandboxGroupContextService {
     companion object {
+        private const val CORDA_API_PACKAGES = "net.corda.v5."
+        private const val CORDA_API_HEADER = "Corda-Api"
+
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private val PLATFORM_PUBLIC_BUNDLE_NAMES: List<String> = unmodifiableList(
@@ -71,6 +78,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
                 "net.corda.ledger-consensual",
                 "net.corda.ledger-utxo",
                 "net.corda.membership",
+                "net.corda.interop",
                 "net.corda.notary-plugin",
                 "net.corda.persistence",
                 "net.corda.serialization",
@@ -166,10 +174,21 @@ class SandboxGroupContextComponentImpl @Activate constructor(
 
     private fun initialiseSandboxContext(allBundles: Array<Bundle>) {
         val (publicBundles, privateBundles) = allBundles.partition { bundle ->
-            bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
+            bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES || bundle.isCordaApi
         }
         sandboxCreationService.createPublicSandbox(publicBundles, privateBundles)
     }
+
+    private val Bundle.isFragment: Boolean
+        get() = (adapt(BundleRevision::class.java).types and TYPE_FRAGMENT) != 0
+
+    private val Bundle.hasCordaApiPackage: Boolean
+        get() = adapt(BundleWiring::class.java).getCapabilities(PACKAGE_NAMESPACE).any { capability ->
+            capability.attributes[PACKAGE_NAMESPACE].let { it != null && it.toString().startsWith(CORDA_API_PACKAGES) }
+        }
+
+    private val Bundle.isCordaApi: Boolean
+        get() = !isFragment && headers[CORDA_API_HEADER] != null && hasCordaApiPackage
 
     override fun flushCache(): CompletableFuture<*> {
         return (sandboxGroupContextService as? CacheControl

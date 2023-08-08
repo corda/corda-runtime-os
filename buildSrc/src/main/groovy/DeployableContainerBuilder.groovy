@@ -40,6 +40,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
     private static final String JENKINS_CHANGE_BRANCH_KEY = "CHANGE_BRANCH"
     private final String projectName = project.name
     private final String version = project.version
+    private final String cordaProductVersion = project.cordaProductVersion
     private String targetRepo
     private def gitLogTask
     private def gitBranchTask
@@ -129,7 +130,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
     @Input
     final Property<String> baseImageTag =
-            getObjects().property(String).convention('11.0.16.1-11.58.23')
+            getObjects().property(String).convention('17.0.4.1-17.36.17')
 
     @Input
     final Property<String> subDir =
@@ -318,11 +319,11 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             tagContainer(builder, "preTest-${tagPrefix}"+gitRevisionShortHash)
         } else if (releaseType == 'RC' || releaseType == 'GA') {
             targetRepo = "corda-os-docker-stable.software.r3.com/corda-os-${containerName}"
-            tagContainer(builder, "${tagPrefix}latest")
+            tagContainer(builder, "${tagPrefix}latest-${cordaProductVersion}")
             tagContainer(builder, "${tagPrefix}${version}")
         } else if (releaseType == 'BETA' && !nightlyBuild.get()) {
             targetRepo = "corda-os-docker-unstable.software.r3.com/corda-os-${containerName}"
-            tagContainer(builder, "${tagPrefix}unstable")
+            tagContainer(builder, "${tagPrefix}unstable-${cordaProductVersion}")
             gitAndVersionTag(builder, "${tagPrefix}${gitRevisionShortHash}")
         } else if (releaseType == 'ALPHA' && !nightlyBuild.get()) {
             targetRepo = "corda-os-docker-dev.software.r3.com/corda-os-${containerName}"
@@ -343,7 +344,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             }
         } else{
             targetRepo = "corda-os-docker-dev.software.r3.com/corda-os-${containerName}"
-            tagContainer(builder, "latest-local")
+            tagContainer(builder, "latest-local-${cordaProductVersion}")
             gitAndVersionTag(builder, gitRevisionShortHash)
         }
     }

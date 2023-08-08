@@ -202,19 +202,26 @@ internal class OutboundMessageProcessor(
         )
         if (linkManagerHostingMap.isHostedLocally(message.header.destination.toCorda())) {
             recordInboundMessagesMetric(inboundMessage)
+            //TODO new log statement added temporarily for Interop Team, revert to debug as part of CORE-10683
+            logger.info("Sending outbound message hosted locally ${message.header.messageId} from ${message.header.source} " +
+                    "to ${message.header.destination}.")
             return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(inboundMessage)))
         } else if (destMemberInfo != null) {
             val source = message.header.source.toCorda()
             val groupPolicy = groupPolicyProvider.getGroupPolicy(source)
             if (groupPolicy == null) {
+                //TODO extended warn statement added temporarily for Interop Team, revert to debug as part of CORE-10683
                 logger.warn(
-                    "Could not find the group information in the GroupPolicyProvider for $source. " +
+                    "Could not find the group information in the GroupPolicyProvider for $source to ${message.header.destination}. " +
                     "The message ${message.header.messageId} was discarded."
                 )
                 return emptyList()
             }
 
             val linkOutMessage = MessageConverter.linkOutFromUnauthenticatedMessage(inboundMessage, source, destMemberInfo, groupPolicy)
+            //TODO logger info level and source identity added temporarily for Interop Team, revert to debug as part of CORE-10683
+            logger.info ("Sending outbound message ${message.header.messageId} to ${message.header.destination} " +
+                    "for ${linkOutMessage.header.address}." )
             return listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), linkOutMessage))
         } else {
             logger.warn("Trying to send unauthenticated message ${message.header.messageId} from ${message.header.source.toCorda()} " +
