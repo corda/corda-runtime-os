@@ -10,6 +10,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.ledger.utxo.token.cache.entities.AvailTokenQueryResult
+import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.repositories.UtxoTokenRepository
 import net.corda.orm.JpaEntitiesSet
 import net.corda.ledger.utxo.token.cache.entities.TokenBalance
@@ -43,12 +44,15 @@ class AvailableTokenServiceImpl @Activate constructor(
         return utxoTokenRepository.findTokens(entityManagerFactory.createEntityManager(), poolKey, ownerHash, tagRegex)
     }
 
-    override fun queryBalance(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?): BigDecimal {
+    override fun queryBalance(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?, claimedTokens: Collection<CachedToken>): TokenBalance {
         val virtualNode = getVirtualNodeInfo(poolKey)
-
         val entityManagerFactory = createEntityManagerFactory(virtualNode)
 
-        return utxoTokenRepository.queryTotalBalance(entityManagerFactory.createEntityManager(), poolKey, ownerHash, tagRegex)
+        val totalBalance = utxoTokenRepository.queryTotalBalance(entityManagerFactory.createEntityManager(), poolKey, ownerHash, tagRegex)
+        val claimedBalance = claimedTokens.sumOf { it.amount }
+        val availableBalance = totalBalance - claimedBalance
+
+        return TokenBalance(availableBalance, totalBalance)
     }
 
     private fun createEntityManagerFactory(virtualNode: VirtualNodeInfo) =
