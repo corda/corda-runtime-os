@@ -318,7 +318,8 @@ class PersistenceExceptionTests {
                 )
             )
         )
-
-        lbm.updateDb(ds.connection, cl)
+        ds.connection.use {
+            lbm.updateDb(it, cl)
+        }
     }
 }
