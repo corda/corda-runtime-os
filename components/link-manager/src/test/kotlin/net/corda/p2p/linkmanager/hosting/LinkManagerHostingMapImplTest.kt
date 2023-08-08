@@ -1,19 +1,24 @@
 package net.corda.p2p.linkmanager.hosting
 
+import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.data.p2p.HostedIdentityEntry
-import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.p2p.linkmanager.common.KeyHasher
 import net.corda.p2p.linkmanager.common.PublicKeyReader
 import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.MemberContext
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -64,8 +69,18 @@ class LinkManagerHostingMapImplTest {
         on { encoded } doReturn byteArrayOf(4, 5)
     }
     private val bobX500Name = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
+    private val bobHoldingIdentity = createTestHoldingIdentity(bobX500Name, "group")
+    private val memberContext = mock<MemberContext> {
+        on { parse(GROUP_ID, String::class.java) } doReturn bobHoldingIdentity.groupId
+        on { parseList(SESSION_KEYS, PublicKey::class.java) } doReturn listOf(publicKeyOne)
+    }
+    private val entryOneMemberInfo = mock<MemberInfo> {
+        on { memberProvidedContext } doReturn memberContext
+        on { mgmProvidedContext } doReturn mock()
+        on { name } doReturn MemberX500Name.parse(bobX500Name)
+    }
     private val entryOne = HostedIdentityEntry(
-        createTestHoldingIdentity(bobX500Name, "group").toAvro(),
+        bobHoldingIdentity.toAvro(),
         "id1",
         listOf("cert1", "cert2"),
         HostedIdentitySessionKeyAndCert(
@@ -110,7 +125,7 @@ class LinkManagerHostingMapImplTest {
         )
 
         assertThat(
-            testObject.isHostedLocally(entryOne.holdingIdentity.toCorda())
+            testObject.isHostedLocally(entryOneMemberInfo)
         ).isTrue
     }
 
@@ -129,6 +144,14 @@ class LinkManagerHostingMapImplTest {
 
     @Test
     fun `onSnapshot adds only data sent`() {
+        val mockMemberContext = mock<MemberContext> {
+            on { parse(GROUP_ID, String::class.java) } doReturn "another group"
+        }
+        val otherMemberInfo = mock<MemberInfo> {
+            on { memberProvidedContext } doReturn mockMemberContext
+            on { mgmProvidedContext } doReturn mock()
+            on { name } doReturn MemberX500Name.parse(bobX500Name)
+        }
         processor.firstValue.onSnapshot(
             mapOf(
                 "key" to entryOne
@@ -137,7 +160,7 @@ class LinkManagerHostingMapImplTest {
 
         assertThat(
             testObject.isHostedLocally(
-                createTestHoldingIdentity(bobX500Name, "another group")
+                otherMemberInfo
             )
         ).isFalse
     }
@@ -174,7 +197,7 @@ class LinkManagerHostingMapImplTest {
 
         assertThat(
             testObject.isHostedLocally(
-                createTestHoldingIdentity(bobX500Name, "group")
+                entryOneMemberInfo
             )
         ).isFalse
     }
@@ -189,7 +212,7 @@ class LinkManagerHostingMapImplTest {
 
         assertThat(
             testObject.isHostedLocally(
-                createTestHoldingIdentity(bobX500Name, "group")
+                entryOneMemberInfo
             )
         ).isTrue
     }

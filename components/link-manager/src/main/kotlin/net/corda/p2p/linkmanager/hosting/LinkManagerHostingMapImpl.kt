@@ -11,10 +11,13 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
+import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.p2p.linkmanager.common.GroupIdWithPublicKeyHash
 import net.corda.p2p.linkmanager.common.KeyHasher
 import net.corda.p2p.linkmanager.common.PublicKeyReader
 import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
@@ -66,8 +69,16 @@ internal class LinkManagerHostingMapImpl(
         managedChildren = setOf(subscriptionTile.toNamedLifecycle(), blockingTile.toNamedLifecycle())
     )
 
-    override fun isHostedLocally(identity: HoldingIdentity) =
-        locallyHostedIdentityToIdentityInfo.containsKey(identity)
+    override fun isHostedLocally(member: MemberInfo?): Boolean {
+        return if (member == null) {
+            false
+        } else {
+            locallyHostedIdentityToIdentityInfo[member.holdingIdentity]?.let { identityInfo ->
+                identityInfo.allSessionKeysAndCertificates.map { it.sessionPublicKey }
+                    .any { member.sessionInitiationKeys.contains(it) }
+            } ?: false
+        }
+    }
 
     override fun getInfo(identity: HoldingIdentity) =
         locallyHostedIdentityToIdentityInfo[identity]

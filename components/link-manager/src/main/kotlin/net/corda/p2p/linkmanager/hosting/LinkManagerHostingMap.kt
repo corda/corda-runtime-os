@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager.hosting
 
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 
 /**
@@ -11,7 +12,7 @@ import net.corda.virtualnode.HoldingIdentity
  */
 interface LinkManagerHostingMap : LifecycleWithDominoTile {
 
-    fun isHostedLocally(identity: HoldingIdentity): Boolean
+    fun isHostedLocally(member: MemberInfo?): Boolean
 
     fun getInfo(identity: HoldingIdentity): HostingMapListener.IdentityInfo?
 

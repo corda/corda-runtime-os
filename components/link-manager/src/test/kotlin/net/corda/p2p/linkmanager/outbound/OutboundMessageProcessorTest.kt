@@ -54,8 +54,7 @@ class OutboundMessageProcessorTest {
         myIdentity, localIdentity, remoteIdentity
     )
     private val hostingMap = mock<LinkManagerHostingMap> {
-        whenever(it.isHostedLocally(myIdentity)).thenReturn(true)
-        whenever(it.isHostedLocally(localIdentity)).thenReturn(true)
+        on { isHostedLocally(any()) } doReturn(false)
     }
     private val assignedListener = mock<InboundAssignmentListener> {
         on { getCurrentlyAssignedPartitions() } doReturn setOf(1)
@@ -94,6 +93,7 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `authenticated messages are dropped when source and destination identities are in different groups`() {
+        whenever(hostingMap.isHostedLocally(any())).doReturn(true)
         val payload = "test"
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
@@ -247,6 +247,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `authenticated messages are dropped if membership messaging validation fails`() {
+        val source = membersAndGroups.first.getGroupReader(myIdentity).lookup(myIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocally(source)).doReturn(true)
         whenever(
             networkMessagingValidator.validateOutbound(any(), any())
         ).doReturn(Either.Right("foo-bar"))
@@ -288,6 +290,7 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `authenticated messages are dropped if inbound membership messaging validation for message to locally host identity fails`() {
+        whenever(hostingMap.isHostedLocally(any())).doReturn(true)
         whenever(
             networkMessagingValidator.validateInbound(any(), any())
         ).doReturn(Either.Right("foo-bar"))
@@ -329,6 +332,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `authenticated messages are dropped if outbound membership messaging validation for message to locally host identity fails`() {
+        val source = membersAndGroups.first.getGroupReader(myIdentity).lookup(myIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocally(source)).doReturn(true)
         whenever(
             networkMessagingValidator.validateOutbound(any(), any())
         ).doReturn(Either.Right("foo-bar"))
@@ -370,6 +375,7 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `if destination identity is hosted locally, unauthenticated messages are looped back`() {
+        whenever(hostingMap.isHostedLocally(any())).doReturn(true)
         val payload = "test"
         val unauthenticatedMsg = OutboundUnauthenticatedMessage(
             OutboundUnauthenticatedMessageHeader(
@@ -407,6 +413,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `onNext forwards unauthenticated messages directly to link out topic`() {
+        val source = membersAndGroups.first.getGroupReader(myIdentity).lookup(myIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocally(source)).doReturn(true)
         val payload = "test"
         val unauthenticatedMsg = OutboundUnauthenticatedMessage(
             OutboundUnauthenticatedMessageHeader(
@@ -645,6 +653,7 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `unauthenticated messages are dropped if inbound network membership validation fails when destination is local`() {
+        whenever(hostingMap.isHostedLocally(any())).doReturn(true)
         whenever(
             networkMessagingValidator.validateInbound(any(), any())
         ).doReturn(Either.Right("foo-bar"))
@@ -677,6 +686,7 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `unauthenticated messages are dropped if outbound network membership validation fails when destination is local`() {
+        whenever(hostingMap.isHostedLocally(any())).doReturn(true)
         whenever(
             networkMessagingValidator.validateOutbound(any(), any())
         ).doReturn(Either.Right("foo-bar"))
@@ -709,6 +719,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `onNext produces only a LinkManagerProcessed marker (per flowMessage) if SessionAlreadyPending`() {
+        val source = membersAndGroups.first.getGroupReader(myIdentity).lookup(myIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocally(source)).doReturn(true)
         whenever(sessionManager.processOutboundMessage(any()))
             .thenReturn(SessionManager.SessionState.SessionAlreadyPending(sessionCounterparties))
         val numberOfMessages = 3
@@ -744,6 +756,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `onNext queue messages if SessionAlreadyPending`() {
+        val source = membersAndGroups.first.getGroupReader(myIdentity).lookup(myIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocally(source)).doReturn(true)
         whenever(sessionManager.processOutboundMessage(any()))
             .thenReturn(SessionManager.SessionState.SessionAlreadyPending(sessionCounterparties))
         val numberOfMessages = 3
@@ -779,6 +793,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `processReplayedAuthenticatedMessage produces no records and queues no messages if SessionAlreadyPending`() {
+        val source = membersAndGroups.first.getGroupReader(localIdentity).lookup(localIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocally(source)).doReturn(true)
         whenever(sessionManager.processOutboundMessage(any()))
             .thenReturn(SessionManager.SessionState.SessionAlreadyPending(sessionCounterparties))
         val authenticatedMsg = AuthenticatedMessage(
@@ -802,6 +818,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `onNext produces session init messages, a LinkManagerProcessed marker and lists of partitions if NewSessionsNeeded`() {
+        val source = membersAndGroups.first.getGroupReader(localIdentity).lookup(localIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocally(source)).doReturn(true)
         val firstSessionInitMessage = mock<LinkOutMessage>()
         val secondSessionInitMessage = mock<LinkOutMessage>()
         val state = SessionManager.SessionState.NewSessionsNeeded(
@@ -857,6 +875,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `processReplayedAuthenticatedMessage produces the correct records if NewSessionsNeeded`() {
+        val source = membersAndGroups.first.getGroupReader(localIdentity).lookup(localIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocally(source)).doReturn(true)
         val firstSessionInitMessage = mock<LinkOutMessage>()
         val secondSessionInitMessage = mock<LinkOutMessage>()
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(
@@ -925,6 +945,7 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `processReplayedAuthenticatedMessage will loop back message if destination is locally hosted`() {
+        whenever(hostingMap.isHostedLocally(any())).doReturn(true)
         val payload = "test"
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
@@ -960,6 +981,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `processReplayedAuthenticatedMessage will not write any records if destination is not in the members map or locally hosted`() {
+        val source = membersAndGroups.first.getGroupReader(localIdentity).lookup(localIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocally(source)).doReturn(true)
         val state = SessionManager.SessionState.SessionEstablished(authenticatedSession, sessionCounterparties)
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
         val authenticatedMessage = AuthenticatedMessage(
@@ -978,6 +1001,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `onNext produces a LinkManagerProcessedMarker per message if SessionEstablished`() {
+        val source = membersAndGroups.first.getGroupReader(myIdentity).lookup(myIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocally(source)).doReturn(true)
         val state = SessionManager.SessionState.SessionEstablished(authenticatedSession, sessionCounterparties)
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
         val messageIds = (1..3).map { i ->
@@ -1031,6 +1056,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `processReplayedAuthenticatedMessage call to recordsForSessionEstablished`() {
+        val source = membersAndGroups.first.getGroupReader(localIdentity).lookup(localIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocally(source)).doReturn(true)
         val state = SessionManager.SessionState.SessionEstablished(authenticatedSession, sessionCounterparties)
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
         val authenticatedMsg = AuthenticatedMessage(
@@ -1054,6 +1081,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `onNext produces only a LinkManagerProcessedMarker if CannotEstablishSession`() {
+        val source = membersAndGroups.first.getGroupReader(localIdentity).lookup(localIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocally(source)).doReturn(true)
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.CannotEstablishSession)
         val messages = listOf(
             EventLogRecord(
@@ -1086,6 +1115,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `processReplayedAuthenticatedMessage doesn't queue messages when CannotEstablishSession`() {
+        val source = membersAndGroups.first.getGroupReader(localIdentity).lookup(localIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocally(source)).doReturn(true)
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(SessionManager.SessionState.CannotEstablishSession)
         val records = processor.processReplayedAuthenticatedMessage(
             AuthenticatedMessageAndKey(
@@ -1107,6 +1138,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `onNext produces only a LinkManagerProcessedMarker if destination is not in the network map or locally hosted`() {
+        val source = membersAndGroups.first.getGroupReader(localIdentity).lookup(localIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocally(source)).doReturn(true)
         val state = SessionManager.SessionState.SessionEstablished(authenticatedSession, sessionCounterparties)
         whenever(sessionManager.processOutboundMessage(any())).thenReturn(state)
         val appMessage = AppMessage(
@@ -1140,6 +1173,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `processReplayedAuthenticatedMessage gives TtlExpiredMarker if TTL expiry true and replay true`() {
+        val source = membersAndGroups.first.getGroupReader(localIdentity).lookup(localIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocally(source)).doReturn(true)
         whenever(sessionManager.processOutboundMessage(any()))
             .thenReturn(SessionManager.SessionState.SessionAlreadyPending(sessionCounterparties))
         val authenticatedMsg = AuthenticatedMessage(
@@ -1174,6 +1209,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `OutboundMessageProcessor produces TtlExpiredMarker and LinkManagerProcessedMarker if TTL expiry is true and replay is false`() {
+        val source = membersAndGroups.first.getGroupReader(localIdentity).lookup(localIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocally(source)).doReturn(true)
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
                 remoteIdentity.toAvro(),
