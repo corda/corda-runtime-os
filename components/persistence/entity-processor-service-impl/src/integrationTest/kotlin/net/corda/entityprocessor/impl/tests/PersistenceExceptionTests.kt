@@ -21,6 +21,7 @@ import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableExcept
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.flow.utils.toKeyValuePairList
 import net.corda.messaging.api.records.Record
+import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getSerializationService
@@ -76,6 +77,11 @@ class PersistenceExceptionTests {
     private lateinit var responseFactory: ResponseFactory
     private lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
+    private lateinit var dbConnectionManager: FakeDbConnectionManager
+    private lateinit var entitySandboxService: EntitySandboxService
+
+    private lateinit var virtualNodeInfo: VirtualNodeInfo
+
     @BeforeAll
     fun setup(
         @InjectService(timeout = 5000)
@@ -94,20 +100,26 @@ class PersistenceExceptionTests {
             virtualNodeInfoReadService = setup.fetchService(timeout = 5000)
             responseFactory = setup.fetchService(timeout = 5000)
             currentSandboxGroupContext = setup.fetchService(timeout = 5000)
+
+
+            virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
+            dbConnectionManager = FakeDbConnectionManager(
+                listOf(Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node")),
+                "PersistenceExceptionTests"
+            )
+            entitySandboxService =
+                EntitySandboxServiceFactory().create(
+                    virtualNode.sandboxGroupContextComponent,
+                    cpkReadService,
+                    virtualNodeInfoReadService,
+                    dbConnectionManager
+                )
         }
     }
 
     @Test
     fun `exception raised when cpks not present`() {
-        val (dbConnectionManager, ignoredRequest) = setupExceptionHandlingTests()
-
-        val entitySandboxService =
-            EntitySandboxServiceFactory().create(
-                virtualNode.sandboxGroupContextComponent,
-                cpkReadService,
-                virtualNodeInfoReadService,
-                dbConnectionManager
-            )
+        val ignoredRequest = getEntityRequest()
 
         val processor = EntityMessageProcessor(
             currentSandboxGroupContext,
@@ -140,7 +152,8 @@ class PersistenceExceptionTests {
 
     @Test
     fun `exception raised when vnode cannot be found`() {
-        val (dbConnectionManager, ignoredRequest) = setupExceptionHandlingTests()
+        val ignoredRequest = getEntityRequest()
+
         val brokenVirtualNodeInfoReadService = object :
             VirtualNodeInfoReadService by virtualNodeInfoReadService {
             override fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo? {
@@ -180,7 +193,7 @@ class PersistenceExceptionTests {
 
     @Test
     fun `exception raised when sent a missing command`() {
-        val (dbConnectionManager, oldRequest) = setupExceptionHandlingTests()
+        val oldRequest = getEntityRequest()
         val unknownCommand = ExceptionEnvelope("", "") // Any Avro object, or null works here.
 
         val vNodeInfo = virtualNodeInfoReadService.get(oldRequest.holdingIdentity.toCorda())!!
@@ -195,14 +208,6 @@ class PersistenceExceptionTests {
                     "flow id",
                     cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM)
                 )
-            )
-
-        val entitySandboxService =
-            EntitySandboxServiceFactory().create(
-                virtualNode.sandboxGroupContextComponent,
-                cpkReadService,
-                virtualNodeInfoReadService,
-                dbConnectionManager
             )
 
         val processor = EntityMessageProcessor(
@@ -231,38 +236,20 @@ class PersistenceExceptionTests {
     private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
 
     /**
-     * Create a simple request and return it, and the (fake) db connection manager.
+     * Create a simple request and return it.
      */
-    private fun setupExceptionHandlingTests(): Pair<FakeDbConnectionManager, EntityRequest> {
-        val virtualNodeInfoOne = virtualNode.load(Resources.EXTENDABLE_CPB)
-        val animalDbConnection = Pair(virtualNodeInfoOne.vaultDmlConnectionId, "animals-node")
-        val dbConnectionManager = FakeDbConnectionManager(
-            listOf(animalDbConnection),
-            "PersistenceExceptionTests"
-        )
-
-        // We need a 'working' service to set up the test
-        val entitySandboxService =
-            EntitySandboxServiceFactory().create(
-                virtualNode.sandboxGroupContextComponent,
-                cpkReadService,
-                virtualNodeInfoReadService,
-                dbConnectionManager
-            )
-
-        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfoOne)
-        val sandboxOne = entitySandboxService.get(virtualNodeInfoOne.holdingIdentity, cpkFileHashes)
-
+    private fun getEntityRequest(): EntityRequest {
+        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
+        val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
         // create dog using dog-aware sandbox
-        val dog = sandboxOne.createDog("Stray", owner = "Not Known")
-        val serialisedDog = sandboxOne.getSerializationService().serialize(dog.instance).bytes
+        val dog = sandbox.createDog("Stray", owner = "Not Known")
+        val serialisedDog = sandbox.getSerializationService().serialize(dog.instance).bytes
 
         // create persist request for the sandbox that isn't dog-aware
-        val request = EntityRequest(
-            virtualNodeInfoOne.holdingIdentity.toAvro(),
+        return EntityRequest(
+            virtualNodeInfo.holdingIdentity.toAvro(),
             PersistEntities(listOf(ByteBuffer.wrap(serialisedDog))),
             ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
         )
-        return Pair(dbConnectionManager, request)
     }
 }
