@@ -7,6 +7,7 @@ import net.corda.crypto.softhsm.impl.toDto
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.orm.utils.use
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -78,4 +79,42 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
         assertThat(loadedKey).isNull()
     }
 
+    @ParameterizedTest
+    @MethodSource("emfs")
+    fun `findKeyWithId returns UUID and saved key`(emf: EntityManagerFactory) {
+        val keyAlias = "find-key-${UUID.randomUUID()}"
+        val repo = WrappingRepositoryImpl(emf, "test")
+        repo.saveKey(keyAlias, wrappingKeyInfo)
+        val loadedKeyAndId = repo.findKeyAndId(keyAlias)
+
+        if (loadedKeyAndId != null) {
+            assertInstanceOf(UUID::class.java, loadedKeyAndId.first)
+            assertThat(loadedKeyAndId.second).isEqualTo(wrappingKeyInfo)
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("emfs")
+    fun `saveKeyWithId with existing UUID updates the recored`(emf: EntityManagerFactory) {
+        val keyAlias = "save-key-with-ID-${UUID.randomUUID()}"
+
+        val wrappingKeyInfo2 = WrappingKeyInfo(
+            encodingVersion = 234,
+            algorithmName = "algo-234",
+            keyMaterial = SecureHashUtils.randomBytes(),
+            generation = 777,
+            parentKeyAlias = "Salamander",
+        )
+
+        val repo = WrappingRepositoryImpl(emf, "test")
+        repo.saveKey(keyAlias, wrappingKeyInfo)
+        val loadedKeyAndId = repo.findKeyAndId(keyAlias)
+        val updatedKey = repo.saveKeyWithId(keyAlias, wrappingKeyInfo2, loadedKeyAndId?.first)
+        val loadedKeyAndId2 = repo.findKeyAndId(keyAlias)
+
+        assertThat(updatedKey).isEqualTo(wrappingKeyInfo2)
+        if (loadedKeyAndId != null && loadedKeyAndId2 != null)  {
+            assertThat(loadedKeyAndId.first).isEqualTo(loadedKeyAndId2.first)
+        }
+    }
 }
