@@ -1,11 +1,9 @@
 package net.corda.flow.fiber
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.data.flow.FlowStartContext
+import net.corda.flow.TestMarshallingService
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.test.util.identity.createTestHoldingIdentity
-import net.corda.v5.application.marshalling.MarshallingService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -39,34 +37,6 @@ class ClientRequestBodyImplTest {
         )
     }
 
-
-    private class TestMarshallingService : MarshallingService {
-        val objectMapper = ObjectMapper().apply {
-            registerModule(KotlinModule.Builder().build())
-        }
-
-        override fun format(data: Any): String {
-            throw NotImplementedError()
-        }
-
-        override fun <T> parse(input: String, clazz: Class<T>): T {
-            return objectMapper.readValue(input, clazz)
-        }
-
-        override fun <T> parseList(input: String, clazz: Class<T>): List<T> {
-            return objectMapper.readValue(
-                input,
-                objectMapper.typeFactory.constructCollectionType(List::class.java, clazz)
-            )
-        }
-
-        override fun <K, V> parseMap(input: String, keyClass: Class<K>, valueClass: Class<V>): Map<K, V> {
-            return objectMapper.readValue(
-                input,
-                objectMapper.typeFactory.constructMapType(LinkedHashMap::class.java, keyClass, valueClass)
-            )
-        }
-    }
 
     private data class TestData(val foo: String)
 
