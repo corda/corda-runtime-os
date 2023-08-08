@@ -163,6 +163,64 @@ class InteropIdentityRegistryViewImplTest {
     }
 
     @Test
+    fun `get interop identities by facadeId`() {
+        val facadeId1 = "org.corda.interop/platform/tokens/v2.0"
+        val testInteropIdentity = InteropIdentity(
+            x500Name = "C=GB, L=London, O=Alice",
+            groupId = INTEROP_GROUP_ID,
+            owningVirtualNodeShortHash = "101010101010",
+            facadeIds = listOf(facadeId1),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://alice.corda5.r3.com:10000"
+        )
+
+        val facadeId2 = "org.corda.interop/platform/tokens/v3.0"
+        val testInteropIdentity2 = InteropIdentity(
+            x500Name = "C=GB, L=London, O=Bob",
+            groupId = INTEROP_GROUP_ID,
+            owningVirtualNodeShortHash = "101010101010",
+            facadeIds = listOf(facadeId1, facadeId2),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://alice.corda5.r3.com:10000"
+        )
+
+        testView.putInteropIdentity(testInteropIdentity)
+        testView.putInteropIdentity(testInteropIdentity2)
+
+        val facadeToIds = testView.getIdentitiesByFacadeId()
+        val facadeMap1 = facadeToIds[facadeId1] ?: throw NullPointerException("No Facade data found for given FacadeId")
+
+        assertThat(facadeMap1).hasSize(2)
+        assertThat(facadeMap1).contains(testInteropIdentity)
+        assertThat(facadeMap1).contains(testInteropIdentity2)
+
+        val facadeMap2 = facadeToIds[facadeId2] ?: throw NullPointerException("No Facade data found for given FacadeId")
+        assertThat(facadeMap2).hasSize(1)
+        assertThat(facadeMap2).doesNotContain(testInteropIdentity)
+        assertThat(facadeMap2).contains(testInteropIdentity2)
+    }
+
+    @Test
+    fun `get interop identities by Application Name`() {
+        val testInteropIdentity = InteropIdentity(
+            x500Name = "C=GB, L=London, O=Alice",
+            groupId = INTEROP_GROUP_ID,
+            owningVirtualNodeShortHash = "101010101010",
+            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            applicationName = "Gold",
+            endpointUrl = "1",
+            endpointProtocol = "https://alice.corda5.r3.com:10000"
+        )
+
+        testView.putInteropIdentity(testInteropIdentity)
+
+        val identity = testView.getIdentitiesByApplicationName()["Gold"]
+        assertThat(identity).isEqualTo(testInteropIdentity)
+    }
+
+    @Test
     fun `multiple owned identities causes an error`() {
         val ownedIdentity1 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice1",
@@ -190,4 +248,5 @@ class InteropIdentityRegistryViewImplTest {
             testView.putInteropIdentity(ownedIdentity2)
         }
     }
+
 }

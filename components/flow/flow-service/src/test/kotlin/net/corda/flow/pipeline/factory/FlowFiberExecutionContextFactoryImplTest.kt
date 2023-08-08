@@ -8,6 +8,7 @@ import net.corda.flow.pipeline.factory.impl.FlowFiberExecutionContextFactoryImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.test.utils.buildFlowEventContext
+import net.corda.interop.identity.cache.InteropIdentityRegistryService
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -32,10 +33,12 @@ class FlowFiberExecutionContextFactoryImplTest {
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
     private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider>()
     private val membershipGroupReader = mock<MembershipGroupReader>()
+    private val interopIdentityService = mock<InteropIdentityRegistryService>()
     private val flowFiberExecutionContextFactory = FlowFiberExecutionContextFactoryImpl(
         flowSandboxService,
         membershipGroupReaderProvider,
-        currentSandboxGroupContext
+        currentSandboxGroupContext,
+        interopIdentityService
     )
 
     val mdcMock = Mockito.mockStatic(MDC::class.java).also {

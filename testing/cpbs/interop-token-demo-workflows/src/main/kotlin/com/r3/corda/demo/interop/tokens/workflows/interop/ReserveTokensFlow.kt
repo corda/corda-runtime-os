@@ -5,6 +5,7 @@ import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.interop.FacadeService
+import net.corda.v5.application.interop.InteropIdentityLookUp
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -33,6 +34,9 @@ class ReserveTokensFlow : ClientStartableFlow {
     @CordaInject
     lateinit var ledgerService: UtxoLedgerService
 
+    @CordaInject
+    lateinit var interopIdentityLookUp: InteropIdentityLookUp
+
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
         log.info("${this::class.java.simpleName}.call() starting ...")
@@ -59,8 +63,10 @@ class ReserveTokensFlow : ClientStartableFlow {
         val inputState = stateAndRef.state.contractState
         log.info("inputState ${inputState.participants}")
 
+        val interOPIdentity = interopIdentityLookUp.lookup(alias.organization)
+
         val client: TokensFacade =
-            facadeService.getProxy(facadeId, TokensFacade::class.java, alias, interopGroupId)
+            facadeService.getProxy(facadeId, TokensFacade::class.java,interOPIdentity)
 
         val responseObject = client.reserveTokensV1("USD", BigDecimal(100))
         val response = responseObject.toString()

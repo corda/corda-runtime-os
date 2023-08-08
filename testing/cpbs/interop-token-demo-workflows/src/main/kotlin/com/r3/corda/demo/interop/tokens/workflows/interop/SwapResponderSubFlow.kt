@@ -27,11 +27,10 @@ class SwapResponderSubFlow(private val message: Payment):
         val interopGroupId = message.interopGroupId
         val myInteropInfo : InterOpIdentityInfo? = interopIdentityLookUp.lookup(interopGroupId)
         require(myInteropInfo != null) { "Cant find InteropInfo for ${interopGroupId}." }
-        val interopIdentity = MemberX500Name.parse(myInteropInfo.x500Name)
         val facadeId = "org.corda.interop/platform/tokens/v1.0"
-        log.info("Interop call: facadeId=$facadeId, interopIdentity=$interopIdentity, interopGroupId=${interopGroupId}")
+        log.info("Interop call: facadeId=$facadeId, interopIdentity=${myInteropInfo.applicationName}, interopGroupId=${myInteropInfo.groupId}")
         val tokens: TokensFacade =
-            facadeService.getProxy(facadeId, TokensFacade::class.java, interopIdentity, interopGroupId)
+            facadeService.getProxy(facadeId, TokensFacade::class.java, myInteropInfo)
         val response = tokens.reserveTokensV1("USD", message.toReserve)
         log.info("Interop call returned: $response")
 

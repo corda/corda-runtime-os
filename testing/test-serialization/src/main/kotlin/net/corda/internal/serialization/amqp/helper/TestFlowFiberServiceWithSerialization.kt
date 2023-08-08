@@ -6,6 +6,8 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.pipeline.metrics.FlowMetrics
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.interop.identity.cache.InteropIdentityRegistryService
+import net.corda.interop.identity.cache.InteropIdentityRegistryView
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.base.types.MemberX500Name
@@ -20,6 +22,7 @@ class TestFlowFiberServiceWithSerialization(
     private val mockFlowFiber = mock(FlowFiber::class.java)
     private val mockFlowSandboxGroupContext = mock(FlowSandboxGroupContext::class.java)
     private val membershipGroupReader = mock(MembershipGroupReader::class.java)
+    private val interopIdentityRegistryView = mock(InteropIdentityRegistryView::class.java)
 
     init {
         val bobX500 = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
@@ -30,6 +33,7 @@ class TestFlowFiberServiceWithSerialization(
             mockFlowSandboxGroupContext,
             holdingIdentity,
             membershipGroupReader,
+            interopIdentityRegistryView,
             currentSandboxGroupContext,
             emptyMap(),
             mock(FlowMetrics::class.java)

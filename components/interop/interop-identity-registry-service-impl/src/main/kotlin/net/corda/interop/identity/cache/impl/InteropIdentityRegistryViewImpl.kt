@@ -14,6 +14,8 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: String):
     private val byVirtualNode = HashMap<String, HashSet<InteropIdentity>>()
     private val byShortHash = HashMap<String, InteropIdentity>()
     private val myIdentities = HashMap<String, InteropIdentity>()
+    private val byApplicationName = HashMap<String, InteropIdentity>()
+    private val byFacadeId = HashMap<String, HashSet<InteropIdentity>>()
 
     private fun getOrCreateByGroupIdEntry(groupId: String): HashSet<InteropIdentity> {
         return byGroupId.computeIfAbsent(groupId) {
@@ -26,6 +28,13 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: String):
             HashSet()
         }
     }
+
+    private fun getOrCreateByFacadeIdEntry(facadeId: String): HashSet<InteropIdentity> {
+        return byFacadeId.computeIfAbsent(facadeId) {
+            HashSet()
+        }
+    }
+
 
     fun putInteropIdentity(identity: InteropIdentity) {
         if (identity.owningVirtualNodeShortHash == virtualNodeShortHash) {
@@ -49,11 +58,16 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: String):
         }
 
         byShortHash[identity.shortHash] = identity
+        byApplicationName[identity.applicationName] = identity
+
+        identity.facadeIds.forEach{
+            getOrCreateByFacadeIdEntry(it).add(identity)
+        }
+
     }
 
     fun removeInteropIdentity(identity: InteropIdentity) {
         interopIdentities.remove(identity)
-
         byGroupId[identity.groupId]?.let {
             it.remove(identity)
             if (it.size == 0) {
@@ -75,6 +89,15 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: String):
         if (identity.owningVirtualNodeShortHash == virtualNodeShortHash) {
             myIdentities.remove(identity.groupId)
         }
+
+        byApplicationName.remove(identity.applicationName)
+
+        byFacadeId.forEach{
+            if (it.value.contains(identity)){
+                it.value.remove(identity)
+            }
+        }
+
     }
 
     override fun getIdentities(): Set<InteropIdentity> = interopIdentities
@@ -87,6 +110,12 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: String):
 
     override fun getIdentitiesByShortHash(): Map<String, InteropIdentity> =
         Collections.unmodifiableMap(byShortHash)
+
+    override fun getIdentitiesByApplicationName(): Map<String, InteropIdentity> =
+        Collections.unmodifiableMap(byApplicationName)
+
+    override fun getIdentitiesByFacadeId(): Map<String, Set<InteropIdentity>> =
+        Collections.unmodifiableMap(byFacadeId)
 
     override fun getOwnedIdentities(): Map<String, InteropIdentity> =
         Collections.unmodifiableMap(myIdentities)

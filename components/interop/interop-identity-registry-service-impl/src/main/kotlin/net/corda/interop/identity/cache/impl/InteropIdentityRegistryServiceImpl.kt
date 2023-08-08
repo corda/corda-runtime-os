@@ -1,6 +1,7 @@
 package net.corda.interop.identity.cache.impl
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.interop.core.InteropIdentity
 import net.corda.interop.identity.cache.InteropIdentityRegistryService
 import net.corda.interop.identity.cache.InteropIdentityRegistryView
@@ -55,6 +56,10 @@ class InteropIdentityRegistryServiceImpl @Activate constructor(
 
     override fun getVirtualNodeRegistryView(virtualNodeShortHash: String): InteropIdentityRegistryView {
         return getOrCreateView(virtualNodeShortHash)
+    }
+
+    override fun getVirtualNodeCacheView(holdingIdentity: HoldingIdentity): InteropIdentityRegistryView {
+        return getOrCreateView(holdingIdentity.shortHash.toString())
     }
 
     override val isRunning: Boolean

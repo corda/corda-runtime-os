@@ -36,7 +36,6 @@ class FacadeInvocationFlow : ClientStartableFlow {
         log.info("FacadeInvocationFlow.call() starting")
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
-        val interopGroupId = getArgument(args, "interopGroupId")
         val facadeId = getArgument(args, "facadeId")
         val methodName = getArgument(args, "methodName")
         val alias = MemberX500Name.parse(getArgument(args,"alias"))
@@ -52,7 +51,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
 
         log.info("Calling facade method '$methodName@$facadeId' with payload '$payload' to $alias")
 
-        val client : SampleTokensFacade = facadeService.getProxy(facadeId, SampleTokensFacade::class.java, alias, interopGroupId)
+        val client : SampleTokensFacade = facadeService.getProxy(facadeId, SampleTokensFacade::class.java, aliasMember)
         val response = client.getHello(payload)
 
         log.info("Facade responded with '$response'")

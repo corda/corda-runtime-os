@@ -36,9 +36,27 @@ interface InteropIdentityRegistryView {
     fun getIdentitiesByShortHash(): Map<String, InteropIdentity>
 
     /**
+     * Get identities within the view as a map with the interop identity application name as a key.
+     *
+     * @return Map of interop identity short hashes to sets of [InteropIdentity] objects.
+     */
+    fun getIdentitiesByApplicationName(): Map<String, InteropIdentity>
+
+    /**
+     * Get identities within the view as a map with the FacadeId as Key and a set of InterOpIdentities that implement
+     * those facades as the value.
+     *
+     * @return Map of interop identity short hashes to sets of [InteropIdentity] objects.
+     */
+    fun getIdentitiesByFacadeId(): Map<String, Set<InteropIdentity>>
+
+
+    /**
      * Get interop identities owned by the owning virtual node of this view by group ID.
      *
      * @return Map of group IDs to [InteropIdentity] objects.
      */
     fun getOwnedIdentities(): Map<String, InteropIdentity>
+
+
 }
