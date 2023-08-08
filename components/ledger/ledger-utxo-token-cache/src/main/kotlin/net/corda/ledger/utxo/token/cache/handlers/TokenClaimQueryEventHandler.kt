@@ -24,7 +24,13 @@ class TokenClaimQueryEventHandler(
         event: ClaimQuery
     ): Record<String, FlowEvent> {
 
-        val availableTokens = availableTokenService.findAvailTokens(event.poolKey.toDto(), event.ownerHash, event.tagRegex)
+        // Fetch the tokens directly from the database
+        val availableTokens = availableTokenService.findAvailTokens(
+            event.poolKey.toDto(),
+            event.ownerHash,
+            event.tagRegex
+        )
+
         val selectedTokens = mutableListOf<CachedToken>()
         var selectedAmount = BigDecimal.ZERO
 
