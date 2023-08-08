@@ -20,6 +20,8 @@ class TestWrappingRepository(
         return key
     }
 
+    override fun saveKeyWithId(alias: String, key: WrappingKeyInfo, id: UUID?): WrappingKeyInfo = TODO("Not needed")
+
     override fun findKey(alias: String): WrappingKeyInfo? = keys[alias]
 
     override fun findKeyAndId(alias: String): Pair<UUID, WrappingKeyInfo>? = TODO("Not needed")

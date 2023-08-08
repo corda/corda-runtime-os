@@ -22,6 +22,7 @@ configurations {
     configureEach {
         resolutionStrategy {
             dependencySubstitution {
+                substitute module('antlr:antlr') using project(':libs:antlr')
                 substitute module('de.javakaffee:kryo-serializers') using project(':libs:serialization:kryo-serializers')
             }
         }

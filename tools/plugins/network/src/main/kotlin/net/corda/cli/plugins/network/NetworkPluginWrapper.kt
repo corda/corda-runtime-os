@@ -27,7 +27,7 @@ class NetworkPluginWrapper : Plugin() {
         subcommands = [
             MemberList::class,
             GenerateGroupPolicy::class,
-            OnBoard::class,
+            Dynamic::class,
             GetRegistrations::class
         ],
         hidden = true,
@@ -47,4 +47,3 @@ class NetworkPluginWrapper : Plugin() {
     )
     class MgmPlugin : CordaCliPlugin
 }
-

@@ -133,9 +133,12 @@ fun ClusterInfo.getOrCreateVirtualNodeFor(
 fun ClusterInfo.getExistingCpi(
     cpiName: String
 ) = cluster {
-    cpiList()
-        .toJson().apply {
-            assertThat(contains("cpis"))
+    assertWithRetryIgnoringExceptions {
+        command { cpiList() }
+        condition { it.code == ResponseCode.OK.statusCode }
+        failMessage("Failed to list CPIs")
+    }.toJson().apply {
+            assertThat(contains("cpis")).isTrue
         }["cpis"]
         .toList()
         .firstOrNull {
@@ -185,6 +188,11 @@ fun ClusterInfo.keyExists(
     category: String? = null,
     ids: List<String>? = null
 ): Boolean = cluster {
-    val result = getKey(tenantId, category, alias, ids)
+    val result = assertWithRetryIgnoringExceptions {
+        command { getKey(tenantId, category, alias, ids) }
+        condition { it.code == ResponseCode.OK.statusCode }
+        failMessage("Failed to get keys for tenant id '$tenantId', category '$category', alias '$alias' and IDs: $ids")
+    }
+
     result.code == ResponseCode.OK.statusCode && result.toJson().fieldNames().hasNext()
 }
