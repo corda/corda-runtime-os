@@ -40,6 +40,7 @@ import net.corda.reconciliation.ReconcilerWriter
 import net.corda.reconciliation.VersionedRecord
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.mapNotNull
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -102,9 +103,10 @@ class MemberInfoReconciler(
             KeyValuePairList::class.java
         )
     }
-    private val reconcilerReadWriter = MemberInfoReconcilerReadWriter()
+    @VisibleForTesting
+    internal val reconcilerReadWriter = MemberInfoReconcilerReadWriter()
 
-    private inner class MemberInfoReconcilerReadWriter:
+    inner class MemberInfoReconcilerReadWriter:
         ReconcilerWriter<String, PersistentMemberInfo>, ReconcilerReader<String, PersistentMemberInfo>,  Lifecycle {
 
         override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<MemberInfoReconcilerReadWriter>()
