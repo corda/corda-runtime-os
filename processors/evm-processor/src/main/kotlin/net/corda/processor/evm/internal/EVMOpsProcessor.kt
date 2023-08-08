@@ -62,7 +62,6 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
                 } catch (e: EVMErrorException) {
                     if(transientEthereumErrorCodes.contains(e.errorResponse.error.code)){
                         // Log or handle the error if needed
-                        println("AT EVM ERROR EXCEPTION")
                         retries++
                         if (retries <= maxRetries) {
                             TimeUnit.MILLISECONDS.sleep(delayMs)
@@ -79,12 +78,21 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
     }
 
 
-    fun getBalance(rpcConnection: String, from: String): CompletableFuture<String> {
-        return CompletableFuture.supplyAsync<String>{
-            val resp = evmConnector.send(rpcConnection, "eth_getBalance", listOf(from,"latest"))
-            resp.result.toString()
-        }
+    /**
+     * Retrieves the balance of a given Ethereum address using the provided RPC connection.
+     *
+     * @param rpcConnection The RPC connection URL for Ethereum communication.
+     * @param from The Ethereum address for which to retrieve the balance.
+     * @return The balance of the specified Ethereum address as a string.
+     */
+    fun getBalance(rpcConnection: String, from: String): String {
+        // Send an RPC request to retrieve the balance of the specified address.
+        val resp = evmConnector.send(rpcConnection, "eth_getBalance", listOf(from, "latest"))
+
+        // Return the balance as a string.
+        return resp.result.toString()
     }
+
 
 
     /**
@@ -102,12 +110,21 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
     }
 
 
-    fun getTransactionByHash(rpcConnection: String, hash: String): CompletableFuture<String> {
-        return CompletableFuture.supplyAsync<String>{
-            val resp = evmConnector.send(rpcConnection, "eth_getTransactionByHash", listOf(hash))
-            resp.result.toString()
-        }
+    /**
+     * Retrieves transaction details for a given Ethereum transaction hash using the provided RPC connection.
+     *
+     * @param rpcConnection The RPC connection URL for Ethereum communication.
+     * @param hash The transaction hash for which to retrieve the details.
+     * @return The transaction details as a string.
+     */
+    fun getTransactionByHash(rpcConnection: String, hash: String): String {
+        // Send an RPC request to retrieve transaction details for the specified hash.
+        val resp = evmConnector.send(rpcConnection, "eth_getTransactionByHash", listOf(hash))
+
+        // Return the transaction details as a string.
+        return resp.result.toString()
     }
+
 
 
     /**
@@ -134,17 +151,36 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
     }
 
 
+
+    /**
+     * Retrieves the maximum priority fee per gas using the provided RPC connection.
+     *
+     * @param rpcConnection The RPC connection URL for Ethereum communication.
+     * @return The maximum priority fee per gas as a BigInteger.
+     */
     private fun maxPriorityFeePerGas(rpcConnection: String): BigInteger {
+        // Send an RPC request to retrieve the maximum priority fee per gas.
         val resp = evmConnector.send(rpcConnection, "eth_maxPriorityFeePerGas", listOf(""))
+
+        // Return the maximum priority fee per gas as a BigInteger.
         return BigInteger.valueOf(Integer.decode(resp.result.toString()).toLong())
     }
 
-
+    /**
+     * Retrieves the code at a specific Ethereum address using the provided RPC connection.
+     *
+     * @param rpcConnection The RPC connection URL for Ethereum communication.
+     * @param address The Ethereum address for which to retrieve the code.
+     * @param blockNumber The block number at which to retrieve the code.
+     * @return The code at the specified Ethereum address and block number as a string.
+     */
     private fun getCode(rpcConnection: String, address: String, blockNumber: String): String {
-            val resp = evmConnector.send(rpcConnection, "eth_getCode", listOf(address,blockNumber))
-            return resp.result.toString()
-    }
+        // Send an RPC request to retrieve the code at the specified address and block number.
+        val resp = evmConnector.send(rpcConnection, "eth_getCode", listOf(address, blockNumber))
 
+        // Return the code as a string.
+        return resp.result.toString()
+    }
 
 
 
