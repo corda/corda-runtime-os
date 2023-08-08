@@ -277,6 +277,9 @@ class ClusterBuilder {
     /** List all virtual nodes */
     fun vNodeList() = client!!.get("/api/$REST_API_VERSION_PATH/virtualnode")
 
+    /** Used to test RestApiVersion.C5_0 getAllVirtualNodes, remove after LTS */
+    fun deprecatedVNodeList() = client!!.get("/api/${RestApiVersion.C5_0.versionPath}/virtualnode")
+
     /** List all virtual nodes */
     fun getVNode(holdingIdentityShortHash: String) = client!!.get("/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdentityShortHash")
 
@@ -356,6 +359,11 @@ class ClusterBuilder {
     fun multipleFlowStatus(holdingIdentityShortHash: String) =
         get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash")
 
+    /** Used to test RestApiVersion.C5_0 getMultipleFlowStatus, remove after LTS */
+    fun deprecatedMultipleFlowStatus(holdingIdentityShortHash: String) =
+        get("/api/${RestApiVersion.C5_0.versionPath}/flow/$holdingIdentityShortHash")
+
+
     /** Get result of a flow execution */
     fun flowResult(holdingIdentityShortHash: String, clientRequestId: String) =
         get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash/$clientRequestId/result")
@@ -363,6 +371,10 @@ class ClusterBuilder {
     /** Get status of multiple flows */
     fun runnableFlowClasses(holdingIdentityShortHash: String) =
         get("/api/$REST_API_VERSION_PATH/flowclass/$holdingIdentityShortHash")
+
+    /** Used to test RestApiVersion.C5_0 getStartableFlows, remove after LTS */
+    fun deprecatedRunnableFlowClasses(holdingIdentityShortHash: String) =
+        get("/api/${RestApiVersion.C5_0.versionPath}/flowclass/$holdingIdentityShortHash")
 
     /** Create a new RBAC role */
     fun createRbacRole(roleName: String, groupVisibility: String? = null) =
@@ -464,10 +476,6 @@ class ClusterBuilder {
         """{ "clientRequestId" : "$clientRequestId", "flowClassName" : "$flowClassName", "requestBody" : 
             |"$requestData" }
         """.trimMargin()
-
-    /** Used to test RestApiVersion.C5_0 getStartableFlows, remove after LTS */
-    fun deprecatedGetStartableFlows(holdingIdentityShortHash: String) =
-        get("/api/${RestApiVersion.C5_0}/flowclass/$holdingIdentityShortHash")
 
     /** Get cluster configuration for the specified section */
     fun getConfig(section: String) = get("/api/$REST_API_VERSION_PATH/config/$section")

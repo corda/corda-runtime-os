@@ -115,7 +115,7 @@ fun ClusterInfo.getOrCreateVirtualNodeFor(
     val normalizedX500 = MemberX500Name.parse(x500).toString()
 
     if (vNodesJson.findValuesAsText("x500Name").contains(normalizedX500)) {
-        vNodeList().toJson()["virtualNodes"].toList().first {
+        vNodeList().toJson().toList().first {
             it["holdingIdentity"]["x500Name"].textValue() == normalizedX500
         }["holdingIdentity"]["shortHash"].textValue()
     } else {
