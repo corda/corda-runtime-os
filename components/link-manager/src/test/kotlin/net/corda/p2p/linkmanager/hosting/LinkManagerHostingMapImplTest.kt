@@ -125,7 +125,7 @@ class LinkManagerHostingMapImplTest {
         )
 
         assertThat(
-            testObject.isHostedLocally(entryOneMemberInfo)
+            testObject.isHostedLocally(entryOne.holdingIdentity.toCorda())
         ).isTrue
     }
 
@@ -144,14 +144,6 @@ class LinkManagerHostingMapImplTest {
 
     @Test
     fun `onSnapshot adds only data sent`() {
-        val mockMemberContext = mock<MemberContext> {
-            on { parse(GROUP_ID, String::class.java) } doReturn "another group"
-        }
-        val otherMemberInfo = mock<MemberInfo> {
-            on { memberProvidedContext } doReturn mockMemberContext
-            on { mgmProvidedContext } doReturn mock()
-            on { name } doReturn MemberX500Name.parse(bobX500Name)
-        }
         processor.firstValue.onSnapshot(
             mapOf(
                 "key" to entryOne
@@ -160,7 +152,7 @@ class LinkManagerHostingMapImplTest {
 
         assertThat(
             testObject.isHostedLocally(
-                otherMemberInfo
+                createTestHoldingIdentity(bobX500Name, "another group")
             )
         ).isFalse
     }
@@ -197,7 +189,7 @@ class LinkManagerHostingMapImplTest {
 
         assertThat(
             testObject.isHostedLocally(
-                entryOneMemberInfo
+                createTestHoldingIdentity(bobX500Name, "group")
             )
         ).isFalse
     }
@@ -212,7 +204,7 @@ class LinkManagerHostingMapImplTest {
 
         assertThat(
             testObject.isHostedLocally(
-                entryOneMemberInfo
+                createTestHoldingIdentity(bobX500Name, "group")
             )
         ).isTrue
     }
@@ -408,5 +400,41 @@ class LinkManagerHostingMapImplTest {
                 emptyList(),
             )
         )
+    }
+
+    @Test
+    fun `isHostedLocally called with MemberInfo returns true for session key matches`() {
+        processor.firstValue.onSnapshot(
+            mapOf(
+                "key" to entryOne
+            )
+        )
+
+        assertThat(
+            testObject.isHostedLocally(entryOneMemberInfo)
+        ).isTrue
+    }
+
+    @Test
+    fun `isHostedLocally called with MemberInfo returns false if no session keys match`() {
+        val mockMemberContext = mock<MemberContext> {
+            on { parse(GROUP_ID, String::class.java) } doReturn "another group"
+        }
+        val otherMemberInfo = mock<MemberInfo> {
+            on { memberProvidedContext } doReturn mockMemberContext
+            on { mgmProvidedContext } doReturn mock()
+            on { name } doReturn MemberX500Name.parse(bobX500Name)
+        }
+        processor.firstValue.onSnapshot(
+            mapOf(
+                "key" to entryOne
+            )
+        )
+
+        assertThat(
+            testObject.isHostedLocally(
+                otherMemberInfo
+            )
+        ).isFalse
     }
 }
