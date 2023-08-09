@@ -17,7 +17,6 @@ import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
-import net.corda.utilities.detailedLogger
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -161,7 +160,6 @@ internal class HostedIdentityEntryFactory(
         nodeInfo: VirtualNodeInfo,
         policy: GroupPolicy,
     ): HostedIdentitySessionKeyAndCert {
-        detailedLogger().info("!!! key ID is ${sessionKeyAndCertificate.sessionKeyId} in hosted identity factory")
         val sessionCertificate = getAndValidateSessionCertificate(
             sessionCertificateHoldingId,
             sessionKeyAndCertificate.sessionCertificateChainAlias,
