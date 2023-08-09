@@ -3,8 +3,8 @@ package net.corda.interop.identity.cache.impl
 import net.corda.interop.core.InteropIdentity
 import net.corda.v5.application.interop.facade.FacadeId
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 
 class InteropIdentityRegistryViewImplTest {
@@ -164,7 +164,7 @@ class InteropIdentityRegistryViewImplTest {
 
     @Test
     fun `get interop identities by facadeId`() {
-        val facadeId1 = "org.corda.interop/platform/tokens/v2.0"
+        val facadeId1 = FacadeId.of("org.corda.interop/platform/tokens/v2.0")
         val testInteropIdentity = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
@@ -175,7 +175,7 @@ class InteropIdentityRegistryViewImplTest {
             endpointProtocol = "https://alice.corda5.r3.com:10000"
         )
 
-        val facadeId2 = "org.corda.interop/platform/tokens/v3.0"
+        val facadeId2 = FacadeId.of("org.corda.interop/platform/tokens/v3.0")
         val testInteropIdentity2 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Bob",
             groupId = INTEROP_GROUP_ID,
@@ -190,13 +190,13 @@ class InteropIdentityRegistryViewImplTest {
         testView.putInteropIdentity(testInteropIdentity2)
 
         val facadeToIds = testView.getIdentitiesByFacadeId()
-        val facadeMap1 = facadeToIds[facadeId1] ?: throw NullPointerException("No Facade data found for given FacadeId")
+        val facadeMap1 = facadeToIds[facadeId1.toString()] ?: throw NullPointerException("No Facade data found for given FacadeId")
 
         assertThat(facadeMap1).hasSize(2)
         assertThat(facadeMap1).contains(testInteropIdentity)
         assertThat(facadeMap1).contains(testInteropIdentity2)
 
-        val facadeMap2 = facadeToIds[facadeId2] ?: throw NullPointerException("No Facade data found for given FacadeId")
+        val facadeMap2 = facadeToIds[facadeId2.toString()] ?: throw NullPointerException("No Facade data found for given FacadeId")
         assertThat(facadeMap2).hasSize(1)
         assertThat(facadeMap2).doesNotContain(testInteropIdentity)
         assertThat(facadeMap2).contains(testInteropIdentity2)
@@ -208,7 +208,7 @@ class InteropIdentityRegistryViewImplTest {
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
             owningVirtualNodeShortHash = "101010101010",
-            facadeIds = listOf("org.corda.interop/platform/tokens/v2.0"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
             endpointProtocol = "https://alice.corda5.r3.com:10000"
