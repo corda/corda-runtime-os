@@ -9,6 +9,7 @@ import picocli.CommandLine.Option
 import java.io.File
 import java.security.MessageDigest
 import java.util.UUID
+import net.corda.cli.plugins.network.enums.MemberRole
 
 @Command(
     name = "onboard-member",
@@ -29,16 +30,16 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
     @Option(
         names = ["--role", "-r"],
-        description = ["Member role, if any. Allowed values: 'notary'."]
+        description = ["Member role, if any. It is not mandatory to provide a role"],
     )
-    var role: String? = null
+    var role: MemberRole? = null
 
     @Option(
         names = ["--set", "-s"],
         description = ["Pass a custom key-value pair to the command to be included in the registration context. " +
-                "Specified as <key>=<value>. Multiple --set arguments may be provided."]
+                "Specified as <key>=<value>. Multiple --set arguments may be provided."],
     )
-    var customProperties: List<String> = emptyList()
+    var customProperties: Map<String, String> = emptyMap()
 
     @Option(
         names = ["--group-policy-file"],
@@ -52,7 +53,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
     @Option(
         names = ["--cpi-hash"],
-        description = ["The CPI hash (Use either cpi-file, cpb-file or cpi-hash)."]
+        description = ["The CPI hash (Use either cpb-file or cpi-hash)."]
     )
     var cpiHash: String? = null
 
@@ -194,31 +195,41 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
     override val registrationContext by lazy {
         val preAuth = preAuthToken?.let { mapOf("corda.auth.token" to it) } ?: emptyMap()
-        val roleProperty = if (role == "notary") mapOf("corda.roles.0" to role) else emptyMap()
-        val notaryServiceName = customProperties.firstNotNullOfOrNull { property ->
-            val key = property.substringBefore("=")
-            val value = property.substringAfter("=")
-            if (key == "corda.notary.service.name") value else null
-        }
-        val notaryProperties = if (role == "notary") {
-            mapOf(
-                "corda.notary.service.name" to notaryServiceName,
-                "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
-                "corda.notary.service.flow.protocol.version.0" to "1",
-                "corda.notary.keys.0.id" to notaryKeyId,
-                "corda.notary.keys.0.signature.spec" to "SHA256withECDSA"
-            )
-        } else {
-            emptyMap()
-        }
-
-        val endpoints: MutableMap<String, String> = mutableMapOf()
-
-        p2pGatewayUrls
-            .forEachIndexed { index, url ->
-                endpoints["corda.endpoints.$index.connectionURL"] = url
-                endpoints["corda.endpoints.$index.protocolVersion"] = "1"
+        val roleProperty = if (role != null) {
+                if (customProperties.containsKey("corda.notary.service.name")) {
+                    mapOf("corda.roles.0" to role!!.value)
+                } else {
+                    throw IllegalArgumentException("Cannot specify 'corda.notary.service.name'")
+                }
+            } else {
+                emptyMap()
             }
+
+        val notaryServiceName = customProperties["corda.notary.service.name"]
+        val notaryProperties = if (role != null) {
+                if (notaryServiceName == null) {
+                    throw IllegalArgumentException("Cannot specify 'corda.notary.service.name' when role is a value provided")
+                }
+                mapOf(
+                    "corda.notary.service.name" to notaryServiceName,
+                    "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
+                    "corda.notary.service.flow.protocol.version.0" to "1",
+                    "corda.notary.keys.0.id" to notaryKeyId,
+                    "corda.notary.keys.0.signature.spec" to "SHA256withECDSA"
+                )
+            } else {
+                emptyMap()
+            }
+
+        val endpoints: Map<String, String> = p2pGatewayUrls
+            .flatMapIndexed { index, url ->
+                    listOf(
+                        "corda.endpoints.$index.connectionURL" to url,
+                        "corda.endpoints.$index.protocolVersion" to "1"
+                    )
+            }
+            .toMap()
+
 
         val sessionKeys = mapOf(
             "corda.session.keys.0.id" to sessionKeyId,
