@@ -59,14 +59,14 @@ class MemberInfoReconciler(
     private val reconcilerFactory: ReconcilerFactory,
     private val publisherFactory: PublisherFactory,
     private val subscriptionFactory: SubscriptionFactory,
-    private val configurationReadService: ConfigurationReadService,
+    private val configurationReadService: ConfigurationReadService
 ): ReconcilerWrapper {
     companion object {
-        const val FOLLOW_CHANGES_RESOURCE_NAME = "MemberInfoReconcilierReadWriter.followStatusChangesByName"
-        const val WAIT_FOR_CONFIG_RESOURCE_NAME = "MemberInfoReconcilierReadWriter.registerComponentForUpdates"
-        const val SUBSCRIPTION_RESOURCE_NAME = "MemberInfoReconcilierReadWriter.subscription"
-        const val PUBLISHER_RESOURCE_NAME = "MemberInfoReconcilierReadWriter.publisher"
-        const val PUBLISHER_CLIENT_ID = "member-info-reconcilier-writer"
+        private const val FOLLOW_CHANGES_RESOURCE_NAME = "MemberInfoReconcilierReadWriter.followStatusChangesByName"
+        private const val WAIT_FOR_CONFIG_RESOURCE_NAME = "MemberInfoReconcilierReadWriter.registerComponentForUpdates"
+        private const val SUBSCRIPTION_RESOURCE_NAME = "MemberInfoReconcilierReadWriter.subscription"
+        internal const val PUBLISHER_RESOURCE_NAME = "MemberInfoReconcilierReadWriter.publisher"
+        private const val PUBLISHER_CLIENT_ID = "member-info-reconcilier-writer"
 
         private val dependencies = setOf(
             LifecycleCoordinatorName.forComponent<DbConnectionManager>(),
@@ -81,6 +81,30 @@ class MemberInfoReconciler(
             val query = queryBuilder.select(root)
             return em.createQuery(query).resultStream
         }
+
+        @VisibleForTesting
+        internal fun getAllMemberInfo(
+            reconciliationContext: ReconciliationContext,
+            keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList>
+        ): Stream<VersionedRecord<String, PersistentMemberInfo>> {
+            val context = reconciliationContext as? VirtualNodeReconciliationContext ?: return Stream.empty()
+            return getAllMemberInfo(context.getOrCreateEntityManager()).map { entity ->
+                val memberInfo = PersistentMemberInfo(
+                    context.virtualNodeInfo.holdingIdentity.toAvro(),
+                    keyValuePairListDeserializer.deserialize(entity.memberContext),
+                    keyValuePairListDeserializer.deserialize(entity.mgmContext)
+                )
+                val holdingIdentity = HoldingIdentity(
+                    MemberX500Name.parse(entity.memberX500Name), context.virtualNodeInfo.holdingIdentity.groupId
+                )
+                object : VersionedRecord<String, PersistentMemberInfo> {
+                    override val version = entity.serialNumber.toInt()
+                    override val isDeleted = entity.isDeleted
+                    override val key = "${context.virtualNodeInfo.holdingIdentity.shortHash}-${holdingIdentity.shortHash}"
+                    override val value = memberInfo
+                }
+            }
+        }
     }
     private val entitiesSet by lazy {
         jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
@@ -90,8 +114,7 @@ class MemberInfoReconciler(
     }
     private var dbReconcilerReader: DbReconcilerReader<String, PersistentMemberInfo>? = null
     private var reconciler: Reconciler? = null
-    private fun reconciliationContextFactory() =
-        virtualNodeInfoReadService.getAll().stream().map {
+    private fun reconciliationContextFactory() = virtualNodeInfoReadService.getAll().stream().map {
             VirtualNodeReconciliationContext(dbConnectionManager, entitiesSet, it)
         }
 
@@ -263,9 +286,8 @@ class MemberInfoReconciler(
                 String::class.java,
                 PersistentMemberInfo::class.java,
                 dependencies,
-                ::reconciliationContextFactory,
-                ::getAllMemberInfo
-            ).also {
+                ::reconciliationContextFactory
+            ) { em -> getAllMemberInfo(em, keyValuePairListDeserializer) }.also {
                 it.start()
             }
         }
@@ -288,28 +310,6 @@ class MemberInfoReconciler(
             }
         }
     }
-
-    private fun getAllMemberInfo(reconciliationContext: ReconciliationContext):
-            Stream<VersionedRecord<String, PersistentMemberInfo>> {
-        val context = reconciliationContext as? VirtualNodeReconciliationContext ?: return Stream.empty()
-        return getAllMemberInfo(context.getOrCreateEntityManager())
-            .map { entity ->
-                val memberInfo = PersistentMemberInfo(
-                    context.virtualNodeInfo.holdingIdentity.toAvro(),
-                    keyValuePairListDeserializer.deserialize(entity.memberContext),
-                    keyValuePairListDeserializer.deserialize(entity.mgmContext)
-                )
-                val holdingIdentity = HoldingIdentity(
-                    MemberX500Name.parse(entity.memberX500Name), context.virtualNodeInfo.holdingIdentity.groupId)
-                object : VersionedRecord<String, PersistentMemberInfo> {
-                    override val version = entity.serialNumber.toInt()
-                    override val isDeleted = entity.isDeleted
-                    override val key = "${context.virtualNodeInfo.holdingIdentity.shortHash}-${holdingIdentity.shortHash}"
-                    override val value = memberInfo
-                }
-            }
-    }
-
 
     override fun stop() {
         dbReconcilerReader?.stop()

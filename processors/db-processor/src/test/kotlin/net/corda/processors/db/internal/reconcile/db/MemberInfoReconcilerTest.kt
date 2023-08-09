@@ -4,6 +4,10 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
+import javax.persistence.TypedQuery
+import javax.persistence.criteria.CriteriaBuilder
+import javax.persistence.criteria.CriteriaQuery
+import javax.persistence.criteria.Root
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigChangedEvent
@@ -18,7 +22,12 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.lib.GroupParametersNotaryUpdater
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
@@ -38,7 +47,8 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import org.assertj.core.api.Assertions
+import net.corda.virtualnode.toAvro
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -51,6 +61,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import net.corda.data.identity.HoldingIdentity as AvroHoldingIdentity
 
 class MemberInfoReconcilerTest {
@@ -93,20 +104,19 @@ class MemberInfoReconcilerTest {
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
         on { getAll() } doReturn listOf(virtualNodeInfo)
     }
-    private val dbReader = argumentCaptor<DbReconcilerReader<String, PersistentMemberInfo>>()
-    private val reconciler = mock<Reconciler>()
+    private val innerReconciler = mock<Reconciler>()
 
     private val reconcilerFactory = mock<ReconcilerFactory> {
         on {
             create(
-                dbReader.capture(),
+                any(),
                 any(),
                 any(),
                 eq(String::class.java),
                 eq(PersistentMemberInfo::class.java),
                 any(),
             )
-        } doReturn reconciler
+        } doReturn innerReconciler
     }
 
     private val deserializedParams = KeyValuePairList(listOf(KeyValuePair(GroupParametersNotaryUpdater.EPOCH_KEY, "1")))
@@ -155,7 +165,7 @@ class MemberInfoReconcilerTest {
         fun `updateInterval will start the reconciler`() {
             memberInfoReconciler.updateInterval(10)
 
-            verify(reconciler).start()
+            verify(innerReconciler).start()
         }
 
         @Test
@@ -163,7 +173,7 @@ class MemberInfoReconcilerTest {
             memberInfoReconciler.updateInterval(10)
             memberInfoReconciler.updateInterval(20)
 
-            verify(reconciler).updateInterval(20)
+            verify(innerReconciler).updateInterval(20)
         }
 
         @Test
@@ -171,7 +181,7 @@ class MemberInfoReconcilerTest {
             memberInfoReconciler.updateInterval(10)
             memberInfoReconciler.updateInterval(30)
 
-            verify(reconciler, times(1)).start()
+            verify(innerReconciler, times(1)).start()
         }
 
         @Test
@@ -180,14 +190,120 @@ class MemberInfoReconcilerTest {
 
             memberInfoReconciler.stop()
 
-            verify(reconciler).stop()
+            verify(innerReconciler).stop()
         }
 
         @Test
         fun `stop will not stop the reconciler is not started`() {
             memberInfoReconciler.stop()
 
-            verify(reconciler, never()).stop()
+            verify(innerReconciler, never()).stop()
+        }
+
+        @Test
+        fun `StartEvent will follow the configuration read service`() {
+            handler.firstValue.processEvent(StartEvent(), coordinator)
+
+            verify(coordinator).followStatusChangesByName(
+                setOf(
+                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                )
+            )
+        }
+
+        @Test
+        fun `StopEvent will close managed resources`() {
+            handler.firstValue.processEvent(StopEvent(), coordinator)
+
+            verify(coordinator).closeManagedResources(
+                argThat {
+                    size == 4
+                }
+            )
+        }
+
+        @Test
+        fun `StopEvent will set the status to down`() {
+            handler.firstValue.processEvent(StopEvent(), coordinator)
+
+            verify(coordinator).updateStatus(LifecycleStatus.DOWN)
+        }
+
+        @Test
+        fun `child up will wait for config`() {
+            handler.firstValue.processEvent(
+                RegistrationStatusChangeEvent(
+                    mock(),
+                    LifecycleStatus.UP
+                ),
+                coordinator
+            )
+
+            verify(configurationReadService).registerComponentForUpdates(
+                coordinator,
+                setOf(
+                    ConfigKeys.BOOT_CONFIG,
+                    ConfigKeys.MESSAGING_CONFIG,
+                )
+            )
+        }
+
+        @Test
+        fun `child down will set the status to down`() {
+            handler.firstValue.processEvent(
+                RegistrationStatusChangeEvent(
+                    mock(),
+                    LifecycleStatus.DOWN
+                ),
+                coordinator
+            )
+
+            verify(coordinator).updateStatus(LifecycleStatus.DOWN)
+        }
+
+        @Test
+        fun `child down will close the resource`() {
+            handler.firstValue.processEvent(
+                RegistrationStatusChangeEvent(
+                    mock(),
+                    LifecycleStatus.DOWN
+                ),
+                coordinator
+            )
+
+            verify(coordinator).closeManagedResources(argThat { size == 1 })
+        }
+
+        @Test
+        fun `config changed event will create the publisher`() {
+            handler.firstValue.processEvent(configChangedEvent, coordinator)
+
+            verify(publisherFactory).createPublisher(any(), eq(messagingConfig))
+        }
+
+        @Test
+        fun `config changed event will start the publisher`() {
+            handler.firstValue.processEvent(configChangedEvent, coordinator)
+
+            verify(publisher).start()
+        }
+
+        @Test
+        fun `config changed event will create the subscription`() {
+            handler.firstValue.processEvent(configChangedEvent, coordinator)
+
+            verify(subscriptionFactory).createCompactedSubscription(
+                any(),
+                eq(processor.firstValue),
+                eq(messagingConfig),
+            )
+        }
+
+        @Test
+        fun `config changed event will start the subscription`() {
+            handler.firstValue.processEvent(configChangedEvent, coordinator)
+
+            verify(compactedSubscription).start()
         }
     }
 
@@ -197,7 +313,6 @@ class MemberInfoReconcilerTest {
         @Test
         fun `onNext adds an item to the list`() {
             handler.firstValue.processEvent(configChangedEvent, coordinator)
-            processor.firstValue.onSnapshot(emptyMap())
             val key = "Key"
             val serialNumber = 26
 
@@ -210,19 +325,54 @@ class MemberInfoReconcilerTest {
 
             val records = memberInfoReconciler.reconcilerReadWriter.getAllVersionedRecords()
 
-            Assertions.assertThat(records).hasSize(1)
+            assertThat(records).hasSize(1)
                 .anySatisfy {
-                    Assertions.assertThat(it.isDeleted).isFalse
-                    Assertions.assertThat(it.key).isEqualTo(key)
-                    Assertions.assertThat(it.version).isEqualTo(serialNumber)
-                    Assertions.assertThat(it.value).isEqualTo(memberInfo)
+                    assertThat(it.isDeleted).isFalse
+                    assertThat(it.key).isEqualTo(key)
+                    assertThat(it.version).isEqualTo(serialNumber)
+                    assertThat(it.value).isEqualTo(memberInfo)
                }
+        }
+
+        @Test
+        fun `onSnapshot adds items to the list`() {
+            handler.firstValue.processEvent(configChangedEvent, coordinator)
+
+            val key = "Key"
+            val serialNumber = 26
+            val memberInfo = PersistentMemberInfo(
+                null,
+                null,
+                KeyValuePairList(listOf(KeyValuePair(MemberInfoExtension.SERIAL, serialNumber.toString())))
+            )
+            val key1 = "Key1"
+            val serialNumber1 = 32
+            val memberInfo1 = PersistentMemberInfo(
+                null,
+                null,
+                KeyValuePairList(listOf(KeyValuePair(MemberInfoExtension.SERIAL, serialNumber1.toString())))
+            )
+            processor.firstValue.onSnapshot(mapOf(key to memberInfo, key1 to memberInfo1))
+
+            val records = memberInfoReconciler.reconcilerReadWriter.getAllVersionedRecords()
+
+            assertThat(records?.toList()).hasSize(2)
+                .anySatisfy {
+                    assertThat(it.isDeleted).isFalse
+                    assertThat(it.key).isEqualTo(key)
+                    assertThat(it.version).isEqualTo(serialNumber)
+                    assertThat(it.value).isEqualTo(memberInfo)
+                }.anySatisfy {
+                    assertThat(it.isDeleted).isFalse
+                    assertThat(it.key).isEqualTo(key1)
+                    assertThat(it.version).isEqualTo(serialNumber1)
+                    assertThat(it.value).isEqualTo(memberInfo1)
+                }
         }
 
         @Test
         fun `getAllVersionedRecords handles NumberFormatException`() {
             handler.firstValue.processEvent(configChangedEvent, coordinator)
-            processor.firstValue.onSnapshot(emptyMap())
 
             val key = "Key"
             val memberContext = KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, "Alice")))
@@ -233,13 +383,12 @@ class MemberInfoReconcilerTest {
             )
             processor.firstValue.onNext(Record("topic", key, memberInfo), null, emptyMap())
 
-            Assertions.assertThat(memberInfoReconciler.reconcilerReadWriter.getAllVersionedRecords()?.toList()).isEmpty()
+            assertThat(memberInfoReconciler.reconcilerReadWriter.getAllVersionedRecords()?.toList()).isEmpty()
         }
 
         @Test
         fun `getAllVersionedRecords handles no serial number`() {
             handler.firstValue.processEvent(configChangedEvent, coordinator)
-            processor.firstValue.onSnapshot(emptyMap())
 
             val key = "Key"
             val memberContext = KeyValuePairList(emptyList())
@@ -250,7 +399,7 @@ class MemberInfoReconcilerTest {
             )
             processor.firstValue.onNext(Record("topic", key, memberInfo), null, emptyMap())
 
-            Assertions.assertThat(memberInfoReconciler.reconcilerReadWriter.getAllVersionedRecords()?.toList()).isEmpty()
+            assertThat(memberInfoReconciler.reconcilerReadWriter.getAllVersionedRecords()?.toList()).isEmpty()
         }
     }
 
@@ -285,5 +434,119 @@ class MemberInfoReconcilerTest {
                 }
             )
         }
+    }
+
+    @Nested
+    inner class QueryTests {
+        @Test
+        fun `getAllMemberInfo will return all the member info`() {
+            val group = "group"
+            val viewOwningMember = HoldingIdentity(
+                MemberX500Name.parse("C=GB, CN=MGM, O=MGM Corp, L=LDN"),
+                "group"
+            )
+            val reconcilierVirtualNodeInfo = mock<VirtualNodeInfo> {
+                on { holdingIdentity } doReturn viewOwningMember
+            }
+            val virtualNodeReconcilationContext = mock<VirtualNodeReconciliationContext> {
+                on { getOrCreateEntityManager() } doReturn entityManager
+                on { virtualNodeInfo } doReturn reconcilierVirtualNodeInfo
+            }
+            val root = mock<Root<MemberInfoEntity>>()
+            val queryBuilder = mock<CriteriaQuery<MemberInfoEntity>> {
+                on { from(MemberInfoEntity::class.java) } doReturn root
+                on { select(root) } doReturn mock
+            }
+            val criteriaBuilder = mock<CriteriaBuilder> {
+                on { createQuery(MemberInfoEntity::class.java) } doReturn queryBuilder
+            }
+            val firstX500Name = "O=Alice, L=London, C=GB"
+            val firstSerial = 106L
+            val firstMemberContext = byteArrayOf(1, 2)
+            val firstMgmContext = byteArrayOf(3, 4)
+            val firstMockMemberInfoEntity = mock<MemberInfoEntity> {
+                on { memberX500Name } doReturn firstX500Name
+                on { memberContext } doReturn firstMemberContext
+                on { mgmContext } doReturn firstMgmContext
+                on { serialNumber } doReturn firstSerial
+                on { isDeleted } doReturn true
+            }
+            val secondX500Name = "O=Bob, L=London, C=GB"
+            val secondSerial = 42L
+            val secondMemberConetxt = byteArrayOf(5, 6)
+            val secondMgmContext = byteArrayOf(7, 8)
+            val secondMockMemberInfoEntity = mock<MemberInfoEntity> {
+                on { memberX500Name } doReturn secondX500Name
+                on { memberContext } doReturn secondMemberConetxt
+                on { mgmContext } doReturn secondMgmContext
+                on { serialNumber } doReturn secondSerial
+                on { isDeleted } doReturn false
+            }
+            val reply = mock<TypedQuery<MemberInfoEntity>> {
+                on { resultStream } doReturn listOf(
+                    firstMockMemberInfoEntity,
+                    secondMockMemberInfoEntity,
+                ).stream()
+            }
+            whenever(entityManager.criteriaBuilder).doReturn(criteriaBuilder)
+            whenever(entityManager.createQuery(queryBuilder)).doReturn(reply)
+            val firstDeserializedMemberContext = mock<KeyValuePairList>()
+            val firstDeserializedMgmContext = mock<KeyValuePairList>()
+            val secondDeserializedMemberContext = mock<KeyValuePairList>()
+            val secondDeserializedMgmContext = mock<KeyValuePairList>()
+            whenever(deserializer.deserialize(firstMemberContext)).doReturn(firstDeserializedMemberContext)
+            whenever(deserializer.deserialize(firstMgmContext)).doReturn(firstDeserializedMgmContext)
+            whenever(deserializer.deserialize(secondMemberConetxt)).doReturn(secondDeserializedMemberContext)
+            whenever(deserializer.deserialize(secondMgmContext)).doReturn(secondDeserializedMgmContext)
+
+
+            memberInfoReconciler.updateInterval(10)
+
+            val records = MemberInfoReconciler.getAllMemberInfo(virtualNodeReconcilationContext, deserializer)
+
+            assertThat(records).hasSize(2)
+                .anySatisfy {
+                    assertThat(it.value.viewOwningMember).isEqualTo(viewOwningMember.toAvro())
+                    assertThat(it.value.memberContext).isEqualTo(firstDeserializedMemberContext)
+                    assertThat(it.value.mgmContext).isEqualTo(firstDeserializedMgmContext)
+                    assertThat(it.version).isEqualTo(firstSerial)
+                    assertThat(it.key)
+                        .isEqualTo("${viewOwningMember.shortHash}-${HoldingIdentity(MemberX500Name.parse(firstX500Name), group).shortHash}")
+                    assertThat(it.isDeleted).isEqualTo(true)
+                 }
+                .anySatisfy {
+                    assertThat(it.value.viewOwningMember).isEqualTo(viewOwningMember.toAvro())
+                    assertThat(it.value.memberContext).isEqualTo(secondDeserializedMemberContext)
+                    assertThat(it.value.mgmContext).isEqualTo(secondDeserializedMgmContext)
+                    assertThat(it.key)
+                        .isEqualTo(
+                            "${viewOwningMember.shortHash}-${HoldingIdentity(MemberX500Name.parse(secondX500Name), group).shortHash}"
+                        )
+                    assertThat(it.version).isEqualTo(secondSerial)
+                    assertThat(it.isDeleted).isEqualTo(false)
+                }
+        }
+
+        @Test
+        fun `getAllMemberInfo creates the correct query`() {
+            val virtualNodeReconcilationContext = mock<VirtualNodeReconciliationContext> {
+                on { getOrCreateEntityManager() } doReturn entityManager
+            }
+            val root = mock<Root<MemberInfoEntity>>()
+            val queryBuilder = mock<CriteriaQuery<MemberInfoEntity>> {
+                on { from(MemberInfoEntity::class.java) } doReturn root
+                on { select(root) } doReturn mock
+            }
+            val criteriaBuilder = mock<CriteriaBuilder> {
+                on { createQuery(MemberInfoEntity::class.java) } doReturn queryBuilder
+            }
+            whenever(entityManager.criteriaBuilder).doReturn(criteriaBuilder)
+            whenever(entityManager.createQuery(queryBuilder)).doReturn(mock())
+
+            MemberInfoReconciler.getAllMemberInfo(virtualNodeReconcilationContext, deserializer)
+
+            verify(entityManager).createQuery(queryBuilder)
+        }
+
     }
 }
