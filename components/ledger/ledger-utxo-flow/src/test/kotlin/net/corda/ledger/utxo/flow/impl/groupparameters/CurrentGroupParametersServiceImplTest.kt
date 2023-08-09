@@ -62,7 +62,7 @@ class CurrentGroupParametersServiceImplTest {
 
     @Test
     fun `get return the correct parameters`() {
-        assertThat(impl.get()).isEqualTo(parameters)
+        assertThat(impl.getCurrentGroupParameters()).isEqualTo(parameters)
     }
 
     @Test
@@ -70,7 +70,7 @@ class CurrentGroupParametersServiceImplTest {
         whenever(membershipGroupReader.signedGroupParameters).doReturn(null)
 
         assertThrows<IllegalArgumentException> {
-            impl.get()
+            impl.getCurrentGroupParameters()
         }
     }
 
