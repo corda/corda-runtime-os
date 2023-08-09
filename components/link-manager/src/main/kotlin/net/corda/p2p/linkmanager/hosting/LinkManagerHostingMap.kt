@@ -12,6 +12,8 @@ import net.corda.virtualnode.HoldingIdentity
  */
 interface LinkManagerHostingMap : LifecycleWithDominoTile {
 
+    fun isHostedLocally(identity: HoldingIdentity): Boolean
+
     fun isHostedLocally(member: MemberInfo?): Boolean
 
     fun getInfo(identity: HoldingIdentity): HostingMapListener.IdentityInfo?

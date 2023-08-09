@@ -135,11 +135,10 @@ internal class OutboundMessageProcessor(
         } catch (e: Exception) {
             return "destination '${destination.x500Name}' is not a valid X500 name: ${e.message}"
         }
-        val sourceMemberInfo = membershipGroupReaderProvider.lookup(cordaSource, cordaSource, filter)
         val destinationMemberInfo = membershipGroupReaderProvider.lookup(cordaSource, cordaDestination, filter)
         return if (source.groupId != destination.groupId) {
             "group IDs do not match"
-        } else if (!linkManagerHostingMap.isHostedLocally(sourceMemberInfo)) {
+        } else if (!linkManagerHostingMap.isHostedLocally(cordaSource)) {
             "source ID is not locally hosted"
         } else if (linkManagerHostingMap.isHostedLocally(destinationMemberInfo)) {
             validateCanMessage(cordaSource, cordaDestination, outbound = true, inbound = true)

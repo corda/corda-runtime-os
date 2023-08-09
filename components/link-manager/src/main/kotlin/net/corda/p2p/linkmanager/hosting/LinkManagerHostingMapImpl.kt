@@ -69,6 +69,9 @@ internal class LinkManagerHostingMapImpl(
         managedChildren = setOf(subscriptionTile.toNamedLifecycle(), blockingTile.toNamedLifecycle())
     )
 
+    override fun isHostedLocally(identity: HoldingIdentity) =
+        locallyHostedIdentityToIdentityInfo.containsKey(identity)
+
     override fun isHostedLocally(member: MemberInfo?): Boolean {
         return if (member == null) {
             false
