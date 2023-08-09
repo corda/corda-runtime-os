@@ -5,10 +5,13 @@ import net.corda.data.crypto.wire.ops.rewrap.CryptoRewrapRequest
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 
+/**
+ * This processor does actual re-wrapping of the keys.
+ * Each Kafka message contains information about one key that needs to be re-wrapped.
+ */
 class CryptoRewrapBusProcessor(
     val cryptoService: CryptoService
 ) : DurableProcessor<String, CryptoRewrapRequest> {
-
 
     override val keyClass: Class<String> = String::class.java
     override val valueClass = CryptoRewrapRequest::class.java
@@ -18,9 +21,8 @@ class CryptoRewrapBusProcessor(
             if (request != null) {
                 cryptoService.rewrapWrappingKey(request.tenantId, request.targetAlias, request.newParentKeyAlias)
             }
-
         }
+        // We need to return something else - this is published back as a response on the incoming events
         return events
     }
-
 }
