@@ -4,11 +4,12 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
 import java.security.MessageDigest
 import java.security.PublicKey
 
-private class FakeTransactionSignatureService: TransactionSignatureServiceInternal {
+private open class FakeTransactionSignatureService: TransactionSignatureServiceInternal {
     override fun sign(
         transaction: TransactionWithMetadata,
         publicKeys: Iterable<PublicKey>
@@ -32,7 +33,20 @@ private class FakeTransactionSignatureService: TransactionSignatureServiceIntern
         MessageDigest.getInstance(digestAlgorithmName).digest(publicKey.encoded)
     )
 }
+private class FakeTransactionSignatureServiceNoKeysAvailable: FakeTransactionSignatureService() {
+    override fun sign(
+        transaction: TransactionWithMetadata,
+        publicKeys: Iterable<PublicKey>
+    ): List<DigitalSignatureAndMetadata> =
+        throw TransactionNoAvailableKeysException(
+            "The publicKeys do not have any private counterparts available.",
+            null
+        )
+}
 
 fun fakeTransactionSignatureService(): TransactionSignatureServiceInternal {
     return FakeTransactionSignatureService()
+}
+fun fakeTransactionSignatureServiceNoKeysAvailable(): TransactionSignatureServiceInternal {
+    return FakeTransactionSignatureServiceNoKeysAvailable()
 }

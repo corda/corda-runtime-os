@@ -4,7 +4,9 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.test.dummyCpkSignerSummaryHash
+import net.corda.ledger.common.testkit.fakeTransactionSignatureServiceNoKeysAvailable
 import net.corda.ledger.common.testkit.publicKeyExample
+import net.corda.ledger.utxo.flow.impl.transaction.factory.impl.UtxoSignedTransactionFactoryImpl
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
@@ -12,6 +14,7 @@ import net.corda.ledger.utxo.testkit.getExampleStateAndRefImpl
 import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
 import org.assertj.core.api.Assertions.assertThat
@@ -484,5 +487,41 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             utxoTransactionBuilder
                 .addReferenceStates(List(2) { stateRef1 })
         }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `TransactionNoAvailableKeysException gets rethrown as a more detailed CordaRunTimeException if the creator is not a signatory`() {
+        val utxoSignedTransactionFactoryNoKeys = UtxoSignedTransactionFactoryImpl(
+            currentSandboxGroupContext,
+            jsonMarshallingService,
+            jsonValidator,
+            serializationServiceNullCfg,
+            fakeTransactionSignatureServiceNoKeysAvailable(),
+            transactionMetadataFactory,
+            wireTransactionFactory,
+            utxoLedgerTransactionFactory,
+            mockUtxoLedgerTransactionVerificationService,
+            mockUtxoLedgerGroupParametersPersistenceService,
+            mockCurrentGroupParametersService,
+            mockSignedGroupParametersVerifier
+        )
+        val utxoTransactionBuilderNoKeys = UtxoTransactionBuilderImpl(utxoSignedTransactionFactoryNoKeys, mockNotaryLookup)
+
+        val inputStateAndRef = getExampleStateAndRefImpl()
+        val inputStateRef = inputStateAndRef.ref
+
+        whenever(mockUtxoLedgerStateQueryService.resolveStateRefs(any()))
+            .thenReturn(listOf(inputStateAndRef))
+
+        assertThatThrownBy {
+            utxoTransactionBuilderNoKeys
+                .setNotary(notaryX500Name)
+                .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
+                .addInputState(inputStateRef)
+                .addSignatories(listOf(publicKeyExample))
+                .addCommand(UtxoCommandExample())
+                .toSignedTransaction()
+        }.isInstanceOf(CordaRuntimeException::class.java)
+            .hasMessageContaining("Creator of the transaction does not own any signatory keys.")
     }
 }

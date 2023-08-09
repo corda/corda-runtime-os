@@ -5,9 +5,11 @@ import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowUntilImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoTransactionBuilderVerifier
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.NotaryLookup
+import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
@@ -197,8 +199,11 @@ class UtxoTransactionBuilderImpl(
         check(!alreadySigned) { "The transaction cannot be signed twice." }
 
         UtxoTransactionBuilderVerifier(this).verify()
-        return utxoSignedTransactionFactory.create(this, signatories).also {
+        return try{
             alreadySigned = true
+            utxoSignedTransactionFactory.create(this, signatories)
+        } catch (e: TransactionNoAvailableKeysException) {
+            throw CordaRuntimeException("Creator of the transaction does not own any signatory keys.", e)
         }
     }
 

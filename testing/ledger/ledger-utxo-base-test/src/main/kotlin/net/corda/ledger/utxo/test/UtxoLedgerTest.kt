@@ -31,10 +31,10 @@ import org.mockito.kotlin.whenever
 
 abstract class UtxoLedgerTest : CommonLedgerTest() {
     private val mockUtxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
-    private val mockUtxoLedgerTransactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
-    private val mockUtxoLedgerGroupParametersPersistenceService = mock<UtxoLedgerGroupParametersPersistenceService>()
-    private val mockCurrentGroupParametersService = mockCurrentGroupParametersService()
-    private val mockSignedGroupParametersVerifier = mock<SignedGroupParametersVerifier>()
+    val mockUtxoLedgerTransactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
+    val mockUtxoLedgerGroupParametersPersistenceService = mock<UtxoLedgerGroupParametersPersistenceService>()
+    val mockCurrentGroupParametersService = mockCurrentGroupParametersService()
+    val mockSignedGroupParametersVerifier = mock<SignedGroupParametersVerifier>()
 
     val mockUtxoLedgerStateQueryService = mock<UtxoLedgerStateQueryService>()
     val mockCurrentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
@@ -64,7 +64,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
             serializationServiceWithWireTx
         ), serializationServiceWithWireTx
     )
-    private val utxoLedgerTransactionFactory = UtxoLedgerTransactionFactoryImpl(
+    val utxoLedgerTransactionFactory = UtxoLedgerTransactionFactoryImpl(
         serializationServiceWithWireTx,
         mockUtxoLedgerStateQueryService
     )
