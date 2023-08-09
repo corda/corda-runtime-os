@@ -195,8 +195,9 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
     override val registrationContext by lazy {
         val preAuth = preAuthToken?.let { mapOf("corda.auth.token" to it) } ?: emptyMap()
+        val notaryServiceName = customProperties["corda.notary.service.name"]
         val roleProperty = if (role != null) {
-                if (customProperties.containsKey("corda.notary.service.name")) {
+                if (notaryServiceName != null) {
                     mapOf("corda.roles.0" to role!!.value)
                 } else {
                     throw IllegalArgumentException("Cannot specify 'corda.notary.service.name'")
@@ -205,11 +206,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
                 emptyMap()
             }
 
-        val notaryServiceName = customProperties["corda.notary.service.name"]
         val notaryProperties = if (role != null) {
-                if (notaryServiceName == null) {
-                    throw IllegalArgumentException("Cannot specify 'corda.notary.service.name' when role is a value provided")
-                }
                 mapOf(
                     "corda.notary.service.name" to notaryServiceName,
                     "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
