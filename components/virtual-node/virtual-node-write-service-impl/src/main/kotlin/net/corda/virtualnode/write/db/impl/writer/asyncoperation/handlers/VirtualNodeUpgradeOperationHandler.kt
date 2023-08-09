@@ -124,26 +124,35 @@ internal class VirtualNodeUpgradeOperationHandler(
         logger.info("membershipQueryClient: " + membershipQueryClient.isRunning)
         logger.info("querymemberinfo: " + membershipQueryClient.queryMemberInfo(upgradedVNodeInfo.holdingIdentity).toString())
         // Re-register the member once the virtual node has been upgraded, so that the member CPI version is up-to-date
-        if(!membershipQueryClient.queryRegistrationRequests(upgradedVNodeInfo.holdingIdentity, limit = 1).getOrThrow().isNullOrEmpty()) {
-            logger.info("membershipQueryClient is running, updating member cpi version")
-            logger.warn(membershipGroupReaderProvider.toString())
+        if(membershipQueryClient.isRunning) {
+            if (!membershipQueryClient.queryRegistrationRequests(upgradedVNodeInfo.holdingIdentity, limit = 1)
+                    .getOrThrow().isNullOrEmpty()
+            ) {
+                logger.info("membershipQueryClient is running, updating member cpi version")
+                logger.warn(membershipGroupReaderProvider.toString())
 
-            logger.warn(membershipGroupReaderProvider.getGroupReader(upgradedVNodeInfo.holdingIdentity).toString())
-            logger.warn(membershipGroupReaderProvider.getGroupReader(upgradedVNodeInfo.holdingIdentity).owningMember.toString())
-            val x500Name = membershipGroupReaderProvider.getGroupReader(upgradedVNodeInfo.holdingIdentity).owningMember
-            val registrationRequest = membershipQueryClient
-                .queryRegistrationRequests(upgradedVNodeInfo.holdingIdentity, x500Name, limit = 1)
-                .getOrThrow()
-                .first()
-            val registrationContext = registrationRequest.memberProvidedContext.toMap()
+                logger.warn(membershipGroupReaderProvider.getGroupReader(upgradedVNodeInfo.holdingIdentity).toString())
+                logger.warn(membershipGroupReaderProvider.getGroupReader(upgradedVNodeInfo.holdingIdentity).owningMember.toString())
+                val x500Name =
+                    membershipGroupReaderProvider.getGroupReader(upgradedVNodeInfo.holdingIdentity).owningMember
+                membershipGroupReaderProvider.getGroupReader(upgradedVNodeInfo.holdingIdentity).lookup(x500Name)?.serial
+                val registrationRequest = membershipQueryClient
+                    .queryRegistrationRequests(upgradedVNodeInfo.holdingIdentity, x500Name, limit = 1)
+                    .getOrThrow()
+                    .first()
 
-            var hasSubmitted = false
-            while (!hasSubmitted) {
-                val registrationResult =
-                    memberResourceClient
-                        .startRegistration(upgradedVNodeInfo.holdingIdentity.shortHash, registrationContext)
-                if (registrationResult.registrationStatus == SubmittedRegistrationStatus.SUBMITTED) {
-                    hasSubmitted = true
+                //val previousInfo = membershipGroupReaderProvider.getGroupReader(upgradedVNodeInfo.holdingIdentity).lookup(x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)?.serial
+                val registrationContext = registrationRequest.memberProvidedContext.toMap()
+                println(registrationContext)
+
+                var hasSubmitted = false
+                while (!hasSubmitted) {
+                    val registrationResult =
+                        memberResourceClient
+                            .startRegistration(upgradedVNodeInfo.holdingIdentity.shortHash, registrationContext)
+                    if (registrationResult.registrationStatus == SubmittedRegistrationStatus.SUBMITTED) {
+                        hasSubmitted = true
+                    }
                 }
             }
         }
