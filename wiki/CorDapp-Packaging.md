@@ -102,7 +102,7 @@ To use it import DigiCert certificate.
 
 1. Save the following text into a file named `digicert-ca.pem`
     ```text
-      -----BEGIN CERTIFICATE-----
+   -----BEGIN CERTIFICATE-----
    MIIFkDCCA3igAwIBAgIQBZsbV56OITLiOQe9p3d1XDANBgkqhkiG9w0BAQwFADBi
    MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
    d3cuZGlnaWNlcnQuY29tMSEwHwYDVQQDExhEaWdpQ2VydCBUcnVzdGVkIFJvb3Qg
