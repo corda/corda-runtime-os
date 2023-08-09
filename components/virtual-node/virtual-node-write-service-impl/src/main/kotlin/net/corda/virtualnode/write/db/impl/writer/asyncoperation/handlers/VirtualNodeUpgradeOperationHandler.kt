@@ -122,8 +122,9 @@ internal class VirtualNodeUpgradeOperationHandler(
         logger.info("memberResourceClient: " + memberResourceClient.isRunning)
         logger.info("membershipGroupReaderProvider: " + membershipGroupReaderProvider.isRunning)
         logger.info("membershipQueryClient: " + membershipQueryClient.isRunning)
+        logger.info("querymemberinfo: " + membershipQueryClient.queryMemberInfo(upgradedVNodeInfo.holdingIdentity).toString())
         // Re-register the member once the virtual node has been upgraded, so that the member CPI version is up-to-date
-        if(membershipQueryClient.isRunning) {
+        if(!membershipQueryClient.queryRegistrationRequests(upgradedVNodeInfo.holdingIdentity, limit = 1).getOrThrow().isNullOrEmpty()) {
             logger.info("membershipQueryClient is running, updating member cpi version")
             logger.warn(membershipGroupReaderProvider.toString())
 
