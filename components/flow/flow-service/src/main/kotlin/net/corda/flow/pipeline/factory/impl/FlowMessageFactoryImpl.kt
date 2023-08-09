@@ -42,10 +42,10 @@ class FlowMessageFactoryImpl(private val currentTimeProvider: () -> Instant) : F
         }
     }
 
-    override fun createFlowKilledStatusMessage(checkpoint: FlowCheckpoint, message: String?): FlowStatus {
+    override fun createFlowKilledStatusMessage(checkpoint: FlowCheckpoint, message: String): FlowStatus {
         return getCommonFlowStatus(checkpoint).apply {
             flowStatus = FlowStates.KILLED
-            message?.let { processingTerminatedReason = it }
+            processingTerminatedReason = message
         }
     }
 

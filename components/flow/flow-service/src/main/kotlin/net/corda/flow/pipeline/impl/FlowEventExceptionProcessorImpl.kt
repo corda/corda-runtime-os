@@ -290,7 +290,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             }
     }
 
-    private fun createFlowKilledStatusRecord(checkpoint: FlowCheckpoint, message: String?): List<Record<*, *>> {
+    private fun createFlowKilledStatusRecord(checkpoint: FlowCheckpoint, message: String): List<Record<*, *>> {
         return createStatusRecord(checkpoint.flowId) {
             flowMessageFactory.createFlowKilledStatusMessage(checkpoint, message)
         }
