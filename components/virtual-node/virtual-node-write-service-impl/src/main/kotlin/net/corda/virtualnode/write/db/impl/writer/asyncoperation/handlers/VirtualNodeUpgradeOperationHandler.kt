@@ -141,7 +141,8 @@ internal class VirtualNodeUpgradeOperationHandler(
                     .getOrThrow()
                     .first()
 
-                //val previousInfo = membershipGroupReaderProvider.getGroupReader(upgradedVNodeInfo.holdingIdentity).lookup(x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)?.serial
+                //val previousInfo = membershipGroupReaderProvider.getGroupReader(upgradedVNodeInfo.holdingIdentity)
+                // .lookup(x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)?.serial
                 val registrationContext = registrationRequest.memberProvidedContext.toMap()
                 println(registrationContext)
 
