@@ -234,7 +234,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         if (useDaemon.get()) {
             logger.info("Daemon available")
             def imageName = "${baseImageTag.get().empty ? baseImageName.get() : "${baseImageName.get()}:${baseImageTag.get()}"}"
-            if (imageName.endsWith("latest-local-${cordaProductVersion }") {
+            if (imageName.endsWith("latest-local-${cordaProductVersion}")) {
                 logger.info("Resolving base image ${baseImageName.get()}:${baseImageTag.get()} from local Docker daemon")
                 builder = Jib.from(DockerDaemonImage.named(imageName))
             } else if (imageName.contains("software.r3.com")) {
