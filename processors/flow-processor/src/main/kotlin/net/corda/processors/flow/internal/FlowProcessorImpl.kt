@@ -6,8 +6,6 @@ import net.corda.cpk.read.CpkReadService
 import net.corda.flow.p2p.filter.FlowP2PFilterService
 import net.corda.flow.service.FlowService
 import net.corda.interop.identity.cache.InteropIdentityRegistryService
-import net.corda.ledger.utxo.token.cache.factories.TokenCacheComponentFactory
-import net.corda.ledger.utxo.token.cache.services.TokenCacheComponent
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator

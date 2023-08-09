@@ -6,7 +6,6 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.pipeline.metrics.FlowMetrics
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.interop.identity.cache.InteropIdentityRegistryService
 import net.corda.interop.identity.cache.InteropIdentityRegistryView
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext

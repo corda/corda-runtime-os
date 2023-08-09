@@ -1,8 +1,6 @@
 package net.corda.interop.rest.impl.v1
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.ObjectNode
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
@@ -119,7 +117,7 @@ internal class InteropRestResourceImpl @Activate constructor(
         return groupPolicyJson["groupId"].asText()
     }
 
-    @Suppress("IllegalComment")
+    @Suppress("ForbiddenComment")
     override fun createInterOpIdentity(
         createInteropIdentityRestRequest: CreateInteropIdentityRest.Request,
         holdingIdentityShortHash: String
@@ -178,8 +176,7 @@ internal class InteropRestResourceImpl @Activate constructor(
                 groupId = interopGroupId,
                 x500Name = ownedInteropIdentityX500,
                 owningVirtualNodeShortHash = vNodeInfo.getVNodeShortHash(),
-                // TODO: Determine initial facade IDs
-                facadeIds = listOf(),
+                facadeIds = facadeIds(),
                 applicationName = createInteropIdentityRestRequest.applicationName,
                 // TODO: Fetch these from the member info topic
                 endpointUrl = "endpointUrl",
@@ -209,6 +206,12 @@ internal class InteropRestResourceImpl @Activate constructor(
             Utils.computeShortHash(ownedInteropIdentityX500, interopGroupId)
         )
     }
+
+    private fun facadeIds() = listOf(
+        FacadeId.of("org.corda.interop/platform/tokens/v1.0"),
+        FacadeId.of("org.corda.interop/platform/tokens/v2.0"),
+        FacadeId.of("org.corda.interop/platform/tokens/v3.0")
+    )
 
     override fun getInterOpIdentities(holdingIdentityShortHash: String): List<InteropIdentityResponse> {
         val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(holdingIdentityShortHash)

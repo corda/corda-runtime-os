@@ -6,22 +6,21 @@ import net.corda.flow.application.services.impl.interop.facade.FacadeRequestImpl
 import net.corda.flow.application.services.impl.interop.facade.FacadeResponseImpl
 import net.corda.flow.application.services.impl.interop.proxies.JacksonJsonMarshallerAdaptor
 import net.corda.flow.application.services.impl.interop.proxies.getClientProxy
-import net.corda.interop.identity.cache.InteropIdentityRegistryService
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.v5.application.interop.FacadeService
+import net.corda.v5.application.interop.InterOpIdentityInfo
 import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
-import net.corda.v5.application.interop.FacadeService
+import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.messaging.FlowMessaging
+import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.messaging.FlowMessaging
-import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.interop.InterOpIdentityInfo
 import org.slf4j.LoggerFactory
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
@@ -40,10 +39,10 @@ class FacadeServiceImpl @Activate constructor(
 
     @Suspendable
     override fun <T : Any?> getProxy(facadeId: String?, expectedType: Class<T>?, interOpIdentity: InterOpIdentityInfo): T {
-        logger.info("Creating Proxy for: facadeId=$facadeId, expectedType=$expectedType, interOpIdentity=${interOpIdentity.applicationName}, " +
+        logger.info("Creating Proxy for: facadeId=$facadeId," +
+                " expectedType=$expectedType, interOpIdentity=${interOpIdentity.applicationName}, " +
                 "interopGroup=${interOpIdentity.groupId}") //TODO lower level to debug
         require(facadeId != null)
-        require(interOpIdentity != null)
         require(expectedType != null)
         val facade = facadeLookup(facadeId)
         val x500Name = MemberX500Name.parse(interOpIdentity.x500Name)

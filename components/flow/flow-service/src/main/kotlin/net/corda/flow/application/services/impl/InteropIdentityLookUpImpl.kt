@@ -3,15 +3,16 @@ package net.corda.flow.application.services.impl
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.interop.identity.cache.InteropIdentityRegistryView
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.v5.application.interop.InterOpIdentityInfo
 import net.corda.v5.application.interop.InteropIdentityLookUp
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.interop.InterOpIdentityInfo
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.slf4j.LoggerFactory
 
 @Component(service = [InteropIdentityLookUp::class, UsedByFlow::class], scope = PROTOTYPE)
 class InteropIdentityLookUpImpl @Activate constructor(
@@ -20,8 +21,14 @@ class InteropIdentityLookUpImpl @Activate constructor(
     ) :
     InteropIdentityLookUp, UsedByFlow, SingletonSerializeAsToken {
 
+    private val logger = LoggerFactory.getLogger(this::class.java)
+
     @Suspendable
     override fun lookup(applicationName: String): InterOpIdentityInfo? {
+//        logger.info("Number Of Identities In Repo: ${getInteropRegistry().getIdentitiesByApplicationName().size}")
+//        getInteropRegistry().getIdentitiesByApplicationName().forEach{
+//            logger.info("${it.key}")
+//        }
         val identityInfo = getInteropRegistry().getIdentitiesByApplicationName()[applicationName] ?: return null
         return InteropIdentityInfoImpl(identityInfo.applicationName,identityInfo.facadeIds,identityInfo.x500Name,identityInfo.groupId)
     }
@@ -40,7 +47,7 @@ class InteropIdentityLookUpImpl @Activate constructor(
 
 data class InteropIdentityInfoImpl(
     private val applicationName: String,
-    private val facadeIds: List<String>,
+    private val facadeIds: List<FacadeId>,
     private val x500Name: String,
     private val groupId: String
 ) : InterOpIdentityInfo {
@@ -49,7 +56,7 @@ data class InteropIdentityInfoImpl(
     }
 
 
-    override fun getFacadeIds(): List<String> {
+    override fun getFacadeIds(): List<FacadeId> {
         return facadeIds
     }
 

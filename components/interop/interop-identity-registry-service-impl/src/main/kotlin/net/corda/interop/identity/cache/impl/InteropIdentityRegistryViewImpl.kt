@@ -1,10 +1,9 @@
 package net.corda.interop.identity.cache.impl
 
-import java.util.Collections
-import kotlin.collections.HashMap
-import kotlin.collections.HashSet
 import net.corda.interop.core.InteropIdentity
 import net.corda.interop.identity.cache.InteropIdentityRegistryView
+import net.corda.v5.application.interop.facade.FacadeId
+import java.util.*
 
 
 class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: String): InteropIdentityRegistryView {
@@ -29,8 +28,8 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: String):
         }
     }
 
-    private fun getOrCreateByFacadeIdEntry(facadeId: String): HashSet<InteropIdentity> {
-        return byFacadeId.computeIfAbsent(facadeId) {
+    private fun getOrCreateByFacadeIdEntry(facadeId: FacadeId): HashSet<InteropIdentity> {
+        return byFacadeId.computeIfAbsent(facadeId.toString()) {
             HashSet()
         }
     }
@@ -43,6 +42,7 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: String):
                 "Unable to add identity $identity to view of virtual node $virtualNodeShortHash, " +
                 "specified virtual node already owns an identity in this interop group."
             }
+
             myIdentities[identity.groupId] = identity
         }
 
