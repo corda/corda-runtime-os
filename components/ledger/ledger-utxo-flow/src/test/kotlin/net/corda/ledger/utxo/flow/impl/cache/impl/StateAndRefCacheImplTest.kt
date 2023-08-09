@@ -47,7 +47,7 @@ class StateAndRefCacheImplTest {
     }
 
     @Test
-    fun `put entries and get entries one by one from the cache`() {
+    fun `put entry and get entry from the cache`() {
         stateAndRefCache.putAll(listOf(STATE_AND_REF_1))
 
         val result = stateAndRefCache.get(setOf(STATE_REF_1))

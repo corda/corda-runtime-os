@@ -45,6 +45,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.nio.ByteBuffer
 
+@Suppress("LongParameterList")
 @Component(
     service = [UtxoLedgerPersistenceService::class, UsedByFlow::class],
     property = [CORDA_SYSTEM_SERVICE],
