@@ -67,7 +67,7 @@ internal class InboundMessageHandler(
     private var p2pInPublisher = PublisherWithDominoLogic(
         publisherFactory,
         lifecycleCoordinatorFactory,
-        PublisherConfig("inbound-message-handler", false),
+        PublisherConfig("inbound-message-handler", true),
         messagingConfiguration
     )
     private val sessionPartitionMapper = SessionPartitionMapperImpl(
