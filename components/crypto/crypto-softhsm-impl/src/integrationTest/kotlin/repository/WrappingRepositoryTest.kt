@@ -87,10 +87,9 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
         repo.saveKey(keyAlias, wrappingKeyInfo)
         val loadedKeyAndId = repo.findKeyAndId(keyAlias)
 
-        if (loadedKeyAndId != null) {
-            assertInstanceOf(UUID::class.java, loadedKeyAndId.first)
-            assertThat(loadedKeyAndId.second).isEqualTo(wrappingKeyInfo)
-        }
+        assertThat(loadedKeyAndId).isNotNull()
+        assertInstanceOf(UUID::class.java, loadedKeyAndId!!.first)
+        assertThat(loadedKeyAndId.second).isEqualTo(wrappingKeyInfo)
     }
 
     @ParameterizedTest
@@ -113,8 +112,8 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
         val loadedKeyAndId2 = repo.findKeyAndId(keyAlias)
 
         assertThat(updatedKey).isEqualTo(wrappingKeyInfo2)
-        if (loadedKeyAndId != null && loadedKeyAndId2 != null)  {
-            assertThat(loadedKeyAndId.first).isEqualTo(loadedKeyAndId2.first)
-        }
+        assertThat(loadedKeyAndId).isNotNull()
+        assertThat(loadedKeyAndId2).isNotNull()
+        assertThat(loadedKeyAndId!!.first).isEqualTo(loadedKeyAndId2!!.first)
     }
 }
