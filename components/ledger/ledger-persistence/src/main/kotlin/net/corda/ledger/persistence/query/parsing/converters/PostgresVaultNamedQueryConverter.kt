@@ -1,5 +1,7 @@
 package net.corda.ledger.persistence.query.parsing.converters
 
+import net.corda.ledger.persistence.query.parsing.JsonCast
+import net.corda.ledger.persistence.query.parsing.JsonKeyExists
 import net.corda.ledger.persistence.query.parsing.Token
 import net.corda.orm.DatabaseTypeProvider
 import net.corda.orm.DatabaseTypeProvider.Companion.POSTGRES_TYPE_FILTER
@@ -18,5 +20,12 @@ class PostgresVaultNamedQueryConverter @Activate constructor(
     }
 
     override fun preProcess(outputTokens: List<Token>) = outputTokens
-    override fun customConvert(token: Token): String? = null
+
+    override fun customConvert(token: Token): String? {
+        return when (token) {
+            is JsonKeyExists -> " \\?\\? "
+            is JsonCast -> "\\:\\:${token.value}"
+            else -> null
+        }
+    }
 }

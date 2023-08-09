@@ -10,9 +10,7 @@ import net.corda.ledger.persistence.query.parsing.In
 import net.corda.ledger.persistence.query.parsing.IsNotNull
 import net.corda.ledger.persistence.query.parsing.IsNull
 import net.corda.ledger.persistence.query.parsing.JsonArrayOrObjectAsText
-import net.corda.ledger.persistence.query.parsing.JsonCast
 import net.corda.ledger.persistence.query.parsing.JsonField
-import net.corda.ledger.persistence.query.parsing.JsonKeyExists
 import net.corda.ledger.persistence.query.parsing.LeftParentheses
 import net.corda.ledger.persistence.query.parsing.LessThan
 import net.corda.ledger.persistence.query.parsing.LessThanEquals
@@ -68,8 +66,6 @@ abstract class AbstractVaultNamedQueryConverterImpl : VaultNamedQueryConverter {
             is IsNotNull -> " IS NOT NULL "
             is LeftParentheses -> "("
             is RightParentheses -> ")"
-            is JsonKeyExists -> " \\?\\? "
-            is JsonCast -> "\\:\\:${token.value}"
             is Like -> " LIKE "
             is ParameterEnd -> ", "
             else -> customConvert(token) ?: throw IllegalArgumentException("Invalid token in expression - $token")
