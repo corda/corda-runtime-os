@@ -7,7 +7,7 @@ import net.corda.v5.application.interop.facade.FacadeId
 data class InteropIdentity(
     val x500Name: String,
     val groupId: String,
-    val owningVirtualNodeShortHash: String,
+    val owningVirtualNodeShortHash: String? = null,
     val facadeIds: List<FacadeId>,
     val applicationName: String,
     val endpointUrl: String,
@@ -16,7 +16,7 @@ data class InteropIdentity(
     val shortHash = Utils.computeShortHash(x500Name, groupId)
 
     companion object {
-        fun of(virtualNodeShortHash: String, interopIdentity: PersistentInteropIdentity): InteropIdentity = InteropIdentity(
+        fun of(virtualNodeShortHash: String?, interopIdentity: PersistentInteropIdentity): InteropIdentity = InteropIdentity(
             interopIdentity.x500Name,
             interopIdentity.groupId,
             virtualNodeShortHash,
@@ -35,6 +35,7 @@ data class InteropIdentity(
 
         if (x500Name != other.x500Name) return false
         if (groupId != other.groupId) return false
+        if (owningVirtualNodeShortHash != other.owningVirtualNodeShortHash) return false
         return shortHash == other.shortHash
     }
 

@@ -1,13 +1,13 @@
 package net.corda.interop.identity.write.impl
 
 import net.corda.data.interop.PersistentInteropIdentity
+import net.corda.interop.core.InteropIdentity
 import net.corda.interop.core.Utils.Companion.computeShortHash
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.INTEROP_IDENTITY_TOPIC
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
-import net.corda.interop.core.InteropIdentity
 
 
 class InteropIdentityProducer(
@@ -31,10 +31,14 @@ class InteropIdentityProducer(
             for (facade in identity.facadeIds) {
                 listOfFacades.add(facade.toString())
             }
+
+        val isLocal = identity.owningVirtualNodeShortHash == holdingIdentityShortHash
+        logger.debug("Publishing Interop Identity for $holdingIdentityShortHash. Is Local $isLocal")
+
         val recordValue = PersistentInteropIdentity(
             identity.groupId,
             identity.x500Name,
-            identity.owningVirtualNodeShortHash == holdingIdentityShortHash,
+            isLocal,
             listOfFacades,
             identity.applicationName,
             identity.endpointUrl,

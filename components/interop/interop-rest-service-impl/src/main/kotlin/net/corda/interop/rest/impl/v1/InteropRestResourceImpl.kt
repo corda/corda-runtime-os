@@ -14,16 +14,7 @@ import net.corda.libs.interop.endpoints.v1.types.CreateInteropIdentityRest
 import net.corda.libs.interop.endpoints.v1.types.ExportInteropIdentityRest
 import net.corda.libs.interop.endpoints.v1.types.ImportInteropIdentityRest
 import net.corda.libs.interop.endpoints.v1.types.InteropIdentityResponse
-import net.corda.lifecycle.DependentComponents
-import net.corda.lifecycle.Lifecycle
-import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.*
 import net.corda.membership.group.policy.validation.InteropGroupPolicyValidator
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.BadRequestException
@@ -191,7 +182,6 @@ internal class InteropRestResourceImpl @Activate constructor(
                 InteropIdentity(
                     groupId = interopGroupId,
                     x500Name = member.x500Name,
-                    owningVirtualNodeShortHash = member.owningIdentityShortHash,
                     facadeIds = member.facadeIds.map { FacadeId.of(it) },
                     applicationName = MemberX500Name.parse(member.x500Name).organization,
                     endpointUrl = member.endpointUrl,
@@ -248,7 +238,9 @@ internal class InteropRestResourceImpl @Activate constructor(
         }
         if (interopIdentityToExport.owningVirtualNodeShortHash != vNodeShortHash) {
             throw InvalidInputDataException(
-                "Only owned identities may be exported."
+                "Only owned identities may be exported. Y" +
+                        "THe Requested Identity shorthash is: ${interopIdentityToExport.owningVirtualNodeShortHash}" +
+                        "& yours is $vNodeShortHash"
             )
         }
         val groupPolicy = checkNotNull(interopGroupPolicyReadService.getGroupPolicy(interopIdentityToExport.groupId)) {
@@ -258,7 +250,7 @@ internal class InteropRestResourceImpl @Activate constructor(
             listOf(
                 ExportInteropIdentityRest.MemberData(
                     interopIdentityToExport.x500Name,
-                    interopIdentityToExport.owningVirtualNodeShortHash,
+                    interopIdentityToExport.owningVirtualNodeShortHash!!,
                     interopIdentityToExport.endpointUrl,
                     interopIdentityToExport.endpointProtocol,
                     interopIdentityToExport.facadeIds.map { it.toString() }
@@ -302,7 +294,6 @@ internal class InteropRestResourceImpl @Activate constructor(
                 InteropIdentity(
                     groupId = interopGroupId,
                     x500Name = member.x500Name,
-                    owningVirtualNodeShortHash = member.owningIdentityShortHash,
                     facadeIds = member.facadeIds.map { FacadeId.of(it) },
                     applicationName = MemberX500Name.parse(member.x500Name).organization,
                     endpointUrl = member.endpointUrl,

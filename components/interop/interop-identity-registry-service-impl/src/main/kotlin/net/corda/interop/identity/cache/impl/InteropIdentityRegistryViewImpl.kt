@@ -49,7 +49,9 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: String):
         interopIdentities.add(identity)
 
         getOrCreateByGroupIdEntry(identity.groupId).add(identity)
-        getOrCreateByVirtualNodeEntry(identity.owningVirtualNodeShortHash).add(identity)
+        identity.owningVirtualNodeShortHash?.let {
+            getOrCreateByVirtualNodeEntry(it).add(identity)
+        }
 
         // Safety check for short hash collisions
         require(byShortHash[identity.shortHash] == null || byShortHash[identity.shortHash] == identity) {

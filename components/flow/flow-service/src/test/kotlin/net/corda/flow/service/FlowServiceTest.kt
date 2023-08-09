@@ -1,11 +1,11 @@
 package net.corda.flow.service
 
-import java.util.stream.Stream
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.external.messaging.services.ExternalMessagingRoutingService
 import net.corda.flow.MINIMUM_SMART_CONFIG
 import net.corda.flow.scheduler.FlowWakeUpScheduler
+import net.corda.interop.identity.cache.InteropIdentityRegistryService
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
@@ -15,11 +15,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
+import org.mockito.kotlin.*
+import java.util.stream.Stream
 
 class FlowServiceTest {
 
@@ -31,7 +28,8 @@ class FlowServiceTest {
                 Arguments.of(LifecycleCoordinatorName.forComponent<SandboxGroupContextComponent>()),
                 Arguments.of(LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()),
                 Arguments.of(LifecycleCoordinatorName.forComponent<CpiInfoReadService>()),
-                Arguments.of(LifecycleCoordinatorName.forComponent<FlowExecutor>())
+                Arguments.of(LifecycleCoordinatorName.forComponent<FlowExecutor>(),
+                Arguments.of(LifecycleCoordinatorName.forComponent<InteropIdentityRegistryService>()))
             )
         }
     }
@@ -147,6 +145,7 @@ class FlowServiceTest {
             addDependency<VirtualNodeInfoReadService>()
             addDependency<CpiInfoReadService>()
             addDependency<FlowExecutor>()
+            addDependency<InteropIdentityRegistryService>()
 
             FlowService(
                 coordinatorFactory,
