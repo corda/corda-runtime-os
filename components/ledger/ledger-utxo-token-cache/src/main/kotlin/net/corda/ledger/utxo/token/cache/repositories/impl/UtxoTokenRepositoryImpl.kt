@@ -90,9 +90,7 @@ class UtxoTokenRepositoryImpl @Activate constructor(
         setParameterIfNecessaryOwnerHash(ownerHash, query)
         setParameterIfNecessaryRegexTag(regexTag, query)
 
-        val balance = BigDecimal((query.singleResult as Number).toInt())
-
-        return balance
+        return query.resultListAsTuples().first()[0] as BigDecimal
     }
 
     private fun setParameterIfNecessaryOwnerHash(ownerHash: String?, query: Query) {
