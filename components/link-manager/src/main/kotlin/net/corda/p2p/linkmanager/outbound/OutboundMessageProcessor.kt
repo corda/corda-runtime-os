@@ -135,8 +135,8 @@ internal class OutboundMessageProcessor(
         } catch (e: Exception) {
             return "destination '${destination.x500Name}' is not a valid X500 name: ${e.message}"
         }
-        val sourceMemberInfo = membershipGroupReaderProvider.lookup(source.toCorda(), source.toCorda(), filter)
-        val destinationMemberInfo = membershipGroupReaderProvider.lookup(source.toCorda(), destination.toCorda(), filter)
+        val sourceMemberInfo = membershipGroupReaderProvider.lookup(cordaSource, cordaSource, filter)
+        val destinationMemberInfo = membershipGroupReaderProvider.lookup(cordaSource, cordaDestination, filter)
         return if (source.groupId != destination.groupId) {
             "group IDs do not match"
         } else if (!linkManagerHostingMap.isHostedLocally(sourceMemberInfo)) {
