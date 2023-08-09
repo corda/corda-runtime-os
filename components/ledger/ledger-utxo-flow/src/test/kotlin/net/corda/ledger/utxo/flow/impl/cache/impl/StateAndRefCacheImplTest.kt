@@ -47,7 +47,7 @@ class StateAndRefCacheImplTest {
     }
 
     @Test
-    fun `put entries one by one and get entries in bulk from the cache`() {
+    fun `put entries and get entries one by one from the cache`() {
         stateAndRefCache.putAll(listOf(STATE_AND_REF_1))
 
         val result = stateAndRefCache.get(setOf(STATE_REF_1))
@@ -74,17 +74,6 @@ class StateAndRefCacheImplTest {
     @Test
     fun `put entries in bulk and get entries in bulk from the cache`() {
         stateAndRefCache.putAll(listOf(STATE_AND_REF_1, STATE_AND_REF_2))
-
-        val result = stateAndRefCache.get(setOf(STATE_REF_1, STATE_REF_2))
-
-        assertThat(result).hasSize(2)
-        assertThat(result.values).containsExactly(STATE_AND_REF_1, STATE_AND_REF_2)
-    }
-
-    @Test
-    fun `put and get multiple entries from the cache`() {
-        stateAndRefCache.putAll(listOf(STATE_AND_REF_1))
-        stateAndRefCache.putAll(listOf(STATE_AND_REF_2))
 
         val result = stateAndRefCache.get(setOf(STATE_REF_1, STATE_REF_2))
 
