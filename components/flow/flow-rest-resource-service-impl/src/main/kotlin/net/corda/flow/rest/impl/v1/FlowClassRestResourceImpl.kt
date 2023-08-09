@@ -81,7 +81,7 @@ class FlowClassRestResourceImpl @Activate constructor(
         }
     }
 
-    @Deprecated("Deprecated in favour of getAllStartableFlowsList")
+    @Deprecated("Deprecated in favour of getStartableFlowsList")
     override fun getStartableFlows(holdingIdentityShortHash: String): ResponseEntity<StartableFlowsResponse> {
         "Deprecated, please use next version at ${RestApiVersion.C5_1} or above.".let { msg ->
             log.warn(msg)
