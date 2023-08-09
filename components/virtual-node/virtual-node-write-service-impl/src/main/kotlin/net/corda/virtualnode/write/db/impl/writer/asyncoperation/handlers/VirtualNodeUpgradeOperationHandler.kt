@@ -124,9 +124,8 @@ internal class VirtualNodeUpgradeOperationHandler(
         logger.info("membershipQueryClient: " + membershipQueryClient.isRunning)
         logger.info("querymemberinfo: " + membershipQueryClient.queryMemberInfo(upgradedVNodeInfo.holdingIdentity).toString())
         // Re-register the member once the virtual node has been upgraded, so that the member CPI version is up-to-date
-        if(membershipQueryClient.isRunning) {
-            if (!membershipQueryClient.queryRegistrationRequests(upgradedVNodeInfo.holdingIdentity, limit = 1)
-                    .getOrThrow().isNullOrEmpty()
+        if(membershipQueryClient.isRunning && membershipQueryClient.queryRegistrationRequests(upgradedVNodeInfo.holdingIdentity, limit = 1)
+                    .getOrThrow().isNotEmpty()
             ) {
                 logger.info("membershipQueryClient is running, updating member cpi version")
                 logger.warn(membershipGroupReaderProvider.toString())
@@ -156,7 +155,6 @@ internal class VirtualNodeUpgradeOperationHandler(
                     }
                 }
             }
-        }
 
         if (migrationUtility.areChangesetsDeployedOnVault(
                 request.virtualNodeShortHash,
