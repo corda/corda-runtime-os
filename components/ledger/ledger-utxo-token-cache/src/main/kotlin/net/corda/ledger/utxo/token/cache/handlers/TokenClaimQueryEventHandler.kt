@@ -34,7 +34,7 @@ class TokenClaimQueryEventHandler(
         val selectedTokens = mutableListOf<CachedToken>()
         var selectedAmount = BigDecimal.ZERO
 
-        for (token in filterStrategy.filterTokens(availableTokens.token, event)) {
+        for (token in filterStrategy.filterTokens(availableTokens.tokens, event)) {
             if (selectedAmount >= event.targetAmount) {
                 break
             }
