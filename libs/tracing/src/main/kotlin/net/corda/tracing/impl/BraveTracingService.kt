@@ -129,6 +129,8 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         tracing.tracer()
     }
 
+    override fun getCurrentTraceId(): String = tracer.currentSpan().context().traceIdString()
+
     private val recordInjector by lazy {
         tracing.propagation().injector { param: MutableList<Pair<String, String>>, key: String, value: String ->
             param.removeAll { it.first == key }

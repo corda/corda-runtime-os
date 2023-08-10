@@ -119,6 +119,10 @@ class NoopTracingService : TracingService {
         return NoopBatchRecordTracer()
     }
 
+    override fun getCurrentTraceId(): String {
+        return ""
+    }
+
     override fun close() {
     }
 }

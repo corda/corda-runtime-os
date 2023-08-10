@@ -22,6 +22,7 @@ import net.corda.rest.server.impl.internal.ParameterRetrieverFactory
 import net.corda.rest.server.impl.internal.ParametersRetrieverContext
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
 import net.corda.rest.server.impl.security.provider.credentials.CredentialResolver
+import net.corda.tracing.currentTraceId
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import net.corda.utilities.withMDC
@@ -127,6 +128,7 @@ internal object ContextUtils {
                     ctx.buildJsonResult(result, this.method.method.returnType)
 
                     ctx.header(Header.CACHE_CONTROL, "no-cache")
+                    ctx.header("X-B3-TraceId", currentTraceId())
                     methodLogger.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
                 } catch (e: Exception) {
                     "Error invoking path '${this.fullPath}' - ${e.message}".let {

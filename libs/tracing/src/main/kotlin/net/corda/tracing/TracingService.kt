@@ -26,5 +26,7 @@ interface TracingService : AutoCloseable {
     fun getTracedServletFilter(): Filter
 
     fun traceBatch(operationName: String): BatchRecordTracer
+
+    fun getCurrentTraceId(): String
 }
 
