@@ -59,6 +59,15 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         ).build()
 
         val sampler = sampler(samplesPerSecond)
+        when (samplesPerSecond) {
+            is PerSecond -> {
+                logger.info("Tracing will sample ${samplesPerSecond.samplesPerSecond} requests per second")
+            }
+
+            is Unlimited -> {
+                logger.info("Tracing will sample unlimited requests per second")
+            }
+        }
 
         val tracingBuilder = Tracing.newBuilder().currentTraceContext(braveCurrentTraceContext).supportsJoin(false)
             .localServiceName(serviceName).traceId128Bit(true).sampler(sampler).propagationFactory(
@@ -85,14 +94,12 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         tracingBuilder.build().also(resourcesToClose::push)
     }
 
-    private fun sampler(samplesPerSecond: SampleRate): Sampler? = when (samplesPerSecond) {
+    private fun sampler(samplesPerSecond: SampleRate): Sampler = when (samplesPerSecond) {
         is PerSecond -> {
-            logger.info("Tracing will sample ${samplesPerSecond.samplesPerSecond} requests per second")
             RateLimitingSampler.create(samplesPerSecond.samplesPerSecond)
         }
 
         is Unlimited -> {
-            logger.info("Tracing will sample unlimited requests per second")
             Sampler.ALWAYS_SAMPLE
         }
     }
