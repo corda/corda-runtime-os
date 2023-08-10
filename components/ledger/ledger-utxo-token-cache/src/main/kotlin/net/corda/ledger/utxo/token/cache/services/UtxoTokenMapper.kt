@@ -1,9 +1,12 @@
 package net.corda.ledger.utxo.token.cache.services
 
 import java.math.BigDecimal
+import java.math.BigInteger
+import java.nio.ByteBuffer
 import javax.persistence.Tuple
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.ledger.utxo.token.selection.data.Token
+import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.v5.ledger.utxo.StateRef
 
@@ -52,7 +55,18 @@ class UtxoTokenMapper() : TokenMapper {
         override val ownerHash: String
     ) : CachedToken {
         override fun toAvro(): Token {
-            TODO("Not yet implemented")
+            return createToken(stateRef, amount, tag, ownerHash)
         }
+
+        private fun createToken(stateRef: String, amount: BigDecimal, tag: String, ownerHash: String): Token =
+            Token().apply {
+                this.stateRef = stateRef
+                this.amount = net.corda.data.ledger.utxo.token.selection.data.TokenAmount(
+                    amount.scale(),
+                    ByteBuffer.wrap(amount.unscaledValue().toByteArray())
+                )
+                this.tag = tag
+                this.ownerHash = ownerHash
+            }
     }
 }

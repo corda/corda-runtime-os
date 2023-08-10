@@ -77,7 +77,6 @@ class UtxoTokenRepositoryImpl @Activate constructor(
         regexTag: String?
     ): BigDecimal {
         val sqlQuery = sqlQueryProvider.getBalanceQuery(
-            QUERY_RESULT_TOKEN_LIMIT,
             regexTag != null,
             ownerHash != null
         )

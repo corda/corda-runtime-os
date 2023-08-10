@@ -61,7 +61,7 @@ class SpendCoinFlow : ClientStartableFlow {
 
             val selectionCriteria = TokenClaimCriteria(
                 CoinState.tokenType,
-                digestService.hash(spendRequest.issuerBankX500.toByteArray(), DigestAlgorithmName.SHA2_256),
+                digestService.parseSecureHash("SHA-256:54111C3F78233454D7F53AE7748F47298810B28F75FA652E42AA3FAA2E80049F"),
                 notary.name,
                 spendRequest.currency,
                 BigDecimal(spendRequest.targetAmount)
@@ -88,57 +88,57 @@ class SpendCoinFlow : ClientStartableFlow {
 //                it.memberProvidedContext["corda.notary.service.name"] == notary.commonName
 //            }.ledgerKeys.first()
 
-            val me = memberLookup.myInfo()
-            val spendCoinMessage = requestBody.getRequestBodyAs(jsonMarshallingService, SpendCoinMessage::class.java)
-            val bankX500 = MemberX500Name.parse(spendCoinMessage.issuerBankX500)
+//            val me = memberLookup.myInfo()
+//            val spendCoinMessage = requestBody.getRequestBodyAs(jsonMarshallingService, SpendCoinMessage::class.java)
+//            val bankX500 = MemberX500Name.parse(spendCoinMessage.issuerBankX500)
+//
+//            val bank = requireNotNull(memberLookup.lookup(bankX500)) {
+//                "Member $bankX500 does not exist in the membership group"
+//            }
+//
+//            val participants = listOf(me.ledgerKeys.first(), bank.ledgerKeys.first())
+//
+//            log.info("Creating transaction...")
+//            val txBuilder = utxoLedgerService.createTransactionBuilder()
 
-            val bank = requireNotNull(memberLookup.lookup(bankX500)) {
-                "Member $bankX500 does not exist in the membership group"
-            }
-
-            val participants = listOf(me.ledgerKeys.first(), bank.ledgerKeys.first())
-
-            log.info("Creating transaction...")
-            val txBuilder = utxoLedgerService.createTransactionBuilder()
-
-            @Suppress("DEPRECATION")
-            val signedTransaction = txBuilder
-                .setNotary(notary.name)
-                .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(TimeUnit.DAYS.toMillis(1)))
-                .addInputStates(spentCoins)
-                .addCommand(TestCommand())
-                .addSignatories(participants)
-                .toSignedTransaction()
-
-            val bankSession = flowMessaging.initiateFlow(bank.name)
-
-            val ret = try {
-                val finalizedSignedTransaction = utxoLedgerService.finalize(
-                    signedTransaction,
-                    listOf(bankSession)
-                )
-
-                log.info("Created and finalised transaction with id='${finalizedSignedTransaction.transaction.id}'")
-                finalizedSignedTransaction.transaction.id.toString()
-            } catch (e: Exception) {
-                log.warn("Finality failed", e)
-                "Finality failed, ${e.message}"
-            }
-
-            log.info("Return value: $ret")
-
-            val coinsToRelease =
-                tokenClaim.claimedTokens.drop(spendRequest.maxCoinsToUse).map { it.stateRef.toString() }
+//            @Suppress("DEPRECATION")
+//            val signedTransaction = txBuilder
+//                .setNotary(notary.name)
+//                .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(TimeUnit.DAYS.toMillis(1)))
+//                .addInputStates(spentCoins)
+//                .addCommand(TestCommand())
+//                .addSignatories(participants)
+//                .toSignedTransaction()
+//
+//            val bankSession = flowMessaging.initiateFlow(bank.name)
+//
+//            val ret = try {
+//                val finalizedSignedTransaction = utxoLedgerService.finalize(
+//                    signedTransaction,
+//                    listOf(bankSession)
+//                )
+//
+//                log.info("Created and finalised transaction with id='${finalizedSignedTransaction.transaction.id}'")
+//                finalizedSignedTransaction.transaction.id.toString()
+//            } catch (e: Exception) {
+//                log.warn("Finality failed", e)
+//                "Finality failed, ${e.message}"
+//            }
+//
+//            log.info("Return value: $ret")
+//
+//            val coinsToRelease =
+//                tokenClaim.claimedTokens.drop(spendRequest.maxCoinsToUse).map { it.stateRef.toString() }
 
             val response = SpendCoinResponseMessage(
                 foundCoins = tokenClaim.claimedTokens,
                 spentCoins = spentCoins.map { it.toString() },
-                releasedCoins = coinsToRelease
+                releasedCoins = emptyList()//coinsToRelease
             )
 
-            log.info("Releasing claim...")
-            tokenClaim.useAndRelease(spentCoins)
-            log.info("Claim released.")
+//            log.info("Releasing claim...")
+//            tokenClaim.useAndRelease(spentCoins)
+//            log.info("Claim released.")
 
             return jsonMarshallingService.format(response)
         } catch (e: Exception) {

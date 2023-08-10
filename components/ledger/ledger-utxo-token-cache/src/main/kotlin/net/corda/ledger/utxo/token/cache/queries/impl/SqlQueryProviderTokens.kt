@@ -19,7 +19,7 @@ class SqlQueryProviderTokens @Activate constructor() : SqlQueryProvider {
         val SQL_PARAMETER_TAG_FILTER = "tag"
     }
 
-    override fun getBalanceQuery(limit: Int, includeTagFilter: Boolean, includeOwnerFilter: Boolean): String {
+    override fun getBalanceQuery(includeTagFilter: Boolean, includeOwnerFilter: Boolean): String {
         val tagFilter = if(includeTagFilter){
             "AND   token_tag ~ :$SQL_PARAMETER_TAG_FILTER"
         }else{
