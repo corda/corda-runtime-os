@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.token.cache.services
 
 import java.math.BigDecimal
-import java.math.BigInteger
 import java.nio.ByteBuffer
 import javax.persistence.Tuple
 import net.corda.crypto.core.parseSecureHash
