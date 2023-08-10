@@ -8,7 +8,9 @@ import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 @Suppress("TooManyFunctions")
 interface UtxoTokenRepository {
 
-    /** Retrieves tokens */
+    /**
+     * Retrieves a set of tokens
+     */
     fun findTokens(
         entityManager: EntityManager,
         poolKey: TokenPoolKey,
@@ -16,6 +18,9 @@ interface UtxoTokenRepository {
         regexTag: String?
     ): AvailTokenQueryResult
 
+    /**
+     * Returns the total balance based on the filtering criteria
+     */
     fun queryBalance(
         entityManager: EntityManager,
         poolKey: TokenPoolKey,
