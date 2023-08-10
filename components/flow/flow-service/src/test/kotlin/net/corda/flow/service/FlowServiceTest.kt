@@ -15,7 +15,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import org.mockito.kotlin.*
+import org.mockito.Mockito.any
+import org.mockito.Mockito.eq
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.times
+import org.mockito.Mockito.verify
 import java.util.stream.Stream
 
 class FlowServiceTest {

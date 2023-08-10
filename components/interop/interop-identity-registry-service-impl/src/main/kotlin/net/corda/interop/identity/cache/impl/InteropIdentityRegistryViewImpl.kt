@@ -34,6 +34,8 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: String):
         }
     }
 
+    // destinationIdentity.getOwningShortHash
+    // registryLookup.getView(owningSHortHash)
 
     fun putInteropIdentity(identity: InteropIdentity) {
         if (identity.owningVirtualNodeShortHash == virtualNodeShortHash) {
