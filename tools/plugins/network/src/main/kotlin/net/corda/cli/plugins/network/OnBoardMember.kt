@@ -195,11 +195,15 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
     override val registrationContext by lazy {
         val preAuth = preAuthToken?.let { mapOf("corda.auth.token" to it) } ?: emptyMap()
+        
         if (customProperties.size > 100) {
             throw IllegalArgumentException("Cannot specify more than 100 key-value pairs")
         }
+        
         val notaryServiceName = customProperties["corda.notary.service.name"]
+      
         customProperties = customProperties.filterKeys { it != "corda.notary.service.name" }
+        
         val extProperties = customProperties.filter {
             val key = it.key
             val value = it.value
@@ -256,7 +260,6 @@ class OnBoardMember : Runnable, BaseOnboard() {
                     )
             }
             .toMap()
-
 
         val sessionKeys = mapOf(
             "corda.session.keys.0.id" to sessionKeyId,

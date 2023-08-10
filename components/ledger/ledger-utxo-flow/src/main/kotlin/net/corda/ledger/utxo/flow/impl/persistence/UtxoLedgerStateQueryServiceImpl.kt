@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.flow.impl.persistence
 import io.micrometer.core.instrument.Timer
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.metrics.recordSuspendable
+import net.corda.ledger.utxo.flow.impl.cache.StateAndRefCache
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindUnconsumedStatesByType
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.ResolveStateRefs
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByTypeExternalEventFactory
@@ -23,6 +24,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
+@Suppress("unused")
 @Component(
     service = [UtxoLedgerStateQueryService::class, UsedByFlow::class],
     scope = PROTOTYPE
@@ -33,7 +35,9 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = SerializationService::class)
-    private val serializationService: SerializationService
+    private val serializationService: SerializationService,
+    @Reference(service = StateAndRefCache::class)
+    private val stateAndRefCache: StateAndRefCache
 ) : UtxoLedgerStateQueryService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -54,12 +58,21 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
             if (stateRefs.count() == 0) {
                 emptyList()
             } else {
-                wrapWithPersistenceException {
-                    externalEventExecutor.execute(
-                        ResolveStateRefsExternalEventFactory::class.java,
-                        ResolveStateRefsParameters(stateRefs)
-                    )
-                }.map { it.toStateAndRef<ContractState>(serializationService) }
+                val cachedStateAndRefs = stateAndRefCache.get(stateRefs.toSet())
+                val nonCachedStateRefs = stateRefs - cachedStateAndRefs.keys
+
+                if (nonCachedStateRefs.isNotEmpty()) {
+                    val resolvedStateRefs = wrapWithPersistenceException {
+                        externalEventExecutor.execute(
+                            ResolveStateRefsExternalEventFactory::class.java,
+                            ResolveStateRefsParameters(stateRefs)
+                        )
+                    }.map { it.toStateAndRef<ContractState>(serializationService) }
+                    stateAndRefCache.putAll(resolvedStateRefs)
+                    cachedStateAndRefs.values + resolvedStateRefs
+                } else {
+                    cachedStateAndRefs.values.toList()
+                }
             }
         }
     }
