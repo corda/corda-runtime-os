@@ -195,7 +195,37 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
     override val registrationContext by lazy {
         val preAuth = preAuthToken?.let { mapOf("corda.auth.token" to it) } ?: emptyMap()
+        if (customProperties.size > 100) {
+            throw IllegalArgumentException("Cannot specify more than 100 key-value pairs")
+        }
         val notaryServiceName = customProperties["corda.notary.service.name"]
+        customProperties = customProperties.filterKeys { it != "corda.notary.service.name" }
+        val extProperties = customProperties.filter {
+            val key = it.key
+            val value = it.value
+            val keyAndValueNotEmpty = (key.isNotEmpty()).and(value.isNotEmpty())
+            val keyStartsWithExt = key.startsWith("ext.")
+            val keyDoesNotEndWithExt = !key.endsWith("ext.")
+            val allChecks = keyAndValueNotEmpty.and(keyStartsWithExt).and(keyDoesNotEndWithExt)
+
+            if (!keyAndValueNotEmpty) {
+                throw IllegalArgumentException("Please specify a key or value, either cannot be empty")
+            }
+            if (!keyStartsWithExt) {
+                throw IllegalArgumentException("The key: $key has to start with `ext.` prefix")
+            }
+            if (!keyDoesNotEndWithExt) {
+                throw IllegalArgumentException("The key: $key cannot end with `ext.`")
+            }
+            if (key.length > 128) {
+                throw IllegalArgumentException("The key length cannot exceed 128 characters")
+            }
+            if (value.length > 800) {
+                throw IllegalArgumentException("The value length cannot exceed 800 characters")
+            }
+
+            allChecks
+        }
         val roleProperty = if (role != null) {
                 if (notaryServiceName != null) {
                     mapOf("corda.roles.0" to role!!.value)
@@ -215,7 +245,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
                     "corda.notary.keys.0.signature.spec" to "SHA256withECDSA"
                 )
             } else {
-                emptyMap()
+            emptyMap()
             }
 
         val endpoints: Map<String, String> = p2pGatewayUrls
@@ -237,7 +267,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
             "corda.ledger.keys.0.signature.spec" to "SHA256withECDSA"
         )
 
-        sessionKeys + ledgerKeys + endpoints + preAuth + roleProperty + notaryProperties
+        sessionKeys + ledgerKeys + endpoints + preAuth + roleProperty + notaryProperties + extProperties
     }
 
     override fun run() {
