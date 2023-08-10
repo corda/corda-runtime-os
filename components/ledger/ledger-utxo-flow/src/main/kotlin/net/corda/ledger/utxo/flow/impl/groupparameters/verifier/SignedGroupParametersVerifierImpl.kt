@@ -51,7 +51,7 @@ class SignedGroupParametersVerifierImpl @Activate constructor(
     }
 
     override fun verifySignature(signedGroupParameters: SignedGroupParameters) {
-        check(currentGroupParametersService.mgmKeys.contains(signedGroupParameters.mgmSignature.by)) {
+        check(currentGroupParametersService.getMgmKeys().contains(signedGroupParameters.mgmSignature.by)) {
             "The group parameters is not signed with a recognized MGM public key."
         }
         signatureVerificationService.verify(

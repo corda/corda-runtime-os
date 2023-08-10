@@ -9,6 +9,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandbox.type.SandboxConstants
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.v5.ledger.utxo.CurrentGroupParametersService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
@@ -20,7 +21,7 @@ import java.security.PublicKey
 
 @Suppress("Unused")
 @Component(
-    service = [CurrentGroupParametersServiceInternal::class, UsedByFlow::class],
+    service = [CurrentGroupParametersService::class, CurrentGroupParametersServiceInternal::class, UsedByFlow::class],
     property = [SandboxConstants.CORDA_SYSTEM_SERVICE],
     scope = ServiceScope.PROTOTYPE
 )
@@ -33,7 +34,7 @@ class CurrentGroupParametersServiceImpl @Activate constructor(
     private val keyEncodingService: KeyEncodingService,
     @Reference(service = GroupPolicyProvider::class)
     private val groupPolicyProvider: GroupPolicyProvider
-) : CurrentGroupParametersServiceInternal, UsedByFlow, SingletonSerializeAsToken {
+) : CurrentGroupParametersService, CurrentGroupParametersServiceInternal, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
