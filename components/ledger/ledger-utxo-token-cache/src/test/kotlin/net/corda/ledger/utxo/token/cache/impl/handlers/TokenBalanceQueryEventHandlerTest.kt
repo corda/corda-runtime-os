@@ -2,7 +2,6 @@ package net.corda.ledger.utxo.token.cache.impl.handlers
 
 import java.math.BigDecimal
 import net.corda.data.flow.event.FlowEvent
-import net.corda.ledger.utxo.token.cache.Helper.toDto
 import net.corda.ledger.utxo.token.cache.entities.BalanceQuery
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
@@ -12,7 +11,6 @@ import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.handlers.TokenBalanceQueryEventHandler
 import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
 import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
-import net.corda.ledger.utxo.token.cache.services.SimpleTokenFilterStrategy
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach

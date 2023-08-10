@@ -4,7 +4,6 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
-import net.corda.ledger.utxo.impl.token.selection.impl.PoolKey
 import net.corda.messaging.api.records.Record
 import net.corda.ledger.utxo.token.cache.converters.EntityConverter
 import net.corda.ledger.utxo.token.cache.converters.EventConverter
