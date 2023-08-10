@@ -55,7 +55,10 @@ class TokenBalanceQueryFlow : ClientStartableFlow {
     private fun TokenBalanceQueryResponseMsg.toJsonStr() =
         marshallingService.format(this)
 
-    private fun genTokenBalanceQueryCriteria(tokenBalanceQueryMsg: TokenBalanceQueryMsg, notary: NotaryInfo): TokenBalanceCriteria {
+    private fun genTokenBalanceQueryCriteria(
+        tokenBalanceQueryMsg: TokenBalanceQueryMsg,
+        notary: NotaryInfo
+    ): TokenBalanceCriteria {
         val queryCriteria = TokenBalanceCriteria(
             tokenBalanceQueryMsg.tokenType,
             digestService.hash(tokenBalanceQueryMsg.issuerBankX500.toByteArray(), DigestAlgorithmName.SHA2_256),
@@ -63,18 +66,24 @@ class TokenBalanceQueryFlow : ClientStartableFlow {
             tokenBalanceQueryMsg.currency
         )
 
-        if(tokenBalanceQueryMsg.ownerHash != null) {
+        if (tokenBalanceQueryMsg.ownerHash != null) {
             queryCriteria.ownerHash = digestService.parseSecureHash(tokenBalanceQueryMsg.ownerHash)
         }
 
-        if(tokenBalanceQueryMsg.regexTag != null) {
+        if (tokenBalanceQueryMsg.regexTag != null) {
             queryCriteria.tagRegex = tokenBalanceQueryMsg.regexTag
         }
 
         return queryCriteria
     }
 
-    private data class TokenBalanceQueryMsg(val tokenType: String, val issuerBankX500: String, val currency: String, val ownerHash: String?, val regexTag: String?)
+    private data class TokenBalanceQueryMsg(
+        val tokenType: String,
+        val issuerBankX500: String,
+        val currency: String,
+        val ownerHash: String?,
+        val regexTag: String?
+    )
 
     private data class TokenBalanceQueryResponseMsg(
         val availableBalance: BigDecimal,
