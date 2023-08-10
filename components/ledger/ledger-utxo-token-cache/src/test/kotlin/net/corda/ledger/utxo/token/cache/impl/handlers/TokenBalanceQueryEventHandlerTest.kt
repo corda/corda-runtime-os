@@ -52,7 +52,7 @@ class TokenBalanceQueryEventHandlerTest {
     @Test
     fun `empty cache should return a balance equal to zero`() {
         // The last argument need to change to an actual mocked version of AvailableTokenService
-        val target = TokenBalanceQueryEventHandler(SimpleTokenFilterStrategy(), recordFactory, mock())
+        val target = TokenBalanceQueryEventHandler(recordFactory, mock())
         val balanceQuery = createBalanceQuery()
         whenever(recordFactory.getBalanceResponse(any(), any(), any(), any())).thenReturn(balanceQueryResult)
 
@@ -70,7 +70,7 @@ class TokenBalanceQueryEventHandlerTest {
     @Test
     fun `the correct balance is calculated - balance availableBalance totalBalance are the same`() {
         // The last argument need to change to an actual mocked version of AvailableTokenService
-        val target = TokenBalanceQueryEventHandler(SimpleTokenFilterStrategy(), recordFactory, mock())
+        val target = TokenBalanceQueryEventHandler(recordFactory, mock())
         val balanceQuery = createBalanceQuery()
         whenever(recordFactory.getBalanceResponse(any(), any(), any(), any())).thenReturn(balanceQueryResult)
         cachedTokens += token99
@@ -89,7 +89,7 @@ class TokenBalanceQueryEventHandlerTest {
     @Test
     fun `the correct balance is calculated - availableBalance and totalBalance are different`() {
         // The last argument need to change to an actual mocked version of AvailableTokenService
-        val target = TokenBalanceQueryEventHandler(SimpleTokenFilterStrategy(), recordFactory, mock())
+        val target = TokenBalanceQueryEventHandler(recordFactory, mock())
         val balanceQuery = createBalanceQuery()
         whenever(recordFactory.getBalanceResponse(any(), any(), any(), any())).thenReturn(balanceQueryResult)
         cachedTokens += token99
