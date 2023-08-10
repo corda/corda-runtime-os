@@ -35,8 +35,6 @@ class TokenCacheEventProcessor constructor(
         try {
             val tokenEvent = eventConverter.convert(event.value)
 
-            // Check if it is an old state. Avro.
-            // Add a warning. Leave a comment explaining why this is being done
             val nonNullableState = state ?: TokenPoolCacheState().apply {
                 this.poolKey = event.key
                 this.availableTokens = listOf()
