@@ -7,10 +7,6 @@ import org.slf4j.LoggerFactory
 
 class PoolCacheStateImpl(private val cacheState: TokenPoolCacheState) : PoolCacheState {
 
-    private companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
-
     private var claimedTokens: Map<String, CachedToken>
 
     init {
