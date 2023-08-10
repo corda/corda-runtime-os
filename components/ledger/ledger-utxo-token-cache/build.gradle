@@ -6,14 +6,14 @@ plugins {
 description "Token Cache"
 
 dependencies {
-    implementation project(path: ':components:virtual-node:virtual-node-info-read-service')
-    implementation project(path: ':components:db:db-connection-manager')
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:ledger:ledger-utxo-flow")
+    implementation project(":components:virtual-node:virtual-node-info-read-service")
+    implementation project(":components:db:db-connection-manager")
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:flows:external-event-responses')
     implementation project(":libs:lifecycle:lifecycle")
