@@ -1,16 +1,13 @@
 package net.corda.libs.interop.endpoints.v1
 
 import net.corda.libs.interop.endpoints.v1.types.ImportInteropIdentityRest2
+import net.corda.libs.interop.endpoints.v1.types.ImportInteropIdentityRest3
 import net.corda.rest.json.serialization.jacksonObjectMapper
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
 class Test1 {
-    @Test
-    fun test1() {
-        val mapper = jacksonObjectMapper() //I suspect this is what Rest server uses to transform JSOn to data classes
-
-        val sampleRequestJson = """
+    val sampleRequestJson = """
 { "applicationName": "Bob2",
   "groupPolicy": {
     "fileFormatVersion": 1,
@@ -55,9 +52,30 @@ class Test1 {
   ]
 }
 """
+    @Test
+    fun `test group policy as data classes`() {
+        val mapper = jacksonObjectMapper() //I suspect this is what Rest server uses to transform JSOn to data classes
 
         val dataClass: ImportInteropIdentityRest2.Request = mapper.readValue(sampleRequestJson,
             ImportInteropIdentityRest2.Request::class.java)
+
+        val groupPolicy = dataClass.groupPolicy
+        val newGroupPolicyAsString = mapper.writeValueAsString(groupPolicy)
+
+        val originalGroupPolicy = mapper.readTree(sampleRequestJson).get("groupPolicy")
+        val newGroupPolicy = mapper.readTree(newGroupPolicyAsString)
+
+        Assertions.assertEquals(originalGroupPolicy, newGroupPolicy)
+
+        println(newGroupPolicyAsString) //TODO remove println
+    }
+
+    @Test
+    fun `test group policy as map of Any`() {
+        val mapper = jacksonObjectMapper() //I suspect this is what Rest server uses to transform JSOn to data classes
+
+        val dataClass: ImportInteropIdentityRest3.Request = mapper.readValue(sampleRequestJson,
+            ImportInteropIdentityRest3.Request::class.java)
 
         val groupPolicy = dataClass.groupPolicy
         val newGroupPolicyAsString = mapper.writeValueAsString(groupPolicy)
