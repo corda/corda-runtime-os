@@ -12,13 +12,15 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
+import net.corda.v5.membership.GroupParameters
 import java.security.PublicKey
 
 @Suppress("TooManyFunctions")
 class UtxoLedgerTransactionImpl(
     private val wrappedWireTransaction: WrappedUtxoWireTransaction,
     private val inputStateAndRefs: List<StateAndRef<*>>,
-    private val referenceStateAndRefs: List<StateAndRef<*>>
+    private val referenceStateAndRefs: List<StateAndRef<*>>,
+    private val groupParameters: GroupParameters
 ) : UtxoLedgerTransactionInternal {
 
     init {
@@ -113,6 +115,10 @@ class UtxoLedgerTransactionImpl(
 
     override fun <T : ContractState> getOutputStates(type: Class<T>): List<T> {
         return outputContractStates.filterIsInstance(type)
+    }
+
+    override fun getGroupParameters(): GroupParameters {
+        return groupParameters
     }
 
     override fun equals(other: Any?): Boolean {

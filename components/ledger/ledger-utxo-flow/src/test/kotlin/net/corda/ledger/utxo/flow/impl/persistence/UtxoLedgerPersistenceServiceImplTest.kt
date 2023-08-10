@@ -33,6 +33,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.utxo.CurrentGroupParametersService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -63,6 +64,7 @@ class UtxoLedgerPersistenceServiceImplTest {
     private val virtualNodeContext = mock<VirtualNodeContext>()
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
     private val stateAndRefCache = mock<StateAndRefCache>()
+    private val currentGroupParametersService = mock<CurrentGroupParametersService>()
 
     private lateinit var utxoLedgerPersistenceService: UtxoLedgerPersistenceService
 
@@ -72,6 +74,7 @@ class UtxoLedgerPersistenceServiceImplTest {
     fun setup() {
         utxoLedgerPersistenceService = UtxoLedgerPersistenceServiceImpl(
             currentSandboxGroupContext,
+            currentGroupParametersService,
             externalEventExecutor,
             serializationService,
             utxoLedgerTransactionFactory,

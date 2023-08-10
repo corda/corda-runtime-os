@@ -99,7 +99,20 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
 
     private fun UtxoLedgerTransaction.toContainer() =
         (this as UtxoLedgerTransactionInternal).run {
-            UtxoLedgerTransactionContainer(wireTransaction, inputStateAndRefs, referenceStateAndRefs)
+            val membershipGroupParametersHashString = this.getMembershipGroupParametersHash()
+            val groupParameters = requireNotNull(
+                utxoLedgerGroupParametersPersistenceService.find(
+                    parseSecureHash(membershipGroupParametersHashString)
+                )
+            ) {
+                "Signed group parameters $membershipGroupParametersHashString related to the transaction ${wireTransaction.id} cannot be accessed."
+            }
+            UtxoLedgerTransactionContainer(
+                wireTransaction,
+                inputStateAndRefs,
+                referenceStateAndRefs,
+                groupParameters
+            )
         }
 
     private fun UtxoLedgerTransaction.getCpkMetadata() =

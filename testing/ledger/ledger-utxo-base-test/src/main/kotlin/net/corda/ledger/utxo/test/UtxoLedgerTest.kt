@@ -25,6 +25,7 @@ import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.ledger.common.NotaryLookup
+import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.NotaryInfo
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -41,6 +42,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
     val mockFlowSandboxService = mock<FlowSandboxService>()
     private val mockExternalEventExecutor = mock<ExternalEventExecutor>()
     private val mockResultSetFactory = mock<ResultSetFactory>()
+    private val mockGroupParameters = mock<GroupParameters>()
 
     val mockNotaryLookup = mock<NotaryLookup>().also{
         val notaryExampleInfo = mock<NotaryInfo>().also {
@@ -66,7 +68,8 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
     )
     private val utxoLedgerTransactionFactory = UtxoLedgerTransactionFactoryImpl(
         serializationServiceWithWireTx,
-        mockUtxoLedgerStateQueryService
+        mockUtxoLedgerStateQueryService,
+        mockUtxoLedgerGroupParametersPersistenceService
     )
     val utxoSignedTransactionFactory = UtxoSignedTransactionFactoryImpl(
         currentSandboxGroupContext,

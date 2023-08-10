@@ -7,6 +7,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
 class TestContract : Contract {
     override fun verify(transaction: UtxoLedgerTransaction) {
+        println("test contract: ${transaction.groupParameters}")
     }
 
     override fun isVisible(state: ContractState, checker: VisibilityChecker): Boolean {

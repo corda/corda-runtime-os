@@ -1,10 +1,13 @@
 package net.corda.ledger.utxo.flow.impl.transaction.factory.impl
 
+import net.corda.crypto.core.parseSecureHash
+import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
+import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.sandbox.type.UsedByFlow
@@ -13,6 +16,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
+import net.corda.v5.membership.GroupParameters
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -24,7 +28,9 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
     @Reference(service = UtxoLedgerStateQueryService::class)
-    private val utxoLedgerStateQueryService: UtxoLedgerStateQueryService
+    private val utxoLedgerStateQueryService: UtxoLedgerStateQueryService,
+    @Reference(service = UtxoLedgerGroupParametersPersistenceService::class)
+    private val utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService
 ) : UtxoLedgerTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -53,7 +59,8 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
         return UtxoLedgerTransactionImpl(
             wrappedUtxoWireTransaction,
             inputStateAndRefs,
-            referenceStateAndRefs
+            referenceStateAndRefs,
+            getGroupParameters(wireTransaction)
         )
     }
 
@@ -65,7 +72,22 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
         return UtxoLedgerTransactionImpl(
             WrappedUtxoWireTransaction(wireTransaction, serializationService),
             inputStateAndRefs.map { it.toStateAndRef<ContractState>(serializationService) },
-            referenceStateAndRefs.map { it.toStateAndRef<ContractState>(serializationService) }
+            referenceStateAndRefs.map { it.toStateAndRef<ContractState>(serializationService) },
+            getGroupParameters(wireTransaction)
         )
+    }
+
+    private fun getGroupParameters(wireTransaction: WireTransaction): GroupParameters {
+        val membershipGroupParametersHashString =
+            requireNotNull((wireTransaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()) {
+                "The membership group parameter hash for the transaction ${wireTransaction.id} is not found."
+            }
+        return requireNotNull(
+            utxoLedgerGroupParametersPersistenceService.find(
+                parseSecureHash(membershipGroupParametersHashString)
+            )
+        ) {
+            "Signed group parameters $membershipGroupParametersHashString related to the transaction ${wireTransaction.id} cannot be accessed."
+        }
     }
 }
