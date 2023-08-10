@@ -5,7 +5,6 @@ import javax.persistence.EntityManager
 import net.corda.ledger.utxo.token.cache.entities.AvailTokenQueryResult
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 
-@Suppress("TooManyFunctions")
 interface UtxoTokenRepository {
 
     /**
