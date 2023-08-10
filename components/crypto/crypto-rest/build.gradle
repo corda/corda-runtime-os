@@ -1,0 +1,20 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Crypto REST definition'
+
+dependencies {
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation project(':libs:platform-info')
+    implementation project(':libs:rest:rest')
+
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:osgi.annotation"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+
+
+}
