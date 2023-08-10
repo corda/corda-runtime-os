@@ -58,7 +58,7 @@ class UtxoTokenMapper() : TokenMapper {
         private fun createToken(stateRef: String, amount: BigDecimal, tag: String, ownerHash: String): Token =
             Token().apply {
                 this.stateRef = stateRef
-                this.amount = net.corda.data.ledger.utxo.token.selection.data.TokenAmount(
+                this.amount = TokenAmount(
                     amount.scale(),
                     ByteBuffer.wrap(amount.unscaledValue().toByteArray())
                 )
