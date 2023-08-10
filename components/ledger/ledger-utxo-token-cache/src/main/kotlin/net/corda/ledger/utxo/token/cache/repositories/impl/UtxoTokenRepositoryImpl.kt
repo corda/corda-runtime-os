@@ -4,7 +4,6 @@ import java.math.BigDecimal
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
 import javax.persistence.Query
 import javax.persistence.Tuple

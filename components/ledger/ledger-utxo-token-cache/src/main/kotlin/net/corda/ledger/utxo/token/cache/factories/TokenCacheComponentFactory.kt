@@ -11,7 +11,6 @@ import net.corda.ledger.utxo.token.cache.handlers.TokenClaimReleaseEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenLedgerChangeEventHandler
 import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
-import net.corda.ledger.utxo.token.cache.services.AvailableTokenServiceImpl
 import net.corda.ledger.utxo.token.cache.services.SimpleTokenFilterStrategy
 import net.corda.ledger.utxo.token.cache.services.TokenCacheComponent
 import net.corda.ledger.utxo.token.cache.services.TokenCacheSubscriptionHandlerImpl

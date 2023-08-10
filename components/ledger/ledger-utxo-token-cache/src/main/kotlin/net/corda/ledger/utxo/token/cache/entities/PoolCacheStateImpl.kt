@@ -3,7 +3,6 @@ package net.corda.ledger.utxo.token.cache.entities
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaim
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.ledger.utxo.token.cache.converters.EntityConverterImpl
-import org.slf4j.LoggerFactory
 
 class PoolCacheStateImpl(private val cacheState: TokenPoolCacheState) : PoolCacheState {
 
