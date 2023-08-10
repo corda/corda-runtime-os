@@ -55,7 +55,6 @@ class PoolCacheStateImpl(private val cacheState: TokenPoolCacheState) : PoolCach
         return claimedTokens.values
     }
 
-
     override fun toAvro(): TokenPoolCacheState {
         return cacheState
     }
