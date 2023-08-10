@@ -9,7 +9,7 @@ import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.v5.ledger.utxo.StateRef
 
-class UtxoTokenMapper() : TokenMapper {
+class UtxoTokenMapper : TokenMapper {
     private object Column {
         const val TRANSACTION_ID = 0
         const val LEAF_IDX = 1
