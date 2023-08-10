@@ -1,5 +1,7 @@
 package com.r3.corda.testing.testflows
 
+import com.r3.corda.testing.testflows.messages.TestFlowInput
+import com.r3.corda.testing.testflows.messages.TestFlowOutput
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
@@ -8,8 +10,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import com.r3.corda.testing.testflows.messages.TestFlowInput
-import com.r3.corda.testing.testflows.messages.TestFlowOutput
 import org.slf4j.LoggerFactory
 
 /**

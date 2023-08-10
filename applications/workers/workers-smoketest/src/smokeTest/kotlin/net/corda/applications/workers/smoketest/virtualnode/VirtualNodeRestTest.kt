@@ -20,12 +20,17 @@ import net.corda.e2etest.utilities.assertWithRetry
 import net.corda.e2etest.utilities.assertWithRetryIgnoringExceptions
 import net.corda.e2etest.utilities.cluster
 import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
+import net.corda.e2etest.utilities.getFlowStatus
 import net.corda.e2etest.utilities.getHoldingIdShortHash
+import net.corda.e2etest.utilities.startRpcFlow
 import net.corda.e2etest.utilities.toJson
 import net.corda.e2etest.utilities.truncateLongHash
 import net.corda.rest.ResponseCode
+import net.corda.test.util.eventually
+import net.corda.utilities.minutes
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
@@ -132,6 +137,103 @@ class VirtualNodeRestTest {
             eventuallyCreateVirtualNode(cpiFileChecksum, aliceX500)
         }
     }
+
+    private fun ClusterBuilder.eventuallyUpdateVirtualNodeState(vnodeId: String, newState: String, expectedOperationalStatuses: String) {
+        updateVirtualNodeState(vnodeId, newState).let {
+            assertThat(it.code).withFailMessage("Failed response: $it").isEqualTo(200)
+        }
+
+        assertWithRetryIgnoringExceptions {
+            timeout(retryTimeout)
+            interval(retryInterval)
+            command {
+                vNodeList()
+            }
+            condition {
+                try {
+                    if (it.code == 200) {
+                        val vNodeInfo = it.toJson()["virtualNodes"].single { virtualNode ->
+                            virtualNode["holdingIdentity"]["shortHash"].textValue() == vnodeId
+                        }
+                        assertAll(
+                            {
+                                assertEquals(
+                                    expectedOperationalStatuses,
+                                    vNodeInfo["flowP2pOperationalStatus"].textValue(),
+                                    "flowP2pOperationalStatus"
+                                )
+                            },
+                            {
+                                assertEquals(
+                                    expectedOperationalStatuses,
+                                    vNodeInfo["flowStartOperationalStatus"].textValue(),
+                                    "flowStartOperationalStatus"
+                                )
+                            },
+                            {
+                                assertEquals(
+                                    expectedOperationalStatuses,
+                                    vNodeInfo["flowOperationalStatus"].textValue(),
+                                    "flowOperationalStatus"
+                                )
+                            },
+                            {
+                                assertEquals(
+                                    expectedOperationalStatuses,
+                                    vNodeInfo["vaultDbOperationalStatus"].textValue(),
+                                    "vaultDbOperationalStatus"
+                                )
+                            }
+                        )
+                        true
+                    } else {
+                        false
+                    }
+                } catch (e: AssertionError) {
+                    println("Failed, response: $it")
+                    false
+                } catch (e: Exception) {
+                    println("Failed, response: $it")
+                    false
+                }
+            }
+        }
+    }
+
+
+    @Test
+    @Order(50)
+    fun `maintenance mode stops flows`() {
+        cluster {
+
+            var restoreVnodeActiveState = false
+            try {
+                // Start a flow
+                val className = "com.r3.corda.testing.testflows.WaitAMinuteFlow"
+                val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className)
+
+                eventually {
+                    assertThat(getFlowStatus(aliceHoldingId, requestId, 200).flowStatus).isEqualTo("RUNNING")
+                }
+
+                // Move vnode to maintenance mode
+                restoreVnodeActiveState = true
+                eventuallyUpdateVirtualNodeState(aliceHoldingId, "maintenance", "INACTIVE")
+
+                // Check that flow was killed
+                eventually(1.minutes) {
+                    val flowStatus = getFlowStatus(aliceHoldingId, requestId, 200)
+                    assertThat(flowStatus.flowStatus).isEqualTo("KILLED")
+                }
+            } finally {
+                // Set vnode back to active
+                if (restoreVnodeActiveState) {
+                    eventuallyUpdateVirtualNodeState(aliceHoldingId, "active", "ACTIVE")
+                }
+            }
+        }
+    }
+
 
     @Test
     @Order(60)
