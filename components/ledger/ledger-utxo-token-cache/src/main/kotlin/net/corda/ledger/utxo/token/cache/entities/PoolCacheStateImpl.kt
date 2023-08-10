@@ -34,11 +34,8 @@ class PoolCacheStateImpl(private val cacheState: TokenPoolCacheState) : PoolCach
         cacheState.tokenClaims = cacheState
             .tokenClaims
             .toMutableList().apply {
-                logger.info("Filipe:1")
                 removeIf { it.claimId == claimId }
-                logger.info("Filipe:1")
                 add(createClaim(claimId, selectedTokens))
-                logger.info("Filipe:2")
             }
         claimedTokens = createClaimedTokenMap()
     }
