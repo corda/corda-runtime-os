@@ -20,7 +20,7 @@ import java.security.PublicKey
 
 @Suppress("Unused")
 @Component(
-    service = [CurrentGroupParametersService::class, UsedByFlow::class],
+    service = [CurrentGroupParametersServiceInternal::class, UsedByFlow::class],
     property = [SandboxConstants.CORDA_SYSTEM_SERVICE],
     scope = ServiceScope.PROTOTYPE
 )
@@ -33,13 +33,13 @@ class CurrentGroupParametersServiceImpl @Activate constructor(
     private val keyEncodingService: KeyEncodingService,
     @Reference(service = GroupPolicyProvider::class)
     private val groupPolicyProvider: GroupPolicyProvider
-) : CurrentGroupParametersService, UsedByFlow, SingletonSerializeAsToken {
+) : CurrentGroupParametersServiceInternal, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun get(): SignedGroupParameters {
+    override fun getCurrentGroupParameters(): SignedGroupParameters {
         val groupReader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
         val signedGroupParameters = requireNotNull(groupReader.signedGroupParameters) {
             "signedGroupParameters could not be accessed."

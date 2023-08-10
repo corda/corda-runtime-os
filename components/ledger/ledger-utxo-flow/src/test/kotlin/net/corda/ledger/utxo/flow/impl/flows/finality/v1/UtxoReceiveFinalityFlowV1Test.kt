@@ -16,7 +16,7 @@ import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResol
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityVersion
-import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersService
+import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersServiceInternal
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
@@ -66,7 +66,7 @@ class UtxoReceiveFinalityFlowV1Test {
 
     private val memberLookup = mock<MemberLookup>()
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
-    private val currentGroupParametersService = mock<CurrentGroupParametersService>()
+    private val currentGroupParametersService = mock<CurrentGroupParametersServiceInternal>()
     private val utxoLedgerGroupParametersPersistenceService = mock<UtxoLedgerGroupParametersPersistenceService>()
     private val transactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
     private val signedGroupParametersVerifier = mock<SignedGroupParametersVerifier>()
@@ -146,7 +146,7 @@ class UtxoReceiveFinalityFlowV1Test {
 
         whenever(metadata.getMembershipGroupParametersHash()).thenReturn(transactionGroupParametersHash.toString())
 
-        whenever(currentGroupParametersService.get()).thenReturn(currentGroupParameters)
+        whenever(currentGroupParametersService.currentGroupParameters).thenReturn(currentGroupParameters)
         whenever(currentGroupParameters.hash).thenReturn(transactionGroupParametersHash)
     }
 
