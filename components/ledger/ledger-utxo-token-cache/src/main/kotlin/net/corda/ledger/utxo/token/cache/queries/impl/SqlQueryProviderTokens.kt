@@ -60,6 +60,7 @@ class SqlQueryProviderTokens @Activate constructor() : SqlQueryProvider {
             ""
         }
 
+        // The query orders by transaction_id to create some randomness in the tokens that are selected
         return """
                 SELECT
                     transaction_id,

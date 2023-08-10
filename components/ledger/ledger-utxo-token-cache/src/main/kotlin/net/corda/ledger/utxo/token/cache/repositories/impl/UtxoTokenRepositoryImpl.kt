@@ -21,13 +21,6 @@ import net.corda.ledger.utxo.token.cache.services.UtxoTokenMapper
 import net.corda.ledger.utxo.token.cache.services.mapToToken
 import org.osgi.service.component.annotations.Reference
 
-@Suppress("TooManyFunctions")
-/**
- * Reads and writes ledger transaction data to and from the virtual node vault database.
- * The component only exists to be created inside a PERSISTENCE sandbox. We denote it
- * as "corda.marker.only" to force the sandbox to create it, despite it implementing
- * only the [UsedByPersistence] marker interface.
- */
 @Component(
     service = [ UtxoTokenRepository::class],
     scope = PROTOTYPE
@@ -39,7 +32,6 @@ class UtxoTokenRepositoryImpl @Activate constructor(
 ) : UtxoTokenRepository
 {
     private companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private val QUERY_RESULT_TOKEN_LIMIT = 1500
     }
 
