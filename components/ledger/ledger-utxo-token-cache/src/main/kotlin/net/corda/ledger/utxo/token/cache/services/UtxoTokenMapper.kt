@@ -10,9 +10,6 @@ import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.v5.ledger.utxo.StateRef
 
-/**
- * Used by [UtxoRepositoryImpl.findTransactionSignatures] to map DB rows to transaction's components group lists
- */
 class UtxoTokenMapper() : TokenMapper {
     private object Column {
         const val TRANSACTION_ID = 0
