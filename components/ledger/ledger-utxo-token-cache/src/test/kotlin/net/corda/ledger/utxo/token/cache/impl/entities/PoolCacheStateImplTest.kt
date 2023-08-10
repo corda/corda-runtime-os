@@ -12,7 +12,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
 class PoolCacheStateImplTest {
-    // These tests must be updated
+
     @Test
     fun `is token claimed checks underlying state object`() {
         val claim1 = TokenClaim().apply {
