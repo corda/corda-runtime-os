@@ -6,10 +6,17 @@ import brave.baggage.BaggagePropagation
 import brave.baggage.BaggagePropagationConfig
 import brave.baggage.CorrelationScopeConfig
 import brave.context.slf4j.MDCScopeDecorator
+import brave.http.HttpRequest
+import brave.http.HttpRequestMatchers.methodEquals
+import brave.http.HttpRequestMatchers.pathStartsWith
+import brave.http.HttpRuleSampler
+import brave.http.HttpTracing
 import brave.propagation.B3Propagation
 import brave.propagation.ThreadLocalCurrentTraceContext
+import brave.sampler.Matchers.and
 import brave.sampler.RateLimitingSampler
 import brave.sampler.Sampler
+import brave.sampler.SamplerFunction
 import brave.servlet.TracingFilter
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -45,23 +52,20 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
     private val resourcesToClose = Stack<AutoCloseable>()
 
     private val tracing: Tracing by lazy {
-      
-        val braveCurrentTraceContext = ThreadLocalCurrentTraceContext.newBuilder()
-            .addScopeDecorator(MDCScopeDecorator.newBuilder()
-                .add(CorrelationScopeConfig.SingleCorrelationField.create(BraveBaggageFields.REQUEST_ID))
-                .build())
-            .build()
 
+        val braveCurrentTraceContext = ThreadLocalCurrentTraceContext.newBuilder().addScopeDecorator(
+            MDCScopeDecorator.newBuilder()
+                .add(CorrelationScopeConfig.SingleCorrelationField.create(BraveBaggageFields.REQUEST_ID)).build()
+        ).build()
 
-        val sampler = when (samplesPerSecond) {
+        val sampler = sampler(samplesPerSecond)
+        when (samplesPerSecond) {
             is PerSecond -> {
                 logger.info("Tracing will sample ${samplesPerSecond.samplesPerSecond} requests per second")
-                RateLimitingSampler.create(samplesPerSecond.samplesPerSecond)
             }
 
             is Unlimited -> {
                 logger.info("Tracing will sample unlimited requests per second")
-                Sampler.ALWAYS_SAMPLE
             }
         }
 
@@ -89,6 +93,23 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         tracingBuilder.addSpanHandler(spanHandler)
         tracingBuilder.build().also(resourcesToClose::push)
     }
+
+    private fun sampler(samplesPerSecond: SampleRate): Sampler = when (samplesPerSecond) {
+        is PerSecond -> {
+            RateLimitingSampler.create(samplesPerSecond.samplesPerSecond)
+        }
+
+        is Unlimited -> {
+            Sampler.ALWAYS_SAMPLE
+        }
+    }
+
+    private val serverSampler: SamplerFunction<HttpRequest> = HttpRuleSampler.newBuilder()
+        .putRule(and(methodEquals("POST"), pathStartsWith("/api/v5_1/flow")), sampler(samplesPerSecond))
+        .putRule(and(methodEquals("POST"), pathStartsWith("/api/v1/flow")), sampler(samplesPerSecond))
+        .putRule(pathStartsWith("/"), sampler(samplesPerSecond)).build()
+
+    private val httpTracing by lazy { HttpTracing.newBuilder(tracing).serverSampler(serverSampler).build() }
 
     private class LogReporter : Reporter<Span> {
         private val logger: Logger = Logger.getLogger(LogReporter::class.java.name)
@@ -167,7 +188,7 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
     }
 
     override fun getTracedServletFilter(): Filter {
-        return TracingFilter.create(tracing)
+        return TracingFilter.create(httpTracing)
     }
 
     override fun close() {
