@@ -59,7 +59,7 @@ class MemberInfoReconciler(
     private val reconcilerFactory: ReconcilerFactory,
     private val publisherFactory: PublisherFactory,
     private val subscriptionFactory: SubscriptionFactory,
-    private val configurationReadService: ConfigurationReadService
+    private val configurationReadService: ConfigurationReadService,
 ): ReconcilerWrapper {
     companion object {
         private const val FOLLOW_CHANGES_RESOURCE_NAME = "MemberInfoReconcilierReadWriter.followStatusChangesByName"
@@ -129,7 +129,7 @@ class MemberInfoReconciler(
     @VisibleForTesting
     internal val reconcilerReadWriter = MemberInfoReconcilerReadWriter()
 
-    inner class MemberInfoReconcilerReadWriter:
+    internal inner class MemberInfoReconcilerReadWriter:
         ReconcilerWriter<String, PersistentMemberInfo>, ReconcilerReader<String, PersistentMemberInfo>,  Lifecycle {
 
         override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<MemberInfoReconcilerReadWriter>()
@@ -139,7 +139,7 @@ class MemberInfoReconciler(
         override fun getAllVersionedRecords(): Stream<VersionedRecord<String, PersistentMemberInfo>>? {
             return recordsMap.entries.stream().mapNotNull {
                 val version = try {
-                    it.value.mgmContext.toSortedMap()[SERIAL]?.toInt()
+                    it.value.mgmContext.items.singleOrNull { keyValuePair -> keyValuePair.key == SERIAL }?.value?.toInt()
                 } catch (e: NumberFormatException) {
                     logger.warn("Record for ${it.value.memberContext.toSortedMap()[PARTY_NAME]} in ${it.value.viewOwningMember}'s member " +
                             "list doesn't contain a valid serial number.")

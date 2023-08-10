@@ -55,10 +55,10 @@ class MemberInfoEntity(
     var mgmContext: ByteArray,
 
     @Column(name = "serial_number", nullable = false)
-    val serialNumber: Long,
+    var serialNumber: Long,
 
     @Column(name = "is_deleted", nullable = false, updatable = true)
-    val isDeleted: Boolean,
+    var isDeleted: Boolean = false,
 ) {
     override fun equals(other: Any?): Boolean {
         if (other === this) return true
