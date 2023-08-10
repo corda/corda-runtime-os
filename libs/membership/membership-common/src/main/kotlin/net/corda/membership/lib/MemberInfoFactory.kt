@@ -7,7 +7,7 @@ import net.corda.data.membership.PersistentMemberInfo
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
-import java.util.*
+import java.util.SortedMap
 
 /**
  * Factory for building [MemberInfo] objects from different sources.
@@ -95,27 +95,4 @@ interface MemberInfoFactory {
         memberSignature: CryptoSignatureWithKey,
         memberSignatureSpec: CryptoSignatureSpec,
     ): SelfSignedMemberInfo
-
-    /*fun createPersistentMemberInfo(
-        viewOwningMember: HoldingIdentity,
-        signedMemberInfo: SignedMemberInfo,
-    ): PersistentMemberInfo
-
-    fun createPersistentMemberInfo(
-        viewOwningMember: HoldingIdentity,
-        memberInfo: MemberInfo,
-    ): PersistentMemberInfo
-
-    fun createPersistentMemberInfo(
-        viewOwningMember: HoldingIdentity,
-        memberInfo: SignedMemberInfo,
-    ): PersistentMemberInfo
-
-    fun createPersistentMemberInfo(
-        viewOwningMember: HoldingIdentity,
-        memberProvidedContext: ByteArray,
-        memberSignature: ByteArray,
-        memberSignatureSpec: ByteArray,
-        mgmProvidedContext: ByteArray,
-    ): PersistentMemberInfo*/
 }
