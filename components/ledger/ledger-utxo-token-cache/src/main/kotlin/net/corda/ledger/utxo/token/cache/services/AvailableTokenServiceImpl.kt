@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.token.cache.services
 
-import java.math.BigDecimal
 import net.corda.crypto.core.ShortHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -44,7 +43,12 @@ class AvailableTokenServiceImpl @Activate constructor(
         return utxoTokenRepository.findTokens(entityManagerFactory.createEntityManager(), poolKey, ownerHash, tagRegex)
     }
 
-    override fun queryBalance(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?, claimedTokens: Collection<CachedToken>): TokenBalance {
+    override fun queryBalance(
+        poolKey: TokenPoolKey,
+        ownerHash: String?,
+        tagRegex: String?,
+        claimedTokens: Collection<CachedToken>
+    ): TokenBalance {
         val virtualNode = getVirtualNodeInfo(poolKey)
         val entityManagerFactory = createEntityManagerFactory(virtualNode)
 
