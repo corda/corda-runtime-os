@@ -10,7 +10,10 @@ import picocli.CommandLine.Command
     ],
     subcommands = [
         AllowClientCertificate::class,
-        ExportGroupPolicy::class
+        ExportGroupPolicy::class,
+        GetPreAuthRules::class,
+        AddPreAuthRule::class,
+        DeletePreAuthRule::class
     ]
 )
 class Operate : Runnable {
