@@ -5,7 +5,6 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.ledger.utxo.token.cache.entities.AvailTokenQueryResult

@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.token.cache.queries.impl
 
 import net.corda.ledger.utxo.token.cache.queries.SqlQueryProvider
-import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 
 @Component(
