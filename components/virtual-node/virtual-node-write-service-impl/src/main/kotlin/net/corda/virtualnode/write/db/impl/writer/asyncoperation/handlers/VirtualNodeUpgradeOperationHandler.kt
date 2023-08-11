@@ -1,7 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers
 
 import net.corda.crypto.core.ShortHash
-import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
@@ -34,10 +33,12 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.membership.client.MemberResourceClient
+import net.corda.membership.client.dto.SubmittedRegistrationStatus
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import java.time.LocalDateTime
+import java.util.concurrent.TimeoutException
 
 @Suppress("LongParameterList")
 internal class VirtualNodeUpgradeOperationHandler(
@@ -140,16 +141,15 @@ internal class VirtualNodeUpgradeOperationHandler(
 
             var hasSubmitted = false
             val end = LocalDateTime.now().plusSeconds(60)
-            while (!hasSubmitted && LocalDateTime.now().isBefore(end)) {
+            while (!hasSubmitted) {
+                if (LocalDateTime.now().isAfter(end)) {
+                    throw TimeoutException("Timed out re-registering member after vNode upgrade")
+                }
                 val registrationResult = memberResourceClient.startRegistration(
                     upgradedVNodeInfo.holdingIdentity.shortHash,
                     registrationContext
                 )
-                val registrationProgress = memberResourceClient.checkSpecificRegistrationProgress(
-                    upgradedVNodeInfo.holdingIdentity.shortHash,
-                    registrationResult.registrationRequestId
-                )
-                if (registrationProgress.registrationStatus.name == RegistrationStatus.SENT_TO_MGM.toString()) {
+                if (registrationResult.registrationStatus.name == SubmittedRegistrationStatus.SUBMITTED.toString()) {
                     hasSubmitted = true
                 }
             }
