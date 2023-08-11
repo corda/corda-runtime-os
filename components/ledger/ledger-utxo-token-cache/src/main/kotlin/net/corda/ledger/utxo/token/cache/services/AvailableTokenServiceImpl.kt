@@ -19,8 +19,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import org.slf4j.LoggerFactory
 
 @Component(
-    service = [AvailableTokenService::class],
-    scope = PROTOTYPE
+    service = [AvailableTokenService::class]
 )
 class AvailableTokenServiceImpl @Activate constructor(
     @Reference

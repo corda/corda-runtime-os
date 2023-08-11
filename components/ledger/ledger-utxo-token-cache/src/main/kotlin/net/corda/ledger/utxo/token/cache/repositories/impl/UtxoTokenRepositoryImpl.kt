@@ -3,7 +3,6 @@ package net.corda.ledger.utxo.token.cache.repositories.impl
 import java.math.BigDecimal
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import javax.persistence.EntityManager
 import javax.persistence.Query
 import javax.persistence.Tuple
@@ -21,8 +20,7 @@ import net.corda.ledger.utxo.token.cache.services.mapToToken
 import org.osgi.service.component.annotations.Reference
 
 @Component(
-    service = [ UtxoTokenRepository::class],
-    scope = PROTOTYPE
+    service = [ UtxoTokenRepository::class]
 )
 class UtxoTokenRepositoryImpl @Activate constructor(
     @Reference
