@@ -1,7 +1,7 @@
 package net.corda.interop.identity.cache
 
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.lifecycle.Lifecycle
+import net.corda.virtualnode.HoldingIdentity
 
 
 interface InteropIdentityRegistryService : Lifecycle {
@@ -19,5 +19,5 @@ interface InteropIdentityRegistryService : Lifecycle {
      * @param holdingIdentity The Holding Identity of the Virtual Node to get the view for.
      * @return An object containing interop identities visible to the specified virtual node.
      */
-    fun getVirtualNodeCacheView(holdingIdentity: HoldingIdentity): InteropIdentityRegistryView
+    fun getVirtualNodeRegistryView(holdingIdentity: HoldingIdentity): InteropIdentityRegistryView
 }

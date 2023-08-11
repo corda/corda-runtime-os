@@ -16,12 +16,12 @@ import net.corda.libs.interop.endpoints.v1.types.ImportInteropIdentityRest
 import net.corda.libs.interop.endpoints.v1.types.InteropIdentityResponse
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
-import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.group.policy.validation.InteropGroupPolicyValidator
@@ -191,6 +191,7 @@ internal class InteropRestResourceImpl @Activate constructor(
                 InteropIdentity(
                     groupId = interopGroupId,
                     x500Name = member.x500Name,
+                    owningVirtualNodeShortHash = member.owningIdentityShortHash,
                     facadeIds = member.facadeIds.map { FacadeId.of(it) },
                     applicationName = MemberX500Name.parse(member.x500Name).organization,
                     endpointUrl = member.endpointUrl,
@@ -304,6 +305,7 @@ internal class InteropRestResourceImpl @Activate constructor(
                     groupId = interopGroupId,
                     x500Name = member.x500Name,
                     facadeIds = member.facadeIds.map { FacadeId.of(it) },
+                    owningVirtualNodeShortHash = member.owningIdentityShortHash,
                     applicationName = MemberX500Name.parse(member.x500Name).organization,
                     endpointUrl = member.endpointUrl,
                     endpointProtocol = member.endpointProtocol

@@ -40,7 +40,7 @@ class FlowFiberExecutionContextFactoryImpl @Activate constructor(
             sandbox,
             checkpoint.holdingIdentity,
             membershipGroupReaderProvider.getGroupReader(checkpoint.holdingIdentity),
-            interopIdentityRegistryService.getVirtualNodeCacheView(checkpoint.holdingIdentity),
+            interopIdentityRegistryService.getVirtualNodeRegistryView(checkpoint.holdingIdentity),
             currentSandboxGroupContext,
             context.mdcProperties,
             context.flowMetrics

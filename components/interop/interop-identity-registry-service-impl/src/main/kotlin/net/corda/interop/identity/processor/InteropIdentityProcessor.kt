@@ -114,20 +114,10 @@ class InteropIdentityProcessor(
         val key = RecordKey(newRecord.key)
         val newValue = newRecord.value
 
-        var oldEntry : InteropIdentity?
-        var newEntry : InteropIdentity?
-
         logger.info("Message Received onNext; key: $key, newValue: $newValue, oldValue: $oldValue")
 
-        if (newValue?.localToVNode == true){
-             oldEntry = oldValue?.let { InteropIdentity.of(key.holdingIdentityShortHash, it) }
-             newEntry = newValue?.let { InteropIdentity.of(key.holdingIdentityShortHash, it) }
-
-        } else {
-            oldEntry = oldValue?.let { InteropIdentity.of("NOT OUR NODE", it) }
-            newEntry = newValue?.let { InteropIdentity.of("NOT OUR NODE", it) }
-        }
-
+        val oldEntry = oldValue?.let { InteropIdentity.of(it) }
+        val newEntry = newValue?.let { InteropIdentity.of(it) }
 
         if ((newEntry != null) && (oldEntry != null)) {
             updateCacheEntry(key, oldEntry, newEntry)
@@ -151,7 +141,7 @@ class InteropIdentityProcessor(
 
         currentData.entries.forEach { topicEntry ->
             val keyInfo = RecordKey(topicEntry.key)
-            val cacheEntry = InteropIdentity.of(keyInfo.holdingIdentityShortHash, topicEntry.value)
+            val cacheEntry = InteropIdentity.of(topicEntry.value)
             registryService.putInteropIdentity(keyInfo.holdingIdentityShortHash, cacheEntry)
         }
     }

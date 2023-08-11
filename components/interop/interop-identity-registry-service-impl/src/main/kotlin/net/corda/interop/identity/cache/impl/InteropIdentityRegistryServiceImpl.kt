@@ -58,7 +58,7 @@ class InteropIdentityRegistryServiceImpl @Activate constructor(
         return getOrCreateView(virtualNodeShortHash)
     }
 
-    override fun getVirtualNodeCacheView(holdingIdentity: HoldingIdentity): InteropIdentityRegistryView {
+    override fun getVirtualNodeRegistryView(holdingIdentity: HoldingIdentity): InteropIdentityRegistryView {
         return getOrCreateView(holdingIdentity.shortHash.toString())
     }
 

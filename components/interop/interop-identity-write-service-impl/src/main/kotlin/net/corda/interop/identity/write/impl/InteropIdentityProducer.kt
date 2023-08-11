@@ -32,13 +32,10 @@ class InteropIdentityProducer(
                 listOfFacades.add(facade.toString())
             }
 
-        val isLocal = identity.owningVirtualNodeShortHash == holdingIdentityShortHash
-        logger.debug("Publishing Interop Identity for $holdingIdentityShortHash. Is Local $isLocal")
-
         val recordValue = PersistentInteropIdentity(
             identity.groupId,
             identity.x500Name,
-            isLocal,
+            identity.owningVirtualNodeShortHash,
             listOfFacades,
             identity.applicationName,
             identity.endpointUrl,
