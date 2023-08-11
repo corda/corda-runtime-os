@@ -9,12 +9,15 @@ import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.interop.identity.cache.InteropIdentityRegistryService
+import net.corda.interop.identity.cache.impl.InteropIdentityRegistryViewImpl
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -33,12 +36,12 @@ class FlowFiberExecutionContextFactoryImplTest {
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
     private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider>()
     private val membershipGroupReader = mock<MembershipGroupReader>()
-    private val interopIdentityService = mock<InteropIdentityRegistryService>()
+    private val interopIdentityRegistryService = mock<InteropIdentityRegistryService>()
     private val flowFiberExecutionContextFactory = FlowFiberExecutionContextFactoryImpl(
         flowSandboxService,
         membershipGroupReaderProvider,
         currentSandboxGroupContext,
-        interopIdentityService
+        interopIdentityRegistryService
     )
 
     val mdcMock = Mockito.mockStatic(MDC::class.java).also {
@@ -60,6 +63,9 @@ class FlowFiberExecutionContextFactoryImplTest {
 
         val context = buildFlowEventContext<Any>(Wakeup())
 
+        val vNodeHoldingIdentity = HoldingIdentity(
+            MemberX500Name.parse(BOB_X500_HOLDING_IDENTITY.x500Name), BOB_X500_HOLDING_IDENTITY.groupId)
+
         whenever(context.checkpoint.flowStartContext).thenReturn(flowStartContext)
         whenever(context.checkpoint.holdingIdentity).thenReturn(BOB_X500_HOLDING_IDENTITY.toCorda())
         whenever(flowSandboxService.get(BOB_X500_HOLDING_IDENTITY.toCorda(), emptySet())).thenReturn(sandboxGroupContext)
@@ -68,7 +74,9 @@ class FlowFiberExecutionContextFactoryImplTest {
             BOB_X500_HOLDING_IDENTITY.toCorda()
         )).thenReturn(membershipGroupReader)
         whenever(sandboxGroupContext.dependencyInjector).thenReturn(sandboxDependencyInjector)
-
+        whenever(interopIdentityRegistryService.getVirtualNodeCacheView(
+            vNodeHoldingIdentity
+        )).thenReturn(InteropIdentityRegistryViewImpl(vNodeHoldingIdentity.shortHash.toString()))
         whenever(sandboxGroupContext.checkpointSerializer).thenReturn(checkpointSerializer)
 
         val result = flowFiberExecutionContextFactory.createFiberExecutionContext(context)
@@ -79,6 +87,5 @@ class FlowFiberExecutionContextFactoryImplTest {
         assertThat(result.membershipGroupReader).isSameAs(membershipGroupReader)
         assertThat(result.memberX500Name).isEqualTo(BOB_X500_NAME)
         assertThat(result.currentSandboxGroupContext).isEqualTo(currentSandboxGroupContext)
-
     }
 }
