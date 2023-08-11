@@ -97,7 +97,7 @@ class SessionInitExecutor(
             SessionInitOutputs(
                 tmpFLowEventKey,
                 sessionEvent.sessionId,
-                generateAppMessage(sessionEvent, sessionEventSerializer, flowConfig)
+                recordFactory.forwardEvent(sessionEvent, instant, flowConfig, sessionEvent.messageDirection)
             )
         }
     }
