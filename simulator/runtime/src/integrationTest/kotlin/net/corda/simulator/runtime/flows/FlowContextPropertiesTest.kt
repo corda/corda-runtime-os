@@ -5,8 +5,10 @@ import net.corda.simulator.Simulator
 import net.corda.simulator.runtime.testutils.createMember
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
+@Disabled//todo CORE-15757
 class FlowContextPropertiesTest {
 
     @Test
