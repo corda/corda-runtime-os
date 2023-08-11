@@ -119,7 +119,7 @@ class PersistenceExceptionTests {
 
     @Test
     fun `exception raised when cpks not present`() {
-        val ignoredRequest = getEntityRequest()
+        val ignoredRequest = createEntityRequest()
 
         val processor = EntityMessageProcessor(
             currentSandboxGroupContext,
@@ -152,7 +152,7 @@ class PersistenceExceptionTests {
 
     @Test
     fun `exception raised when vnode cannot be found`() {
-        val ignoredRequest = getEntityRequest()
+        val ignoredRequest = createEntityRequest()
 
         val brokenVirtualNodeInfoReadService = object :
             VirtualNodeInfoReadService by virtualNodeInfoReadService {
@@ -193,7 +193,7 @@ class PersistenceExceptionTests {
 
     @Test
     fun `exception raised when sent a missing command`() {
-        val oldRequest = getEntityRequest()
+        val oldRequest = createEntityRequest()
         val unknownCommand = ExceptionEnvelope("", "") // Any Avro object, or null works here.
 
         val vNodeInfo = virtualNodeInfoReadService.get(oldRequest.holdingIdentity.toCorda())!!
@@ -238,7 +238,7 @@ class PersistenceExceptionTests {
     /**
      * Create a simple request and return it.
      */
-    private fun getEntityRequest(): EntityRequest {
+    private fun createEntityRequest(): EntityRequest {
         val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
         // create dog using dog-aware sandbox
