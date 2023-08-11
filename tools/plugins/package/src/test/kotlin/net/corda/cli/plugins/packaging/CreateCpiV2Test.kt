@@ -273,4 +273,26 @@ class CreateCpiV2Test {
                         "[\$.groupId: does not match the regex pattern")
         )
     }
+
+    @Test
+    fun `cpi create tool aborts if cpi version is invalid`() {
+        val outputFile = Path.of(tempDir.toString(), CPI_FILE_NAME)
+        val errText = TestUtils.captureStdErr {
+            CommandLine(CreateCpiV2()).execute (
+                "--cpb=${cpbPath}",
+                "--group-policy=${testGroupPolicy}",
+                "--cpi-name=testCpi",
+                "--cpi-version=\$%#",
+                "--file=$outputFile",
+                "--keystore=${testKeyStore}",
+                "--storepass=keystore password",
+                "--key=${SIGNING_KEY_1_ALIAS}",
+                "--sig-file=$CPI_SIGNER_NAME"
+            )
+        }
+
+        assertFalse(outputFile.exists())
+        assertTrue(errText.contains("CPI version should include at least one alphanumeric character")
+        )
+    }
 }
