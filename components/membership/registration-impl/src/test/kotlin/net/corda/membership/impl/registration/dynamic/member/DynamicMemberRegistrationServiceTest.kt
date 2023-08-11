@@ -1140,7 +1140,7 @@ class DynamicMemberRegistrationServiceTest {
         }
 
         @Test
-        fun `re-registration fails when MGM is on 50000 platform - serial from request is incorrect and would let re-registration happen`() {
+        fun `re-registration fails when MGM is on 50000 platform - serial in request is incorrect and would let re-registration`() {
             val mgmInfo = mock<MemberInfo> {
                 on { mgmProvidedContext } doReturn mock()
                 on { memberProvidedContext } doReturn mock()

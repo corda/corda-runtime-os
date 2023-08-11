@@ -108,7 +108,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.versioning.Version
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -474,6 +473,7 @@ class DynamicMemberRegistrationService @Activate constructor(
          * If submitted serial or member's current serial suggests re-registration attempt,
          * we will mark their request as INVALID.
          */
+        @Suppress("ComplexCondition")
         private fun verifyReRegistrationIsEnabled(
             submittedSerial: Long,
             currentSerial: Long?,
