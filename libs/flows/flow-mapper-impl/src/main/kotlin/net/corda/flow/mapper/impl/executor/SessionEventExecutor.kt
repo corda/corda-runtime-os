@@ -5,8 +5,6 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionAck
-import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
@@ -40,7 +38,7 @@ class SessionEventExecutor(
         return if (flowMapperState == null) {
             handleNullState()
         } else {
-            processOtherSessionEvents(flowMapperState, instant)
+            processOtherSessionEvents(flowMapperState)
         }
     }
 
@@ -66,8 +64,7 @@ class SessionEventExecutor(
                         instant,
                         sessionEventSerializer,
                         appMessageFactory,
-                        flowConfig,
-                        0
+                        flowConfig
                     )
                 )
             )
@@ -83,7 +80,7 @@ class SessionEventExecutor(
     /**
      * Output the session event to the correct topic and key
      */
-    private fun processOtherSessionEvents(flowMapperState: FlowMapperState, instant: Instant): FlowMapperResult {
+    private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
         val errorMsg = "Flow mapper received error event from counterparty for session which does not exist. " +
                 "Session may have expired. Key: $eventKey, Event: $sessionEvent. "
 
@@ -97,20 +94,7 @@ class SessionEventExecutor(
                     log.warn("Attempted to send a message but flow mapper state is in CLOSING. Session ID: ${sessionEvent.sessionId}")
                     FlowMapperResult(flowMapperState, listOf())
                 } else {
-                    if (sessionEvent.payload is SessionClose) {
-                        val outputRecord =
-                            createP2PRecord(
-                                sessionEvent,
-                                SessionAck(),
-                                instant,
-                                sessionEventSerializer,
-                                appMessageFactory,
-                                flowConfig
-                            )
-                        FlowMapperResult(flowMapperState, listOf(outputRecord))
-                    } else {
-                        FlowMapperResult(flowMapperState, listOf())
-                    }
+                    FlowMapperResult(flowMapperState, listOf())
                 }
             }
             FlowMapperStateType.OPEN -> {

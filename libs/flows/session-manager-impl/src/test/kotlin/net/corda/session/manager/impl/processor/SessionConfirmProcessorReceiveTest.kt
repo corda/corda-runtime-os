@@ -26,7 +26,7 @@ class SessionConfirmProcessorReceiveTest {
             SessionStateType.CONFIRMED, 0, mutableListOf(), 1, mutableListOf()
         )
 
-        val event = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionConfirm(sessionProps), 1)
+        val event = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionConfirm(sessionProps))
         val sessionConfirmProcessorReceived =
             SessionConfirmProcessorReceive("key", inputState, event, SessionConfirm(sessionProps), Instant.now())
         val sessionState = sessionConfirmProcessorReceived.execute()
@@ -38,7 +38,7 @@ class SessionConfirmProcessorReceiveTest {
 
     @Test
     fun `test null state generates a new error state and queues an error to send`() {
-        val event = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionConfirm(sessionProps), 1)
+        val event = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionConfirm(sessionProps))
         val sessionConfirmProcessorReceived = SessionConfirmProcessorReceive("key", null, event, SessionConfirm(sessionProps), Instant
             .now())
         val sessionState = sessionConfirmProcessorReceived.execute()

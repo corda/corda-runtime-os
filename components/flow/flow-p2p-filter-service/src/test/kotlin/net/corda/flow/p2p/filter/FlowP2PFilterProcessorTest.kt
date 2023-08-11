@@ -51,15 +51,12 @@ class FlowP2PFilterProcessorTest {
             1,
             identity,
             identity,
-            0,
-            listOf(),
             SessionInit(
                 testValue,
                 null,
                 emptyKeyValuePairList(),
                 emptyKeyValuePairList(),
-                emptyKeyValuePairList(),
-                ByteBuffer.wrap("".toByteArray())
+                emptyKeyValuePairList()
             )
         )
 

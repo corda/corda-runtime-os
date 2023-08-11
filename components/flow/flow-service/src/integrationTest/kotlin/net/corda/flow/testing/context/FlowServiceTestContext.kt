@@ -22,7 +22,6 @@ import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseError
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
@@ -56,7 +55,6 @@ import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.MessagingConfig
@@ -283,13 +281,11 @@ class FlowServiceTestContext @Activate constructor(
             SessionInit.newBuilder()
                 .setFlowId(flowId)
                 .setCpiId(cpiId)
-                .setPayload(ByteBuffer.wrap(byteArrayOf()))
                 .setContextPlatformProperties(emptyKeyValuePairList())
                 .setContextUserProperties(emptyKeyValuePairList())
                 .setContextSessionProperties(getContextSessionProps(protocol))
                 .build(),
             sequenceNum = 0,
-            receivedSequenceNum = 1,
         )
     }
 
@@ -298,24 +294,6 @@ class FlowServiceTestContext @Activate constructor(
             put(FLOW_PROTOCOL, protocol)
             put(FLOW_PROTOCOL_VERSIONS_SUPPORTED, "1")
         }.avro
-    }
-
-    override fun sessionAckEventReceived(
-        flowId: String,
-        sessionId: String,
-        receivedSequenceNum: Int,
-        outOfOrderSeqNums: List<Int>
-    ): FlowIoRequestSetup {
-        return createAndAddSessionEvent(
-            flowId,
-            sessionId,
-            null,
-            null,
-            SessionAck(),
-            sequenceNum = null,
-            receivedSequenceNum,
-            outOfOrderSeqNums
-        )
     }
 
     override fun sessionDataEventReceived(
@@ -331,10 +309,8 @@ class FlowServiceTestContext @Activate constructor(
             sessionId,
             null,
             null,
-            SessionData(ByteBuffer.wrap(data)),
-            sequenceNum,
-            receivedSequenceNum,
-            outOfOrderSeqNums
+            SessionData(ByteBuffer.wrap(data), null),
+            sequenceNum
         )
     }
 
@@ -353,7 +329,6 @@ class FlowServiceTestContext @Activate constructor(
             initiatedIdentity,
             SessionClose(),
             sequenceNum,
-            receivedSequenceNum,
         )
     }
 
@@ -371,7 +346,6 @@ class FlowServiceTestContext @Activate constructor(
             initiatedIdentity,
             SessionError(ExceptionEnvelope(RuntimeException::class.qualifiedName, "Something went wrong!")),
             null,
-            receivedSequenceNum,
         )
     }
 
@@ -484,17 +458,13 @@ class FlowServiceTestContext @Activate constructor(
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?,
         payload: Any,
-        sequenceNum: Int?,
-        receivedSequenceNum: Int?,
-        outOfOrderSeqNums: List<Int> = emptyList()
+        sequenceNum: Int?
     ): FlowIoRequestSetup {
         val sessionEvent = buildSessionEvent(
             MessageDirection.INBOUND,
             sessionId,
             sequenceNum,
             payload,
-            receivedSequenceNum ?: sequenceNum ?: 0,
-            outOfOrderSeqNums,
             Instant.now(),
             initiatingIdentity ?: sessionInitiatingIdentity!!,
             initiatedIdentity ?: sessionInitiatedIdentity!!

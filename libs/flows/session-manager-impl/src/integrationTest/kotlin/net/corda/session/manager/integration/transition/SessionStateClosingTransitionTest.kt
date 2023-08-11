@@ -59,8 +59,7 @@ class SessionStateClosingTransitionTest {
         val sessionState = buildClosingState(false)
 
         val sessionEvent = generateMessage(SessionMessageType.CLOSE, instant)
-        val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant, maxMsgSize)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.WAIT_FOR_FINAL_ACK)
+        sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant, maxMsgSize)
     }
 
     @Test
@@ -98,21 +97,8 @@ class SessionStateClosingTransitionTest {
 
         val sessionEvent = generateMessage(SessionMessageType.CLOSE, instant, MessageDirection.INBOUND)
         sessionEvent.sequenceNum = 1
-        val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.WAIT_FOR_FINAL_ACK)
+        sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
     }
-
-    @Test
-    fun `Receive ack for close when initiated close`() {
-        val sessionState = buildClosingState(true)
-
-        val sessionEvent = generateMessage(SessionMessageType.ACK, instant, MessageDirection.INBOUND)
-        sessionEvent.receivedSequenceNum = 2
-
-        val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSING)
-    }
-
 
     private fun buildClosingState(initiatedClose: Boolean): SessionState {
         val sentSeqNum: Int

@@ -104,13 +104,12 @@ class FlowFilterServiceIntegrationTest {
             identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession", MembershipStatusFilter.ACTIVE
         )
         val sessionEvent = SessionEvent(
-            MessageDirection.OUTBOUND, Instant.now(), testId, 1, identity, identity, 0, listOf(), SessionInit(
+            MessageDirection.OUTBOUND, Instant.now(), testId, 1, identity, identity, SessionInit(
                 testId,
                 null,
                 emptyKeyValuePairList(),
                 emptyKeyValuePairList(),
                 emptyKeyValuePairList(),
-                ByteBuffer.wrap("".toByteArray())
             )
         )
 

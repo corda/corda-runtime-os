@@ -52,7 +52,7 @@ class FlowMapperMessageProcessorTest {
     }
 
     private fun buildSessionEvent(timestamp: Instant = Instant.now().plusSeconds(600) ) : SessionEvent {
-        return buildSessionEvent(MessageDirection.INBOUND, "sessionId", null, SessionInit(), 0, listOf(), timestamp)
+        return buildSessionEvent(MessageDirection.INBOUND, "sessionId", null, SessionInit(), timestamp)
     }
 
     @Test

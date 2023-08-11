@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test
 class SessionInitProcessorReceiveTest {
 
     private fun createSessionInit() =
-        SessionInit("flow", "flowId1", emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList(), null)
+        SessionInit("flow", "flowId1", emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList())
 
     @Test
     fun `Receive duplicate init when state is not null`() {
@@ -38,7 +38,6 @@ class SessionInitProcessorReceiveTest {
 
         assertThat(sessionState).isNotNull
         assertThat(sessionState.sendEventsState.undeliveredMessages).isEmpty()
-        assertThat(sessionState.sendAck).isTrue
     }
 
     @Test
@@ -90,6 +89,5 @@ class SessionInitProcessorReceiveTest {
         assertThat(receivedEvents.undeliveredMessages.first()).isEqualTo(sessionInitEvent)
 
         assertThat(sessionState.sendEventsState.undeliveredMessages).isEmpty()
-        assertThat(sessionState.sendAck).isTrue
     }
 }

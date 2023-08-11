@@ -61,9 +61,7 @@ class SessionDataProcessorReceive(
                 "Duplicate message received on key $key with sessionId $sessionId with sequence number of $seqNum when next" +
                         " expected seqNum is $expectedNextSeqNum"
             }
-            sessionState.apply {
-                sendAck = true
-            }
+            sessionState
         }
     }
 
@@ -95,7 +93,6 @@ class SessionDataProcessorReceive(
             sessionState.apply {
                 receivedEventsState.lastProcessedSequenceNum = recalcHighWatermark(receivedEventsState.undeliveredMessages,
                     receivedEventState.lastProcessedSequenceNum)
-                sendAck = true
             }
             logger.trace { "receivedEventsState after update: ${sessionState.receivedEventsState}" }
             sessionState
@@ -117,7 +114,7 @@ class SessionDataProcessorReceive(
         val receivedCloseSeqNum = receivedEventState.undeliveredMessages.find { it.payload is SessionClose }?.sequenceNum
         val otherPartyClosingMismatch = receivedCloseSeqNum != null && receivedCloseSeqNum <= expectedNextSeqNum
         val thisPartyClosingMismatch = receivedCloseSeqNum == null && currentStatus == SessionStateType.CLOSING
-        val statusMismatch = currentStatus == SessionStateType.WAIT_FOR_FINAL_ACK || currentStatus == SessionStateType.ERROR
+        val statusMismatch = currentStatus == SessionStateType.ERROR
                 || currentStatus == SessionStateType.CLOSED
         return otherPartyClosingMismatch || thisPartyClosingMismatch || statusMismatch
     }

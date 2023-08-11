@@ -121,6 +121,6 @@ class SessionDataProcessorSendTest {
         assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(3)
         val sessionEventOutput = result.sendEventsState.undeliveredMessages.first()
         assertThat(sessionEventOutput.sequenceNum).isNotNull
-        assertThat(sessionEventOutput.payload).isEqualTo(SessionData(Chunk()))
+        assertThat(sessionEventOutput.payload).isEqualTo(SessionData(Chunk(), null))
     }
 }

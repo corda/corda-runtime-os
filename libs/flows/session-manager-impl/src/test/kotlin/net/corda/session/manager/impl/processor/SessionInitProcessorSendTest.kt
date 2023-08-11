@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test
 class SessionInitProcessorSendTest {
 
     private fun createSessionInit() =
-        SessionInit("flow", "flowId1", emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList(), null)
+        SessionInit("flow", "flowId1", emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList())
 
     @Test
     fun `Send init when state is not null`() {

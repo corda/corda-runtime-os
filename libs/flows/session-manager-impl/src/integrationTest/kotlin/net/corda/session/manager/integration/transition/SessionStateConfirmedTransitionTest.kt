@@ -84,16 +84,6 @@ class SessionStateConfirmedTransitionTest {
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSING)
     }
 
-    @Test
-    fun `Receive ack when in state confirmed`() {
-        val sessionState = buildConfirmedState()
-        val sessionEvent = generateMessage(SessionMessageType.ACK, instant, MessageDirection.INBOUND)
-        sessionEvent.receivedSequenceNum = 1
-
-        val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CONFIRMED)
-    }
-
     private fun buildConfirmedState(): SessionState {
         return buildSessionState(
             SessionStateType.CONFIRMED,

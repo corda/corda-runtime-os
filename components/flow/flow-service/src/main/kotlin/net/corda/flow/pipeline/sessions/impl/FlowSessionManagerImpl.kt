@@ -66,7 +66,6 @@ class FlowSessionManagerImpl @Activate constructor(
         val payload = SessionInit.newBuilder()
             .setFlowId(checkpoint.flowId)
             .setCpiId(checkpoint.flowStartContext.cpiId)
-            .setPayload(ByteBuffer.wrap(byteArrayOf()))
             .setContextPlatformProperties(contextPlatformProperties)
             .setContextUserProperties(contextUserProperties)
             .setContextSessionProperties(sessionProperties)
@@ -78,8 +77,6 @@ class FlowSessionManagerImpl @Activate constructor(
             .setSequenceNum(null)
             .setInitiatingIdentity(checkpoint.holdingIdentity.toAvro())
             .setInitiatedIdentity(HoldingIdentity(x500Name.toString(), checkpoint.holdingIdentity.groupId))
-            .setReceivedSequenceNum(0)
-            .setOutOfOrderSequenceNums(listOf(0))
             .setPayload(payload)
             .build()
 
@@ -116,7 +113,7 @@ class FlowSessionManagerImpl @Activate constructor(
             sendSessionMessageToExistingSession(
                 checkpoint,
                 sessionId,
-                payload = SessionData(ByteBuffer.wrap(payload)),
+                payload = SessionData(ByteBuffer.wrap(payload), null),
                 instant
             )
         }
@@ -280,8 +277,6 @@ class FlowSessionManagerImpl @Activate constructor(
                 .setInitiatingIdentity(initiatingIdentity)
                 .setInitiatedIdentity(initiatedIdentity)
                 .setSequenceNum(null)
-                .setReceivedSequenceNum(0)
-                .setOutOfOrderSequenceNums(listOf(0))
                 .setPayload(payload)
                 .build(),
             instant = instant,

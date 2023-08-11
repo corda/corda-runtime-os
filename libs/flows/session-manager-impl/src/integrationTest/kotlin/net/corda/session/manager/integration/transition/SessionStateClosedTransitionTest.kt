@@ -92,17 +92,6 @@ class SessionStateClosedTransitionTest {
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSED)
     }
 
-    @Test
-    fun `Receive ack for close when in state closed`() {
-        val sessionState = buildClosedState()
-
-        val sessionEvent = generateMessage(SessionMessageType.ACK, instant, MessageDirection.INBOUND)
-        sessionEvent.receivedSequenceNum = 2
-
-        val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSED)
-    }
-
 
     private fun buildClosedState(): SessionState {
         return buildSessionState(

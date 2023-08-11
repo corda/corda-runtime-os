@@ -33,7 +33,6 @@ class SessionCloseProcessorReceiveTest {
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CLOSING)
         assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
-        assertThat(result.sendAck).isTrue
     }
 
     @Test
@@ -61,7 +60,6 @@ class SessionCloseProcessorReceiveTest {
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CLOSING)
         assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
-        assertThat(result.sendAck).isTrue
     }
 
     @Test
@@ -75,7 +73,6 @@ class SessionCloseProcessorReceiveTest {
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CLOSING)
         assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
-        assertThat(result.sendAck).isTrue
     }
 
     @Test
@@ -89,23 +86,22 @@ class SessionCloseProcessorReceiveTest {
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CLOSED)
         assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
-        assertThat(result.sendAck).isTrue
     }
 
     @Test
     fun `Receive a close when status is CLOSING but some sent messages not acked`() {
         val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId-test", 1, SessionClose())
         val inputState = buildSessionState(
-            SessionStateType.CLOSING, 0, mutableListOf(), 0, mutableListOf(buildSessionEvent(MessageDirection.OUTBOUND,
+            SessionStateType.CLOSING, 0, mutableListOf(), 0, mutableListOf(buildSessionEvent(
+                MessageDirection.OUTBOUND,
                 "sessionId-test2", 2,
-                SessionClose()))
+                SessionClose()
+            ))
         )
 
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
-        assertThat(result.status).isEqualTo(SessionStateType.WAIT_FOR_FINAL_ACK)
         assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
         assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionClose::class.java)
-        assertThat(result.sendAck).isTrue
     }
 }

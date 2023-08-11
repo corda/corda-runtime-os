@@ -35,7 +35,7 @@ class SessionEventExecutorTest {
     fun `Session event executor test outbound data message and non null state`() {
         val bytes = "bytes".toByteArray()
         whenever(sessionEventSerializer.serialize(any())).thenReturn(bytes)
-        val payload = buildSessionEvent(MessageDirection.OUTBOUND, sessionId, 1, SessionData(ByteBuffer.wrap(bytes)))
+        val payload = buildSessionEvent(MessageDirection.OUTBOUND, sessionId, 1, SessionData(ByteBuffer.wrap(bytes), null))
 
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
 
@@ -118,8 +118,6 @@ class SessionEventExecutorTest {
         assertThat(appMessageFactoryCaptor.sessionEvent!!.messageDirection).isEqualTo(MessageDirection.OUTBOUND)
         assertThat(appMessageFactoryCaptor.sessionEvent!!.initiatingIdentity).isEqualTo(payload.initiatingIdentity)
         assertThat(appMessageFactoryCaptor.sessionEvent!!.initiatedIdentity).isEqualTo(payload.initiatedIdentity)
-        assertThat(appMessageFactoryCaptor.sessionEvent!!.receivedSequenceNum).isEqualTo(0)
-        assertThat(appMessageFactoryCaptor.sessionEvent!!.outOfOrderSequenceNums).isEmpty()
         assertThat(appMessageFactoryCaptor.sessionEvent!!.payload::class.java).isEqualTo(SessionError::class.java)
         val error = appMessageFactoryCaptor.sessionEvent!!.payload as SessionError
         assertThat(error.errorMessage.errorType).isEqualTo("FlowMapper-SessionExpired")

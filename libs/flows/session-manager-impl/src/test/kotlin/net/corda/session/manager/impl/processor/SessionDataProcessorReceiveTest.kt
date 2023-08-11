@@ -51,7 +51,6 @@ class SessionDataProcessorReceiveTest {
         assertThat(result.status).isEqualTo(SessionStateType.CONFIRMED)
 
         assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
-        assertThat(result.sendAck).isTrue
     }
 
     @Test
@@ -66,7 +65,6 @@ class SessionDataProcessorReceiveTest {
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CONFIRMED)
         assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
-        assertThat(result.sendAck).isTrue
     }
 
     @Test
@@ -82,7 +80,6 @@ class SessionDataProcessorReceiveTest {
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CLOSING)
         assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
-        assertThat(result.sendAck).isTrue
     }
 
 
@@ -100,7 +97,6 @@ class SessionDataProcessorReceiveTest {
         assertThat(result.status).isEqualTo(SessionStateType.CONFIRMED)
         assertThat(result.receivedEventsState.undeliveredMessages.size).isEqualTo(2)
         assertThat(result.receivedEventsState.lastProcessedSequenceNum).isEqualTo(4)
-        assertThat(result.sendAck).isTrue
     }
 
     @Test

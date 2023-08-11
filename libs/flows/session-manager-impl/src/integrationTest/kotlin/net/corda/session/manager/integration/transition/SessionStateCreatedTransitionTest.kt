@@ -83,16 +83,6 @@ class SessionStateCreatedTransitionTest {
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSING)
     }
 
-    @Test
-    fun `Session Initiator receives ack back`() {
-        val sessionState = buildCreatedState()
-        val sessionEvent = generateMessage(SessionMessageType.ACK, instant, MessageDirection.INBOUND)
-        sessionEvent.receivedSequenceNum = 1
-
-        val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CONFIRMED)
-    }
-
     private fun buildCreatedState(): SessionState {
         val sentSessionInit = generateMessage(SessionMessageType.INIT, instant)
         sentSessionInit.sequenceNum = 1

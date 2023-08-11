@@ -39,7 +39,7 @@ class SessionCloseProcessorSend(
             sessionState == null -> {
                 handleNullSession(sessionId)
             }
-            currentStatus == SessionStateType.CLOSED || currentStatus == SessionStateType.WAIT_FOR_FINAL_ACK -> {
+            currentStatus == SessionStateType.CLOSED -> {
                 sessionState
             }
             currentStatus == SessionStateType.ERROR -> {
@@ -118,7 +118,6 @@ class SessionCloseProcessorSend(
                     "${sessionEvent.sequenceNum}, $sessionId" }
             // Doesn't go to closed until ack received
             sessionState.apply {
-                status = SessionStateType.WAIT_FOR_FINAL_ACK
                 sendEventsState.lastProcessedSequenceNum = nextSeqNum
                 sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(sessionEvent)
             }
