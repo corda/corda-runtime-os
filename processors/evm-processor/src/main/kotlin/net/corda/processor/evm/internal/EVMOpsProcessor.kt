@@ -1,20 +1,15 @@
-package net.corda.processors.evm.internal
+package net.corda.processor.evm.internal
 
 import com.google.gson.JsonObject
-import net.corda.data.interop.evm.EvmRequest
-import net.corda.data.interop.evm.request.SendRawTransaction
-import net.corda.data.interop.evm.EvmResponse
-import net.corda.messaging.api.processor.RPCResponderProcessor
-import org.slf4j.LoggerFactory
-import org.web3j.crypto.Credentials
-import org.web3j.crypto.RawTransaction
-import org.web3j.service.TxSignServiceImpl
-import org.web3j.utils.Numeric
 import java.math.BigInteger
 import java.util.concurrent.CompletableFuture
-import net.corda.interop.web3j.internal.EthereumConnector
 import java.util.concurrent.Executors
-import kotlinx.coroutines.*
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.runBlocking
+import net.corda.data.interop.evm.EvmRequest
+import net.corda.data.interop.evm.EvmResponse
 import net.corda.data.interop.evm.request.Call
 import net.corda.data.interop.evm.request.ChainId
 import net.corda.data.interop.evm.request.EstimateGas
@@ -24,9 +19,17 @@ import net.corda.data.interop.evm.request.GetCode
 import net.corda.data.interop.evm.request.GetTransactionByHash
 import net.corda.data.interop.evm.request.GetTransactionReceipt
 import net.corda.data.interop.evm.request.MaxPriorityFeePerGas
+import net.corda.data.interop.evm.request.SendRawTransaction
 import net.corda.data.interop.evm.request.Syncing
 import net.corda.interop.web3j.internal.EVMErrorException
-import java.util.concurrent.TimeUnit
+import net.corda.interop.web3j.internal.EthereumConnector
+import net.corda.messaging.api.processor.RPCResponderProcessor
+import okhttp3.OkHttpClient
+import org.slf4j.LoggerFactory
+import org.web3j.crypto.Credentials
+import org.web3j.crypto.RawTransaction
+import org.web3j.service.TxSignServiceImpl
+import org.web3j.utils.Numeric
 
 class TransientErrorException(message: String) : Exception(message)
 
@@ -36,11 +39,13 @@ class TransientErrorException(message: String) : Exception(message)
  * EVMOpsProcessor is an implementation of the RPCResponderProcessor for handling Ethereum Virtual Machine (EVM) requests.
  * It allows executing smart contract calls and sending transactions on an Ethereum network.
  */
-class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
+class EVMOpsProcessor(
+    private val evmConnector: EthereumConnector = EthereumConnector(OkHttpClient())
+
+) : RPCResponderProcessor<EvmRequest, EvmResponse> {
 
     private val MAX_RETRIES = 3
     private val RETRY_DELAY_MS = 1000L // 1 second
-    private val evmConnector = EthereumConnector()
     private val scheduledExecutorService = Executors.newFixedThreadPool(20)
     private val transientEthereumErrorCodes = listOf(
         -32000, -32005, -32010, -32016, -32002,

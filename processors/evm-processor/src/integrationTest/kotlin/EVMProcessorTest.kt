@@ -7,8 +7,7 @@ import net.corda.data.interop.evm.request.GasPrice
 import net.corda.data.interop.evm.request.GetCode
 import net.corda.data.interop.evm.request.GetTransactionReceipt
 import net.corda.data.interop.evm.request.SendRawTransaction
-import net.corda.interop.web3j.internal.main
-import net.corda.processors.evm.internal.EVMOpsProcessor
+import net.corda.processor.evm.internal.EVMOpsProcessor
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.util.concurrent.CompletableFuture

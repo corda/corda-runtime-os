@@ -1,16 +1,15 @@
 package net.corda.interop.web3j.internal
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.gson.Gson
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
+import java.util.concurrent.TimeUnit
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import java.util.concurrent.TimeUnit
-import com.google.gson.Gson
-import com.google.gson.JsonObject
 import kotlin.reflect.KClass
-import com.google.gson.JsonParser
-import net.corda.v5.base.exceptions.CordaRuntimeException
 
 
 data class JsonRpcResponse(
@@ -96,7 +95,9 @@ data class TransactionLog(
     val removed: Boolean
 )
 
-class EthereumConnector {
+class EthereumConnector(
+    private val client: OkHttpClient
+) {
 
     companion object {
         private const val JSON_RPC_VERSION = "2.0"

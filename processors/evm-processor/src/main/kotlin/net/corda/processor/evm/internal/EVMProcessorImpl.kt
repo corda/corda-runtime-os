@@ -1,26 +1,31 @@
 package net.corda.processors.evm.internal
 
-import net.corda.processors.db.EVMProcessor
-import net.corda.libs.configuration.SmartConfig
-import net.corda.lifecycle.*
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.interop.evm.EvmRequest
+import net.corda.data.interop.evm.EvmResponse
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
-import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-
+import net.corda.lifecycle.DependentComponents
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-
-
+import net.corda.processor.evm.internal.EVMOpsProcessor
+import net.corda.processors.db.EVMProcessor
+import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-
-import net.corda.data.interop.evm.EvmRequest
-import net.corda.data.interop.evm.EvmResponse
-import net.corda.schema.Schemas
 
 @Component(service = [EVMProcessor::class])
 @Suppress("Unused", "LongParameterList")
