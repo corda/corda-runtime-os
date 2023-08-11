@@ -11,7 +11,6 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PP
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_TRUST_ROOTS
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_TYPE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.TLS_VERSION
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.CIPHER_SUITE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.FILE_FORMAT_VERSION
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.MGM_INFO
@@ -28,7 +27,6 @@ import net.corda.membership.lib.impl.grouppolicy.getMandatoryInt
 import net.corda.membership.lib.impl.grouppolicy.getMandatoryJsonNode
 import net.corda.membership.lib.impl.grouppolicy.getMandatoryString
 import net.corda.membership.lib.impl.grouppolicy.getMandatoryStringList
-import net.corda.membership.lib.impl.grouppolicy.getMandatoryStringMap
 import net.corda.membership.lib.impl.grouppolicy.getMissingCertError
 import net.corda.membership.lib.impl.grouppolicy.getOptionalString
 import net.corda.membership.lib.impl.grouppolicy.getOptionalStringList
@@ -58,7 +56,7 @@ class InteropGroupPolicyImpl(rootNode: JsonNode) : InteropGroupPolicy {
         MGMInfoImpl(it)
     }
 
-    override val cipherSuite: GroupPolicy.CipherSuite = CipherSuiteImpl(rootNode.getMandatoryStringMap(CIPHER_SUITE))
+    override val cipherSuite: GroupPolicy.CipherSuite = CipherSuiteImpl(emptyMap())
 
     internal inner class ProtocolParametersImpl : GroupPolicy.ProtocolParameters {
         override val sessionKeyPolicy = SessionKeyPolicy.COMBINED

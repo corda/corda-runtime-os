@@ -40,7 +40,9 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.util.UUID
+import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.read.MembershipGroupReaderProvider
 
 @Suppress("LongParameterList")
 @Component(service = [PluggableRestResource::class])
@@ -58,7 +60,9 @@ internal class InteropRestResourceImpl @Activate constructor(
     @Reference(service = InteropGroupPolicyReadService::class)
     private val interopGroupPolicyReadService: InteropGroupPolicyReadService,
     @Reference(service = InteropGroupPolicyValidator::class)
-    private val interopGroupPolicyValidator: InteropGroupPolicyValidator
+    private val interopGroupPolicyValidator: InteropGroupPolicyValidator,
+    @Reference(service = MembershipGroupReaderProvider::class)
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider
 ) : InteropRestResource, PluggableRestResource<InteropRestResource>, Lifecycle {
 
     private companion object {
@@ -135,8 +139,8 @@ internal class InteropRestResourceImpl @Activate constructor(
             vNodeInfo.holdingIdentity.x500Name.locality,
             vNodeInfo.holdingIdentity.x500Name.country
         ).toString()
-
-        interopGroupPolicyValidator.validateGroupPolicy(createInteropIdentityRestRequest.groupPolicy)
+        val json = ObjectMapper().writeValueAsString(createInteropIdentityRestRequest.groupPolicy)
+        interopGroupPolicyValidator.validateGroupPolicy(json)
 
         try {
             MemberX500Name.parse(ownedInteropIdentityX500)
@@ -147,7 +151,7 @@ internal class InteropRestResourceImpl @Activate constructor(
         }
 
         val groupIdField = try {
-            getGroupIdFieldFromGroupPolicy(createInteropIdentityRestRequest.groupPolicy)
+            getGroupIdFieldFromGroupPolicy(json)
         } catch (e: Exception) {
             throw InvalidInputDataException(e.message!!)
         }
@@ -166,8 +170,28 @@ internal class InteropRestResourceImpl @Activate constructor(
 
         val interopGroupId = interopIdentityWriteService.publishGroupPolicy(
             groupIdField,
-            createInteropIdentityRestRequest.groupPolicy
+            json
         )
+
+        val groupReader = membershipGroupReaderProvider.getGroupReader(vNodeInfo.holdingIdentity)
+        val owningIdentityMemberInfo = checkNotNull(groupReader.lookup(vNodeInfo.holdingIdentity.x500Name)) {
+            "Failed to read member info for identity ${vNodeInfo.holdingIdentity.x500Name}"
+        }
+
+        val owningIdentityMemberContext = owningIdentityMemberInfo.memberProvidedContext.entries.associate { entry ->
+            entry.key to entry.value
+        }
+
+        val endpointUrlKey = String.format(MemberInfoExtension.URL_KEY, "0")
+        val protocolVersionKey = String.format(MemberInfoExtension.PROTOCOL_VERSION, "0")
+
+        val endpointUrl = checkNotNull(owningIdentityMemberContext[endpointUrlKey]) {
+            "Failed to get endpoint URL from owning identity member context, no entry with key $endpointUrlKey"
+        }
+
+        val endpointProtocol = checkNotNull(owningIdentityMemberContext[protocolVersionKey]) {
+            "Failed to get endpoint protocol version from owning identity member context, no entry with key $protocolVersionKey"
+        }
 
         // Create the owned interop identity
         interopIdentityWriteService.addInteropIdentity(
@@ -178,9 +202,8 @@ internal class InteropRestResourceImpl @Activate constructor(
                 owningVirtualNodeShortHash = vNodeInfo.getVNodeShortHash(),
                 facadeIds = facadeIds(),
                 applicationName = createInteropIdentityRestRequest.applicationName,
-                // TODO: Fetch these from the member info topic
-                endpointUrl = "endpointUrl",
-                endpointProtocol = "endpointProtocol"
+                endpointUrl = endpointUrl,
+                endpointProtocol = endpointProtocol
             )
         )
 

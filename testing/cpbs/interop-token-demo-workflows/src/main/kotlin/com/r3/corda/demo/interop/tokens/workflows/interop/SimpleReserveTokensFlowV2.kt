@@ -8,7 +8,6 @@ import net.corda.v5.application.interop.FacadeService
 import net.corda.v5.application.interop.InteropIdentityLookUp
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 
@@ -39,12 +38,14 @@ class SimpleReserveTokensFlowV2 : ClientStartableFlow {
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
         val facadeId = getArgument(args, "facadeId")
-        val alias = MemberX500Name.parse(getArgument(args, "alias"))
+        val applicationName = getArgument(args, "applicationName")
         val uuid = getArgument(args, "payload")
 
-        val interopIdentity = interopIdentityLookUp.lookup(alias.organization)
+        val interopIdentity = checkNotNull(interopIdentityLookUp.lookup(applicationName)) {
+            "No interop identity found with application name '$applicationName'"
+        }
 
-        log.info("Calling facade method '$facadeId' with payload '$uuid' to $alias")
+        log.info("Calling facade method '$facadeId' with payload '$uuid' using interop identity: ${interopIdentity.x500Name}")
 
         val tokens: TokensFacade =
             facadeService.getProxy(facadeId, TokensFacade::class.java, interopIdentity)
