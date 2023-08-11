@@ -5,7 +5,7 @@ import net.corda.v5.ledger.utxo.ContractState
 import java.security.PublicKey
 
 @BelongsToContract(TestContract::class)
-class TestUtxoState(
+open class TestUtxoState(
     val identifier: Int,
     val testField: String,
     private val participants: List<PublicKey>,
