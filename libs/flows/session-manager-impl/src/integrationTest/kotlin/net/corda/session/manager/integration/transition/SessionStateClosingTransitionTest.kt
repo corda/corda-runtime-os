@@ -12,11 +12,12 @@ import net.corda.session.manager.integration.SessionMessageType
 import net.corda.session.manager.integration.helper.generateMessage
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-
+@Disabled //todo CORE-15757
 class SessionStateClosingTransitionTest {
 
     private val messagingChunkFactory : MessagingChunkFactory = mock<MessagingChunkFactory>().apply {

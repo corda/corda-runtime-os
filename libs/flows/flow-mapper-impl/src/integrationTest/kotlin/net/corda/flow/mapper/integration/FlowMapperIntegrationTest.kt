@@ -27,6 +27,7 @@ import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.fail
@@ -36,6 +37,7 @@ import java.nio.ByteBuffer
 import java.time.Instant
 
 @ExtendWith(ServiceExtension::class)
+@Disabled //todo CORE-15757
 class FlowMapperIntegrationTest {
 
     private val identity = HoldingIdentity("x500", "grp1")

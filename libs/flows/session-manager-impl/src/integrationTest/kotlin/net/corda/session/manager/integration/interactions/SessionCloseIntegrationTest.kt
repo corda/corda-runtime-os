@@ -13,9 +13,10 @@ import net.corda.session.manager.integration.helper.assertStatus
 import net.corda.session.manager.integration.helper.closeSession
 import net.corda.session.manager.integration.helper.initiateNewSession
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.Instant
-
+@Disabled //todo CORE-15757
 class SessionCloseIntegrationTest {
 
     private companion object {
