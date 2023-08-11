@@ -1,12 +1,13 @@
 package net.corda.libs.interop.endpoints.v1
 
+import com.fasterxml.jackson.core.JsonParseException
 import net.corda.libs.interop.endpoints.v1.types.ImportInteropIdentityRest2
 import net.corda.libs.interop.endpoints.v1.types.ImportInteropIdentityRest3
 import net.corda.rest.json.serialization.jacksonObjectMapper
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
-class Test1 {
+class InteropJsonToDataClassesTest {
     val sampleRequestJson = """
 { "applicationName": "Bob2",
   "groupPolicy": {
@@ -86,5 +87,40 @@ class Test1 {
         Assertions.assertEquals(originalGroupPolicy, newGroupPolicy)
 
         println(newGroupPolicyAsString) //TODO remove println
+    }
+
+    @Test
+    fun `test julias group policy json`() {
+        val mapper = jacksonObjectMapper() //I suspect this is what Rest server uses to transform JSOn to data classes
+
+        val sampleRequestJson =  """{
+            "applicationName": "Bob2",
+            "groupPolicy": {
+            "cipherSuite": "corda.provider" : "default",
+            "fileFormatVersion": "string",
+            "groupId": "edc8ef6a-d291-4342-b2eb-fe1e56b986ac",
+            "p2pParameters": [
+            {}
+            ]
+        },
+            "members": [
+            {
+                "endpointProtocol": "string",
+                "endpointUrl": "string",
+                "facadeIds": [
+                "org.corda.interop/platform/tokens/v2.0"
+                ],
+                "owningIdentityShortHash": "46E86A4F7210",
+                "x500Name": "O=Bob2, L=London, C=GB"
+            }
+            ]
+        } """
+
+
+        val exception = Assertions.assertThrows(JsonParseException::class.java) {
+            mapper.readTree(sampleRequestJson)
+        }
+        Assertions.assertTrue(exception.message?.contains("Unexpected character") ?: false)
+        println(exception)
     }
 }
