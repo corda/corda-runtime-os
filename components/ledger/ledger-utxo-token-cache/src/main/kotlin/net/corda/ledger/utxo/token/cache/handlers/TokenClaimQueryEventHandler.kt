@@ -7,10 +7,10 @@ import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
-import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
-import java.math.BigDecimal
 import net.corda.ledger.utxo.token.cache.Helper.toDto
 import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
+import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
+import java.math.BigDecimal
 
 class TokenClaimQueryEventHandler(
     private val filterStrategy: TokenFilterStrategy,
