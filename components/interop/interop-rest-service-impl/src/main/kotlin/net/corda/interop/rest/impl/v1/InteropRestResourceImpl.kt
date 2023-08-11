@@ -16,12 +16,12 @@ import net.corda.libs.interop.endpoints.v1.types.ImportInteropIdentityRest
 import net.corda.libs.interop.endpoints.v1.types.InteropIdentityResponse
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
-import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
-import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.group.policy.validation.InteropGroupPolicyValidator
@@ -135,8 +135,8 @@ internal class InteropRestResourceImpl @Activate constructor(
             vNodeInfo.holdingIdentity.x500Name.locality,
             vNodeInfo.holdingIdentity.x500Name.country
         ).toString()
-
-        interopGroupPolicyValidator.validateGroupPolicy(createInteropIdentityRestRequest.groupPolicy)
+        val json = ObjectMapper().writeValueAsString(createInteropIdentityRestRequest.groupPolicy)
+        interopGroupPolicyValidator.validateGroupPolicy(json)
 
         try {
             MemberX500Name.parse(ownedInteropIdentityX500)
@@ -147,7 +147,7 @@ internal class InteropRestResourceImpl @Activate constructor(
         }
 
         val groupIdField = try {
-            getGroupIdFieldFromGroupPolicy(createInteropIdentityRestRequest.groupPolicy)
+            getGroupIdFieldFromGroupPolicy(json)
         } catch (e: Exception) {
             throw InvalidInputDataException(e.message!!)
         }
@@ -166,7 +166,7 @@ internal class InteropRestResourceImpl @Activate constructor(
 
         val interopGroupId = interopIdentityWriteService.publishGroupPolicy(
             groupIdField,
-            createInteropIdentityRestRequest.groupPolicy
+            json
         )
 
         // Create the owned interop identity

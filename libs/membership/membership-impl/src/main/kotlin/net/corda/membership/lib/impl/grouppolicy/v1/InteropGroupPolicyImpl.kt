@@ -58,7 +58,7 @@ class InteropGroupPolicyImpl(rootNode: JsonNode) : InteropGroupPolicy {
         MGMInfoImpl(it)
     }
 
-    override val cipherSuite: GroupPolicy.CipherSuite = CipherSuiteImpl(rootNode.getMandatoryStringMap(CIPHER_SUITE))
+    override val cipherSuite: GroupPolicy.CipherSuite = CipherSuiteImpl(emptyMap())
 
     internal inner class ProtocolParametersImpl : GroupPolicy.ProtocolParameters {
         override val sessionKeyPolicy = SessionKeyPolicy.COMBINED
