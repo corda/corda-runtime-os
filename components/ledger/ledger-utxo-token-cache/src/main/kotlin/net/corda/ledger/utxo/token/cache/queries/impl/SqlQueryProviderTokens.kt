@@ -12,11 +12,11 @@ import org.osgi.service.component.annotations.ServiceScope
 class SqlQueryProviderTokens @Activate constructor() : SqlQueryProvider {
 
     companion object {
-        val SQL_PARAMETER_TOKEN_TYPE = "tokenType"
-        val SQL_PARAMETER_ISSUER_HASH = "issuerHash"
-        val SQL_PARAMETER_SYMBOL = "symbol"
-        val SQL_PARAMETER_OWNER_HASH = "ownerHash"
-        val SQL_PARAMETER_TAG_FILTER = "tag"
+        const val SQL_PARAMETER_TOKEN_TYPE = "tokenType"
+        const val SQL_PARAMETER_ISSUER_HASH = "issuerHash"
+        const val SQL_PARAMETER_SYMBOL = "symbol"
+        const val SQL_PARAMETER_OWNER_HASH = "ownerHash"
+        const val SQL_PARAMETER_TAG_FILTER = "tag"
     }
 
     override fun getBalanceQuery(includeTagFilter: Boolean, includeOwnerFilter: Boolean): String {
