@@ -48,6 +48,7 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
         -32011, -32012, -32014, -32015, -32019,
         -32020, -32021
     )
+
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -60,7 +61,7 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
                 try {
                     return action()
                 } catch (e: EVMErrorException) {
-                    if(transientEthereumErrorCodes.contains(e.errorResponse.error.code)){
+                    if (transientEthereumErrorCodes.contains(e.errorResponse.error.code)) {
                         // Log or handle the error if needed
                         retries++
                         if (retries <= maxRetries) {
@@ -68,7 +69,7 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
                         } else {
                             throw e // If retries exhausted, rethrow the exception
                         }
-                    }else{
+                    } else {
                         throw e
                     }
                 }
@@ -94,7 +95,6 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
     }
 
 
-
     /**
      * Get the transaction receipt details from the Ethereum node.
      *
@@ -102,11 +102,11 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
      * @param receipt The receipt of the transaction.
      * @return The JSON representation of the transaction receipt, or null if not found.
      */
-    fun getTransactionReceipt(rpcConnection: String, receipt: String): CompletableFuture<String> {
-        return CompletableFuture.supplyAsync<String>{
-            val resp = evmConnector.send(rpcConnection, "eth_getTransactionReceipt", listOf(receipt))
-            resp.result.toString()
-        }
+    private fun getTransactionReceipt(rpcConnection: String, receipt: String): String {
+        println("RECEIPT: $receipt")
+        val resp = evmConnector.send(rpcConnection, "eth_getTransactionReceipt", listOf(receipt),true)
+        return resp.result.toString()
+
     }
 
 
@@ -124,7 +124,6 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
         // Return the transaction details as a string.
         return resp.result.toString()
     }
-
 
 
     /**
@@ -149,7 +148,6 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
         val resp = evmConnector.send(rpcConnection, "eth_gasPrice", listOf(""))
         return BigInteger.valueOf(Integer.decode(resp.result.toString()).toLong())
     }
-
 
 
     /**
@@ -181,7 +179,6 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
         // Return the code as a string.
         return resp.result.toString()
     }
-
 
 
     /**
@@ -232,15 +229,16 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
         return resp.result.toString()
     }
 
-    private suspend fun prepareTransaction(rpcConnection: String): Pair<BigInteger, Long> = coroutineScope {
-        val nonceDeferred = async { getTransactionCount(rpcConnection, "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73") }
-        val chainIdDeferred = async { getChainId(rpcConnection) }
+    private suspend fun prepareTransaction(rpcConnection: String, from: String): Pair<BigInteger, Long> =
+        coroutineScope {
+            val nonceDeferred = async { getTransactionCount(rpcConnection, from) }
+            val chainIdDeferred = async { getChainId(rpcConnection) }
 
-        val nonce = nonceDeferred.await()
-        val chainId = chainIdDeferred.await()
+            val nonce = nonceDeferred.await()
+            val chainId = chainIdDeferred.await()
 
-        nonce to chainId
-    }
+            nonce to chainId
+        }
 
     /**
      * Send a transaction to the Ethereum network.
@@ -250,35 +248,40 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
      * @param payload The payload data for the transaction.
      * @return The receipt of the transaction.
      */
-    private suspend fun sendTransaction(rpcConnection: String, contractAddress: String, payload: String): String {
+    private suspend fun sendTransaction(
+        rpcConnection: String,
+        from: String,
+        contractAddress: String,
+        payload: String
+    ): String {
         // Do this async
-        val (nonce, chainId) = prepareTransaction(rpcConnection)
+        val (nonce, chainId) = prepareTransaction(rpcConnection, from)
 
         val transaction = RawTransaction.createTransaction(
-                chainId,
-                nonce,
-                BigInteger.valueOf(10000000),
-                contractAddress,
-                BigInteger.valueOf(0),
-                payload,
-                BigInteger.valueOf(10000000),
-                BigInteger.valueOf(51581475500)
-            )
+            chainId,
+            nonce,
+            BigInteger.valueOf(10000000),
+            contractAddress,
+            BigInteger.valueOf(0),
+            payload,
+            BigInteger.valueOf(10000000),
+            BigInteger.valueOf(51581475500)
+        )
 
-            val signer = Credentials.create("0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63")
-            println("Passed Credentials")
+        val signer = Credentials.create("0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63")
+        println("Passed Credentials")
 
-            val signed = TxSignServiceImpl(signer).sign(transaction, "1337".toLong())
-            println("Passed Signing")
-            println(Numeric.toHexString(signed))
-            val tReceipt =
-                evmConnector.send(rpcConnection, "eth_sendRawTransaction", listOf(Numeric.toHexString(signed)))
-            println("Receipt: $tReceipt")
-            if (!tReceipt.success) {
-                return tReceipt.result.toString()
-            }
+        val signed = TxSignServiceImpl(signer).sign(transaction, "1337".toLong())
+        println("Passed Signing")
+        println(Numeric.toHexString(signed))
+        val tReceipt =
+            evmConnector.send(rpcConnection, "eth_sendRawTransaction", listOf(Numeric.toHexString(signed)))
+        println("Receipt: $tReceipt")
+        if (!tReceipt.success) {
+            return tReceipt.result.toString()
+        }
 
-            // Exception Case When Contract is Being Created we need to wait the address
+        // Exception Case When Contract is Being Created we need to wait the address
         println("CONTRACT ADDRESS EMPTY: $contractAddress")
         return if (contractAddress.isEmpty()) {
             queryCompletionContract(rpcConnection, tReceipt.result.toString())
@@ -329,49 +332,59 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
                 println("PAYLOAD: ${payload.payload}")
                 val callResult = sendCall(rpcConnection, to, payload.payload)
                 respFuture.complete(EvmResponse(flowId, callResult))
-             }
+            }
+
             is ChainId -> {
                 // Handle the Chain Id
                 val chainId = getChainId(rpcConnection)
-                respFuture.complete(EvmResponse(flowId,chainId.toString()))
+                respFuture.complete(EvmResponse(flowId, chainId.toString()))
             }
+
             is EstimateGas -> {
-                val estimateGas = estimateGas(rpcConnection,from,to,payload.payload.toString())
-                respFuture.complete(EvmResponse(flowId,estimateGas.toString()))
+                val estimateGas = estimateGas(rpcConnection, from, to, payload.payload.toString())
+                respFuture.complete(EvmResponse(flowId, estimateGas.toString()))
             }
+
             is GasPrice -> {
                 val gasPrice = getGasPrice(rpcConnection)
-                respFuture.complete(EvmResponse(flowId,gasPrice.toString()))
+                respFuture.complete(EvmResponse(flowId, gasPrice.toString()))
             }
+
             is GetBalance -> {
-                val balance = getBalance(rpcConnection,from)
-                respFuture.complete(EvmResponse(flowId,balance.toString()))
+                val balance = getBalance(rpcConnection, from)
+                respFuture.complete(EvmResponse(flowId, balance.toString()))
             }
+
             is GetCode -> {
-                val code = getCode(rpcConnection,payload.address,payload.blockNumber)
+                val code = getCode(rpcConnection, payload.address, payload.blockNumber)
                 respFuture.complete(EvmResponse(flowId, code))
             }
+
             is GetTransactionByHash -> {
-                val transaction = getTransactionByHash(rpcConnection,data)
+                val transaction = getTransactionByHash(rpcConnection, data)
                 respFuture.complete(EvmResponse(flowId, transaction.toString()))
 
             }
+
             is GetTransactionReceipt -> {
-                val receipt = getTransactionReceipt(rpcConnection,data)
-                respFuture.complete(EvmResponse(flowId,receipt.toString()))
+                val receipt = getTransactionReceipt(rpcConnection, payload.transactionHash)
+                respFuture.complete(EvmResponse(flowId, receipt.toString()))
             }
+
             is MaxPriorityFeePerGas -> {
                 val maxPriority = maxPriorityFeePerGas(rpcConnection)
-                respFuture.complete(EvmResponse(flowId,maxPriority.toString()))
+                respFuture.complete(EvmResponse(flowId, maxPriority.toString()))
             }
+
             is SendRawTransaction -> {
                 var transactionOutput: String;
                 runBlocking {
-                    transactionOutput = sendTransaction(rpcConnection, to, payload.payload)
+                    transactionOutput = sendTransaction(rpcConnection, from, to, payload.payload)
                 }
                 val result = EvmResponse(flowId, transactionOutput)
                 respFuture.complete(result)
             }
+
             is Syncing -> {
 
             }
@@ -401,7 +414,7 @@ class EVMOpsProcessor : RPCResponderProcessor<EvmRequest, EvmResponse> {
         scheduledExecutorService.submit {
             try {
                 retryPolicy.execute {
-                    handleRequest(request,respFuture)
+                    handleRequest(request, respFuture)
                 }
             } catch (e: Exception) {
                 respFuture.completeExceptionally(e)

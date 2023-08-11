@@ -221,47 +221,59 @@ class EthereumConnector {
         waitForResponse: Boolean,
         requests: Int
     ): Response {
-        // Check if the maximum number of requests has been reached
-        if (requests > maxLoopedRequests) {
-            return Response("90", "2.0", "Timed Out",false)
+        try {
+            // Check if the maximum number of requests has been reached
+            if (requests > maxLoopedRequests) {
+                return Response("90", "2.0", "Timed Out", false)
+            }
+
+            // Make the RPC call to the Ethereum node
+            val response = rpcCall(rpcUrl, method, params)
+            val responseBody = response.message
+            val success = response.success
+
+            // Handle the response based on success status
+            if (!success) {
+                println("Request Failed")
+                return Response("90", "2.0", response.message, false)
+            }
+
+            // Parse the JSON response into the base response object
+            println("Response Body: $responseBody ")
+            val baseResponse = gson.fromJson<Response>(responseBody, Response::class.java)
+
+
+            // If the base response is null and waitForResponse is true, wait for 2 seconds and make a recursive call
+            // TODO: This is temporarily required for
+
+            if (baseResponse.result == null && waitForResponse) {
+                TimeUnit.SECONDS.sleep(2)
+                return makeRequest(rpcUrl, method, params, true, requests + 1) // Return the recursive call
+            }
+
+            // Find the appropriate data class for parsing the actual response
+            val responseType = findDataClassForJson(
+                responseBody
+            )
+
+            println("RESPONSE BODY: ${responseBody}")
+            // Parse the actual response using the determined data class
+            val actualParsedResponse = gson.fromJson<Any>(responseBody, responseType?.java ?: Any::class.java)
+            // Get the useful response data from the parsed response
+            val usefulResponse = returnUsefulData(actualParsedResponse)
+
+            return Response("90", "2.0", usefulResponse.payload, usefulResponse.success)
+        }catch(error: Exception) {
+            println("AT POST EXCEPTION ${error.message}")
+            if (waitForResponse) {
+                TimeUnit.SECONDS.sleep(2)
+                return makeRequest(rpcUrl, method, params, waitForResponse, requests + 1) // Return the recursive call
+            }else {
+                throw CordaRuntimeException("Post Failure Method: ${error.message}")
+
+            }
+
         }
-
-        // Make the RPC call to the Ethereum node
-        val response = rpcCall(rpcUrl, method, params)
-        val responseBody = response.message
-        val success = response.success
-
-        // Handle the response based on success status
-        if (!success) {
-            println("Request Failed")
-            return Response("90", "2.0", response.message,false)
-        }
-
-        // Parse the JSON response into the base response object
-        println("Response Body: $responseBody ")
-        val baseResponse = gson.fromJson<Response>(responseBody, Response::class.java)
-
-
-        // If the base response is null and waitForResponse is true, wait for 2 seconds and make a recursive call
-        // TODO: This is temporarily required for
-
-        if (baseResponse.result == null && waitForResponse) {
-            TimeUnit.SECONDS.sleep(2)
-            return makeRequest(rpcUrl, method, params, waitForResponse, requests + 1) // Return the recursive call
-        }
-
-        // Find the appropriate data class for parsing the actual response
-        val responseType = findDataClassForJson(
-            responseBody
-        )
-
-        println("RESPONSE BODY: ${responseBody}")
-        // Parse the actual response using the determined data class
-        val actualParsedResponse = gson.fromJson<Any>(responseBody, responseType?.java ?: Any::class.java)
-        // Get the useful response data from the parsed response
-        val usefulResponse = returnUsefulData(actualParsedResponse)
-
-        return Response("90", "2.0", usefulResponse.payload, usefulResponse.success)
     }
 
     /**
