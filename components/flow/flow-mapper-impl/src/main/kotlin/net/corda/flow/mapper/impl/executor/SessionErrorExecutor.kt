@@ -1,8 +1,6 @@
 package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.ExceptionEnvelope
-import java.time.Instant
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -14,6 +12,7 @@ import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 @Suppress("LongParameterList")
 class SessionErrorExecutor(
@@ -33,8 +32,6 @@ class SessionErrorExecutor(
     }
 
     private val messageDirection = sessionEvent.messageDirection
-    private val outputTopic = getSessionEventOutputTopic(messageDirection)
-
     private val defaultMsg = "$messageDirection flow mapper received error event while in $flowMapperState, {} event. " +
             "Key: $eventKey, Event: $sessionEvent"
     private val missingSessionMsg = "$messageDirection flow mapper received error event from counterparty for session " +
