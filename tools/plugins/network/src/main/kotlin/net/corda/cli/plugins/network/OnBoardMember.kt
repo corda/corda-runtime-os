@@ -10,6 +10,19 @@ import java.io.File
 import java.security.MessageDigest
 import java.util.UUID
 import net.corda.cli.plugins.network.enums.MemberRole
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
+import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
+import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNATURE_SPEC
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATURE_SPEC
 
 @Command(
     name = "onboard-member",
@@ -32,7 +45,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
         names = ["--role", "-r"],
         description = ["Member role, if any. It is not mandatory to provide a role"],
     )
-    var role: MemberRole? = null
+    var roles: Set<MemberRole> = emptySet()
 
     @Option(
         names = ["--set", "-s"],
@@ -195,79 +208,55 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
     override val registrationContext by lazy {
         val preAuth = preAuthToken?.let { mapOf("corda.auth.token" to it) } ?: emptyMap()
-        
-        if (customProperties.size > 100) {
-            throw IllegalArgumentException("Cannot specify more than 100 key-value pairs")
-        }
-        
-        val notaryServiceName = customProperties["corda.notary.service.name"]
-      
-        customProperties = customProperties.filterKeys { it != "corda.notary.service.name" }
-        
+
         val extProperties = customProperties.filter {
             val key = it.key
             val value = it.value
-            val keyAndValueNotEmpty = (key.isNotEmpty()).and(value.isNotEmpty())
-            val keyStartsWithExt = key.startsWith("ext.")
-            val keyDoesNotEndWithExt = !key.endsWith("ext.")
-            val allChecks = keyAndValueNotEmpty.and(keyStartsWithExt).and(keyDoesNotEndWithExt)
+            val keyStartsWithExt = key.startsWith("$CUSTOM_KEY_PREFIX.")
 
-            if (!keyAndValueNotEmpty) {
-                throw IllegalArgumentException("Please specify a key or value, either cannot be empty")
-            }
-            if (!keyStartsWithExt) {
-                throw IllegalArgumentException("The key: $key has to start with `ext.` prefix")
-            }
-            if (!keyDoesNotEndWithExt) {
-                throw IllegalArgumentException("The key: $key cannot end with `ext.`")
-            }
             if (key.length > 128) {
                 throw IllegalArgumentException("The key length cannot exceed 128 characters")
             }
             if (value.length > 800) {
                 throw IllegalArgumentException("The value length cannot exceed 800 characters")
             }
-
-            allChecks
+            keyStartsWithExt
         }
-        val roleProperty = if (role != null) {
-                if (notaryServiceName != null) {
-                    mapOf("corda.roles.0" to role!!.value)
-                } else {
-                    throw IllegalArgumentException("Cannot specify 'corda.notary.service.name'")
-                }
-            } else {
-                emptyMap()
-            }
+        val roleProperty: Map<String, String> = roles.mapIndexed { index: Int, memberRole: MemberRole ->
+            "$ROLES_PREFIX.$index" to memberRole.value
+        }.toMap()
 
-        val notaryProperties = if (role != null) {
-                mapOf(
-                    "corda.notary.service.name" to notaryServiceName,
-                    "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
-                    "corda.notary.service.flow.protocol.version.0" to "1",
-                    "corda.notary.keys.0.id" to notaryKeyId,
-                    "corda.notary.keys.0.signature.spec" to "SHA256withECDSA"
-                )
-            } else {
+        val notaryProperties = if (roles.contains(MemberRole.NOTARY)) {
+            val notaryServiceName = customProperties[NOTARY_SERVICE_NAME] ?:
+            throw IllegalArgumentException("When specifying a NOTARY role, " +
+                    "you also need to specify a custom property for its name under $NOTARY_SERVICE_NAME.")
+            mapOf(
+                NOTARY_SERVICE_NAME to notaryServiceName,
+                NOTARY_SERVICE_PROTOCOL to "com.r3.corda.notary.plugin.nonvalidating",
+                NOTARY_SERVICE_PROTOCOL_VERSIONS.format("0") to "1",
+                NOTARY_KEYS_ID.format("0") to notaryKeyId,
+                NOTARY_KEY_SPEC.format("0") to "SHA256withECDSA"
+            )
+        } else {
             emptyMap()
-            }
+        }
 
         val endpoints: Map<String, String> = p2pGatewayUrls
             .flatMapIndexed { index, url ->
                     listOf(
-                        "corda.endpoints.$index.connectionURL" to url,
-                        "corda.endpoints.$index.protocolVersion" to "1"
+                        URL_KEY.format(index) to url,
+                        PROTOCOL_VERSION.format(index) to "1"
                     )
             }
             .toMap()
 
         val sessionKeys = mapOf(
-            "corda.session.keys.0.id" to sessionKeyId,
-            "corda.session.keys.0.signature.spec" to "SHA256withECDSA"
+            PARTY_SESSION_KEYS_ID.format(0) to sessionKeyId,
+            SESSION_KEYS_SIGNATURE_SPEC.format(0) to "SHA256withECDSA"
         )
         val ledgerKeys = mapOf(
-            "corda.ledger.keys.0.id" to ledgerKeyId,
-            "corda.ledger.keys.0.signature.spec" to "SHA256withECDSA"
+            LEDGER_KEYS_ID.format(0) to ledgerKeyId,
+            LEDGER_KEY_SIGNATURE_SPEC.format(0) to "SHA256withECDSA"
         )
 
         sessionKeys + ledgerKeys + endpoints + preAuth + roleProperty + notaryProperties + extProperties
