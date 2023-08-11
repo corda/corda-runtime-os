@@ -1,5 +1,6 @@
 package net.corda.interop.identity.cache
 
+import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
 
 
@@ -24,21 +25,21 @@ interface InteropIdentityRegistryView {
     /**
      * Get identities within the view as a map with the virtual node short hash as a key.
      *
-     * @return Map of holding identity short hashes to sets of [InteropIdentity] objects.
+     * @return Map of virtual node short hashes to sets of [InteropIdentity] objects.
      */
-    fun getIdentitiesByVirtualNode(): Map<String, Set<InteropIdentity>>
+    fun getIdentitiesByVirtualNode(): Map<ShortHash, Set<InteropIdentity>>
 
     /**
      * Get identities within the view as a map with the interop identity short hash as a key.
      *
      * @return Map of interop identity short hashes to sets of [InteropIdentity] objects.
      */
-    fun getIdentitiesByShortHash(): Map<String, InteropIdentity>
+    fun getIdentitiesByShortHash(): Map<ShortHash, InteropIdentity>
 
     /**
      * Get identities within the view as a map with the interop identity application name as a key.
      *
-     * @return Map of interop identity short hashes to sets of [InteropIdentity] objects.
+     * @return Map of interop identity application names to [InteropIdentity] objects.
      */
     fun getIdentitiesByApplicationName(): Map<String, InteropIdentity>
 
@@ -46,7 +47,7 @@ interface InteropIdentityRegistryView {
      * Get identities within the view as a map with the FacadeId as Key and a set of InterOpIdentities that implement
      * those facades as the value.
      *
-     * @return Map of interop identity short hashes to sets of [InteropIdentity] objects.
+     * @return Map of facade IDs to sets of [InteropIdentity] objects.
      */
     fun getIdentitiesByFacadeId(): Map<String, Set<InteropIdentity>>
 
@@ -57,6 +58,4 @@ interface InteropIdentityRegistryView {
      * @return Map of group IDs to [InteropIdentity] objects.
      */
     fun getOwnedIdentities(): Map<String, InteropIdentity>
-
-
 }

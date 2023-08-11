@@ -8,6 +8,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.INTEROP_IDENTITY_TOPIC
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
+import net.corda.crypto.core.ShortHash
 
 
 class InteropIdentityProducer(
@@ -17,7 +18,7 @@ class InteropIdentityProducer(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    fun publishInteropIdentity(holdingIdentityShortHash: String, identity: InteropIdentity) {
+    fun publishInteropIdentity(holdingIdentityShortHash: ShortHash, identity: InteropIdentity) {
         if (publisher.get() == null) {
             logger.error("Interop identity publisher is null, not publishing.")
             return

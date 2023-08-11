@@ -47,13 +47,13 @@ class HostedIdentityProducer(private val publisher: AtomicReference<Publisher?>)
 
         val hostedIdentity = HostedIdentityEntry(
             HoldingIdentity(interopIdentity.x500Name, interopIdentity.groupId),
-            interopIdentityShortHash,
+            interopIdentityShortHash.toString(),
             //TODO CORE-15168
             listOf(DUMMY_CERTIFICATE),
             HostedIdentitySessionKeyAndCert(DUMMY_PUBLIC_SESSION_KEY, null),
             emptyList()
         )
 
-        return Record(P2P_HOSTED_IDENTITIES_TOPIC, interopIdentityShortHash, hostedIdentity)
+        return Record(P2P_HOSTED_IDENTITIES_TOPIC, interopIdentityShortHash.toString(), hostedIdentity)
     }
 }

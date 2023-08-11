@@ -1,5 +1,6 @@
 package net.corda.interop.identity.processor
 
+import net.corda.crypto.core.ShortHash
 import net.corda.data.interop.PersistentInteropIdentity
 import net.corda.interop.core.InteropIdentity
 import net.corda.interop.core.Utils.Companion.computeShortHash
@@ -21,7 +22,7 @@ class InteropIdentityProcessor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private fun verifyShortHash(identity: InteropIdentity, expectedShortHash: String) {
+    private fun verifyShortHash(identity: InteropIdentity, expectedShortHash: ShortHash) {
         val shortHash = computeShortHash(identity.x500Name, identity.groupId)
         if (shortHash != expectedShortHash) {
             throw CordaRuntimeException(
@@ -33,8 +34,8 @@ class InteropIdentityProcessor(
     private data class RecordKey(
         val keyText: String
     ) {
-        val holdingIdentityShortHash: String
-        val interopIdentityShortHash: String
+        val holdingIdentityShortHash: ShortHash
+        val interopIdentityShortHash: ShortHash
 
         init {
             val tokens = keyText.split(":")
@@ -44,13 +45,13 @@ class InteropIdentityProcessor(
             }
 
             holdingIdentityShortHash = if (tokens[0].length == 12) {
-                tokens[0]
+                ShortHash.parse(tokens[0])
             } else {
                 throw CordaRuntimeException("Invalid record key '$keyText', expected string of length 12, got ${tokens[0].length}.")
             }
 
             interopIdentityShortHash = if (tokens[1].length == 12) {
-                tokens[1]
+                ShortHash.parse(tokens[1])
             } else {
                 throw CordaRuntimeException("Invalid record key '$keyText', expected string of length 12, got ${tokens[1].length}.")
             }
@@ -124,8 +125,8 @@ class InteropIdentityProcessor(
              newEntry = newValue?.let { InteropIdentity.of(key.holdingIdentityShortHash, it) }
 
         } else {
-            oldEntry = oldValue?.let { InteropIdentity.of("NOT OUR NODE", it) }
-            newEntry = newValue?.let { InteropIdentity.of("NOT OUR NODE", it) }
+            oldEntry = oldValue?.let { InteropIdentity.of(null, it) }
+            newEntry = newValue?.let { InteropIdentity.of(null, it) }
         }
 
 
