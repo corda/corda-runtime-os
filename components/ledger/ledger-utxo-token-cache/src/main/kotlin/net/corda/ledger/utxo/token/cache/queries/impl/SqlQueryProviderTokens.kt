@@ -30,7 +30,7 @@ class SqlQueryProviderTokens : SqlQueryProvider {
 
         return """
             SELECT 
-                SUM(token_amount) 
+                COALESCE(SUM(token_amount), 0)
             FROM {h-schema}utxo_transaction_output as t_output
             INNER JOIN {h-schema}utxo_visible_transaction_state as t_state 
             ON t_output.transaction_id = t_state.transaction_id 
