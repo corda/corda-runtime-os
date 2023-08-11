@@ -283,7 +283,7 @@ internal class InteropRestResourceImpl @Activate constructor(
             listOf(
                 ExportInteropIdentityRest.MemberData(
                     interopIdentityToExport.x500Name,
-                    interopIdentityToExport.owningVirtualNodeShortHash!!,
+                    interopIdentityToExport.owningVirtualNodeShortHash,
                     interopIdentityToExport.endpointUrl,
                     interopIdentityToExport.endpointProtocol,
                     interopIdentityToExport.facadeIds.map { it.toString() }
