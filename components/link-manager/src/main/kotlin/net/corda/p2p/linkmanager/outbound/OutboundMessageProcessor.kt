@@ -135,16 +135,21 @@ internal class OutboundMessageProcessor(
         } catch (e: Exception) {
             return "destination '${destination.x500Name}' is not a valid X500 name: ${e.message}"
         }
-        val destinationMemberInfo = membershipGroupReaderProvider.lookup(cordaSource, cordaDestination, filter)
-        return if (source.groupId != destination.groupId) {
-            "group IDs do not match"
-        } else if (!linkManagerHostingMap.isHostedLocally(cordaSource)) {
-            "source ID is not locally hosted"
-        } else if (linkManagerHostingMap.isHostedLocally(destinationMemberInfo)) {
-            validateCanMessage(cordaSource, cordaDestination, outbound = true, inbound = true)
-        } else {
-            validateCanMessage(cordaSource, cordaDestination, outbound = true)
+        if (source.groupId != destination.groupId) {
+            return "group IDs do not match"
         }
+        if (!linkManagerHostingMap.isHostedLocally(cordaSource)) {
+            return "source ID is not locally hosted"
+        }
+        // Perform a stricter locally-hosted check on the destination, which includes session key matching, to guard
+        // against scenarios such as when a message is being sent to a duplicate holding identity on another cluster,
+        // but is instead routed to a matching holding identity which is hosted locally.
+        membershipGroupReaderProvider.lookup(cordaSource, cordaDestination, filter)?.let {
+            if (linkManagerHostingMap.isHostedLocallyAndSessionKeyMatch(it)) {
+                return validateCanMessage(cordaSource, cordaDestination, outbound = true, inbound = true)
+            }
+        }
+        return validateCanMessage(cordaSource, cordaDestination, outbound = true)
     }
 
     /**
@@ -205,7 +210,7 @@ internal class OutboundMessageProcessor(
             ),
             message.payload,
         )
-        if (linkManagerHostingMap.isHostedLocally(destinationMemberInfo)) {
+        if (linkManagerHostingMap.isHostedLocallyAndSessionKeyMatch(destinationMemberInfo)) {
             recordInboundMessagesMetric(inboundMessage)
             return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(inboundMessage)))
         } else {
@@ -284,7 +289,7 @@ internal class OutboundMessageProcessor(
                     "${messageAndKey.message.header.statusFilter} Message will be retried later.")
         }
 
-        if (linkManagerHostingMap.isHostedLocally(destinationMemberInfo)) {
+        if (linkManagerHostingMap.isHostedLocallyAndSessionKeyMatch(destinationMemberInfo)) {
             recordInboundMessagesMetric(messageAndKey.message)
             return if (isReplay) {
                 listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),

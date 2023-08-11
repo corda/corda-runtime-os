@@ -72,16 +72,12 @@ internal class LinkManagerHostingMapImpl(
     override fun isHostedLocally(identity: HoldingIdentity) =
         locallyHostedIdentityToIdentityInfo.containsKey(identity)
 
-    override fun isHostedLocally(member: MemberInfo?): Boolean {
-        return if (member == null) {
-            false
-        } else {
-            locallyHostedIdentityToIdentityInfo[member.holdingIdentity]?.let { identityInfo ->
-                identityInfo.allSessionKeysAndCertificates.map { it.sessionPublicKey }
-                    .any { member.sessionInitiationKeys.contains(it) }
-            } ?: false
-        }
-    }
+    override fun isHostedLocallyAndSessionKeyMatch(member: MemberInfo) =
+        locallyHostedIdentityToIdentityInfo[member.holdingIdentity]?.let { identityInfo ->
+            val memberSessionKeysEncoded = member.sessionInitiationKeys.map { it.encoded }
+            identityInfo.allSessionKeysAndCertificates.map { it.sessionPublicKey.encoded }
+                .any { memberSessionKeysEncoded.contains(it) }
+        } ?: false
 
     override fun getInfo(identity: HoldingIdentity) =
         locallyHostedIdentityToIdentityInfo[identity]
