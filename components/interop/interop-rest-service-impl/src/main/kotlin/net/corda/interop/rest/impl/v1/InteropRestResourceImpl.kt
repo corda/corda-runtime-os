@@ -13,7 +13,16 @@ import net.corda.libs.interop.endpoints.v1.types.CreateInteropIdentityRest
 import net.corda.libs.interop.endpoints.v1.types.ExportInteropIdentityRest
 import net.corda.libs.interop.endpoints.v1.types.ImportInteropIdentityRest
 import net.corda.libs.interop.endpoints.v1.types.InteropIdentityResponse
-import net.corda.lifecycle.*
+import net.corda.lifecycle.DependentComponents
+import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
 import net.corda.membership.group.policy.validation.InteropGroupPolicyValidator
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -32,6 +41,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
+
 
 @Suppress("LongParameterList")
 @Component(service = [PluggableRestResource::class])
