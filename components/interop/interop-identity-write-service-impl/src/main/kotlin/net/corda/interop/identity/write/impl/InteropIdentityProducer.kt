@@ -1,5 +1,6 @@
 package net.corda.interop.identity.write.impl
 
+import net.corda.crypto.core.ShortHash
 import net.corda.data.interop.PersistentInteropIdentity
 import net.corda.interop.core.InteropIdentity
 import net.corda.interop.core.Utils.Companion.computeShortHash
@@ -17,7 +18,7 @@ class InteropIdentityProducer(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    fun publishInteropIdentity(holdingIdentityShortHash: String, identity: InteropIdentity) {
+    fun publishInteropIdentity(holdingIdentityShortHash: ShortHash, identity: InteropIdentity) {
         if (publisher.get() == null) {
             logger.error("Interop identity publisher is null, not publishing.")
             return
@@ -35,7 +36,7 @@ class InteropIdentityProducer(
         val recordValue = PersistentInteropIdentity(
             identity.groupId,
             identity.x500Name,
-            identity.owningVirtualNodeShortHash,
+            identity.owningVirtualNodeShortHash.value,
             listOfFacades,
             identity.applicationName,
             identity.endpointUrl,

@@ -15,4 +15,5 @@ dependencies {
 
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:interop:interop-core')
+    implementation project(':libs:crypto:crypto-core')
 }

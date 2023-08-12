@@ -1,7 +1,7 @@
 package net.corda.interop.identity.cache.impl
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.virtualnode.HoldingIdentity
+import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
 import net.corda.interop.identity.cache.InteropIdentityRegistryService
 import net.corda.interop.identity.cache.InteropIdentityRegistryView
@@ -38,28 +38,24 @@ class InteropIdentityRegistryServiceImpl @Activate constructor(
     /**
      * Map of holding identity short hashes to [InteropIdentityRegistryViewImpl] objects
      */
-    private val cacheData = HashMap<String, InteropIdentityRegistryViewImpl>()
+    private val cacheData = HashMap<ShortHash, InteropIdentityRegistryViewImpl>()
 
-    private fun getOrCreateView(shortHash: String): InteropIdentityRegistryViewImpl {
+    private fun getOrCreateView(shortHash: ShortHash): InteropIdentityRegistryViewImpl {
         return cacheData.computeIfAbsent(shortHash) {
             InteropIdentityRegistryViewImpl(shortHash)
         }
     }
 
-    fun putInteropIdentity(holdingIdentityShortHash: String, identity: InteropIdentity) {
+    fun putInteropIdentity(holdingIdentityShortHash: ShortHash, identity: InteropIdentity) {
         getOrCreateView(holdingIdentityShortHash).putInteropIdentity(identity)
     }
 
-    fun removeInteropIdentity(holdingIdentityShortHash: String, identity: InteropIdentity) {
+    fun removeInteropIdentity(holdingIdentityShortHash: ShortHash, identity: InteropIdentity) {
         getOrCreateView(holdingIdentityShortHash).removeInteropIdentity(identity)
     }
 
-    override fun getVirtualNodeRegistryView(virtualNodeShortHash: String): InteropIdentityRegistryView {
+    override fun getVirtualNodeRegistryView(virtualNodeShortHash: ShortHash): InteropIdentityRegistryView {
         return getOrCreateView(virtualNodeShortHash)
-    }
-
-    override fun getVirtualNodeRegistryView(holdingIdentity: HoldingIdentity): InteropIdentityRegistryView {
-        return getOrCreateView(holdingIdentity.shortHash.toString())
     }
 
     override val isRunning: Boolean

@@ -4,14 +4,15 @@ import net.corda.interop.core.InteropIdentity
 import net.corda.interop.identity.cache.InteropIdentityRegistryView
 import net.corda.v5.application.interop.facade.FacadeId
 import java.util.*
+import net.corda.crypto.core.ShortHash
 
 
-class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: String): InteropIdentityRegistryView {
+class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: ShortHash): InteropIdentityRegistryView {
     private val interopIdentities = HashSet<InteropIdentity>()
 
     private val byGroupId = HashMap<String, HashSet<InteropIdentity>>()
-    private val byVirtualNode = HashMap<String, HashSet<InteropIdentity>>()
-    private val byShortHash = HashMap<String, InteropIdentity>()
+    private val byVirtualNode = HashMap<ShortHash, HashSet<InteropIdentity>>()
+    private val byShortHash = HashMap<ShortHash, InteropIdentity>()
     private val myIdentities = HashMap<String, InteropIdentity>()
     private val byApplicationName = HashMap<String, InteropIdentity>()
     private val byFacadeId = HashMap<String, HashSet<InteropIdentity>>()
@@ -22,7 +23,7 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: String):
         }
     }
 
-    private fun getOrCreateByVirtualNodeEntry(shortHash: String): HashSet<InteropIdentity> {
+    private fun getOrCreateByVirtualNodeEntry(shortHash: ShortHash): HashSet<InteropIdentity> {
         return byVirtualNode.computeIfAbsent(shortHash) {
             HashSet()
         }
@@ -82,7 +83,7 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: String):
         byVirtualNode[identity.owningVirtualNodeShortHash]?.let {
             it.remove(identity)
             if (it.size == 0) {
-                byGroupId.remove(identity.owningVirtualNodeShortHash)
+                byVirtualNode.remove(identity.owningVirtualNodeShortHash)
             }
         }
 
@@ -109,10 +110,10 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: String):
     override fun getIdentitiesByGroupId(): Map<String, Set<InteropIdentity>> =
         Collections.unmodifiableMap(byGroupId)
 
-    override fun getIdentitiesByVirtualNode(): Map<String, Set<InteropIdentity>> =
+    override fun getIdentitiesByVirtualNode(): Map<ShortHash, Set<InteropIdentity>> =
         Collections.unmodifiableMap(byVirtualNode)
 
-    override fun getIdentitiesByShortHash(): Map<String, InteropIdentity> =
+    override fun getIdentitiesByShortHash(): Map<ShortHash, InteropIdentity> =
         Collections.unmodifiableMap(byShortHash)
 
     override fun getIdentitiesByApplicationName(): Map<String, InteropIdentity> =

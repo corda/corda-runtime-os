@@ -75,8 +75,8 @@ class FlowFiberExecutionContextFactoryImplTest {
         )).thenReturn(membershipGroupReader)
         whenever(sandboxGroupContext.dependencyInjector).thenReturn(sandboxDependencyInjector)
         whenever(interopIdentityRegistryService.getVirtualNodeRegistryView(
-            vNodeHoldingIdentity
-        )).thenReturn(InteropIdentityRegistryViewImpl(vNodeHoldingIdentity.shortHash.toString()))
+            vNodeHoldingIdentity.shortHash
+        )).thenReturn(InteropIdentityRegistryViewImpl(vNodeHoldingIdentity.shortHash))
         whenever(sandboxGroupContext.checkpointSerializer).thenReturn(checkpointSerializer)
 
         val result = flowFiberExecutionContextFactory.createFiberExecutionContext(context)

@@ -14,6 +14,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.util.UUID
+import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
 import net.corda.v5.application.interop.facade.FacadeId
 
@@ -35,7 +36,7 @@ class InteropIdentityRegistryServiceImplTest {
 
         val cache = InteropIdentityRegistryServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
 
-        val shortHash = "1234567890"
+        val shortHash = ShortHash.parse("123456789012")
         val response = cache.getVirtualNodeRegistryView(shortHash)
 
         assertThat(response.getIdentities().isEmpty()).isTrue
@@ -57,8 +58,8 @@ class InteropIdentityRegistryServiceImplTest {
 
         val cache = InteropIdentityRegistryServiceImpl(coordinatorFactory, mock(), subscriptionFactory)
 
-        val shortHash1 = "1234567890"
-        val shortHash2 = "0987654321"
+        val shortHash1 = ShortHash.parse("123456789012")
+        val shortHash2 = ShortHash.parse("210987654321")
 
         val view1 = cache.getVirtualNodeRegistryView(shortHash1)
         val view2 = cache.getVirtualNodeRegistryView(shortHash2)

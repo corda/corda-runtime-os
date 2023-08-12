@@ -1,5 +1,6 @@
 package net.corda.interop.identity.cache.impl
 
+import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
 import net.corda.v5.application.interop.facade.FacadeId
 import org.assertj.core.api.Assertions.assertThat
@@ -9,7 +10,7 @@ import org.junit.jupiter.api.assertThrows
 
 class InteropIdentityRegistryViewImplTest {
     companion object {
-        private const val VIEW_OWNER_SHORT_HASH = "0123456789AB"
+        private val VIEW_OWNER_SHORT_HASH = ShortHash.parse("0123456789AB")
         private const val INTEROP_GROUP_ID = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
     }
 
@@ -20,7 +21,7 @@ class InteropIdentityRegistryViewImplTest {
         val testInteropIdentity = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
-            owningVirtualNodeShortHash = "101010101010",
+            owningVirtualNodeShortHash = ShortHash.parse("101010101010"),
             facadeIds = listOf(
                 FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
@@ -33,7 +34,7 @@ class InteropIdentityRegistryViewImplTest {
         val identicalInteropIdentity = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
-            owningVirtualNodeShortHash = "101010101010",
+            owningVirtualNodeShortHash = ShortHash.parse("101010101010"),
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
@@ -48,7 +49,7 @@ class InteropIdentityRegistryViewImplTest {
         val nonIdenticalInteropIdentity = InteropIdentity(
             x500Name = "C=GB, L=London, O=Bob",
             groupId = INTEROP_GROUP_ID,
-            owningVirtualNodeShortHash = "101010101010",
+            owningVirtualNodeShortHash = ShortHash.parse("101010101010"),
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
@@ -66,7 +67,7 @@ class InteropIdentityRegistryViewImplTest {
         val testInteropIdentity = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
-            owningVirtualNodeShortHash = "101010101010",
+            owningVirtualNodeShortHash = ShortHash.parse("101010101010"),
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
@@ -81,7 +82,7 @@ class InteropIdentityRegistryViewImplTest {
         val identicalInteropIdentity = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
-            owningVirtualNodeShortHash = "101010101010",
+            owningVirtualNodeShortHash = ShortHash.parse("101010101010"),
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
@@ -98,7 +99,7 @@ class InteropIdentityRegistryViewImplTest {
         val testInteropIdentity = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
-            owningVirtualNodeShortHash = "101010101010",
+            owningVirtualNodeShortHash = ShortHash.parse("101010101010"),
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
@@ -139,7 +140,7 @@ class InteropIdentityRegistryViewImplTest {
         val notOwnedIdentity = InteropIdentity(
             x500Name = "C=GB, L=London, O=Bob",
             groupId = INTEROP_GROUP_ID,
-            owningVirtualNodeShortHash = "101010101010",
+            owningVirtualNodeShortHash = ShortHash.parse("101010101010"),
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
@@ -168,7 +169,7 @@ class InteropIdentityRegistryViewImplTest {
         val testInteropIdentity = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
-            owningVirtualNodeShortHash = "101010101010",
+            owningVirtualNodeShortHash = ShortHash.parse("101010101010"),
             facadeIds = listOf(facadeId1),
             applicationName = "Gold",
             endpointUrl = "1",
@@ -179,7 +180,7 @@ class InteropIdentityRegistryViewImplTest {
         val testInteropIdentity2 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Bob",
             groupId = INTEROP_GROUP_ID,
-            owningVirtualNodeShortHash = "101010101010",
+            owningVirtualNodeShortHash = ShortHash.parse("101010101010"),
             facadeIds = listOf(facadeId1, facadeId2),
             applicationName = "Gold",
             endpointUrl = "1",
@@ -207,7 +208,7 @@ class InteropIdentityRegistryViewImplTest {
         val testInteropIdentity = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
-            owningVirtualNodeShortHash = "101010101010",
+            owningVirtualNodeShortHash = ShortHash.parse("101010101010"),
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
@@ -248,5 +249,4 @@ class InteropIdentityRegistryViewImplTest {
             testView.putInteropIdentity(ownedIdentity2)
         }
     }
-
 }

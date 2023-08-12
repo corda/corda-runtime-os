@@ -66,7 +66,7 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
     override val isRunning: Boolean
         get() = coordinator.isRunning
 
-    override fun addInteropIdentity(vNodeShortHash: String, identity: InteropIdentity) {
+    override fun addInteropIdentity(vNodeShortHash: ShortHash, identity: InteropIdentity) {
         writeMemberInfoTopic(vNodeShortHash, identity)
         writeInteropIdentityTopic(vNodeShortHash, identity)
 
@@ -87,7 +87,7 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
         return returnId
     }
 
-    private fun writeMemberInfoTopic(vNodeShortHash: String, identity: InteropIdentity) {
+    private fun writeMemberInfoTopic(vNodeShortHash: ShortHash, identity: InteropIdentity) {
         val cacheView = interopIdentityRegistryService.getVirtualNodeRegistryView(vNodeShortHash)
         val ownedInteropIdentities = cacheView.getOwnedIdentities()
 
@@ -101,14 +101,14 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
                 "The interop group ${identity.groupId} does not contain an interop identity for holding identity $vNodeShortHash.")
         }
 
-        val vNodeInfo = checkNotNull(virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(vNodeShortHash))) {
+        val vNodeInfo = checkNotNull(virtualNodeInfoReadService.getByHoldingIdentityShortHash(vNodeShortHash)) {
             "No holding identity with short hash $vNodeShortHash"
         }
 
         membershipInfoProducer.publishMemberInfo(vNodeInfo.holdingIdentity, ownedInteropIdentity, listOf(identity))
     }
 
-    private fun writeInteropIdentityTopic(vNodeShortHash: String, identity: InteropIdentity) {
+    private fun writeInteropIdentityTopic(vNodeShortHash: ShortHash, identity: InteropIdentity) {
         interopIdentityProducer.publishInteropIdentity(vNodeShortHash, identity)
     }
 

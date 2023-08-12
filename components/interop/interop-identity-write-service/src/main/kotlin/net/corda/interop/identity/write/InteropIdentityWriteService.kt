@@ -1,5 +1,6 @@
 package net.corda.interop.identity.write
 
+import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
 import net.corda.lifecycle.Lifecycle
 
@@ -11,7 +12,7 @@ interface InteropIdentityWriteService : Lifecycle {
      * @param vNodeShortHash Short hash of the virtual node to add the interop identity to.
      * @param identity The new interop identity to add.
      */
-    fun addInteropIdentity(vNodeShortHash: String, identity: InteropIdentity)
+    fun addInteropIdentity(vNodeShortHash: ShortHash, identity: InteropIdentity)
 
     /**
      * Add a new group policy json.
