@@ -41,6 +41,7 @@ class SecurityManagerPolicyTests {
         private const val EXPECTED_ERROR_MSG = "access denied (\"java.lang.reflect.ReflectPermission\" \"suppressAccessChecks\")"
     }
 
+    @Suppress("JUnitMalformedDeclaration")
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
 

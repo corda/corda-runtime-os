@@ -88,7 +88,6 @@ dependencies {
     runtimeOnly("co.paralleluniverse:quasar-core-osgi:$quasarVersion:framework-extension") {
         transitive = false
     }
-    runtimeOnly "antlr:antlr.osgi:$antlrVersion"
     runtimeOnly "commons-beanutils:commons-beanutils:$beanutilsVersion"
     runtimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     runtimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
