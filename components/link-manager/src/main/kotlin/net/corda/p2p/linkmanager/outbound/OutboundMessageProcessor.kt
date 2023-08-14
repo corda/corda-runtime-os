@@ -243,6 +243,7 @@ internal class OutboundMessageProcessor(
                 "to ${messageAndKey.message.header.destination}."
         }
 
+        logger.info("QQQ in processAuthenticatedMessage for ${messageAndKey.key}", Exception("QQQ"))
         val discardReason = checkSourceAndDestinationValid(
             messageAndKey.message.header.source, messageAndKey.message.header.destination
         )
