@@ -319,8 +319,6 @@ class PersistenceExceptionTests {
 
     private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
 
-    private var dogClass: Class<*>? = null
-
     /**
      * Create a simple request and return it.
      */
@@ -338,8 +336,6 @@ class PersistenceExceptionTests {
                         dbConnectionManager.getDataSource(virtualNodeInfo.vaultDmlConnectionId),
                         liquibaseScript
                     )
-                }.also {
-                    dogClass = it::class.java
                 }
         val serialisedDog = sandbox.getSerializationService().serialize(dog).bytes
 
