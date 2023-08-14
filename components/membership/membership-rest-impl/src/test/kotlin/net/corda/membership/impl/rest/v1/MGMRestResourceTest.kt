@@ -25,7 +25,6 @@ import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.rest.v1.types.RestGroupParameters
-import net.corda.membership.rest.v5_1.types.request.SuspensionActivationParameters
 import net.corda.rest.exception.InvalidStateChangeException
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.test.util.time.MockTimeFacilitiesProvider
@@ -54,6 +53,8 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import javax.persistence.PessimisticLockException
+import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
+import org.junit.jupiter.api.assertDoesNotThrow
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
@@ -1276,6 +1277,21 @@ class MGMRestResourceTest {
                 mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject, 1))
             }
         }
+
+        @Test
+        fun `suspendMember throws BadRequestException when serial number is null`() {
+            assertThrows<BadRequestException> {
+                mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
+            }
+        }
+
+        @Test
+        fun `deprecatedSuspendMember does not throw when serial number is null`() {
+            assertDoesNotThrow {
+                @Suppress("DEPRECATION")
+                mgmRestResource.deprecatedSuspendMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
+            }
+        }
     }
 
     @Nested
@@ -1401,6 +1417,22 @@ class MGMRestResourceTest {
 
             assertThrows<InvalidStateChangeException> {
                 mgmRestResource.activateMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject, 1))
+            }
+        }
+
+
+        @Test
+        fun `activateMember throws BadRequestException when serial number is null`() {
+            assertThrows<BadRequestException> {
+                mgmRestResource.activateMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
+            }
+        }
+
+        @Test
+        fun `deprecatedActivateMember does not throw when serial number is null`() {
+            assertDoesNotThrow {
+                @Suppress("DEPRECATION")
+                mgmRestResource.deprecatedActivateMember(HOLDING_IDENTITY_ID, SuspensionActivationParameters(subject))
             }
         }
     }

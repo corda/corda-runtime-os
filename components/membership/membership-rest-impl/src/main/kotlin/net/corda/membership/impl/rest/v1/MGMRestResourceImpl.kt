@@ -41,7 +41,7 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.membership.lib.toMap
 import net.corda.membership.rest.v1.types.RestGroupParameters
-import net.corda.membership.rest.v5_1.types.request.SuspensionActivationParameters
+import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.rest.exception.InvalidStateChangeException
 import net.corda.v5.base.types.MemberX500Name
@@ -54,7 +54,6 @@ import java.util.regex.PatternSyntaxException
 import javax.persistence.PessimisticLockException
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus as AvroPreAuthTokenStatus
-import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters as DeprecatedSuspensionActivationParameters
 
 @Suppress("TooManyFunctions")
 @Component(service = [PluggableRestResource::class])
@@ -159,9 +158,9 @@ class MGMRestResourceImpl internal constructor(
 
         fun declineRegistrationRequest(holdingIdentityShortHash: String, requestId: String, reason: ManualDeclinationReason)
 
-        fun suspendMember(holdingIdentityShortHash: String, suspensionParams: DeprecatedSuspensionActivationParameters)
+        fun suspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters)
 
-        fun activateMember(holdingIdentityShortHash: String, activationParams: DeprecatedSuspensionActivationParameters)
+        fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters)
 
         fun updateGroupParameters(holdingIdentityShortHash: String, newGroupParameters: RestGroupParameters): RestGroupParameters
     }
@@ -254,18 +253,18 @@ class MGMRestResourceImpl internal constructor(
     ) = impl.declineRegistrationRequest(holdingIdentityShortHash, requestId, reason)
 
     @Deprecated("Deprecated in favour of suspendMember")
-    override fun suspendMember(holdingIdentityShortHash: String, suspensionParams: DeprecatedSuspensionActivationParameters) =
+    override fun deprecatedSuspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters) =
         impl.suspendMember(holdingIdentityShortHash, suspensionParams)
 
     override fun suspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters) =
-        impl.suspendMember(holdingIdentityShortHash, suspensionParams.toDeprecated())
+        impl.suspendMember(holdingIdentityShortHash, suspensionParams.throwBadRequestIfNoSerialNumber())
 
     @Deprecated("Deprecated in favour of activateMember")
-    override fun activateMember(holdingIdentityShortHash: String, activationParams: DeprecatedSuspensionActivationParameters) =
+    override fun deprecatedActivateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) =
         impl.activateMember(holdingIdentityShortHash, activationParams)
 
     override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) =
-        impl.activateMember(holdingIdentityShortHash, activationParams.toDeprecated())
+        impl.activateMember(holdingIdentityShortHash, activationParams.throwBadRequestIfNoSerialNumber())
 
     override fun updateGroupParameters(holdingIdentityShortHash: String, newGroupParameters: RestGroupParameters) =
         impl.updateGroupParameters(holdingIdentityShortHash, newGroupParameters)
@@ -280,8 +279,11 @@ class MGMRestResourceImpl internal constructor(
         impl = InactiveImpl
     }
 
-    private fun SuspensionActivationParameters.toDeprecated(): DeprecatedSuspensionActivationParameters {
-        return DeprecatedSuspensionActivationParameters(this.x500Name, this.serialNumber, this.reason)
+    private fun SuspensionActivationParameters.throwBadRequestIfNoSerialNumber(): SuspensionActivationParameters {
+        if (this.serialNumber == null) {
+            throw BadRequestException("The serial number must be provided in the request.")
+        }
+        return this
     }
 
     private object InactiveImpl : InnerMGMRestResource {
@@ -368,12 +370,12 @@ class MGMRestResourceImpl internal constructor(
 
         override fun suspendMember(
             holdingIdentityShortHash: String,
-            suspensionParams: DeprecatedSuspensionActivationParameters
+            suspensionParams: SuspensionActivationParameters
         ): Unit = throwNotRunningException()
 
         override fun activateMember(
             holdingIdentityShortHash: String,
-            activationParams: DeprecatedSuspensionActivationParameters
+            activationParams: SuspensionActivationParameters
         ): Unit = throwNotRunningException()
 
         override fun updateGroupParameters(
@@ -582,7 +584,7 @@ class MGMRestResourceImpl internal constructor(
             }
         }
 
-        override fun suspendMember(holdingIdentityShortHash: String, suspensionParams: DeprecatedSuspensionActivationParameters) {
+        override fun suspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters) {
             val memberName = parseX500Name("suspensionParams.x500Name", suspensionParams.x500Name)
             try {
                 handleCommonErrors(holdingIdentityShortHash) {
@@ -603,7 +605,7 @@ class MGMRestResourceImpl internal constructor(
                 throw InvalidStateChangeException("${e.message}")
             }
         }
-        override fun activateMember(holdingIdentityShortHash: String, activationParams: DeprecatedSuspensionActivationParameters) {
+        override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) {
             val memberName = parseX500Name("activationParams.x500Name", activationParams.x500Name)
             try {
                 handleCommonErrors(holdingIdentityShortHash) {

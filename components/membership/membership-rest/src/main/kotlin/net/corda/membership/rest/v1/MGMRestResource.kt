@@ -13,13 +13,12 @@ import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
 import net.corda.membership.rest.v1.types.request.PreAuthTokenRequest
 import net.corda.membership.rest.v1.types.request.ManualDeclinationReason
-import net.corda.membership.rest.v5_1.types.request.SuspensionActivationParameters
+import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
 import net.corda.membership.rest.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.rest.v1.types.response.PreAuthToken
 import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.rest.annotations.RestApiVersion
-import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters as DeprecatedSuspensionActivationParameters
 
 /**
  * The MGM API consists of a number of endpoints used to manage membership groups. A membership group is a logical
@@ -443,7 +442,7 @@ interface MGMRestResource : RestResource {
         minVersion = RestApiVersion.C5_0,
         maxVersion = RestApiVersion.C5_0,
     )
-    fun suspendMember(
+    fun deprecatedSuspendMember(
         @RestPathParameter(
             description = "The holding identity ID of the MGM of the membership group"
         )
@@ -451,7 +450,7 @@ interface MGMRestResource : RestResource {
         @ClientRequestBodyParameter(
             description = "Parameters for suspending a member."
         )
-        suspensionParams: DeprecatedSuspensionActivationParameters
+        suspensionParams: SuspensionActivationParameters
     )
 
     /**
@@ -500,7 +499,7 @@ interface MGMRestResource : RestResource {
         maxVersion = RestApiVersion.C5_0,
     )
     @Deprecated("Deprecated in favour of activateMember")
-    fun activateMember(
+    fun deprecatedActivateMember(
         @RestPathParameter(
             description = "The holding identity ID of the MGM of the membership group"
         )
@@ -509,7 +508,7 @@ interface MGMRestResource : RestResource {
         @ClientRequestBodyParameter(
             description = "Parameters for suspending or activating a member."
         )
-        activationParams: DeprecatedSuspensionActivationParameters
+        activationParams: SuspensionActivationParameters
     )
 
     /**
