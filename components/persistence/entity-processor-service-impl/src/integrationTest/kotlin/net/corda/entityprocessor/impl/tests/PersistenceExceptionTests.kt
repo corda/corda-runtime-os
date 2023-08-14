@@ -302,21 +302,21 @@ class PersistenceExceptionTests {
         // duplicate request
         val record2 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
         assertNull(((record2.single().value as FlowEvent).payload as ExternalEventResponse).error)
-        // There shouldn't be a dog duplicate entry in the DB, i.e. dogs count in the DB should still be 1
-        assertEquals(1,
-            dbConnectionManager
-                .getDataSource(animalDbConnection!!.first).connection.use {
-                    it.prepareStatement("SELECT count(*) FROM dog").use {
-                        it.executeQuery().use { rs ->
-                            if (!rs.next()) {
-                                throw IllegalStateException("Should be able to find at least 1 dog entry")
-                            }
-                            val dogCount = rs.getInt(1)
-                            dogCount
+
+        val dogCount = dbConnectionManager
+            .getDataSource(animalDbConnection!!.first).connection.use {
+                it.prepareStatement("SELECT count(*) FROM dog").use {
+                    it.executeQuery().use { rs ->
+                        if (!rs.next()) {
+                            throw IllegalStateException("Should be able to find at least 1 dog entry")
                         }
+                        rs.getInt(1)
                     }
                 }
-        )
+            }
+
+        // There shouldn't be a dog duplicate entry in the DB, i.e. dogs count in the DB should still be 1
+        assertEquals(1, dogCount)
     }
 
     private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
