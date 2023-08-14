@@ -51,14 +51,13 @@ allprojects {
     pluginManager.withPlugin('java') {
         java {
             toolchain {
-                languageVersion = of(17)
+                languageVersion = of(javaVersion.majorVersion.toInteger())
             }
 
             withSourcesJar()
         }
 
         tasks.withType(JavaCompile).configureEach {
-            options.release = 11
             options.encoding = 'UTF-8'
             options.compilerArgs += [ '-XDenableSunApiLintControl', '-parameters' ]
         }
@@ -90,7 +89,7 @@ allprojects {
 
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         compilerOptions {
-            allWarningsAsErrors = false
+            allWarningsAsErrors = true
             languageVersion = KOTLIN_1_8
             apiVersion = KOTLIN_1_8
             jvmTarget = JVM_11
