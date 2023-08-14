@@ -1105,7 +1105,7 @@ class DynamicMemberRegistrationServiceTest {
             val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, contextWithInvalidSerial)
             }
-            assertThat(exception).hasMessageContaining("Re-registration is not supported.")
+            assertThat(exception).hasMessageContaining("re-registration is not supported.")
         }
 
         @Test
@@ -1136,7 +1136,7 @@ class DynamicMemberRegistrationServiceTest {
             val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, context)
             }
-            assertThat(exception).hasMessageContaining("Re-registration is not supported.")
+            assertThat(exception).hasMessageContaining("re-registration is not supported.")
         }
 
         @Test
@@ -1168,7 +1168,7 @@ class DynamicMemberRegistrationServiceTest {
             val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, contextSuggestingInitialRegistration)
             }
-            assertThat(exception).hasMessageContaining("Re-registration is not supported.")
+            assertThat(exception).hasMessageContaining("re-registration is not supported.")
         }
     }
 

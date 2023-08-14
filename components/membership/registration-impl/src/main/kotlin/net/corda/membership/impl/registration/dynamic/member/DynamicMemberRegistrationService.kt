@@ -480,8 +480,8 @@ class DynamicMemberRegistrationService @Activate constructor(
             mgmPlatformVersion: Int,
         ) {
             if ((submittedSerial > 0 || (currentSerial != null && currentSerial > 0)) && mgmPlatformVersion < 50100) {
-                throw InvalidMembershipRegistrationException("MGM is on 5.0 platform. " +
-                        "Re-registration is not supported.")
+                throw InvalidMembershipRegistrationException("MGM is on a lower version where re-registration " +
+                        "is not supported.")
             }
         }
 
