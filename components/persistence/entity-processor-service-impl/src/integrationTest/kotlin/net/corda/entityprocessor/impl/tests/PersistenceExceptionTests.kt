@@ -41,6 +41,7 @@ import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
@@ -71,6 +72,9 @@ class PersistenceExceptionTests {
     companion object {
         const val TOPIC = "pretend-topic"
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        const val DOGS_TABLE_WITH_PK = "migration/db.changelog-master.xml"
+        const val DOGS_TABLE_WITHOUT_PK = "dogs-without-pk.xml"
     }
 
     @RegisterExtension
@@ -244,7 +248,7 @@ class PersistenceExceptionTests {
     @Disabled("This test is disabled for now because currently we do execute duplicate persistence requests." +
             "It should be re-enabled after deduplication work is done in epic CORE-5909")
     @Test
-    fun `on duplicate persistence request don't execute it`() {
+    fun `on duplicate persistence request don't execute it - with PK constraint does not throw PK violation`() {
         val (dbConnectionManager, persistEntitiesRequest) = setupExceptionHandlingTests()
 
         val entitySandboxService =
@@ -271,12 +275,60 @@ class PersistenceExceptionTests {
         assertNull(((record2.single().value as FlowEvent).payload as ExternalEventResponse).error)
     }
 
+    @Disabled("This test is disabled for now because currently we do execute duplicate persistence requests." +
+            "It should be re-enabled after deduplication work is done in epic CORE-5909")
+    @Test
+    fun `on duplicate persistence request don't execute it - without PK constraint does not add duplicate DB entry`() {
+        val (dbConnectionManager, persistEntitiesRequest) =
+            setupExceptionHandlingTests(DOGS_TABLE_WITHOUT_PK)
+
+        val entitySandboxService =
+            EntitySandboxServiceFactory().create(
+                virtualNode.sandboxGroupContextComponent,
+                cpkReadService,
+                virtualNodeInfoReadService,
+                dbConnectionManager
+            )
+
+        val processor = EntityMessageProcessor(
+            currentSandboxGroupContext,
+            entitySandboxService,
+            responseFactory,
+            this::noOpPayloadCheck
+        )
+
+        val record1 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
+        assertNull(((record1.single().value as FlowEvent).payload as ExternalEventResponse).error)
+        // duplicate request
+        val record2 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
+        assertNull(((record2.single().value as FlowEvent).payload as ExternalEventResponse).error)
+        // There shouldn't be a dog duplicate entry in the DB, i.e. dogs count in the DB should still be 1
+        assertEquals(1,
+            dbConnectionManager
+                .getDataSource(animalDbConnection!!.first).connection.use {
+                    it.prepareStatement("SELECT count(*) FROM dog").use {
+                        it.executeQuery().use { rs ->
+                            if (!rs.next()) {
+                                throw IllegalStateException("Should be able to find at least 1 dog entry")
+                            }
+                            val dogCount = rs.getInt(1)
+                            dogCount
+                        }
+                    }
+                }
+        )
+    }
+
     private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
+
+    private var animalDbConnection: Pair<UUID, String>? = null
+
+    private var dogClass: Class<*>? = null
 
     /**
      * Create a simple request and return it.
      */
-    private fun createEntityRequest(): EntityRequest {
+    private fun createEntityRequest(liquibaseScript: String = DOGS_TABLE_WITH_PK): EntityRequest {
         val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
         // create dog using dog-aware sandbox
@@ -287,8 +339,11 @@ class PersistenceExceptionTests {
                 .also {
                     createDBTables(
                         it::class.java,
-                        dbConnectionManager.getDataSource(virtualNodeInfo.vaultDmlConnectionId)
+                        dbConnectionManager.getDataSource(virtualNodeInfo.vaultDmlConnectionId),
+                        liquibaseScript
                     )
+                }.also {
+                    dogClass = it::class.java
                 }
         val serialisedDog = sandbox.getSerializationService().serialize(dog).bytes
 
@@ -308,12 +363,16 @@ class PersistenceExceptionTests {
         )
     }
 
-    private fun createDBTables(clazz: Class<*>, ds: DataSource) {
+    private fun createDBTables(
+        clazz: Class<*>,
+        ds: DataSource,
+        liquibaseScript: String
+    ) {
         val cl = ClassloaderChangeLog(
             linkedSetOf(
                 ClassloaderChangeLog.ChangeLogResourceFiles(
                     clazz.packageName,
-                    listOf("migration/db.changelog-master.xml"),
+                    listOf(liquibaseScript),
                     clazz.classLoader
                 )
             )
