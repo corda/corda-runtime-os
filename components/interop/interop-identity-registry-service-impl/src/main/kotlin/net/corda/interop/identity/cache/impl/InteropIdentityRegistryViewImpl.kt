@@ -1,10 +1,10 @@
 package net.corda.interop.identity.cache.impl
 
+import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
 import net.corda.interop.identity.cache.InteropIdentityRegistryView
 import net.corda.v5.application.interop.facade.FacadeId
 import java.util.*
-import net.corda.crypto.core.ShortHash
 
 
 class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: ShortHash): InteropIdentityRegistryView {
@@ -52,7 +52,7 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: ShortHas
         interopIdentities.add(identity)
 
         getOrCreateByGroupIdEntry(identity.groupId).add(identity)
-        identity.owningVirtualNodeShortHash?.let {
+        identity.owningVirtualNodeShortHash.let {
             getOrCreateByVirtualNodeEntry(it).add(identity)
         }
 

@@ -1,8 +1,8 @@
 package com.r3.corda.demo.interop.tokens.workflows.interop
 
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.interop.FacadeService
 import net.corda.v5.application.interop.InteropIdentityLookUp
@@ -38,7 +38,6 @@ class SimpleReserveTokensFlowV3 : ClientStartableFlow {
 
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
-        val interopGroupId = getArgument(args, "interopGroupId")
         val facadeId = getArgument(args, "facadeId")
         val alias = MemberX500Name.parse(getArgument(args, "alias"))
         val uuid = getArgument(args, "payload")
