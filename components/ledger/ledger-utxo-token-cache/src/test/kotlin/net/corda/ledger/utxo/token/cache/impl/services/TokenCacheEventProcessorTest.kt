@@ -89,6 +89,13 @@ class TokenCacheEventProcessorTest {
         val outputState = TokenPoolCacheState()
         val handlerResponse = Record<String, FlowEvent>("", "", null)
 
+        val stateIn = TokenPoolCacheState().apply {
+            this.poolKey = POOL_CACHE_KEY
+            this.availableTokens = listOf()
+            this.tokenClaims = listOf()
+        }
+
+
         whenever(entityConverter.toTokenCache(stateIn)).thenReturn(tokenCache)
         whenever(entityConverter.toPoolCacheState(stateIn)).thenReturn(cachePoolState)
         whenever(cachePoolState.toAvro()).thenReturn(outputState)
@@ -96,6 +103,7 @@ class TokenCacheEventProcessorTest {
             .thenReturn(handlerResponse)
 
         val target = TokenCacheEventProcessor(eventConverter, entityConverter, tokenCacheEventHandlerMap)
+
 
         val result = target.onNext(stateIn, eventIn)
 

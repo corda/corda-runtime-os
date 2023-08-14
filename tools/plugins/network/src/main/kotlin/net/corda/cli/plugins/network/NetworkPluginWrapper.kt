@@ -25,10 +25,10 @@ class NetworkPluginWrapper : Plugin() {
     @CommandLine.Command(
         name = "network",
         subcommands = [
-            MemberList::class,
             GenerateGroupPolicy::class,
-            OnBoard::class,
-            GetRegistrations::class
+            Dynamic::class,
+            GetRegistrations::class,
+            Lookup::class
         ],
         hidden = true,
         mixinStandardHelpOptions = true,
@@ -47,4 +47,3 @@ class NetworkPluginWrapper : Plugin() {
     )
     class MgmPlugin : CordaCliPlugin
 }
-

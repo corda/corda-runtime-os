@@ -9,9 +9,10 @@ import picocli.CommandLine.Option
 import java.io.File
 import java.security.MessageDigest
 import java.util.UUID
+import net.corda.cli.plugins.network.enums.MemberRole
 
 @Command(
-    name = "member",
+    name = "onboard-member",
     description = [
         "Onboard a member",
         "This sub command should only be used in for internal development"
@@ -19,22 +20,26 @@ import java.util.UUID
 )
 class OnBoardMember : Runnable, BaseOnboard() {
     @Option(
-        names = ["--cpi-file"],
-        description = [
-            "Location of a CPI file (Use either cpi-file, cpb-file or cpi-hash).",
-            "To create the CPI use the MGM created group policy file and sign it using the package create-cpi command."
-        ]
-    )
-    var cpiFile: File? = null
-
-    @Option(
         names = ["--cpb-file"],
         description = [
-            "Location of a CPB file (Use either cpi-file, cpb-file or cpi-hash).",
-            "Usage of --cpi-file or --cpi-hash is recommended. The CPI will be signed with default options."
+            "Location of a CPB file (Use either cpb-file or cpi-hash).",
+            "The CPI will be signed with default options."
         ]
     )
     var cpbFile: File? = null
+
+    @Option(
+        names = ["--role", "-r"],
+        description = ["Member role, if any. It is not mandatory to provide a role"],
+    )
+    var role: MemberRole? = null
+
+    @Option(
+        names = ["--set", "-s"],
+        description = ["Pass a custom key-value pair to the command to be included in the registration context. " +
+                "Specified as <key>=<value>. Multiple --set arguments may be provided."],
+    )
+    var customProperties: Map<String, String> = emptyMap()
 
     @Option(
         names = ["--group-policy-file"],
@@ -48,7 +53,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
     @Option(
         names = ["--cpi-hash"],
-        description = ["The CPI hash (Use either cpi-file, cpb-file or cpi-hash)."]
+        description = ["The CPI hash (Use either cpb-file or cpi-hash)."]
     )
     var cpiHash: String? = null
 
@@ -74,11 +79,8 @@ class OnBoardMember : Runnable, BaseOnboard() {
         if (cpiHash != null) {
             return@lazy cpiHash!!
         }
-        if (cpiFile != null) {
-            return@lazy uploadCpi(cpiFile!!)
-        }
         if (cpbFile?.canRead() != true) {
-            throw OnboardException("Please set either CPB file, CPI file or CPI hash")
+            throw OnboardException("Please set either CPB file or CPI hash")
         } else {
             uploadCpb(cpbFile!!)
         }
@@ -129,12 +131,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
         val hash = listOf(cpbFile, groupPolicyFile).hash()
         val cpiRoot = File(cpisRoot, hash)
         val cpiFile = File(cpiRoot, "${cpbFile.name}.cpi")
-        val baseNetworkName = if (cordaClusterName == null) {
-            "combined-worker"
-        } else {
-            cordaClusterName
-        }
-        val cpiHashesFile = File(cpiRoot, "$baseNetworkName.shortHash")
+        val cpiHashesFile = File(cpiRoot, "$hash.shortHash")
         if (cpiHashesFile.canRead()) {
             val cpiFileChecksum = cpiHashesFile.readText()
             val currentCpis = createRestClient(CpiUploadRestResource::class).use { client ->
@@ -192,16 +189,55 @@ class OnBoardMember : Runnable, BaseOnboard() {
         assignSoftHsmAndGenerateKey("LEDGER")
     }
 
+    private val notaryKeyId by lazy {
+        assignSoftHsmAndGenerateKey("NOTARY")
+    }
+
     override val registrationContext by lazy {
-        val preAuth = if (preAuthToken != null) mapOf("corda.auth.token" to preAuthToken) else emptyMap()
-        mapOf(
+        val preAuth = preAuthToken?.let { mapOf("corda.auth.token" to it) } ?: emptyMap()
+        val notaryServiceName = customProperties["corda.notary.service.name"]
+        val roleProperty = if (role != null) {
+                if (notaryServiceName != null) {
+                    mapOf("corda.roles.0" to role!!.value)
+                } else {
+                    throw IllegalArgumentException("Cannot specify 'corda.notary.service.name'")
+                }
+            } else {
+                emptyMap()
+            }
+
+        val notaryProperties = if (role != null) {
+                mapOf(
+                    "corda.notary.service.name" to notaryServiceName,
+                    "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
+                    "corda.notary.service.flow.protocol.version.0" to "1",
+                    "corda.notary.keys.0.id" to notaryKeyId,
+                    "corda.notary.keys.0.signature.spec" to "SHA256withECDSA"
+                )
+            } else {
+                emptyMap()
+            }
+
+        val endpoints: Map<String, String> = p2pGatewayUrls
+            .flatMapIndexed { index, url ->
+                    listOf(
+                        "corda.endpoints.$index.connectionURL" to url,
+                        "corda.endpoints.$index.protocolVersion" to "1"
+                    )
+            }
+            .toMap()
+
+
+        val sessionKeys = mapOf(
             "corda.session.keys.0.id" to sessionKeyId,
-            "corda.session.keys.0.signature.spec" to "SHA256withECDSA",
+            "corda.session.keys.0.signature.spec" to "SHA256withECDSA"
+        )
+        val ledgerKeys = mapOf(
             "corda.ledger.keys.0.id" to ledgerKeyId,
-            "corda.ledger.keys.0.signature.spec" to "SHA256withECDSA",
-            "corda.endpoints.0.connectionURL" to p2pUrl,
-            "corda.endpoints.0.protocolVersion" to "1"
-        ) + preAuth
+            "corda.ledger.keys.0.signature.spec" to "SHA256withECDSA"
+        )
+
+        sessionKeys + ledgerKeys + endpoints + preAuth + roleProperty + notaryProperties
     }
 
     override fun run() {
