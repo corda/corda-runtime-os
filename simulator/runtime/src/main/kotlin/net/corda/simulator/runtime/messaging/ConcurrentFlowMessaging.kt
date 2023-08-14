@@ -64,7 +64,7 @@ class ConcurrentFlowMessaging(
         return doInitiate(x500Name, null)
     }
 
-    override fun initiateFlow(x500Name: MemberX500Name, requireClose: Boolean?): FlowSession {
+    override fun initiateFlow(x500Name: MemberX500Name, requireClose: Boolean): FlowSession {
         //todo - CORE-15757
         TODO("Not yet implemented")
     }
