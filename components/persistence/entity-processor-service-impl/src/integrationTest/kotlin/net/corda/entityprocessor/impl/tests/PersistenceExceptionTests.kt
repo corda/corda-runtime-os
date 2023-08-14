@@ -38,6 +38,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -117,6 +118,11 @@ class PersistenceExceptionTests {
         }
     }
 
+    @AfterEach
+    fun cleanUp() {
+        dbConnectionManager.stop()
+    }
+
     @Test
     fun `exception raised when cpks not present`() {
         val ignoredRequest = createEntityRequest()
@@ -146,8 +152,6 @@ class PersistenceExceptionTests {
         assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.TRANSIENT)
         // The failure also captures the exception name.
         assertThat(response.error.exception.errorType).isEqualTo(CpkNotAvailableException::class.java.name)
-
-        dbConnectionManager.stop()
     }
 
     @Test
@@ -187,8 +191,6 @@ class PersistenceExceptionTests {
         assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.TRANSIENT)
         // The failure also captures the exception name.
         assertThat(response.error.exception.errorType).isEqualTo(VirtualNodeException::class.java.name)
-
-        dbConnectionManager.stop()
     }
 
     @Test
@@ -229,8 +231,6 @@ class PersistenceExceptionTests {
         assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.FATAL)
         // The failure also captures the exception name.
         assertThat(response.error.exception.errorType).isEqualTo(CordaRuntimeException::class.java.name)
-
-        dbConnectionManager.stop()
     }
 
     private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
