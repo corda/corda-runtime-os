@@ -7,12 +7,15 @@ import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
+import net.corda.ledger.utxo.token.cache.Helper.toDto
+import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
 import java.math.BigDecimal
 
 class TokenClaimQueryEventHandler(
     private val filterStrategy: TokenFilterStrategy,
     private val recordFactory: RecordFactory,
+    private val availableTokenService: AvailableTokenService
 ) : TokenEventHandler<ClaimQuery> {
 
     override fun handle(
@@ -21,10 +24,17 @@ class TokenClaimQueryEventHandler(
         event: ClaimQuery
     ): Record<String, FlowEvent> {
 
+        // Fetch the tokens directly from the database
+        val availableTokens = availableTokenService.findAvailTokens(
+            event.poolKey.toDto(),
+            event.ownerHash,
+            event.tagRegex
+        )
+
         val selectedTokens = mutableListOf<CachedToken>()
         var selectedAmount = BigDecimal.ZERO
 
-        for (token in filterStrategy.filterTokens(tokenCache, event)) {
+        for (token in filterStrategy.filterTokens(availableTokens.tokens, event)) {
             if (selectedAmount >= event.targetAmount) {
                 break
             }
