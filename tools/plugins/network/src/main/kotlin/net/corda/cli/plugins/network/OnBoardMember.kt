@@ -216,12 +216,9 @@ class OnBoardMember : Runnable, BaseOnboard() {
         val extProperties = customProperties.filterKeys { it.startsWith("$CUSTOM_KEY_PREFIX.") }
 
         val notaryProperties = if (roles.contains(MemberRole.NOTARY)) {
-            var notaryServiceName = ""
-            verifyAndPrintError {
-                notaryServiceName = customProperties[NOTARY_SERVICE_NAME] ?:
+            val notaryServiceName = customProperties[NOTARY_SERVICE_NAME] ?:
                 throw IllegalArgumentException("When specifying a NOTARY role, " +
                         "you also need to specify a custom property for its name under $NOTARY_SERVICE_NAME.")
-            }
             mapOf(
                 NOTARY_SERVICE_NAME to notaryServiceName,
                 NOTARY_SERVICE_PROTOCOL to "com.r3.corda.notary.plugin.nonvalidating",
@@ -255,35 +252,37 @@ class OnBoardMember : Runnable, BaseOnboard() {
     }
 
     override fun run() {
-        println("This sub command should only be used in for internal development")
-        println("On-boarding member $x500Name")
+        verifyAndPrintError {
+            println("This sub command should only be used in for internal development")
+            println("On-boarding member $x500Name")
 
-        configureGateway()
+            configureGateway()
 
-        createTlsKeyIdNeeded()
+            createTlsKeyIdNeeded()
 
-        if (mtls) {
-            println(
-                "Using $certificateSubject as client certificate. " +
-                        "The onboarding will fail until the the subject is added to the MGM's allow list. " +
-                        "You can do that using the allowClientCertificate command."
-            )
-        }
+            if (mtls) {
+                println(
+                    "Using $certificateSubject as client certificate. " +
+                            "The onboarding will fail until the the subject is added to the MGM's allow list. " +
+                            "You can do that using the allowClientCertificate command."
+                )
+            }
 
-        setupNetwork()
+            setupNetwork()
 
-        println("Provided registration context: ")
-        println(registrationContext)
+            println("Provided registration context: ")
+            println(registrationContext)
 
-        register(waitForFinalStatus)
+            register(waitForFinalStatus)
 
-        if (waitForFinalStatus) {
-            println("Member $x500Name was onboarded.")
-        } else {
-            println(
-                "Registration request has been submitted. Wait for MGM approval to finalize registration. " +
-                        "MGM may need to approve your request manually."
-            )
+            if (waitForFinalStatus) {
+                println("Member $x500Name was onboarded.")
+            } else {
+                println(
+                    "Registration request has been submitted. Wait for MGM approval to finalize registration. " +
+                            "MGM may need to approve your request manually."
+                )
+            }
         }
     }
 }
