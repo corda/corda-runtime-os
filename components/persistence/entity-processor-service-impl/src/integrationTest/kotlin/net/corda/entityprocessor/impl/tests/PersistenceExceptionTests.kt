@@ -249,6 +249,7 @@ class PersistenceExceptionTests {
             "It should be re-enabled after deduplication work is done in epic CORE-5909")
     @Test
     fun `on duplicate persistence request don't execute it - with PK constraint does not throw PK violation`() {
+        createDogDb()
         val persistEntitiesRequest = createEntityRequest()
 
         val entitySandboxService =
@@ -279,7 +280,8 @@ class PersistenceExceptionTests {
             "It should be re-enabled after deduplication work is done in epic CORE-5909")
     @Test
     fun `on duplicate persistence request don't execute it - without PK constraint does not add duplicate DB entry`() {
-        val persistEntitiesRequest = createEntityRequest(DOGS_TABLE_WITHOUT_PK)
+        createDogDb(DOGS_TABLE_WITHOUT_PK)
+        val persistEntitiesRequest = createEntityRequest()
 
         val entitySandboxService =
             EntitySandboxServiceFactory().create(
@@ -322,21 +324,11 @@ class PersistenceExceptionTests {
     /**
      * Create a simple request and return it.
      */
-    private fun createEntityRequest(liquibaseScript: String = DOGS_TABLE_WITH_PK): EntityRequest {
+    private fun createEntityRequest(): EntityRequest {
         val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
         // create dog using dog-aware sandbox
-        val dog =
-            sandbox
-                .createDog("Stray", owner = "Not Known")
-                .instance
-                .also {
-                    createDBTables(
-                        it::class.java,
-                        dbConnectionManager.getDataSource(virtualNodeInfo.vaultDmlConnectionId),
-                        liquibaseScript
-                    )
-                }
+        val dog = sandbox.createDog("Stray", owner = "Not Known").instance
         val serialisedDog = sandbox.getSerializationService().serialize(dog).bytes
 
         // create persist request for the sandbox that isn't dog-aware
@@ -352,6 +344,19 @@ class PersistenceExceptionTests {
                     cpkFileHashes.map { KeyValuePair(CPK_FILE_CHECKSUM, it.toString()) }
                 )
             )
+        )
+    }
+
+    private fun createDogDb(liquibaseScript: String = DOGS_TABLE_WITH_PK) {
+        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
+        val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
+
+        val dog = sandbox.createDog("Stray", owner = "Not Known").instance
+
+        createDBTables(
+            dog::class.java,
+            dbConnectionManager.getDataSource(virtualNodeInfo.vaultDmlConnectionId),
+            liquibaseScript
         )
     }
 
