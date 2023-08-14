@@ -332,14 +332,12 @@ class PersistenceExceptionTests {
         val serialisedDog = sandbox.getSerializationService().serialize(dog).bytes
 
         // create persist request for the sandbox that isn't dog-aware
-        val requestId = UUID.randomUUID().toString()
-        val flowId = UUID.randomUUID().toString()
         return EntityRequest(
             virtualNodeInfo.holdingIdentity.toAvro(),
             PersistEntities(listOf(ByteBuffer.wrap(serialisedDog))),
             ExternalEventContext(
-                requestId,
-                flowId,
+                UUID.randomUUID().toString(),
+                UUID.randomUUID().toString(),
                 KeyValuePairList(
                     cpkFileHashes.map { KeyValuePair(CPK_FILE_CHECKSUM, it.toString()) }
                 )
