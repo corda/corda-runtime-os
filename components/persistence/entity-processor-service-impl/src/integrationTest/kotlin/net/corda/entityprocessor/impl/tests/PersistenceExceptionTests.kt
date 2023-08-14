@@ -351,24 +351,14 @@ class PersistenceExceptionTests {
 
         val dog = sandbox.createDog("Stray", owner = "Not Known").instance
 
-        createDBTables(
-            dog::class.java,
-            dbConnectionManager.getDataSource(virtualNodeInfo.vaultDmlConnectionId),
-            liquibaseScript
-        )
-    }
-
-    private fun createDBTables(
-        clazz: Class<*>,
-        ds: DataSource,
-        liquibaseScript: String
-    ) {
+        val dogClass = dog::class.java
+        val ds = dbConnectionManager.getDataSource(virtualNodeInfo.vaultDmlConnectionId)
         val cl = ClassloaderChangeLog(
             linkedSetOf(
                 ClassloaderChangeLog.ChangeLogResourceFiles(
-                    clazz.packageName,
+                    dogClass.packageName,
                     listOf(liquibaseScript),
-                    clazz.classLoader
+                    dogClass.classLoader
                 )
             )
         )
