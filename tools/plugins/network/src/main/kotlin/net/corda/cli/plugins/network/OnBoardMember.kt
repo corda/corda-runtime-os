@@ -10,10 +10,11 @@ import java.io.File
 import java.security.MessageDigest
 import java.util.UUID
 import net.corda.cli.plugins.network.enums.MemberRole
+import net.corda.cli.plugins.network.utils.PrintUtils.Companion.verifyAndPrintError
+import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
-import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
@@ -43,7 +44,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
     @Option(
         names = ["--role", "-r"],
-        description = ["Member role, if any. It is not mandatory to provide a role"],
+        description = ["Member role, if any. It is not mandatory to provide a role. Multiple roles can be specified"],
     )
     var roles: Set<MemberRole> = emptySet()
 
@@ -208,28 +209,19 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
     override val registrationContext by lazy {
         val preAuth = preAuthToken?.let { mapOf("corda.auth.token" to it) } ?: emptyMap()
-
-        val extProperties = customProperties.filter {
-            val key = it.key
-            val value = it.value
-            val keyStartsWithExt = key.startsWith("$CUSTOM_KEY_PREFIX.")
-
-            if (key.length > 128) {
-                throw IllegalArgumentException("The key length cannot exceed 128 characters")
-            }
-            if (value.length > 800) {
-                throw IllegalArgumentException("The value length cannot exceed 800 characters")
-            }
-            keyStartsWithExt
-        }
         val roleProperty: Map<String, String> = roles.mapIndexed { index: Int, memberRole: MemberRole ->
             "$ROLES_PREFIX.$index" to memberRole.value
         }.toMap()
 
+        val extProperties = customProperties.filterKeys { it.startsWith("$CUSTOM_KEY_PREFIX.") }
+
         val notaryProperties = if (roles.contains(MemberRole.NOTARY)) {
-            val notaryServiceName = customProperties[NOTARY_SERVICE_NAME] ?:
-            throw IllegalArgumentException("When specifying a NOTARY role, " +
-                    "you also need to specify a custom property for its name under $NOTARY_SERVICE_NAME.")
+            var notaryServiceName = ""
+            verifyAndPrintError {
+                notaryServiceName = customProperties[NOTARY_SERVICE_NAME] ?:
+                throw IllegalArgumentException("When specifying a NOTARY role, " +
+                        "you also need to specify a custom property for its name under $NOTARY_SERVICE_NAME.")
+            }
             mapOf(
                 NOTARY_SERVICE_NAME to notaryServiceName,
                 NOTARY_SERVICE_PROTOCOL to "com.r3.corda.notary.plugin.nonvalidating",
@@ -243,10 +235,10 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
         val endpoints: Map<String, String> = p2pGatewayUrls
             .flatMapIndexed { index, url ->
-                    listOf(
-                        URL_KEY.format(index) to url,
-                        PROTOCOL_VERSION.format(index) to "1"
-                    )
+                listOf(
+                    URL_KEY.format(index) to url,
+                    PROTOCOL_VERSION.format(index) to "1"
+                )
             }
             .toMap()
 
