@@ -73,7 +73,7 @@ class PersistenceExceptionTests {
         const val TOPIC = "pretend-topic"
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        const val DOGS_TABLE_WITH_PK = "migration/db.changelog-master.xml"
+        const val DOGS_TABLE = "migration/db.changelog-master.xml"
         const val DOGS_TABLE_WITHOUT_PK = "dogs-without-pk.xml"
     }
 
@@ -347,7 +347,7 @@ class PersistenceExceptionTests {
         )
     }
 
-    private fun createDogDb(liquibaseScript: String = DOGS_TABLE_WITH_PK) {
+    private fun createDogDb(liquibaseScript: String = DOGS_TABLE) {
         val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
 
