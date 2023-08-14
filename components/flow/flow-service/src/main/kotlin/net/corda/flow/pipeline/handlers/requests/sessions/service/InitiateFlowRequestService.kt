@@ -12,6 +12,7 @@ import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.keyValuePairListOf
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPPORTED
+import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
 import net.corda.utilities.trace
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -90,7 +91,9 @@ class InitiateFlowRequestService @Activate constructor(
                     it.counterparty,
                     contextUserProperties = keyValuePairListOf(it.contextUserProperties),
                     contextPlatformProperties = keyValuePairListOf(it.contextPlatformProperties),
-                    sessionProperties = sessionContext.avro,
+                    sessionProperties = sessionContext.avro.apply {
+                        put(FLOW_SESSION_REQUIRE_CLOSE, it.requireClose)
+                    },
                     Instant.now()
                 )
             }

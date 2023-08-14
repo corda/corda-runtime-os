@@ -194,6 +194,7 @@ class FlowRunnerImplTest {
         whenever(
             flowFactory.createInitiatedFlow(
                 flowStartContext,
+                true,
                 sandboxGroupContext,
                 localContextProperties.counterpartySessionProperties
             )
