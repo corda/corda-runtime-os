@@ -303,8 +303,8 @@ class PersistenceExceptionTests {
         assertNull(((record2.single().value as FlowEvent).payload as ExternalEventResponse).error)
 
         val dogCount = dbConnectionManager
-            .getDataSource(virtualNodeInfo.vaultDmlConnectionId).connection.use {
-                it.prepareStatement("SELECT count(*) FROM dog").use {
+            .getDataSource(virtualNodeInfo.vaultDmlConnectionId).connection.use { connection ->
+                connection.prepareStatement("SELECT count(*) FROM dog").use {
                     it.executeQuery().use { rs ->
                         if (!rs.next()) {
                             throw IllegalStateException("Should be able to find at least 1 dog entry")
