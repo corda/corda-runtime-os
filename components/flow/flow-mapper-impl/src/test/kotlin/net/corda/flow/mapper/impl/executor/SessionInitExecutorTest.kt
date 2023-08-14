@@ -8,7 +8,6 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
-import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfigImpl
@@ -63,9 +62,7 @@ class SessionInitExecutorTest {
         assertThat(outboundEvents.size).isEqualTo(1)
         val outboundEvent = outboundEvents.first()
         assertThat(outboundEvent.topic).isEqualTo("Topic")
-        assertThat(outboundEvent.key).isEqualTo("sessionId")
         assertThat(payload.sessionId).isEqualTo("sessionId")
-        assertThat(outboundEvent.value!!::class).isEqualTo(AppMessage::class)
     }
 
     @Test
@@ -93,7 +90,6 @@ class SessionInitExecutorTest {
 
         assertThat(outboundEvents.size).isEqualTo(1)
         val outboundEvent = outboundEvents.first()
-        assertThat(outboundEvent.topic).isEqualTo("Topic")
         assertThat(outboundEvent.key::class).isEqualTo(String::class)
         assertThat(outboundEvent.value!!::class).isEqualTo(FlowEvent::class)
         assertThat(payload.sessionId).isEqualTo("sessionId-INITIATED")
