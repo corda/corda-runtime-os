@@ -249,7 +249,7 @@ class PersistenceExceptionTests {
             "It should be re-enabled after deduplication work is done in epic CORE-5909")
     @Test
     fun `on duplicate persistence request don't execute it - with PK constraint does not throw PK violation`() {
-        val (dbConnectionManager, persistEntitiesRequest) = setupExceptionHandlingTests()
+        val persistEntitiesRequest = createEntityRequest()
 
         val entitySandboxService =
             EntitySandboxServiceFactory().create(
@@ -279,8 +279,7 @@ class PersistenceExceptionTests {
             "It should be re-enabled after deduplication work is done in epic CORE-5909")
     @Test
     fun `on duplicate persistence request don't execute it - without PK constraint does not add duplicate DB entry`() {
-        val (dbConnectionManager, persistEntitiesRequest) =
-            setupExceptionHandlingTests(DOGS_TABLE_WITHOUT_PK)
+        val persistEntitiesRequest = createEntityRequest(DOGS_TABLE_WITHOUT_PK)
 
         val entitySandboxService =
             EntitySandboxServiceFactory().create(
