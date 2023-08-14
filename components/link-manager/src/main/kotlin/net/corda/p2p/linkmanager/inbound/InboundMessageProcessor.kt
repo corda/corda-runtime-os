@@ -110,6 +110,9 @@ internal class InboundMessageProcessor(
                     val partitionsAssigned =
                         inboundAssignmentListener.getCurrentlyAssignedPartitions()
                     if (partitionsAssigned.isNotEmpty()) {
+                        logger.info("FFF in processSessionMessage sending response " +
+                                "${response.header.sourceIdentity.x500Name} -> " +
+                                " ${response.header.destinationIdentity.x500Name}")
                         listOf(
                             Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response),
                             Record(
