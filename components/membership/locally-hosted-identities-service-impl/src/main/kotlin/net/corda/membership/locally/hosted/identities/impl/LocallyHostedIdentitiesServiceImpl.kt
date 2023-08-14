@@ -80,6 +80,7 @@ class LocallyHostedIdentitiesServiceImpl(
     private fun handleEvent(event: LifecycleEvent) {
         when (event) {
             is StartEvent -> {
+                logger.info("StartEvent")
                 coordinator.createManagedResource(FOLLOW_CHANGES_RESOURCE_NAME) {
                     coordinator.followStatusChangesByName(
                         setOf(
@@ -89,6 +90,7 @@ class LocallyHostedIdentitiesServiceImpl(
                 }
             }
             is StopEvent -> {
+                logger.info("StopEvent")
                 coordinator.closeManagedResources(
                     setOf(
                         FOLLOW_CHANGES_RESOURCE_NAME,
@@ -99,6 +101,7 @@ class LocallyHostedIdentitiesServiceImpl(
                 coordinator.updateStatus(LifecycleStatus.DOWN)
             }
             is RegistrationStatusChangeEvent -> {
+                logger.info("if RegistrationStatusChangeEvent")
                 if (event.status == LifecycleStatus.UP) {
                     coordinator.createManagedResource(WAIT_FOR_CONFIG_RESOURCE_NAME) {
                         configurationReadService.registerComponentForUpdates(
@@ -110,6 +113,7 @@ class LocallyHostedIdentitiesServiceImpl(
                         )
                     }
                 } else {
+                    logger.info("else RegistrationStatusChangeEvent")
                     coordinator.closeManagedResources(
                         setOf(
                             WAIT_FOR_CONFIG_RESOURCE_NAME,
@@ -119,6 +123,7 @@ class LocallyHostedIdentitiesServiceImpl(
                 }
             }
             is ConfigChangedEvent -> {
+                logger.info("ConfigChangedEvent")
                 coordinator.createManagedResource(SUBSCRIPTION_RESOURCE_NAME) {
                     subscriptionFactory.createCompactedSubscription(
                         subscriptionConfig = SubscriptionConfig(
@@ -160,6 +165,7 @@ class LocallyHostedIdentitiesServiceImpl(
             currentData.values.forEach {
                 addEntry(it)
             }
+            logger.info("onSnapshot LifecycleStatus.UP")
             coordinator.updateStatus(LifecycleStatus.UP)
         }
     }
