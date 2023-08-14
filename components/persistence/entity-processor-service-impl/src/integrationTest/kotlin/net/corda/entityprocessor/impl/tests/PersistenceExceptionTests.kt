@@ -352,7 +352,6 @@ class PersistenceExceptionTests {
         val dog = sandbox.createDog("Stray", owner = "Not Known").instance
 
         val dogClass = dog::class.java
-        val ds = dbConnectionManager.getDataSource(virtualNodeInfo.vaultDmlConnectionId)
         val cl = ClassloaderChangeLog(
             linkedSetOf(
                 ClassloaderChangeLog.ChangeLogResourceFiles(
@@ -362,6 +361,7 @@ class PersistenceExceptionTests {
                 )
             )
         )
+        val ds = dbConnectionManager.getDataSource(virtualNodeInfo.vaultDmlConnectionId)
         ds.connection.use {
             lbm.updateDb(it, cl)
         }
