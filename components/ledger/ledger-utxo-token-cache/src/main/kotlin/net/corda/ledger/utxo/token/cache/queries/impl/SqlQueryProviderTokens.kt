@@ -18,7 +18,7 @@ class SqlQueryProviderTokens : SqlQueryProvider {
 
     override fun getBalanceQuery(includeTagFilter: Boolean, includeOwnerFilter: Boolean): String {
         val tagFilter = if(includeTagFilter){
-            "REGEXP_MATCHES(token_tag, :$SQL_PARAMETER_TAG_FILTER)"
+            "AND REGEXP_MATCHES(token_tag, :$SQL_PARAMETER_TAG_FILTER)"
         }else{
             ""
         }
@@ -47,7 +47,7 @@ class SqlQueryProviderTokens : SqlQueryProvider {
 
     override fun getPagedSelectQuery(limit: Int, includeTagFilter: Boolean, includeOwnerFilter: Boolean): String {
         val tagFilter = if(includeTagFilter){
-            "REGEXP_MATCHES(token_tag, :$SQL_PARAMETER_TAG_FILTER)"
+            "AND REGEXP_MATCHES(token_tag, :$SQL_PARAMETER_TAG_FILTER)"
         }else{
             ""
         }
