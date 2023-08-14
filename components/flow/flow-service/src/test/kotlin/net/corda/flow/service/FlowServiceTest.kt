@@ -1,5 +1,6 @@
 package net.corda.flow.service
 
+import java.util.stream.Stream
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.external.messaging.services.ExternalMessagingRoutingService
@@ -15,12 +16,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import org.mockito.Mockito.any
-import org.mockito.Mockito.eq
-import org.mockito.Mockito.mock
-import org.mockito.Mockito.times
-import org.mockito.Mockito.verify
-import java.util.stream.Stream
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 
 class FlowServiceTest {
 
@@ -32,8 +32,8 @@ class FlowServiceTest {
                 Arguments.of(LifecycleCoordinatorName.forComponent<SandboxGroupContextComponent>()),
                 Arguments.of(LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()),
                 Arguments.of(LifecycleCoordinatorName.forComponent<CpiInfoReadService>()),
-                Arguments.of(LifecycleCoordinatorName.forComponent<FlowExecutor>(),
-                Arguments.of(LifecycleCoordinatorName.forComponent<InteropIdentityRegistryService>()))
+                Arguments.of(LifecycleCoordinatorName.forComponent<FlowExecutor>()),
+                Arguments.of(LifecycleCoordinatorName.forComponent<InteropIdentityRegistryService>())
             )
         }
     }

@@ -9,7 +9,7 @@ import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.interop.identity.cache.InteropIdentityRegistryService
-import net.corda.interop.identity.cache.impl.InteropIdentityRegistryViewImpl
+import net.corda.interop.identity.cache.InteropIdentityRegistryView
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -37,6 +37,7 @@ class FlowFiberExecutionContextFactoryImplTest {
     private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider>()
     private val membershipGroupReader = mock<MembershipGroupReader>()
     private val interopIdentityRegistryService = mock<InteropIdentityRegistryService>()
+    private val interopIdentityRegistryServiceView = mock<InteropIdentityRegistryView>()
     private val flowFiberExecutionContextFactory = FlowFiberExecutionContextFactoryImpl(
         flowSandboxService,
         membershipGroupReaderProvider,
@@ -76,7 +77,7 @@ class FlowFiberExecutionContextFactoryImplTest {
         whenever(sandboxGroupContext.dependencyInjector).thenReturn(sandboxDependencyInjector)
         whenever(interopIdentityRegistryService.getVirtualNodeRegistryView(
             vNodeHoldingIdentity.shortHash
-        )).thenReturn(InteropIdentityRegistryViewImpl(vNodeHoldingIdentity.shortHash))
+        )).thenReturn(interopIdentityRegistryServiceView)
         whenever(sandboxGroupContext.checkpointSerializer).thenReturn(checkpointSerializer)
 
         val result = flowFiberExecutionContextFactory.createFiberExecutionContext(context)

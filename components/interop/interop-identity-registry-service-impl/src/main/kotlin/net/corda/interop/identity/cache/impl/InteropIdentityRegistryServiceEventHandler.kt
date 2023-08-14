@@ -46,7 +46,7 @@ class InteropIdentityRegistryServiceEventHandler(
     }
 
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
-        configurationReadService.start()
+        //configurationReadService.start()
         registration?.close()
         registration = coordinator.followStatusChangesByName(setOf(
             LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
@@ -54,8 +54,8 @@ class InteropIdentityRegistryServiceEventHandler(
     }
 
     private fun onStopEvent() {
-        configSubscription?.close()
-        configSubscription = null
+        //configSubscription?.close()
+        //configSubscription = null
         registration?.close()
         registration = null
     }
