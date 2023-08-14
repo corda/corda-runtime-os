@@ -252,14 +252,6 @@ class PersistenceExceptionTests {
         createDogDb()
         val persistEntitiesRequest = createEntityRequest()
 
-        val entitySandboxService =
-            EntitySandboxServiceFactory().create(
-                virtualNode.sandboxGroupContextComponent,
-                cpkReadService,
-                virtualNodeInfoReadService,
-                dbConnectionManager
-            )
-
         val processor = EntityMessageProcessor(
             currentSandboxGroupContext,
             entitySandboxService,
@@ -282,14 +274,6 @@ class PersistenceExceptionTests {
     fun `on duplicate persistence request don't execute it - without PK constraint does not add duplicate DB entry`() {
         createDogDb(DOGS_TABLE_WITHOUT_PK)
         val persistEntitiesRequest = createEntityRequest()
-
-        val entitySandboxService =
-            EntitySandboxServiceFactory().create(
-                virtualNode.sandboxGroupContextComponent,
-                cpkReadService,
-                virtualNodeInfoReadService,
-                dbConnectionManager
-            )
 
         val processor = EntityMessageProcessor(
             currentSandboxGroupContext,
