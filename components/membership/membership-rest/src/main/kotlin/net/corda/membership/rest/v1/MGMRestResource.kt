@@ -441,6 +441,8 @@ interface MGMRestResource : RestResource {
         path = "{holdingIdentityShortHash}/suspend",
         minVersion = RestApiVersion.C5_0,
         maxVersion = RestApiVersion.C5_0,
+        description = "The suspend endpoint enables you to suspend a member. The v1 version of this endpoint is deprecated in favour of " +
+            "later versions. Later versions mandate that the serial number is specified in the request body."
     )
     fun deprecatedSuspendMember(
         @RestPathParameter(
@@ -467,7 +469,8 @@ interface MGMRestResource : RestResource {
      */
     @HttpPOST(
         path = "{holdingIdentityShortHash}/suspend",
-        minVersion = RestApiVersion.C5_1
+        minVersion = RestApiVersion.C5_1,
+        description = "The suspend endpoint enables you to suspend a member."
     )
     fun suspendMember(
         @RestPathParameter(
@@ -481,7 +484,7 @@ interface MGMRestResource : RestResource {
     )
 
     /**
-     * The [activateMember] method enables you to activate a previously suspended member. An activated member is
+     * The [deprecatedActivateMember] method enables you to activate a previously suspended member. An activated member is
      * allowed to communicate with other members of the group again, and is able to receive updates related to the
      * group or the other members.
      *
@@ -491,12 +494,14 @@ interface MGMRestResource : RestResource {
      * ```
      *
      * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
-     * @param activationParams Parameters for activating a member. See [DeprecatedSuspensionActivationParameters] for more details.
+     * @param activationParams Parameters for activating a member. See [SuspensionActivationParameters] for more details.
      */
     @HttpPOST(
         path = "{holdingIdentityShortHash}/activate",
         minVersion = RestApiVersion.C5_0,
         maxVersion = RestApiVersion.C5_0,
+        description = "This endpoint enables you to activate a previously suspended member. The v1 version of this endpoint is deprecated " +
+            "in favour of later versions. Later versions mandate that the serial number is specified in the request body."
     )
     @Deprecated("Deprecated in favour of activateMember")
     fun deprecatedActivateMember(
@@ -526,7 +531,8 @@ interface MGMRestResource : RestResource {
      */
     @HttpPOST(
         path = "{holdingIdentityShortHash}/activate",
-        minVersion = RestApiVersion.C5_1
+        minVersion = RestApiVersion.C5_1,
+        description = "This endpoint enables you to activate a previously suspended member."
     )
     fun activateMember(
         @RestPathParameter(
