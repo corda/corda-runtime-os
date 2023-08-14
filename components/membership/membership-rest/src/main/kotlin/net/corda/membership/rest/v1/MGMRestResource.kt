@@ -500,8 +500,8 @@ interface MGMRestResource : RestResource {
         path = "{holdingIdentityShortHash}/activate",
         minVersion = RestApiVersion.C5_0,
         maxVersion = RestApiVersion.C5_0,
-        description = "This endpoint enables you to activate a previously suspended member. The v1 version of this endpoint is deprecated " +
-            "in favour of later versions. Later versions mandate that the serial number is specified in the request body."
+        description = "This endpoint enables you to activate a previously suspended member. The v1 version of this endpoint is deprecated "
+            + "in favour of later versions. Later versions mandate that the serial number is specified in the request body."
     )
     @Deprecated("Deprecated in favour of activateMember")
     fun deprecatedActivateMember(
