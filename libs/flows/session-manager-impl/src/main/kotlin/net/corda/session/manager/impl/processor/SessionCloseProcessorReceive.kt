@@ -41,6 +41,17 @@ class SessionCloseProcessorReceive(
             logger.debug { errorMessage }
             generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionClose-NullSessionState", instant)
         } else {
+
+            /**
+             * if status is CLOSED/ERROR do nothing
+             * else (CREATED/CONFIRMED) (i.e we have not called session.close yet)
+             *  - set status to be CLOSING
+             *  else if CLOSING (i.e weve called session.close already)
+             *  - set status to CLOSED
+             *
+             */
+
+
             val seqNum = sessionEvent.sequenceNum
             val receivedEventsState = sessionState.receivedEventsState
             val lastProcessedSeqNum = receivedEventsState.lastProcessedSequenceNum

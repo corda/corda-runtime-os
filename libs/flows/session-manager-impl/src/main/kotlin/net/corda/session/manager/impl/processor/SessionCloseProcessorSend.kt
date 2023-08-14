@@ -32,6 +32,18 @@ class SessionCloseProcessorSend(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    /**
+     * If I am  the initiated party
+     *  - if requireClose == true
+     *      - send Close
+     *      - set status CLOSED
+     *      - if status is already CLOSED - do nothing
+     *
+     *  - if requireClose == false
+     *      - set status CLOSED
+     *      - if status is already CLOSED - do nothing
+     *
+     */
     override fun execute(): SessionState {
         val sessionId = sessionEvent.sessionId
         val currentStatus = sessionState?.status
