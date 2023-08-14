@@ -104,6 +104,7 @@ internal class OutboundMessageProcessor(
             logger.error("Received null message. The message was discarded.")
             return emptyList()
         }
+        logger.info("QQQ I am ${hashCode()} got event ${event.key}")
 
         return when (message) {
             is AuthenticatedMessage -> {

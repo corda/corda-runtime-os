@@ -277,6 +277,8 @@ internal class SessionManagerImpl(
                             initMessages,
                             message.message.header.statusFilter
                         ) ?: return@read SessionState.CannotEstablishSession
+                        logger.info("QQQ in processOutboundMessage I am ${hashCode()} " +
+                                "creating session for ${counterparties.ourId.x500Name} -> ${counterparties.counterpartyId.x500Name}")
                         SessionState.NewSessionsNeeded(messages, counterparties)
                     }
                 }
@@ -409,6 +411,9 @@ internal class SessionManagerImpl(
             val records = linkOutMessagesFromSessionInitMessages(
                 sessionCounterparties, sessionInitMessage, sessionCounterparties.status
             ) ?.let {
+                logger.info("QQQ I am ${hashCode()} creating new session for refreshOutboundSession" +
+                        " ${sessionCounterparties.ourId.x500Name} -> " +
+                        "${sessionCounterparties.counterpartyId.x500Name}")
                 OutboundMessageProcessor.recordsForNewSessions(
                     SessionState.NewSessionsNeeded(it, sessionCounterparties),
                     inboundAssignmentListener,
@@ -873,6 +878,8 @@ internal class SessionManagerImpl(
             SessionManager.Counterparties(ourIdentityInfo.holdingIdentity, peer.holdingIdentity),
             session.getSession()
         )
+        logger.info("QQQ I am ${hashCode()} adding " +
+                "active session ${ourIdentityInfo.holdingIdentity.x500Name} -> ${peer.holdingIdentity.x500Name}")
         logger.info(
             "Inbound session ${message.header.sessionId} established " +
                 "(local=${ourIdentityInfo.holdingIdentity}, remote=${peer.holdingIdentity})."

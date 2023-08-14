@@ -82,6 +82,7 @@ class P2pRecordsFactory(
             .build()
         val appMessage = AppMessage(message)
 
+        // QQQ one
         return Record(
             P2P_OUT_TOPIC,
             "Membership: $source -> $destination",

@@ -655,6 +655,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             payload: ByteBuffer,
             topicKey: String,
         ): Record<String, AppMessage> {
+            // QQQ 2
             return Record(
                 Schemas.P2P.P2P_OUT_TOPIC,
                 topicKey,
