@@ -51,7 +51,6 @@ import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
 import net.corda.membership.impl.registration.verifiers.OrderVerifier
 import net.corda.membership.impl.registration.verifiers.P2pEndpointVerifier
 import net.corda.membership.impl.registration.verifiers.RegistrationContextCustomFieldsVerifier
-import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -449,11 +448,10 @@ class DynamicMemberRegistrationService @Activate constructor(
 
             previousRegistrationContext?.let { previous ->
                 ((newRegistrationContext.entries - previous.entries) + (previous.entries - newRegistrationContext.entries)).filter {
-                    it.key.startsWith(ENDPOINTS) ||
-                            it.key.startsWith(SESSION_KEYS) ||
-                            it.key.startsWith(LEDGER_KEYS) ||
-                            it.key.startsWith(ROLES_PREFIX) ||
-                            it.key.startsWith("corda.notary")
+                    it.key.startsWith(SESSION_KEYS) ||
+                    it.key.startsWith(LEDGER_KEYS) ||
+                    it.key.startsWith(ROLES_PREFIX) ||
+                    it.key.startsWith("corda.notary")
                 }.apply {
                     require(isEmpty()) {
                         throw InvalidMembershipRegistrationException(
