@@ -91,9 +91,7 @@ class InitiateFlowRequestService @Activate constructor(
                     it.counterparty,
                     contextUserProperties = keyValuePairListOf(it.contextUserProperties),
                     contextPlatformProperties = keyValuePairListOf(it.contextPlatformProperties),
-                    sessionProperties = sessionContext.avro.apply {
-                        put(FLOW_SESSION_REQUIRE_CLOSE, it.requireClose)
-                    },
+                    sessionProperties = sessionContext.apply { put(FLOW_SESSION_REQUIRE_CLOSE, it.requireClose.toString()) }.avro,
                     Instant.now()
                 )
             }
