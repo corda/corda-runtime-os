@@ -36,7 +36,6 @@ data class InteropIdentity(
 
         if (x500Name != other.x500Name) return false
         if (groupId != other.groupId) return false
-        if (owningVirtualNodeShortHash != other.owningVirtualNodeShortHash) return false
         return shortHash == other.shortHash
     }
 
