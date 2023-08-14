@@ -314,7 +314,6 @@ class PersistenceExceptionTests {
                     }
                 }
             }
-
         // There shouldn't be a dog duplicate entry in the DB, i.e. dogs count in the DB should still be 1
         assertEquals(1, dogCount)
     }
