@@ -48,21 +48,37 @@ class VaultNamedQueryExecutorImpl(
             "Only WHERE queries are supported for now."
         }
 
-        // Fetch the state and refs for the given transaction IDs
-        val contractStateResults = fetchStateAndRefs(
-            request,
-            vaultNamedQuery.query.query
-        )
+        val filteredResults = mutableSetOf<StateAndRef<ContractState>>()
+        var internalOffset = request.offset
 
         // Deserialize the parameters into readable objects instead of bytes
         val deserializedParams = request.parameters.mapValues {
             serializationService.deserialize(it.value.array(), Any::class.java)
         }
 
-        // Apply filters and transforming functions (if there's any)
-        val filteredAndTransformedResults = contractStateResults.filter {
-            vaultNamedQuery.filter?.filter(it, deserializedParams) ?: true
-        }.mapNotNull { // This has no effect as of now, but we keep it for safety purposes
+        while (filteredResults.size < request.limit) {
+            // Fetch the state and refs for the given transaction IDs
+            val contractStateResults = fetchStateAndRefs(
+                request,
+                vaultNamedQuery.query.query,
+                offsetOverride = internalOffset
+            )
+
+            // Increase offset as we don't want to see the same results over and over again
+            // Increase it by the "unfiltered" row count to avoid duplication
+            internalOffset += contractStateResults.size
+
+            // Apply filters (if there's any)
+            val currentFilteredResults = contractStateResults.filter {
+                vaultNamedQuery.filter?.filter(it, deserializedParams) ?: true
+            }
+
+            // Add the filtered results to the final result set
+            filteredResults.addAll(currentFilteredResults)
+        }
+
+        // mapNotNull has no effect as of now, but we keep it for safety purposes
+        val filteredAndTransformedResults = filteredResults.mapNotNull {
             vaultNamedQuery.mapper?.transform(it, deserializedParams) ?: it
         }
 
@@ -75,7 +91,8 @@ class VaultNamedQueryExecutorImpl(
         // Return the filtered/transformed/collected (if present) result to the caller
         return EntityResponse.newBuilder()
             .setResults(collectedResults.map { ByteBuffer.wrap(serializationService.serialize(it).bytes) })
-            .setMetadata(KeyValuePairList(listOf(KeyValuePair("numberOfRowsFromQuery", contractStateResults.size.toString()))))
+            // TODO Should `numberOfRowsFromQuery` be the number of rows before or after filtering?
+            .setMetadata(KeyValuePairList(listOf(KeyValuePair("numberOfRowsFromQuery", filteredResults.size.toString()))))
             .build()
     }
 
@@ -85,7 +102,8 @@ class VaultNamedQueryExecutorImpl(
      */
     private fun fetchStateAndRefs(
         request: FindWithNamedQuery,
-        whereJson: String?
+        whereJson: String?,
+        offsetOverride: Int? = null
     ): List<StateAndRef<ContractState>> {
 
         validateParameters(request)
@@ -120,7 +138,7 @@ class VaultNamedQueryExecutorImpl(
                 query.setParameter(rec.key, serializationService.deserialize(bytes))
             }
 
-            query.firstResult = request.offset
+            query.firstResult = offsetOverride ?: request.offset
             query.maxResults = request.limit
 
             query.resultList as List<Tuple>
