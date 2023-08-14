@@ -22,7 +22,7 @@ class SqlQueryProviderTokens : SqlQueryProvider {
         }else{
             ""
         }
-        val ownerFilter = if(includeTagFilter){
+        val ownerFilter = if(includeOwnerFilter){
             "AND   token_owner_hash = :$SQL_PARAMETER_OWNER_HASH"
         }else{
             ""
@@ -51,7 +51,7 @@ class SqlQueryProviderTokens : SqlQueryProvider {
         }else{
             ""
         }
-        val ownerFilter = if(includeTagFilter){
+        val ownerFilter = if(includeOwnerFilter){
             "AND   token_owner_hash = :$SQL_PARAMETER_OWNER_HASH"
         }else{
             ""
