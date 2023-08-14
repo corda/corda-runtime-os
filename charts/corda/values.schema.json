@@ -1267,7 +1267,8 @@
                 "membership",
                 "rest",
                 "p2pLinkManager",
-                "p2pGateway"
+                "p2pGateway",
+                "uniqueness"
             ],
             "additionalProperties": false,
             "properties": {
@@ -1916,6 +1917,55 @@
                             }]
                         }
                     ]
+                },
+                "uniqueness": {
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/worker"
+                        },
+                        {
+                            "additionalProperties": false,
+                            "properties": {
+                                "image": {},
+                                "javaOptions": {},
+                                "annotations": {},
+                                "replicaCount": {},
+                                "debug": {},
+                                "logging": {},
+                                "profiling": {},
+                                "resources": {},
+                                "kafka": {}
+                            },
+                            "examples": [{
+                                "image": {
+                                    "registry": "",
+                                    "repository": "corda-os-uniqueness-worker",
+                                    "tag": ""
+                                },
+                                "replicaCount": 1,
+                                "debug": {
+                                    "enabled": false,
+                                    "suspend": false
+                                },
+                                "logging": {
+                                    "level": "warn"
+                                },
+                                "profiling": {
+                                    "enabled": false
+                                },
+                                "resources": {
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    },
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    }
+                                }
+                            }]
+                        }
+                    ]
                 }
             },
             "examples": [{
@@ -2134,6 +2184,34 @@
                     },
                     "service": {
                         "port": 8080
+                    }
+                },
+                "uniqueness": {
+                    "image": {
+                        "registry": "corda-os-docker.software.r3.com",
+                        "repository": "corda-os-uniqueness-worker",
+                        "tag": ""
+                    },
+                    "replicaCount": 1,
+                    "debug": {
+                        "enabled": false,
+                        "suspend": false
+                    },
+                    "logging": {
+                        "level": "warn"
+                    },
+                    "profiling": {
+                        "enabled": false
+                    },
+                    "resources": {
+                        "requests": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        },
+                        "limits": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        }
                     }
                 }
             }]
