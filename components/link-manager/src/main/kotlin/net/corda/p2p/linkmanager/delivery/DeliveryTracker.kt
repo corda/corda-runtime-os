@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.AuthenticatedMessageDeliveryState
+import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerProcessedMarker
@@ -28,6 +29,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.metrics.CordaMetrics
 import net.corda.p2p.linkmanager.sessions.SessionManager
+import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.P2P_OUT_MARKERS
 import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
@@ -124,7 +126,14 @@ internal class DeliveryTracker(
                     throw IllegalStateException("A message was added for replay before the DeliveryTracker was started.")
                 }
 
-                val records = processAuthenticatedMessage(message)
+                val records = listOf(
+                    Record(
+                        Schemas.P2P.P2P_OUT_TOPIC,
+                        message.key,
+                        AppMessage(message.message),
+                    ),
+                )
+                    //processAuthenticatedMessage(message)
                 logger.debug { "Replaying data message ${message.message.header.messageId}." }
                 publisher.publish(records)
                 recordReplaysMetric(message.message)
