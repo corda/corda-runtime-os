@@ -5,12 +5,12 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.KotlinFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
-import picocli.CommandLine
 import java.net.URL
 import java.net.URLDecoder
 import java.nio.charset.Charset
 import java.util.jar.JarEntry
 import java.util.jar.JarFile
+import picocli.CommandLine
 
 @CommandLine.Command(name = "create", description = ["Create Kafka topics"], subcommands = [CreateScript::class, CreateConnect::class])
 class Create(
@@ -65,6 +65,7 @@ class Create(
         "crypto" to listOf("crypto", "combined"),
         "db" to listOf("db", "combined"),
         "flow" to listOf("flow", "combined"),
+        "verification" to listOf("verification", "combined"),
         "membership" to listOf("membership", "combined"),
         "gateway" to listOf("p2pGateway", "combined"),
         "link-manager" to listOf("p2pLinkManager", "combined"),
