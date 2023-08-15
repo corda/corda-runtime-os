@@ -16,6 +16,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import kotlin.test.assertFailsWith
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -276,23 +277,25 @@ class CreateCpiV2Test {
 
     @Test
     fun `cpi create tool aborts if cpi version is invalid`() {
-        val outputFile = Path.of(tempDir.toString(), CPI_FILE_NAME)
-        val errText = TestUtils.captureStdErr {
-            CommandLine(CreateCpiV2()).execute (
-                "--cpb=${cpbPath}",
-                "--group-policy=${testGroupPolicy}",
-                "--cpi-name=testCpi",
-                "--cpi-version=\$%#",
-                "--file=$outputFile",
-                "--keystore=${testKeyStore}",
-                "--storepass=keystore password",
-                "--key=${SIGNING_KEY_1_ALIAS}",
-                "--sig-file=$CPI_SIGNER_NAME"
-            )
-        }
-
-        assertFalse(outputFile.exists())
-        assertTrue(errText.contains("CPI version should include at least one alphanumeric character")
+        val createTool = CreateCpiV2()
+        assertFailsWith<IllegalArgumentException>(
+            block = {
+                createTool.verifyCpiVersion("\$%#")
+            }
         )
+
+        assertFailsWith<IllegalArgumentException>(
+            block = {
+                createTool.verifyCpiVersion("")
+            }
+        )
+
+        createTool.verifyCpiVersion("1")
+        createTool.verifyCpiVersion("1.0-alpha")
+        createTool.verifyCpiVersion("2.5")
+        createTool.verifyCpiVersion("4-beta")
+        createTool.verifyCpiVersion("2.7-gamma")
+        createTool.verifyCpiVersion("21-delta-3")
+        createTool.verifyCpiVersion("0.1-epsilon-7")
     }
 }

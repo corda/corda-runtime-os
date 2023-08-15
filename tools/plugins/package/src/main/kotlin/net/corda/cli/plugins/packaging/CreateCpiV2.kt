@@ -96,7 +96,7 @@ class CreateCpiV2 : Runnable {
 
         GroupPolicyValidator.validateGroupPolicy(groupPolicyString)
 
-        require(cpiVersion.matches(".*[a-zA-Z0-9].*".toRegex())) { "CPI version should include at least one alphanumeric character" }
+        verifyCpiVersion(cpiVersion)
 
         val cpbPath = cpbFileName?.let { requireFileExists(it) }
 
@@ -145,6 +145,15 @@ class CreateCpiV2 : Runnable {
             .trustedCerts(readCertificates(signingOptions.keyStoreFileName, signingOptions.keyStorePass))
             .build()
             .verify()
+    }
+
+    /**
+     * @throws IllegalArgumentException if Cpi version is invalid
+     */
+    public fun verifyCpiVersion(version: String) {
+        require(version.matches("[0-9][a-zA-Z0-9\\.-]*".toRegex())) {
+            "CPI version should match the Maven version specification (see https://maven.apache.org/pom.html#version-order-specification for more information)"
+        }
     }
 
     /**
