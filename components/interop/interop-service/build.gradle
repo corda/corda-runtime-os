@@ -21,12 +21,14 @@ dependencies {
     implementation project(":components:link-manager")
     implementation project(':components:domino-logic')
     implementation project(':components:membership:membership-group-read')
+    implementation project(':components:interop:interop-identity-registry-service')
     implementation project(":libs:membership:membership-impl")
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
+    implementation project(':libs:interop:interop-core')
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "net.corda:corda-application"

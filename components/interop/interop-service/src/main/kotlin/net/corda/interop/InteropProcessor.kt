@@ -16,7 +16,6 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.interop.InteropAliasProcessor.Companion.addAliasSubstringToOrganisationName
 import net.corda.interop.service.InteropFacadeToFlowMapperService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -33,11 +32,13 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
+import net.corda.interop.identity.cache.InteropIdentityRegistryService
 
 class InteropProcessor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val facadeToFlowMapperService: InteropFacadeToFlowMapperService,
+    private val interopIdentityRegistryService: InteropIdentityRegistryService,
     private val flowConfig: SmartConfig
 ) : StateAndEventProcessor<String, InteropState, FlowMapperEvent> {
 
@@ -48,7 +49,6 @@ class InteropProcessor(
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val SUBSYSTEM = "interop"
-        private const val POSTFIX_DENOTING_ALIAS = " Alias"
         private const val INTEROP_RESPONDER_FLOW = "INTEROP_RESPONDER_FLOW"
     }
 
@@ -61,21 +61,15 @@ class InteropProcessor(
     private fun processInboundEvent(state: InteropState?, eventKey: String, sessionEvent: SessionEvent):
             StateAndEventProcessor.Response<InteropState> {
 
-        val (destinationAlias, oldSource) = if(sessionEvent.isInitiatingIdentityDestination()) {
+        val (destinationInteropIdentity, sourceInteropIdentity) = if (sessionEvent.isInitiatingIdentityDestination()) {
             Pair(sessionEvent.initiatingIdentity, sessionEvent.initiatedIdentity)
         } else {
             Pair(sessionEvent.initiatedIdentity, sessionEvent.initiatingIdentity)
         }
-        logEntering("INBOUND", oldSource, destinationAlias, sessionEvent)
 
-        val destinationAliasX500 = destinationAlias.toCorda().x500Name.toString()
-        val aliasMapping = InteropAliasProcessor.getRealHoldingIdentity(destinationAliasX500) ?: throw InteropProcessorException(
-            "Could not determine alias mapping for identity $destinationAlias.", state
-        )
+        logEntering("INBOUND", sourceInteropIdentity, destinationInteropIdentity, sessionEvent)
 
-        val realHoldingIdentity = getRealHoldingIdentityFromAliasMapping(aliasMapping) ?: throw InteropProcessorException(
-            "Could not find a holding identity for alias $destinationAlias.", state
-        )
+        val realDestinationIdentity = lookupOwningIdentity(destinationInteropIdentity.toCorda())
 
         val sessionPayload = sessionEvent.payload
 
@@ -87,7 +81,7 @@ class InteropProcessor(
                 " Key: $eventKey, facade request: ${parameters.facadeId}/${parameters.facadeMethod}")
 
             val flowName = try {
-                facadeToFlowMapperService.getFlowName(realHoldingIdentity, parameters.facadeId, parameters.facadeMethod)
+                facadeToFlowMapperService.getFlowName(realDestinationIdentity, parameters.facadeId, parameters.facadeMethod)
             } catch (e: IllegalStateException) {
                 throw InteropProcessorException("Failed to find responder flow for facade ${parameters.facadeId}.", state, e)
             }
@@ -109,8 +103,8 @@ class InteropProcessor(
                 UUID.randomUUID().toString(),
                 null,
                 InteropStateType.VALID,
-                destinationAlias.x500Name.toString(),
-                destinationAlias.groupId
+                destinationInteropIdentity.x500Name.toString(),
+                destinationInteropIdentity.groupId
             ),
             listOf(
                 Record(
@@ -119,14 +113,14 @@ class InteropProcessor(
                     FlowMapperEvent(sessionEvent.apply {
                         if (isInitiatingIdentityDestination()) {
                             initiatingIdentity = initiatingIdentity.apply {
-                                x500Name = realHoldingIdentity.x500Name.toString()
-                                groupId = realHoldingIdentity.groupId
+                                x500Name = realDestinationIdentity.x500Name.toString()
+                                groupId = realDestinationIdentity.groupId
                             }
                         }
                         if (isInitiatedIdentityDestination()) {
                             initiatedIdentity = initiatedIdentity.apply {
-                                x500Name = realHoldingIdentity.x500Name.toString()
-                                groupId = realHoldingIdentity.groupId
+                                x500Name = realDestinationIdentity.x500Name.toString()
+                                groupId = realDestinationIdentity.groupId
                             }
                         }
                         val (newDest, newSource) = if (isInitiatingIdentityDestination()) {
@@ -142,6 +136,7 @@ class InteropProcessor(
         )
     }
 
+    @Suppress("ThrowsCount")
     private fun processOutboundEvent(state: InteropState?, sessionEvent: SessionEvent):
             StateAndEventProcessor.Response<InteropState> {
 
@@ -160,24 +155,38 @@ class InteropProcessor(
             )
         }
 
-        // TODO CORE-13491 Implement proper lookup process for source alias name
+        val sourceIdentityShortHash = sourceIdentity.toCorda().shortHash
+        val sourceRegistryView = interopIdentityRegistryService.getVirtualNodeRegistryView(sourceIdentityShortHash)
+
+        // The translated source is our source identity in the given interop group
         val translatedSource = sourceIdentity.apply {
-            x500Name = state?.aliasHoldingIdentity ?: addAliasSubstringToOrganisationName(this.toCorda()).x500Name.toString()
-            groupId = interopGroupId
-            // as FlowProcessor assigns a real group of the source
+            val interopIdentity = checkNotNull(sourceRegistryView.getOwnedIdentities()[interopGroupId]) {
+                "Source identity '${this.x500Name}' does not own an interop identity in interop group '$interopGroupId'"
+            }
+            this.x500Name = interopIdentity.x500Name
+            this.groupId = interopGroupId
         }
 
-        // TODO CORE-13491 Implement proper lookup process for source alias name
+        // The translated destination is the non-owned interop identity within the given group which has the
+        // given destination interop identity x500 name
         val translatedDestination = destinationIdentity.apply {
-            // TODO review destination from initiating flow vs from initiated
-            val name = this.toCorda()
-            if (!name.toString().contains(POSTFIX_DENOTING_ALIAS)) {
-                // TODO CORE-13491 this should be always an alias (set by API or kept by responder flow)
-                x500Name = addAliasSubstringToOrganisationName(name).x500Name.toString()
+            val groupIdentities = checkNotNull(sourceRegistryView.getIdentitiesByGroupId()[interopGroupId]) {
+                "No identities in group '$interopGroupId' found within view of source identity '$sourceIdentity'"
             }
-            groupId = interopGroupId
-            // as FlowProcessor assigns a real group of the source,
-            // for the following messages it should already have an alias group worth comparing with the session
+            val destinationIdentityList = groupIdentities.filter {
+                it.shortHash != sourceIdentityShortHash && it.x500Name == this.x500Name
+            }
+            if (destinationIdentityList.size > 1) {
+                throw IllegalStateException(
+                    "Multiple destination identity candidates found with name '${this.x500Name}'"
+                )
+            } else if (destinationIdentityList.isEmpty()) {
+                throw IllegalStateException(
+                    "No destination identity with name '${this.x500Name}' found"
+                )
+            }
+            this.x500Name = destinationIdentityList.single().x500Name
+            this.groupId = interopGroupId
         }
 
         logLeaving("OUTBOUND", translatedSource, translatedDestination, sessionEvent)
@@ -245,12 +254,28 @@ class InteropProcessor(
         logger.info("Finished processing $direction from $source to $dest," +
                 "event=${event.payload::class.java}, session/seq=${event.sessionId}/${event.sequenceNum}")
 
-    private fun getRealHoldingIdentityFromAliasMapping(fakeHoldingIdentity: HoldingIdentity): HoldingIdentity? {
-        val groupReader = membershipGroupReaderProvider.getGroupReader(fakeHoldingIdentity)
-        val memberProvidedContext = groupReader.lookup(fakeHoldingIdentity.x500Name)?.memberProvidedContext
-        memberProvidedContext ?: return null
-        val x500Name = memberProvidedContext.get("corda.interop.mapping.x500name") ?: return null
-        val groupId = memberProvidedContext.get("corda.interop.mapping.group") ?: return null
+    private fun lookupOwningIdentity(interopIdentity: HoldingIdentity): HoldingIdentity {
+        val errorPrefix = "Failed to find owning identity of '${interopIdentity.x500Name}'"
+
+        val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(interopIdentity)
+
+        val memberInfo = checkNotNull(membershipGroupReader.lookup(interopIdentity.x500Name)) {
+            "$errorPrefix, member info not found."
+        }
+
+        val memberProvidedContext = memberInfo.memberProvidedContext
+
+        val contextX500NameKey = "corda.interop.mapping.x500name"
+        val contextGroupIDKey = "corda.interop.mapping.group"
+
+        val x500Name = checkNotNull(memberProvidedContext.get(contextX500NameKey)) {
+            "$errorPrefix, property '$contextX500NameKey' is missing from member provided context."
+        }
+
+        val groupId = checkNotNull(memberProvidedContext.get(contextGroupIDKey)) {
+            "$errorPrefix, '$contextX500NameKey' property missing from member provided context."
+        }
+
         return HoldingIdentity(MemberX500Name.parse(x500Name), groupId)
     }
 
