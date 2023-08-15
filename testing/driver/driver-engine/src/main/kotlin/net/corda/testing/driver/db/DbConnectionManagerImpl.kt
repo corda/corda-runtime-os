@@ -70,6 +70,10 @@ class DbConnectionManagerImpl private constructor(
         dataSourceFactory = HikariDataSourceFactory()
     )
 
+    init {
+        jpaEntitiesRegistry.register(CordaDb.Vault.persistenceUnitName, emptySet())
+    }
+
     @Deactivate
     fun done() {
         entityManagerFactories.clear()
