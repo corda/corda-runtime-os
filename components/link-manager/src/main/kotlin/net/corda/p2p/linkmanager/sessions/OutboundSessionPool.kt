@@ -42,10 +42,13 @@ internal class OutboundSessionPool(
      * [SessionPoolStatus.SessionPending] is returned, otherwise [SessionPoolStatus.NewSessionsNeeded] is returned.
      */
     fun getNextSession(sessionCounterparties: SessionManager.SessionCounterparties): SessionPoolStatus {
-        logger.info("QQQ PPP in getNextSession(${sessionCounterparties.counterpartyId}) ${Thread.currentThread().id}")
+        logger.info("QQQ PPP in ${hashCode()} getNextSession(${sessionCounterparties.counterpartyId}) ${Thread.currentThread().id}")
         val outboundSessionsForCounterparties = outboundSessions[sessionCounterparties]
             ?: return SessionPoolStatus.NewSessionsNeeded.also {
             logger.info("QQQ PPP empty for ${sessionCounterparties.counterpartyId} ${Thread.currentThread().id}!")
+                outboundSessions.keys.forEach { k ->
+                    logger.info("QQQ PPP empty for ${sessionCounterparties.counterpartyId} my session: $sessionCounterparties, k: $k!")
+                }
         }
 
 
@@ -126,7 +129,7 @@ internal class OutboundSessionPool(
         sessionCounterparties: SessionManager.SessionCounterparties,
         authenticationProtocols: List<AuthenticationProtocolInitiator>
     ) {
-        logger.info("QQQQ PPP updateAfterSessionEstablished( " +
+        logger.info("QQQQ PPP ${hashCode()} updateAfterSessionEstablished( " +
                 "${sessionCounterparties.counterpartyId.x500Name}, ${authenticationProtocols.map { it.sessionId }})" +
                 " ${Thread.currentThread().id}")
         outboundSessions.compute(sessionCounterparties) { _, _ ->
@@ -182,6 +185,7 @@ internal class OutboundSessionPool(
      * Remove all sessions in the pool.
      */
     fun clearPool() {
+        logger.info("QQQ PPP clearPool ${hashCode()}")
         counterpartiesForSessionId.clear()
         outboundSessions.clear()
     }
