@@ -298,7 +298,7 @@ class PersistenceExceptionTests {
     @Disabled("This test is disabled for now because currently we do execute duplicate persistence requests." +
             "It should be re-enabled after deduplication work is done in epic CORE-5909")
     @Test
-    fun `on duplicate persistence request don't execute it - statically updatable field isn't getting updated in DB`() {
+    fun `on duplicate persistence request don't execute it - statically updated field isn't getting updated in DB`() {
         createVersionedDogDb()
         val persistEntitiesRequest = createVersionedDogPersistRequest()
 
