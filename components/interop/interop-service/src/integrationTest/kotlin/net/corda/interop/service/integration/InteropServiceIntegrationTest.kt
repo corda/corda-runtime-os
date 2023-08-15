@@ -18,7 +18,7 @@ import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.interop.InteropAliasProcessor.Companion.createHostedAliasIdentity
 import net.corda.interop.InteropService
-import net.corda.interop.identity.cache.InteropIdentityRegistryService
+import net.corda.interop.identity.registry.InteropIdentityRegistryService
 import net.corda.interop.service.InteropFacadeToFlowMapperService
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.membership.read.MembershipGroupReaderProvider

@@ -40,6 +40,8 @@ class FlowService @Activate constructor(
     private val flowWakeUpScheduler: FlowWakeUpScheduler,
     @Reference(service = ExternalMessagingRoutingService::class)
     private val externalMessagingRoutingService: ExternalMessagingRoutingService,
+    @Reference(service = InteropIdentityRegistryService::class)
+    private val interopIdentityRegistryService: InteropIdentityRegistryService
     ) : Lifecycle {
 
     companion object {

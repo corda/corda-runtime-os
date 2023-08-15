@@ -41,7 +41,7 @@ class FlowServiceTest {
     private val flowExecutor = mock<FlowExecutor>()
     private val flowWakeUpScheduler = mock<FlowWakeUpScheduler>()
     private val externalMessagingRoutingService = mock<ExternalMessagingRoutingService>()
-
+    private val interopIdentityRegistryService = mock<InteropIdentityRegistryService>()
     private val exampleConfig = mapOf(
         ConfigKeys.BOOT_CONFIG to MINIMUM_SMART_CONFIG,
         ConfigKeys.MESSAGING_CONFIG to MINIMUM_SMART_CONFIG,
@@ -156,7 +156,8 @@ class FlowServiceTest {
                 configReadService,
                 flowExecutor,
                 flowWakeUpScheduler,
-                externalMessagingRoutingService
+                externalMessagingRoutingService,
+                interopIdentityRegistryService
             )
         }
     }
