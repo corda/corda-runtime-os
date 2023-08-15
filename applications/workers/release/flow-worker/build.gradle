@@ -12,10 +12,6 @@ osgiRun {
     )
 }
 
-quasar {
-    excludeLocations = [ 'VERIFICATION/*' ]
-}
-
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
@@ -28,7 +24,6 @@ dependencies {
     implementation project(':libs:tracing')
     // Processor list must be kept in sync with workersForProcessor in net.corda.cli.plugins.topicconfig.Create
     implementation project(':processors:flow-processor')
-    implementation project(':processors:verification-processor')
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
