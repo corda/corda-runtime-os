@@ -5,7 +5,6 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.external.messaging.services.ExternalMessagingRoutingService
 import net.corda.flow.scheduler.FlowWakeUpScheduler
-import net.corda.interop.identity.registry.InteropIdentityRegistryService
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -39,9 +38,7 @@ class FlowService @Activate constructor(
     @Reference(service = FlowWakeUpScheduler::class)
     private val flowWakeUpScheduler: FlowWakeUpScheduler,
     @Reference(service = ExternalMessagingRoutingService::class)
-    private val externalMessagingRoutingService: ExternalMessagingRoutingService,
-    @Reference(service = InteropIdentityRegistryService::class)
-    private val interopIdentityRegistryService: InteropIdentityRegistryService
+    private val externalMessagingRoutingService: ExternalMessagingRoutingService
     ) : Lifecycle {
 
     companion object {
@@ -64,8 +61,7 @@ class FlowService @Activate constructor(
                             LifecycleCoordinatorName.forComponent<SandboxGroupContextComponent>(),
                             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                             LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
-                            LifecycleCoordinatorName.forComponent<FlowExecutor>(),
-                            LifecycleCoordinatorName.forComponent<InteropIdentityRegistryService>(),
+                            LifecycleCoordinatorName.forComponent<FlowExecutor>()
                         )
                     )
                 flowExecutor.start()

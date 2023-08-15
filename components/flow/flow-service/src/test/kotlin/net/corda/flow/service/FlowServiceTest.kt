@@ -6,7 +6,6 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.external.messaging.services.ExternalMessagingRoutingService
 import net.corda.flow.MINIMUM_SMART_CONFIG
 import net.corda.flow.scheduler.FlowWakeUpScheduler
-import net.corda.interop.identity.registry.InteropIdentityRegistryService
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
@@ -32,8 +31,8 @@ class FlowServiceTest {
                 Arguments.of(LifecycleCoordinatorName.forComponent<SandboxGroupContextComponent>()),
                 Arguments.of(LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()),
                 Arguments.of(LifecycleCoordinatorName.forComponent<CpiInfoReadService>()),
-                Arguments.of(LifecycleCoordinatorName.forComponent<FlowExecutor>()),
-                Arguments.of(LifecycleCoordinatorName.forComponent<InteropIdentityRegistryService>())
+                Arguments.of(LifecycleCoordinatorName.forComponent<FlowExecutor>())//,
+                //Arguments.of(LifecycleCoordinatorName.forComponent<InteropIdentityRegistryService>())
             )
         }
     }
@@ -41,7 +40,7 @@ class FlowServiceTest {
     private val flowExecutor = mock<FlowExecutor>()
     private val flowWakeUpScheduler = mock<FlowWakeUpScheduler>()
     private val externalMessagingRoutingService = mock<ExternalMessagingRoutingService>()
-    private val interopIdentityRegistryService = mock<InteropIdentityRegistryService>()
+    //private val interopIdentityRegistryService = mock<InteropIdentityRegistryService>()
     private val exampleConfig = mapOf(
         ConfigKeys.BOOT_CONFIG to MINIMUM_SMART_CONFIG,
         ConfigKeys.MESSAGING_CONFIG to MINIMUM_SMART_CONFIG,
@@ -149,15 +148,13 @@ class FlowServiceTest {
             addDependency<VirtualNodeInfoReadService>()
             addDependency<CpiInfoReadService>()
             addDependency<FlowExecutor>()
-            addDependency<InteropIdentityRegistryService>()
 
             FlowService(
                 coordinatorFactory,
                 configReadService,
                 flowExecutor,
                 flowWakeUpScheduler,
-                externalMessagingRoutingService,
-                interopIdentityRegistryService
+                externalMessagingRoutingService
             )
         }
     }
