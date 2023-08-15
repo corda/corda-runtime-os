@@ -14,6 +14,7 @@ import java.util.UUID
  */
 object SandboxHelper {
     const val DOG_CLASS_NAME = "com.r3.corda.testing.bundles.dogs.Dog"
+    const val VERSIONED_DOG_CLASS_NAME = "com.r3.corda.testing.bundles.dogs.VersionedDog"
     const val CAT_CLASS_NAME = "com.r3.corda.testing.bundles.cats.Cat"
     const val CAT_KEY_CLASS_NAME = "com.r3.corda.testing.bundles.cats.CatKey"
 
@@ -46,6 +47,17 @@ object SandboxHelper {
             .getDeclaredConstructor(UUID::class.java, String::class.java, Instant::class.java, String::class.java)
         val instance = dogCtor.newInstance(id, name, date, owner)
         return Box(instance, id)
+    }
+
+    fun SandboxGroupContext.createVersionedDog(
+        name: String = "Lassie",
+        id: UUID = UUID.randomUUID(),
+        date: Instant = Instant.now().truncatedTo(ChronoUnit.MILLIS),
+        owner: String? = "me"
+    ): Any {
+        val dogCtor = this.sandboxGroup.loadClassFromMainBundles(VERSIONED_DOG_CLASS_NAME)
+            .getDeclaredConstructor(UUID::class.java, String::class.java, Instant::class.java, String::class.java)
+        return dogCtor.newInstance(id, name, date, owner)
     }
 
     fun SandboxGroupContext.createCatKeyInstance(id: UUID, name: String): Any {

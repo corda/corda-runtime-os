@@ -10,6 +10,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.persistence.EntityRequest
+import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
@@ -18,6 +19,7 @@ import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.createVersionedDog
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
@@ -59,7 +61,6 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.nio.file.Path
 import java.util.UUID
-import javax.sql.DataSource
 
 
 /**
@@ -75,6 +76,7 @@ class PersistenceExceptionTests {
 
         const val DOGS_TABLE = "migration/db.changelog-master.xml"
         const val DOGS_TABLE_WITHOUT_PK = "dogs-without-pk.xml"
+        const val VERSIONED_DOGS_TABLE = "versioned-dogs.xml"
     }
 
     @RegisterExtension
@@ -288,22 +290,86 @@ class PersistenceExceptionTests {
         val record2 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
         assertNull(((record2.single().value as FlowEvent).payload as ExternalEventResponse).error)
 
-        val dogCount = dbConnectionManager
-            .getDataSource(virtualNodeInfo.vaultDmlConnectionId).connection.use { connection ->
-                connection.prepareStatement("SELECT count(*) FROM dog").use {
-                    it.executeQuery().use { rs ->
-                        if (!rs.next()) {
-                            throw IllegalStateException("Should be able to find at least 1 dog entry")
-                        }
-                        rs.getInt(1)
-                    }
-                }
-            }
+        val dogDbCount = dogDbCount(virtualNodeInfo.vaultDmlConnectionId)
         // There shouldn't be a dog duplicate entry in the DB, i.e. dogs count in the DB should still be 1
-        assertEquals(1, dogCount)
+        assertEquals(1, dogDbCount)
+    }
+
+//    @Disabled("This test is disabled for now because currently we do execute duplicate persistence requests." +
+//            "It should be re-enabled after deduplication work is done in epic CORE-5909")
+    @Test
+    fun `on duplicate persistence request don't execute it - statically updatable field isn't getting updated in DB`() {
+        createVersionedDogDb()
+        val persistEntitiesRequest = createVersionedDogPersistRequest()
+
+        val processor = EntityMessageProcessor(
+            currentSandboxGroupContext,
+            entitySandboxService,
+            responseFactory,
+            this::noOpPayloadCheck
+        )
+
+        // persist request
+        processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
+
+        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
+        val serialisedDog = (persistEntitiesRequest.request as PersistEntities).entities
+
+        val requestId = UUID.randomUUID().toString()
+        val mergeEntityRequest =
+            EntityRequest(
+                virtualNodeInfo.holdingIdentity.toAvro(),
+                MergeEntities(serialisedDog),
+                ExternalEventContext(
+                    requestId,
+                    "flow id",
+                    KeyValuePairList(
+                        cpkFileHashes.map { KeyValuePair(CPK_FILE_CHECKSUM, it.toString()) }
+                    )
+                )
+            )
+
+        // first update request
+        processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), mergeEntityRequest)))
+        // check we update same dog
+        val dogDbCount = dogDbCount(virtualNodeInfo.vaultDmlConnectionId, dogDBTable = "versionedDog")
+        assertEquals(1, dogDbCount)
+        // check timestamp 1
+        val dogVersion1 = getDogVersionFromDb(virtualNodeInfo.vaultDmlConnectionId)
+
+        // duplicate update request
+        processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), mergeEntityRequest)))
+        // check we update same dog
+        val dogDbCount2 = dogDbCount(virtualNodeInfo.vaultDmlConnectionId, dogDBTable = "versionedDog")
+        assertEquals(1, dogDbCount2)
+        // check timestamp 2
+        val dogVersion2 = getDogVersionFromDb(virtualNodeInfo.vaultDmlConnectionId)
+        assertEquals(dogVersion1, dogVersion2)
     }
 
     private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
+
+    private fun createVersionedDogPersistRequest(): EntityRequest {
+        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
+        val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
+        // create dog using dog-aware sandbox
+        val dog = sandbox.createVersionedDog("Stray", owner = "Not Known")
+        val serialisedDog = sandbox.getSerializationService().serialize(dog).bytes
+
+        // create persist request for the sandbox that isn't dog-aware
+        val requestId = UUID.randomUUID().toString()
+        return EntityRequest(
+            virtualNodeInfo.holdingIdentity.toAvro(),
+            PersistEntities(listOf(ByteBuffer.wrap(serialisedDog))),
+            ExternalEventContext(
+                requestId,
+                "flow id",
+                KeyValuePairList(
+                    cpkFileHashes.map { KeyValuePair(CPK_FILE_CHECKSUM, it.toString()) }
+                )
+            )
+        )
+    }
 
     /**
      * Create a simple request and return it.
@@ -316,12 +382,13 @@ class PersistenceExceptionTests {
         val serialisedDog = sandbox.getSerializationService().serialize(dog).bytes
 
         // create persist request for the sandbox that isn't dog-aware
+        val requestId = UUID.randomUUID().toString()
         return EntityRequest(
             virtualNodeInfo.holdingIdentity.toAvro(),
             PersistEntities(listOf(ByteBuffer.wrap(serialisedDog))),
             ExternalEventContext(
-                UUID.randomUUID().toString(),
-                UUID.randomUUID().toString(),
+                requestId,
+                "flow id",
                 KeyValuePairList(
                     cpkFileHashes.map { KeyValuePair(CPK_FILE_CHECKSUM, it.toString()) }
                 )
@@ -350,4 +417,57 @@ class PersistenceExceptionTests {
             lbm.updateDb(it, cl)
         }
     }
+
+    private fun createVersionedDogDb() {
+        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
+        val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
+
+        val dog = sandbox.createVersionedDog("Stray", owner = "Not Known")
+
+        val dogClass = dog::class.java
+        val cl = ClassloaderChangeLog(
+            linkedSetOf(
+                ClassloaderChangeLog.ChangeLogResourceFiles(
+                    dogClass.packageName,
+                    listOf(VERSIONED_DOGS_TABLE),
+                    dogClass.classLoader
+                )
+            )
+        )
+        val ds = dbConnectionManager.getDataSource(virtualNodeInfo.vaultDmlConnectionId)
+        ds.connection.use {
+            lbm.updateDb(it, cl)
+        }
+    }
+
+    private fun dogDbCount(connectionId: UUID, dogDBTable: String = "dog"): Int =
+        dbConnectionManager
+            .getDataSource(connectionId).connection.use { connection ->
+                connection.prepareStatement("SELECT count(*) FROM $dogDBTable").use {
+                    it.executeQuery().use { rs ->
+                        if (!rs.next()) {
+                            throw IllegalStateException("Should be able to find at least 1 dog entry")
+                        }
+                        rs.getInt(1)
+                    }
+                }
+            }
+
+    private fun getDogVersionFromDb(connectionId: UUID): Int =
+        dbConnectionManager
+            .getDataSource(connectionId).connection.use { connection ->
+                connection.prepareStatement("SELECT version FROM versionedDog").use {
+                    it.executeQuery().use { rs ->
+                        if (!rs.next()) {
+                            throw IllegalStateException("Should be able to find at least 1 dog entry")
+                        }
+                        rs.getInt(1)
+                            .also {
+                                if (rs.next()) {
+                                    throw IllegalStateException("There should be at most 1 dog entry")
+                                }
+                            }
+                    }
+                }
+            }
 }
