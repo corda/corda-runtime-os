@@ -16,7 +16,6 @@ import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import com.r3.corda.demo.utxo.contract.TestCommand
 import com.r3.corda.demo.utxo.contract.TestUtxoState
-import net.corda.v5.ledger.utxo.CurrentGroupParametersService
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
@@ -48,9 +47,6 @@ class UtxoDemoFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var notaryLookup: NotaryLookup
-
-    @CordaInject
-    lateinit var groupParametersService: CurrentGroupParametersService
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
@@ -85,11 +81,6 @@ class UtxoDemoFlow : ClientStartableFlow {
                 .addCommand(TestCommand())
                 .addSignatories(testUtxoState.participants)
                 .toSignedTransaction()
-
-            val currentGroupParams = groupParametersService.currentGroupParameters
-            log.info("XXXX epoch: ${currentGroupParams.epoch}")
-            log.info("XXXX notaries: ${currentGroupParams.notaries}")
-            log.info("XXXX modifiedTime: ${currentGroupParams.modifiedTime}")
 
             val sessions = members.map { flowMessaging.initiateFlow(it.name) }
 

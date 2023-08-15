@@ -87,7 +87,8 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
                 parseSecureHash(membershipGroupParametersHashString)
             )
         ) {
-            "Signed group parameters $membershipGroupParametersHashString related to the transaction ${wireTransaction.id} cannot be accessed."
+            "Signed group parameters $membershipGroupParametersHashString related to the transaction" +
+                    " ${wireTransaction.id} cannot be accessed."
         }
     }
 }
