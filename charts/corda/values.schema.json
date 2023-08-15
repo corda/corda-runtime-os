@@ -1941,7 +1941,7 @@
                                 "clusterDbConnectionPool": {
                                     "type": "object",
                                     "default": {},
-                                    "title": "crypto worker JDBC connection pool configuration for cluster DB",
+                                    "title": "uniqueness worker JDBC connection pool configuration for cluster DB",
                                     "required": [
                                         "maxSize",
                                         "idleTimeoutSeconds",
@@ -1954,7 +1954,7 @@
                                         "maxSize": {
                                             "type": "integer",
                                             "default": 5,
-                                            "title": "crypto worker maximum JDBC connection pool size for cluster DB",
+                                            "title": "uniqueness worker maximum JDBC connection pool size for cluster DB",
                                             "examples": [
                                                 5
                                             ]
@@ -1970,7 +1970,7 @@
                                                 }
                                             ],
                                             "default": null,
-                                            "title": "crypto worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value"
+                                            "title": "uniqueness worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value"
                                         },
                                         "idleTimeoutSeconds": {
                                             "type": "integer",
