@@ -42,6 +42,12 @@ class StateAndRefCacheImpl @Activate constructor(
         Caffeine.newBuilder().maximumSize(maximumSize)
     )
 
+    init {
+        if (!cacheEviction.addEvictionListener(SandboxGroupType.FLOW, ::onEviction)) {
+            log.error("FAILED TO ADD EVICTION LISTENER")
+        }
+    }
+
     override fun get(stateRefs: Set<StateRef>): Map<StateRef, StateAndRef<*>> {
         return if (stateRefs.isNotEmpty()) {
             val virtualNodeContext = currentSandboxGroupContext.get().virtualNodeContext
