@@ -57,7 +57,9 @@ class FlowProcessorImpl @Activate constructor(
     @Reference(service = GroupPolicyProvider::class)
     private val groupPolicyProvider: GroupPolicyProvider,
     @Reference(service = MembershipQueryClient::class)
-    private val membershipQueryClient: MembershipQueryClient
+    private val membershipQueryClient: MembershipQueryClient,
+    @Reference(service = LocallyHostedIdentitiesService::class)
+    private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService
 ) : FlowProcessor {
 
     private companion object {
@@ -76,7 +78,8 @@ class FlowProcessorImpl @Activate constructor(
         ::groupParametersReaderService,
         ::cpkReadService,
         ::groupPolicyProvider,
-        ::membershipQueryClient
+        ::membershipQueryClient,
+        ::locallyHostedIdentitiesService
     )
 
     private val lifecycleCoordinator =
