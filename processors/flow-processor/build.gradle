@@ -22,6 +22,7 @@ dependencies {
     implementation project(":components:flow:flow-service")
     implementation project(":components:flow:flow-p2p-filter-service")
     implementation project(':components:membership:group-policy')
+    implementation project(':components:membership:locally-hosted-identities-service')
     implementation project(":components:membership:membership-group-read")
     implementation project(":components:membership:membership-persistence-client")
     implementation project(":components:ledger:ledger-utxo-token-cache")
