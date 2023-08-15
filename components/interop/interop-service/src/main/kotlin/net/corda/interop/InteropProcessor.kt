@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
-import net.corda.interop.identity.cache.InteropIdentityRegistryService
+import net.corda.interop.identity.registry.InteropIdentityRegistryService
 
 class InteropProcessor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
