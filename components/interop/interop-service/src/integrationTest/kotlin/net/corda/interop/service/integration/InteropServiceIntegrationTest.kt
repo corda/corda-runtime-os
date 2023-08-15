@@ -18,6 +18,8 @@ import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.interop.InteropAliasProcessor.Companion.createHostedAliasIdentity
 import net.corda.interop.InteropService
+import net.corda.interop.identity.cache.InteropIdentityRegistryService
+import net.corda.interop.service.InteropFacadeToFlowMapperService
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.DurableProcessor
@@ -79,6 +81,12 @@ class InteropServiceIntegrationTest {
 
     @InjectService(timeout = 4000)
     lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
+
+    @InjectService(timeout = 4000)
+    lateinit var interopIdentityRegistryService: InteropIdentityRegistryService
+
+    @InjectService(timeout = 4000)
+    lateinit var facadeToFlowMapperService: InteropFacadeToFlowMapperService
 
     @InjectService(timeout = 4000)
     lateinit var interopService: InteropService
@@ -208,6 +216,7 @@ class InteropServiceIntegrationTest {
         configService.start()
         configService.bootstrapConfig(bootConfig)
         membershipGroupReaderProvider.start()
+        interopIdentityRegistryService.start()
     }
 
     private fun publishConfig(publisher: Publisher) {
