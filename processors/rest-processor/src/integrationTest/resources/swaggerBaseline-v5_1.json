@@ -4959,6 +4959,26 @@
           }
         }
       },
+      "GroupPolicy" : {
+        "required" : [ "fileFormatVersion", "groupId", "p2pParameters" ],
+        "type" : "object",
+        "properties" : {
+          "fileFormatVersion" : {
+            "type" : "integer",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          },
+          "groupId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "p2pParameters" : {
+            "$ref" : "#/components/schemas/P2pParameters"
+          }
+        }
+      },
       "HoldingIdentity" : {
         "required" : [ "fullHash", "groupId", "shortHash", "x500Name" ],
         "type" : "object",
@@ -5221,6 +5241,55 @@
         },
         "description" : "The request sent during registration which contains the requested registration context map containing data required to initiate the registration process."
       },
+      "P2pParameters" : {
+        "required" : [ "protocolMode", "sessionPki", "sessionTrustRoots", "tlsPki", "tlsTrustRoots", "tlsType", "tlsVersion" ],
+        "type" : "object",
+        "properties" : {
+          "protocolMode" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "sessionPki" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "sessionTrustRoots" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          },
+          "tlsPki" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "tlsTrustRoots" : {
+            "uniqueItems" : false,
+            "type" : "array",
+            "nullable" : false,
+            "items" : {
+              "type" : "string",
+              "example" : "string"
+            }
+          },
+          "tlsType" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "tlsVersion" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
       "PermissionAssociationResponseType" : {
         "required" : [ "createdTimestamp", "id" ],
         "type" : "object",
@@ -5441,9 +5510,7 @@
             "example" : "string"
           },
           "groupPolicy" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
+            "$ref" : "#/components/schemas/GroupPolicy"
           },
           "members" : {
             "uniqueItems" : false,
