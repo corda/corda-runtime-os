@@ -12,7 +12,6 @@ import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.repositories.UtxoTokenRepository
 import net.corda.ledger.utxo.token.cache.entities.TokenBalance
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
-import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.VirtualNodeInfo
@@ -25,8 +24,6 @@ class AvailableTokenServiceImpl @Activate constructor(
     private val virtualNodeInfoService: VirtualNodeInfoReadService,
     @Reference
     private val dbConnectionManager: DbConnectionManager,
-    @Reference
-    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     @Reference
     private val utxoTokenRepository: UtxoTokenRepository
 ) : AvailableTokenService, SingletonSerializeAsToken {
