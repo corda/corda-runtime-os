@@ -7,15 +7,15 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.jsr310.ser.InstantSerializer
 import com.fasterxml.jackson.datatype.jsr310.deser.InstantDeserializer
+import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.cli.plugins.network.output.Output
 import net.corda.rest.client.exceptions.InternalErrorException
 import java.time.Instant
 
 class PrintUtils {
     companion object {
+        val objectMapper = jacksonObjectMapper()
         inline fun <reified T> printJsonOutput(result: Any, output: T) {
-
-            val objectMapper = jacksonObjectMapper()
             val module = SimpleModule()
 
             module.addSerializer(Instant::class.java, InstantSerializer.INSTANCE)
@@ -28,8 +28,12 @@ class PrintUtils {
             pp.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE)
 
             val jsonString = objectMapper.writer(pp).writeValueAsString(result)
+            val formattedString = jsonString
+                .replace("\\n", System.lineSeparator())
+                .replace("\\","")
+                .replace("\"\"", "")
             when (output) {
-                is Output -> output.generateOutput(jsonString)
+                is Output -> output.generateOutput(formattedString)
                 else -> throw IllegalArgumentException("Unsupported output type")
             }
         }
@@ -41,10 +45,10 @@ class PrintUtils {
                 if (e.localizedMessage.contains("URI does not specify a valid host name")) {
                     System.err.println("Error: Invalid host name")
                 } else {
-                    System.err.println("Error: ${e.localizedMessage}")
+                    printJsonOutput(e.localizedMessage, ConsoleOutput())
                 }
             } catch (e: Exception) {
-                System.err.println("Error: ${e.localizedMessage}")
+                printJsonOutput(e.localizedMessage, ConsoleOutput())
             }
         }
     }
