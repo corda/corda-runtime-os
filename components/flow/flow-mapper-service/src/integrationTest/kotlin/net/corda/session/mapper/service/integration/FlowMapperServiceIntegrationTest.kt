@@ -122,8 +122,8 @@ class FlowMapperServiceIntegrationTest {
             )
 
             val holdingIdentityToKey: List<Record<String, HostedIdentityEntry>> = listOf(
-                Record("Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC", "bob", bobHostedIdentityEntry),
-                Record("Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC", "alice", aliceHostedIdentityEntry)
+                Record("p2p.hosted.identities", "bob", bobHostedIdentityEntry),
+                Record("p2p.hosted.identities", "alice", aliceHostedIdentityEntry)
             )
 
             publisher.publish(holdingIdentityToKey)
