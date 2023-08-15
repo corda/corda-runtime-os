@@ -1,7 +1,7 @@
 package net.corda.interop.identity.read.impl
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.interop.identity.cache.InteropIdentityRegistryService
+import net.corda.interop.identity.registry.InteropIdentityRegistryService
 import net.corda.interop.identity.read.InteropIdentityReadService
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinatorFactory

@@ -5,7 +5,7 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
-import net.corda.interop.identity.cache.InteropIdentityRegistryService
+import net.corda.interop.identity.registry.InteropIdentityRegistryService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.virtualnode.toCorda

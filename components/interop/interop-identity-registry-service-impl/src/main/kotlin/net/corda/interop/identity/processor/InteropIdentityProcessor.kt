@@ -4,7 +4,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.data.interop.PersistentInteropIdentity
 import net.corda.interop.core.InteropIdentity
 import net.corda.interop.core.Utils.Companion.computeShortHash
-import net.corda.interop.identity.cache.impl.InteropIdentityRegistryServiceImpl
+import net.corda.interop.identity.registry.impl.InteropIdentityRegistryServiceImpl
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.exceptions.CordaRuntimeException

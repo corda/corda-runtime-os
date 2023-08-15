@@ -1,4 +1,4 @@
-package net.corda.interop.identity.cache
+package net.corda.interop.identity.registry
 
 import net.corda.crypto.core.ShortHash
 import net.corda.lifecycle.Lifecycle

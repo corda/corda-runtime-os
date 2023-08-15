@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
 import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
-import net.corda.interop.identity.cache.InteropIdentityRegistryService
+import net.corda.interop.identity.registry.InteropIdentityRegistryService
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import java.util.UUID
 

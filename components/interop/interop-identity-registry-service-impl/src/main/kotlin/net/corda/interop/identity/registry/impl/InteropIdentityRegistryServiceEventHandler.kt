@@ -1,4 +1,4 @@
-package net.corda.interop.identity.cache.impl
+package net.corda.interop.identity.registry.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService

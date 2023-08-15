@@ -1,7 +1,7 @@
 package net.corda.flow.application.services.impl
 
 import net.corda.flow.fiber.FlowFiberService
-import net.corda.interop.identity.cache.InteropIdentityRegistryView
+import net.corda.interop.identity.registry.InteropIdentityRegistryView
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.interop.InterOpIdentityInfo
 import net.corda.v5.application.interop.InteropIdentityLookUp

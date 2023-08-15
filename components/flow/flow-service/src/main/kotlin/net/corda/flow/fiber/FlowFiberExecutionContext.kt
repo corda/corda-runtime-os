@@ -4,7 +4,7 @@ import net.corda.flow.pipeline.metrics.FlowMetrics
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
-import net.corda.interop.identity.cache.InteropIdentityRegistryView
+import net.corda.interop.identity.registry.InteropIdentityRegistryView
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.serialization.checkpoint.NonSerializable

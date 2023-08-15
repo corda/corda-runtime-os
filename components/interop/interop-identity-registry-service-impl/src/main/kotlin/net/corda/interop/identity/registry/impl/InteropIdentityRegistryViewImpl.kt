@@ -1,8 +1,8 @@
-package net.corda.interop.identity.cache.impl
+package net.corda.interop.identity.registry.impl
 
 import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
-import net.corda.interop.identity.cache.InteropIdentityRegistryView
+import net.corda.interop.identity.registry.InteropIdentityRegistryView
 import net.corda.v5.application.interop.facade.FacadeId
 import java.util.*
 

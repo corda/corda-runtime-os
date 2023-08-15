@@ -1,10 +1,10 @@
-package net.corda.interop.identity.cache.impl
+package net.corda.interop.identity.registry.impl
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
-import net.corda.interop.identity.cache.InteropIdentityRegistryService
-import net.corda.interop.identity.cache.InteropIdentityRegistryView
+import net.corda.interop.identity.registry.InteropIdentityRegistryService
+import net.corda.interop.identity.registry.InteropIdentityRegistryView
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory

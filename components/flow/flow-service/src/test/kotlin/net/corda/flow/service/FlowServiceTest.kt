@@ -6,7 +6,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.external.messaging.services.ExternalMessagingRoutingService
 import net.corda.flow.MINIMUM_SMART_CONFIG
 import net.corda.flow.scheduler.FlowWakeUpScheduler
-import net.corda.interop.identity.cache.InteropIdentityRegistryService
+import net.corda.interop.identity.registry.InteropIdentityRegistryService
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent

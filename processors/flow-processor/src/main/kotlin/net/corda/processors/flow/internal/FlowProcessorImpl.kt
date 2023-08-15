@@ -5,7 +5,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpk.read.CpkReadService
 import net.corda.flow.p2p.filter.FlowP2PFilterService
 import net.corda.flow.service.FlowService
-import net.corda.interop.identity.cache.InteropIdentityRegistryService
+import net.corda.interop.identity.registry.InteropIdentityRegistryService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator

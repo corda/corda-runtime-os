@@ -8,8 +8,8 @@ import net.corda.flow.pipeline.factory.impl.FlowFiberExecutionContextFactoryImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.test.utils.buildFlowEventContext
-import net.corda.interop.identity.cache.InteropIdentityRegistryService
-import net.corda.interop.identity.cache.InteropIdentityRegistryView
+import net.corda.interop.identity.registry.InteropIdentityRegistryService
+import net.corda.interop.identity.registry.InteropIdentityRegistryView
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext

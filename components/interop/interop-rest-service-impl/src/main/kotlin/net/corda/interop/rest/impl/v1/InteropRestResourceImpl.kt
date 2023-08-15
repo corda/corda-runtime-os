@@ -6,7 +6,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
 import net.corda.interop.core.Utils
 import net.corda.interop.group.policy.read.InteropGroupPolicyReadService
-import net.corda.interop.identity.cache.InteropIdentityRegistryService
+import net.corda.interop.identity.registry.InteropIdentityRegistryService
 import net.corda.interop.identity.write.InteropIdentityWriteService
 import net.corda.libs.interop.endpoints.v1.InteropRestResource
 import net.corda.libs.interop.endpoints.v1.types.CreateInteropIdentityRest
