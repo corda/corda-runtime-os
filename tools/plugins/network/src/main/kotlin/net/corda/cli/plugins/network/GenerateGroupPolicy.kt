@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import net.corda.cli.plugins.network.utils.PrintUtils.Companion.verifyAndPrintError
 import org.yaml.snakeyaml.Yaml
 import picocli.CommandLine
 import java.nio.file.Path
@@ -49,15 +50,17 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
     }
 
     override fun run() {
-        val objectMapper = jacksonObjectMapper()
-        val groupPolicy = generateGroupPolicyContent()
+        verifyAndPrintError {
+            val objectMapper = jacksonObjectMapper()
+            val groupPolicy = generateGroupPolicyContent()
 
-        // add pretty printer and override indentation to make the nested values look better and the file more presentable
-        val pp = DefaultPrettyPrinter()
-        pp.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE)
+            // add pretty printer and override indentation to make the nested values look better and the file more presentable
+            val pp = DefaultPrettyPrinter()
+            pp.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE)
 
-        val jsonString = objectMapper.writer(pp).writeValueAsString(groupPolicy)
-        output.generateOutput(jsonString)
+            val jsonString = objectMapper.writer(pp).writeValueAsString(groupPolicy)
+            output.generateOutput(jsonString)
+        }
     }
 
     /**

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.jsr310.ser.InstantSerializer
 import com.fasterxml.jackson.datatype.jsr310.deser.InstantDeserializer
 import net.corda.cli.plugins.network.output.Output
+import net.corda.rest.client.exceptions.InternalErrorException
 import java.time.Instant
 
 class PrintUtils {
@@ -36,8 +37,14 @@ class PrintUtils {
         fun verifyAndPrintError(action: () -> Unit) {
             try {
                 action()
+            } catch (e: InternalErrorException) {
+                if (e.localizedMessage.contains("URI does not specify a valid host name")) {
+                    System.err.println("Error: Invalid host name")
+                } else {
+                    System.err.println("Error: ${e.localizedMessage}")
+                }
             } catch (e: Exception) {
-                System.err.println("Error: ${e.message}")
+                System.err.println("Error: ${e.localizedMessage}")
             }
         }
     }

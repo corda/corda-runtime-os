@@ -4,6 +4,7 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
+import net.corda.cli.plugins.network.utils.PrintUtils.Companion.verifyAndPrintError
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.membership.rest.v1.MGMRestResource
 import picocli.CommandLine.Parameters
@@ -179,26 +180,29 @@ class OnboardMgm : Runnable, BaseOnboard() {
     }
 
     override fun run() {
-        println("This sub command should only be used in for internal development")
-        println("On-boarding MGM member $x500Name")
+        verifyAndPrintError {
+            println("This sub command should only be used in for internal development")
+            println("On-boarding MGM member $x500Name")
 
-        configureGateway()
+            configureGateway()
 
-        createTlsKeyIdNeeded()
+            createTlsKeyIdNeeded()
 
-        register()
+            register()
 
-        setupNetwork()
+            setupNetwork()
 
-        println("MGM Member $x500Name was onboarded")
+            println("MGM Member $x500Name was onboarded")
 
-        saveGroupPolicy()
+            saveGroupPolicy()
 
-        if (mtls) {
-            println(
-                "To onboard members to this group on other clusters, please add those members' " +
-                        "client certificates subjects to this MGM's allow list. You can do that using the allowClientCertificate command."
-            )
+            if (mtls) {
+                println(
+                    "To onboard members to this group on other clusters, please add those members' " +
+                            "client certificates subjects to this MGM's allow list. " +
+                            "You can do that using the allowClientCertificate command."
+                )
+            }
         }
     }
 }
