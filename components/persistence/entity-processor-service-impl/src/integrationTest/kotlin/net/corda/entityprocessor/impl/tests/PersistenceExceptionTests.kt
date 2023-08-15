@@ -290,7 +290,7 @@ class PersistenceExceptionTests {
         val record2 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
         assertNull(((record2.single().value as FlowEvent).payload as ExternalEventResponse).error)
 
-        val dogDbCount = dogDbCount(virtualNodeInfo.vaultDmlConnectionId)
+        val dogDbCount = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId)
         // There shouldn't be a dog duplicate entry in the DB, i.e. dogs count in the DB should still be 1
         assertEquals(1, dogDbCount)
     }
@@ -332,18 +332,18 @@ class PersistenceExceptionTests {
         // first update request
         processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), mergeEntityRequest)))
         // check we update same dog
-        val dogDbCount = dogDbCount(virtualNodeInfo.vaultDmlConnectionId, dogDBTable = "versionedDog")
+        val dogDbCount = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId, dogDBTable = "versionedDog")
         assertEquals(1, dogDbCount)
         // check timestamp 1
-        val dogVersion1 = getDogVersionFromDb(virtualNodeInfo.vaultDmlConnectionId)
+        val dogVersion1 = getDogDbVersion(virtualNodeInfo.vaultDmlConnectionId)
 
         // duplicate update request
         processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), mergeEntityRequest)))
         // check we update same dog
-        val dogDbCount2 = dogDbCount(virtualNodeInfo.vaultDmlConnectionId, dogDBTable = "versionedDog")
+        val dogDbCount2 = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId, dogDBTable = "versionedDog")
         assertEquals(1, dogDbCount2)
         // check timestamp 2
-        val dogVersion2 = getDogVersionFromDb(virtualNodeInfo.vaultDmlConnectionId)
+        val dogVersion2 = getDogDbVersion(virtualNodeInfo.vaultDmlConnectionId)
         assertEquals(dogVersion1, dogVersion2)
     }
 
@@ -440,7 +440,7 @@ class PersistenceExceptionTests {
         }
     }
 
-    private fun dogDbCount(connectionId: UUID, dogDBTable: String = "dog"): Int =
+    private fun getDogDbCount(connectionId: UUID, dogDBTable: String = "dog"): Int =
         dbConnectionManager
             .getDataSource(connectionId).connection.use { connection ->
                 connection.prepareStatement("SELECT count(*) FROM $dogDBTable").use {
@@ -453,7 +453,7 @@ class PersistenceExceptionTests {
                 }
             }
 
-    private fun getDogVersionFromDb(connectionId: UUID): Int =
+    private fun getDogDbVersion(connectionId: UUID): Int =
         dbConnectionManager
             .getDataSource(connectionId).connection.use { connection ->
                 connection.prepareStatement("SELECT version FROM versionedDog").use {
