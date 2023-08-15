@@ -169,7 +169,10 @@ internal class SessionManagerImpl(
     private val executorService = executorServiceFactory()
 
     // These metrics must be removed on shutdown as the MeterRegistry holds references to their lambdas.
-    private val outboundSessionCount = OutboundSessionCount { outboundSessionPool.getAllSessionIds().size }.builder().build()
+    private val outboundSessionCount = OutboundSessionCount {
+        logger.info("QQQ TTT PPP Current outboundSessionPool size ${outboundSessionPool.getAllSessionIds().size}" )
+        outboundSessionPool.getAllSessionIds().size
+    }.builder().build()
     private val inboundSessionCount = InboundSessionCount { activeInboundSessions.size + pendingInboundSessions.size }.builder().build()
 
     override val dominoTile = ComplexDominoTile(
@@ -468,6 +471,8 @@ internal class SessionManagerImpl(
                 ourIdentityInfo.holdingIdentity.groupId,
                 pkiMode
             )
+            logger.info("QQQ Creating session ID: $sessionId for ${counterparties.ourId.x500Name} -> " +
+                    "${counterparties.counterpartyId.x500Name}")
             messagesAndProtocol.add(Pair(session, session.generateInitiatorHello()))
         }
         return messagesAndProtocol

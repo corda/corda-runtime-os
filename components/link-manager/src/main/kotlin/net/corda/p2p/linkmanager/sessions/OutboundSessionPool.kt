@@ -2,6 +2,7 @@ package net.corda.p2p.linkmanager.sessions
 
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.Session
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 
@@ -16,6 +17,7 @@ internal class OutboundSessionPool(
     private val calculateWeightForSession: (sessionId: String) -> Long?,
     private val genRandomNumber: (until: Long) -> Long = { until -> Random.nextLong(until) }
 ) {
+    private val logger = LoggerFactory.getLogger(this::class.java)
     private val outboundSessions = ConcurrentHashMap<SessionManager.SessionCounterparties, ConcurrentHashMap<String, SessionType>>()
     private val counterpartiesForSessionId = ConcurrentHashMap<String, SessionManager.SessionCounterparties>()
 
@@ -40,12 +42,20 @@ internal class OutboundSessionPool(
      * [SessionPoolStatus.SessionPending] is returned, otherwise [SessionPoolStatus.NewSessionsNeeded] is returned.
      */
     fun getNextSession(sessionCounterparties: SessionManager.SessionCounterparties): SessionPoolStatus {
-        val outboundSessionsForCounterparties = outboundSessions[sessionCounterparties] ?: return SessionPoolStatus.NewSessionsNeeded
+        logger.info("QQQ PPP in getNextSession(${sessionCounterparties.ourId} -> ${sessionCounterparties.counterpartyId})")
+        val outboundSessionsForCounterparties = outboundSessions[sessionCounterparties]
+            ?: return SessionPoolStatus.NewSessionsNeeded.also {
+            logger.info("QQQ PPP empty!")
+        }
+
 
         val activeSessions = outboundSessionsForCounterparties.mapNotNull { (_, session) ->
             session as? SessionType.ActiveSession
         }.associateBy { it.session.sessionId }
-        if (activeSessions.isEmpty()) return SessionPoolStatus.SessionPending
+        if (activeSessions.isEmpty()) return SessionPoolStatus.SessionPending.also {
+            logger.info("QQQ PPP pending!")
+        }
+
 
         var totalWeight = 0L
         val weights = activeSessions.mapNotNull {
@@ -55,12 +65,14 @@ internal class OutboundSessionPool(
         }.toMutableList()
 
         if (weights.size == 1) {
+            logger.info("QQQ PPP active 1!")
             return SessionPoolStatus.SessionActive(weights[0].first.session)
         }
 
         //If all sessions have weight 0 select a random session (as the algorithm bellow doesn't work).
         if (totalWeight == 0L) {
             val randomNumber = genRandomNumber(weights.size.toLong()).toInt()
+            logger.info("QQQ PPP active 2!")
             return SessionPoolStatus.SessionActive(weights[randomNumber].first.session)
         }
 
@@ -77,13 +89,16 @@ internal class OutboundSessionPool(
             randomNumber < totalProb
         }?.first
 
-        selectedSession!!.let { return SessionPoolStatus.SessionActive(it.session) }
+        selectedSession!!.let { return SessionPoolStatus.SessionActive(it.session).also {
+            logger.info("QQQ PPP active 3!")
+        } }
     }
 
     /**
      * get a specific session by [sessionId]
      */
     fun getSession(sessionId: String): SessionType? {
+        logger.info("QQQQ PPP getSession($sessionId)")
         val counterparties = counterpartiesForSessionId[sessionId] ?: return null
         return outboundSessions[counterparties]?.get(sessionId)
     }
@@ -92,6 +107,7 @@ internal class OutboundSessionPool(
      * update the session pool once session negotiation is complete
      */
     fun updateAfterSessionEstablished(session: Session) {
+        logger.info("QQQQ PPP updateAfterSessionEstablished(${session.sessionId})")
         val counterparties = counterpartiesForSessionId[session.sessionId] ?: return
         outboundSessions.computeIfPresent(counterparties) { _, sessions ->
             sessions[session.sessionId] = SessionType.ActiveSession(counterparties, session)
@@ -107,6 +123,8 @@ internal class OutboundSessionPool(
         sessionCounterparties: SessionManager.SessionCounterparties,
         authenticationProtocols: List<AuthenticationProtocolInitiator>
     ) {
+        logger.info("QQQQ PPP updateAfterSessionEstablished(${sessionCounterparties.ourId.x500Name} -> " +
+                "${sessionCounterparties.counterpartyId.x500Name}, ${authenticationProtocols.map { it.sessionId }})")
         outboundSessions.compute(sessionCounterparties) { _, _ ->
             val sessionsMap = ConcurrentHashMap<String, SessionType>()
             authenticationProtocols.forEach { sessionsMap[it.sessionId] = SessionType.PendingSession(sessionCounterparties, it) }
@@ -124,6 +142,7 @@ internal class OutboundSessionPool(
     ): Boolean {
         var removed = false
         val counterparties = counterpartiesForSessionId[timedOutSessionId] ?: return removed
+        logger.info("QQQQ PPP replaceSession($timedOutSessionId, ${newPendingSession.sessionId})")
         outboundSessions.computeIfPresent(counterparties) { _, sessions ->
             sessions.remove(timedOutSessionId) ?: return@computeIfPresent sessions
             removed = true
@@ -139,6 +158,7 @@ internal class OutboundSessionPool(
      * Remove all the Sessions in the pool for a set of [sessionCounterparties]
      */
     fun removeSessions(sessionCounterparties: SessionManager.SessionCounterparties) {
+        logger.info("QQQQ PPP removeSessions(${sessionCounterparties.ourId.x500Name} -> ${sessionCounterparties.counterpartyId.x500Name})")
         val removedSessions = outboundSessions.remove(sessionCounterparties)
         if (removedSessions != null) {
             for (sessionId in removedSessions.keys()) {
