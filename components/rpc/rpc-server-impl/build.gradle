@@ -1,0 +1,30 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.common-publishing'
+}
+
+description 'Rpc Server for '
+
+dependencies {
+
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+
+    implementation "net.corda:corda-avro-schema"
+    implementation project(':libs:serialization:serialization-avro')
+    implementation project(':components:rpc:rpc-server')
+
+    implementation "io.javalin:javalin-osgi:$javalinVersion"
+    constraints {
+        implementation("org.eclipse.jetty:jetty-server:$jettyVersion") {
+            because 'Javalin uses an older version of Jetty which is exposed to CVE-2023-26048 and CVE-2023-26049. ' +
+                    'This might be resolved in the future versions of Javalin.'
+        }
+    }
+
+
+    testImplementation platform('org.junit:junit-bom:5.9.1')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
