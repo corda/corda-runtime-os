@@ -24,6 +24,7 @@ dependencies {
     implementation project(':components:crypto:crypto-hes')
     implementation project(':components:membership:group-params-writer-service')
     implementation project(":components:membership:group-policy")
+    implementation project(':components:membership:locally-hosted-identities-service')
     implementation project(":components:membership:membership-group-read")
     implementation project(":components:membership:membership-service")
     implementation project(":components:membership:membership-persistence-client")
