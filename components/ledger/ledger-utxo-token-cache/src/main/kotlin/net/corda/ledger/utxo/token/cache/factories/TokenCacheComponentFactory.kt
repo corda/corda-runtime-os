@@ -48,7 +48,7 @@ class TokenCacheComponentFactory @Activate constructor(
 
         val entityConverter = EntityConverterImpl()
         val eventConverter = EventConverterImpl(entityConverter)
-        val recordFactory = RecordFactoryImpl(externalEventResponseFactory, entityConverter)
+        val recordFactory = RecordFactoryImpl(externalEventResponseFactory)
         val tokenFilterStrategy = SimpleTokenFilterStrategy()
         val sqlQueryProvider = SqlQueryProviderTokens()
         val utxoTokenRepository = UtxoTokenRepositoryImpl(sqlQueryProvider)

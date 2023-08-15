@@ -14,7 +14,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.VirtualNodeInfo
 
-class AvailableTokenServiceImpl constructor(
+class AvailableTokenServiceImpl(
     private val virtualNodeInfoService: VirtualNodeInfoReadService,
     private val dbConnectionManager: DbConnectionManager,
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,

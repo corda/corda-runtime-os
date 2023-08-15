@@ -16,7 +16,7 @@ import javax.persistence.EntityManager
 import javax.persistence.Query
 import javax.persistence.Tuple
 
-class UtxoTokenRepositoryImpl constructor(
+class UtxoTokenRepositoryImpl(
     private val sqlQueryProvider: SqlQueryProvider,
 ) : UtxoTokenRepository {
 
