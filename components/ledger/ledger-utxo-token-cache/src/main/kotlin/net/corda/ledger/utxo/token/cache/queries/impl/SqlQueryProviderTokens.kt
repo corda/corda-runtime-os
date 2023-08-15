@@ -17,14 +17,14 @@ class SqlQueryProviderTokens : SqlQueryProvider {
     }
 
     override fun getBalanceQuery(includeTagFilter: Boolean, includeOwnerFilter: Boolean): String {
-        val tagFilter = if(includeTagFilter){
-            "AND   token_tag ~ :$SQL_PARAMETER_TAG_FILTER"
-        }else{
+        val tagFilter = if (includeTagFilter) {
+            "AND REGEXP_LIKE(token_tag, :$SQL_PARAMETER_TAG_FILTER)"
+        } else {
             ""
         }
-        val ownerFilter = if(includeTagFilter){
-            "AND   token_owner_hash = :$SQL_PARAMETER_OWNER_HASH"
-        }else{
+        val ownerFilter = if (includeOwnerFilter) {
+            "AND token_owner_hash = :$SQL_PARAMETER_OWNER_HASH"
+        } else {
             ""
         }
 
@@ -46,14 +46,14 @@ class SqlQueryProviderTokens : SqlQueryProvider {
     }
 
     override fun getPagedSelectQuery(limit: Int, includeTagFilter: Boolean, includeOwnerFilter: Boolean): String {
-        val tagFilter = if(includeTagFilter){
-            "AND   token_tag ~ :$SQL_PARAMETER_TAG_FILTER"
-        }else{
+        val tagFilter = if (includeTagFilter) {
+            "AND REGEXP_LIKE(token_tag, :$SQL_PARAMETER_TAG_FILTER)"
+        } else {
             ""
         }
-        val ownerFilter = if(includeTagFilter){
-            "AND   token_owner_hash = :$SQL_PARAMETER_OWNER_HASH"
-        }else{
+        val ownerFilter = if (includeOwnerFilter) {
+            "AND token_owner_hash = :$SQL_PARAMETER_OWNER_HASH"
+        } else {
             ""
         }
 

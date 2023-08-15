@@ -10,6 +10,20 @@ import java.io.File
 import java.security.MessageDigest
 import java.util.UUID
 import net.corda.cli.plugins.network.enums.MemberRole
+import net.corda.cli.plugins.network.utils.PrintUtils.Companion.verifyAndPrintError
+import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
+import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNATURE_SPEC
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATURE_SPEC
 
 @Command(
     name = "onboard-member",
@@ -30,9 +44,9 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
     @Option(
         names = ["--role", "-r"],
-        description = ["Member role, if any. It is not mandatory to provide a role"],
+        description = ["Member role, if any. It is not mandatory to provide a role. Multiple roles can be specified"],
     )
-    var role: MemberRole? = null
+    var roles: Set<MemberRole> = emptySet()
 
     @Option(
         names = ["--set", "-s"],
@@ -195,81 +209,80 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
     override val registrationContext by lazy {
         val preAuth = preAuthToken?.let { mapOf("corda.auth.token" to it) } ?: emptyMap()
-        val notaryServiceName = customProperties["corda.notary.service.name"]
-        val roleProperty = if (role != null) {
-                if (notaryServiceName != null) {
-                    mapOf("corda.roles.0" to role!!.value)
-                } else {
-                    throw IllegalArgumentException("Cannot specify 'corda.notary.service.name'")
-                }
-            } else {
-                emptyMap()
-            }
+        val roleProperty: Map<String, String> = roles.mapIndexed { index: Int, memberRole: MemberRole ->
+            "$ROLES_PREFIX.$index" to memberRole.value
+        }.toMap()
 
-        val notaryProperties = if (role != null) {
-                mapOf(
-                    "corda.notary.service.name" to notaryServiceName,
-                    "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
-                    "corda.notary.service.flow.protocol.version.0" to "1",
-                    "corda.notary.keys.0.id" to notaryKeyId,
-                    "corda.notary.keys.0.signature.spec" to "SHA256withECDSA"
-                )
-            } else {
-                emptyMap()
-            }
+        val extProperties = customProperties.filterKeys { it.startsWith("$CUSTOM_KEY_PREFIX.") }
+
+        val notaryProperties = if (roles.contains(MemberRole.NOTARY)) {
+            val notaryServiceName = customProperties[NOTARY_SERVICE_NAME] ?:
+                throw IllegalArgumentException("When specifying a NOTARY role, " +
+                        "you also need to specify a custom property for its name under $NOTARY_SERVICE_NAME.")
+            mapOf(
+                NOTARY_SERVICE_NAME to notaryServiceName,
+                NOTARY_SERVICE_PROTOCOL to "com.r3.corda.notary.plugin.nonvalidating",
+                NOTARY_SERVICE_PROTOCOL_VERSIONS.format("0") to "1",
+                NOTARY_KEYS_ID.format("0") to notaryKeyId,
+                NOTARY_KEY_SPEC.format("0") to "SHA256withECDSA"
+            )
+        } else {
+            emptyMap()
+        }
 
         val endpoints: Map<String, String> = p2pGatewayUrls
             .flatMapIndexed { index, url ->
-                    listOf(
-                        "corda.endpoints.$index.connectionURL" to url,
-                        "corda.endpoints.$index.protocolVersion" to "1"
-                    )
+                listOf(
+                    URL_KEY.format(index) to url,
+                    PROTOCOL_VERSION.format(index) to "1"
+                )
             }
             .toMap()
 
-
         val sessionKeys = mapOf(
-            "corda.session.keys.0.id" to sessionKeyId,
-            "corda.session.keys.0.signature.spec" to "SHA256withECDSA"
+            PARTY_SESSION_KEYS_ID.format(0) to sessionKeyId,
+            SESSION_KEYS_SIGNATURE_SPEC.format(0) to "SHA256withECDSA"
         )
         val ledgerKeys = mapOf(
-            "corda.ledger.keys.0.id" to ledgerKeyId,
-            "corda.ledger.keys.0.signature.spec" to "SHA256withECDSA"
+            LEDGER_KEYS_ID.format(0) to ledgerKeyId,
+            LEDGER_KEY_SIGNATURE_SPEC.format(0) to "SHA256withECDSA"
         )
 
-        sessionKeys + ledgerKeys + endpoints + preAuth + roleProperty + notaryProperties
+        sessionKeys + ledgerKeys + endpoints + preAuth + roleProperty + notaryProperties + extProperties
     }
 
     override fun run() {
-        println("This sub command should only be used in for internal development")
-        println("On-boarding member $x500Name")
+        verifyAndPrintError {
+            println("This sub command should only be used in for internal development")
+            println("On-boarding member $x500Name")
 
-        configureGateway()
+            configureGateway()
 
-        createTlsKeyIdNeeded()
+            createTlsKeyIdNeeded()
 
-        if (mtls) {
-            println(
-                "Using $certificateSubject as client certificate. " +
-                        "The onboarding will fail until the the subject is added to the MGM's allow list. " +
-                        "You can do that using the allowClientCertificate command."
-            )
-        }
+            if (mtls) {
+                println(
+                    "Using $certificateSubject as client certificate. " +
+                            "The onboarding will fail until the the subject is added to the MGM's allow list. " +
+                            "You can do that using the allowClientCertificate command."
+                )
+            }
 
-        setupNetwork()
+            setupNetwork()
 
-        println("Provided registration context: ")
-        println(registrationContext)
+            println("Provided registration context: ")
+            println(registrationContext)
 
-        register(waitForFinalStatus)
+            register(waitForFinalStatus)
 
-        if (waitForFinalStatus) {
-            println("Member $x500Name was onboarded.")
-        } else {
-            println(
-                "Registration request has been submitted. Wait for MGM approval to finalize registration. " +
-                        "MGM may need to approve your request manually."
-            )
+            if (waitForFinalStatus) {
+                println("Member $x500Name was onboarded.")
+            } else {
+                println(
+                    "Registration request has been submitted. Wait for MGM approval to finalize registration. " +
+                            "MGM may need to approve your request manually."
+                )
+            }
         }
     }
 }
