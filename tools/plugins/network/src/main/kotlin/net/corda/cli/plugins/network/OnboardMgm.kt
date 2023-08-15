@@ -6,7 +6,6 @@ import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.membership.rest.v1.MGMRestResource
-import picocli.CommandLine.Parameters
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.ByteArrayOutputStream
@@ -21,13 +20,6 @@ import java.util.UUID
     ]
 )
 class OnboardMgm : Runnable, BaseOnboard() {
-    @Parameters(
-        description = ["The X500 name of the MGM. Default to a random name"],
-        paramLabel = "--x500-name",
-        arity = "0..1",
-    )
-    override var x500Name: String = "O=Mgm, L=London, C=GB, OU=${UUID.randomUUID()}"
-
     @Option(
         names = ["--cpi-hash"],
         description = ["The CPI hash of a previously uploaded CPI. " +
