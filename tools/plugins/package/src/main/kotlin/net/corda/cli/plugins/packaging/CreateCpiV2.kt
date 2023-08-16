@@ -150,9 +150,11 @@ class CreateCpiV2 : Runnable {
     /**
      * @throws IllegalArgumentException if Cpi version is invalid
      */
+
     public fun verifyCpiVersion(version: String) {
         require(version.matches("[0-9][a-zA-Z0-9\\.-]*".toRegex())) {
-            "CPI version should match the Maven version specification (see https://maven.apache.org/pom.html#version-order-specification for more information)"
+            "CPI version should match the Maven version specification " +
+                    "(see https://maven.apache.org/pom.html#version-order-specification for more information)"
         }
     }
 

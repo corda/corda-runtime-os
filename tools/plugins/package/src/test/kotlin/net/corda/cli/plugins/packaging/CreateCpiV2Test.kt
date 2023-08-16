@@ -20,6 +20,8 @@ import kotlin.test.assertFailsWith
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import picocli.CommandLine
 import java.io.ByteArrayInputStream
 import java.io.File
@@ -275,27 +277,21 @@ class CreateCpiV2Test {
         )
     }
 
-    @Test
-    fun `cpi create tool aborts if cpi version is invalid`() {
+    @ParameterizedTest
+    @ValueSource(strings = arrayOf("1.%", "1.$", "1.#", "1.\\", "", "v1", "first version"))
+    fun `cpi create tool aborts if cpi version is invalid`(input: String) {
         val createTool = CreateCpiV2()
         assertFailsWith<IllegalArgumentException>(
             block = {
-                createTool.verifyCpiVersion("\$%#")
+                createTool.verifyCpiVersion(input)
             }
         )
+    }
 
-        assertFailsWith<IllegalArgumentException>(
-            block = {
-                createTool.verifyCpiVersion("")
-            }
-        )
-
-        createTool.verifyCpiVersion("1")
-        createTool.verifyCpiVersion("1.0-alpha")
-        createTool.verifyCpiVersion("2.5")
-        createTool.verifyCpiVersion("4-beta")
-        createTool.verifyCpiVersion("2.7-gamma")
-        createTool.verifyCpiVersion("21-delta-3")
-        createTool.verifyCpiVersion("0.1-epsilon-7")
+    @ParameterizedTest
+    @ValueSource(strings = arrayOf("1", "1.0-alpha", "2.5", "4-beta", "2.7-gamma", "21-delta-3", "0.1-epsilon-7"))
+    fun `cpi create tool succeeds if cpi version is valid`(input: String) {
+        val createTool = CreateCpiV2()
+        createTool.verifyCpiVersion(input)
     }
 }

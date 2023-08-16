@@ -24,6 +24,7 @@ dependencies {
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
     testImplementation "org.pf4j:pf4j:${pf4jVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:${junit5Version}"
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion"
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:packaging-test-utilities")
