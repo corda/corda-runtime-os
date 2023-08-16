@@ -31,8 +31,6 @@ class VaultNamedQueryExecutorImpl(
         const val UTXO_TX_COMPONENT_TABLE = "utxo_transaction_component"
         const val TIMESTAMP_LIMIT_PARAM_NAME = "Corda_TimestampLimit"
 
-        const val RESULT_SET_FILL_RETRY_SLEEP_MS = 1000L
-
         // TODO Should this be configurable or hard-coded?
         const val RESULT_SET_FILL_RETRY_LIMIT = 5
 
@@ -131,9 +129,6 @@ class VaultNamedQueryExecutorImpl(
             filteredResults.addAll(contractStateResults.filter {
                 vaultNamedQuery.filter?.filter(it, deserializedParams) ?: true
             })
-
-            // Sleep 1 second to avoid heavy CPU usage
-            Thread.sleep(RESULT_SET_FILL_RETRY_SLEEP_MS)
         }
 
         return filteredResults
