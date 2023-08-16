@@ -1,6 +1,7 @@
 package net.corda.testing.driver;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import net.corda.testing.driver.function.ThrowingConsumer;
@@ -18,27 +19,34 @@ import org.jetbrains.annotations.Unmodifiable;
 public interface DriverDSL {
     @NotNull
     @Unmodifiable
-    List<VirtualNodeInfo> startNodes(@NotNull @Unmodifiable Set<MemberX500Name> memberNames);
+    List<@NotNull VirtualNodeInfo> startNodes(@NotNull @Unmodifiable Set<@NotNull MemberX500Name> memberNames);
+
+    @NotNull
+    VirtualNodeInfo nodeFor(@NotNull String groupName, @NotNull MemberX500Name member);
+
+    @NotNull
+    @Unmodifiable
+    Map<@NotNull MemberX500Name, @NotNull VirtualNodeInfo> nodesFor(@NotNull String groupName);
 
     @Nullable
     String runFlow(
         @NotNull VirtualNodeInfo virtualNodeInfo,
         @NotNull Class<? extends ClientStartableFlow> flowClass,
-        @NotNull ThrowingSupplier<String> flowArgMapper
+        @NotNull ThrowingSupplier<@NotNull String> flowArgMapper
     );
 
     void node(
         @NotNull VirtualNodeInfo virtualNodeInfo,
-        @NotNull ThrowingConsumer<Member> action
+        @NotNull ThrowingConsumer<@NotNull Member> action
     );
 
     void groupFor(
         @NotNull VirtualNodeInfo virtualNodeInfo,
-        @NotNull ThrowingConsumer<MembershipGroupDSL> action
+        @NotNull ThrowingConsumer<@NotNull MembershipGroupDSL> action
     );
 
     void group(
         @NotNull String groupName,
-        @NotNull ThrowingConsumer<MembershipGroupDSL> action
+        @NotNull ThrowingConsumer<@NotNull MembershipGroupDSL> action
     );
 }

@@ -24,9 +24,9 @@ abstract class AbstractDriver {
     private DriverDSLImpl driver;
 
     AbstractDriver(
-        @NotNull Map<MemberX500Name, KeyPair> members,
-        @NotNull Map<MemberX500Name, KeyPair> notaries,
-        @NotNull Set<KeyValuePair> groupParameters
+        @NotNull Map<@NotNull MemberX500Name, @NotNull KeyPair> members,
+        @NotNull Map<@NotNull MemberX500Name, @NotNull KeyPair> notaries,
+        @NotNull Set<@NotNull KeyValuePair> groupParameters
     ) {
         requireNonNull(members, "members must not be null");
         requireNonNull(notaries, "notaries must not be null");

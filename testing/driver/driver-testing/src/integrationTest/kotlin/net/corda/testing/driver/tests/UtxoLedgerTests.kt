@@ -67,13 +67,10 @@ class UtxoLedgerTests {
     @BeforeAll
     fun start() {
         driver.run { dsl ->
-            dsl.startNodes(setOf(alice, bob, charlie)).onEach { vNode ->
+            dsl.startNodes(setOf(alice, bob, charlie)).forEach { vNode ->
                 logger.info("VirtualNode({}): {}", vNode.holdingIdentity.x500Name, vNode)
-            }.filter { vNode ->
-                vNode.cpiIdentifier.name == "ledger-utxo-demo-app"
-            }.associateByTo(utxoLedger) { vNode ->
-                vNode.holdingIdentity.x500Name
             }
+            utxoLedger += dsl.nodesFor("ledger-utxo-demo-app")
             assertThat(utxoLedger).hasSize(3)
         }
         logger.info("{}, {} and {} started successfully", alice.commonName, bob.commonName, charlie.commonName)

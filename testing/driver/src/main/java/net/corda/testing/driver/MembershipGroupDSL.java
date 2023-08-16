@@ -15,7 +15,7 @@ public interface MembershipGroupDSL {
 
     @NotNull
     @Unmodifiable
-    Set<MemberX500Name> members();
+    Set<@NotNull MemberX500Name> members();
 
-    void member(@NotNull MemberX500Name name, @NotNull ThrowingConsumer<Member> action);
+    void member(@NotNull MemberX500Name name, @NotNull ThrowingConsumer<@NotNull Member> action);
 }

@@ -39,11 +39,10 @@ class FlowTests {
     @BeforeAll
     fun start() {
         aliceCorDapp = driver.let { dsl ->
-            dsl.startNodes(setOf(alice, bob)).onEach { vNode ->
+            dsl.startNodes(setOf(alice, bob)).forEach { vNode ->
                 logger.info("VirtualNode({}): {}", vNode.holdingIdentity.x500Name, vNode)
-            }.single { vNode ->
-                vNode.cpiIdentifier.name == "test-cordapp" && vNode.holdingIdentity.x500Name == alice
             }
+            dsl.nodeFor("test-cordapp", alice)
         }
         logger.info("{} and {} started successfully", alice.commonName, bob.commonName)
     }

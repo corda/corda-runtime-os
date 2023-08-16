@@ -19,11 +19,18 @@ public interface EmbeddedNodeService {
 
     @NotNull
     @Unmodifiable
-    Set<VirtualNodeInfo> loadVirtualNodes(@NotNull @Unmodifiable Set<MemberX500Name> names, @NotNull URI fileURI);
+    Set<@NotNull VirtualNodeInfo> loadVirtualNodes(
+        @NotNull
+        @Unmodifiable
+        Set<@NotNull MemberX500Name> names,
 
-    void loadSystemCpi(@NotNull @Unmodifiable Set<MemberX500Name> names, @NotNull URI fileURI);
+        @NotNull
+        URI fileURI
+    );
 
-    void setGroupParameters(@NotNull @Unmodifiable Set<KeyValuePair> groupParameters);
+    void loadSystemCpi(@NotNull @Unmodifiable Set<@NotNull MemberX500Name> names, @NotNull URI fileURI);
 
-    void setMembershipGroup(@NotNull @Unmodifiable Map<MemberX500Name, KeyPair> network);
+    void setGroupParameters(@NotNull @Unmodifiable Set<@NotNull KeyValuePair> groupParameters);
+
+    void setMembershipGroup(@NotNull @Unmodifiable Map<@NotNull MemberX500Name, @NotNull KeyPair> network);
 }

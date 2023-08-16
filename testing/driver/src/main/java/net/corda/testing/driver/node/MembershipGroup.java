@@ -14,11 +14,8 @@ public interface MembershipGroup {
     String getName(@NotNull HoldingIdentity holdingIdentity);
 
     @NotNull
-    HoldingIdentity getAnyMemberOf(@NotNull String groupName);
-
-    @NotNull
     @Unmodifiable
-    Set<MemberX500Name> getMembers(@NotNull HoldingIdentity holdingIdentity);
+    Set<@NotNull MemberX500Name> getMembers(@NotNull HoldingIdentity holdingIdentity);
 
-    void virtualNode(@NotNull HoldingIdentity holdingIdentity, @NotNull ThrowingConsumer<Member> action);
+    void virtualNode(@NotNull HoldingIdentity holdingIdentity, @NotNull ThrowingConsumer<@NotNull Member> action);
 }

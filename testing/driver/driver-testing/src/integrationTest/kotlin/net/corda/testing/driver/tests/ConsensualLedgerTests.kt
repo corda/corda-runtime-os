@@ -58,13 +58,10 @@ class ConsensualLedgerTests {
     @BeforeAll
     fun start() {
         driver.run { dsl ->
-            dsl.startNodes(setOf(alice, bob, charlie)).onEach { vNode ->
+            dsl.startNodes(setOf(alice, bob, charlie)).forEach { vNode ->
                 logger.info("VirtualNode({}): {}", vNode.holdingIdentity.x500Name, vNode)
-            }.filter { vNode ->
-                vNode.cpiIdentifier.name == "ledger-consensual-demo-app"
-            }.associateByTo(consensualLedger) { vNode ->
-                vNode.holdingIdentity.x500Name
             }
+            consensualLedger += dsl.nodesFor("ledger-consensual-demo-app")
             assertThat(consensualLedger).hasSize(3)
         }
         logger.info("{}, {} and {} started successfully", alice.commonName, bob.commonName, charlie.commonName)
