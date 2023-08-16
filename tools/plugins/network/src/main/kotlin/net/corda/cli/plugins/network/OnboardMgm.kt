@@ -181,7 +181,6 @@ class OnboardMgm : Runnable, BaseOnboard() {
 
     override fun run() {
         verifyAndPrintError {
-            println("This sub command should only be used in for internal development")
             println("On-boarding MGM member $x500Name")
 
             configureGateway()

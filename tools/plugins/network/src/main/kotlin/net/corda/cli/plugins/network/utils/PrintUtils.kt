@@ -9,7 +9,6 @@ import com.fasterxml.jackson.datatype.jsr310.ser.InstantSerializer
 import com.fasterxml.jackson.datatype.jsr310.deser.InstantDeserializer
 import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.cli.plugins.network.output.Output
-import net.corda.rest.client.exceptions.InternalErrorException
 import java.time.Instant
 
 class PrintUtils {
@@ -29,7 +28,7 @@ class PrintUtils {
 
             val jsonString = objectMapper.writer(pp).writeValueAsString(result)
             val formattedString = jsonString
-                .replace("\\n", System.lineSeparator())
+                .replace("\\n", "")
                 .replace("\\","")
                 .replace("\"\"", "")
             when (output) {
@@ -41,12 +40,6 @@ class PrintUtils {
         fun verifyAndPrintError(action: () -> Unit) {
             try {
                 action()
-            } catch (e: InternalErrorException) {
-                if (e.localizedMessage.contains("URI does not specify a valid host name")) {
-                    System.err.println("Error: Invalid host name")
-                } else {
-                    printJsonOutput(e.localizedMessage, ConsoleOutput())
-                }
             } catch (e: Exception) {
                 printJsonOutput(e.localizedMessage, ConsoleOutput())
             }

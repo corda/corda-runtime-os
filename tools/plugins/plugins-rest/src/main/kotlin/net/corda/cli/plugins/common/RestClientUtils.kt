@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory
 import java.time.Duration
 import kotlin.reflect.KClass
 import kotlin.system.exitProcess
+import java.net.URL
 
 object RestClientUtils {
 
@@ -22,6 +23,7 @@ object RestClientUtils {
         restResource: KClass<I>,
         apiVersion: RestApiVersion = RestApiVersion.C5_0
     ): RestClient<I> {
+        validateTargetUrl(targetUrl)
         val localTargetUrl = if(targetUrl.endsWith("/")) {
             targetUrl.dropLast(1)
         } else {
@@ -86,12 +88,16 @@ object RestClientUtils {
         throw lastException!!
     }
 
-    fun reThrow(ex: ResourceAlreadyExistsException): Nothing {
+    private fun reThrow(ex: ResourceAlreadyExistsException): Nothing {
         logger.info("Re-throwing", ex)
         throw ex
     }
 
-    fun ignore(ex: ResourceAlreadyExistsException) {
-        logger.debug("Ignoring", ex)
+    private fun validateTargetUrl(url: String) {
+        try {
+            URL(url)
+        } catch (e: Exception) {
+            throw IllegalArgumentException("Error: Invalid target URL")
+        }
     }
 }
