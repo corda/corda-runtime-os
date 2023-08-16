@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
 
 /**

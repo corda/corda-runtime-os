@@ -2,10 +2,6 @@ package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
-import net.corda.flow.fiber.FlowContinuation
-import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.fiber.cache.FlowFiberCache
-import net.corda.flow.metrics.FlowIORequestTypeConverter
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.events.FlowEventContext
@@ -13,23 +9,18 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
-import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
-import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
-import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.tracing.TraceTag
 import net.corda.utilities.trace
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 
 /**
  * [FlowEventPipelineImpl] encapsulates the pipeline steps that are executed when a [FlowEvent] is received by a [FlowEventProcessor].
  *
  * @param flowEventHandlers Map of available [FlowEventHandler]s where one is used for processing incoming events.
+ * @param flowExecutionPipelineStage Stage of the pipeline responsible for executing user code and updating state after.
  * @param flowGlobalPostProcessor The [FlowGlobalPostProcessor] applied to all events .
  * @param context The [FlowEventContext] that should be modified by the pipeline steps.
  * @param virtualNodeInfoReadService The [VirtualNodeInfoReadService] is responsible for reading virtual node information.

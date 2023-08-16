@@ -28,7 +28,6 @@ import org.mockito.kotlin.argThat
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.concurrent.Future
 import java.util.stream.Stream
 import net.corda.data.flow.state.waiting.Wakeup as WakeUpWaitingFor
 
