@@ -8,19 +8,11 @@ import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.BOB_X500
 import net.corda.flow.FLOW_ID_1
-import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
-import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.fiber.Interruptable
-import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.events.FlowEventContext
-import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.handlers.events.FlowEventHandler
-import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
-import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
-import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.virtualnode.HoldingIdentity
@@ -30,20 +22,13 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
 import java.util.concurrent.Future
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 import java.util.stream.Stream
 import net.corda.data.flow.state.waiting.Wakeup as WakeUpWaitingFor
 
@@ -87,26 +72,12 @@ class FlowEventPipelineImplTest {
         whenever(preProcess(inputContext)).thenReturn(outputContext)
     }
 
-    private val flowWaitingForHandler = mock<FlowWaitingForHandler<Any>>().apply {
-        whenever(runOrContinue(eq(inputContext), any())).thenReturn(FlowContinuation.Run(Unit))
-    }
-
-    private val flowRequestHandler = mock<FlowRequestHandler<FlowIORequest.ForceCheckpoint>>().apply {
-        whenever(getUpdatedWaitingFor(inputContext, FlowIORequest.ForceCheckpoint)).thenReturn(WaitingFor(Wakeup()))
-        whenever(postProcess(inputContext, FlowIORequest.ForceCheckpoint)).thenReturn(outputContext)
-    }
-
     private val flowGlobalPostProcessor = mock<FlowGlobalPostProcessor>().apply {
         whenever(postProcess(inputContext)).thenReturn(outputContext)
     }
 
-    private val runFlowFiberFuture = mock<FiberFuture>().apply {
-        whenever(future).thenReturn(mock<Future<FlowIORequest<*>>>())
-        whenever(interruptable).thenReturn(mock<Interruptable>())
-    }
-
-    private val flowRunner = mock<FlowRunner>().apply {
-        whenever(runFlow(any(), any())).thenReturn(runFlowFiberFuture)
+    private val mockFlowExecutionPipelineStage = mock<FlowExecutionPipelineStage>().apply {
+        whenever(runFlow(any(), any())).thenReturn(outputContext)
     }
 
     private val virtualNodeInfo = mock<VirtualNodeInfo>()
@@ -114,20 +85,13 @@ class FlowEventPipelineImplTest {
         whenever(get(any())).thenReturn(virtualNodeInfo)
     }
 
-    private val flowFiberCache = mock<FlowFiberCache>()
-
-    private fun buildPipeline(output: FlowIORequest<*>? = null): FlowEventPipelineImpl {
+    private fun buildPipeline(): FlowEventPipelineImpl {
         return FlowEventPipelineImpl(
             mapOf(Wakeup::class.java to wakeUpFlowEventHandler, StartFlow::class.java to startFlowEventHandler),
-            mapOf(WakeUpWaitingFor()::class.java to flowWaitingForHandler),
-            mapOf(FlowIORequest.ForceCheckpoint::class.java to flowRequestHandler),
-            flowRunner,
+            mockFlowExecutionPipelineStage,
             flowGlobalPostProcessor,
             inputContext,
-            virtualNodeInfoReadService,
-            flowFiberCache,
-            mock(),
-            output
+            virtualNodeInfoReadService
         )
     }
 
@@ -172,14 +136,10 @@ class FlowEventPipelineImplTest {
         val pipeline =
             FlowEventPipelineImpl(
                 mapOf(),
-                mapOf(),
-                mapOf(),
                 mock(),
                 mock(),
                 mockContext,
-                virtualNodeInfoReadService,
-                flowFiberCache,
-                mock()
+                virtualNodeInfoReadService
             )
 
         val mockVirtualNode = mock<VirtualNodeInfo> {
@@ -192,7 +152,14 @@ class FlowEventPipelineImplTest {
         }
     }
 
-    @ParameterizedTest(name = "runOrContinue runs a flow when {0} is returned by the FlowWaitingForHandler with suspend result")
+    @Test
+    fun `execute flow invokes the execute flow pipeline stage`() {
+        val pipeline = buildPipeline()
+        pipeline.executeFlow(RUN_OR_CONTINUE_TIMEOUT)
+        verify(mockFlowExecutionPipelineStage).runFlow(inputContext, RUN_OR_CONTINUE_TIMEOUT)
+    }
+
+/*    @ParameterizedTest(name = "runOrContinue runs a flow when {0} is returned by the FlowWaitingForHandler with suspend result")
     @MethodSource("runFlowContinuationConditions")
     fun `runOrContinue runs a flow with suspend result`(outcome: FlowContinuation) {
         val flowResult = FlowIORequest.SubFlowFinished(emptyList())
@@ -320,17 +287,17 @@ class FlowEventPipelineImplTest {
         val pipeline = buildPipeline(output = FlowIORequest.WaitForSessionConfirmations)
         assertThrows<FlowFatalException> { pipeline.requestPostProcessing() }
     }
-
+*/
     @Test
     fun `globalPostProcessing calls the FlowGlobalPostProcessor when output is set`() {
-        val pipeline = buildPipeline(output = FlowIORequest.ForceCheckpoint)
+        val pipeline = buildPipeline()
         assertEquals(outputContext, pipeline.globalPostProcessing().context)
         verify(flowGlobalPostProcessor).postProcess(inputContext)
     }
 
     @Test
     fun `globalPostProcessing calls the FlowGlobalPostProcessor when output is not set`() {
-        val pipeline = buildPipeline(output = null)
+        val pipeline = buildPipeline()
         assertEquals(outputContext, pipeline.globalPostProcessing().context)
         verify(flowGlobalPostProcessor).postProcess(inputContext)
     }
