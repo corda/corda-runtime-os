@@ -88,7 +88,7 @@ class FlowEventProcessorImpl(
                 pipeline
                     .eventPreProcessing()
                     .virtualNodeFlowOperationalChecks()
-                    .executeFlow()
+                    .executeFlow(flowTimeout)
                     .globalPostProcessing()
                     .context
             )

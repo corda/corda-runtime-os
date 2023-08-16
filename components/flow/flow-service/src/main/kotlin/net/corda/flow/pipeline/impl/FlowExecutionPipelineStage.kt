@@ -26,11 +26,11 @@ internal class FlowExecutionPipelineStage(
         private val logger = LoggerFactory.getLogger(this::class.java.name)
     }
 
-    fun runFlow(context: FlowEventContext<Any>) : FlowEventContext<Any> {
+    fun runFlow(context: FlowEventContext<Any>, timeout: Long) : FlowEventContext<Any> {
         var currentContext = context
         var continuation = flowReady(context)
         while (continuation != FlowContinuation.Continue) {
-            val output = executeFlow(currentContext, continuation)
+            val output = executeFlow(currentContext, continuation, timeout)
             currentContext = updateContext(output, currentContext)
             continuation = flowReady(currentContext)
         }
@@ -46,12 +46,12 @@ internal class FlowExecutionPipelineStage(
         return handler.runOrContinue(context, waitingFor)
     }
 
-    private fun executeFlow(context: FlowEventContext<Any>, continuation: FlowContinuation) : FlowIORequest<*> {
+    private fun executeFlow(context: FlowEventContext<Any>, continuation: FlowContinuation, timeout: Long) : FlowIORequest<*> {
         context.flowMetrics.flowFiberEntered()
         val future = flowRunner.runFlow(context, continuation)
 
         val fiberResult = try {
-            future.future.get(1000, TimeUnit.MILLISECONDS) // TODO: need to get the config
+            future.future.get(timeout, TimeUnit.MILLISECONDS)
         } catch (e: TimeoutException) {
             logger.warn("Flow execution timeout, Flow marked as failed, interrupt attempted")
             // This works in extremely limited circumstances. The Flow which experienced a timeout will continue to

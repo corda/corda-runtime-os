@@ -110,8 +110,8 @@ internal class FlowEventPipelineImpl(
         return this
     }
 
-    override fun executeFlow(): FlowEventPipeline {
-        context = flowExecutionPipelineStage.runFlow(context)
+    override fun executeFlow(timeout: Long): FlowEventPipeline {
+        context = flowExecutionPipelineStage.runFlow(context, timeout)
         return this
     }
 

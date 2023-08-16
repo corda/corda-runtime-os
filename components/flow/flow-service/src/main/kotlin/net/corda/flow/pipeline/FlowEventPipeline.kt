@@ -33,9 +33,11 @@ interface FlowEventPipeline {
     /**
      * Runs the user code a number of times, and processes any output requests that the flow makes.
      *
+     * @param timeout Time in milliseconds to wait before timing out running the fiber. Note that this applies per
+     * fiber execution, so this function may block for longer than this if the fiber is run multiple times.
      * @return The updated pipeline instance
      */
-    fun executeFlow(): FlowEventPipeline
+    fun executeFlow(timeout: Long): FlowEventPipeline
 
     /**
      * Performs post-processing that should always execute.
