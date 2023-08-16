@@ -89,6 +89,7 @@ class PersistenceExceptionTests {
 
     private lateinit var dbConnectionManager: FakeDbConnectionManager
     private lateinit var entitySandboxService: EntitySandboxService
+    private lateinit var processor: EntityMessageProcessor
 
     private lateinit var virtualNodeInfo: VirtualNodeInfo
     private lateinit var cpkFileHashes: Set<SecureHash>
@@ -132,6 +133,12 @@ class PersistenceExceptionTests {
                 virtualNodeInfoReadService,
                 dbConnectionManager
             )
+        processor = EntityMessageProcessor(
+            currentSandboxGroupContext,
+            entitySandboxService,
+            responseFactory,
+            this::noOpPayloadCheck
+        )
     }
 
     @AfterEach
@@ -142,13 +149,6 @@ class PersistenceExceptionTests {
     @Test
     fun `exception raised when cpks not present`() {
         val ignoredRequest = createDogPersistRequest()
-
-        val processor = EntityMessageProcessor(
-            currentSandboxGroupContext,
-            entitySandboxService,
-            responseFactory,
-            this::noOpPayloadCheck
-        )
 
         // Insert some non-existent CPK hashes to our external event to trigger CPK not available error
         ignoredRequest.flowExternalEventContext.contextProperties = KeyValuePairList(
@@ -225,13 +225,6 @@ class PersistenceExceptionTests {
                 )
             )
 
-        val processor = EntityMessageProcessor(
-                currentSandboxGroupContext,
-                entitySandboxService,
-                responseFactory,
-                this::noOpPayloadCheck
-            )
-
         // Now "send" the request for processing and "receive" the responses.
         val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), badRequest)))
 
@@ -253,13 +246,6 @@ class PersistenceExceptionTests {
         createDogDb()
         val persistEntitiesRequest = createDogPersistRequest()
 
-        val processor = EntityMessageProcessor(
-            currentSandboxGroupContext,
-            entitySandboxService,
-            responseFactory,
-            this::noOpPayloadCheck
-        )
-
         val record1 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
         assertNull(((record1.single().value as FlowEvent).payload as ExternalEventResponse).error)
         // duplicate request
@@ -275,13 +261,6 @@ class PersistenceExceptionTests {
     fun `on duplicate persistence request don't execute it - without PK constraint does not add duplicate DB entry`() {
         createDogDb(DOGS_TABLE_WITHOUT_PK)
         val persistEntitiesRequest = createDogPersistRequest()
-
-        val processor = EntityMessageProcessor(
-            currentSandboxGroupContext,
-            entitySandboxService,
-            responseFactory,
-            this::noOpPayloadCheck
-        )
 
         val record1 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
         assertNull(((record1.single().value as FlowEvent).payload as ExternalEventResponse).error)
@@ -300,13 +279,6 @@ class PersistenceExceptionTests {
     fun `on duplicate persistence request don't execute it - statically updated field isn't getting updated in DB`() {
         createVersionedDogDb()
         val persistEntitiesRequest = createVersionedDogPersistRequest()
-
-        val processor = EntityMessageProcessor(
-            currentSandboxGroupContext,
-            entitySandboxService,
-            responseFactory,
-            this::noOpPayloadCheck
-        )
 
         // persist request
         processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
