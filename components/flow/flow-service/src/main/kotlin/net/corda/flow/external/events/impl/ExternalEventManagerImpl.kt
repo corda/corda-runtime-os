@@ -3,6 +3,7 @@ package net.corda.flow.external.events.impl
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.external.ExternalEvent
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
@@ -168,6 +169,12 @@ class ExternalEventManagerImpl(
                 log.debug {
                     "Resending external event request ${externalEventState.requestId} which was last sent at " +
                             externalEventState.eventToSend.timestamp
+                }
+                if (externalEventState.status.type == ExternalEventStateType.OK) {
+                    externalEventState.status.exception =
+                        ExceptionEnvelope("Unreceived Error", "Event retried but did not receive an error, Ensure all workers are running")
+                    externalEventState.status.type = ExternalEventStateType.RETRY
+                    externalEventState.retries = externalEventState.retries.inc()
                 }
                 getAndUpdateEventToSend(externalEventState, instant, config)
             }
