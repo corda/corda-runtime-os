@@ -48,7 +48,7 @@ internal class VirtualNodeUpgradeOperationHandler(
     private val membershipQueryClient: MembershipQueryClient,
     private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository(),
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
-    private val externalMessagingRouteConfigGenerator: ExternalMessagingRouteConfigGenerator,
+    private val externalMessagingRouteConfigGenerator: ExternalMessagingRouteConfigGenerator
 ) : VirtualNodeAsyncOperationHandler<VirtualNodeUpgradeRequest> {
 
     private companion object {
