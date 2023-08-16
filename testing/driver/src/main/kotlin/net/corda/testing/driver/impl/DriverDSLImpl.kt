@@ -385,7 +385,10 @@ internal class DriverDSLImpl(
         }
         try {
             return driverFramework.loadCordapps(memberNames).onEach { vNode ->
-                virtualNodeInfo[keyFor(vNode)] = vNode
+                val member = vNode.holdingIdentity.x500Name
+                if (member in members.keys) {
+                    virtualNodeInfo[keyFor(vNode.cpiIdentifier.name, member)] = vNode
+                }
             }
         } catch (e: RuntimeException) {
             throw e
@@ -443,7 +446,6 @@ internal class DriverDSLImpl(
 private data class VirtualNodeKey(val groupName: String, val member: MemberX500Name)
 
 private fun keyFor(groupName: String, member: MemberX500Name) = VirtualNodeKey(groupName, member)
-private fun keyFor(vNode: VirtualNodeInfo) = keyFor(vNode.cpiIdentifier.name, vNode.holdingIdentity.x500Name)
 
 private class ServiceImpl<T : Any>(
     private val service: T,
