@@ -38,6 +38,11 @@ fun getSourceAndDestinationIdentity(sessionEvent: SessionEvent): Pair<HoldingIde
     }
 }
 
+/**
+ * Get the destination holding identity from the [sessionEvent].
+ * @param sessionEvent Session event to extract identity from
+ * @return destination identity for a SessionEvent message.
+ */
 fun getDestinationIdentity(sessionEvent: SessionEvent): HoldingIdentity {
     return if (sessionEvent.sessionId.contains(INITIATED_SESSION_ID_SUFFIX)) {
         sessionEvent.initiatedIdentity
