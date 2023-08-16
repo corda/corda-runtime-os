@@ -11,7 +11,6 @@ import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.exceptions.NullParameterException
-import net.corda.utilities.seconds
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.utxo.ContractState
