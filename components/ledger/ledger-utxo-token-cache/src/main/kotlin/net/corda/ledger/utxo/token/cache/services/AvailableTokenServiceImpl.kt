@@ -16,9 +16,7 @@ import net.corda.orm.JpaEntitiesSet
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.VirtualNodeInfo
 
-@Component(
-    service = [AvailableTokenService::class]
-)
+@Component(service = [AvailableTokenService::class])
 class AvailableTokenServiceImpl @Activate constructor(
     @Reference
     private val virtualNodeInfoService: VirtualNodeInfoReadService,

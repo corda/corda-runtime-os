@@ -2,7 +2,6 @@ package net.corda.ledger.utxo.token.cache.impl.services
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
-import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.messaging.api.records.Record
 import net.corda.ledger.utxo.token.cache.converters.EntityConverter
@@ -10,8 +9,10 @@ import net.corda.ledger.utxo.token.cache.converters.EventConverter
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
+import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
 import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
+import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY_DTO
 import net.corda.ledger.utxo.token.cache.services.TokenCacheEventProcessor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -95,7 +96,6 @@ class TokenCacheEventProcessorTest {
             this.tokenClaims = listOf()
         }
 
-
         whenever(entityConverter.toTokenCache(stateIn)).thenReturn(tokenCache)
         whenever(entityConverter.toPoolCacheState(stateIn)).thenReturn(cachePoolState)
         whenever(cachePoolState.toAvro()).thenReturn(outputState)
@@ -103,7 +103,6 @@ class TokenCacheEventProcessorTest {
             .thenReturn(handlerResponse)
 
         val target = TokenCacheEventProcessor(eventConverter, entityConverter, tokenCacheEventHandlerMap)
-
 
         val result = target.onNext(stateIn, eventIn)
 
@@ -145,8 +144,8 @@ class TokenCacheEventProcessorTest {
     }
 
     class FakeTokenEvent : TokenEvent {
-        override val poolKey: TokenPoolCacheKey
-            get() = POOL_CACHE_KEY
+        override val poolKey: TokenPoolKey
+            get() = POOL_CACHE_KEY_DTO
 
     }
 }
