@@ -35,6 +35,7 @@ import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
+import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
 import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
@@ -52,6 +53,7 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
 import org.osgi.test.common.annotation.InjectBundleContext
@@ -79,6 +81,10 @@ class PersistenceExceptionTests {
         const val DOGS_TABLE_WITHOUT_PK = "dogs-without-pk.xml"
         const val VERSIONED_DOGS_TABLE = "versioned-dogs.xml"
     }
+
+    @Suppress("JUnitMalformedDeclaration")
+    @RegisterExtension
+    private val sandboxLifecycle = AllTestsLifecycle()
 
     private lateinit var virtualNode: VirtualNodeService
     private lateinit var cpiInfoReadService: CpiInfoReadService
@@ -108,13 +114,14 @@ class PersistenceExceptionTests {
     ) {
         logger.info("Setup test (test Directory: $testDirectory)")
         sandboxSetup.configure(bundleContext, testDirectory)
-
-        virtualNode = sandboxSetup.fetchService(timeout = 5000)
-        cpiInfoReadService = sandboxSetup.fetchService(timeout = 5000)
-        cpkReadService = sandboxSetup.fetchService(timeout = 5000)
-        virtualNodeInfoReadService = sandboxSetup.fetchService(timeout = 5000)
-        responseFactory = sandboxSetup.fetchService(timeout = 5000)
-        currentSandboxGroupContext = sandboxSetup.fetchService(timeout = 5000)
+        sandboxLifecycle.accept(sandboxSetup) {
+            virtualNode = sandboxSetup.fetchService(timeout = 5000)
+            cpiInfoReadService = sandboxSetup.fetchService(timeout = 5000)
+            cpkReadService = sandboxSetup.fetchService(timeout = 5000)
+            virtualNodeInfoReadService = sandboxSetup.fetchService(timeout = 5000)
+            responseFactory = sandboxSetup.fetchService(timeout = 5000)
+            currentSandboxGroupContext = sandboxSetup.fetchService(timeout = 5000)
+        }
 
         virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
         cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
