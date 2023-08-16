@@ -115,11 +115,11 @@ Examples of on-boarding an MGM can be:
 ```shell
 ./corda-cli.sh network dynamic onboard-mgm 'O=MGM, L=London, C=GB' --user=admin --password=admin --target=https://localhost:8888 --insecure
 
-./corda-cli.sh network dynamic onboard-mgm --cpi-hash=D8AF6080C7B4 --user=admin --password=admin --target=https://localhost:8888 --insecure
+./corda-cli.sh network dynamic onboard-mgm 'O=MGM, L=London, C=GB' --cpi-hash=D8AF6080C7B4 --user=admin --password=admin --target=https://localhost:8888 --insecure
 
-./corda-cli.sh network dynamic onboard-mgm --save-group-policy-as /tmp/groupPolicy.json --user=admin --password=admin --target=https://localhost:8888 --insecure
+./corda-cli.sh network dynamic onboard-mgm 'O=MGM, L=London, C=GB' --save-group-policy-as /tmp/groupPolicy.json --user=admin --password=admin --target=https://localhost:8888 --insecure
 
-./corda-cli.sh network dynamic onboard-mgm --user=admin --password=admin --target=https://localhost:8888 --p2p-gateway-url=https://localhost:8888 --p2p-gateway-url=https://localhost:8886 --insecure
+./corda-cli.sh network dynamic onboard-mgm 'O=MGM, L=London, C=GB' --user=admin --password=admin --target=https://localhost:8888 --p2p-gateway-url=https://localhost:8888 --p2p-gateway-url=https://localhost:8886 --insecure
 ```
 
 Use the `--help` to view all the other options and defaults.
@@ -147,8 +147,8 @@ Few examples of on-boarding a member can be:
 ```shell
 ./corda-cli.sh network dynamic onboard-member 'O=Alice, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb --user=admin --password=admin --target=https://localhost:8888 --insecure
 ./corda-cli.sh network dynamic onboard-member 'O=Alice, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb --wait --user=admin --password=admin --target=https://localhost:8888 --insecure
-./corda-cli.sh network dynamic onboard-member --cpi-hash 8CBD8A9C6318 --wait --user=admin --password=admin --target=https://localhost:8888 --insecure -r "notary" -s "corda.notary.service.name"="C=GB, L=London, O=Arish"
-./corda-cli.sh network dynamic onboard-member --cpi-hash 200E86176EF2 --user=admin --password=admin --target=https://localhost:8888 --insecure
+./corda-cli.sh network dynamic onboard-member 'O=Alice, L=London, C=GB' --cpi-hash 8CBD8A9C6318 --wait --user=admin --password=admin --target=https://localhost:8888 --insecure -r "notary" -s "corda.notary.service.name"="C=GB, L=London, O=Arish"
+./corda-cli.sh network dynamic onboard-member 'O=Alice, L=London, C=GB' --cpi-hash 200E86176EF2 --user=admin --password=admin --target=https://localhost:8888 --insecure
 ```
 Use the `--help` to view all the other options and defaults.
 

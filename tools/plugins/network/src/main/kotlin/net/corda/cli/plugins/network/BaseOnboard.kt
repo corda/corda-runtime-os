@@ -43,7 +43,7 @@ import org.bouncycastle.crypto.util.PrivateKeyFactory
 import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder
 import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder
 import org.bouncycastle.operator.bc.BcRSAContentSignerBuilder
-import picocli.CommandLine
+import picocli.CommandLine.Parameters
 import picocli.CommandLine.Option
 import java.io.File
 import java.io.InputStream
@@ -104,7 +104,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         }
     }
 
-    @CommandLine.Parameters(
+    @Parameters(
         description = ["The X500 name of the virtual node."],
         arity = "1",
         index = "0"
