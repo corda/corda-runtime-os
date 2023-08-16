@@ -69,7 +69,7 @@ allprojects {
                 if (project.hasProperty('runMultiClusterTests')) {
                     includeTags 'MultiCluster'
                 } else if (project.hasProperty('runUnstableTests')) {
-                    includeTags 'runUnstableTests'
+                    includeTags 'Unstable'
                 } else {
                     excludeTags 'MultiCluster', 'Unstable'
                 }
