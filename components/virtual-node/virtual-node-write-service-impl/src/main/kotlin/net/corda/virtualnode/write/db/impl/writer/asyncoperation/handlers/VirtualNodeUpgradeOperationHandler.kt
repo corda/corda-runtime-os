@@ -193,9 +193,10 @@ internal class VirtualNodeUpgradeOperationHandler(
     // after the virtual node has been upgraded, so that the member CPI version is up-to-date
     private fun reRegisterMember(upgradedVNodeInfo: VirtualNodeInfo) {
         val holdingIdentity = upgradedVNodeInfo.holdingIdentity
+        val registrationRequestsCheck = membershipQueryClient.queryRegistrationRequests(holdingIdentity)
         if (
-            (membershipQueryClient.queryRegistrationRequests(holdingIdentity) as MembershipQueryResult.Success)
-                .payload.isNotEmpty()
+            registrationRequestsCheck is MembershipQueryResult.Success
+            && registrationRequestsCheck.payload.isNotEmpty()
         ) {
             val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
             val x500Name = membershipGroupReader.owningMember
