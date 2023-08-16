@@ -33,14 +33,13 @@ import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
-import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
-import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -51,7 +50,6 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
-import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
 import org.osgi.test.common.annotation.InjectBundleContext
@@ -91,6 +89,7 @@ class PersistenceExceptionTests {
     private lateinit var entitySandboxService: EntitySandboxService
 
     private lateinit var virtualNodeInfo: VirtualNodeInfo
+    private lateinit var cpkFileHashes: Set<SecureHash>
 
     @InjectService
     lateinit var lbm: LiquibaseSchemaMigrator
@@ -115,6 +114,7 @@ class PersistenceExceptionTests {
         currentSandboxGroupContext = sandboxSetup.fetchService(timeout = 5000)
 
         virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
+        cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
     }
 
     @BeforeEach
@@ -211,9 +211,6 @@ class PersistenceExceptionTests {
     fun `exception raised when sent a missing command`() {
         val oldRequest = createDogPersistRequest()
         val unknownCommand = ExceptionEnvelope("", "") // Any Avro object, or null works here.
-
-        val vNodeInfo = virtualNodeInfoReadService.get(oldRequest.holdingIdentity.toCorda())!!
-        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(vNodeInfo)
 
         val badRequest =
             EntityRequest(
@@ -312,7 +309,6 @@ class PersistenceExceptionTests {
         // persist request
         processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
 
-        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
         val serialisedDog = (persistEntitiesRequest.request as PersistEntities).entities
 
         val requestId = UUID.randomUUID().toString()
@@ -350,7 +346,6 @@ class PersistenceExceptionTests {
     private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
 
     private fun createVersionedDogPersistRequest(): EntityRequest {
-        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
         // create dog using dog-aware sandbox
         val dog = sandbox.createVersionedDog("Stray", owner = "Not Known")
@@ -375,7 +370,6 @@ class PersistenceExceptionTests {
      * Create a simple request and return it.
      */
     private fun createDogPersistRequest(): EntityRequest {
-        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
         // create dog using dog-aware sandbox
         val dog = sandbox.createDog("Stray", owner = "Not Known").instance
@@ -397,14 +391,12 @@ class PersistenceExceptionTests {
     }
 
     private fun createDogDb(liquibaseScript: String = DOGS_TABLE) {
-        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
         val dog = sandbox.createDog("Stray", owner = "Not Known").instance
         createDb(liquibaseScript, dog)
     }
 
     private fun createVersionedDogDb() {
-        val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
         val versionedDog = sandbox.createVersionedDog("Stray", owner = "Not Known")
         createDb(VERSIONED_DOGS_TABLE, versionedDog)
