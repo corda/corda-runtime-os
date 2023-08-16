@@ -46,6 +46,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -79,9 +80,6 @@ class PersistenceExceptionTests {
         const val VERSIONED_DOGS_TABLE = "versioned-dogs.xml"
     }
 
-    @RegisterExtension
-    private val lifecycle = EachTestLifecycle()
-
     private lateinit var virtualNode: VirtualNodeService
     private lateinit var cpiInfoReadService: CpiInfoReadService
     private lateinit var cpkReadService: CpkReadService
@@ -108,28 +106,30 @@ class PersistenceExceptionTests {
     ) {
         logger.info("Setup test (test Directory: $testDirectory)")
         sandboxSetup.configure(bundleContext, testDirectory)
-        // The below callback runs before each test
-        lifecycle.accept(sandboxSetup) { setup ->
-            virtualNode = setup.fetchService(timeout = 5000)
-            cpiInfoReadService = setup.fetchService(timeout = 5000)
-            cpkReadService = setup.fetchService(timeout = 5000)
-            virtualNodeInfoReadService = setup.fetchService(timeout = 5000)
-            responseFactory = setup.fetchService(timeout = 5000)
-            currentSandboxGroupContext = setup.fetchService(timeout = 5000)
 
-            virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
-            dbConnectionManager = FakeDbConnectionManager(
-                listOf(Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node")),
-                "PersistenceExceptionTests"
+        virtualNode = sandboxSetup.fetchService(timeout = 5000)
+        cpiInfoReadService = sandboxSetup.fetchService(timeout = 5000)
+        cpkReadService = sandboxSetup.fetchService(timeout = 5000)
+        virtualNodeInfoReadService = sandboxSetup.fetchService(timeout = 5000)
+        responseFactory = sandboxSetup.fetchService(timeout = 5000)
+        currentSandboxGroupContext = sandboxSetup.fetchService(timeout = 5000)
+
+        virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
+    }
+
+    @BeforeEach
+    fun setUpBeforeEach() {
+        dbConnectionManager = FakeDbConnectionManager(
+            listOf(Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node")),
+            "PersistenceExceptionTests"
+        )
+        entitySandboxService =
+            EntitySandboxServiceFactory().create(
+                virtualNode.sandboxGroupContextComponent,
+                cpkReadService,
+                virtualNodeInfoReadService,
+                dbConnectionManager
             )
-            entitySandboxService =
-                EntitySandboxServiceFactory().create(
-                    virtualNode.sandboxGroupContextComponent,
-                    cpkReadService,
-                    virtualNodeInfoReadService,
-                    dbConnectionManager
-                )
-        }
     }
 
     @AfterEach
