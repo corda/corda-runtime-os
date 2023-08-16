@@ -36,7 +36,7 @@ class TokenBalanceQueryTests {
     private val alice = MemberX500Name.parse("CN=Alice, OU=Testing, O=R3, L=London, C=GB")
     private val bob = MemberX500Name.parse("CN=Bob, OU=Testing, O=R3, L=San Francisco, C=US")
     private val notary = MemberX500Name.parse("CN=Notary, OU=Testing, O=R3, L=Rome, C=IT")
-    private val utxoLedger = mutableMapOf<MemberX500Name, VirtualNodeInfo>()
+    private lateinit var utxoLedger: Map<MemberX500Name, VirtualNodeInfo>
     private val jsonMapper = ObjectMapper().apply {
         registerModule(KotlinModule.Builder().build())
 
@@ -53,13 +53,13 @@ class TokenBalanceQueryTests {
 
     @BeforeAll
     fun start() {
-        driver.run { dsl ->
+        utxoLedger = driver.let { dsl ->
             dsl.startNodes(setOf(alice, bob)).forEach { vNode ->
                 logger.info("VirtualNode({}): {}", vNode.holdingIdentity.x500Name, vNode)
             }
-            utxoLedger += dsl.nodesFor("ledger-utxo-demo-app")
-            assertThat(utxoLedger).hasSize(2)
+            dsl.nodesFor("ledger-utxo-demo-app")
         }
+        assertThat(utxoLedger).hasSize(2)
         logger.info("{} and {} started successfully", alice.commonName, bob.commonName)
     }
 

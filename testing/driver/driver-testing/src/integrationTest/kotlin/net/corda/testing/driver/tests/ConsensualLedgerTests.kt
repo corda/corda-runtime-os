@@ -40,7 +40,7 @@ class ConsensualLedgerTests {
     private val alice = MemberX500Name.parse("CN=Alice, OU=Testing, O=R3, L=London, C=GB")
     private val bob = MemberX500Name.parse("CN=Bob, OU=Testing, O=R3, L=San Francisco, C=US")
     private val charlie = MemberX500Name.parse("CN=Charlie, OU=Testing, O=R3, L=Paris, C=FR")
-    private val consensualLedger = mutableMapOf<MemberX500Name, VirtualNodeInfo>()
+    private lateinit var consensualLedger: Map<MemberX500Name, VirtualNodeInfo>
     private val jsonMapper = ObjectMapper().apply {
         registerModule(KotlinModule.Builder().build())
 
@@ -57,13 +57,13 @@ class ConsensualLedgerTests {
 
     @BeforeAll
     fun start() {
-        driver.run { dsl ->
+        consensualLedger = driver.let { dsl ->
             dsl.startNodes(setOf(alice, bob, charlie)).forEach { vNode ->
                 logger.info("VirtualNode({}): {}", vNode.holdingIdentity.x500Name, vNode)
             }
-            consensualLedger += dsl.nodesFor("ledger-consensual-demo-app")
-            assertThat(consensualLedger).hasSize(3)
+            dsl.nodesFor("ledger-consensual-demo-app")
         }
+        assertThat(consensualLedger).hasSize(3)
         logger.info("{}, {} and {} started successfully", alice.commonName, bob.commonName, charlie.commonName)
     }
 
