@@ -27,6 +27,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
+import net.corda.applications.workers.workercommon.JavalinServer
 
 /**
  * An implementation of [WorkerMonitor].
@@ -37,12 +38,14 @@ import java.util.concurrent.ConcurrentHashMap
 @Suppress("Unused")
 internal class WorkerMonitorImpl @Activate constructor(
     @Reference(service = LifecycleRegistry::class)
-    private val lifecycleRegistry: LifecycleRegistry
+    private val lifecycleRegistry: LifecycleRegistry,
+    @Reference(service = JavalinServer::class)
+    private val javalinServer: JavalinServer
 ) : WorkerMonitor {
     private val logger = LoggerFactory.getLogger(this::class.java)
 
     // The use of Javalin is temporary, and will be replaced in the future.
-    private var server: Javalin? = null
+    private var server = javalinServer.getServer()
     private val objectMapper = ObjectMapper()
     private val prometheusRegistry: PrometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     private val lastLogMessage = ConcurrentHashMap(mapOf(HTTP_HEALTH_ROUTE to "", HTTP_STATUS_ROUTE to ""))

@@ -2,6 +2,7 @@ package net.corda.applications.workers.member
 
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
+import net.corda.applications.workers.workercommon.JavalinServer
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
@@ -56,6 +57,8 @@ class MemberWorker @Activate constructor(
         val params = getParams(args, MemberWorkerParams())
         if (printHelpOrVersion(params.defaultParams, MemberWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
+
+        //rpc setup
 
         configureTracing("Member Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
 

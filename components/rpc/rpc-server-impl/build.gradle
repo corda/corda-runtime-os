@@ -7,14 +7,16 @@ description 'Rpc Server for '
 
 dependencies {
 
-    compileOnly 'org.osgi:osgi.annotation'
-    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:osgi.core"
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiServiceComponentVersion"
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     implementation "net.corda:corda-avro-schema"
     implementation project(':libs:serialization:serialization-avro')
     implementation project(':components:rpc:rpc-server')
+    implementation project(':applications:workers:worker-common')
 
     implementation "io.javalin:javalin-osgi:$javalinVersion"
     constraints {
