@@ -350,36 +350,23 @@ class PersistenceExceptionTests {
         // create dog using dog-aware sandbox
         val dog = sandbox.createVersionedDog("Stray", owner = "Not Known")
         val serialisedDog = sandbox.getSerializationService().serialize(dog).bytes
-
-        // create persist request for the sandbox that isn't dog-aware
-        val requestId = UUID.randomUUID().toString()
-        return EntityRequest(
-            virtualNodeInfo.holdingIdentity.toAvro(),
-            PersistEntities(listOf(ByteBuffer.wrap(serialisedDog))),
-            ExternalEventContext(
-                requestId,
-                "flow id",
-                KeyValuePairList(
-                    cpkFileHashes.map { KeyValuePair(CPK_FILE_CHECKSUM, it.toString()) }
-                )
-            )
-        )
+        return createPersistEntitiesRequest(listOf(ByteBuffer.wrap(serialisedDog)))
     }
 
-    /**
-     * Create a simple request and return it.
-     */
     private fun createDogPersistRequest(): EntityRequest {
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
         // create dog using dog-aware sandbox
         val dog = sandbox.createDog("Stray", owner = "Not Known").instance
         val serialisedDog = sandbox.getSerializationService().serialize(dog).bytes
+        return createPersistEntitiesRequest(listOf(ByteBuffer.wrap(serialisedDog)))
+    }
 
+    private fun createPersistEntitiesRequest(serializedEntities: List<ByteBuffer>): EntityRequest {
         // create persist request for the sandbox that isn't dog-aware
         val requestId = UUID.randomUUID().toString()
         return EntityRequest(
             virtualNodeInfo.holdingIdentity.toAvro(),
-            PersistEntities(listOf(ByteBuffer.wrap(serialisedDog))),
+            PersistEntities(serializedEntities),
             ExternalEventContext(
                 requestId,
                 "flow id",
