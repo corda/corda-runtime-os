@@ -14,14 +14,9 @@ import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 import net.corda.v5.ledger.utxo.token.selection.TokenBalanceCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection
 import net.corda.v5.membership.NotaryInfo
-import org.slf4j.LoggerFactory
 
 @InitiatingFlow(protocol = "token-balance-query-flow-protocol")
 class TokenBalanceQueryFlow : ClientStartableFlow {
-
-    private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
 
     @CordaInject
     lateinit var tokenSelection: TokenSelection

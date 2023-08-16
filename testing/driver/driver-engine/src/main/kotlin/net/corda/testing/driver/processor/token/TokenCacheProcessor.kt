@@ -39,7 +39,7 @@ class TokenCacheProcessor @Activate constructor(
     init {
         val entityConverter = EntityConverterImpl()
         val eventConverter = EventConverterImpl(entityConverter)
-        val recordFactory = RecordFactoryImpl(externalEventResponseFactory)
+        val recordFactory = RecordFactoryImpl(externalEventResponseFactory, entityConverter)
         val tokenFilterStrategy = SimpleTokenFilterStrategy()
 
         val eventHandlerMap = mapOf<Class<*>, TokenEventHandler<TokenEvent>>(
