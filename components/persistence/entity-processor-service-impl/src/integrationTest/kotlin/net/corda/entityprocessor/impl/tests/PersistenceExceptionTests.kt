@@ -139,7 +139,7 @@ class PersistenceExceptionTests {
 
     @Test
     fun `exception raised when cpks not present`() {
-        val ignoredRequest = createEntityRequest()
+        val ignoredRequest = createDogPersistRequest()
 
         val processor = EntityMessageProcessor(
             currentSandboxGroupContext,
@@ -170,7 +170,7 @@ class PersistenceExceptionTests {
 
     @Test
     fun `exception raised when vnode cannot be found`() {
-        val ignoredRequest = createEntityRequest()
+        val ignoredRequest = createDogPersistRequest()
 
         val brokenVirtualNodeInfoReadService = object :
             VirtualNodeInfoReadService by virtualNodeInfoReadService {
@@ -209,7 +209,7 @@ class PersistenceExceptionTests {
 
     @Test
     fun `exception raised when sent a missing command`() {
-        val oldRequest = createEntityRequest()
+        val oldRequest = createDogPersistRequest()
         val unknownCommand = ExceptionEnvelope("", "") // Any Avro object, or null works here.
 
         val vNodeInfo = virtualNodeInfoReadService.get(oldRequest.holdingIdentity.toCorda())!!
@@ -252,7 +252,7 @@ class PersistenceExceptionTests {
     @Test
     fun `on duplicate persistence request don't execute it - with PK constraint does not throw PK violation`() {
         createDogDb()
-        val persistEntitiesRequest = createEntityRequest()
+        val persistEntitiesRequest = createDogPersistRequest()
 
         val processor = EntityMessageProcessor(
             currentSandboxGroupContext,
@@ -275,7 +275,7 @@ class PersistenceExceptionTests {
     @Test
     fun `on duplicate persistence request don't execute it - without PK constraint does not add duplicate DB entry`() {
         createDogDb(DOGS_TABLE_WITHOUT_PK)
-        val persistEntitiesRequest = createEntityRequest()
+        val persistEntitiesRequest = createDogPersistRequest()
 
         val processor = EntityMessageProcessor(
             currentSandboxGroupContext,
@@ -374,7 +374,7 @@ class PersistenceExceptionTests {
     /**
      * Create a simple request and return it.
      */
-    private fun createEntityRequest(): EntityRequest {
+    private fun createDogPersistRequest(): EntityRequest {
         val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
         // create dog using dog-aware sandbox
