@@ -51,8 +51,10 @@ interface RecordFactory {
     ): Record<*, *>
 
     /**
-     * Gets the topic for a record
-     * @return topic
+     * Inbound records should be directed to the flow event topic.
+     * Outbound records that are not local should be directed to the p2p out topic.
+     * Outbound records that are local should be directed to the flow mapper event topic.
+     * @return the output topic based on [messageDirection].
      */
     fun getSessionEventOutputTopic(
         sessionEvent: SessionEvent,

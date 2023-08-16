@@ -38,21 +38,20 @@ class RecordFactoryImpl @Activate constructor(
         messageDirection: MessageDirection
     ): Record<*, *> {
         val outputTopic = getSessionEventOutputTopic(sessionEvent, messageDirection)
-        val errEvent = SessionEvent(
-            MessageDirection.INBOUND,
-            instant,
-            toggleSessionId(sessionEvent.sessionId),
-            null,
-            sessionEvent.initiatingIdentity,
-            sessionEvent.initiatedIdentity,
-            sessionEvent.receivedSequenceNum,
-            emptyList(),
-            SessionError(
-                exceptionEnvelope
-            )
-        )
-
         return if (isLocalCluster(sessionEvent)) {
+            val errEvent = SessionEvent(
+                MessageDirection.INBOUND,
+                instant,
+                toggleSessionId(sessionEvent.sessionId),
+                null,
+                sessionEvent.initiatingIdentity,
+                sessionEvent.initiatedIdentity,
+                sessionEvent.receivedSequenceNum,
+                emptyList(),
+                SessionError(
+                    exceptionEnvelope
+                )
+            )
             Record(outputTopic, errEvent.sessionId, FlowMapperEvent(errEvent))
         } else {
             createOutboundRecord(
@@ -76,7 +75,6 @@ class RecordFactoryImpl @Activate constructor(
         messageDirection: MessageDirection
     ): Record<*, *> {
         val outputTopic = getSessionEventOutputTopic(sessionEvent, messageDirection)
-
         return if (isLocalCluster(sessionEvent)) {
             sessionEvent.messageDirection = MessageDirection.INBOUND
             sessionEvent.sessionId = toggleSessionId(sessionEvent.sessionId)
@@ -105,19 +103,18 @@ class RecordFactoryImpl @Activate constructor(
         messageDirection: MessageDirection
     ): Record<*, *> {
         val outputTopic = getSessionEventOutputTopic(sessionEvent, messageDirection)
-        val ackEvent = SessionEvent(
-            MessageDirection.INBOUND,
-            instant,
-            toggleSessionId(sessionEvent.sessionId),
-            null,
-            sessionEvent.initiatingIdentity,
-            sessionEvent.initiatedIdentity,
-            sessionEvent.sequenceNum,
-            emptyList(),
-            SessionAck()
-        )
-
         return if (isLocalCluster(sessionEvent)) {
+            val ackEvent = SessionEvent(
+                MessageDirection.INBOUND,
+                instant,
+                toggleSessionId(sessionEvent.sessionId),
+                null,
+                sessionEvent.initiatingIdentity,
+                sessionEvent.initiatedIdentity,
+                sessionEvent.sequenceNum,
+                emptyList(),
+                SessionAck()
+            )
             Record(outputTopic, ackEvent.sessionId, FlowMapperEvent(ackEvent))
         } else {
             createOutboundRecord(
@@ -141,13 +138,6 @@ class RecordFactoryImpl @Activate constructor(
             else -> true
         }
     }
-
-    /**
-     * Inbound records should be directed to the flow event topic.
-     * Outbound records that are not local should be directed to the p2p out topic.
-     * Outbound records that are local should be directed to the flow mapper event topic.
-     * @return the output topic based on [messageDirection].
-     */
 
     override fun getSessionEventOutputTopic(sessionEvent: SessionEvent, messageDirection: MessageDirection): String {
         return when (messageDirection) {
