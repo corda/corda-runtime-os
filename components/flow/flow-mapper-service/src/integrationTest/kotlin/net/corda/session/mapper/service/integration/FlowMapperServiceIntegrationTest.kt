@@ -102,7 +102,9 @@ class FlowMapperServiceIntegrationTest {
 
             val tlsTenantId = "tlsTenantId"
             val tlsCertificates = mutableListOf<String>()
-            val preferredSessionKeyAndCert = HostedIdentitySessionKeyAndCert()
+            val sessionPublicKey = "sessionPublicKey"
+            val sessionCertificates = listOf("sessionCertificates")
+            val preferredSessionKeyAndCert = HostedIdentitySessionKeyAndCert(sessionPublicKey, sessionCertificates)
             val alternativeSessionKeysAndCerts = mutableListOf<HostedIdentitySessionKeyAndCert>()
 
             val bobHostedIdentityEntry = HostedIdentityEntry(
