@@ -43,7 +43,7 @@ internal class QueryMemberInfoHandler(
                     request.queryIdentities.flatMap { holdingIdentity ->
                         em.createQuery(
                             "SELECT m FROM ${MemberInfoEntity::class.simpleName} " +
-                                    "m where m.groupId = :groupId and m.memberX500Name = :memberX500Name m and m.isDeleted = FALSE",
+                                    "m where m.groupId = :groupId and m.memberX500Name = :memberX500Name and m.isDeleted = FALSE",
                             MemberInfoEntity::class.java
                         )
                             .setParameter("groupId", holdingIdentity.groupId)
