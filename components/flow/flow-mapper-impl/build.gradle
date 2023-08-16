@@ -1,7 +1,6 @@
 plugins {
     id 'corda.common-library'
     id 'corda.common-publishing'
-    id 'corda.osgi-test-conventions'
 }
 
 dependencies {
@@ -31,17 +30,6 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:flow:flow-utilities")
     testImplementation project(":libs:flows:flow-utils")
-
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
-
-    //to get serializzation factory impl
-    integrationTestRuntimeOnly project(":components:membership:locally-hosted-identities-service-impl")
-    integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
-    integrationTestRuntimeOnly project(":libs:messaging:db-message-bus-impl")
-    integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
-    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
-    integrationTestRuntimeOnly project(":libs:messaging:messaging-impl")
-    integrationTestRuntimeOnly project(":libs:crypto:cipher-suite-impl")
 }
 
 description 'Flow Mapper Library Impl'
