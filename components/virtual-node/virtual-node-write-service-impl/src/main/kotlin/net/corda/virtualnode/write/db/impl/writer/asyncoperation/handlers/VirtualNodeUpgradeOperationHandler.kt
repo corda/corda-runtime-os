@@ -1,6 +1,8 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers
 
 import net.corda.crypto.core.ShortHash
+import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
@@ -32,10 +34,10 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.membership.client.MemberResourceClient
-import net.corda.membership.client.dto.SubmittedRegistrationStatus
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
+import java.time.LocalDateTime
 
 @Suppress("LongParameterList")
 internal class VirtualNodeUpgradeOperationHandler(
@@ -118,43 +120,40 @@ internal class VirtualNodeUpgradeOperationHandler(
 
         publishVirtualNodeInfo(upgradedVNodeInfo)
 
-        logger.info("REREGISTER CODE")
-        logger.info("memberResourceClient: " + memberResourceClient.isRunning)
-        logger.info("membershipGroupReaderProvider: " + membershipGroupReaderProvider.isRunning)
-        logger.info("membershipQueryClient: " + membershipQueryClient.isRunning)
-        logger.info("querymemberinfo: " + membershipQueryClient.queryMemberInfo(upgradedVNodeInfo.holdingIdentity).toString())
         // Re-register the member once the virtual node has been upgraded, so that the member CPI version is up-to-date
-        if(membershipQueryClient.isRunning && membershipQueryClient.queryRegistrationRequests(upgradedVNodeInfo.holdingIdentity, limit = 1)
-                    .getOrThrow().isNotEmpty()
-            ) {
-                logger.info("membershipQueryClient is running, updating member cpi version")
-                logger.warn(membershipGroupReaderProvider.toString())
+        if (membershipQueryClient.isRunning &&
+            membershipQueryClient.queryRegistrationRequests(upgradedVNodeInfo.holdingIdentity, limit = 1)
+                .getOrThrow().isNotEmpty()
+        ) {
+            val x500Name = membershipGroupReaderProvider.getGroupReader(upgradedVNodeInfo.holdingIdentity).owningMember
+            val registrationRequest = membershipQueryClient
+                .queryRegistrationRequests(upgradedVNodeInfo.holdingIdentity, x500Name, limit = 1)
+                .getOrThrow()
+                .first()
 
-                logger.warn(membershipGroupReaderProvider.getGroupReader(upgradedVNodeInfo.holdingIdentity).toString())
-                logger.warn(membershipGroupReaderProvider.getGroupReader(upgradedVNodeInfo.holdingIdentity).owningMember.toString())
-                val x500Name =
-                    membershipGroupReaderProvider.getGroupReader(upgradedVNodeInfo.holdingIdentity).owningMember
-                membershipGroupReaderProvider.getGroupReader(upgradedVNodeInfo.holdingIdentity).lookup(x500Name)?.serial
-                val registrationRequest = membershipQueryClient
-                    .queryRegistrationRequests(upgradedVNodeInfo.holdingIdentity, x500Name, limit = 1)
-                    .getOrThrow()
-                    .first()
+            val registrationContext = registrationRequest.memberProvidedContext.toMap().toMutableMap()
+            if (registrationContext.containsKey("corda.serial")) {
+                registrationContext["corda.serial"] =
+                    membershipGroupReaderProvider.getGroupReader(upgradedVNodeInfo.holdingIdentity)
+                        .lookup(x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)?.serial.toString()
+            }
 
-                //val previousInfo = membershipGroupReaderProvider.getGroupReader(upgradedVNodeInfo.holdingIdentity)
-                // .lookup(x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)?.serial
-                val registrationContext = registrationRequest.memberProvidedContext.toMap()
-                println(registrationContext)
-
-                var hasSubmitted = false
-                while (!hasSubmitted) {
-                    val registrationResult =
-                        memberResourceClient
-                            .startRegistration(upgradedVNodeInfo.holdingIdentity.shortHash, registrationContext)
-                    if (registrationResult.registrationStatus == SubmittedRegistrationStatus.SUBMITTED) {
-                        hasSubmitted = true
-                    }
+            var hasSubmitted = false
+            val end = LocalDateTime.now().plusSeconds(60)
+            while (!hasSubmitted && LocalDateTime.now().isBefore(end)) {
+                val registrationResult = memberResourceClient.startRegistration(
+                    upgradedVNodeInfo.holdingIdentity.shortHash,
+                    registrationContext
+                )
+                val registrationProgress = memberResourceClient.checkSpecificRegistrationProgress(
+                    upgradedVNodeInfo.holdingIdentity.shortHash,
+                    registrationResult.registrationRequestId
+                )
+                if (registrationProgress.registrationStatus.name == RegistrationStatus.SENT_TO_MGM.toString()) {
+                    hasSubmitted = true
                 }
             }
+        }
 
         if (migrationUtility.areChangesetsDeployedOnVault(
                 request.virtualNodeShortHash,
