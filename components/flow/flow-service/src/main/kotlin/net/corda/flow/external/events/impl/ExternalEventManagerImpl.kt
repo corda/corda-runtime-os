@@ -172,7 +172,10 @@ class ExternalEventManagerImpl(
                 }
                 if (externalEventState.status.type == ExternalEventStateType.OK) {
                     externalEventState.status.exception =
-                        ExceptionEnvelope("Unreceived Error", "Event retried but did not receive an error, Ensure all workers are running")
+                        ExceptionEnvelope(
+                            "NoResponse",
+                            "Received no response for external event request, ensure all workers are running"
+                        )
                     externalEventState.status.type = ExternalEventStateType.RETRY
                     externalEventState.retries = externalEventState.retries.inc()
                 }
