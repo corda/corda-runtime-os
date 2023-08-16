@@ -11,6 +11,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.exceptions.NullParameterException
+import net.corda.utilities.seconds
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.utxo.ContractState
@@ -31,6 +32,10 @@ class VaultNamedQueryExecutorImpl(
         const val UTXO_TX_COMPONENT_TABLE = "utxo_transaction_component"
         const val TIMESTAMP_LIMIT_PARAM_NAME = "Corda_TimestampLimit"
 
+        // TODO Should these be configurable?
+        const val RESULT_SET_FILL_WAIT_TIME_MS = 1000L
+        const val RESULT_SET_FILL_RETRY_LIMIT = 10 // TODO Should this be a time limit instead?
+
         val log = LoggerFactory.getLogger(VaultNamedQueryExecutorImpl::class.java)
     }
 
@@ -48,15 +53,17 @@ class VaultNamedQueryExecutorImpl(
             "Only WHERE queries are supported for now."
         }
 
-        val filteredResults = mutableSetOf<StateAndRef<ContractState>>()
-        var internalOffset = request.offset
-
         // Deserialize the parameters into readable objects instead of bytes
         val deserializedParams = request.parameters.mapValues {
             serializationService.deserialize(it.value.array(), Any::class.java)
         }
 
-        while (filteredResults.size < request.limit) {
+        val filteredResults = mutableSetOf<StateAndRef<ContractState>>()
+        var internalOffset = request.offset
+        var currentTry = 0
+
+        while (filteredResults.size < request.limit && currentTry < RESULT_SET_FILL_RETRY_LIMIT) {
+            ++currentTry
             // Fetch the state and refs for the given transaction IDs
             val contractStateResults = fetchStateAndRefs(
                 request,
@@ -75,6 +82,8 @@ class VaultNamedQueryExecutorImpl(
 
             // Add the filtered results to the final result set
             filteredResults.addAll(currentFilteredResults)
+
+            Thread.sleep(RESULT_SET_FILL_WAIT_TIME_MS)
         }
 
         // mapNotNull has no effect as of now, but we keep it for safety purposes
