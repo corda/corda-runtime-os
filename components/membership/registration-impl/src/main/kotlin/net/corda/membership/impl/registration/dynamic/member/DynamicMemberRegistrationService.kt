@@ -318,6 +318,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                     ?: previousInfo?.serial
                     ?: 0
 
+                verifyReRegistrationIsEnabled(serialInfo, previousInfo?.serial, mgm.platformVersion,)
+
                 val message = MembershipRegistrationRequest(
                     registrationId.toString(),
                     signedMemberContext,
@@ -462,6 +464,23 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
 
             return newRegistrationContext
+        }
+
+        /**
+         * Verify MGM is not on 5.0 platform, since re-registration is not supported by that version.
+         * If submitted serial or member's current serial suggests re-registration attempt,
+         * we will mark their request as INVALID.
+         */
+        @Suppress("ComplexCondition")
+        private fun verifyReRegistrationIsEnabled(
+            submittedSerial: Long,
+            currentSerial: Long?,
+            mgmPlatformVersion: Int,
+        ) {
+            if ((submittedSerial > 0 || (currentSerial != null && currentSerial > 0)) && mgmPlatformVersion < 50100) {
+                throw InvalidMembershipRegistrationException("MGM is on a lower version where re-registration " +
+                        "is not supported.")
+            }
         }
 
         private fun getTlsSubject(member: HoldingIdentity): Map<String, String> {

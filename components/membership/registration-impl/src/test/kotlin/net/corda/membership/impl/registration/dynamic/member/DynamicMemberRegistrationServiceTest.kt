@@ -174,6 +174,7 @@ class DynamicMemberRegistrationServiceTest {
         on { name } doReturn mgmName
         on { groupId } doReturn GROUP_NAME
         on { isMgm } doReturn true
+        on { platformVersion } doReturn 50100
     }
     private val memberName = MemberX500Name("Alice", "London", "GB")
     private val member = HoldingIdentity(memberName, GROUP_NAME)
@@ -1268,6 +1269,89 @@ class DynamicMemberRegistrationServiceTest {
                 registrationService.register(registrationResultId, member, newContext.toMap())
             }
             assertThat(exception).hasMessageContaining("cannot be added, removed or updated")
+        }
+
+        @Test
+        fun `re-registration fails when MGM is on 50000 platform - request contains serial`() {
+            val mgmInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mock()
+                on { memberProvidedContext } doReturn mock()
+                on { isMgm } doReturn true
+                on { platformVersion } doReturn 50000
+            }
+            whenever(groupReader.lookup()).doReturn(listOf(mgmInfo))
+
+            postConfigChangedEvent()
+            registrationService.start()
+
+            val contextWithInvalidSerial = context + mapOf(SERIAL to "2")
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, contextWithInvalidSerial)
+            }
+            assertThat(exception).hasMessageContaining("re-registration is not supported.")
+        }
+
+        @Test
+        fun `re-registration fails when MGM is on 50000 platform - serial is from existing info`() {
+            val mgmInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mock()
+                on { memberProvidedContext } doReturn mock()
+                on { isMgm } doReturn true
+                on { platformVersion } doReturn 50000
+            }
+            whenever(groupReader.lookup()).doReturn(listOf(mgmInfo))
+
+            val previous = mock<MemberContext> {
+                on { entries } doReturn previousRegistrationContext.entries
+            }
+            val memberInfo = mock<MemberInfo> {
+                on { memberProvidedContext } doReturn previous
+                on { mgmProvidedContext } doReturn mock()
+                on { name } doReturn memberName
+                on { groupId } doReturn GROUP_NAME
+                on { serial } doReturn 1
+            }
+            whenever(groupReader.lookup(eq(memberName), any())).doReturn(memberInfo)
+
+            postConfigChangedEvent()
+            registrationService.start()
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, context)
+            }
+            assertThat(exception).hasMessageContaining("re-registration is not supported.")
+        }
+
+        @Test
+        fun `re-registration fails when MGM is on 50000 platform - serial in request is incorrect and would let re-registration`() {
+            val mgmInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mock()
+                on { memberProvidedContext } doReturn mock()
+                on { isMgm } doReturn true
+                on { platformVersion } doReturn 50000
+            }
+            whenever(groupReader.lookup()).doReturn(listOf(mgmInfo))
+
+            val previous = mock<MemberContext> {
+                on { entries } doReturn previousRegistrationContext.entries
+            }
+            val memberInfo = mock<MemberInfo> {
+                on { memberProvidedContext } doReturn previous
+                on { mgmProvidedContext } doReturn mock()
+                on { name } doReturn memberName
+                on { groupId } doReturn GROUP_NAME
+                on { serial } doReturn 1
+            }
+            whenever(groupReader.lookup(eq(memberName), any())).doReturn(memberInfo)
+
+            postConfigChangedEvent()
+            registrationService.start()
+
+            val contextSuggestingInitialRegistration = context + mapOf(SERIAL to "0")
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, contextSuggestingInitialRegistration)
+            }
+            assertThat(exception).hasMessageContaining("re-registration is not supported.")
         }
 
         @Test
