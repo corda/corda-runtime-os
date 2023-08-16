@@ -31,9 +31,10 @@ class VaultNamedQueryExecutorImpl(
         const val UTXO_TX_COMPONENT_TABLE = "utxo_transaction_component"
         const val TIMESTAMP_LIMIT_PARAM_NAME = "Corda_TimestampLimit"
 
-        // TODO Should these be configurable?
-        const val RESULT_SET_FILL_WAIT_TIME_MS = 1000L
-        const val RESULT_SET_FILL_RETRY_LIMIT = 10 // TODO Should this be a time limit instead?
+        const val RESULT_SET_FILL_RETRY_SLEEP_MS = 1000L
+
+        // TODO Should this be configurable or hard-coded?
+        const val RESULT_SET_FILL_RETRY_LIMIT = 5
 
         val log = LoggerFactory.getLogger(VaultNamedQueryExecutorImpl::class.java)
     }
@@ -57,36 +58,13 @@ class VaultNamedQueryExecutorImpl(
             serializationService.deserialize(it.value.array(), Any::class.java)
         }
 
-        val filteredResults = mutableSetOf<StateAndRef<ContractState>>()
-        var internalOffset = request.offset
-        var currentTry = 0
-
-        while (filteredResults.size < request.limit && currentTry < RESULT_SET_FILL_RETRY_LIMIT) {
-            ++currentTry
-            // Fetch the state and refs for the given transaction IDs
-            val contractStateResults = fetchStateAndRefs(
-                request,
-                vaultNamedQuery.query.query,
-                offsetOverride = internalOffset
-            )
-
-            // Increase offset as we don't want to see the same results over and over again
-            // Increase it by the "unfiltered" row count to avoid duplication
-            internalOffset += contractStateResults.size
-
-            // Apply filters (if there's any)
-            val currentFilteredResults = contractStateResults.filter {
-                vaultNamedQuery.filter?.filter(it, deserializedParams) ?: true
-            }
-
-            // Add the filtered results to the final result set
-            filteredResults.addAll(currentFilteredResults)
-
-            Thread.sleep(RESULT_SET_FILL_WAIT_TIME_MS)
-        }
-
+        // Fetch and filter the results and try to fill up the page size then map the results
         // mapNotNull has no effect as of now, but we keep it for safety purposes
-        val filteredAndTransformedResults = filteredResults.mapNotNull {
+        val filteredAndTransformedResults = filterResultsAndFillPageSize(
+            request,
+            vaultNamedQuery,
+            deserializedParams
+        ).mapNotNull {
             vaultNamedQuery.mapper?.transform(it, deserializedParams) ?: it
         }
 
@@ -100,8 +78,65 @@ class VaultNamedQueryExecutorImpl(
         return EntityResponse.newBuilder()
             .setResults(collectedResults.map { ByteBuffer.wrap(serializationService.serialize(it).bytes) })
             // TODO Should `numberOfRowsFromQuery` be the number of rows before or after filtering?
-            .setMetadata(KeyValuePairList(listOf(KeyValuePair("numberOfRowsFromQuery", filteredResults.size.toString()))))
+            .setMetadata(KeyValuePairList(listOf(KeyValuePair("numberOfRowsFromQuery", filteredAndTransformedResults.size.toString()))))
             .build()
+    }
+
+    /**
+     * This function will fetch a given number ("page size") of records from the database
+     * (amount defined by [request]'s limit field).
+     *
+     * After fetching those records the in-memory filter will be applied. If the filtering
+     * reduces the amount of records below the "page size", then another "page size" number
+     * of records will be fetched and filtered.
+     *
+     * This logic will be repeated until either:
+     * - The size of the filtered results reaches the "page size"
+     * - We run out of data to fetch from the database
+     * - We reach the number of retries ([RESULT_SET_FILL_RETRY_LIMIT])
+     *
+     * If any of these conditions happen, we just return the result set as-is without filling
+     * up the "page size".
+     */
+    private fun filterResultsAndFillPageSize(
+        request: FindWithNamedQuery,
+        vaultNamedQuery: VaultNamedQuery,
+        deserializedParams: Map<String, Any>
+    ): Set<StateAndRef<ContractState>> {
+        val filteredResults = mutableSetOf<StateAndRef<ContractState>>()
+
+        var internalOffset = request.offset
+        var currentRetry = 0
+
+        while (filteredResults.size < request.limit && currentRetry < RESULT_SET_FILL_RETRY_LIMIT) {
+            ++currentRetry
+
+            log.info("Executing try: $currentRetry, fetched ${filteredResults.size} number of results so far.")
+
+            // Fetch the state and refs for the given transaction IDs
+            val contractStateResults = fetchStateAndRefs(
+                request,
+                vaultNamedQuery.query.query,
+                offsetOverride = internalOffset
+            )
+
+            // If we can't fetch more states we just return the result set as-is
+            if (contractStateResults.isEmpty())
+                break
+
+            // Increase the internal offset, so we don't fetch the same results multiple times
+            internalOffset += contractStateResults.size
+
+            // Apply filters (if there's any) and add the filtered results to the final result set
+            filteredResults.addAll(contractStateResults.filter {
+                vaultNamedQuery.filter?.filter(it, deserializedParams) ?: true
+            })
+
+            // Sleep 1 second to avoid heavy CPU usage
+            Thread.sleep(RESULT_SET_FILL_RETRY_SLEEP_MS)
+        }
+
+        return filteredResults
     }
 
     /**
