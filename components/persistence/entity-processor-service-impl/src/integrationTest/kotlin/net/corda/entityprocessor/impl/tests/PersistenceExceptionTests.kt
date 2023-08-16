@@ -20,6 +20,8 @@ import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.createVersionedDog
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.getVersionedDogClass
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
@@ -378,19 +380,18 @@ class PersistenceExceptionTests {
     }
 
     private fun createDogDb(liquibaseScript: String = DOGS_TABLE) {
-        val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
-        val dog = sandbox.createDog("Stray", owner = "Not Known").instance
-        createDb(liquibaseScript, dog)
+        val sandboxGroupContext = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
+        val dogClass = sandboxGroupContext.sandboxGroup.getDogClass()
+        createDb(liquibaseScript, dogClass)
     }
 
     private fun createVersionedDogDb() {
-        val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
-        val versionedDog = sandbox.createVersionedDog("Stray", owner = "Not Known")
+        val sandboxGroupContext = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
+        val versionedDog = sandboxGroupContext.sandboxGroup.getVersionedDogClass()
         createDb(VERSIONED_DOGS_TABLE, versionedDog)
     }
 
-    private fun createDb(liquibaseScript: String, entity: Any) {
-        val entityClass = entity::class.java
+    private fun createDb(liquibaseScript: String, entityClass: Class<*>) {
         val cl = ClassloaderChangeLog(
             linkedSetOf(
                 ClassloaderChangeLog.ChangeLogResourceFiles(

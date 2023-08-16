@@ -23,6 +23,10 @@ object SandboxHelper {
         return this.loadClassFromMainBundles(DOG_CLASS_NAME)
     }
 
+    fun SandboxGroup.getVersionedDogClass(): Class<*> {
+        return this.loadClassFromMainBundles(VERSIONED_DOG_CLASS_NAME)
+    }
+
     fun SandboxGroup.getCatKeyClass(): Class<*> {
         return this.loadClassFromMainBundles(CAT_KEY_CLASS_NAME)
     }
@@ -55,7 +59,7 @@ object SandboxHelper {
         date: Instant = Instant.now().truncatedTo(ChronoUnit.MILLIS),
         owner: String? = "me"
     ): Any {
-        val dogCtor = this.sandboxGroup.loadClassFromMainBundles(VERSIONED_DOG_CLASS_NAME)
+        val dogCtor = this.sandboxGroup.getVersionedDogClass()
             .getDeclaredConstructor(UUID::class.java, String::class.java, Instant::class.java, String::class.java)
         return dogCtor.newInstance(id, name, date, owner)
     }
