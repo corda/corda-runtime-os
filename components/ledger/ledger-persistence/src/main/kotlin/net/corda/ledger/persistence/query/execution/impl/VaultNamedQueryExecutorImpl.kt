@@ -109,7 +109,7 @@ class VaultNamedQueryExecutorImpl(
         while (filteredResults.size < request.limit && currentRetry < RESULT_SET_FILL_RETRY_LIMIT) {
             ++currentRetry
 
-            log.info("Executing try: $currentRetry, fetched ${filteredResults.size} number of results so far.")
+            log.debug("Executing try: $currentRetry, fetched ${filteredResults.size} number of results so far.")
 
             // Fetch the state and refs for the given transaction IDs
             val contractStateResults = fetchStateAndRefs(
