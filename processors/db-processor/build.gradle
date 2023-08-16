@@ -18,6 +18,8 @@ dependencies {
     implementation project(':components:ledger:ledger-persistence')
     implementation project(':components:membership:group-params-writer-service')
     implementation project(':components:membership:membership-group-read')
+    implementation project(':components:membership:membership-client')
+    implementation project(':components:membership:membership-persistence-client')
     implementation project(':components:membership:membership-persistence-service')
     implementation project(':components:permissions:permission-storage-reader-service')
     implementation project(':components:permissions:permission-storage-writer-service')
