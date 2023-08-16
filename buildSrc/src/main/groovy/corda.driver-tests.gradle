@@ -51,7 +51,7 @@ pluginManager.withPlugin('java') {
     pluginManager.withPlugin('jacoco') {
         tasks.withType(Test).configureEach {
             jacoco {
-                enabled = false
+                enabled = System.getenv().containsKey('JENKINS_URL')
             }
         }
     }

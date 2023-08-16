@@ -47,7 +47,7 @@ public final class DriverNodes {
 
     @NotNull
     @Unmodifiable
-    private static Set<Integer> setOf(int value, int @NotNull... otherValues) {
+    private static Set<@NotNull Integer> setOf(int value, int @NotNull... otherValues) {
         final Set<Integer> items = new LinkedHashSet<>();
         items.add(value);
         for (int otherValue : otherValues) {
@@ -76,9 +76,9 @@ public final class DriverNodes {
     }
 
     @NotNull
-    private static Map<MemberX500Name, KeyPair> createNetwork(
+    private static Map<@NotNull MemberX500Name, @NotNull KeyPair> createNetwork(
         @NotNull KeyPairGenerator keyPairGenerator,
-        @NotNull Set<MemberX500Name> members
+        @NotNull Set<@NotNull MemberX500Name> members
     ) {
         final Map<MemberX500Name, KeyPair> map = new LinkedHashMap<>();
         for (MemberX500Name member : members) {
@@ -87,7 +87,7 @@ public final class DriverNodes {
         return map;
     }
 
-    public DriverNodes(@NotNull Set<MemberX500Name> members) {
+    public DriverNodes(@NotNull Set<@NotNull MemberX500Name> members) {
         requireNonNull(members, "members must not be null");
         this.members = members;
         notaries = new LinkedHashMap<>();
@@ -118,9 +118,9 @@ public final class DriverNodes {
     private interface DriverConstructor<T extends AbstractDriver> {
         @NotNull
         T build(
-            @NotNull Map<MemberX500Name, KeyPair> members,
-            @NotNull Map<MemberX500Name, KeyPair> notaries,
-            @NotNull Set<KeyValuePair> groupParameters
+            @NotNull Map<@NotNull MemberX500Name, @NotNull KeyPair> members,
+            @NotNull Map<@NotNull MemberX500Name, @NotNull KeyPair> notaries,
+            @NotNull Set<@NotNull KeyValuePair> groupParameters
         );
     }
 
@@ -162,8 +162,8 @@ public final class DriverNodes {
         private int notaryIndex;
 
         GroupParametersBuilder(
-            @NotNull Map<MemberX500Name, Set<Integer>> notaries,
-            @NotNull Map<MemberX500Name, KeyPair> notaryNetwork
+            @NotNull Map<@NotNull MemberX500Name, @NotNull Set<@NotNull Integer>> notaries,
+            @NotNull Map<@NotNull MemberX500Name, @NotNull KeyPair> notaryNetwork
         ) {
             this.notaries = notaries;
             this.notaryNetwork = notaryNetwork;
@@ -185,7 +185,7 @@ public final class DriverNodes {
         }
 
         @NotNull
-        private List<KeyValuePair> createNotaryProtocol(@NotNull Set<Integer> protocolVersions) {
+        private List<@NotNull KeyValuePair> createNotaryProtocol(@NotNull Set<@NotNull Integer> protocolVersions) {
             final List<KeyValuePair> result = new ArrayList<>();
             result.add(new KeyValuePair(
                 String.format("corda.notary.service.%d.flow.protocol.name", notaryIndex),
@@ -204,8 +204,8 @@ public final class DriverNodes {
 
         @NotNull
         @Unmodifiable
-        Set<KeyValuePair> build() {
-            for (Map.Entry<MemberX500Name, Set<Integer>> notary : notaries.entrySet()) {
+        Set<@NotNull KeyValuePair> build() {
+            for (Map.Entry<@NotNull MemberX500Name, @NotNull Set<@NotNull Integer>> notary : notaries.entrySet()) {
                 final MemberX500Name notaryName = notary.getKey();
                 groupParameters.add(createNotaryName(notaryName));
                 groupParameters.add(createNotaryKey(notaryNetwork.get(notaryName)));

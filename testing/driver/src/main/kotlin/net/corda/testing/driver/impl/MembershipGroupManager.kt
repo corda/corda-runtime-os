@@ -3,6 +3,7 @@ package net.corda.testing.driver.impl
 import java.time.Duration
 import net.corda.data.identity.HoldingIdentity as AvroHoldingIdentity
 import net.corda.testing.driver.MembershipGroupDSL
+import net.corda.testing.driver.Service
 import net.corda.testing.driver.function.ThrowingConsumer
 import net.corda.testing.driver.node.MembershipGroup
 import net.corda.testing.driver.node.Member
@@ -12,9 +13,13 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 
 internal class MembershipGroupManager(private val dsl: DriverInternalDSL) {
+    private fun getMembershipGroup(timeout: Duration): Service<MembershipGroup> {
+        return dsl.framework.getService(MembershipGroup::class.java, null, timeout)
+    }
+
     private fun doMembershipGroupService(timeout: Duration, operation: ThrowingConsumer<MembershipGroup>) {
         try {
-            dsl.framework.getService(MembershipGroup::class.java, null, timeout).andAlso(operation)
+            getMembershipGroup(timeout).andAlso(operation)
         } catch (e: RuntimeException) {
             throw e
         } catch (e: Exception) {
@@ -31,12 +36,6 @@ internal class MembershipGroupManager(private val dsl: DriverInternalDSL) {
     fun forMembershipGroup(holdingIdentity: HoldingIdentity, timeout: Duration, action: ThrowingConsumer<MembershipGroupDSL>) {
         doMembershipGroupService(timeout) { group ->
             action.acceptThrowing(MembershipGroupDSLImpl(group, holdingIdentity.toAvro()))
-        }
-    }
-
-    fun forMembershipGroup(groupName: String, timeout: Duration, action: ThrowingConsumer<MembershipGroupDSL>) {
-        doMembershipGroupService(timeout) { group ->
-            action.acceptThrowing(MembershipGroupDSLImpl(group, group.getAnyMemberOf(groupName)))
         }
     }
 

@@ -1,11 +1,13 @@
 package net.corda.testing.driver.node;
 
+import org.jetbrains.annotations.Nullable;
+
 public class FlowFatalException extends RuntimeException {
-    public FlowFatalException(String message, Throwable cause) {
+    public FlowFatalException(@Nullable String message, @Nullable Throwable cause) {
         super(message, cause);
     }
 
-    public FlowFatalException(String message) {
+    public FlowFatalException(@Nullable String message) {
         super(message);
     }
 }

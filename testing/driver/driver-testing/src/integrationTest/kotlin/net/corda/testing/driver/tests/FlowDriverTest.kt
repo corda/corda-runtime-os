@@ -8,7 +8,6 @@ import java.util.stream.Stream
 import net.corda.testing.driver.DriverNodes
 import net.corda.testing.driver.runFlow
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.virtualnode.VirtualNodeInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.jupiter.api.BeforeAll
@@ -30,7 +29,6 @@ class FlowDriverTest {
 
     private val alice = MemberX500Name.parse("CN=Alice, OU=Testing, O=R3, L=London, C=GB")
     private val bob = MemberX500Name.parse("CN=Bob, OU=Testing, O=R3, L=San Francisco, C=US")
-    private val virtualNodes = mutableSetOf<VirtualNodeInfo>()
     private val jsonMapper = ObjectMapper()
 
     @Suppress("JUnitMalformedDeclaration")
@@ -43,7 +41,7 @@ class FlowDriverTest {
         assertThat(DriverNodes::class.java.protectionDomain.codeSource.location.path).endsWith(".jar")
 
         driver.run { dsl ->
-            virtualNodes += dsl.startNodes(setOf(alice, bob)).onEach { vNode ->
+            dsl.startNodes(setOf(alice, bob)).forEach { vNode ->
                 logger.info("VirtualNode({}): {}", vNode.holdingIdentity.x500Name, vNode)
             }
         }
@@ -53,19 +51,19 @@ class FlowDriverTest {
     @ParameterizedTest
     @ArgumentsSource(RequestProvider::class)
     fun testMandelbrotFlow(request: RequestMessage) {
-        val mandelbrot = virtualNodes.filter { vNode ->
-            vNode.cpiIdentifier.name == "mandelbrot"
+        val mandelbrot = driver.let { dsl ->
+            dsl.nodesFor("mandelbrot")
         }
 
         val aliceResult = driver.let { dsl ->
-            dsl.runFlow<CalculateBlockFlow>(mandelbrot.single { it.holdingIdentity.x500Name == alice }) {
+            dsl.runFlow<CalculateBlockFlow>(mandelbrot[alice] ?: fail("Missing vNode for Alice")) {
                 jsonMapper.writeValueAsString(request)
             }
         } ?: fail("aliceResult must not be null")
         logger.info("Alice Mandelbrot Block={}", aliceResult)
 
         val bobResult = driver.let { dsl ->
-            dsl.runFlow<CalculateBlockFlow>(mandelbrot.single { it.holdingIdentity.x500Name == bob }) {
+            dsl.runFlow<CalculateBlockFlow>(mandelbrot[bob] ?: fail("Missing vNode for Bob")) {
                 jsonMapper.writeValueAsString(request)
             }
         } ?: fail("bobResult must not be null")

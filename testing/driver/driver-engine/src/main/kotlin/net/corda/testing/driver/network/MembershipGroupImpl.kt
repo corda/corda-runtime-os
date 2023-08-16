@@ -19,7 +19,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -40,13 +39,6 @@ class MembershipGroupImpl @Activate constructor(
 
     override fun getName(holdingIdentity: AvroHoldingIdentity): String {
         return getVirtualNodeInfo(holdingIdentity.toCorda()).cpiIdentifier.name
-    }
-
-    override fun getAnyMemberOf(groupName: String): AvroHoldingIdentity {
-        val virtualNodeInfo = virtualNodeInfoReadService.getAll().firstOrNull { vNode ->
-            vNode.cpiIdentifier.name == groupName
-        } ?: throw AssertionError("Group '$groupName' not found")
-        return virtualNodeInfo.holdingIdentity.toAvro()
     }
 
     override fun getMembers(holdingIdentity: AvroHoldingIdentity): Set<MemberX500Name> {

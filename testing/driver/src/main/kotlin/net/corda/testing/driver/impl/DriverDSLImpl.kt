@@ -341,6 +341,7 @@ internal class DriverDSLImpl(
         }
     }
 
+    private val virtualNodeInfo = mutableMapOf<VirtualNodeKey, VirtualNodeInfo>()
     private val driverFramework = createDriverFramework()
 
     init {
@@ -383,7 +384,9 @@ internal class DriverDSLImpl(
             "Each node needs at least one member."
         }
         try {
-            return driverFramework.loadCordapps(memberNames)
+            return driverFramework.loadCordapps(memberNames).onEach { vNode ->
+                virtualNodeInfo[keyFor(vNode)] = vNode
+            }
         } catch (e: RuntimeException) {
             throw e
         } catch (e: Exception) {
@@ -399,6 +402,23 @@ internal class DriverDSLImpl(
         return FlowRunner(this).runFlow(virtualNodeInfo, flowClass, flowArgMapper, TIMEOUT)
     }
 
+    override fun nodeFor(groupName: String, member: MemberX500Name): VirtualNodeInfo {
+        return virtualNodeInfo[keyFor(groupName, member)]
+            ?: throw AssertionError("VirtualNodeInfo not found for member=${member.commonName}, group=$groupName")
+    }
+
+    override fun nodesFor(groupName: String): Map<MemberX500Name, VirtualNodeInfo> {
+        return java.util.Map.copyOf(
+            virtualNodeInfo.filterValues { vNode ->
+                vNode.cpiIdentifier.name == groupName
+            }.ifEmpty {
+                throw AssertionError("No nodes found for group $groupName")
+            }.mapKeys { entry ->
+                entry.key.member
+            }
+        )
+    }
+
     override fun node(virtualNodeInfo: VirtualNodeInfo, action: ThrowingConsumer<Member>) {
         MembershipGroupManager(this).forVirtualNode(virtualNodeInfo.holdingIdentity, TIMEOUT, action)
     }
@@ -408,7 +428,10 @@ internal class DriverDSLImpl(
     }
 
     override fun group(groupName: String, action: ThrowingConsumer<MembershipGroupDSL>) {
-        MembershipGroupManager(this).forMembershipGroup(groupName, TIMEOUT, action)
+        val anyMemberNode = virtualNodeInfo.values.firstOrNull { vNode ->
+            vNode.cpiIdentifier.name == groupName
+        } ?: throw AssertionError("Group '$groupName' not found")
+        return groupFor(anyMemberNode, action)
     }
 
     @Throws(InterruptedException::class)
@@ -416,6 +439,11 @@ internal class DriverDSLImpl(
         driverFramework.close()
     }
 }
+
+private data class VirtualNodeKey(val groupName: String, val member: MemberX500Name)
+
+private fun keyFor(groupName: String, member: MemberX500Name) = VirtualNodeKey(groupName, member)
+private fun keyFor(vNode: VirtualNodeInfo) = keyFor(vNode.cpiIdentifier.name, vNode.holdingIdentity.x500Name)
 
 private class ServiceImpl<T : Any>(
     private val service: T,
