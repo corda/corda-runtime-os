@@ -22,6 +22,7 @@ import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -81,6 +82,9 @@ class FlowMapperServiceIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var flowMapperService: FlowMapperService
 
+    @InjectService(timeout = 4000)
+    lateinit var locallyHostedIdentityService: LocallyHostedIdentitiesService
+
     private val messagingConfig = SmartConfigImpl.empty()
         .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
         .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
@@ -97,8 +101,8 @@ class FlowMapperServiceIntegrationTest {
             val publisher = publisherFactory.createPublisher(PublisherConfig(clientId), messagingConfig)
             setupConfig(publisher)
 
-            val aliceHoldingIdentity: HoldingIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group1")
-            val bobHoldingIdentity: HoldingIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group1")
+            val aliceHoldingIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group1")
+            val bobHoldingIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group1")
 
             val tlsTenantId = "tlsTenantId"
             val tlsCertificates = mutableListOf<String>()
@@ -130,6 +134,7 @@ class FlowMapperServiceIntegrationTest {
 
             publisher.publish(holdingIdentityToKey)
             flowMapperService.start()
+            locallyHostedIdentityService.start()
         }
     }
 
