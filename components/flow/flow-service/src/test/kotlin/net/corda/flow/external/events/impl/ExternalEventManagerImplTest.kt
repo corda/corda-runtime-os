@@ -487,8 +487,8 @@ class ExternalEventManagerImplTest {
         assertEquals(payload.array(), record.value)
         if(stateType == ExternalEventStateType.OK) {
             val expectedException = ExceptionEnvelope(
-                "Unreceived Error",
-                "Event retried but did not receive an error, Ensure all workers are running"
+                "NoResponse",
+                "Received no response for external event request, ensure all workers are running"
             )
 
             assertEquals(ExternalEventStateType.RETRY, updatedExternalEventState.status.type)
