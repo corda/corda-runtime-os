@@ -1,0 +1,33 @@
+package net.corda.libs.scheduler.datamodel
+
+import net.corda.libs.scheduler.datamodel.db.internal.TaskSchedulerLogEntity
+import net.corda.libs.scheduler.datamodel.db.internal.TaskSchedulerLogEntityRepository
+import java.time.temporal.ChronoUnit
+import javax.persistence.EntityManager
+
+class SchedulerLockImpl(
+    override val taskName: String,
+    override val schedulerId: String,
+    private val em: EntityManager,
+    private val logEntityRepository: TaskSchedulerLogEntityRepository = TaskSchedulerLogEntityRepository()
+) : SchedulerLock {
+    override val secondsSinceLastScheduledTrigger: Long
+    private val tx = em.transaction
+    private val log : TaskSchedulerLogEntity
+
+    init {
+        tx.begin()
+        log = logEntityRepository.getOrInitialiseLog(taskName, schedulerId, em)
+        secondsSinceLastScheduledTrigger = log.lastScheduled.until(log.dbNow.toInstant(), ChronoUnit.SECONDS)
+    }
+
+    override fun updateAndRelease(schedulerId: String) {
+        log.schedulerId = schedulerId
+        logEntityRepository.updateLog(taskName, schedulerId, em)
+        tx.commit()
+    }
+
+    override fun close() {
+        em.close()
+    }
+}
