@@ -9,13 +9,13 @@ import net.corda.ledger.utxo.token.cache.entities.TokenBalance
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.handlers.TokenBalanceQueryEventHandler
-import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
+import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY_DTO
 import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.ArgumentMatchers
+import org.mockito.ArgumentMatchers.isNull
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
@@ -57,14 +57,8 @@ class TokenBalanceQueryEventHandlerTest {
         val target = TokenBalanceQueryEventHandler(recordFactory, availableTokenService)
         val balanceQuery = createBalanceQuery()
         whenever(recordFactory.getBalanceResponse(any(), any(), any(), any())).thenReturn(balanceQueryResult)
-        whenever(
-            availableTokenService.queryBalance(
-                any(),
-                ArgumentMatchers.isNull(),
-                ArgumentMatchers.isNull(),
-                any()
-            )
-        ).thenReturn(TokenBalance(BigDecimal(0), BigDecimal(0)))
+        whenever(availableTokenService.queryBalance(any(), isNull(), isNull(), any()))
+            .thenReturn(TokenBalance(BigDecimal(0), BigDecimal(0)))
 
         val result = target.handle(tokenCache, poolCacheState, balanceQuery)
 
@@ -72,7 +66,7 @@ class TokenBalanceQueryEventHandlerTest {
         verify(recordFactory).getBalanceResponse(
             flowId,
             balanceId,
-            POOL_CACHE_KEY,
+            POOL_CACHE_KEY_DTO,
             TokenBalance(BigDecimal(0.0), BigDecimal(0.0))
         )
     }
@@ -82,14 +76,8 @@ class TokenBalanceQueryEventHandlerTest {
         val target = TokenBalanceQueryEventHandler(recordFactory, availableTokenService)
         val balanceQuery = createBalanceQuery()
         whenever(recordFactory.getBalanceResponse(any(), any(), any(), any())).thenReturn(balanceQueryResult)
-        whenever(
-            availableTokenService.queryBalance(
-                any(),
-                ArgumentMatchers.isNull(),
-                ArgumentMatchers.isNull(),
-                any()
-            )
-        ).thenReturn(TokenBalance(BigDecimal(99), BigDecimal(99)))
+        whenever(availableTokenService.queryBalance(any(), isNull(), isNull(), any()))
+            .thenReturn(TokenBalance(BigDecimal(99), BigDecimal(99)))
         cachedTokens += token99
 
         val result = target.handle(tokenCache, poolCacheState, balanceQuery)
@@ -98,7 +86,7 @@ class TokenBalanceQueryEventHandlerTest {
         verify(recordFactory).getBalanceResponse(
             flowId,
             balanceId,
-            POOL_CACHE_KEY,
+            POOL_CACHE_KEY_DTO,
             TokenBalance(BigDecimal(99), BigDecimal(99))
         )
     }
@@ -108,14 +96,8 @@ class TokenBalanceQueryEventHandlerTest {
         val target = TokenBalanceQueryEventHandler(recordFactory, availableTokenService)
         val balanceQuery = createBalanceQuery()
         whenever(recordFactory.getBalanceResponse(any(), any(), any(), any())).thenReturn(balanceQueryResult)
-        whenever(
-            availableTokenService.queryBalance(
-                any(),
-                ArgumentMatchers.isNull(),
-                ArgumentMatchers.isNull(),
-                any()
-            )
-        ).thenReturn(TokenBalance(BigDecimal(99), BigDecimal(199)))
+        whenever(availableTokenService.queryBalance(any(), isNull(), isNull(), any()))
+            .thenReturn(TokenBalance(BigDecimal(99), BigDecimal(199)))
         cachedTokens += token99
         cachedTokens += token100
 
@@ -129,13 +111,13 @@ class TokenBalanceQueryEventHandlerTest {
         verify(recordFactory).getBalanceResponse(
             flowId,
             balanceId,
-            POOL_CACHE_KEY,
+            POOL_CACHE_KEY_DTO,
             TokenBalance(BigDecimal(99), BigDecimal(199))
         )
     }
 
     private fun createBalanceQuery(): BalanceQuery {
-        return BalanceQuery(balanceId, flowId, null, null, POOL_CACHE_KEY)
+        return BalanceQuery(balanceId, flowId, null, null, POOL_CACHE_KEY_DTO)
     }
 }
 

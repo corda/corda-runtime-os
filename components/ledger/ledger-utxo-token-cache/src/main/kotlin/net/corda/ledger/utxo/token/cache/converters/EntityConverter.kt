@@ -16,6 +16,7 @@ import net.corda.ledger.utxo.token.cache.entities.ClaimRelease
 import net.corda.ledger.utxo.token.cache.entities.LedgerChange
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
+import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 
 /**
  * The [EntityConverter] converts Avro entities to model entities
@@ -89,5 +90,23 @@ interface EntityConverter {
      * @return An instance of [BigDecimal]
      */
     fun amountToBigDecimal(avroTokenAmount: TokenAmount): BigDecimal
+
+    /**
+     * Creates a [TokenPoolKey] from an Avro [TokenPoolCacheKey]
+     *
+     * @param tokenPoolCacheKey The Avro representation of token pool cache key
+     *
+     * @return An instance of [TokenPoolKey]
+     */
+    fun toTokenPoolKey(tokenPoolCacheKey: TokenPoolCacheKey): TokenPoolKey
+
+    /**
+     * Creates a [TokenPoolCacheKey] from an Avro [TokenPoolKey]
+     *
+     * @param tokenPoolCacheKey The dto representation of the Avro object token pool cache key
+     *
+     * @return An instance of [TokenPoolCacheKey]
+     */
+    fun toTokenPoolCacheKey(tokenPoolKey: TokenPoolKey): TokenPoolCacheKey
 }
 
