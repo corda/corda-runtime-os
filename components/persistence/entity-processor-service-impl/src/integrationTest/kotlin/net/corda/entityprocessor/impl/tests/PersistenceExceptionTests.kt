@@ -399,38 +399,25 @@ class PersistenceExceptionTests {
     private fun createDogDb(liquibaseScript: String = DOGS_TABLE) {
         val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
-
         val dog = sandbox.createDog("Stray", owner = "Not Known").instance
-
-        val dogClass = dog::class.java
-        val cl = ClassloaderChangeLog(
-            linkedSetOf(
-                ClassloaderChangeLog.ChangeLogResourceFiles(
-                    dogClass.packageName,
-                    listOf(liquibaseScript),
-                    dogClass.classLoader
-                )
-            )
-        )
-        val ds = dbConnectionManager.getDataSource(virtualNodeInfo.vaultDmlConnectionId)
-        ds.connection.use {
-            lbm.updateDb(it, cl)
-        }
+        createDb(liquibaseScript, dog)
     }
 
     private fun createVersionedDogDb() {
         val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
+        val versionedDog = sandbox.createVersionedDog("Stray", owner = "Not Known")
+        createDb(VERSIONED_DOGS_TABLE, versionedDog)
+    }
 
-        val dog = sandbox.createVersionedDog("Stray", owner = "Not Known")
-
-        val dogClass = dog::class.java
+    private fun createDb(liquibaseScript: String, entity: Any) {
+        val entityClass = entity::class.java
         val cl = ClassloaderChangeLog(
             linkedSetOf(
                 ClassloaderChangeLog.ChangeLogResourceFiles(
-                    dogClass.packageName,
-                    listOf(VERSIONED_DOGS_TABLE),
-                    dogClass.classLoader
+                    entityClass.packageName,
+                    listOf(liquibaseScript),
+                    entityClass.classLoader
                 )
             )
         )
