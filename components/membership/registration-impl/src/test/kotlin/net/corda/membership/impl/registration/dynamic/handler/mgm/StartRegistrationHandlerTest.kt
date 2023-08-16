@@ -33,9 +33,11 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
@@ -137,6 +139,8 @@ class StartRegistrationHandlerTest {
         NOTARY_KEYS_ID.format(0) to "ABC123456789",
         PARTY_SESSION_KEYS_ID.format(0) to "BBC123456789",
         LEDGER_KEYS_ID.format(0) to "CBC123456789",
+        URL_KEY.format(0) to "https://localhost:1080",
+        PROTOCOL_VERSION.format(0) to "1",
     )
     private val memberMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
@@ -899,6 +903,85 @@ class StartRegistrationHandlerTest {
             .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
         val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
         result.assertDeclinedRegistration()
+    }
+
+    @Test
+    fun `allows endpoints to be added during re-registration`() {
+        val newUrl = "https://localhost:8888"
+        val newProtocolVersion = 2
+        val newEndpoint = mock<EndpointInfo> {
+            on { url } doReturn newUrl
+            on { protocolVersion } doReturn newProtocolVersion
+        }
+        val newContextEntries = memberContextEntries.toMutableMap().apply {
+            put(URL_KEY.format(1), newUrl)
+            put(PROTOCOL_VERSION.format(1), newProtocolVersion.toString())
+        }.entries
+        val contextWithUpdates = mock<MemberContext> {
+            on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
+            on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(newEndpoint)
+            on { entries } doReturn newContextEntries
+        }
+        whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+            .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+        result.assertRegistrationStarted()
+    }
+
+    @Test
+    fun `allows endpoints to be updated during re-registration`() {
+        val changedUrl = "https://localhost:8888"
+        val changedProtocolVersion = 2
+        val changedEndpoint = mock<EndpointInfo> {
+            on { url } doReturn changedUrl
+            on { protocolVersion } doReturn changedProtocolVersion
+        }
+        val newContextEntries = memberContextEntries.toMutableMap().apply {
+            put(URL_KEY.format(0), changedUrl)
+            put(PROTOCOL_VERSION.format(0), changedProtocolVersion.toString())
+        }.entries
+        val contextWithUpdates = mock<MemberContext> {
+            on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
+            on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(changedEndpoint)
+            on { entries } doReturn newContextEntries
+        }
+        whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+            .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+        result.assertRegistrationStarted()
+    }
+
+    @Test
+    fun `allows endpoints to be removed during re-registration`() {
+        val endpointUrl = "https://localhost:8888"
+        val endpointProtocolVersion = 2
+        val changedEndpoint = mock<EndpointInfo> {
+            on { url } doReturn endpointUrl
+            on { protocolVersion } doReturn endpointProtocolVersion
+        }
+        val previousContextEntries = memberContextEntries.toMutableMap().apply {
+            put(URL_KEY.format(1), endpointUrl)
+            put(PROTOCOL_VERSION.format(1), endpointProtocolVersion.toString())
+        }.entries
+        whenever(memberMemberContext.entries).doReturn(previousContextEntries)
+        val contextWithUpdates = mock<MemberContext> {
+            on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
+            on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(changedEndpoint)
+            on { entries } doReturn memberContextEntries.entries
+        }
+        whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+            .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+        result.assertRegistrationStarted()
     }
 
     @Test

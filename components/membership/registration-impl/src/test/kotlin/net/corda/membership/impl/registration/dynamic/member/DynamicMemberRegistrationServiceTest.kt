@@ -694,6 +694,68 @@ class DynamicMemberRegistrationServiceTest {
         }
 
         @Test
+        fun `re-registration allows endpoints to be added`() {
+            val previous = mock<MemberContext> {
+                on { entries } doReturn previousRegistrationContext.entries
+            }
+            val newContextEntries = context.toMutableMap().apply {
+                put(URL_KEY.format(1), "https://localhost:1234")
+                put(PROTOCOL_VERSION.format(1), "5")
+            }.entries
+            val newContext = mock<MemberContext> {
+                on { entries } doReturn newContextEntries
+            }
+            whenever(memberInfo.memberProvidedContext).doReturn(previous)
+            whenever(groupReader.lookup(eq(memberName), any())).doReturn(memberInfo)
+
+            assertDoesNotThrow {
+                registrationService.register(registrationResultId, member, newContext.toMap())
+            }
+        }
+
+        @Test
+        fun `registration allows endpoints to be updated`() {
+            val previous = mock<MemberContext> {
+                on { entries } doReturn previousRegistrationContext.entries
+            }
+            val newContextEntries = context.toMutableMap().apply {
+                put(URL_KEY.format(0), "https://localhost:1234")
+                put(PROTOCOL_VERSION.format(0), "5")
+            }.entries
+            val newContext = mock<MemberContext> {
+                on { entries } doReturn newContextEntries
+            }
+            whenever(memberInfo.memberProvidedContext).doReturn(previous)
+            whenever(groupReader.lookup(eq(memberName), any())).doReturn(memberInfo)
+
+            assertDoesNotThrow {
+                registrationService.register(registrationResultId, member, newContext.toMap())
+            }
+        }
+
+        @Test
+        fun `re-registration allows endpoints to be removed`() {
+            val previous = mock<MemberContext> {
+                on { entries } doReturn previousRegistrationContext.toMutableMap().apply {
+                    put(URL_KEY.format(1), "https://localhost:1234")
+                    put(PROTOCOL_VERSION.format(1), "5")
+                }.entries
+            }
+            val newContextEntries = context.filterNot {
+                it.key == URL_KEY.format(1) || it.key == PROTOCOL_VERSION.format(1)
+            }.entries
+            val newContext = mock<MemberContext> {
+                on { entries } doReturn newContextEntries
+            }
+            whenever(memberInfo.memberProvidedContext).doReturn(previous)
+            whenever(groupReader.lookup(eq(memberName), any())).doReturn(memberInfo)
+
+            assertDoesNotThrow {
+                registrationService.register(registrationResultId, member, newContext.toMap())
+            }
+        }
+
+        @Test
         fun `registration allows custom properties to be removed`() {
             val previous = mock<MemberContext> {
                 on { entries } doReturn previousRegistrationContext.entries
@@ -1206,6 +1268,32 @@ class DynamicMemberRegistrationServiceTest {
                 registrationService.register(registrationResultId, member, newContext.toMap())
             }
             assertThat(exception).hasMessageContaining("cannot be added, removed or updated")
+        }
+
+        @Test
+        fun `declined if invalid endpoint is provided during re-registration`() {
+            val previous = mock<MemberContext> {
+                on { entries } doReturn previousRegistrationContext.entries
+            }
+            val changedUrl = "invalidURL"
+            val changedProtocolVersion = 2
+            val newContextEntries = context.toMutableMap().apply {
+                put(URL_KEY.format(0), changedUrl)
+                put(PROTOCOL_VERSION.format(0), changedProtocolVersion.toString())
+            }.entries
+            val newContext = mock<MemberContext> {
+                on { entries } doReturn newContextEntries
+            }
+            whenever(memberInfo.memberProvidedContext).doReturn(previous)
+            whenever(groupReader.lookup(eq(memberName), any())).doReturn(memberInfo)
+
+            postConfigChangedEvent()
+            registrationService.start()
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, newContext.toMap())
+            }
+            assertThat(exception).hasMessageContaining("endpoint URL")
         }
     }
 
