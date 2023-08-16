@@ -3,6 +3,7 @@ package net.corda.flow.pipeline.impl
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.cache.FlowFiberCache
+import net.corda.flow.metrics.FlowIORequestTypeConverter
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
@@ -17,7 +18,8 @@ internal class FlowExecutionPipelineStage(
     private val flowWaitingForHandlers: Map<Class<*>, FlowWaitingForHandler<out Any>>,
     private val flowRequestHandlers: Map<Class<out FlowIORequest<*>>, FlowRequestHandler<out FlowIORequest<*>>>,
     private val flowRunner: FlowRunner,
-    private val fiberCache: FlowFiberCache
+    private val fiberCache: FlowFiberCache,
+    private val flowIORequestTypeConverter: FlowIORequestTypeConverter
 ) {
 
     private companion object {
@@ -45,6 +47,7 @@ internal class FlowExecutionPipelineStage(
     }
 
     private fun executeFlow(context: FlowEventContext<Any>, continuation: FlowContinuation) : FlowIORequest<*> {
+        context.flowMetrics.flowFiberEntered()
         val future = flowRunner.runFlow(context, continuation)
 
         val fiberResult = try {
@@ -72,9 +75,9 @@ internal class FlowExecutionPipelineStage(
                     fiberCache.put(context.checkpoint.flowKey, it)
                 }
                 context.checkpoint.serializedFiber = fiberResult.fiber
-//                context.flowMetrics.flowFiberExitedWithSuspension(
-//                    flowIORequestTypeConverter.convertToActionName(flowResult.output)
-//                )
+                context.flowMetrics.flowFiberExitedWithSuspension(
+                    flowIORequestTypeConverter.convertToActionName(fiberResult.output)
+                )
                 fiberResult.output
             }
 
