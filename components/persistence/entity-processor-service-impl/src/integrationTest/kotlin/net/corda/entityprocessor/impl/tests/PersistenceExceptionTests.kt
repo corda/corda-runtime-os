@@ -87,7 +87,7 @@ class PersistenceExceptionTests {
     @RegisterExtension
     private val sandboxLifecycle = AllTestsLifecycle()
 
-    private lateinit var virtualNode: VirtualNodeService
+    private lateinit var virtualNodeService: VirtualNodeService
     private lateinit var cpiInfoReadService: CpiInfoReadService
     private lateinit var cpkReadService: CpkReadService
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
@@ -118,14 +118,14 @@ class PersistenceExceptionTests {
         logger.info("Setup test (test Directory: $testDirectory)")
         sandboxSetup.configure(bundleContext, testDirectory)
         sandboxLifecycle.accept(sandboxSetup) {
-            virtualNode = sandboxSetup.fetchService(timeout = 5000)
+            virtualNodeService = sandboxSetup.fetchService(timeout = 5000)
             cpiInfoReadService = sandboxSetup.fetchService(timeout = 5000)
             cpkReadService = sandboxSetup.fetchService(timeout = 5000)
             virtualNodeInfoReadService = sandboxSetup.fetchService(timeout = 5000)
             responseFactory = sandboxSetup.fetchService(timeout = 5000)
         }
 
-        virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
+        virtualNodeInfo = virtualNodeService.load(Resources.EXTENDABLE_CPB)
         cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
     }
 
@@ -137,7 +137,7 @@ class PersistenceExceptionTests {
         )
         entitySandboxService =
             EntitySandboxServiceFactory().create(
-                virtualNode.sandboxGroupContextComponent,
+                virtualNodeService.sandboxGroupContextComponent,
                 cpkReadService,
                 virtualNodeInfoReadService,
                 dbConnectionManager
@@ -192,7 +192,7 @@ class PersistenceExceptionTests {
 
         val brokenEntitySandboxService =
             EntitySandboxServiceFactory().create(
-                virtualNode.sandboxGroupContextComponent,
+                virtualNodeService.sandboxGroupContextComponent,
                 cpkReadService,
                 brokenVirtualNodeInfoReadService,
                 dbConnectionManager
