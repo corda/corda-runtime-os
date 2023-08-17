@@ -9,7 +9,6 @@ import com.fasterxml.jackson.datatype.jsr310.ser.InstantSerializer
 import com.fasterxml.jackson.datatype.jsr310.deser.InstantDeserializer
 import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.cli.plugins.network.output.Output
-import net.corda.rest.RestResource
 import java.time.Instant
 
 class PrintUtils {
