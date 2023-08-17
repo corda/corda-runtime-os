@@ -8,9 +8,9 @@ import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.Instant
+
 class SessionErrorProcessorReceiveTest {
 
     @Test

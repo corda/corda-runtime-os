@@ -24,6 +24,7 @@ import java.time.Instant
  * Otherwise buffer the event in the received events state ready to be processed by the client code via the session manager api and queue
  * a session ack to send.
  */
+@Suppress("LongParameterList")
 class SessionDataProcessorReceive(
     private val key: Any,
     private val sessionState: SessionState?,

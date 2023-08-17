@@ -18,19 +18,16 @@ import java.time.Instant
 
 class SessionDataProcessorReceiveTest {
 
-    private val sessionInitProcessorReceive : SessionInitProcessorReceive = mock()
+    private val sessionInitProcessorReceive: SessionInitProcessorReceive = mock()
 
     @Test
     fun testNullState() {
         val sessionEvent = buildSessionEvent(
-            MessageDirection.INBOUND,
-            "sessionId",
-            1,
-            SessionData(),
-            contextSessionProps = emptyKeyValuePairList()
+            MessageDirection.INBOUND, "sessionId", 1, SessionData(), contextSessionProps = emptyKeyValuePairList()
         )
 
-        val result = SessionDataProcessorReceive("key", null, sessionEvent, SessionData(), Instant.now(), sessionInitProcessorReceive).execute()
+        val result =
+            SessionDataProcessorReceive("key", null, sessionEvent, SessionData(), Instant.now(), sessionInitProcessorReceive).execute()
         assertThat(result).isNotNull
         assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
         assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
@@ -39,18 +36,16 @@ class SessionDataProcessorReceiveTest {
     @Test
     fun testErrorState() {
         val sessionEvent = buildSessionEvent(
-            MessageDirection.INBOUND,
-            "sessionId",
-            3,
-            SessionData(),
-            contextSessionProps = emptyKeyValuePairList()
+            MessageDirection.INBOUND, "sessionId", 3, SessionData(), contextSessionProps = emptyKeyValuePairList()
         )
 
         val inputState = buildSessionState(
             SessionStateType.ERROR, 2, mutableListOf(), 0, mutableListOf()
         )
 
-        val result = SessionDataProcessorReceive("key", inputState, sessionEvent, SessionData(), Instant.now(), sessionInitProcessorReceive).execute()
+        val result = SessionDataProcessorReceive(
+            "key", inputState, sessionEvent, SessionData(), Instant.now(), sessionInitProcessorReceive
+        ).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
         assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
@@ -60,18 +55,16 @@ class SessionDataProcessorReceiveTest {
     @Test
     fun testOldSeqNum() {
         val sessionEvent = buildSessionEvent(
-            MessageDirection.INBOUND,
-            "sessionId",
-            2,
-            SessionData(),
-            contextSessionProps = emptyKeyValuePairList()
+            MessageDirection.INBOUND, "sessionId", 2, SessionData(), contextSessionProps = emptyKeyValuePairList()
         )
 
         val inputState = buildSessionState(
             SessionStateType.CONFIRMED, 2, mutableListOf(), 0, mutableListOf()
         )
 
-        val result = SessionDataProcessorReceive("key", inputState, sessionEvent, SessionData(), Instant.now(), sessionInitProcessorReceive).execute()
+        val result = SessionDataProcessorReceive(
+            "key", inputState, sessionEvent, SessionData(), Instant.now(), sessionInitProcessorReceive
+        ).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CONFIRMED)
 
@@ -81,18 +74,16 @@ class SessionDataProcessorReceiveTest {
     @Test
     fun testValidDataMessage() {
         val sessionEvent = buildSessionEvent(
-            MessageDirection.INBOUND,
-            "sessionId",
-            3,
-            SessionData(),
-            contextSessionProps = emptyKeyValuePairList()
+            MessageDirection.INBOUND, "sessionId", 3, SessionData(), contextSessionProps = emptyKeyValuePairList()
         )
 
         val inputState = buildSessionState(
             SessionStateType.CONFIRMED, 2, mutableListOf(), 0, mutableListOf()
         )
 
-        val result = SessionDataProcessorReceive("key", inputState, sessionEvent, SessionData(), Instant.now(), sessionInitProcessorReceive).execute()
+        val result = SessionDataProcessorReceive(
+            "key", inputState, sessionEvent, SessionData(), Instant.now(), sessionInitProcessorReceive
+        ).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CONFIRMED)
         assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
@@ -101,25 +92,18 @@ class SessionDataProcessorReceiveTest {
     @Test
     fun `Receive data after out of order close received`() {
         val dataEvent = buildSessionEvent(
-            MessageDirection.INBOUND,
-            "sessionId",
-            3,
-            SessionData(),
-            contextSessionProps = emptyKeyValuePairList()
+            MessageDirection.INBOUND, "sessionId", 3, SessionData(), contextSessionProps = emptyKeyValuePairList()
         )
         val closeEvent = buildSessionEvent(
-            MessageDirection.INBOUND,
-            "sessionId",
-            4,
-            SessionClose(),
-            contextSessionProps = emptyKeyValuePairList()
+            MessageDirection.INBOUND, "sessionId", 4, SessionClose(), contextSessionProps = emptyKeyValuePairList()
         )
 
         val inputState = buildSessionState(
             SessionStateType.CLOSING, 2, mutableListOf(closeEvent), 0, mutableListOf()
         )
 
-        val result = SessionDataProcessorReceive("key", inputState, dataEvent, SessionData(), Instant.now(), sessionInitProcessorReceive).execute()
+        val result =
+            SessionDataProcessorReceive("key", inputState, dataEvent, SessionData(), Instant.now(), sessionInitProcessorReceive).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CLOSING)
         assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
@@ -129,25 +113,18 @@ class SessionDataProcessorReceiveTest {
     @Test
     fun `Receive multiple data in order without acknowledging older received messages`() {
         val dataEvent1 = buildSessionEvent(
-            MessageDirection.INBOUND,
-            "sessionId",
-            3,
-            SessionData(),
-            contextSessionProps = emptyKeyValuePairList()
+            MessageDirection.INBOUND, "sessionId", 3, SessionData(), contextSessionProps = emptyKeyValuePairList()
         )
         val dataEvent2 = buildSessionEvent(
-            MessageDirection.INBOUND,
-            "sessionId",
-            4,
-            SessionData(),
-            contextSessionProps = emptyKeyValuePairList()
+            MessageDirection.INBOUND, "sessionId", 4, SessionData(), contextSessionProps = emptyKeyValuePairList()
         )
 
         val inputState = buildSessionState(
             SessionStateType.CONFIRMED, 3, mutableListOf(dataEvent1), 0, mutableListOf()
         )
 
-        val result = SessionDataProcessorReceive("key", inputState, dataEvent2, SessionData(), Instant.now(), sessionInitProcessorReceive).execute()
+        val result =
+            SessionDataProcessorReceive("key", inputState, dataEvent2, SessionData(), Instant.now(), sessionInitProcessorReceive).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CONFIRMED)
         assertThat(result.receivedEventsState.undeliveredMessages.size).isEqualTo(2)
@@ -157,25 +134,18 @@ class SessionDataProcessorReceiveTest {
     @Test
     fun `Receive new data after close received`() {
         val dataEvent = buildSessionEvent(
-            MessageDirection.INBOUND,
-            "sessionId",
-            4,
-            SessionData(),
-            contextSessionProps = emptyKeyValuePairList()
+            MessageDirection.INBOUND, "sessionId", 4, SessionData(), contextSessionProps = emptyKeyValuePairList()
         )
         val closeEvent = buildSessionEvent(
-            MessageDirection.INBOUND,
-            "sessionId",
-            3,
-            SessionClose(),
-            contextSessionProps = emptyKeyValuePairList()
+            MessageDirection.INBOUND, "sessionId", 3, SessionClose(), contextSessionProps = emptyKeyValuePairList()
         )
 
         val inputState = buildSessionState(
             SessionStateType.CLOSING, 3, mutableListOf(closeEvent), 0, mutableListOf()
         )
 
-        val result = SessionDataProcessorReceive("key", inputState, dataEvent, SessionData(), Instant.now(), sessionInitProcessorReceive).execute()
+        val result =
+            SessionDataProcessorReceive("key", inputState, dataEvent, SessionData(), Instant.now(), sessionInitProcessorReceive).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
         assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
@@ -187,11 +157,7 @@ class SessionDataProcessorReceiveTest {
     fun `Receive data message with init payload when session state is null`() {
         val sessionData = SessionData(ByteBuffer.allocate(1), SessionInit())
         val sessionEvent = buildSessionEvent(
-            MessageDirection.INBOUND,
-            "sessionId",
-            3,
-            sessionData,
-            contextSessionProps = emptyKeyValuePairList()
+            MessageDirection.INBOUND, "sessionId", 3, sessionData, contextSessionProps = emptyKeyValuePairList()
         )
 
         val inputState = buildSessionState(
@@ -200,8 +166,8 @@ class SessionDataProcessorReceiveTest {
 
         whenever(sessionInitProcessorReceive.execute()).thenReturn(inputState)
 
-        val result = SessionDataProcessorReceive("key", null, sessionEvent, sessionData, Instant.now(), sessionInitProcessorReceive)
-            .execute()
+        val result =
+            SessionDataProcessorReceive("key", null, sessionEvent, sessionData, Instant.now(), sessionInitProcessorReceive).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CONFIRMED)
         assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
