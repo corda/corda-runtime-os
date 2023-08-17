@@ -1,15 +1,21 @@
 package net.corda.rpc.server
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import io.javalin.Javalin
 import io.javalin.http.Handler
 import net.corda.applications.workers.workercommon.JavalinServer
+import org.eclipse.jetty.http.HttpStatus
 import org.slf4j.LoggerFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 
+/**
+ * An implementation of the RPCServer interface.
+ *
+ * @param cordaAvroSerializationFactory The CordaAvroSerializationFactory service used for Avro serialization and deserialization.
+ * @param javalinServer The JavalinServer service used for server operations. This must be previously initialized and started
+ */
 @Component(service = [RPCServer::class])
 class RPCServerImpl @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
@@ -22,35 +28,45 @@ class RPCServerImpl @Activate constructor(
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun <REQ: Any, RESP: Any> registerEndpoint(endpoint: String, handler: (REQ) -> RESP, clazz: Class<REQ>) {
+    /**
+     * Registers an endpoint with the provided handler function and request payload class.
+     *
+     * @param endpoint The endpoint URL path.
+     * @param handler The handler function to process the request payload.
+     * @param clazz The class of the request payload.
+     */
+    override fun <REQ : Any, RESP : Any> registerEndpoint(endpoint: String, handler: (REQ) -> RESP, clazz: Class<REQ>) {
         val server = javalinServer.getServer()
-        if(server != null) {
-            server.post(endpoint, Handler { ctx ->
+        if (server != null) {
+            server.post(endpoint, Handler { context ->
 
                 val avroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({
                     log.error("Failed to deserialize payload for request")
-                    ctx.result("Failed to deserialize request payload")
-                    ctx.res.status = 500;
+                    context.result("Failed to deserialize request payload")
+                    context.status(HttpStatus.INTERNAL_SERVER_ERROR_500)
                 }, clazz)
+
                 val avroSerializer = cordaAvroSerializationFactory.createAvroSerializer<RESP> {
                     log.error("Failed to serialize payload for response")
-                    ctx.result("Failed to serialize response payload")
-                    ctx.res.status = 500;
+                    context.result("Failed to serialize response payload")
+                    context.status(HttpStatus.INTERNAL_SERVER_ERROR_500)
                 }
 
-                val payload = avroDeserializer.deserialize(ctx.bodyAsBytes())
+                val payload = avroDeserializer.deserialize(context.bodyAsBytes())
 
                 if (payload != null) {
                     val serializedResponse = avroSerializer.serialize(handler(payload))
                     if (serializedResponse != null) {
-                        ctx.result(serializedResponse)
+                        context.result(serializedResponse)
                     } else {
-                        ctx.result("Response Payload was Null")
-                        ctx.res.status = 422
+                        log.error("Response Payload was Null")
+                        context.result("Response Payload was Null")
+                        context.status(HttpStatus.UNPROCESSABLE_ENTITY_422)
                     }
                 } else {
-                    ctx.result("Request Payload was Null")
-                    ctx.res.status = 422
+                    log.error("Request Payload was Null")
+                    context.result("Request Payload was Null")
+                    context.status(HttpStatus.UNPROCESSABLE_ENTITY_422)
                 }
             })
         } else {
