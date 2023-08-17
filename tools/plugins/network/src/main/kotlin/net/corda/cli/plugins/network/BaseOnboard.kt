@@ -43,6 +43,7 @@ import org.bouncycastle.crypto.util.PrivateKeyFactory
 import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder
 import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder
 import org.bouncycastle.operator.bc.BcRSAContentSignerBuilder
+import picocli.CommandLine.Parameters
 import picocli.CommandLine.Option
 import java.io.File
 import java.io.InputStream
@@ -102,6 +103,13 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             }
         }
     }
+
+    @Parameters(
+        description = ["The X500 name of the virtual node."],
+        arity = "1",
+        index = "0"
+    )
+    lateinit var name: String
 
     @Option(
         names = ["--ca"],
@@ -174,8 +182,6 @@ abstract class BaseOnboard : Runnable, RestCommand() {
 
     protected abstract val cpiFileChecksum: String
 
-    abstract var x500Name: String
-
     protected abstract val registrationContext: Map<String, Any?>
 
     private fun waitForVirtualNode(shortHashId: String) {
@@ -198,7 +204,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
 
     protected val holdingId: String by lazy {
         val request = CreateVirtualNodeRequest(
-            x500Name = x500Name,
+            x500Name = name,
             cpiFileChecksum = cpiFileChecksum,
             vaultDdlConnection = null,
             vaultDmlConnection = null,
@@ -369,7 +375,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             throw OnboardException("Could not submit MGM registration: ${response.memberInfoSubmitted}")
         }
 
-        println("Registration ID of $x500Name is $registrationId")
+        println("Registration ID of $name is $registrationId")
 
         if (waitForFinalStatus) {
             waitForFinalStatus(registrationId)
