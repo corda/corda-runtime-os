@@ -25,21 +25,3 @@ interface TokenCache : Iterable<CachedToken> {
      */
     fun removeAll(stateRefs: Set<String>)
 }
-
-interface TokenPoolCache {
-    /**
-     * Gets the cached tokens for a given pool
-     *
-     * @param poolKey The key for the required [TokenCache]
-     */
-    fun get(poolKey: TokenPoolKey): TokenCache
-}
-
-class TokenPoolCacheImpl : TokenPoolCache {
-
-    private val cache = mutableMapOf<TokenPoolKey, TokenCache>()
-    override fun get(poolKey: TokenPoolKey): TokenCache {
-        return cache.getOrPut(poolKey) { TokenCacheImpl() }
-    }
-}
-
