@@ -42,8 +42,8 @@ class PrintUtils {
                 action()
             } catch (e: Exception) {
                 /**
-                 * This ia present to address the issue of the RemoteClient in
-                 * rest-client automatically converts any non-200 codes into exceptions.
+                 * This is present to address the issue of the RemoteClient in
+                 * rest-client automatically converting any non-200 codes into exceptions with the response body as message.
                  */
                 printJsonOutput(e.localizedMessage, ConsoleOutput())
             }
