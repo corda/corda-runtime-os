@@ -18,6 +18,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
+import net.corda.libs.scheduler.datamodel.SchedulerEntities
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -144,6 +145,7 @@ class DBProcessorImpl @Activate constructor(
                     + CpiEntities.classes
                     + CertificateEntities.clusterClasses
                     + MembershipEntities.clusterClasses
+                    + SchedulerEntities.classes
         )
         entitiesRegistry.register(CordaDb.RBAC.persistenceUnitName, RbacEntities.classes)
         entitiesRegistry.register(

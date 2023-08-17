@@ -29,7 +29,7 @@ const val TASK_SCHEDULER_LOG_QUERY_PARAM_NAME = "name"
             "FROM TaskSchedulerLogEntity s " +
             "WHERE s.name = :$TASK_SCHEDULER_LOG_QUERY_PARAM_NAME"
 )
-class TaskSchedulerLogEntity(
+internal class TaskSchedulerLogEntity(
     @Id
     @Column(name = "task_name", nullable = false)
     override var name: String,
