@@ -1,6 +1,5 @@
 package net.corda.session.manager.impl.processor
 
-import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
@@ -11,10 +10,10 @@ import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.session.manager.impl.processor.helper.recalcHighWatermark
-import net.corda.utilities.createSimpleCache
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 /**
  * Process a [SessionData] event received from a counterparty.
@@ -45,7 +44,7 @@ class SessionDataProcessorReceive(
             logger.debug { errorMessage }
             generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionData-NullSessionState", instant)
         } else if (sessionState != null) {
-                getInboundDataEventResult(sessionState, sessionId)
+            getInboundDataEventResult(sessionState, sessionId)
         } else {
             val newSessionState = SessionInitProcessorReceive(key, null, sessionEvent, instant).execute()
             getInboundDataEventResult(newSessionState, sessionId)
@@ -100,8 +99,10 @@ class SessionDataProcessorReceive(
                 if (currentStatus == SessionStateType.CREATED) {
                     status = SessionStateType.CONFIRMED
                 }
-                receivedEventsState.lastProcessedSequenceNum = recalcHighWatermark(receivedEventsState.undeliveredMessages,
-                    receivedEventState.lastProcessedSequenceNum)
+                receivedEventsState.lastProcessedSequenceNum = recalcHighWatermark(
+                    receivedEventsState.undeliveredMessages,
+                    receivedEventState.lastProcessedSequenceNum
+                )
             }
             logger.trace { "receivedEventsState after update: ${sessionState.receivedEventsState}" }
             sessionState
@@ -118,7 +119,7 @@ class SessionDataProcessorReceive(
      * @param currentStatus To validate the state is valid to receive new messages
      * @return True if there is a mismatch of messages between parties, false otherwise.
      */
-    private fun isSessionMismatch(receivedEventState: SessionProcessState, expectedNextSeqNum: Int, currentStatus: SessionStateType) :
+    private fun isSessionMismatch(receivedEventState: SessionProcessState, expectedNextSeqNum: Int, currentStatus: SessionStateType):
             Boolean {
         val receivedCloseSeqNum = receivedEventState.undeliveredMessages.find { it.payload is SessionClose }?.sequenceNum
         val otherPartyClosingMismatch = receivedCloseSeqNum != null && receivedCloseSeqNum <= expectedNextSeqNum

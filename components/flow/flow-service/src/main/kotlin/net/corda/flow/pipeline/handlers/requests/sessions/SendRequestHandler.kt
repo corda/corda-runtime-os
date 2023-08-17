@@ -1,9 +1,6 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
-import java.time.Instant
 import net.corda.data.flow.event.Wakeup
-import net.corda.data.flow.state.waiting.SessionConfirmation
-import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
@@ -17,6 +14,7 @@ import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Instant
 
 @Component(service = [FlowRequestHandler::class])
 class SendRequestHandler @Activate constructor(

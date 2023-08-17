@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.sessions
 
-import java.time.Instant
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
@@ -16,10 +15,12 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name
+import java.time.Instant
 
 /**
  * [FlowSessionManager] encapsulates the logic of [SessionManager] with a specific focus on its usage within the flow event pipeline.
  */
+@Suppress("TooManyFunctions")//TODO CORE-15757
 interface FlowSessionManager {
 
     /**
@@ -57,6 +58,7 @@ interface FlowSessionManager {
      * @param sessionProperties The session context properties
      * @param instant The [Instant] used within the created [SessionEvent].
      */
+    @Suppress("LongParameterList")
     fun sendInitMessage(
         checkpoint: FlowCheckpoint,
         sessionId: String,

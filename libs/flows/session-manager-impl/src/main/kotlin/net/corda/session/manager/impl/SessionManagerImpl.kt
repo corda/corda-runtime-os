@@ -4,8 +4,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionData
-import net.corda.data.flow.event.session.SessionError
-import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
@@ -124,7 +122,7 @@ class SessionManagerImpl @Activate constructor(
         return Pair(sessionState, messagesToReturn)
     }
 
-    override fun errorSession(sessionState: SessionState) : SessionState {
+    override fun errorSession(sessionState: SessionState): SessionState {
         sessionState.status = SessionStateType.ERROR
         return sessionState
     }
@@ -143,9 +141,9 @@ class SessionManagerImpl @Activate constructor(
 
         logger.debug {
             "Dispatching events for session [${sessionState.sessionId}]: " +
-            sessionEvents.joinToString {
-                "[Sequence: ${it.sequenceNum}, Class: ${it.payload::class.java.simpleName}, Resend timestamp: ${it.timestamp}]"
-            }
+                    sessionEvents.joinToString {
+                        "[Sequence: ${it.sequenceNum}, Class: ${it.payload::class.java.simpleName}, Resend timestamp: ${it.timestamp}]"
+                    }
         }
 
         return sessionEvents

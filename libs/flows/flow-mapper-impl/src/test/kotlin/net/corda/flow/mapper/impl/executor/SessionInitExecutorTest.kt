@@ -33,7 +33,8 @@ class SessionInitExecutorTest {
 
         val flowId = "id1"
         val sessionInit = SessionInit("", flowId, emptyKeyValuePairList(), emptyKeyValuePairList())
-        val payload = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, sessionInit, contextSessionProps = emptyKeyValuePairList())
+        val payload =
+            buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, sessionInit, contextSessionProps = emptyKeyValuePairList())
         val result =
             SessionInitExecutor("sessionId", payload, sessionInit, null, sessionEventSerializer, flowConfig).execute()
         val state = result.flowMapperState
@@ -108,7 +109,7 @@ class SessionInitExecutorTest {
     }
 
     @Test
-    fun `Subsequent OUTBOUND SessionInit messages get passed through if no ACK received from first message`(){
+    fun `Subsequent OUTBOUND SessionInit messages get passed through if no ACK received from first message`() {
         whenever(sessionEventSerializer.serialize(any())).thenReturn("bytes".toByteArray())
         val retrySessionInit = SessionInit("info", "1", emptyKeyValuePairList(), emptyKeyValuePairList())
         val payload = buildSessionEvent(
@@ -143,7 +144,7 @@ class SessionInitExecutorTest {
         val retrySessionInit = SessionInit("info", "1", emptyKeyValuePairList(), emptyKeyValuePairList())
 
         val payload = buildSessionEvent(
-            MessageDirection. INBOUND,
+            MessageDirection.INBOUND,
             "sessionId",
             1,
             retrySessionInit,

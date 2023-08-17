@@ -28,16 +28,11 @@ class SessionErrorExecutorTest {
 
     @Test
     fun `Session error event received with null state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError(), contextSessionProps = emptyKeyValuePairList())
+        val payload =
+            buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError(), contextSessionProps = emptyKeyValuePairList())
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
         val result = SessionErrorExecutor(
-            sessionId,
-            payload,
-            null,
-            Instant.now(),
-            sessionEventSerializer,
-            appMessageFactoryCaptor::generateAppMessage,
-            flowConfig
+            sessionId, payload, null, Instant.now(), sessionEventSerializer, appMessageFactoryCaptor::generateAppMessage, flowConfig
         ).execute()
 
         val state = result.flowMapperState
@@ -49,18 +44,14 @@ class SessionErrorExecutorTest {
 
     @Test
     fun `Session error received with CLOSING state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError(), contextSessionProps = emptyKeyValuePairList())
+        val payload =
+            buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError(), contextSessionProps = emptyKeyValuePairList())
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
 
         val result = SessionErrorExecutor(
-            sessionId, payload,
-            FlowMapperState(
+            sessionId, payload, FlowMapperState(
                 "flowId1", null, FlowMapperStateType.CLOSING
-            ),
-            Instant.now(),
-            sessionEventSerializer,
-            appMessageFactoryCaptor::generateAppMessage,
-            flowConfig
+            ), Instant.now(), sessionEventSerializer, appMessageFactoryCaptor::generateAppMessage, flowConfig
         ).execute()
         val outboundEvents = result.outputEvents
 
@@ -71,18 +62,14 @@ class SessionErrorExecutorTest {
 
     @Test
     fun `Session error received with ERROR state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError(), contextSessionProps = emptyKeyValuePairList())
+        val payload =
+            buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError(), contextSessionProps = emptyKeyValuePairList())
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
 
         val result = SessionErrorExecutor(
-            sessionId, payload,
-            FlowMapperState(
+            sessionId, payload, FlowMapperState(
                 "flowId1", null, FlowMapperStateType.ERROR
-            ),
-            Instant.now(),
-            sessionEventSerializer,
-            appMessageFactoryCaptor::generateAppMessage,
-            flowConfig
+            ), Instant.now(), sessionEventSerializer, appMessageFactoryCaptor::generateAppMessage, flowConfig
         ).execute()
         val outboundEvents = result.outputEvents
 
@@ -93,18 +80,14 @@ class SessionErrorExecutorTest {
 
     @Test
     fun `Session error received with OPEN state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError(), contextSessionProps = emptyKeyValuePairList())
+        val payload =
+            buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError(), contextSessionProps = emptyKeyValuePairList())
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
 
         val result = SessionErrorExecutor(
-            sessionId, payload,
-            FlowMapperState(
+            sessionId, payload, FlowMapperState(
                 "flowId1", null, FlowMapperStateType.OPEN
-            ),
-            Instant.now(),
-            sessionEventSerializer,
-            appMessageFactoryCaptor::generateAppMessage,
-            flowConfig
+            ), Instant.now(), sessionEventSerializer, appMessageFactoryCaptor::generateAppMessage, flowConfig
         ).execute()
         val outboundEvents = result.outputEvents
         val state = result.flowMapperState
@@ -125,9 +108,7 @@ class SessionErrorExecutorTest {
         var sessionEventSerializer: CordaAvroSerializer<SessionEvent>? = null
 
         fun generateAppMessage(
-            sessionEvent: SessionEvent,
-            sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
-            flowConfig: SmartConfig
+            sessionEvent: SessionEvent, sessionEventSerializer: CordaAvroSerializer<SessionEvent>, flowConfig: SmartConfig
         ): AppMessage {
             this.sessionEvent = sessionEvent
             this.sessionEventSerializer = sessionEventSerializer

@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
-import java.time.Instant
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
@@ -12,7 +11,6 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.sessions.FlowSessionManager
-import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

@@ -1,7 +1,5 @@
 package net.corda.session.manager.impl.processor
 
-import java.nio.ByteBuffer
-import java.time.Instant
 import net.corda.data.chunking.Chunk
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionData
@@ -11,9 +9,10 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
-import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.time.Instant
 
 /**
  * Process a [SessionData] event to be sent to a counterparty.

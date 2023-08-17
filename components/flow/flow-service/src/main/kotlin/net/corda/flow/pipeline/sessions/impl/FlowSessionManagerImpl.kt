@@ -1,7 +1,5 @@
 package net.corda.flow.pipeline.sessions.impl
 
-import java.nio.ByteBuffer
-import java.time.Instant
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.MessageDirection
@@ -30,6 +28,8 @@ import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.nio.ByteBuffer
+import java.time.Instant
 
 @Suppress("TooManyFunctions")
 @Component(service = [FlowSessionManager::class])
@@ -139,7 +139,12 @@ class FlowSessionManagerImpl @Activate constructor(
         }
     }
 
-    private fun getSessionData(payload: ByteArray, checkpoint: FlowCheckpoint, sessionState: SessionState, sessionInfo: SessionInfo): SessionData {
+    private fun getSessionData(
+        payload: ByteArray,
+        checkpoint: FlowCheckpoint,
+        sessionState: SessionState,
+        sessionInfo: SessionInfo
+    ): SessionData {
         val sessionInit = if (sessionState.status != SessionStateType.CREATED) null else {
             SessionInit.newBuilder()
                 .setFlowId(checkpoint.flowId)

@@ -75,7 +75,8 @@ class SessionEventExecutorTest {
 
     @Test
     fun `Session event executor test inbound data message and non null state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionData(), contextSessionProps = emptyKeyValuePairList())
+        val payload =
+            buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionData(), contextSessionProps = emptyKeyValuePairList())
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
 
         val result = SessionEventExecutor(
@@ -102,7 +103,8 @@ class SessionEventExecutorTest {
 
     @Test
     fun `Session event received with null state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionData(), contextSessionProps = emptyKeyValuePairList())
+        val payload =
+            buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionData(), contextSessionProps = emptyKeyValuePairList())
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
         val result = SessionEventExecutor(
             sessionId,
@@ -139,7 +141,8 @@ class SessionEventExecutorTest {
     @Disabled
     //todo core-15757
     fun `Session event received with CLOSING state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionClose(), contextSessionProps = emptyKeyValuePairList())
+        val payload =
+            buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionClose(), contextSessionProps = emptyKeyValuePairList())
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
 
         val result = SessionEventExecutor(
@@ -165,7 +168,8 @@ class SessionEventExecutorTest {
 
     @Test
     fun `Session event received with OPEN state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionEvent(), contextSessionProps = emptyKeyValuePairList())
+        val payload =
+            buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionEvent(), contextSessionProps = emptyKeyValuePairList())
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
 
         val result = SessionEventExecutor(

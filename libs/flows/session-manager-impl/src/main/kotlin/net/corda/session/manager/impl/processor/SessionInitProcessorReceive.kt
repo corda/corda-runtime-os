@@ -32,17 +32,18 @@ class SessionInitProcessorReceive(
 
     override fun execute(): SessionState {
         return if (sessionState != null) {
-            if (sessionState.status == SessionStateType.CREATED ) {
+            if (sessionState.status == SessionStateType.CREATED) {
                 sessionState.apply {
                     status = SessionStateType.ERROR
                     sendEventsState.undeliveredMessages = sendEventsState.undeliveredMessages.plus(
-                            generateErrorEvent(sessionState,
-                                sessionEvent,
-                                "Received event with seqNum ${sessionEvent.sequenceNum} when session state which was not null: $sessionState",
-                                "SessionInit-SessionMismatch",
-                                instant
-                            )
+                        generateErrorEvent(
+                            sessionState,
+                            sessionEvent,
+                            "Received event with seqNum ${sessionEvent.sequenceNum} when session state which was not null: $sessionState",
+                            "SessionInit-SessionMismatch",
+                            instant
                         )
+                    )
                 }
             } else {
                 logger.debug { "Received duplicate SessionInit on key $key for session which was not null: $sessionState" }

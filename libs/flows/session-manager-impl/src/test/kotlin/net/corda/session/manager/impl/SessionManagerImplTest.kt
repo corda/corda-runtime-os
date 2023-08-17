@@ -2,8 +2,6 @@ package net.corda.session.manager.impl
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import java.nio.ByteBuffer
-import java.time.Instant
 import net.corda.data.chunking.Chunk
 import net.corda.data.crypto.SecureHash
 import net.corda.data.flow.event.MessageDirection
@@ -28,6 +26,8 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
+import java.time.Instant
 
 @Disabled //todo CORE-15757
 class SessionManagerImplTest {
@@ -35,7 +35,7 @@ class SessionManagerImplTest {
     private lateinit var messagingChunkFactory: MessagingChunkFactory
     private lateinit var chunkDeserializerService: ChunkDeserializerService<ByteArray>
     private lateinit var sessionManager: SessionManager
-    private val realBytes =ByteArray(500)
+    private val realBytes = ByteArray(500)
     private val realBytesBuffer = ByteBuffer.wrap(realBytes)
     private val testResendWindow = 5000L
     private val testHeartbeatTimeout = 30000L
@@ -178,7 +178,7 @@ class SessionManagerImplTest {
 
         //Validate heartbeat
         val (_, secondMessagesToSend) = sessionManager.getMessagesToSend(
-            sessionState, instant.plusMillis(testResendWindow  + 1),
+            sessionState, instant.plusMillis(testResendWindow + 1),
             testSmartConfig,
             testIdentity
         )
@@ -239,7 +239,7 @@ class SessionManagerImplTest {
 
         //Validate heartbeat
         val (secondUpdatedState, secondMessagesToSend) = sessionManager.getMessagesToSend(
-            sessionState, instant.plusMillis(testHeartbeatTimeout  + 1),
+            sessionState, instant.plusMillis(testHeartbeatTimeout + 1),
             testSmartConfig,
             testIdentity
         )
@@ -294,7 +294,8 @@ class SessionManagerImplTest {
 
     @Test
     fun `CREATED state, data received for init message sent, state moves to CONFIRMED`() {
-        val init = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionInit(), contextSessionProps = emptyKeyValuePairList())
+        val init =
+            buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionInit(), contextSessionProps = emptyKeyValuePairList())
         val sessionState = buildSessionState(
             SessionStateType.CREATED, 0, emptyList(), 1,
             mutableListOf(init)
@@ -408,8 +409,7 @@ class SessionManagerImplTest {
     }
 
     @Test
-    fun `next message is a chunk and all chunks are present but deserialization fails, returns null and updates the session state to error`
-                () {
+    fun `next message is a chunk and all chunks are present but deserialization fails, returns null and set session state to error`() {
         whenever(chunkDeserializerService.assembleChunks(any())).thenReturn(null)
         val instant = Instant.now()
         val requestId = "chunkId"
