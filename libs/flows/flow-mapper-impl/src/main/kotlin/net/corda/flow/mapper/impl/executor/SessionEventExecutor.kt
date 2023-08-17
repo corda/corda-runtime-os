@@ -40,6 +40,7 @@ class SessionEventExecutor(
         val payload = sessionEvent.payload
         val sessionInit = getInitPayload(payload)
         return if (flowMapperState == null && sessionInit != null) {
+            //TODO - CORE 15757 might be a nicer way to do this
             SessionInitExecutor(eventKey, sessionEvent, sessionInit, null, sessionEventSerializer, flowConfig).execute()
         } else if (flowMapperState == null) {
             handleNullState()

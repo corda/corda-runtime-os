@@ -19,7 +19,6 @@ import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.FlowConfig.SESSION_P2P_TTL
 import net.corda.test.flow.util.buildSessionEvent
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
@@ -32,6 +31,8 @@ class SessionEventExecutorTest {
     private val sessionId = "sessionId"
     private val flowConfig = SmartConfigImpl.empty().withValue(SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
     private val sessionEventSerializer = mock<CordaAvroSerializer<SessionEvent>>()
+
+    //TODO - init based test CORE-15757
 
     @Test
     fun `Session event executor test outbound data message and non null state`() {
@@ -102,7 +103,7 @@ class SessionEventExecutorTest {
     }
 
     @Test
-    fun `Session event received with null state`() {
+    fun `Non Init Session event received with null state`() {
         val payload =
             buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionData(), contextSessionProps = emptyKeyValuePairList())
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
@@ -138,8 +139,6 @@ class SessionEventExecutorTest {
     }
 
     @Test
-    @Disabled
-    //todo core-15757
     fun `Session event received with CLOSING state`() {
         val payload =
             buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionClose(), contextSessionProps = emptyKeyValuePairList())
@@ -159,11 +158,7 @@ class SessionEventExecutorTest {
         val outboundEvents = result.outputEvents
 
         assertThat(state?.status).isEqualTo(FlowMapperStateType.CLOSING)
-        assertThat(outboundEvents.size).isEqualTo(1)
-        val outboundEvent = outboundEvents.first()
-        assertThat(outboundEvent.topic).isEqualTo(P2P_OUT_TOPIC)
-        assertThat(outboundEvent.key).isEqualTo(sessionId)
-        assertThat(outboundEvent.value!!::class).isEqualTo(AppMessage::class)
+        assertThat(outboundEvents.size).isEqualTo(0)
     }
 
     @Test

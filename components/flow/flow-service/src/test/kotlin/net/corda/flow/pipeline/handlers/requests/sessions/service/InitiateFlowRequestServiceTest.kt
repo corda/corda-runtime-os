@@ -76,6 +76,7 @@ class InitiateFlowRequestServiceTest {
     fun `Session init event sent to session manager and checkpoint updated with session state`() {
         initiateFlowRequestService.initiateFlowsNotInitiated(testContext.flowEventContext, sessionInfo)
         verify(testContext.flowCheckpoint).putSessionStates(listOf(sessionState1))
+        verify(testContext.flowSessionManager).generateSessionState(any(), any(), any(), any(), any())
     }
 
     @Test

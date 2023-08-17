@@ -47,6 +47,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.stream.Stream
 
@@ -133,6 +134,18 @@ class SessionEventHandlerTest {
     }
 
     @Test
+    fun `Receiving a session data with init payload creates a checkpoint and adds the new session to it, does not reply with confirm`() {
+        val sessionEvent = createSessionDatWithInit()
+        val inputContext = buildFlowEventContext(checkpoint = expectedCheckpoint, inputEventPayload = sessionEvent)
+
+        whenever(sessionManager.getNextReceivedEvent(updatedSessionState)).thenReturn(sessionEvent)
+
+        sessionEventHandler.preProcess(inputContext)
+
+        verify(flowSessionManager, times(0)).sendConfirmMessage(any(), any(), anyOrNull(), any())
+    }
+
+    @Test
     fun `Receiving a session init payload throws an exception when the session manager returns no next received event`() {
         val sessionEvent = createSessionInit()
         val inputContext = buildFlowEventContext(checkpoint = expectedCheckpoint, inputEventPayload = sessionEvent)
@@ -184,6 +197,19 @@ class SessionEventHandlerTest {
             .setContextPlatformProperties(emptyKeyValuePairList())
             .setContextUserProperties(emptyKeyValuePairList())
             .build()
+
+        return createSessionEvent(payload)
+    }
+
+    private fun createSessionDatWithInit(): SessionEvent {
+        val sessionInit = SessionInit.newBuilder()
+            .setFlowId(FLOW_ID)
+            .setCpiId(CPI_ID)
+            .setContextPlatformProperties(emptyKeyValuePairList())
+            .setContextUserProperties(emptyKeyValuePairList())
+            .build()
+
+        val payload = SessionData(ByteBuffer.allocate(1), sessionInit)
 
         return createSessionEvent(payload)
     }

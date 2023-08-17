@@ -1,6 +1,5 @@
 package net.corda.test.flow.util
 
-import java.time.Instant
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -8,6 +7,7 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
+import java.time.Instant
 
 @Suppress("LongParameterList")
 fun buildSessionState(
@@ -29,7 +29,7 @@ fun buildSessionState(
         .setSendEventsState(SessionProcessState(lastSentSeqNum, eventsToSend))
         .setStatus(status)
         .setHasScheduledCleanup(false)
-        .setSessionProperties(KeyValuePairList())
+        .setSessionProperties(null)
         .setRequireClose(false)
         .build()
 }

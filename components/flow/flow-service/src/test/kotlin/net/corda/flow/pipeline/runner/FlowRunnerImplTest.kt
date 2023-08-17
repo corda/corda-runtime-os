@@ -1,7 +1,5 @@
 package net.corda.flow.pipeline.runner
 
-import java.time.Instant
-import java.util.UUID
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.flow.FlowKey
@@ -9,6 +7,7 @@ import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
@@ -57,6 +56,9 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.UUID
 
 class FlowRunnerImplTest {
 
@@ -165,11 +167,36 @@ class FlowRunnerImplTest {
 
     @Test
     fun `initiate flow session event should create a new flow and execute it in a new fiber`() {
-        val flowContinuation = FlowContinuation.Run()
-        val sessionInit = SessionInit().apply {
+        val eventPayload = SessionInit().apply {
             contextPlatformProperties = platformContext.avro
             contextUserProperties = userContext.avro
         }
+
+        runInitiatedTest(eventPayload)
+    }
+
+    @Test
+    fun `First SessionData with Init Info should create a new flow and execute it in a new fiber`() {
+        val sessionInitPayload = SessionInit().apply {
+            contextPlatformProperties = platformContext.avro
+            contextUserProperties = userContext.avro
+        }
+
+        val sessionData = SessionData().apply {
+            payload = ByteBuffer.allocate(1)
+            sessionInit = sessionInitPayload
+        }
+        runInitiatedTest(sessionData)
+    }
+
+    private fun runInitiatedTest(eventPayload: Any) {
+        val sessionEvent = SessionEvent().apply {
+            sequenceNum = 1
+            payload = eventPayload
+            contextSessionProperties = sessionContext.avro
+        }
+
+        val flowContinuation = FlowContinuation.Run()
 
         val flowStartContext = FlowStartContext().apply {
             statusKey = FlowKey().apply {
@@ -179,11 +206,6 @@ class FlowRunnerImplTest {
             initiatedBy = HoldingIdentity().apply {
                 x500Name = MemberX500Name("R3", "London", "GB").toString()
             }
-        }
-        val sessionEvent = SessionEvent().apply {
-            sequenceNum = 1
-            payload = sessionInit
-            contextSessionProperties = sessionContext.avro
         }
         val logicAndArgs = InitiatedFlow(initiatedFlow, mock())
 
@@ -236,6 +258,36 @@ class FlowRunnerImplTest {
     fun `other event types resume existing flow`() {
         val flowContinuation = FlowContinuation.Run()
         val context = buildFlowEventContext<Any>(flowCheckpoint, Wakeup())
+
+        whenever(flowFiberFactory.createAndResumeFlowFiber(flowFiberExecutionContext, flowContinuation)).thenReturn(
+            fiberFuture
+        )
+
+        val result = flowRunner.runFlow(context, flowContinuation)
+
+        assertThat(result).isSameAs(fiberFuture)
+    }
+
+    @Test
+    fun `Second SessionData with Init Info should resume existing flow`() {
+        val sessionInitPayload = SessionInit().apply {
+            contextPlatformProperties = platformContext.avro
+            contextUserProperties = userContext.avro
+        }
+
+        val sessionData = SessionData().apply {
+            payload = ByteBuffer.allocate(1)
+            sessionInit = sessionInitPayload
+        }
+
+        val sessionEvent = SessionEvent().apply {
+            sequenceNum = 2
+            payload = sessionData
+            contextSessionProperties = sessionContext.avro
+        }
+
+        val flowContinuation = FlowContinuation.Run()
+        val context = buildFlowEventContext<Any>(flowCheckpoint, sessionEvent)
 
         whenever(flowFiberFactory.createAndResumeFlowFiber(flowFiberExecutionContext, flowContinuation)).thenReturn(
             fiberFuture

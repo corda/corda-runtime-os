@@ -1,8 +1,5 @@
 package net.corda.flow.pipeline.sessions.impl
 
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.stream.Stream
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -39,7 +36,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -52,8 +48,10 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.stream.Stream
 
-@Disabled//todo - core-15757
 class FlowSessionManagerImplTest {
 
     private companion object {
@@ -136,6 +134,7 @@ class FlowSessionManagerImplTest {
     private val sessionManager = mock<SessionManager>()
     private val checkpoint = mock<FlowCheckpoint>()
     private val flowStack = mock<FlowStack>()
+    private val flowStartContext = mock<FlowStartContext>()
     private val flowRecordFactory = mock<FlowRecordFactory>()
 
     private val flowSessionManager = FlowSessionManagerImpl(sessionManager, flowRecordFactory)
@@ -144,6 +143,8 @@ class FlowSessionManagerImplTest {
     fun setup() {
         whenever(checkpoint.flowId).thenReturn(FLOW_ID)
         whenever(checkpoint.flowKey).thenReturn(flowKey)
+        whenever(checkpoint.flowStartContext).thenReturn(flowStartContext)
+        whenever(flowStartContext.cpiId).thenReturn("CPIID")
         whenever(flowKey.identity).thenReturn(HOLDING_IDENTITY)
         whenever(checkpoint.holdingIdentity).thenReturn(HOLDING_IDENTITY.toCorda())
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(sessionState)
@@ -211,14 +212,15 @@ class FlowSessionManagerImplTest {
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            sessionContext.avro
+            null
         )
 
-        val sessionState = flowSessionManager.generateSessionState(
+        val sessionState = flowSessionManager.sendInitMessage(
             checkpoint,
             SESSION_ID,
+            userContext.avro,
+            platformContext.avro,
             X500_NAME,
-            sessionContext.avro,
             instant
         )
 
@@ -260,7 +262,7 @@ class FlowSessionManagerImplTest {
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            sessionContext.avro
+            null
         )
         val anotherExpectedSessionEvent = buildSessionEvent(
             MessageDirection.OUTBOUND,
@@ -270,7 +272,7 @@ class FlowSessionManagerImplTest {
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            sessionContext.avro
+            null
         )
 
         val sessionStates = flowSessionManager.sendDataMessages(
@@ -336,7 +338,7 @@ class FlowSessionManagerImplTest {
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            sessionContext.avro
+            null
         )
         val anotherExpectedSessionEvent = buildSessionEvent(
             MessageDirection.OUTBOUND,
@@ -346,7 +348,7 @@ class FlowSessionManagerImplTest {
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            sessionContext.avro
+            null
         )
 
         val sessionStates = flowSessionManager.sendCloseMessages(
@@ -359,6 +361,12 @@ class FlowSessionManagerImplTest {
         verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(anotherSessionState), any(), eq(instant), any())
         assertEquals(expectedSessionEvent, sessionStates[0].sendEventsState.undeliveredMessages.single())
         assertEquals(anotherExpectedSessionEvent, sessionStates[1].sendEventsState.undeliveredMessages.single())
+    }
+
+    @Test
+    fun `generateSessionState calls session manager to generate a session state`() {
+        flowSessionManager.generateSessionState(checkpoint, SESSION_ID, X500_NAME, emptyKeyValuePairList(), Instant.now())
+        verify(sessionManager).generateSessionState(any(), any(), any(), any())
     }
 
     @Test
@@ -390,7 +398,7 @@ class FlowSessionManagerImplTest {
             SESSION_ID,
             sequenceNum = null,
             payload = Unit,
-            contextSessionProps = sessionContext.avro
+            contextSessionProps = null
         )
         val anotherSessionEvent =
             buildSessionEvent(
@@ -398,7 +406,7 @@ class FlowSessionManagerImplTest {
                 ANOTHER_SESSION_ID,
                 sequenceNum = null,
                 payload = Unit,
-                contextSessionProps = sessionContext.avro
+                contextSessionProps = null
             )
 
         whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(sessionEvent)
@@ -416,7 +424,7 @@ class FlowSessionManagerImplTest {
             SESSION_ID,
             sequenceNum = null,
             payload = Unit,
-            contextSessionProps = sessionContext.avro
+            contextSessionProps = null
         )
 
         whenever(sessionManager.getNextReceivedEvent(sessionState)).thenReturn(sessionEvent)
@@ -462,7 +470,7 @@ class FlowSessionManagerImplTest {
             SESSION_ID,
             sequenceNum = 1,
             payload = Unit,
-            contextSessionProps = sessionContext.avro
+            contextSessionProps = null
         )
         val anotherSessionEvent =
             buildSessionEvent(
@@ -470,7 +478,7 @@ class FlowSessionManagerImplTest {
                 ANOTHER_SESSION_ID,
                 sequenceNum = 2,
                 payload = Unit,
-                contextSessionProps = sessionContext.avro
+                contextSessionProps = null
             )
         flowSessionManager.acknowledgeReceivedEvents(
             listOf(
@@ -495,7 +503,7 @@ class FlowSessionManagerImplTest {
             SESSION_ID,
             sequenceNum = null,
             payload = Unit,
-            contextSessionProps = sessionContext.avro
+            contextSessionProps = null
         )
         val anotherSessionEvent =
             buildSessionEvent(
@@ -503,7 +511,7 @@ class FlowSessionManagerImplTest {
                 ANOTHER_SESSION_ID,
                 sequenceNum = null,
                 payload = Unit,
-                contextSessionProps = sessionContext.avro
+                contextSessionProps = null
             )
 
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
@@ -864,7 +872,7 @@ class FlowSessionManagerImplTest {
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            sessionContext.avro
+            null
         )
 
         val anotherExpectedSessionEvent = buildSessionEvent(
@@ -875,7 +883,7 @@ class FlowSessionManagerImplTest {
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            sessionContext.avro
+            null
         )
 
         val sessionStates = flowSessionManager.sendErrorMessages(
@@ -921,7 +929,7 @@ class FlowSessionManagerImplTest {
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            sessionContext.avro
+            null
         )
 
         val anotherExpectedSessionEvent = buildSessionEvent(
@@ -932,7 +940,7 @@ class FlowSessionManagerImplTest {
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            sessionContext.avro
+            null
         )
 
         val sessionStates = flowSessionManager.sendErrorMessages(

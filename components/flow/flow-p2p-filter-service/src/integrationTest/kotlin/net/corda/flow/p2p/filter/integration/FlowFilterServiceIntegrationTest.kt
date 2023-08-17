@@ -1,12 +1,8 @@
 package net.corda.flow.p2p.filter.integration
 
 import com.typesafe.config.ConfigValueFactory
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import net.corda.configuration.read.ConfigurationReadService
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.flow.event.FlowEvent
@@ -39,16 +35,18 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Disabled //todo CORE-15757
 class FlowFilterServiceIntegrationTest {
 
     private companion object {

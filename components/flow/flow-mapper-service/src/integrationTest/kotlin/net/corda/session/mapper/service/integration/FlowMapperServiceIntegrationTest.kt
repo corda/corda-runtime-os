@@ -2,11 +2,6 @@ package net.corda.session.mapper.service.integration
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import java.lang.System.currentTimeMillis
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -54,6 +49,11 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.lang.System.currentTimeMillis
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -100,7 +100,8 @@ class FlowMapperServiceIntegrationTest {
     }
 
     @Test
-    fun testSessionInitOutAndDataInbound() {
+    fun `Test first session event outbound sets up flow mapper state, verify subsequent messages received are passed to flow event topic`
+                () {
         val testId = "test1"
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
 
@@ -108,9 +109,9 @@ class FlowMapperServiceIntegrationTest {
         val sessionInitEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 buildSessionEvent(
-                    MessageDirection.OUTBOUND, testId, 1, SessionInit(
+                    MessageDirection.OUTBOUND, testId, 1, SessionData(ByteBuffer.wrap("bytes".toByteArray()), SessionInit(
                         testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList()
-                    ),
+                    )),
                     contextSessionProps = emptyKeyValuePairList()
                 )
             )
