@@ -18,7 +18,6 @@ import java.util.UUID
     name = "onboard-mgm",
     description = [
         "Onboard MGM member.",
-        "This sub command should only be used in for internal development",
     ]
 )
 class OnboardMgm : Runnable, BaseOnboard() {

@@ -37,16 +37,14 @@ class PrintUtils {
             }
         }
 
-        /**
-         * This function [verifyAndPrintError] is present to address the issue
-         * of the RemoteClient in rest-client automatically converts any non-200 codes into exceptions.
-         * In this case, a 409 is converted into a ResourceAlreadyExistsException
-         * with the payload of the body as the message of the exception.
-         */
         fun verifyAndPrintError(action: () -> Unit) {
             try {
                 action()
             } catch (e: Exception) {
+                /**
+                 * This ia present to address the issue of the RemoteClient in
+                 * rest-client automatically converts any non-200 codes into exceptions.
+                 */
                 printJsonOutput(e.localizedMessage, ConsoleOutput())
             }
         }

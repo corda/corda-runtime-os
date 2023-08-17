@@ -10,8 +10,7 @@ import picocli.CommandLine.Parameters
 @Command(
     name = "allow-client-certificate",
     description = [
-        "Allow client certificate in mutual TLS.",
-        "This sub command should only be used for internal development"
+        "Allow client certificate in mutual TLS."
     ]
 )
 class AllowClientCertificate : Runnable, RestCommand() {

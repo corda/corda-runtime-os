@@ -28,8 +28,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATU
 @Command(
     name = "onboard-member",
     description = [
-        "Onboard a member",
-        "This sub command should only be used in for internal development"
+        "Onboard a member"
     ]
 )
 class OnBoardMember : Runnable, BaseOnboard() {
