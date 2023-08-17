@@ -13,7 +13,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.Instant
-@Disabled //todo CORE-15757
+@Disabled //todo CORE-15757/ CORE-16184
 class SessionCloseProcessorSendTest {
 
     private companion object {

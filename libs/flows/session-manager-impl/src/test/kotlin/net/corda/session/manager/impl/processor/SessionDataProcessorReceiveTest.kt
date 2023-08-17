@@ -1,19 +1,24 @@
 package net.corda.session.manager.impl.processor
 
-import java.time.Instant
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-@Disabled //todo CORE-15757
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
+import java.time.Instant
+
 class SessionDataProcessorReceiveTest {
+
+    private val sessionInitProcessorReceive : SessionInitProcessorReceive = mock()
 
     @Test
     fun testNullState() {
@@ -25,7 +30,7 @@ class SessionDataProcessorReceiveTest {
             contextSessionProps = emptyKeyValuePairList()
         )
 
-        val result = SessionDataProcessorReceive("key", null, sessionEvent, SessionData(), Instant.now()).execute()
+        val result = SessionDataProcessorReceive("key", null, sessionEvent, SessionData(), Instant.now(), sessionInitProcessorReceive).execute()
         assertThat(result).isNotNull
         assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
         assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
@@ -45,7 +50,7 @@ class SessionDataProcessorReceiveTest {
             SessionStateType.ERROR, 2, mutableListOf(), 0, mutableListOf()
         )
 
-        val result = SessionDataProcessorReceive("key", inputState, sessionEvent, SessionData(), Instant.now()).execute()
+        val result = SessionDataProcessorReceive("key", inputState, sessionEvent, SessionData(), Instant.now(), sessionInitProcessorReceive).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
         assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
@@ -66,7 +71,7 @@ class SessionDataProcessorReceiveTest {
             SessionStateType.CONFIRMED, 2, mutableListOf(), 0, mutableListOf()
         )
 
-        val result = SessionDataProcessorReceive("key", inputState, sessionEvent, SessionData(), Instant.now()).execute()
+        val result = SessionDataProcessorReceive("key", inputState, sessionEvent, SessionData(), Instant.now(), sessionInitProcessorReceive).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CONFIRMED)
 
@@ -87,7 +92,7 @@ class SessionDataProcessorReceiveTest {
             SessionStateType.CONFIRMED, 2, mutableListOf(), 0, mutableListOf()
         )
 
-        val result = SessionDataProcessorReceive("key", inputState, sessionEvent, SessionData(), Instant.now()).execute()
+        val result = SessionDataProcessorReceive("key", inputState, sessionEvent, SessionData(), Instant.now(), sessionInitProcessorReceive).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CONFIRMED)
         assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
@@ -114,7 +119,7 @@ class SessionDataProcessorReceiveTest {
             SessionStateType.CLOSING, 2, mutableListOf(closeEvent), 0, mutableListOf()
         )
 
-        val result = SessionDataProcessorReceive("key", inputState, dataEvent, SessionData(), Instant.now()).execute()
+        val result = SessionDataProcessorReceive("key", inputState, dataEvent, SessionData(), Instant.now(), sessionInitProcessorReceive).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CLOSING)
         assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
@@ -142,7 +147,7 @@ class SessionDataProcessorReceiveTest {
             SessionStateType.CONFIRMED, 3, mutableListOf(dataEvent1), 0, mutableListOf()
         )
 
-        val result = SessionDataProcessorReceive("key", inputState, dataEvent2, SessionData(), Instant.now()).execute()
+        val result = SessionDataProcessorReceive("key", inputState, dataEvent2, SessionData(), Instant.now(), sessionInitProcessorReceive).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CONFIRMED)
         assertThat(result.receivedEventsState.undeliveredMessages.size).isEqualTo(2)
@@ -170,11 +175,35 @@ class SessionDataProcessorReceiveTest {
             SessionStateType.CLOSING, 3, mutableListOf(closeEvent), 0, mutableListOf()
         )
 
-        val result = SessionDataProcessorReceive("key", inputState, dataEvent, SessionData(), Instant.now()).execute()
+        val result = SessionDataProcessorReceive("key", inputState, dataEvent, SessionData(), Instant.now(), sessionInitProcessorReceive).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
         assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
         val outputEvent = result.sendEventsState.undeliveredMessages.first()
         assertThat(outputEvent.payload::class.java).isEqualTo(SessionError::class.java)
+    }
+
+    @Test
+    fun `Receive data message with init payload when session state is null`() {
+        val sessionData = SessionData(ByteBuffer.allocate(1), SessionInit())
+        val sessionEvent = buildSessionEvent(
+            MessageDirection.INBOUND,
+            "sessionId",
+            3,
+            sessionData,
+            contextSessionProps = emptyKeyValuePairList()
+        )
+
+        val inputState = buildSessionState(
+            SessionStateType.CONFIRMED, 2, mutableListOf(), 0, mutableListOf()
+        )
+
+        whenever(sessionInitProcessorReceive.execute()).thenReturn(inputState)
+
+        val result = SessionDataProcessorReceive("key", null, sessionEvent, sessionData, Instant.now(), sessionInitProcessorReceive)
+            .execute()
+        assertThat(result).isNotNull
+        assertThat(result.status).isEqualTo(SessionStateType.CONFIRMED)
+        assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
     }
 }

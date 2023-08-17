@@ -11,7 +11,6 @@ import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.Instant
-@Disabled //todo CORE-15757
 class SessionErrorProcessorReceiveTest {
 
     @Test

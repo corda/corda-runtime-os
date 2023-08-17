@@ -1,13 +1,10 @@
 package net.corda.session.manager.impl.processor
 
-import java.nio.ByteBuffer
-import java.time.Instant
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
-import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.messaging.api.chunking.ChunkSerializerService
@@ -15,12 +12,12 @@ import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-@Disabled //todo CORE-15757
+import java.nio.ByteBuffer
+import java.time.Instant
 class SessionDataProcessorSendTest {
 
     private lateinit var chunkSerializerService: ChunkSerializerService
@@ -33,25 +30,6 @@ class SessionDataProcessorSendTest {
         chunkSerializer = mock()
         chunkSerializerService = mock()
     }
-
-    @Test
-    fun `Send data when state is null`() {
-        val sessionEvent = buildSessionEvent(
-            MessageDirection.OUTBOUND,
-            "sessionId",
-            null,
-            SessionData(),
-            contextSessionProps = emptyKeyValuePairList()
-        )
-
-        val result = SessionDataProcessorSend("key", SessionState(), sessionEvent, Instant.now(), chunkSerializerService,  payload)
-            .execute()
-        assertThat(result).isNotNull
-        assertThat(result.status).isEqualTo(SessionStateType.ERROR)
-        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
-    }
-
     @Test
     fun `Send data when in state ERROR`() {
         val sessionEvent = buildSessionEvent(

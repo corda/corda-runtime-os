@@ -1,6 +1,5 @@
 package net.corda.session.manager.impl.processor
 
-import java.time.Instant
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionConfirm
 import net.corda.data.flow.event.session.SessionError
@@ -12,9 +11,8 @@ import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSION_USED
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-@Disabled //todo CORE-15757
+import java.time.Instant
 class SessionConfirmProcessorReceiveTest {
 
     private val sessionProps = KeyValueStore().apply {
@@ -33,7 +31,7 @@ class SessionConfirmProcessorReceiveTest {
             "sessionId",
             1,
             SessionConfirm(),
-            contextSessionProps = emptyKeyValuePairList()
+            contextSessionProps = sessionProps
         )
         val sessionConfirmProcessorReceived =
             SessionConfirmProcessorReceive("key", inputState, event, Instant.now())
