@@ -17,7 +17,7 @@ For example:
 ```
 REST_HOST=localhost
 REST_PORT=8888
-export API_URL="https://$REST_HOST:$REST_PORT/api/v1"
+export API_URL="https://$REST_HOST:$REST_PORT/api/v5_1"
 export MGM_HOLDING_ID="<MGM Holding ID>"
 export MEMBER_X500_NAME="<Member X500 Name>"
 ```
@@ -29,7 +29,7 @@ export MEMBER_X500_NAME="<Member X500 Name>"
 ```PowerShell
 $REST_HOST = "localhost"
 $REST_PORT = 8888
-$API_URL = "https://$REST_HOST`:$REST_PORT/api/v1"
+$API_URL = "https://$REST_HOST`:$REST_PORT/api/v5_1"
 $MGM_HOLDING_ID = "<MGM Holding ID>"
 $MEMBER_X500_NAME = "<Member X500 Name>"
 $AUTH_INFO = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("admin:admin" -f $username,$password)))
@@ -90,8 +90,6 @@ Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -
 </details>
 
 Where `<SERIAL NUMBER>` is the current serial number of the member information.
-The `<SERIAL NUMBER>` is optional, if it is not specified, then the latest serial number will be used.
-However, we recommend always specifying the serial number in the request, to avoid suspending a member based on outdated information.
 If the serial number doesn't match, then the REST method will return a 409 CONFLICT.
 This can happen if another process has updated the member information, before the suspension operation.
 The operator can, then re-query the member lookup REST endpoint and decide if they still want to proceed with the operation.
@@ -121,8 +119,6 @@ Invoke-RestMethod -SkipCertificateCheck  -Headers @{Authorization=("Basic {0}" -
 </details>
 
 Where `<SERIAL NUMBER>` is the current serial number of the member information.
-The `<SERIAL NUMBER>` is optional, if it is not specified, then the latest serial number will be used.
-However, we recommend always specifying the serial number in the request, to avoid re-activating a member based on outdated information.
 If the serial number doesn't match, then the REST method will return a 409 CONFLICT.
 This works in the same way as for [Suspending a Member](#suspending-a-member).
 Once a member has been re-activated it flow communication between it and other members can resume.
