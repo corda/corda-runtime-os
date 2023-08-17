@@ -12,6 +12,7 @@ import java.io.File
 import java.net.URLEncoder.encode
 import java.nio.charset.Charset.defaultCharset
 import java.time.Duration
+import net.corda.rest.annotations.RestApiVersion
 
 /**
  * Calls the necessary endpoints to create a vnode, and onboard the MGM to that vnode.
@@ -351,7 +352,7 @@ fun ClusterInfo.deprecatedSuspendMember(
         interval(1.seconds)
         command {
             post(
-                "/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/suspend",
+                "/api/${RestApiVersion.C5_0.versionPath}/mgm/$mgmHoldingId/suspend",
                 "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
             )
         }
@@ -397,7 +398,7 @@ fun ClusterInfo.deprecatedActivateMember(
         interval(1.seconds)
         command {
             post(
-                "/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/activate",
+                "/api/${RestApiVersion.C5_0.versionPath}/mgm/$mgmHoldingId/activate",
                 "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
             )
         }
