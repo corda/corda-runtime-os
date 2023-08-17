@@ -1,5 +1,6 @@
 package net.corda.libs.scheduler.datamodel.db.internal
 
+import net.corda.libs.scheduler.datamodel.db.TaskSchedulerLog
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -31,20 +32,23 @@ const val TASK_SCHEDULER_LOG_QUERY_PARAM_NAME = "name"
 class TaskSchedulerLogEntity(
     @Id
     @Column(name = "task_name", nullable = false)
-    var name: String,
+    override var name: String,
 
     @Column(name = "scheduler_id", nullable = false)
-    var schedulerId: String,
+    override var schedulerId: String,
 
     // Updated by the DB.
     @Column(name = "last_scheduled", insertable = false, updatable = false)
-    var lastScheduled: Instant = Instant.MIN,
+    override var lastScheduled: Instant = Instant.MIN,
 
-    // not managed by Hibernate
+    // not managed by Hibernate, but still set as part of the get Query.
     // NOTE: using util.Date because that is what Hibernate maps CURRENT_TIMESTAMP to (java.sql.Timestamp).
     @Transient
     var dbNow: java.util.Date = java.util.Date(Long.MIN_VALUE)
-) {
+) : TaskSchedulerLog {
+    @Transient
+    override var now: Instant = dbNow.toInstant()
+
     // equals override to support Hibernate's requirement
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

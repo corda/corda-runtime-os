@@ -1,7 +1,7 @@
 package net.corda.libs.scheduler.datamodel
 
-import net.corda.libs.scheduler.datamodel.db.internal.TaskSchedulerLogEntity
-import net.corda.libs.scheduler.datamodel.db.internal.TaskSchedulerLogEntityRepository
+import net.corda.libs.scheduler.datamodel.db.TaskSchedulerLog
+import net.corda.libs.scheduler.datamodel.db.TaskSchedulerLogEntityRepository
 import java.time.temporal.ChronoUnit
 import javax.persistence.EntityManager
 
@@ -13,12 +13,12 @@ class SchedulerLockImpl(
 ) : SchedulerLock {
     override val secondsSinceLastScheduledTrigger: Long
     private val tx = em.transaction
-    private val log : TaskSchedulerLogEntity
+    private val log : TaskSchedulerLog
 
     init {
         tx.begin()
         log = logEntityRepository.getOrInitialiseLog(taskName, schedulerId, em)
-        secondsSinceLastScheduledTrigger = log.lastScheduled.until(log.dbNow.toInstant(), ChronoUnit.SECONDS)
+        secondsSinceLastScheduledTrigger = log.lastScheduled.until(log.now, ChronoUnit.SECONDS)
     }
 
     override fun updateAndRelease(schedulerId: String) {

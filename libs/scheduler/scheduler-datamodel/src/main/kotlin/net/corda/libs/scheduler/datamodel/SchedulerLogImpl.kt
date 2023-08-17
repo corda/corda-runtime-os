@@ -1,6 +1,6 @@
 package net.corda.libs.scheduler.datamodel
 
-import net.corda.libs.scheduler.datamodel.db.internal.TaskSchedulerLogEntityRepository
+import net.corda.libs.scheduler.datamodel.db.TaskSchedulerLogEntityRepository
 import javax.persistence.EntityManagerFactory
 
 class SchedulerLogImpl(

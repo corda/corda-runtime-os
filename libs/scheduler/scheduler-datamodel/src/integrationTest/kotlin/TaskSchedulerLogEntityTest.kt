@@ -4,10 +4,10 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.scheduler.datamodel.SchedulerEntities
+import net.corda.libs.scheduler.datamodel.db.TaskSchedulerLogEntityRepository
 import net.corda.libs.scheduler.datamodel.db.internal.TASK_SCHEDULER_LOG_GET_QUERY_NAME
 import net.corda.libs.scheduler.datamodel.db.internal.TASK_SCHEDULER_LOG_QUERY_PARAM_NAME
 import net.corda.libs.scheduler.datamodel.db.internal.TaskSchedulerLogEntity
-import net.corda.libs.scheduler.datamodel.db.internal.TaskSchedulerLogEntityRepository
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
@@ -155,7 +155,7 @@ class TaskSchedulerLogEntityTest {
             assertSoftly {
                 it.assertThat(loadedLog.name).isEqualTo(taskId)
                 it.assertThat(loadedLog.schedulerId).isEqualTo("bar")
-                it.assertThat(loadedLog.dbNow).isAfter(loadedLog.lastScheduled)
+                it.assertThat(loadedLog.now).isAfter(loadedLog.lastScheduled)
             }
         }
     }

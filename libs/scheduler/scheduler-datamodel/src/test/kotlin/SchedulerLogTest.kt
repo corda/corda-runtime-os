@@ -1,6 +1,7 @@
+
 import net.corda.libs.scheduler.datamodel.SchedulerLogImpl
+import net.corda.libs.scheduler.datamodel.db.TaskSchedulerLogEntityRepository
 import net.corda.libs.scheduler.datamodel.db.internal.TaskSchedulerLogEntity
-import net.corda.libs.scheduler.datamodel.db.internal.TaskSchedulerLogEntityRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -29,7 +30,7 @@ class SchedulerLogTest {
     private val emf = mock<EntityManagerFactory>() {
         on { createEntityManager() } doReturn em
     }
-    private val repo = mock< TaskSchedulerLogEntityRepository>() {
+    private val repo = mock<TaskSchedulerLogEntityRepository>() {
         on { getOrInitialiseLog(any(), any(), any()) } doReturn loadedLog
     }
 

@@ -1,7 +1,7 @@
 
 import net.corda.libs.scheduler.datamodel.SchedulerLockImpl
 import net.corda.libs.scheduler.datamodel.db.internal.TaskSchedulerLogEntity
-import net.corda.libs.scheduler.datamodel.db.internal.TaskSchedulerLogEntityRepository
+import net.corda.libs.scheduler.datamodel.db.TaskSchedulerLogEntityRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -26,7 +26,7 @@ class SchedulerLockTest {
     private val em = mock<EntityManager>() {
         on { transaction } doReturn tx
     }
-    private val repo = mock< TaskSchedulerLogEntityRepository>() {
+    private val repo = mock<TaskSchedulerLogEntityRepository>() {
         on { getOrInitialiseLog(any(), any(), any()) } doReturn loadedLog
     }
 
