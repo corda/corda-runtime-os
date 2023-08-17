@@ -48,17 +48,18 @@ class UtxoTokenMapperTest {
         val transactionId = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "transaction_id".toByteArray())
         val leafId = 0
         val tag = "tag"
-        val owner_hash = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "owner_hash".toByteArray())
-        val token_amount = BigDecimal(1)
+        val ownerHash =
+            SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "owner_hash".toByteArray())
+        val tokenAmount = BigDecimal(1)
         val mapper = UtxoTokenMapper()
         val tuples =
-            listOf(TupleImpl(listOf(transactionId.toString(), leafId, tag, owner_hash.toString(), token_amount)))
+            listOf(TupleImpl(listOf(transactionId.toString(), leafId, tag, ownerHash.toString(), tokenAmount)))
 
         val cachedToken = mapper.map(tuples)
 
         assertThat(cachedToken.first().stateRef).isEqualTo(StateRef(transactionId, leafId).toString())
         assertThat(cachedToken.first().tag).isEqualTo(tag)
-        assertThat(cachedToken.first().ownerHash).isEqualTo(owner_hash.toString())
-        assertThat(cachedToken.first().amount).isEqualTo(token_amount)
+        assertThat(cachedToken.first().ownerHash).isEqualTo(ownerHash.toString())
+        assertThat(cachedToken.first().amount).isEqualTo(tokenAmount)
     }
 }
