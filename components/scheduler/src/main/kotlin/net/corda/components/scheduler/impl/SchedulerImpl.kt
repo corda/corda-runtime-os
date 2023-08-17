@@ -10,7 +10,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 // NOTE: the implementation of Scheduler is heavily based on the Reconciler design.
 //  In the future, we should consider using the scheduler as part of reconciliation.
 class SchedulerImpl(
-    schedule: Schedule,
+    override val schedule: Schedule,
     publisher: TriggerPublisher,
     schedulerLog: SchedulerLog,
     coordinatorFactory: LifecycleCoordinatorFactory,
