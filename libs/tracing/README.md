@@ -35,7 +35,7 @@ curl --insecure -u admin:admin --header "X-B3-TraceId: $TRACE_ID" --header "X-B3
 
 ## How to use
 
-Here we describe how to run the combined worker with a Kafka message bus and a tracing dashboard.
+Here we describe how to run the combined worker with a Kafka message bus, a tracing dashboard and a Jupyter notebook.
 
 1. Setup kafka
 2. Create the `docker-compose.yml` file:
@@ -82,12 +82,13 @@ Here we describe how to run the combined worker with a Kafka message bus and a t
     ./build/generatedScripts/corda-cli.sh topic -b=localhost:9092 create connect
     cd ../corda-runtime-os/
     ```
-5. Open a terminal in `corda-runtime-os/metrics` and run `docker compose up`
-6. Build combined worker with kafka support:
+5. Open a terminal in `corda-runtime-os/metrics` and run `docker build -t jupyter-image -f jupyter-image .`, this will build the docker image for the Jupyter notebook
+6. Within `corda-runtime-os/metrics` run `docker compose up`
+7. Build combined worker with kafka support:
     ```shell
     ./gradlew :applications:workers:release:combined-worker:clean :applications:workers:release:combined-worker:appJar -PbusImpl=kafka
     ```
-7. Start the combined worker with the `--send-trace-to` command line parameter
+8. Start the combined worker with the `--send-trace-to` command line parameter
     ```bash
     java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true                      \
       ./applications/workers/release/combined-worker/build/bin/corda-combined-worker-*.jar \
@@ -102,4 +103,6 @@ Here we describe how to run the combined worker with a Kafka message bus and a t
       -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster                    \
       --send-trace-to=http://localhost:9411
     ```
-8. Visit http://localhost:3000/ to view the dashboard
+8. Visit http://localhost:3000/ to view the Grafana dashboard
+9. Visit http://localhost:8887/ to view the Jupyter Server, the token to gain access to the home directory is: `admin`, from there open up `Trace_Analysis.ipynb` 
+and run the cells as described in the notebook, there you will also find further information as to its current functionality and usage  
