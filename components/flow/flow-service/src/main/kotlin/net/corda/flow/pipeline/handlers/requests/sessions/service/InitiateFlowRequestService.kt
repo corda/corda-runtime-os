@@ -45,12 +45,12 @@ class InitiateFlowRequestService @Activate constructor(
     ) {
         val sessionsNotInitiated = getSessionsNotInitiated(context, sessionToInfo)
         if (sessionsNotInitiated.isNotEmpty()) {
-            initiateFlows(context, sessionsNotInitiated)
+            generateSessionStates(context, sessionsNotInitiated)
         }
     }
 
     @Suppress("ThrowsCount")
-    private fun initiateFlows(
+    private fun generateSessionStates(
         context: FlowEventContext<Any>,
         sessionsNotInitiated: Set<SessionInfo>
     ) {
@@ -85,12 +85,10 @@ class InitiateFlowRequestService @Activate constructor(
 
         checkpoint.putSessionStates(
             sessionsNotInitiated.map {
-                flowSessionManager.sendInitMessage(
+                flowSessionManager.generateSessionState(
                     checkpoint,
                     it.sessionId,
                     it.counterparty,
-                    contextUserProperties = keyValuePairListOf(it.contextUserProperties),
-                    contextPlatformProperties = keyValuePairListOf(it.contextPlatformProperties),
                     sessionProperties = sessionContext.apply { put(FLOW_SESSION_REQUIRE_CLOSE, it.requireClose.toString()) }.avro,
                     Instant.now()
                 )

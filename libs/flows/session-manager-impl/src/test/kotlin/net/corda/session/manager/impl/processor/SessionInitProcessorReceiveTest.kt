@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test
 class SessionInitProcessorReceiveTest {
 
     private fun createSessionInit() =
-        SessionInit("flow", "flowId1", emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList())
+        SessionInit("flow", "flowId1", emptyKeyValuePairList(), emptyKeyValuePairList())
 
     @Test
     fun `Receive duplicate init when state is not null`() {
@@ -23,7 +23,8 @@ class SessionInitProcessorReceiveTest {
             MessageDirection.INBOUND,
             "sessionId",
             1,
-            createSessionInit()
+            createSessionInit(),
+            contextSessionProps = emptyKeyValuePairList()
         )
 
         val sessionInitProcessor = SessionInitProcessorReceive(
@@ -47,7 +48,8 @@ class SessionInitProcessorReceiveTest {
             MessageDirection.INBOUND,
             "sessionId",
             1,
-            createSessionInit()
+            createSessionInit(),
+            contextSessionProps = emptyKeyValuePairList()
         )
 
         val sessionInitProcessor = SessionInitProcessorReceive(
@@ -75,7 +77,8 @@ class SessionInitProcessorReceiveTest {
             MessageDirection.INBOUND,
             "sessionId",
             1,
-            createSessionInit()
+            createSessionInit(),
+            contextSessionProps = emptyKeyValuePairList()
         )
 
         val sessionInitProcessor = SessionInitProcessorReceive("key", null, sessionInitEvent, Instant.now())

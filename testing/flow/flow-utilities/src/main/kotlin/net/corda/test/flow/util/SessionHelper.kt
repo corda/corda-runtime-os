@@ -29,7 +29,8 @@ fun buildSessionState(
         .setSendEventsState(SessionProcessState(lastSentSeqNum, eventsToSend))
         .setStatus(status)
         .setHasScheduledCleanup(false)
-        .setCounterpartySessionProperties(KeyValuePairList())
+        .setSessionProperties(KeyValuePairList())
+        .setRequireClose(false)
         .build()
 }
 
@@ -42,6 +43,7 @@ fun buildSessionEvent(
     timestamp: Instant = Instant.now(),
     initiatingIdentity: HoldingIdentity = HoldingIdentity("alice", "group1"),
     initiatedIdentity: HoldingIdentity = HoldingIdentity("bob", "group1"),
+    contextSessionProps: KeyValuePairList?,
 ): SessionEvent {
     return SessionEvent.newBuilder()
         .setSessionId(sessionId)
@@ -51,5 +53,6 @@ fun buildSessionEvent(
         .setInitiatedIdentity(initiatedIdentity)
         .setPayload(payload)
         .setTimestamp(timestamp)
+        .setContextSessionProperties(contextSessionProps)
         .build()
 }

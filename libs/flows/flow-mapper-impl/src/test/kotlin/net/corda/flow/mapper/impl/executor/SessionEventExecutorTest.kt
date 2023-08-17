@@ -11,6 +11,7 @@ import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.p2p.app.AppMessage
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
@@ -36,7 +37,13 @@ class SessionEventExecutorTest {
     fun `Session event executor test outbound data message and non null state`() {
         val bytes = "bytes".toByteArray()
         whenever(sessionEventSerializer.serialize(any())).thenReturn(bytes)
-        val payload = buildSessionEvent(MessageDirection.OUTBOUND, sessionId, 1, SessionData(ByteBuffer.wrap(bytes), null))
+        val payload = buildSessionEvent(
+            MessageDirection.OUTBOUND,
+            sessionId,
+            1,
+            SessionData(ByteBuffer.wrap(bytes), null),
+            contextSessionProps = emptyKeyValuePairList()
+        )
 
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
 
@@ -68,7 +75,7 @@ class SessionEventExecutorTest {
 
     @Test
     fun `Session event executor test inbound data message and non null state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionData())
+        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionData(), contextSessionProps = emptyKeyValuePairList())
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
 
         val result = SessionEventExecutor(
@@ -95,7 +102,7 @@ class SessionEventExecutorTest {
 
     @Test
     fun `Session event received with null state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionData())
+        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionData(), contextSessionProps = emptyKeyValuePairList())
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
         val result = SessionEventExecutor(
             sessionId,
@@ -132,7 +139,7 @@ class SessionEventExecutorTest {
     @Disabled
     //todo core-15757
     fun `Session event received with CLOSING state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionClose())
+        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionClose(), contextSessionProps = emptyKeyValuePairList())
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
 
         val result = SessionEventExecutor(
@@ -158,7 +165,7 @@ class SessionEventExecutorTest {
 
     @Test
     fun `Session event received with OPEN state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionEvent())
+        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionEvent(), contextSessionProps = emptyKeyValuePairList())
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
 
         val result = SessionEventExecutor(

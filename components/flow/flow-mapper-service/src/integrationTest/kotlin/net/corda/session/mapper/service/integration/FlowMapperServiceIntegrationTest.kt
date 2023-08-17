@@ -109,8 +109,9 @@ class FlowMapperServiceIntegrationTest {
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 buildSessionEvent(
                     MessageDirection.OUTBOUND, testId, 1, SessionInit(
-                        testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList()
-                    )
+                        testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList()
+                    ),
+                    contextSessionProps = emptyKeyValuePairList()
                 )
             )
         )
@@ -130,7 +131,13 @@ class FlowMapperServiceIntegrationTest {
         //send data back
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                buildSessionEvent(MessageDirection.INBOUND, testId, 2, SessionData(ByteBuffer.wrap("".toByteArray()), null))
+                buildSessionEvent(
+                    MessageDirection.INBOUND,
+                    testId,
+                    2,
+                    SessionData(ByteBuffer.wrap("".toByteArray()), null),
+                    contextSessionProps = emptyKeyValuePairList()
+                )
             )
         )
         publisher.publish(listOf(sessionDataEvent))
@@ -226,7 +233,13 @@ class FlowMapperServiceIntegrationTest {
         //send data, no state
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                buildSessionEvent(MessageDirection.OUTBOUND, testId, 1, SessionData(ByteBuffer.wrap("".toByteArray()), null))
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    testId,
+                    1,
+                    SessionData(ByteBuffer.wrap("".toByteArray()), null),
+                    contextSessionProps = emptyKeyValuePairList()
+                )
             )
         )
         publisher.publish(listOf(sessionDataEvent))
@@ -252,8 +265,8 @@ class FlowMapperServiceIntegrationTest {
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 buildSessionEvent(
                     MessageDirection.OUTBOUND, testId, 1, SessionInit(
-                        testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList()
-                    )
+                        testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList()
+                    ), contextSessionProps = emptyKeyValuePairList()
                 )
             )
         )
@@ -276,7 +289,13 @@ class FlowMapperServiceIntegrationTest {
         //send data back
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                buildSessionEvent(MessageDirection.INBOUND, testId, 2, SessionData(ByteBuffer.wrap("".toByteArray()), null))
+                buildSessionEvent(
+                    MessageDirection.INBOUND,
+                    testId,
+                    2,
+                    SessionData(ByteBuffer.wrap("".toByteArray()), null),
+                    contextSessionProps = emptyKeyValuePairList()
+                )
             )
         )
         publisher.publish(listOf(sessionDataEvent))

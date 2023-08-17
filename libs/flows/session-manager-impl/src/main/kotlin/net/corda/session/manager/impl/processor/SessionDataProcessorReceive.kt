@@ -11,6 +11,7 @@ import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.session.manager.impl.processor.helper.recalcHighWatermark
+import net.corda.utilities.createSimpleCache
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
@@ -28,6 +29,7 @@ class SessionDataProcessorReceive(
     private val key: Any,
     private val sessionState: SessionState?,
     private val sessionEvent: SessionEvent,
+    private val payload: SessionData,
     private val instant: Instant
 ) : SessionEventProcessor {
 
@@ -37,12 +39,16 @@ class SessionDataProcessorReceive(
 
     override fun execute(): SessionState {
         val sessionId = sessionEvent.sessionId
-        return if (sessionState == null) {
+        val sessionInit = payload.sessionInit
+        return if (sessionState == null && sessionInit == null) {
             val errorMessage = "Received SessionData on key $key for session which was null"
             logger.debug { errorMessage }
             generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionData-NullSessionState", instant)
+        } else if (sessionState != null) {
+                getInboundDataEventResult(sessionState, sessionId)
         } else {
-            getInboundDataEventResult(sessionState, sessionId)
+            val newSessionState = SessionInitProcessorReceive(key, null, sessionEvent, instant).execute()
+            getInboundDataEventResult(newSessionState, sessionId)
         }
     }
 
@@ -91,6 +97,9 @@ class SessionDataProcessorReceive(
             }
         } else {
             sessionState.apply {
+                if (currentStatus == SessionStateType.CREATED) {
+                    status = SessionStateType.CONFIRMED
+                }
                 receivedEventsState.lastProcessedSequenceNum = recalcHighWatermark(receivedEventsState.undeliveredMessages,
                     receivedEventState.lastProcessedSequenceNum)
             }

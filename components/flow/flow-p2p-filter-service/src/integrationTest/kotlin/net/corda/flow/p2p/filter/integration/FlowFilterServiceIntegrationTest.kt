@@ -111,8 +111,7 @@ class FlowFilterServiceIntegrationTest {
                 null,
                 emptyKeyValuePairList(),
                 emptyKeyValuePairList(),
-                emptyKeyValuePairList(),
-            )
+            ), emptyKeyValuePairList()
         )
 
         val sessionRecord = Record(

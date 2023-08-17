@@ -35,14 +35,12 @@ class InitiateFlowRequestServiceTest {
     @BeforeEach
     fun setup() {
         whenever(
-            testContext.flowSessionManager.sendInitMessage(
+            testContext.flowSessionManager.generateSessionState(
                 eq(testContext.flowCheckpoint),
                 eq(sessionId1),
                 eq(ALICE_X500_NAME),
                 any(),
                 any(),
-                any(),
-                any()
             )
         ).thenReturn(sessionState1)
         whenever(testContext.flowSandboxService.get(any(), any())).thenReturn(sandboxGroupContext)

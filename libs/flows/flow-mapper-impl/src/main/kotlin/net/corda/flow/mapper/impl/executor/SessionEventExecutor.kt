@@ -5,7 +5,9 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.p2p.app.AppMessage
@@ -35,10 +37,22 @@ class SessionEventExecutor(
     private val outputTopic = getSessionEventOutputTopic(messageDirection)
 
     override fun execute(): FlowMapperResult {
-        return if (flowMapperState == null) {
+        val payload = sessionEvent.payload
+        val sessionInit = getInitPayload(payload)
+        return if (flowMapperState == null && sessionInit != null) {
+            SessionInitExecutor(eventKey, sessionEvent, sessionInit, null, sessionEventSerializer, flowConfig).execute()
+        } else if (flowMapperState == null) {
             handleNullState()
         } else {
             processOtherSessionEvents(flowMapperState)
+        }
+    }
+
+    private fun getInitPayload(payload: Any): SessionInit? {
+        return when (payload) {
+            is SessionInit -> payload
+            is SessionData -> payload.sessionInit
+            else -> null
         }
     }
 
@@ -90,6 +104,7 @@ class SessionEventExecutor(
                 FlowMapperResult(null, listOf())
             }
             FlowMapperStateType.CLOSING -> {
+                //todo - CORE-15757/ CORE-16184
                 if (messageDirection == MessageDirection.OUTBOUND) {
                     log.warn("Attempted to send a message but flow mapper state is in CLOSING. Session ID: ${sessionEvent.sessionId}")
                     FlowMapperResult(flowMapperState, listOf())

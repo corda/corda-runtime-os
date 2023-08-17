@@ -33,7 +33,6 @@ fun generateInit(instant: Instant, messageDirection: MessageDirection = MessageD
         .setFlowId(null)
         .setContextPlatformProperties(emptyKeyValuePairList())
         .setContextUserProperties(emptyKeyValuePairList())
-        .setContextSessionProperties(emptyKeyValuePairList())
         .build()
     return generateSessionEvent(sessionInit, instant, messageDirection)
 }
@@ -56,5 +55,5 @@ fun generateClose(instant: Instant, messageDirection: MessageDirection): Session
 }
 
 fun generateSessionEvent(payload: Any, instant: Instant, messageDirection: MessageDirection): SessionEvent {
-    return buildSessionEvent(messageDirection, "sessionId", null, payload, instant)
+    return buildSessionEvent(messageDirection, "sessionId", null, payload, instant, contextSessionProps = emptyKeyValuePairList())
 }

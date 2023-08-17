@@ -46,7 +46,7 @@ class CloseSessionsRequestHandler @Activate constructor(
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.CloseSessions): FlowEventContext<Any> {
-        val checkpoint = context.checkpoint
+        /*val checkpoint = context.checkpoint
 
         val hasNoSessionsOrAllClosed = try {
             val sessionsToClose = getSessionsToClose(checkpoint, request)
@@ -64,7 +64,18 @@ class CloseSessionsRequestHandler @Activate constructor(
             context.copy(outputRecords = context.outputRecords + listOf(record))
         } else {
             context
+        }*/
+
+        //TODO CORE-15757 / CORE-16184 - implement close properly
+        val checkpoint = context.checkpoint
+        val sessionsToClose = getSessionsToClose(checkpoint, request)
+        context.checkpoint.sessions.onEach {
+            if (sessionsToClose.contains(it.sessionId))
+                it.status = SessionStateType.CLOSED
         }
+
+        val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
+        return context.copy(outputRecords = context.outputRecords + listOf(record))
     }
 
     private fun getSessionsToClose(checkpoint: FlowCheckpoint, request: FlowIORequest.CloseSessions): List<String> {

@@ -9,6 +9,7 @@ import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.p2p.app.AppMessage
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.schema.Schemas
@@ -27,7 +28,7 @@ class SessionErrorExecutorTest {
 
     @Test
     fun `Session error event received with null state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError())
+        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError(), contextSessionProps = emptyKeyValuePairList())
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
         val result = SessionErrorExecutor(
             sessionId,
@@ -48,7 +49,7 @@ class SessionErrorExecutorTest {
 
     @Test
     fun `Session error received with CLOSING state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError())
+        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError(), contextSessionProps = emptyKeyValuePairList())
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
 
         val result = SessionErrorExecutor(
@@ -70,7 +71,7 @@ class SessionErrorExecutorTest {
 
     @Test
     fun `Session error received with ERROR state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError())
+        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError(), contextSessionProps = emptyKeyValuePairList())
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
 
         val result = SessionErrorExecutor(
@@ -92,7 +93,7 @@ class SessionErrorExecutorTest {
 
     @Test
     fun `Session error received with OPEN state`() {
-        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError())
+        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError(), contextSessionProps = emptyKeyValuePairList())
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
 
         val result = SessionErrorExecutor(

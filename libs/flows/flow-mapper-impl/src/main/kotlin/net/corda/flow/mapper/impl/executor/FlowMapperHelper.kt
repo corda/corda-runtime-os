@@ -85,7 +85,6 @@ fun generateAppMessage(
  * @param sessionEventSerializer Serializer for session events
  * @param appMessageFactory AppMessage factory
  * @param flowConfig config
- * @param receivedSequenceNumber Received sequence number of the session event
  */
 @Suppress("LongParameterList")
 fun createP2PRecord(
@@ -106,7 +105,8 @@ fun createP2PRecord(
                 null,
                 sessionEvent.initiatingIdentity,
                 sessionEvent.initiatedIdentity,
-                payload
+                payload,
+                sessionEvent.contextSessionProperties
             ),
             sessionEventSerializer,
             flowConfig

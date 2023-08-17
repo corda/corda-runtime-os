@@ -283,9 +283,9 @@ class FlowServiceTestContext @Activate constructor(
                 .setCpiId(cpiId)
                 .setContextPlatformProperties(emptyKeyValuePairList())
                 .setContextUserProperties(emptyKeyValuePairList())
-                .setContextSessionProperties(getContextSessionProps(protocol))
                 .build(),
             sequenceNum = 0,
+            getContextSessionProps(protocol)
         )
     }
 
@@ -310,7 +310,8 @@ class FlowServiceTestContext @Activate constructor(
             null,
             null,
             SessionData(ByteBuffer.wrap(data), null),
-            sequenceNum
+            sequenceNum,
+            null
         )
     }
 
@@ -329,6 +330,7 @@ class FlowServiceTestContext @Activate constructor(
             initiatedIdentity,
             SessionClose(),
             sequenceNum,
+            null,
         )
     }
 
@@ -345,6 +347,7 @@ class FlowServiceTestContext @Activate constructor(
             initiatingIdentity,
             initiatedIdentity,
             SessionError(ExceptionEnvelope(RuntimeException::class.qualifiedName, "Something went wrong!")),
+            null,
             null,
         )
     }
@@ -458,7 +461,8 @@ class FlowServiceTestContext @Activate constructor(
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?,
         payload: Any,
-        sequenceNum: Int?
+        sequenceNum: Int?,
+        contextSessionProps: KeyValuePairList?
     ): FlowIoRequestSetup {
         val sessionEvent = buildSessionEvent(
             MessageDirection.INBOUND,
@@ -467,7 +471,8 @@ class FlowServiceTestContext @Activate constructor(
             payload,
             Instant.now(),
             initiatingIdentity ?: sessionInitiatingIdentity!!,
-            initiatedIdentity ?: sessionInitiatedIdentity!!
+            initiatedIdentity ?: sessionInitiatedIdentity!!,
+            contextSessionProps
         )
         return addTestRun(createFlowEventRecord(flowId, sessionEvent))
     }

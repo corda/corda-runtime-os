@@ -1,16 +1,19 @@
 package net.corda.session.manager.impl
 
+import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
+import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.utils.toMap
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.chunking.MessagingChunkFactory
+import net.corda.session.manager.Constants
 import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
 import net.corda.session.manager.impl.processor.helper.setErrorState
@@ -49,12 +52,32 @@ class SessionManagerImpl @Activate constructor(
 
     override fun processMessageToSend(
         key: Any,
-        sessionState: SessionState?,
+        sessionState: SessionState,
         event: SessionEvent,
         instant: Instant,
         maxMsgSize: Long,
     ): SessionState {
         return sessionEventProcessorFactory.createEventToSendProcessor(key, event, sessionState, instant, maxMsgSize).execute()
+    }
+
+    override fun generateSessionState(
+        sessionId: String,
+        contextSessionProperties: KeyValuePairList,
+        counterparty: HoldingIdentity,
+        instant: Instant,
+    ): SessionState {
+        return SessionState.newBuilder()
+            .setSessionId(sessionId)
+            .setSessionStartTime(instant)
+            .setLastReceivedMessageTime(instant)
+            .setCounterpartyIdentity(counterparty)
+            .setReceivedEventsState(SessionProcessState(0, mutableListOf()))
+            .setSendEventsState(SessionProcessState(0, mutableListOf()))
+            .setSessionProperties(contextSessionProperties)
+            .setStatus(SessionStateType.CREATED)
+            .setHasScheduledCleanup(false)
+            .setRequireClose(contextSessionProperties.toMap()[Constants.FLOW_SESSION_REQUIRE_CLOSE].toBoolean())
+            .build()
     }
 
     override fun getNextReceivedEvent(sessionState: SessionState): SessionEvent? {
@@ -67,8 +90,6 @@ class SessionManagerImpl @Activate constructor(
             undeliveredMessages.isEmpty() -> null
             //don't allow data messages to be consumed when session is not fully established or if there is an error
             incorrectSessionState -> null
-            //only allow client to see a close message after the session is closed on both sides
-            status != SessionStateType.CLOSED && undeliveredMessages.first().payload is SessionClose -> null
             //return the next valid message
             undeliveredMessages.first().sequenceNum <= receivedEvents.lastProcessedSequenceNum -> {
                 val nextMessage = undeliveredMessages.first()
@@ -98,7 +119,8 @@ class SessionManagerImpl @Activate constructor(
         identity: HoldingIdentity,
     ): Pair<SessionState,
             List<SessionEvent>> {
-        val messagesToReturn = getMessagesToSendAndUpdateSendState(sessionState, instant)
+        val messagesToReturn = getMessagesToSend(sessionState)
+        sessionState.sendEventsState.undeliveredMessages = emptyList()
         return Pair(sessionState, messagesToReturn)
     }
 
@@ -109,21 +131,13 @@ class SessionManagerImpl @Activate constructor(
 
     /**
      * Get any new messages to send from the sendEvents state within [sessionState].
-     * If we're in [SessionStateType.CREATED], only send [SessionInit] events.
-     * Send any Acks or Errors regardless of timestamps.
-     * Send any other messages with a timestamp less than that of [instantInMillis].
-     * Don't send a SessionAck if other events present in the send list as ack info is present at SessionEvent level on all events.
-     * Update sendEvents state to remove acks/errors and increase timestamps of messages to send.
      * @param sessionState to examine sendEventsState.undeliveredMessages
-     * @param instant to compare against messages to avoid resending messages in quick succession
-     * @param config config to get resend values from
      * @return Messages to send
      */
-    private fun getMessagesToSendAndUpdateSendState(
+    private fun getMessagesToSend(
         sessionState: SessionState,
-        instant: Instant,
     ): List<SessionEvent> {
-        val sessionEvents = filterSessionEvents(sessionState, instant)
+        val sessionEvents = sessionState.sendEventsState.undeliveredMessages
         if (sessionEvents.isEmpty()) return emptyList()
 
 
@@ -135,34 +149,6 @@ class SessionManagerImpl @Activate constructor(
         }
 
         return sessionEvents
-    }
-
-    /**
-     * Filters session events from the given [SessionState] that are ready to be sent based on the given [instant].
-     * Events with a timestamp in the past or any error events are included in the filtered list.
-     *
-     * If the [SessionState] status is [SessionStateType.CREATED], only the first [SessionInit] event from the filtered
-     * list is returned (if present), otherwise all events are returned.
-     *
-     * @param sessionState the [SessionState] from which to filter session events.
-     * @param instant the [Instant] to use for filtering events based on their timestamp.
-     * @return a list of [SessionEvent] objects that are ready to be sent.
-     */
-    private fun filterSessionEvents(
-        sessionState: SessionState,
-        instant: Instant
-    ): List<SessionEvent> {
-        if (sessionState.sendEventsState.undeliveredMessages.isEmpty()) return emptyList()
-
-        val pastEventsAndErrors = sessionState.sendEventsState.undeliveredMessages.filter {
-            it.timestamp <= instant || it.payload is SessionError
-        }
-
-        return if (SessionStateType.CREATED == sessionState.status) {
-            pastEventsAndErrors.firstOrNull { it.payload is SessionInit }?.let { listOf(it) } ?: emptyList()
-        } else {
-            pastEventsAndErrors
-        }
     }
 
     /**

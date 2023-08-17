@@ -120,10 +120,9 @@ class FlowMapperIntegrationTest {
             "flowId",
             emptyKeyValuePairList(),
             emptyKeyValuePairList(),
-            emptyKeyValuePairList(),
         )
 
-        val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, inputKey, 1, sessionInit)
+        val sessionEvent = buildSessionEvent(MessageDirection.OUTBOUND, inputKey, 1, sessionInit, contextSessionProps = emptyKeyValuePairList())
         val flowMapperEvent = FlowMapperEvent(sessionEvent)
         val result = onNext(null, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
 
@@ -144,9 +143,8 @@ class FlowMapperIntegrationTest {
             "flow id",
             emptyKeyValuePairList(),
             emptyKeyValuePairList(),
-            emptyKeyValuePairList(),
         )
-        val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, inputKey, 1, sessionInit)
+        val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, inputKey, 1, sessionInit, contextSessionProps = emptyKeyValuePairList())
         val flowMapperEvent = FlowMapperEvent(sessionEvent)
         val result = onNext(null, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
 
@@ -165,7 +163,13 @@ class FlowMapperIntegrationTest {
     fun `Send SessionData as initiator`() {
         val inputKey = "sessionId"
         val sessionEvent =
-            buildSessionEvent(MessageDirection.OUTBOUND, inputKey, 3, SessionData(ByteBuffer.wrap("".toByteArray()), null))
+            buildSessionEvent(
+                MessageDirection.OUTBOUND,
+                inputKey,
+                3,
+                SessionData(ByteBuffer.wrap("".toByteArray()), null),
+                contextSessionProps = emptyKeyValuePairList()
+            )
         val flowMapperEvent = FlowMapperEvent(sessionEvent)
         val flowMapperState = FlowMapperState("flowKey", null, FlowMapperStateType.OPEN)
         val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
@@ -181,7 +185,13 @@ class FlowMapperIntegrationTest {
     fun `Receive SessionData as initiator`() {
         val inputKey = "sessionId"
         val sessionEvent =
-            buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionData(ByteBuffer.wrap("".toByteArray()), null))
+            buildSessionEvent(
+                MessageDirection.INBOUND,
+                inputKey,
+                3,
+                SessionData(ByteBuffer.wrap("".toByteArray()), null),
+                contextSessionProps = emptyKeyValuePairList()
+            )
         val flowMapperEvent = FlowMapperEvent(sessionEvent)
         val flowMapperState = FlowMapperState("flowKey", null, FlowMapperStateType.OPEN)
         val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
@@ -198,7 +208,13 @@ class FlowMapperIntegrationTest {
     fun `Send SessionData as initiated`() {
         val inputKey = "sessionId-INITIATED"
         val sessionEvent =
-            buildSessionEvent(MessageDirection.OUTBOUND, inputKey, 3, SessionData(ByteBuffer.wrap("".toByteArray()), null))
+            buildSessionEvent(
+                MessageDirection.OUTBOUND,
+                inputKey,
+                3,
+                SessionData(ByteBuffer.wrap("".toByteArray()), null),
+                contextSessionProps = emptyKeyValuePairList()
+            )
         val flowMapperEvent = FlowMapperEvent(sessionEvent)
         val flowMapperState = FlowMapperState("flowKey", null, FlowMapperStateType.OPEN)
         val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
@@ -214,7 +230,13 @@ class FlowMapperIntegrationTest {
     fun `Receive SessionData as initiated`() {
         val inputKey = "sessionId-INITIATED"
         val sessionEvent =
-            buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionData(ByteBuffer.wrap("".toByteArray()), null))
+            buildSessionEvent(
+                MessageDirection.INBOUND,
+                inputKey,
+                3,
+                SessionData(ByteBuffer.wrap("".toByteArray()), null),
+                contextSessionProps = emptyKeyValuePairList()
+            )
         val flowMapperEvent = FlowMapperEvent(sessionEvent)
         val flowMapperState = FlowMapperState("flowKey", null, FlowMapperStateType.OPEN)
         val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
@@ -231,7 +253,7 @@ class FlowMapperIntegrationTest {
     fun `Receive SessionError in CLOSING state - ignore and change state to ERROR`() {
         val inputKey = "sessionId"
         val sessionEvent =
-            buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionError())
+            buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionError(), contextSessionProps = emptyKeyValuePairList())
         val flowMapperEvent = FlowMapperEvent(sessionEvent)
         val flowMapperState = FlowMapperState("flowKey", null, FlowMapperStateType.CLOSING)
         val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
@@ -247,7 +269,7 @@ class FlowMapperIntegrationTest {
     fun `Receive SessionError in ERROR state - ignore`() {
         val inputKey = "sessionId"
         val sessionEvent =
-            buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionError())
+            buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionError(), contextSessionProps = emptyKeyValuePairList())
         val flowMapperEvent = FlowMapperEvent(sessionEvent)
         val flowMapperState = FlowMapperState("flowKey", null, FlowMapperStateType.ERROR)
         val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))
@@ -263,7 +285,7 @@ class FlowMapperIntegrationTest {
     fun `Receive SessionError in OPEN state - forward and change state to ERROR`() {
         val inputKey = "sessionId"
         val sessionEvent =
-            buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionError())
+            buildSessionEvent(MessageDirection.INBOUND, inputKey, 3, SessionError(), contextSessionProps = emptyKeyValuePairList())
         val flowMapperEvent = FlowMapperEvent(sessionEvent)
         val flowMapperState = FlowMapperState("flowKey", null, FlowMapperStateType.OPEN)
         val result = onNext(flowMapperState, Record(FLOW_MAPPER_EVENT_TOPIC, inputKey, flowMapperEvent))

@@ -12,6 +12,7 @@ import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.chunking.ChunkDeserializerService
 import net.corda.messaging.api.chunking.MessagingChunkFactory
@@ -62,9 +63,9 @@ class SessionManagerImplTest {
             SessionStateType.CONFIRMED,
             1,
             listOf(
-                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionData()),
-                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 3, SessionData()),
-                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 4, SessionData()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionData(), contextSessionProps = emptyKeyValuePairList()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 3, SessionData(), contextSessionProps = emptyKeyValuePairList()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 4, SessionData(), contextSessionProps = emptyKeyValuePairList()),
             ),
             0,
             listOf()
@@ -80,8 +81,8 @@ class SessionManagerImplTest {
             SessionStateType.CONFIRMED,
             1,
             listOf(
-                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 3, SessionData()),
-                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 4, SessionData()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 3, SessionData(), contextSessionProps = emptyKeyValuePairList()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 4, SessionData(), contextSessionProps = emptyKeyValuePairList()),
             ),
             0,
             listOf()
@@ -96,9 +97,9 @@ class SessionManagerImplTest {
             SessionStateType.CONFIRMED,
             1,
             listOf(
-                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionData()),
-                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 3, SessionData()),
-                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 4, SessionData()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionData(), contextSessionProps = emptyKeyValuePairList()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 3, SessionData(), contextSessionProps = emptyKeyValuePairList()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 4, SessionData(), contextSessionProps = emptyKeyValuePairList()),
             ),
             0,
             listOf()
@@ -117,9 +118,30 @@ class SessionManagerImplTest {
             listOf(),
             4,
             listOf(
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 2, SessionData(), instant.minusMillis(50)),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 3, SessionData(), instant),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 4, SessionData(), instant.plusMillis(100)),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    2,
+                    SessionData(),
+                    instant.minusMillis(50),
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    3,
+                    SessionData(),
+                    instant,
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    4,
+                    SessionData(),
+                    instant.plusMillis(100),
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
             ),
         )
         //validate only messages with a timestamp in the past are returned.
@@ -237,9 +259,30 @@ class SessionManagerImplTest {
             listOf(),
             4,
             listOf(
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 2, SessionData(), instant.minusMillis(100)),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 3, SessionData(), instant.minusMillis(100)),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 4, SessionInit(), instant.minusMillis(50)),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    2,
+                    SessionData(),
+                    instant.minusMillis(100),
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    3,
+                    SessionData(),
+                    instant.minusMillis(100),
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    4,
+                    SessionInit(),
+                    instant.minusMillis(50),
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
             ),
         )
 
@@ -251,13 +294,19 @@ class SessionManagerImplTest {
 
     @Test
     fun `CREATED state, data received for init message sent, state moves to CONFIRMED`() {
-        val init = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionInit())
+        val init = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionInit(), contextSessionProps = emptyKeyValuePairList())
         val sessionState = buildSessionState(
             SessionStateType.CREATED, 0, emptyList(), 1,
             mutableListOf(init)
         )
 
-        val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", null, SessionData())
+        val sessionEvent = buildSessionEvent(
+            MessageDirection.INBOUND,
+            "sessionId",
+            null,
+            SessionData(),
+            contextSessionProps = emptyKeyValuePairList()
+        )
         val updatedState = sessionManager.processMessageReceived("key", sessionState, sessionEvent, Instant.now())
 
         assertThat(updatedState.status).isEqualTo(SessionStateType.CONFIRMED)
@@ -277,9 +326,30 @@ class SessionManagerImplTest {
             SessionStateType.CONFIRMED,
             4,
             listOf(
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 2, SessionData(chunks[0], null), instant),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 3, SessionData(chunks[1], null), instant),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 4, SessionData(chunks[2], null), instant),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    2,
+                    SessionData(chunks[0], null),
+                    instant,
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    3,
+                    SessionData(chunks[1], null),
+                    instant,
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    4,
+                    SessionData(chunks[2], null),
+                    instant,
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
             ),
             4,
             listOf(),
@@ -302,9 +372,30 @@ class SessionManagerImplTest {
             SessionStateType.CONFIRMED,
             4,
             listOf(
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 2, SessionData(chunks[0], null), instant),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 3, SessionData(chunks[1], null), instant),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 4, SessionData(chunks[2], null), instant),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    2,
+                    SessionData(chunks[0], null),
+                    instant,
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    3,
+                    SessionData(chunks[1], null),
+                    instant,
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    4,
+                    SessionData(chunks[2], null),
+                    instant,
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
             ),
             4,
             listOf(),
@@ -331,9 +422,30 @@ class SessionManagerImplTest {
             SessionStateType.CONFIRMED,
             4,
             listOf(
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 2, SessionData(chunks[0], null), instant),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 3, SessionData(chunks[1], null), instant),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 4, SessionData(chunks[2], null), instant),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    2,
+                    SessionData(chunks[0], null),
+                    instant,
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    3,
+                    SessionData(chunks[1], null),
+                    instant,
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    4,
+                    SessionData(chunks[2], null),
+                    instant,
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
             ),
             4,
             listOf(),

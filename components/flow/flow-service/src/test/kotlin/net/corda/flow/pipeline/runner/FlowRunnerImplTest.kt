@@ -169,7 +169,6 @@ class FlowRunnerImplTest {
         val sessionInit = SessionInit().apply {
             contextPlatformProperties = platformContext.avro
             contextUserProperties = userContext.avro
-            contextSessionProperties = sessionContext.avro
         }
 
         val flowStartContext = FlowStartContext().apply {
@@ -182,7 +181,9 @@ class FlowRunnerImplTest {
             }
         }
         val sessionEvent = SessionEvent().apply {
+            sequenceNum = 1
             payload = sessionInit
+            contextSessionProperties = sessionContext.avro
         }
         val logicAndArgs = InitiatedFlow(initiatedFlow, mock())
 
@@ -201,7 +202,7 @@ class FlowRunnerImplTest {
                 flowStartContext,
                 true,
                 sandboxGroupContext,
-                localContextProperties.counterpartySessionProperties
+                localContextProperties.sessionProperties
             )
         ).thenReturn(logicAndArgs)
         whenever(

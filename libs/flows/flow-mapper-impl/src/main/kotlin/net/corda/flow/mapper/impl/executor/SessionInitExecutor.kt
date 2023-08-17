@@ -96,7 +96,6 @@ class SessionInitExecutor(
             //with an extra field of flowKey. set flowkey to null to not expose it on outbound messages
             val tmpFLowEventKey = sessionInit.flowId
             sessionInit.flowId = null
-            sessionEvent.payload = sessionInit
 
             SessionInitOutputs(
                 tmpFLowEventKey,

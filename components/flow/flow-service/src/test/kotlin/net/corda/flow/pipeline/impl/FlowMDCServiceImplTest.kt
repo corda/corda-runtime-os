@@ -81,7 +81,8 @@ class FlowMDCServiceImplTest {
             payload,
             Instant.now(),
             aliceHoldingIdentity,
-            aliceHoldingIdentity
+            aliceHoldingIdentity,
+            null
         )
 
     @Test

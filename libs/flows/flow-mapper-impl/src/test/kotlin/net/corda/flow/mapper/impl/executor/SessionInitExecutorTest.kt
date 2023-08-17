@@ -32,8 +32,8 @@ class SessionInitExecutorTest {
         whenever(sessionEventSerializer.serialize(any())).thenReturn(bytes)
 
         val flowId = "id1"
-        val sessionInit = SessionInit("", flowId, emptyKeyValuePairList(), emptyKeyValuePairList(),emptyKeyValuePairList())
-        val payload = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, sessionInit)
+        val sessionInit = SessionInit("", flowId, emptyKeyValuePairList(), emptyKeyValuePairList())
+        val payload = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, sessionInit, contextSessionProps = emptyKeyValuePairList())
         val result =
             SessionInitExecutor("sessionId", payload, sessionInit, null, sessionEventSerializer, flowConfig).execute()
         val state = result.flowMapperState
@@ -54,8 +54,14 @@ class SessionInitExecutorTest {
 
     @Test
     fun `Inbound session init creates new state and forwards to flow event`() {
-        val sessionInit = SessionInit("", null, emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList())
-        val payload = buildSessionEvent(MessageDirection.INBOUND, "sessionId-INITIATED", 1, sessionInit)
+        val sessionInit = SessionInit("", null, emptyKeyValuePairList(), emptyKeyValuePairList())
+        val payload = buildSessionEvent(
+            MessageDirection.INBOUND,
+            "sessionId-INITIATED",
+            1,
+            sessionInit,
+            contextSessionProps = emptyKeyValuePairList()
+        )
         val result = SessionInitExecutor(
             "sessionId-INITIATED",
             payload,
@@ -83,8 +89,8 @@ class SessionInitExecutorTest {
 
     @Test
     fun `Session init with non null state ignored`() {
-        val sessionInit = SessionInit("", null, emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList())
-        val payload = buildSessionEvent(MessageDirection.INBOUND, "", 1, sessionInit)
+        val sessionInit = SessionInit("", null, emptyKeyValuePairList(), emptyKeyValuePairList())
+        val payload = buildSessionEvent(MessageDirection.INBOUND, "", 1, sessionInit, contextSessionProps = emptyKeyValuePairList())
         val result = SessionInitExecutor(
             "sessionId-INITIATED",
             payload,
@@ -104,8 +110,14 @@ class SessionInitExecutorTest {
     @Test
     fun `Subsequent OUTBOUND SessionInit messages get passed through if no ACK received from first message`(){
         whenever(sessionEventSerializer.serialize(any())).thenReturn("bytes".toByteArray())
-        val retrySessionInit = SessionInit("info", "1", emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList())
-        val payload = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, retrySessionInit)
+        val retrySessionInit = SessionInit("info", "1", emptyKeyValuePairList(), emptyKeyValuePairList())
+        val payload = buildSessionEvent(
+            MessageDirection.OUTBOUND,
+            "sessionId",
+            1,
+            retrySessionInit,
+            contextSessionProps = emptyKeyValuePairList()
+        )
 
         val flowMapperState = FlowMapperState()
         flowMapperState.status = FlowMapperStateType.OPEN
@@ -128,9 +140,15 @@ class SessionInitExecutorTest {
 
     @Test
     fun `Duplicate INBOUND SessionInit messages are ignored`() {
-        val retrySessionInit = SessionInit("info", "1", emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList())
+        val retrySessionInit = SessionInit("info", "1", emptyKeyValuePairList(), emptyKeyValuePairList())
 
-        val payload = buildSessionEvent(MessageDirection. INBOUND, "sessionId", 1, retrySessionInit)
+        val payload = buildSessionEvent(
+            MessageDirection. INBOUND,
+            "sessionId",
+            1,
+            retrySessionInit,
+            contextSessionProps = emptyKeyValuePairList()
+        )
 
         val flowMapperState = FlowMapperState()
         flowMapperState.status = FlowMapperStateType.OPEN

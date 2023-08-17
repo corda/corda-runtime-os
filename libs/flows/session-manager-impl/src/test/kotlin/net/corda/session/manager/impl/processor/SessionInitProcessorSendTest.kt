@@ -3,6 +3,7 @@ package net.corda.session.manager.impl.processor
 import java.time.Instant
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionInit
+import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.test.flow.util.buildSessionEvent
@@ -14,7 +15,7 @@ import org.junit.jupiter.api.Test
 class SessionInitProcessorSendTest {
 
     private fun createSessionInit() =
-        SessionInit("flow", "flowId1", emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList())
+        SessionInit("flow", "flowId1", emptyKeyValuePairList(),  emptyKeyValuePairList())
 
     @Test
     fun `Send init when state is not null`() {
@@ -22,11 +23,12 @@ class SessionInitProcessorSendTest {
             MessageDirection.OUTBOUND,
             "sessionId",
             1,
-            createSessionInit()
+            createSessionInit(),
+            contextSessionProps = emptyKeyValuePairList()
         )
 
         val sessionState = buildSessionState(SessionStateType.CREATED, 0, listOf(), 1, listOf(sessionInit))
-        val sessionInitProcessor = SessionInitProcessorSend("key", sessionState, sessionInit, Instant.now())
+        val sessionInitProcessor = SessionInitProcessorSend(sessionState, sessionInit, Instant.now())
 
         val updatedState = sessionInitProcessor.execute()
 
@@ -40,9 +42,10 @@ class SessionInitProcessorSendTest {
             MessageDirection.OUTBOUND,
             "sessionId",
             1,
-            createSessionInit()
+            createSessionInit(),
+            contextSessionProps = emptyKeyValuePairList()
         )
-        val sessionInitProcessor = SessionInitProcessorSend("key", null, sessionInitEvent, Instant.now())
+        val sessionInitProcessor = SessionInitProcessorSend(SessionState(), sessionInitEvent, Instant.now())
 
         val sessionState = sessionInitProcessor.execute()
 

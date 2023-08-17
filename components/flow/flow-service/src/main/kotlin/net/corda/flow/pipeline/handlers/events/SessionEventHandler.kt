@@ -6,15 +6,16 @@ import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
+import net.corda.data.flow.state.waiting.Wakeup
 import net.corda.flow.pipeline.CheckpointInitializer
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
-import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.protocol.FlowAndProtocolVersion
@@ -68,11 +69,10 @@ class SessionEventHandler @Activate constructor(
 
         // Null is returned if duplicate [SessionInit]s are received
         val nextSessionEvent = sessionManager.getNextReceivedEvent(updatedSessionState)
-        val nextSessionPayload = nextSessionEvent?.payload
-
         if (!checkpoint.doesExist) {
-            if (nextSessionPayload is SessionInit) {
-                createInitiatedFlowCheckpoint(context, nextSessionPayload, nextSessionEvent, updatedSessionState)
+            val sessionInit = getSessionInitIfPresent(nextSessionEvent)
+            if (nextSessionEvent != null && sessionInit != null) {
+                createInitiatedFlowCheckpoint(context, sessionInit.cpiId, nextSessionEvent, updatedSessionState)
             } else {
                 discardSessionEvent(context, sessionEvent)
             }
@@ -83,6 +83,18 @@ class SessionEventHandler @Activate constructor(
         context.flowMetrics.flowSessionMessageReceived(sessionEvent.payload::class.java.name)
 
         return context
+    }
+
+    private fun getSessionInitIfPresent(sessionEvent: SessionEvent?): SessionInit? {
+        if (sessionEvent == null) return null
+        val payload = sessionEvent.payload
+        return if (payload is SessionInit) {
+            payload
+        } else if (payload is SessionData && payload.sessionInit != null) {
+            payload.sessionInit
+        } else {
+            null
+        }
     }
 
     private fun getContextSessionProperties(protocolVersion: FlowAndProtocolVersion): KeyValuePairList {
@@ -96,15 +108,15 @@ class SessionEventHandler @Activate constructor(
 
     private fun createInitiatedFlowCheckpoint(
         context: FlowEventContext<*>,
-        sessionInit: SessionInit,
+        cpiId: String,
         sessionEvent: SessionEvent,
         initialSessionState: SessionState,
     ) {
         val sessionId = sessionEvent.sessionId
-        val (requestedProtocolName, initiatorVersionsSupported) = getProtocolInfo(sessionInit, sessionEvent)
+        val (requestedProtocolName, initiatorVersionsSupported) = getProtocolInfo(sessionEvent.contextSessionProperties, sessionEvent)
 
         val initiatedFlowNameAndProtocolResult = initializeCheckpointAndGetResult(
-            context, sessionEvent, sessionInit, requestedProtocolName, initiatorVersionsSupported
+            context, sessionEvent, cpiId, requestedProtocolName, initiatorVersionsSupported
         )
 
         //set initial session state, so it can be found when trying to send the confirmation message
@@ -113,13 +125,7 @@ class SessionEventHandler @Activate constructor(
 
         initiatedFlowNameAndProtocolResult.let { result ->
             when {
-                result.isSuccess -> sendConfirmMessage(
-                    result.getOrNull(),
-                    requestedProtocolName,
-                    initiatorVersionsSupported,
-                    context,
-                    sessionId
-                )
+                result.isSuccess -> {}
                 result.isFailure -> sendErrorMessage(
                     context,
                     sessionId,
@@ -133,7 +139,7 @@ class SessionEventHandler @Activate constructor(
     private fun initializeCheckpointAndGetResult(
         context: FlowEventContext<*>,
         sessionEvent: SessionEvent,
-        sessionInit: SessionInit,
+        cpiId: String,
         requestedProtocolName: String,
         initiatorVersionsSupported: List<Int>
     ): Result<FlowAndProtocolVersion> {
@@ -145,7 +151,7 @@ class SessionEventHandler @Activate constructor(
 
         checkpointInitializer.initialize(
             context.checkpoint,
-            WaitingFor(WaitingForSessionInit(sessionId)),
+            WaitingFor(Wakeup()),
             holdingIdentity
         ) {
             val protocolStore = try {
@@ -166,7 +172,7 @@ class SessionEventHandler @Activate constructor(
                 .setInitiatorType(FlowInitiatorType.P2P)
                 .setRequestId(sessionId)
                 .setIdentity(initiatedIdentity)
-                .setCpiId(sessionInit.cpiId)
+                .setCpiId(cpiId)
                 .setInitiatedBy(initiatingIdentity)
                 .setFlowClassName(initiatedFlowNameAndProtocolResult?.getOrNull()?.flowClassName ?: "Invalid protocol")
                 .setContextPlatformProperties(keyValuePairListOf(mapOf(MDC_CLIENT_ID to sessionId)))
@@ -179,10 +185,10 @@ class SessionEventHandler @Activate constructor(
 
 
     private fun getProtocolInfo(
-        sessionInit: SessionInit,
+        contextSessionProperties: KeyValuePairList,
         sessionEvent: SessionEvent,
     ): Pair<String, List<Int>> {
-        val sessionProperties = KeyValueStore(sessionInit.contextSessionProperties)
+        val sessionProperties = KeyValueStore(contextSessionProperties)
         val requestedProtocolName = sessionProperties[FLOW_PROTOCOL]
         val initiatorVersionsSupportedProp = sessionProperties[FLOW_PROTOCOL_VERSIONS_SUPPORTED]
         if (requestedProtocolName == null || initiatorVersionsSupportedProp == null) {

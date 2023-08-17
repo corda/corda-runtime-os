@@ -46,7 +46,7 @@ class FlowMapperEventExecutorFactoryImplTest {
         val executor = executorFactoryImpl.create(
             "",
             FlowMapperEvent(SessionEvent(MessageDirection.INBOUND, Instant.now(), "", 1,
-                HoldingIdentity(), HoldingIdentity(), null)),
+                HoldingIdentity(), HoldingIdentity(), null, null)),
             null,
             SmartConfigImpl.empty(),
             Instant.now()
@@ -68,7 +68,9 @@ class FlowMapperEventExecutorFactoryImplTest {
                         "FlowMapper-SessionError",
                         "Received SessionError with sessionId 1"
                     )
-                ))),
+                ),
+                null
+            )),
             null,
             SmartConfigImpl.empty(),
             Instant.now()

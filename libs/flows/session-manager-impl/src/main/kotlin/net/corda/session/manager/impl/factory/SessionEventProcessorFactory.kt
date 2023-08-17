@@ -52,10 +52,10 @@ class SessionEventProcessorFactory @Activate constructor(
 
         return when (val payload = sessionEvent.payload) {
             is SessionInit -> SessionInitProcessorReceive(key, sessionState, sessionEvent, instant)
-            is SessionData -> SessionDataProcessorReceive(key, sessionState, sessionEvent, instant)
+            is SessionData -> SessionDataProcessorReceive(key, sessionState, sessionEvent, payload, instant)
             is SessionClose -> SessionCloseProcessorReceive(key, sessionState, sessionEvent, instant)
             is SessionError -> SessionErrorProcessorReceive(key, sessionState, sessionEvent, payload.errorMessage, instant)
-            is SessionConfirm -> SessionConfirmProcessorReceive(key, sessionState, sessionEvent, payload, instant)
+            is SessionConfirm -> SessionConfirmProcessorReceive(key, sessionState, sessionEvent, instant)
             else -> throw NotImplementedError(
                 "The session event type '${payload.javaClass.name}' is not supported."
             )
@@ -65,13 +65,14 @@ class SessionEventProcessorFactory @Activate constructor(
     /**
      * Get the correct processor for the [sessionEvent] to be sent to a counterparty.
      * [key] is provided for logging purposes
+     * [sessionEvent] the given [sessionEvent] to send
      * [sessionState] is provided for the given [sessionEvent]
      * [instant] is provided for timestamps
      */
     fun createEventToSendProcessor(
         key: Any,
         sessionEvent: SessionEvent,
-        sessionState: SessionState?,
+        sessionState: SessionState,
         instant: Instant,
         maxMsgSize: Long,
     ): SessionEventProcessor {
@@ -82,14 +83,14 @@ class SessionEventProcessorFactory @Activate constructor(
                     "for factory method createEventToSendProcessor()")
         }
         return when (val payload = sessionEvent.payload) {
-            is SessionInit -> SessionInitProcessorSend(key, sessionState, sessionEvent, instant)
+            is SessionInit -> SessionInitProcessorSend(sessionState, sessionEvent, instant)
             is SessionData -> {
                 val chunkSerializer = messagingChunkFactory.createChunkSerializerService(maxMsgSize)
                 SessionDataProcessorSend(key, sessionState, sessionEvent, instant, chunkSerializer, payload)
             }
             is SessionClose -> SessionCloseProcessorSend(key, sessionState, sessionEvent, instant)
             is SessionError -> SessionErrorProcessorSend(key, sessionState, sessionEvent, payload.errorMessage, instant)
-            is SessionConfirm -> SessionConfirmProcessorSend(key, sessionState, sessionEvent, instant)
+            is SessionConfirm -> SessionConfirmProcessorSend(sessionState, sessionEvent, instant)
             else -> throw NotImplementedError(
                 "The session event type '${payload.javaClass.name}' is not supported."
             )

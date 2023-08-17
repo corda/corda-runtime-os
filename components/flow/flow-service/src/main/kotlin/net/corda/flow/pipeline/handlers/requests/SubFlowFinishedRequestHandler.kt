@@ -40,7 +40,8 @@ class SubFlowFinishedRequestHandler @Activate constructor(
         return if (sessionsToClose.isEmpty()) {
             WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
         } else {
-            WaitingFor(SessionConfirmation(sessionsToClose, SessionConfirmationType.CLOSE))
+            //TODO - CORE-15757 / CORE-16184
+            WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
         }
     }
 

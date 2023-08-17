@@ -187,7 +187,7 @@ class SessionCloseIntegrationTest {
         bob.assertStatus(SessionStateType.ERROR)
 
         //close cannot be retrieved as status never went to closed
-        assertThat(alice.sessionState?.receivedEventsState?.undeliveredMessages?.size).isEqualTo(1)
+        assertThat(alice.sessionState.receivedEventsState?.undeliveredMessages?.size).isEqualTo(1)
         //close for bob was passed to client as error was received after that was processed
         bob.assertAllMessagesDelivered()
 

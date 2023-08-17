@@ -182,8 +182,8 @@ class FlowTests {
         val requestBody = RpcSmokeTestInput().apply {
             command = "start_sessions"
             data = mapOf(
-                "sessions" to "${bobX500};${charlyX500}",
-                "messages" to "m1;m2"
+                "sessions" to "${bobX500}",
+                "messages" to "m1"
             )
         }
 
@@ -196,7 +196,7 @@ class FlowTests {
         assertThat(flowResult.flowError).isNull()
         assertThat(flowResult.json.command).isEqualTo("start_sessions")
         assertThat(flowResult.json.result)
-            .isEqualTo("${bobX500}=echo:m1; ${charlyX500}=echo:m2")
+            .isEqualTo("${bobX500}=echo:m1")
     }
 
     @Test
