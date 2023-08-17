@@ -7,6 +7,7 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.messaging.api.chunking.ChunkSerializerService
+import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.utilities.debug
@@ -34,6 +35,8 @@ class SessionDataProcessorSend(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    private val isInitiatedParty = isInitiatedParty(sessionEvent)
+
     override fun execute(): SessionState {
         val sessionId = sessionEvent.sessionId
 
@@ -44,7 +47,8 @@ class SessionDataProcessorSend(
                 sessionState
             }
             SessionStateType.CREATED, SessionStateType.CONFIRMED  -> {
-                if (currentStatus == SessionStateType.CREATED) {
+                if (currentStatus == SessionStateType.CREATED ||
+                    (isInitiatedParty && sessionState.sendEventsState.lastProcessedSequenceNum == 0)) {
                     //ensure first message to arrive to counterparty contains session props
                     sessionEvent.contextSessionProperties = sessionState.sessionProperties
                 }
@@ -104,5 +108,9 @@ class SessionDataProcessorSend(
         val copy = SessionEvent.newBuilder(sessionEvent).build()
         (copy.payload as SessionData).payload = chunk
         return copy
+    }
+
+    private fun isInitiatedParty(sessionEvent: SessionEvent) : Boolean {
+        return sessionEvent.sessionId.contains(INITIATED_SESSION_ID_SUFFIX)
     }
 }
