@@ -142,6 +142,15 @@ internal class InteropRestResourceImpl @Activate constructor(
         val validHoldingIdentityShortHash = validateShortHash(holdingIdentityShortHash)
         val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(validHoldingIdentityShortHash)
 
+        if(interopIdentityRegistryService
+                .getVirtualNodeRegistryView(validHoldingIdentityShortHash)
+                .getIdentitiesByApplicationName()
+                .keys.contains(createInteropIdentityRestRequest.applicationName)) {
+            throw InvalidInputDataException(
+                "Interop identity already present with application name '${createInteropIdentityRestRequest.applicationName}'."
+            )
+        }
+
         val ownedInteropIdentityX500 = MemberX500Name(
             createInteropIdentityRestRequest.applicationName,
             vNodeInfo.holdingIdentity.x500Name.locality,
