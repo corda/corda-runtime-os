@@ -18,6 +18,8 @@ dependencies {
     implementation project(':components:ledger:ledger-persistence')
     implementation project(':components:membership:group-params-writer-service')
     implementation project(':components:membership:membership-group-read')
+    implementation project(':components:membership:membership-client')
+    implementation project(':components:membership:membership-persistence-client')
     implementation project(':components:membership:membership-persistence-service')
     implementation project(':components:permissions:permission-storage-reader-service')
     implementation project(':components:permissions:permission-storage-writer-service')
@@ -81,6 +83,8 @@ dependencies {
     runtimeOnly project(':components:virtual-node:virtual-node-write-service-impl')
     runtimeOnly project(':components:membership:certificates-service-impl')
     runtimeOnly project(':components:membership:group-policy-configuration-validation-impl')
+    runtimeOnly project(':components:membership:membership-client-impl')
+    runtimeOnly project(':components:membership:membership-persistence-client-impl')
 
     runtimeOnly project(":libs:application:application-impl")
     runtimeOnly project(':libs:crypto:cipher-suite-impl')
