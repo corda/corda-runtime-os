@@ -32,6 +32,7 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.membership.client.MemberResourceClient
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -208,10 +209,11 @@ internal class VirtualNodeUpgradeOperationHandler(
                 .memberProvidedContext
                 .toMap().toMutableMap()
 
-            if (registrationContext.containsKey("corda.serial")) {
-                registrationContext["corda.serial"] =
+            if (registrationContext.containsKey(MemberInfoExtension.SERIAL)) {
+                registrationContext[MemberInfoExtension.SERIAL] =
                     membershipGroupReader.lookup(x500Name)?.serial.toString()
             }
+
             memberResourceClient.startRegistration(
                 holdingIdentity.shortHash,
                 registrationContext
