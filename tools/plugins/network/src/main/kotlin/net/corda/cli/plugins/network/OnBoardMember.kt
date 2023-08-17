@@ -8,7 +8,6 @@ import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
 import java.security.MessageDigest
-import java.util.UUID
 import net.corda.cli.plugins.network.enums.MemberRole
 import net.corda.cli.plugins.network.utils.PrintUtils.Companion.verifyAndPrintError
 import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
@@ -69,12 +68,6 @@ class OnBoardMember : Runnable, BaseOnboard() {
         description = ["The CPI hash (Use either cpb-file or cpi-hash)."]
     )
     var cpiHash: String? = null
-
-    @Option(
-        names = ["--x500-name", "-x"],
-        description = ["The X500 name of the member. Default to a random member name"]
-    )
-    override var x500Name: String = "O=${UUID.randomUUID()}, L=London, C=GB"
 
     @Option(
         names = ["--pre-auth-token"],
@@ -252,7 +245,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
     override fun run() {
         verifyAndPrintError {
-            println("On-boarding member $x500Name")
+            println("On-boarding member $name")
 
             configureGateway()
 
@@ -274,7 +267,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
             register(waitForFinalStatus)
 
             if (waitForFinalStatus) {
-                println("Member $x500Name was onboarded.")
+                println("Member $name was onboarded.")
             } else {
                 println(
                     "Registration request has been submitted. Wait for MGM approval to finalize registration. " +
