@@ -38,8 +38,10 @@ internal class FlowExecutionPipelineStage(
     }
 
     private fun flowReady(context: FlowEventContext<Any>) : FlowContinuation {
+        // If the waiting for value is null, that indicates that the previous run of the fiber resulted in the flow
+        // terminating.
         val waitingFor = context.checkpoint.waitingFor?.value
-            ?: throw FlowFatalException("Flow [${context.checkpoint.flowId}] waiting for is null")
+            ?: return FlowContinuation.Continue
         @Suppress("unchecked_cast")
         val handler = flowWaitingForHandlers[waitingFor::class.java] as? FlowWaitingForHandler<Any>
             ?: throw FlowFatalException("${waitingFor::class.qualifiedName} does not have an associated flow status handler")
