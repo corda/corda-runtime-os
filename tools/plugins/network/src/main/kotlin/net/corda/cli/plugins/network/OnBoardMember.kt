@@ -246,8 +246,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
     override fun run() {
         verifyAndPrintError {
-            println("This sub command should only be used in for internal development")
-            println("On-boarding member $x500Name")
+            println("On-boarding member $name")
 
             configureGateway()
 
@@ -269,7 +268,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
             register(waitForFinalStatus)
 
             if (waitForFinalStatus) {
-                println("Member $x500Name was onboarded.")
+                println("Member $name was onboarded.")
             } else {
                 println(
                     "Registration request has been submitted. Wait for MGM approval to finalize registration. " +

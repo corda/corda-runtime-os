@@ -172,7 +172,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
 
     override fun run() {
         println("This sub command should only be used in for internal development")
-        println("On-boarding MGM member $x500Name")
+        println("On-boarding MGM member $name")
 
         configureGateway()
 
@@ -182,7 +182,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
 
         setupNetwork()
 
-        println("MGM Member $x500Name was onboarded")
+        println("MGM Member $name was onboarded")
 
         saveGroupPolicy()
 

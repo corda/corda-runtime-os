@@ -109,7 +109,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         arity = "1",
         index = "0"
     )
-    lateinit var x500Name: String
+    lateinit var name: String
 
     @Option(
         names = ["--ca"],
@@ -204,7 +204,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
 
     protected val holdingId: String by lazy {
         val request = CreateVirtualNodeRequest(
-            x500Name = x500Name,
+            x500Name = name,
             cpiFileChecksum = cpiFileChecksum,
             vaultDdlConnection = null,
             vaultDmlConnection = null,
@@ -375,7 +375,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
             throw OnboardException("Could not submit MGM registration: ${response.memberInfoSubmitted}")
         }
 
-        println("Registration ID of $x500Name is $registrationId")
+        println("Registration ID of $name is $registrationId")
 
         if (waitForFinalStatus) {
             waitForFinalStatus(registrationId)
