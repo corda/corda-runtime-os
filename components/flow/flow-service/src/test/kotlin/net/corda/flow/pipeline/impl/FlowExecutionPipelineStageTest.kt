@@ -11,6 +11,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.metrics.FlowIORequestTypeConverter
 import net.corda.flow.pipeline.events.FlowEventContext
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.metrics.FlowMetrics
@@ -18,6 +19,7 @@ import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.state.FlowCheckpoint
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.AdditionalAnswers
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
@@ -108,6 +110,86 @@ class FlowExecutionPipelineStageTest {
         val outputContext = stage.runFlow(context, TIMEOUT)
         assertEquals(secondContext, outputContext)
         verifyInteractions(fiberOutputs)
+    }
+
+    @Test
+    fun `when the flow fails, context is updated correctly`() {
+        val waitingForHandlers = createWaitingForHandlerMap(
+            mapOf(
+                WaitingFor(SessionConfirmation()) to FlowContinuation.Run()
+            )
+        )
+        val newContext = createContext(WaitingFor(null))
+        val requestHandlers = createRequestHandlerMap(
+            mapOf(FlowIORequest.FlowFailed(IllegalArgumentException()) to Pair(WaitingFor(null), newContext))
+        )
+        val fiberOutputs = listOf(FlowIORequest.FlowFailed(IllegalArgumentException()))
+        val flowRunner = createFlowRunner(fiberOutputs)
+        val stage = FlowExecutionPipelineStage(
+            waitingForHandlers,
+            requestHandlers,
+            flowRunner,
+            fiberCache,
+            ioRequestTypeConverter
+        )
+
+        val context = createContext()
+        val outputContext = stage.runFlow(context, TIMEOUT)
+        assertEquals(newContext, outputContext)
+        verifyInteractions(fiberOutputs)
+    }
+
+    @Test
+    fun `when there is no suitable waitingFor handler, throws fatal exception`() {
+        val waitingForHandlers = createWaitingForHandlerMap(
+            mapOf(
+            )
+        )
+        val newContext = createContext(WaitingFor(ExternalEventResponse()))
+        val requestHandlers = createRequestHandlerMap(
+            mapOf(fiberOutput to Pair(WaitingFor(ExternalEventResponse()), newContext))
+        )
+        val fiberOutputs = listOf(flowSuspended)
+        val flowRunner = createFlowRunner(fiberOutputs)
+        val stage = FlowExecutionPipelineStage(
+            waitingForHandlers,
+            requestHandlers,
+            flowRunner,
+            fiberCache,
+            ioRequestTypeConverter
+        )
+
+        val context = createContext()
+        assertThrows<FlowFatalException> {
+            stage.runFlow(context, TIMEOUT)
+        }
+    }
+
+    @Test
+    fun `when there is no suitable request handler, throws fatal exception`() {
+        val waitingForHandlers = createWaitingForHandlerMap(
+            mapOf(
+                WaitingFor(SessionConfirmation()) to FlowContinuation.Run(),
+                WaitingFor(ExternalEventResponse()) to FlowContinuation.Continue
+            )
+        )
+        val requestHandlers = createRequestHandlerMap(
+            mapOf()
+        )
+        val fiberOutputs = listOf(flowSuspended)
+        val flowRunner = createFlowRunner(fiberOutputs)
+        val stage = FlowExecutionPipelineStage(
+            waitingForHandlers,
+            requestHandlers,
+            flowRunner,
+            fiberCache,
+            ioRequestTypeConverter
+        )
+
+        val context = createContext()
+        assertThrows<FlowFatalException> {
+            stage.runFlow(context, TIMEOUT)
+        }
     }
 
     private fun verifyInteractions(
