@@ -197,7 +197,8 @@ class QueryMemberInfoHandlerTest {
         signatureContent,
         signatureName,
         mgmContextBytes,
-        1L
+        1L,
+        isDeleted = false
     )
 
     @BeforeEach

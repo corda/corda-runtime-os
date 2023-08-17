@@ -58,6 +58,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isNotary
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
+import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.InvalidGroupParametersUpdateException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
@@ -125,8 +126,6 @@ class StaticMemberRegistrationService(
         private const val KEY_SCHEME = "corda.key.scheme"
         private val DUMMY_CERTIFICATE =
             this::class.java.getResource("/static_network_dummy_certificate.pem")!!.readText()
-        private val DUMMY_PUBLIC_SESSION_KEY =
-            this::class.java.getResource("/static_network_dummy_session_key.pem")!!.readText()
 
         private const val MAX_PERSISTENCE_RETRIES = 10
     }
@@ -287,7 +286,7 @@ class StaticMemberRegistrationService(
                 customFields,
                 membershipGroupReader,
             )
-            (records + createHostedIdentity(member, groupPolicy)).publish()
+            (records + createHostedIdentity(memberInfo, groupPolicy)).publish()
 
             persistGroupParameters(memberInfo, staticMemberList, membershipGroupReader)
 
@@ -532,11 +531,12 @@ class StaticMemberRegistrationService(
      * Creates the locally hosted identity required for the P2P layer.
      */
     private fun createHostedIdentity(
-        registeringMember: HoldingIdentity,
+        registeringMember: MemberInfo,
         groupPolicy: GroupPolicy
     ): Record<String, HostedIdentityEntry> {
-        val memberName = registeringMember.x500Name
-        val memberId = registeringMember.shortHash
+        val holdingId = registeringMember.holdingIdentity
+        val memberName = holdingId.x500Name
+        val memberId = holdingId.shortHash
         val groupId = groupPolicy.groupId
 
         /**
@@ -548,7 +548,7 @@ class StaticMemberRegistrationService(
             memberId.value,
             listOf(DUMMY_CERTIFICATE),
             HostedIdentitySessionKeyAndCert(
-                DUMMY_PUBLIC_SESSION_KEY,
+                keyEncodingService.encodeAsString(registeringMember.sessionInitiationKeys.first()),
                 null
             ),
             emptyList()
@@ -556,7 +556,7 @@ class StaticMemberRegistrationService(
 
         return Record(
             P2P_HOSTED_IDENTITIES_TOPIC,
-            registeringMember.shortHash.value,
+            holdingId.shortHash.value,
             hostedIdentity
         )
     }

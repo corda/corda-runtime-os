@@ -19,7 +19,6 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.impl.registration.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
-import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
@@ -189,11 +188,10 @@ internal class StartRegistrationHandler(
                 val pendingContext = pendingMemberInfo.memberProvidedContext.toMap()
                 val diff = ((pendingContext.entries - previousContext.entries) + (previousContext.entries - pendingContext.entries))
                     .filter {
-                        it.key.startsWith(ENDPOINTS) ||
-                                it.key.startsWith(SESSION_KEYS) ||
-                                it.key.startsWith(LEDGER_KEYS) ||
-                                it.key.startsWith(ROLES_PREFIX) ||
-                                it.key.startsWith("corda.notary")
+                        it.key.startsWith(SESSION_KEYS) ||
+                        it.key.startsWith(LEDGER_KEYS) ||
+                        it.key.startsWith(ROLES_PREFIX) ||
+                        it.key.startsWith("corda.notary")
                     }
                 validateRegistrationRequest(
                     diff.isEmpty()

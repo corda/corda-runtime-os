@@ -144,6 +144,7 @@ class QueryMemberSignatureHandlerTest {
                 signatureSpec,
                 mgmContext,
                 1L,
+                isDeleted = false
             )
         }
 

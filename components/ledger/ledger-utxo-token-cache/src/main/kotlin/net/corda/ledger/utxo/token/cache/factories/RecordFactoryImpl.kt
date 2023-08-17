@@ -8,22 +8,26 @@ import net.corda.data.ledger.utxo.token.selection.data.TokenBalanceQueryResult
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQueryResult
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimReleaseAck
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimResultStatus
-import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.ledger.utxo.token.cache.converters.EntityConverter
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.TokenBalance
+import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.messaging.api.records.Record
 
-class RecordFactoryImpl(private val externalEventResponseFactory: ExternalEventResponseFactory) : RecordFactory {
+class RecordFactoryImpl(
+    private val externalEventResponseFactory: ExternalEventResponseFactory,
+    private val entityConverter: EntityConverter
+) : RecordFactory {
 
     override fun getSuccessfulClaimResponse(
         flowId: String,
         externalEventRequestId: String,
-        poolKey: TokenPoolCacheKey,
+        poolKey: TokenPoolKey,
         selectedTokens: List<CachedToken>
     ): Record<String, FlowEvent> {
         val payload = TokenClaimQueryResult().apply {
-            this.poolKey = poolKey
+            this.poolKey = entityConverter.toTokenPoolCacheKey(poolKey)
             this.claimId = externalEventRequestId
             this.resultType = TokenClaimResultStatus.SUCCESS
             this.claimedTokens = selectedTokens.map { it.toAvro() }
@@ -35,10 +39,10 @@ class RecordFactoryImpl(private val externalEventResponseFactory: ExternalEventR
     override fun getFailedClaimResponse(
         flowId: String,
         externalEventRequestId: String,
-        poolKey: TokenPoolCacheKey
+        poolKey: TokenPoolKey
     ): Record<String, FlowEvent> {
         val payload = TokenClaimQueryResult().apply {
-            this.poolKey = poolKey
+            this.poolKey = entityConverter.toTokenPoolCacheKey(poolKey)
             this.claimId = externalEventRequestId
             this.resultType = TokenClaimResultStatus.NONE_AVAILABLE
             this.claimedTokens = listOf()
@@ -57,11 +61,11 @@ class RecordFactoryImpl(private val externalEventResponseFactory: ExternalEventR
     override fun getBalanceResponse(
         flowId: String,
         externalEventRequestId: String,
-        poolKey: TokenPoolCacheKey,
+        poolKey: TokenPoolKey,
         tokenBalance: TokenBalance
     ): Record<String, FlowEvent> {
         val payload = TokenBalanceQueryResult().apply {
-            this.poolKey = poolKey
+            this.poolKey = entityConverter.toTokenPoolCacheKey(poolKey)
             this.availableBalance = tokenBalance.availableBalance.toTokenAmount()
             this.totalBalance = tokenBalance.totalBalance.toTokenAmount()
         }

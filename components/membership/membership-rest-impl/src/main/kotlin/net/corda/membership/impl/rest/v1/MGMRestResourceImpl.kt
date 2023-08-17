@@ -275,11 +275,19 @@ class MGMRestResourceImpl internal constructor(
         holdingIdentityShortHash: String, requestId: String, reason: ManualDeclinationReason
     ) = impl.declineRegistrationRequest(holdingIdentityShortHash, requestId, reason)
 
-    override fun suspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters) =
+    @Deprecated("Deprecated in favour of suspendMember")
+    override fun deprecatedSuspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters) =
         impl.suspendMember(holdingIdentityShortHash, suspensionParams)
 
-    override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) =
+    override fun suspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters) =
+        impl.suspendMember(holdingIdentityShortHash, suspensionParams.throwBadRequestIfNoSerialNumber())
+
+    @Deprecated("Deprecated in favour of activateMember")
+    override fun deprecatedActivateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) =
         impl.activateMember(holdingIdentityShortHash, activationParams)
+
+    override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) =
+        impl.activateMember(holdingIdentityShortHash, activationParams.throwBadRequestIfNoSerialNumber())
 
     override fun updateGroupParameters(holdingIdentityShortHash: String, newGroupParameters: RestGroupParameters) =
         impl.updateGroupParameters(holdingIdentityShortHash, newGroupParameters)
@@ -292,6 +300,13 @@ class MGMRestResourceImpl internal constructor(
     fun deactivate(reason: String) {
         coordinator.updateStatus(LifecycleStatus.DOWN, reason)
         impl = InactiveImpl
+    }
+
+    private fun SuspensionActivationParameters.throwBadRequestIfNoSerialNumber(): SuspensionActivationParameters {
+        if (this.serialNumber == null) {
+            throw BadRequestException("The serial number must be provided in the request.")
+        }
+        return this
     }
 
     private object InactiveImpl : InnerMGMRestResource {
@@ -598,10 +613,7 @@ class MGMRestResourceImpl internal constructor(
             }
         }
 
-        override fun suspendMember(
-            holdingIdentityShortHash: String,
-            suspensionParams: SuspensionActivationParameters
-        ) {
+        override fun suspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters) {
             val memberName = parseX500Name("suspensionParams.x500Name", suspensionParams.x500Name)
             try {
                 handleCommonErrors(holdingIdentityShortHash) {
@@ -622,11 +634,7 @@ class MGMRestResourceImpl internal constructor(
                 throw InvalidStateChangeException("${e.message}")
             }
         }
-
-        override fun activateMember(
-            holdingIdentityShortHash: String,
-            activationParams: SuspensionActivationParameters
-        ) {
+        override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) {
             val memberName = parseX500Name("activationParams.x500Name", activationParams.x500Name)
             try {
                 handleCommonErrors(holdingIdentityShortHash) {

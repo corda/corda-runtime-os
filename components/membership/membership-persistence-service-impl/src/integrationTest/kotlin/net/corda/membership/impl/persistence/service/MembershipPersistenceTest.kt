@@ -939,7 +939,8 @@ class MembershipPersistenceTest {
             byteArrayOf(1),
             RSA_SHA256.signatureName,
             cordaAvroSerializer.serialize(oldNotaryMgmContext)!!,
-            1L
+            1L,
+            isDeleted = false
         )
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()

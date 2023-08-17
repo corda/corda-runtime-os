@@ -105,9 +105,6 @@ To run the network either use the app simulator `deploy.sh` script ([see here](.
 ## Onboard an MGM member to an existing Corda cluster
 This command should only be used for internal development. See the [wiki](https://github.com/corda/corda-runtime-os/wiki/MGM-Onboarding) for more details.
 
-This command should only be used for internal development. See
-the [wiki](https://github.com/corda/corda-runtime-os/wiki/MGM-Onboarding) for more details.
-
 This is a sub-command under the `dynamic` sub-command to onboard a new MGM member (and create a new group). By default, the command will save the group policy file into `~/.corda/gp/groupPolicy.json` (and will overwrite any
 existing group policy file there).
 Use the `--save-group-policy-as` to indicate another location to save the MGM group policy file (that can be used to
@@ -116,13 +113,13 @@ create CPIs - [see here](../../../../../../../../../package/README.md))
 Examples of on-boarding an MGM can be:
 
 ```shell
-./corda-cli.sh network dynamic onboard-mgm --x500-name='O=MGM, L=London, C=GB' --user=admin --password=admin --target=https://localhost:8888 --insecure
+./corda-cli.sh network dynamic onboard-mgm 'O=MGM, L=London, C=GB' --user=admin --password=admin --target=https://localhost:8888 --insecure
 
-./corda-cli.sh network dynamic onboard-mgm --cpi-hash=D8AF6080C7B4 --user=admin --password=admin --target=https://localhost:8888 --insecure
+./corda-cli.sh network dynamic onboard-mgm 'O=MGM, L=London, C=GB' --cpi-hash=D8AF6080C7B4 --user=admin --password=admin --target=https://localhost:8888 --insecure
 
-./corda-cli.sh network dynamic onboard-mgm --save-group-policy-as /tmp/groupPolicy.json --user=admin --password=admin --target=https://localhost:8888 --insecure
+./corda-cli.sh network dynamic onboard-mgm 'O=MGM, L=London, C=GB' --save-group-policy-as /tmp/groupPolicy.json --user=admin --password=admin --target=https://localhost:8888 --insecure
 
-./corda-cli.sh network dynamic onboard-mgm --user=admin --password=admin --target=https://localhost:8888 --p2p-gateway-url=https://localhost:8888 --p2p-gateway-url=https://localhost:8886 --insecure
+./corda-cli.sh network dynamic onboard-mgm 'O=MGM, L=London, C=GB' --user=admin --password=admin --target=https://localhost:8888 --p2p-gateway-url=https://localhost:8888 --p2p-gateway-url=https://localhost:8886 --insecure
 ```
 
 Use the `--help` to view all the other options and defaults.
@@ -138,8 +135,6 @@ This is a sub-command under the `dynamic` sub-command to onboard a new member to
 
 To decide which CPI to use, there are three options:
 * If you know the CPI hash, you can use it with the `--cpi-hash` option
-* If you have the CPI file (for example, from the [package command](../../../../../../../../../package/README.md)), you
-  can use it with the `--cpi-file` option.
 * If you have a CPB and a group policy file (from the `dynamic onboard-mgm` command), you can use the `--cpb-file`
   and `--group-policy-file` option. This will create an unsigned CPI and save it in your home directory.
 
@@ -150,23 +145,73 @@ need to manually approve (or decline) your submitted registration to be fully on
 
 Few examples of on-boarding a member can be:
 ```shell
-./corda-cli.sh network dynamic member --x500-name='O=Alice, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb --user=admin --password=admin --target=https://localhost:8888 --insecure
-./corda-cli.sh network dynamic member --x500-name='O=Alice, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb --wait --user=admin --password=admin --target=https://localhost:8888 --insecure
-./corda-cli.sh network dynamic member --cpi-file /tmp/calculator.cpi --user=admin --password=admin --target=https://localhost:8888 --insecure
-./corda-cli.sh network dynamic member --cpi-hash 200E86176EF2 --user=admin --password=admin --target=https://localhost:8888 --insecure
+./corda-cli.sh network dynamic onboard-member 'O=Alice, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb --user=admin --password=admin --target=https://localhost:8888 --insecure
+./corda-cli.sh network dynamic onboard-member 'O=Alice, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb --wait --user=admin --password=admin --target=https://localhost:8888 --insecure
+./corda-cli.sh network dynamic onboard-member 'O=Alice, L=London, C=GB' --cpi-hash 8CBD8A9C6318 --wait --user=admin --password=admin --target=https://localhost:8888 --insecure -r "notary" -s "corda.notary.service.name"="C=GB, L=London, O=Arish"
+./corda-cli.sh network dynamic onboard-member 'O=Alice, L=London, C=GB' --cpi-hash 200E86176EF2 --user=admin --password=admin --target=https://localhost:8888 --insecure
 ```
 Use the `--help` to view all the other options and defaults.
 
-See [here](https://github.com/corda/corda-runtime-os/wiki/Member-Onboarding-(Dynamic-Networks)) for details on how to do it manually.
+See [here](https://github.com/corda/corda-runtime-os/wiki/Member-Onboarding-(Dynamic-Networks)) for details on how to do
+it manually.
 
-# Get Members List
+## Lookup Members
 
-> Use `--help` to see information about commands and available options.
+Use either `--holding-identity-short-hash` or `--name` (optionally with `--group`) to lookup members.
 
-This is a sub-command under the `network` plugin to view the member list via HTTP.
+### Samples
 
-For example,
+To look up all members visible to member `3B8DECDDD6E2`:
 
 ```shell
-./corda-cli.sh network members-list --user=admin --password=admin --target=https://localhost:8888 --insecure members-list -h=<holding-identity-short-hash>
+./corda-cli.sh network lookup members -h "3B8DECDDD6E2"
+```
+
+To look up members visible to member `3B8DECDDD6E2` filtered by attributes Organization (O) `Alice` and Country (C) `
+IE`:
+
+```shell
+./corda-cli.sh network lookup members -h "3B8DECDDD6E2" -o "Alice" -c "IE"
+```
+
+To look up all members visible to `C=GB, L=London, O=Member1` from the default (last created) group:
+
+```shell
+./corda-cli.sh network lookup members -n "C=GB, L=London, O=Member1"
+```
+
+To look up all members visible to `C=GB, L=London, O=Member1` from group `b0a0f381-e0d6-49d2-abba-6094992cef02`:
+
+```shell
+./corda-cli.sh network lookup members -n "C=GB, L=London, O=Member1" -g "b0a0f381-e0d6-49d2-abba-6094992cef02"
+```
+
+To look up suspended members as the MGM (`1B8DECDDD6E2`) from the default group:
+
+```shell
+./corda-cli.sh network lookup members -h "1B8DECDDD6E2" -s "SUSPENDED"
+```
+
+## Lookup Group Parameters
+
+Use either `--holding-identity-short-hash` or `--name` (optionally with `--group`) to lookup group parameters.
+
+### Samples
+
+To look up group parameters visible to member `3B8DECDDD6E2`:
+
+```shell
+./corda-cli.sh network lookup group-parameters -h "3B8DECDDD6E2" --user=admin --password=admin --target=https://localhost:8888 --insecure
+```
+
+To look up group parameters visible to `C=GB, L=London, O=Member1` from the default (last created) group:
+
+```shell
+./corda-cli.sh network lookup group-parameters -n "C=GB, L=London, O=Member1" --user=admin --password=admin --target=https://localhost:8888 --insecure
+```
+
+To look up group parameters visible to `C=GB, L=London, O=Member1` from group `b0a0f381-e0d6-49d2-abba-6094992cef02`:
+
+```shell
+./corda-cli.sh network lookup group-parameters -n "C=GB, L=London, O=Member1" -g "b0a0f381-e0d6-49d2-abba-6094992cef02" --user=admin --password=admin --target=https://localhost:8888 --insecure
 ```
