@@ -1,9 +1,9 @@
 package net.corda.ledger.utxo.token.cache.factories
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.TokenBalance
+import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.messaging.api.records.Record
 
 /**
@@ -24,7 +24,7 @@ interface RecordFactory {
     fun getSuccessfulClaimResponse(
         flowId: String,
         externalEventRequestId: String,
-        poolKey: TokenPoolCacheKey,
+        poolKey: TokenPoolKey,
         selectedTokens: List<CachedToken>
     ): Record<String, FlowEvent>
 
@@ -40,7 +40,7 @@ interface RecordFactory {
     fun getFailedClaimResponse(
         flowId: String,
         externalEventRequestId: String,
-        poolKey: TokenPoolCacheKey
+        poolKey: TokenPoolKey
     ): Record<String, FlowEvent>
 
     /**
@@ -69,7 +69,7 @@ interface RecordFactory {
     fun getBalanceResponse(
         flowId: String,
         externalEventRequestId: String,
-        poolKey: TokenPoolCacheKey,
+        poolKey: TokenPoolKey,
         tokenBalance: TokenBalance
     ): Record<String, FlowEvent>
 }
