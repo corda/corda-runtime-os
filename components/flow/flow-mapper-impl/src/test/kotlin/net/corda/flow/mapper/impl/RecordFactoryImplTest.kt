@@ -56,8 +56,6 @@ internal class RecordFactoryImplTest {
             Instant.now(), "", 1,
             HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1"),
             HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1"),
-            0,
-            listOf(),
             SessionError(
                 ExceptionEnvelope(
                     "FlowMapper-SessionError",
@@ -87,35 +85,10 @@ internal class RecordFactoryImplTest {
             Instant.now(), "", 1,
             HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1"),
             HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1"),
-            0,
-            listOf(),
             SessionData()
         )
 
         val record = recordFactoryImplSameCluster.forwardEvent(
-            sessionEvent,
-            Instant.now(),
-            flowConfig,
-            sessionEvent.messageDirection
-        )
-        Assertions.assertThat(record).isNotNull
-        Assertions.assertThat(record.topic).isEqualTo("flow.mapper.event")
-        Assertions.assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
-    }
-
-    @Test
-    fun `forwardAck returns record for same cluster`() {
-        val sessionEvent = SessionEvent(
-            MessageDirection.OUTBOUND,
-            Instant.now(), "", 1,
-            HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1"),
-            HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1"),
-            0,
-            listOf(),
-            SessionData()
-        )
-
-        val record = recordFactoryImplSameCluster.forwardAck(
             sessionEvent,
             Instant.now(),
             flowConfig,
@@ -133,8 +106,6 @@ internal class RecordFactoryImplTest {
             Instant.now(), "", 1,
             HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1"),
             HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1"),
-            0,
-            listOf(),
             SessionError(
                 ExceptionEnvelope(
                     "FlowMapper-SessionError",
@@ -164,35 +135,10 @@ internal class RecordFactoryImplTest {
             Instant.now(), "", 1,
             HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1"),
             HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1"),
-            0,
-            listOf(),
             SessionData(
-                ByteBuffer.wrap("data".toByteArray()))
+                ByteBuffer.wrap("data".toByteArray()), null)
         )
         val record = recordFactoryImplDifferentCluster.forwardEvent(
-            sessionEvent,
-            Instant.now(),
-            flowConfig,
-            sessionEvent.messageDirection
-        )
-        Assertions.assertThat(record).isNotNull
-        Assertions.assertThat(record.topic).isEqualTo("p2p.out")
-        Assertions.assertThat(record.value!!::class).isEqualTo(AppMessage::class)
-    }
-
-    @Test
-    fun `forwardAck returns record for different cluster`() {
-        val sessionEvent = SessionEvent(
-            MessageDirection.OUTBOUND,
-            Instant.now(), "", 1,
-            HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1"),
-            HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1"),
-            0,
-            listOf(),
-            SessionData()
-        )
-
-        val record = recordFactoryImplDifferentCluster.forwardAck(
             sessionEvent,
             Instant.now(),
             flowConfig,
@@ -210,8 +156,6 @@ internal class RecordFactoryImplTest {
             Instant.now(), "", 1,
             HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1"),
             HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1"),
-            0,
-            listOf(),
             SessionData()
         )
 
@@ -230,8 +174,6 @@ internal class RecordFactoryImplTest {
             Instant.now(), "", 1,
             HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1"),
             HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1"),
-            0,
-            listOf(),
             SessionData()
         )
 

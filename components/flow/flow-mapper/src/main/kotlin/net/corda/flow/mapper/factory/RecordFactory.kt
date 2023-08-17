@@ -28,13 +28,6 @@ interface RecordFactory {
         messageDirection: MessageDirection
     ): Record<*, *>
 
-    fun forwardAck(
-        sessionEvent: SessionEvent,
-        instant: Instant,
-        flowConfig: SmartConfig,
-        messageDirection: MessageDirection
-    ): Record<*, *>
-
     fun getSessionEventOutputTopic(
         sessionEvent: SessionEvent,
         messageDirection: MessageDirection

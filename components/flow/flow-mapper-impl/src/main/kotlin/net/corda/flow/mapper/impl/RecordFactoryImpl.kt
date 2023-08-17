@@ -5,7 +5,6 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionError
 import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.flow.mapper.impl.executor.createOutboundRecord
@@ -45,8 +44,6 @@ class RecordFactoryImpl @Activate constructor(
             null,
             sessionEvent.initiatingIdentity,
             sessionEvent.initiatedIdentity,
-            sessionEvent.receivedSequenceNum,
-            emptyList(),
             SessionError(
                 exceptionEnvelope
             )
@@ -63,7 +60,6 @@ class RecordFactoryImpl @Activate constructor(
                 instant,
                 sessionEventSerializer,
                 flowConfig,
-                sessionEvent.receivedSequenceNum,
                 outputTopic
             )
         }
@@ -92,41 +88,6 @@ class RecordFactoryImpl @Activate constructor(
                 instant,
                 sessionEventSerializer,
                 flowConfig,
-                sessionEvent.sequenceNum,
-                outputTopic
-            )
-        }
-    }
-
-    override fun forwardAck(
-        sessionEvent: SessionEvent,
-        instant: Instant,
-        flowConfig: SmartConfig,
-        messageDirection: MessageDirection
-    ): Record<*, *> {
-        val outputTopic = getSessionEventOutputTopic(sessionEvent, messageDirection)
-        val ackEvent = SessionEvent(
-            MessageDirection.INBOUND,
-            instant,
-            toggleSessionId(sessionEvent.sessionId),
-            null,
-            sessionEvent.initiatingIdentity,
-            sessionEvent.initiatedIdentity,
-            sessionEvent.sequenceNum,
-            emptyList(),
-            SessionAck()
-        )
-
-        return if (isLocalCluster(sessionEvent)) {
-            Record(outputTopic, ackEvent.sessionId, FlowMapperEvent(ackEvent))
-        } else {
-            createOutboundRecord(
-                sessionEvent,
-                SessionAck(),
-                instant,
-                sessionEventSerializer,
-                flowConfig,
-                sessionEvent.sequenceNum,
                 outputTopic
             )
         }
