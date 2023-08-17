@@ -37,3 +37,14 @@ services:
       - "4317:4317"  # otlp grpc
       - "4318:4318"  # otlp http
       - "9411:9411"   # zipkin
+
+  jupyter:
+    image: jupyter-image
+    container_name: jupyterNotebook
+    volumes:
+      - .:/home/jovyan # Mounts the current directory to the notebook working directory
+    ports:
+      - "8887:8888"  # 8887 local so it doesn't clash with the swagger
+    restart: always
+    environment:
+      - JUPYTER_TOKEN=admin
