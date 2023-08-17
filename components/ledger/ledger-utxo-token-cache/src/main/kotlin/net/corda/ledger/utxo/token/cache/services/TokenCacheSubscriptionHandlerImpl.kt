@@ -20,7 +20,7 @@ import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
-class TokenCacheSubscriptionHandlerImpl constructor(
+class TokenCacheSubscriptionHandlerImpl(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val subscriptionFactory: SubscriptionFactory,
     private val tokenCacheEventProcessorFactory: TokenCacheEventProcessorFactory,
