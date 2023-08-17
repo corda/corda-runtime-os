@@ -39,7 +39,7 @@ class FlowDriverJavaTest {
 
     @SuppressWarnings("JUnitMalformedDeclaration")
     @RegisterExtension
-    final AllTestsDriver driver = new DriverNodes(ALICE, BOB).forAllTests();
+    private final AllTestsDriver driver = new DriverNodes(ALICE, BOB).forAllTests();
 
     @BeforeAll
     void start() {

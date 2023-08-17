@@ -172,7 +172,7 @@ class RunFlowImpl @Activate constructor(
                         result.updatedState?.also { state ->
                             checkpoints[current.key] = state
                         }
-                        LinkedList(result.responseEvents)
+                        result.responseEvents
                     }
 
                     // Check whether the flow is either COMPLETED, FAILED or KILLED.
@@ -230,7 +230,7 @@ class RunFlowImpl @Activate constructor(
                 }
 
                 // No more FlowEvents, but we have nothing to return!?
-                null
+                throw FlowErrorException("Flow ended prematurely without any result.")
             }
         } catch (e: RuntimeException) {
             throw e
