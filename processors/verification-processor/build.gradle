@@ -18,10 +18,21 @@ dependencies {
 
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:ledger:ledger-verification')
+    implementation project(':components:virtual-node:cpk-read-service')
+    implementation project(':components:virtual-node:sandbox-group-context-service')
+    implementation project(':libs:flows:external-event-responses')
     implementation project(':libs:lifecycle:lifecycle')
+    implementation project(':libs:messaging:messaging')
     implementation project(':libs:utilities')
+    implementation project(':libs:virtual-node:sandbox-group-context')
 
     runtimeOnly project(':components:configuration:configuration-read-service-impl')
+    runtimeOnly project(':components:virtual-node:cpk-read-service-impl')
+    runtimeOnly project(":libs:application:application-impl")
+    runtimeOnly project(":libs:flows:external-event-responses-impl")
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
+    runtimeOnly project(":libs:messaging:messaging-impl")
+    runtimeOnly project(":libs:sandbox-internal")
+    runtimeOnly project(":libs:schema-registry:schema-registry-impl")
 }
 

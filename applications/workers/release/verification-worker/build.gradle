@@ -22,6 +22,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':applications:workers:worker-common')
     implementation project(":components:security-manager")
+    implementation project(':libs:ledger:ledger-common-data')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-validation')
     implementation project(':libs:platform-info:')
