@@ -100,8 +100,8 @@ class VaultNamedQueryExecutorImpl(
         request: FindWithNamedQuery,
         vaultNamedQuery: VaultNamedQuery,
         deserializedParams: Map<String, Any>
-    ): Set<StateAndRef<ContractState>> {
-        val filteredResults = mutableSetOf<StateAndRef<ContractState>>()
+    ): List<StateAndRef<ContractState>> {
+        val filteredResults = mutableListOf<StateAndRef<ContractState>>()
 
         var internalOffset = request.offset
         var currentRetry = 0
@@ -131,7 +131,8 @@ class VaultNamedQueryExecutorImpl(
             })
         }
 
-        return filteredResults
+        // Make sure we don't return more than the limit even if the list has overflown
+        return filteredResults.take(request.limit)
     }
 
     /**
