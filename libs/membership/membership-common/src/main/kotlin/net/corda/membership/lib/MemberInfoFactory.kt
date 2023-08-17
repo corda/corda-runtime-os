@@ -78,6 +78,14 @@ interface MemberInfoFactory {
 
     fun createPersistentMemberInfo(
         viewOwningMember: HoldingIdentity,
+        memberInfo: SelfSignedMemberInfo,
+    ): PersistentMemberInfo
+
+    /**
+     * Should be only used when creating members on static networks or for MGM on dynamic networks.
+     */
+    fun createMgmOrStaticPersistentMemberInfo(
+        viewOwningMember: HoldingIdentity,
         memberInfo: MemberInfo,
         memberSignature: CryptoSignatureWithKey,
         memberSignatureSpec: CryptoSignatureSpec,
@@ -86,12 +94,6 @@ interface MemberInfoFactory {
     fun createSelfSignedMemberInfo(
         memberContext: ByteArray,
         mgmContext: ByteArray,
-        memberSignature: CryptoSignatureWithKey,
-        memberSignatureSpec: CryptoSignatureSpec,
-    ): SelfSignedMemberInfo
-
-    fun createSelfSignedMemberInfo(
-        memberInfo: MemberInfo,
         memberSignature: CryptoSignatureWithKey,
         memberSignatureSpec: CryptoSignatureSpec,
     ): SelfSignedMemberInfo

@@ -750,13 +750,16 @@ class MembershipPersistenceTest {
                 KeyValuePair(SERIAL, "1"),
             ).sorted()
         )
-        val notaryInfo = memberInfoFactory.createMemberInfo(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        val notaryInfo = memberInfoFactory.createSelfSignedMemberInfo(
+            cordaAvroSerializer.serialize(memberContext)!!,
+            cordaAvroSerializer.serialize(mgmContext)!!,
+            CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf(1)), ByteBuffer.wrap(byteArrayOf(1))),
+            CryptoSignatureSpec(RSA_SHA256.signatureName, null, null),
+        )
         val notary = memberInfoFactory
             .createPersistentMemberInfo(
                 viewOwningHoldingIdentity.toAvro(),
                 notaryInfo,
-                CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf(1)), ByteBuffer.wrap(byteArrayOf(1))),
-                CryptoSignatureSpec(RSA_SHA256.signatureName, null, null),
             )
         val expectedGroupParameters = listOf(
             KeyValuePair(EPOCH_KEY, "51"),
@@ -812,13 +815,16 @@ class MembershipPersistenceTest {
                 KeyValuePair(SERIAL, "1"),
             ).sorted()
         )
-        val notaryInfo = memberInfoFactory.createMemberInfo(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        val notaryInfo = memberInfoFactory.createSelfSignedMemberInfo(
+            cordaAvroSerializer.serialize(memberContext)!!,
+            cordaAvroSerializer.serialize(mgmContext)!!,
+            CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf(1)), ByteBuffer.wrap(byteArrayOf(1))),
+            CryptoSignatureSpec(RSA_SHA256.signatureName, null, null),
+        )
         val notary = memberInfoFactory
             .createPersistentMemberInfo(
                 viewOwningHoldingIdentity.toAvro(),
                 notaryInfo,
-                CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf(1)), ByteBuffer.wrap(byteArrayOf(1))),
-                CryptoSignatureSpec(RSA_SHA256.signatureName, null, null),
             )
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
@@ -897,13 +903,16 @@ class MembershipPersistenceTest {
                 KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
             ).sorted()
         )
-        val notaryInfo = memberInfoFactory.createMemberInfo(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        val notaryInfo = memberInfoFactory.createSelfSignedMemberInfo(
+            cordaAvroSerializer.serialize(memberContext)!!,
+            cordaAvroSerializer.serialize(mgmContext)!!,
+            CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf(1)), ByteBuffer.wrap(byteArrayOf(1))),
+            CryptoSignatureSpec(RSA_SHA256.signatureName, null, null),
+        )
         val notary = memberInfoFactory
             .createPersistentMemberInfo(
                 viewOwningHoldingIdentity.toAvro(),
                 notaryInfo,
-                CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf(1)), ByteBuffer.wrap(byteArrayOf(1))),
-                CryptoSignatureSpec(RSA_SHA256.signatureName, null, null),
             )
         val oldNotaryKey = keyGenerator.genKeyPair().public
         val oldNotaryKeyAsString = keyEncodingService.encodeAsString(oldNotaryKey)
@@ -1489,13 +1498,16 @@ class MembershipPersistenceTest {
                 KeyValuePair(SERIAL, "1"),
             ).sorted()
         )
-        val notaryInfo = memberInfoFactory.createMemberInfo(memberContext.toSortedMap(), mgmContext.toSortedMap())
+        val notaryInfo = memberInfoFactory.createSelfSignedMemberInfo(
+            cordaAvroSerializer.serialize(memberContext)!!,
+            cordaAvroSerializer.serialize(mgmContext)!!,
+            CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf(1)), ByteBuffer.wrap(byteArrayOf(1))),
+            CryptoSignatureSpec(RSA_SHA256.signatureName, null, null),
+        )
         val notary = memberInfoFactory
             .createPersistentMemberInfo(
                 viewOwningHoldingIdentity.toAvro(),
                 notaryInfo,
-                CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf(1)), ByteBuffer.wrap(byteArrayOf(1))),
-                CryptoSignatureSpec(RSA_SHA256.signatureName, null, null),
             )
         val persisted = membershipPersistenceClientWrapper.addNotaryToGroupParameters(notary)
             .execute()

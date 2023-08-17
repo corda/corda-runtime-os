@@ -109,9 +109,7 @@ class  RegistrationProcessorTest {
                 holdingIdentity.toCorda().shortHash.value,
                 1,
                 signedMemberContext,
-                memberContext,
                 signedRegistrationContext,
-                registrationContext,
                 "",
                 SERIAL,
             )
@@ -207,6 +205,7 @@ class  RegistrationProcessorTest {
         }
         deserializer = mock {
             on { deserialize(eq(memberContext.toByteBuffer().array())) } doReturn memberContext
+            on { deserialize(eq(registrationRequestDetails.registrationContext.data.array())) } doReturn mock()
         }
         verificationRequestResponseSerializer = mock {
             on { serialize(eq(verificationRequest)) } doReturn "REQUEST".toByteArray()

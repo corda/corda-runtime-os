@@ -6,7 +6,6 @@ import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.PersistentSignedMemberInfo
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
@@ -125,13 +124,12 @@ class MembershipPersistenceClientImpl(
     ): MembershipPersistenceOperation<Unit> {
         logger.info("Persisting ${memberInfos.size} member info(s).")
         val avroViewOwningIdentity = viewOwningIdentity.toAvro()
-        val signedMemberList = createSignedMemberList(avroViewOwningIdentity, memberInfos)
         val request = MembershipPersistenceRequest(
             buildMembershipRequestContext(avroViewOwningIdentity),
             PersistMemberInfo(
-                // first is deprecated data, which will be remove din future versions
-                signedMemberList.map { it.first },
-                signedMemberList.map { it.second },
+                // first is deprecated data, which will be removed in future versions
+                null,
+                createSignedMemberList(avroViewOwningIdentity, memberInfos),
             )
         )
         return request.operation(::nullToUnitConvertor)
@@ -141,18 +139,13 @@ class MembershipPersistenceClientImpl(
         viewOwningIdentity: net.corda.data.identity.HoldingIdentity,
         memberInfos: Collection<SelfSignedMemberInfo>
     ) = memberInfos.map {
-            val persistentMemberInfo = memberInfoFactory.createPersistentMemberInfo(
+            memberInfoFactory.createPersistentMemberInfo(
                 viewOwningIdentity,
                 it.memberContextBytes,
                 it.mgmContextBytes,
                 it.memberSignature,
                 it.memberSignatureSpec,
             )
-            PersistentSignedMemberInfo(
-                persistentMemberInfo,
-                it.memberSignature,
-                it.memberSignatureSpec,
-            ) to persistentMemberInfo
         }
 
     override fun persistGroupPolicy(

@@ -503,7 +503,6 @@ class MembershipQueryClientImplTest {
                         ),
                         CryptoSignatureSpec("dummy", null, null),
                     ),
-                    KeyValuePairList(listOf(KeyValuePair("key", "value"))),
                     SignedData(
                         ByteBuffer.wrap(byteArrayOf(1)),
                         CryptoSignatureWithKey(
@@ -512,7 +511,6 @@ class MembershipQueryClientImplTest {
                         ),
                         CryptoSignatureSpec("dummy2", null, null),
                     ),
-                    KeyValuePairList(emptyList()),
                     "test reason",
                     0L,
                 )
@@ -657,7 +655,6 @@ class MembershipQueryClientImplTest {
                         ),
                         CryptoSignatureSpec("dummy1", null, null),
                     ),
-                    KeyValuePairList(listOf(KeyValuePair("key", "value"))),
                     SignedData(
                         ByteBuffer.wrap(byteArrayOf(1)),
                         CryptoSignatureWithKey(
@@ -666,7 +663,6 @@ class MembershipQueryClientImplTest {
                         ),
                         CryptoSignatureSpec("dummy3", null, null),
                     ),
-                    KeyValuePairList(emptyList()),
                     "test reason 1",
                     0L,
                 ),
@@ -685,7 +681,6 @@ class MembershipQueryClientImplTest {
                         ),
                         CryptoSignatureSpec("dummy2", null, null),
                     ),
-                    KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
                     SignedData(
                         ByteBuffer.wrap(byteArrayOf(1)),
                         CryptoSignatureWithKey(
@@ -694,7 +689,6 @@ class MembershipQueryClientImplTest {
                         ),
                         CryptoSignatureSpec("dummy4", null, null),
                     ),
-                    KeyValuePairList(emptyList()),
                     "test reason 2",
                     1L,
                 ),

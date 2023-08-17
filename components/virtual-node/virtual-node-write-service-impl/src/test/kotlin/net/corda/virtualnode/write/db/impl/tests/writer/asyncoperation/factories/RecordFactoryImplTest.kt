@@ -51,7 +51,7 @@ class RecordFactoryImplTest {
         val persistentMemberInfo = mock<PersistentMemberInfo>()
 
         whenever(
-            memberInfoFactory.createPersistentMemberInfo(
+            memberInfoFactory.createMgmOrStaticPersistentMemberInfo(
                 ALICE_HOLDING_ID1.toAvro(),
                 mgmMemberInfo,
                 CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())),

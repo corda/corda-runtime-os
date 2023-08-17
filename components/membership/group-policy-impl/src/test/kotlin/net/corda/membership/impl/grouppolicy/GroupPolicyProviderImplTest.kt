@@ -29,6 +29,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTI
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
@@ -214,15 +215,14 @@ class GroupPolicyProviderImplTest {
     }
 
     private val mgmPersistentMemberInfo = createPersistentMemberInfo(holdingIdentity5)
-    private val mgmMemberContext: MemberContext = mock {
-        on { entries } doReturn mapOf(PARTY_NAME to mgm.toString()).entries
-    }
-    private val validMgmMgmContext: MGMContext = mock {
-        on { entries } doReturn mapOf(IS_MGM to "true", STATUS to MEMBER_STATUS_ACTIVE).entries
-    }
+    private val mgmMemberContext: MemberContext = mock()
+    private val validMgmMgmContext: MGMContext = mock()
     private val validMgmMemberInfo: MemberInfo = mock {
         on { memberProvidedContext } doReturn mgmMemberContext
         on { mgmProvidedContext } doReturn validMgmMgmContext
+        on { name } doReturn mgm
+        on { isMgm } doReturn true
+        on { isActive } doReturn true
     }
 
     private val memberInfoFactory: MemberInfoFactory = mock {

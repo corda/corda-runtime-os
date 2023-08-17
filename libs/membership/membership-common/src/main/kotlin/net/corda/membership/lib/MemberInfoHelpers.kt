@@ -1,8 +1,11 @@
 package net.corda.membership.lib
 
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.util.*
+import kotlin.jvm.Throws
 
 /**
  * Validates the order of the key, we are making sure they are not tampered with.
@@ -33,3 +36,19 @@ fun retrieveSignatureSpec(signatureName: String) = if (signatureName.isEmpty()) 
 } else {
     CryptoSignatureSpec(signatureName, null, null)
 }
+
+/**
+ * Deserializes byte array (serialized as [KeyValuePairList]) used mainly as registration, member or MGM context.
+ *
+ * @throws ContextDeserializationException if deserialization failed
+ */
+@Throws(ContextDeserializationException::class)
+fun ByteArray.deserializeContext(
+    cordaAvroDeserializer: CordaAvroDeserializer<KeyValuePairList>,
+): Map<String, String?> {
+    return cordaAvroDeserializer.deserialize(this)?.items?.associate { it.key to it.value }
+        ?: throw ContextDeserializationException
+}
+
+object ContextDeserializationException :
+    CordaRuntimeException("Failed to deserialize key value pair list.")

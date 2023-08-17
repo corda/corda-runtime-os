@@ -1,5 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
@@ -16,6 +17,7 @@ import net.corda.membership.impl.registration.dynamic.handler.MissingRegistratio
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.verifiers.RegistrationContextCustomFieldsVerifier
+import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
@@ -34,6 +36,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SelfSignedMemberInfo
+import net.corda.membership.lib.deserializeContext
 import net.corda.membership.lib.registration.RegistrationRequestHelpers.getPreAuthToken
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -71,6 +74,14 @@ internal class StartRegistrationHandler(
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
+
+    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> =
+        cordaAvroSerializationFactory.createAvroDeserializer(
+            {
+                logger.error("Failed to deserialize key value pair list.")
+            },
+            KeyValuePairList::class.java
+        )
 
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize key value pair list.") }
@@ -111,8 +122,6 @@ internal class StartRegistrationHandler(
             val persistentMemberInfo = memberInfoFactory.createPersistentMemberInfo(
                 mgmMemberInfo.holdingIdentity.toAvro(),
                 pendingMemberInfo,
-                registrationRequest.memberProvidedContext.signature,
-                registrationRequest.memberProvidedContext.signatureSpec,
             )
             val pendingMemberRecord = Record(
                 topic = Schemas.Membership.MEMBER_LIST_TOPIC,
@@ -238,9 +247,7 @@ internal class StartRegistrationHandler(
     }
 
     private fun buildPendingMemberInfo(registrationRequest: RegistrationRequestDetails): SelfSignedMemberInfo {
-        val memberContext = registrationRequest.deserializedMemberProvidedContext
-            ?.items?.associate { it.key to it.value }
-            ?: emptyMap()
+        val memberContext = registrationRequest.memberProvidedContext.data.array().deserializeContext(keyValuePairListDeserializer)
         validateRegistrationRequest(memberContext.isNotEmpty()) {
             "Empty member context in the registration request."
         }
@@ -324,7 +331,7 @@ internal class StartRegistrationHandler(
         registrationRequest: RegistrationRequestDetails
     ) {
         try {
-            registrationRequest.getPreAuthToken()?.let {
+            registrationRequest.getPreAuthToken(keyValuePairListDeserializer)?.let {
                 val result = membershipQueryClient.queryPreAuthTokens(
                     mgmHoldingIdentity = mgmHoldingId,
                     ownerX500Name = pendingMemberInfo.name,
@@ -350,15 +357,22 @@ internal class StartRegistrationHandler(
                 )
             }
         } catch (e: IllegalArgumentException) {
-            with("Registration failed due to invalid format for the provided pre-auth token.") {
-                logger.info(this, e)
-                throw InvalidRegistrationRequestException(this)
-            }
+            e.mapToInvalidRegistrationRequestException(
+                "Registration failed due to invalid format for the provided pre-auth token."
+            )
         } catch (e: MembershipQueryResult.QueryException) {
-            with("Registration failed due to failure to query configured pre-auth tokens.") {
-                logger.info(this, e)
-                throw InvalidRegistrationRequestException(this)
-            }
+            e.mapToInvalidRegistrationRequestException(
+                "Registration failed due to failure to query configured pre-auth tokens."
+            )
+        } catch (e: ContextDeserializationException) {
+            e.mapToInvalidRegistrationRequestException(
+                "Registration failed due to failure when deserializing registration context."
+            )
         }
+    }
+
+    private fun Exception.mapToInvalidRegistrationRequestException(message: String) {
+        logger.info(message, this)
+        throw InvalidRegistrationRequestException(message)
     }
 }

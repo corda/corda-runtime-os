@@ -506,13 +506,14 @@ class SynchronisationIntegrationTest {
         val members: List<MemberInfo> = mutableListOf(participantInfo)
         val selfSignedMembers = mutableListOf<SelfSignedMemberInfo>()
         val signedMembers = members.map {
-            val memberInfo = keyValueSerializer.serialize(it.memberProvidedContext.toAvro())
+            val memberContext = keyValueSerializer.serialize(it.memberProvidedContext.toAvro())
+            val mgmContext = keyValueSerializer.serialize(it.mgmProvidedContext.toAvro())
             val memberSignatureSpec = SignatureSpecs.ECDSA_SHA256
             val memberSignature = cryptoOpsClient.sign(
                 participant.toCorda().shortHash.value,
                 participantSessionKey,
                 memberSignatureSpec,
-                memberInfo!!
+                memberContext!!
             ).let { withKey ->
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(withKey.by)),
@@ -520,7 +521,8 @@ class SynchronisationIntegrationTest {
                 )
             }
             val selfSignedMemberInfo = memberInfoFactory.createSelfSignedMemberInfo(
-                it,
+                memberContext,
+                mgmContext!!,
                 memberSignature,
                 CryptoSignatureSpec(memberSignatureSpec.signatureName, null, null)
             )
@@ -540,7 +542,7 @@ class SynchronisationIntegrationTest {
             SignedMemberInfo.newBuilder()
                 .setMemberContext(
                     SignedData(
-                        ByteBuffer.wrap(memberInfo),
+                        ByteBuffer.wrap(memberContext),
                         memberSignature,
                         CryptoSignatureSpec(memberSignatureSpec.signatureName, null, null)
                     )

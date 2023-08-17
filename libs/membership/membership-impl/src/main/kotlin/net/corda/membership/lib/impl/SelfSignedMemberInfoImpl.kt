@@ -5,6 +5,7 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.v5.membership.MemberInfo
+import java.util.Objects
 
 class SelfSignedMemberInfoImpl(
     override val memberContextBytes: ByteArray,
@@ -23,17 +24,11 @@ class SelfSignedMemberInfoImpl(
         if (!mgmContextBytes.contentEquals(other.mgmContextBytes)) return false
         if (memberSignature != other.memberSignature) return false
         if (memberSignatureSpec != other.memberSignatureSpec) return false
-        if (memberInfoFactory != other.memberInfoFactory) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = memberContextBytes.contentHashCode()
-        result = 31 * result + mgmContextBytes.contentHashCode()
-        result = 31 * result + memberSignature.hashCode()
-        result = 31 * result + memberSignatureSpec.hashCode()
-        result = 31 * result + memberInfoFactory.hashCode()
-        return result
+        return Objects.hash(memberContextBytes, mgmContextBytes, memberSignature, memberSignatureSpec)
     }
 }

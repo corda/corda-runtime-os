@@ -44,12 +44,12 @@ internal class RecordFactoryImpl(
         return Record(VIRTUAL_NODE_INFO_TOPIC, virtualNodeInfo.holdingIdentity, virtualNodeInfo)
     }
 
-    override fun createMgmInfoRecord(holdingIdentity: HoldingIdentity, mgmInfo:MemberInfo): Record<*, *> {
+    override fun createMgmInfoRecord(holdingIdentity: HoldingIdentity, mgmInfo: MemberInfo): Record<*, *> {
         val mgmHoldingIdentity = HoldingIdentity(mgmInfo.name, mgmInfo.groupId)
         return Record(
             MEMBER_LIST_TOPIC,
             "${holdingIdentity.shortHash}-${mgmHoldingIdentity.shortHash}",
-            memberInfoFactory.createPersistentMemberInfo(
+            memberInfoFactory.createMgmOrStaticPersistentMemberInfo(
                 holdingIdentity.toAvro(),
                 mgmInfo,
                 CryptoSignatureWithKey(

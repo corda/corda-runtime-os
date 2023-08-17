@@ -13,6 +13,7 @@ import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.create
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.retrieveSignatureSpec
 import net.corda.membership.lib.toSortedMap
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -135,6 +136,23 @@ class MemberInfoFactoryImpl @Activate constructor(
 
     override fun createPersistentMemberInfo(
         viewOwningMember: HoldingIdentity,
+        memberInfo: SelfSignedMemberInfo,
+    ): PersistentMemberInfo = PersistentMemberInfo.newBuilder()
+        .setViewOwningMember(viewOwningMember)
+        .setMemberContext(null)
+        .setMgmContext(null)
+        .setSignedMemberContext(
+            createSignedData(
+                memberInfo.memberContextBytes,
+                memberInfo.memberSignature,
+                memberInfo.memberSignatureSpec,
+            )
+        )
+        .setSerializedMgmContext(memberInfo.mgmContextBytes.toByteBuffer())
+        .build()
+
+    override fun createMgmOrStaticPersistentMemberInfo(
+        viewOwningMember: HoldingIdentity,
         memberInfo: MemberInfo,
         memberSignature: CryptoSignatureWithKey,
         memberSignatureSpec: CryptoSignatureSpec,
@@ -160,18 +178,6 @@ class MemberInfoFactoryImpl @Activate constructor(
     ) = SelfSignedMemberInfoImpl(
         memberContext,
         mgmContext,
-        memberSignature,
-        memberSignatureSpec,
-        this,
-    )
-
-    override fun createSelfSignedMemberInfo(
-        memberInfo: MemberInfo,
-        memberSignature: CryptoSignatureWithKey,
-        memberSignatureSpec: CryptoSignatureSpec
-    ) = SelfSignedMemberInfoImpl(
-        serialize(memberInfo.memberProvidedContext.toAvro()),
-        serialize(memberInfo.mgmProvidedContext.toAvro()),
         memberSignature,
         memberSignatureSpec,
         this,

@@ -80,7 +80,6 @@ import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
 import net.corda.utilities.concurrent.SecManagerForkJoinPool
-import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -199,6 +198,12 @@ class StaticMemberRegistrationService(
     )
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize key value pair list.") }
+
+    private fun serialize(context: KeyValuePairList): ByteArray {
+        return keyValuePairListSerializer.serialize(context) ?: throw CordaRuntimeException(
+            "Failed to serialize key value pair list."
+        )
+    }
 
     private val customFieldsVerifier = RegistrationContextCustomFieldsVerifier()
 
@@ -349,16 +354,8 @@ class StaticMemberRegistrationService(
     }
 
     private fun persistRegistrationRequest(registrationId: UUID, memberInfo: MemberInfo) {
-        val memberContext = wrapWithNullErrorHandling({
-            IllegalArgumentException("Failed to serialize the member context for this request.", it)
-        }) {
-            keyValuePairListSerializer.serialize(memberInfo.memberProvidedContext.toAvro())
-        }
-        val registrationContext = wrapWithNullErrorHandling({
-            IllegalArgumentException("Failed to serialize the registration context for this request.", it)
-        }) {
-            keyValuePairListSerializer.serialize(KeyValuePairList(emptyList()))
-        }
+        val memberContext = serialize(memberInfo.memberProvidedContext.toAvro())
+        val registrationContext = serialize(KeyValuePairList(emptyList()))
         persistenceClient.persistRegistrationRequest(
             viewOwningIdentity = memberInfo.holdingIdentity,
             registrationRequest = RegistrationRequest(
@@ -518,12 +515,12 @@ class StaticMemberRegistrationService(
             Record(
                 MEMBER_LIST_TOPIC,
                 "${owningMemberHoldingIdentity.shortHash}-$memberId",
-                memberInfoFactory.createPersistentMemberInfo(
+                memberInfoFactory.createMgmOrStaticPersistentMemberInfo(
                     owningMemberHoldingIdentity.toAvro(),
                     memberInfo,
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap(byteArrayOf()),
-                        ByteBuffer.wrap(byteArrayOf())
+                        ByteBuffer.wrap(byteArrayOf()),
                     ),
                     CryptoSignatureSpec("", null, null),
                 )

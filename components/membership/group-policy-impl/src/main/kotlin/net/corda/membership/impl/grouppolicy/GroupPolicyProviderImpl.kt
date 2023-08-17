@@ -4,7 +4,6 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -18,16 +17,12 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
-import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -40,6 +35,7 @@ import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.debug
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -325,13 +321,11 @@ class GroupPolicyProviderImpl @Activate constructor(
         private fun gotData(member: PersistentMemberInfo) {
             try {
                 val memberInfo = memberInfoFactory.createMemberInfo(member)
-                val memberContext = memberInfo.memberProvidedContext.toAvro().toMap()
-                val mgmContext = memberInfo.mgmProvidedContext.toAvro().toMap()
                 // Only notify when an active MGM is added to itself
                 if (
-                    (memberContext[PARTY_NAME] == member.viewOwningMember.x500Name) &&
-                    (mgmContext[IS_MGM] == "true") &&
-                    (mgmContext[STATUS] == MEMBER_STATUS_ACTIVE)
+                    memberInfo.name == MemberX500Name.parse(member.viewOwningMember.x500Name) &&
+                    memberInfo.isMgm &&
+                    memberInfo.isActive
                 ) {
                     val holdingIdentity = member.viewOwningMember.toCorda()
                     val gp = parseGroupPolicy(holdingIdentity)

@@ -1,5 +1,8 @@
 package net.corda.membership.impl.synchronisation.dummy
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.StaticNetworkInfo
@@ -7,10 +10,12 @@ import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus
+import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
+import net.corda.membership.impl.synchronisation.SynchronisationIntegrationTest
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SelfSignedMemberInfo
@@ -42,6 +47,8 @@ class TestMembershipQueryClientImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = MemberInfoFactory::class)
     private val memberInfoFactory: MemberInfoFactory,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) : TestMembershipQueryClient {
     companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -56,10 +63,14 @@ class TestMembershipQueryClientImpl @Activate constructor(
             }
         }
 
+    private val serializer: CordaAvroSerializer<KeyValuePairList> =
+        cordaAvroSerializationFactory.createAvroSerializer { }
+
     override fun loadMembers(memberList: List<MemberInfo>) {
         members = memberList.map {
             memberInfoFactory.createSelfSignedMemberInfo(
-                it,
+                serializer.serialize(it.memberProvidedContext.toAvro())!!,
+                serializer.serialize(it.mgmProvidedContext.toAvro())!!,
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(it.holdingIdentity.x500Name.toString().toByteArray()),
                     ByteBuffer.wrap(it.holdingIdentity.x500Name.toString().toByteArray()),

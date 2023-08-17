@@ -7,12 +7,12 @@ import net.corda.data.membership.event.MembershipEvent
 import net.corda.data.membership.event.registration.MgmOnboarded
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.schema.Schemas.Membership.EVENT_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -33,10 +33,12 @@ class MGMRegistrationOutputPublisherTest {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn holdingIdentity.groupId
     }
     private val mgmContext: MGMContext = mock()
-    private val memberInfo: MemberInfo = mock {
+    private val memberInfo: SelfSignedMemberInfo = mock {
         on { mgmProvidedContext } doReturn mgmContext
         on { memberProvidedContext } doReturn memberContext
         on { name } doReturn holdingIdentity.x500Name
+        on { memberSignature } doReturn CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf()))
+        on { memberSignatureSpec } doReturn CryptoSignatureSpec("", null, null)
     }
     private val persistentInfo = mock<PersistentMemberInfo>()
     private val memberInfoFactory = mock<MemberInfoFactory> {
@@ -44,8 +46,6 @@ class MGMRegistrationOutputPublisherTest {
             createPersistentMemberInfo(
                 holdingIdentity.toAvro(),
                 memberInfo,
-                CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())),
-                CryptoSignatureSpec("", null, null),
             )
         } doReturn persistentInfo
     }

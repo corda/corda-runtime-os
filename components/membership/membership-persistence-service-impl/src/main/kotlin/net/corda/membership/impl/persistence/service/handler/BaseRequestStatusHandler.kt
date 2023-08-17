@@ -7,6 +7,7 @@ import net.corda.data.membership.SignedData
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
+import net.corda.membership.lib.deserializeContext
 import net.corda.membership.lib.retrieveSignatureSpec
 import java.nio.ByteBuffer
 
@@ -25,11 +26,9 @@ internal abstract class BaseRequestStatusHandler<REQUEST, RESPONSE>(persistenceH
     }
 
     fun RegistrationRequestEntity.toDetails(): RegistrationRequestDetails {
-        val deserializedMemberContext = keyValuePairListDeserializer.deserialize(this.memberContext)
-        val deserializedRegistrationContext = keyValuePairListDeserializer.deserialize(this.registrationContext)
-        val registrationProtocolVersion = deserializedMemberContext?.items?.firstOrNull {
-            it.key == "registrationProtocolVersion"
-        }?.value?.toIntOrNull() ?: DEFAULT_REGISTRATION_PROTOCOL_VERSION
+        val registrationProtocolVersion = this.memberContext
+            .deserializeContext(keyValuePairListDeserializer)["registrationProtocolVersion"]?.toIntOrNull()
+            ?: DEFAULT_REGISTRATION_PROTOCOL_VERSION
         return RegistrationRequestDetails.newBuilder()
             .setRegistrationSent(this.created)
             .setRegistrationLastModified(this.lastModified)
@@ -47,7 +46,6 @@ internal abstract class BaseRequestStatusHandler<REQUEST, RESPONSE>(persistenceH
                     retrieveSignatureSpec(this.memberContextSignatureSpec),
                 )
             )
-            .setDeserializedMemberProvidedContext(deserializedMemberContext)
             .setRegistrationContext(
                 SignedData(
                     ByteBuffer.wrap(this.registrationContext),
@@ -58,7 +56,6 @@ internal abstract class BaseRequestStatusHandler<REQUEST, RESPONSE>(persistenceH
                     retrieveSignatureSpec(registrationContextSignatureSpec),
                 )
             )
-            .setDeserializedRegistrationContext(deserializedRegistrationContext)
             .setReason(this.reason)
             .setSerial(this.serial)
             .build()

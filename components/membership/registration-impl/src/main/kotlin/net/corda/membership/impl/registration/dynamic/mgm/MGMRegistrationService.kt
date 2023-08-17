@@ -146,7 +146,8 @@ class MGMRegistrationService @Activate constructor(
             memberInfoFactory,
             membershipPersistenceClient,
             platformInfoProvider,
-            virtualNodeInfoReadService
+            virtualNodeInfoReadService,
+            cordaAvroSerializationFactory,
         )
         private val mgmRegistrationGroupPolicyHandler = MGMRegistrationGroupPolicyHandler(
             layeredPropertyMapFactory,

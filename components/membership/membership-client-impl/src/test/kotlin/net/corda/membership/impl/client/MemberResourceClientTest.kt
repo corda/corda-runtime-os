@@ -1,5 +1,6 @@
 package net.corda.membership.impl.client
 
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.ShortHash
@@ -32,6 +33,7 @@ import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
+import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -147,8 +149,10 @@ class MemberResourceClientTest {
     private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
         on { serialize(any()) } doReturn bytes
     }
+    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
+        on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
     }
     private val membershipQueryClient = mock<MembershipQueryClient>()
     private val memberOpsClient = MemberResourceClientImpl(
@@ -312,6 +316,15 @@ class MemberResourceClientTest {
 
     @Test
     fun `checkRegistrationProgress return correct data`() {
+        val bytesId1 = "id1".toByteArray()
+        whenever(keyValuePairListDeserializer.deserialize(bytesId1))
+            .doReturn(KeyValuePairList(listOf(KeyValuePair("key", "value"))))
+        val bytesId2 = "id2".toByteArray()
+        whenever(keyValuePairListDeserializer.deserialize(bytesId2))
+            .doReturn(KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))))
+        val bytesId3 = "id3".toByteArray()
+        whenever(keyValuePairListDeserializer.deserialize(bytesId3))
+            .doReturn(KeyValuePairList(listOf(KeyValuePair("key 3", "value 3"))))
         val response =
             listOf(
                 RegistrationRequestDetails(
@@ -321,10 +334,12 @@ class MemberResourceClientTest {
                     "registration id",
                     "holdingId1",
                     1,
+                    SignedData(
+                        ByteBuffer.wrap(bytesId1),
+                        signatureWithKey,
+                        signatureSpec,
+                    ),
                     signedContext,
-                    KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                    signedContext,
-                    KeyValuePairList(emptyList()),
                     null,
                     SERIAL,
                 ),
@@ -335,10 +350,12 @@ class MemberResourceClientTest {
                     "registration id 2",
                     "holdingId2",
                     1,
+                    SignedData(
+                        ByteBuffer.wrap(bytesId2),
+                        signatureWithKey,
+                        signatureSpec,
+                    ),
                     signedContext,
-                    KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
-                    signedContext,
-                    KeyValuePairList(emptyList()),
                     null,
                     SERIAL,
                 ),
@@ -349,10 +366,12 @@ class MemberResourceClientTest {
                     "registration id 3",
                     "holdingId3",
                     1,
+                    SignedData(
+                        ByteBuffer.wrap(bytesId3),
+                        signatureWithKey,
+                        signatureSpec,
+                    ),
                     signedContext,
-                    KeyValuePairList(listOf(KeyValuePair("key 3", "value 3"))),
-                    signedContext,
-                    KeyValuePairList(emptyList()),
                     null,
                     SERIAL,
                 ),
@@ -436,9 +455,39 @@ class MemberResourceClientTest {
         }
     }
 
+    @Test
+    fun `checkRegistrationProgress throw exception if deserialization fails`() {
+        whenever(membershipQueryClient.queryRegistrationRequests(
+            any(), eq(null), eq(RegistrationStatus.values().toList()), eq(null))
+        ).doReturn(MembershipQueryResult.Success(listOf(
+            RegistrationRequestDetails(
+                clock.instant().plusSeconds(3),
+                clock.instant().plusSeconds(7),
+                RegistrationStatus.APPROVED,
+                "registration id",
+                "holdingId1",
+                1,
+                signedContext,
+                signedContext,
+                null,
+                SERIAL,
+            )
+        )))
+
+        memberOpsClient.start()
+        setUpConfig()
+
+        assertThrows<ContextDeserializationException> {
+            memberOpsClient.checkRegistrationProgress(holdingIdentityId)
+        }
+    }
+
     @ParameterizedTest
     @EnumSource(RegistrationStatus::class)
     fun `checkSpecificRegistrationProgress return correct data when response is not null`(status: RegistrationStatus) {
+        val bytesId = "id".toByteArray()
+        whenever(keyValuePairListDeserializer.deserialize(bytesId))
+            .doReturn(KeyValuePairList(listOf(KeyValuePair("key", "value"))))
         val response =
             RegistrationRequestDetails(
                 clock.instant().plusSeconds(1),
@@ -447,10 +496,12 @@ class MemberResourceClientTest {
                 "registration id",
                 "holdingId1",
                 1,
+                SignedData(
+                    ByteBuffer.wrap(bytesId),
+                    signatureWithKey,
+                    signatureSpec,
+                ),
                 signedContext,
-                KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                signedContext,
-                KeyValuePairList(emptyList()),
                 null,
                 SERIAL,
             )

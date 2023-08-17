@@ -1,5 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
@@ -107,10 +108,10 @@ class StartRegistrationHandlerTest {
                 KeyValuePair("apple", "pear"),
             )
         )
-        val registrationContext = mock<KeyValuePairList> {
-            on { items } doReturn emptyList()
-            on { toByteBuffer() } doReturn ByteBuffer.wrap(byteArrayOf(1))
-        }
+        val registrationContext = KeyValuePairList(emptyList())
+        val emptyMemberContextBytes = "empty-member-context".toByteArray()
+        val memberContextBytes = "non-empty-member-context".toByteArray()
+        val registrationContextBytes = "registration-context".toByteArray()
 
         val startRegistrationCommand = RegistrationCommand(StartRegistration())
 
@@ -204,13 +205,19 @@ class StartRegistrationHandlerTest {
     private val serializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn "serialized-bytes".toByteArray()
     }
+    private val deserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
+        on { deserialize(eq(emptyMemberContextBytes)) } doReturn KeyValuePairList(emptyList())
+        on { deserialize(eq(memberContextBytes)) } doReturn memberContext
+        on { deserialize(eq(registrationContextBytes)) } doReturn registrationContext
+    }
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
+        on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
     }
 
     private fun createRegistrationRequest(
         registeringMember: HoldingIdentity = aliceHoldingIdentity,
-        context: KeyValuePairList = memberContext,
+        serializedContext: ByteArray = memberContextBytes,
         serial: Long? = 0L
     ) = RegistrationRequestDetails(
         clock.instant(),
@@ -220,23 +227,21 @@ class StartRegistrationHandlerTest {
         registeringMember.toCorda().shortHash.value,
         1,
         SignedData(
-            ByteBuffer.wrap(byteArrayOf(0)),
+            ByteBuffer.wrap(serializedContext),
             CryptoSignatureWithKey(
                 ByteBuffer.wrap("456".toByteArray()),
                 ByteBuffer.wrap("789".toByteArray())
             ),
             CryptoSignatureSpec("", null, null),
         ),
-        context,
         SignedData(
-            ByteBuffer.wrap(byteArrayOf(1)),
+            ByteBuffer.wrap(registrationContextBytes),
             CryptoSignatureWithKey(
                 ByteBuffer.wrap("456".toByteArray()),
                 ByteBuffer.wrap("789".toByteArray())
             ),
             CryptoSignatureSpec("", null, null),
         ),
-        registrationContext,
         "",
         serial,
     )
@@ -249,8 +254,6 @@ class StartRegistrationHandlerTest {
                 createPersistentMemberInfo(
                     eq(mgmHoldingIdentity),
                     eq(pendingMemberInfo),
-                    eq(registrationRequest.memberProvidedContext.signature),
-                    eq(registrationRequest.memberProvidedContext.signatureSpec),
                 )
             } doReturn persistentMemberInfo
         }
@@ -441,7 +444,7 @@ class StartRegistrationHandlerTest {
     @Test
     fun `declined if member context is empty`() {
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
-            .thenReturn(MembershipQueryResult.Success(createRegistrationRequest(context = KeyValuePairList(emptyList()))))
+            .thenReturn(MembershipQueryResult.Success(createRegistrationRequest(serializedContext = emptyMemberContextBytes)))
         with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
@@ -455,7 +458,6 @@ class StartRegistrationHandlerTest {
             queryRegistrationRequest = true,
         )
     }
-
 
     @Test
     fun `declined if customs fields in member fail validation`() {
@@ -923,8 +925,8 @@ class StartRegistrationHandlerTest {
     inner class PreAuthTokenTest {
         @Test
         fun `Invalid UUID for preauth token results in declined registration`() {
-            whenever(registrationContext.items).doReturn(
-                listOf(KeyValuePair(PRE_AUTH_TOKEN, "bad-token"))
+            whenever(deserializer.deserialize(registrationContextBytes)).doReturn(
+                KeyValuePairList(listOf(KeyValuePair(PRE_AUTH_TOKEN, "bad-token")))
             )
 
             val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
@@ -936,8 +938,8 @@ class StartRegistrationHandlerTest {
         @Test
         fun `Exception while querying for pre-auth tokens causes a declined registration`() {
             val token = UUID(0, 1)
-            whenever(registrationContext.items).doReturn(
-                listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString()))
+            whenever(deserializer.deserialize(registrationContextBytes)).doReturn(
+                KeyValuePairList(listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString())))
             )
             whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
                 MembershipQueryResult.Failure("failed-query")
@@ -953,8 +955,8 @@ class StartRegistrationHandlerTest {
         fun `No matching pre-auth token results in declined registration`() {
             val token = UUID(0, 1)
 
-            whenever(registrationContext.items).doReturn(
-                listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString()))
+            whenever(deserializer.deserialize(registrationContextBytes)).doReturn(
+                KeyValuePairList(listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString())))
             )
             whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
                 MembershipQueryResult.Success(emptyList())
@@ -970,8 +972,8 @@ class StartRegistrationHandlerTest {
         fun `Matching pre-auth token found results in started registration`() {
             val token = UUID(0, 1)
             val persistedToken: PreAuthToken = mock()
-            whenever(registrationContext.items).doReturn(
-                listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString()))
+            whenever(deserializer.deserialize(registrationContextBytes)).doReturn(
+                KeyValuePairList(listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString())))
             )
             whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
                 MembershipQueryResult.Success(listOf(persistedToken))
@@ -988,8 +990,8 @@ class StartRegistrationHandlerTest {
             val persistedToken: PreAuthToken = mock {
                 on { ttl } doReturn null
             }
-            whenever(registrationContext.items).doReturn(
-                listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString()))
+            whenever(deserializer.deserialize(registrationContextBytes)).doReturn(
+                KeyValuePairList(listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString())))
             )
             whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
                 MembershipQueryResult.Success(listOf(persistedToken))
@@ -1006,8 +1008,8 @@ class StartRegistrationHandlerTest {
             val persistedToken: PreAuthToken = mock {
                 on { ttl } doReturn clock.instant().plusSeconds(600)
             }
-            whenever(registrationContext.items).doReturn(
-                listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString()))
+            whenever(deserializer.deserialize(registrationContextBytes)).doReturn(
+                KeyValuePairList(listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString())))
             )
             whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
                 MembershipQueryResult.Success(listOf(persistedToken))
@@ -1024,8 +1026,8 @@ class StartRegistrationHandlerTest {
             val persistedToken: PreAuthToken = mock {
                 on { ttl } doReturn clock.instant().minusSeconds(600)
             }
-            whenever(registrationContext.items).doReturn(
-                listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString()))
+            whenever(deserializer.deserialize(registrationContextBytes)).doReturn(
+                KeyValuePairList(listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString())))
             )
             whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
                 MembershipQueryResult.Success(listOf(persistedToken))

@@ -44,7 +44,6 @@ class QueryRegistrationRequestHandlerTest {
     private val memberSignatureKey = byteArrayOf(1)
     private val memberSignatureContent = byteArrayOf(2)
     private val memberSignatureSpec = "SignatureSpec"
-    private val registrationContext = mock<KeyValuePairList>()
     private val serialisedRegistrationContext = "serialisedRegistrationContext".toByteArray()
     private val registrationSignatureKey = "registrationSignatureKey".toByteArray()
     private val registrationSignatureContent = "registrationSignatureContent".toByteArray()
@@ -67,7 +66,6 @@ class QueryRegistrationRequestHandlerTest {
     }
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
         on { deserialize(serialisedMemberContext) } doReturn memberContext
-        on { deserialize(serialisedRegistrationContext) } doReturn registrationContext
     }
     private val serializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
@@ -150,7 +148,6 @@ class QueryRegistrationRequestHandlerTest {
         assertThat(result.registrationRequest.memberProvidedContext.signatureSpec).isEqualTo(
             CryptoSignatureSpec(memberSignatureSpec, null, null)
         )
-        assertThat(result.registrationRequest.deserializedMemberProvidedContext).isEqualTo(memberContext)
         assertThat(result.registrationRequest.registrationContext.data.array()).isEqualTo(serialisedRegistrationContext)
         assertThat(result.registrationRequest.registrationContext.signature).isEqualTo(
             CryptoSignatureWithKey(
@@ -161,7 +158,6 @@ class QueryRegistrationRequestHandlerTest {
         assertThat(result.registrationRequest.registrationContext.signatureSpec).isEqualTo(
             CryptoSignatureSpec(registrationContextSignatureSpec, null, null)
         )
-        assertThat(result.registrationRequest.deserializedRegistrationContext).isEqualTo(registrationContext)
     }
 
     @Test

@@ -23,8 +23,8 @@ internal class QueryMemberInfoHandler(
                 if (request.queryIdentities.isNotEmpty()) {
                     logger.info("Querying MemberInfo(s) by name.")
                     val inStatus = criteriaBuilder.`in`(root.get<String>("memberX500Name"))
-                    request.queryIdentities.forEach { queryIdentities ->
-                        inStatus.value(queryIdentities.x500Name)
+                    request.queryIdentities.forEach { queryIdentity ->
+                        inStatus.value(queryIdentity.x500Name)
                     }
                     predicates.add(inStatus)
                 }
