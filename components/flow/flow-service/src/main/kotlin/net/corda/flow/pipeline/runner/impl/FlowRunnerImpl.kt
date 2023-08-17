@@ -18,8 +18,10 @@ import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.flow.utils.toMap
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
 import net.corda.v5.application.flows.FlowContextPropertyKeys
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -100,11 +102,14 @@ class FlowRunnerImpl @Activate constructor(
             mapOf("corda.account" to "account-zero")
         )
 
+        val requireClose = getRequireClose(sessionInitEvent)
+
         return startFlow(
             context,
             createFlow = { sgc ->
                 flowFactory.createInitiatedFlow(
                     flowStartContext,
+                    requireClose,
                     sgc,
                     localContext.counterpartySessionProperties
                 )
@@ -116,6 +121,11 @@ class FlowRunnerImpl @Activate constructor(
                 localContext.platformProperties
             )
         )
+    }
+
+    private fun getRequireClose(sessionInitEvent: SessionInit): Boolean {
+        val sessionProps = sessionInitEvent.contextSessionProperties.toMap()
+        return sessionProps[FLOW_SESSION_REQUIRE_CLOSE].toBoolean()
     }
 
     private fun addFlowStackItemSession(fsi: FlowStackItem, sessionId: String) {

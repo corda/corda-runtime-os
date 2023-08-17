@@ -53,8 +53,6 @@ class SessionInitProcessorSend(
             .setSessionId(newSessionId)
             .setSessionStartTime(instant)
             .setLastReceivedMessageTime(instant)
-            .setLastSentMessageTime(instant)
-            .setSendAck(false)
             .setCounterpartyIdentity(sessionEvent.initiatedIdentity)
             .setReceivedEventsState(SessionProcessState(0, mutableListOf()))
             .setSendEventsState(SessionProcessState(seqNum, mutableListOf(sessionEvent)))

@@ -60,12 +60,12 @@ class SessionDataWaitingForHandlerTest {
                 listOf(
                     sessionState to SessionEvent().apply {
                         sessionId = SESSION_ID
-                        payload = SessionData(ByteBuffer.wrap(DATA))
+                        payload = SessionData(ByteBuffer.wrap(DATA), null)
                         sequenceNum = 1
                     },
                     sessionStateTwo to SessionEvent().apply {
                         sessionId = SESSION_ID_2
-                        payload = SessionData(ByteBuffer.wrap(MORE_DATA))
+                        payload = SessionData(ByteBuffer.wrap(MORE_DATA), null)
                         sequenceNum = 1
                     }
                 )
@@ -113,7 +113,7 @@ class SessionDataWaitingForHandlerTest {
                 listOf(
                     sessionState to SessionEvent().apply {
                         sessionId = SESSION_ID
-                        payload = SessionData(ByteBuffer.wrap(DATA))
+                        payload = SessionData(ByteBuffer.wrap(DATA), null)
                         sequenceNum = 1
                     },
                 )
@@ -163,7 +163,7 @@ class SessionDataWaitingForHandlerTest {
                 listOf(
                     sessionState to SessionEvent().apply {
                         sessionId = SESSION_ID
-                        payload = SessionData(ByteBuffer.wrap(DATA))
+                        payload = SessionData(ByteBuffer.wrap(DATA), null)
                         sequenceNum = 1
                     }
                 ))
@@ -190,12 +190,12 @@ class SessionDataWaitingForHandlerTest {
                 listOf(
                     sessionState to SessionEvent().apply {
                         sessionId = SESSION_ID
-                        payload = SessionData(ByteBuffer.wrap(DATA))
+                        payload = SessionData(ByteBuffer.wrap(DATA), null)
                         sequenceNum = 1
                     },
                     sessionStateTwo to SessionEvent().apply {
                         sessionId = SESSION_ID_2
-                        payload = SessionData(ByteBuffer.wrap(MORE_DATA))
+                        payload = SessionData(ByteBuffer.wrap(MORE_DATA), null)
                         sequenceNum = 1
                     }
                 )
@@ -221,7 +221,7 @@ class SessionDataWaitingForHandlerTest {
                 listOf(
                     sessionState to SessionEvent().apply {
                         sessionId = SESSION_ID
-                        payload = SessionData(ByteBuffer.wrap(DATA))
+                        payload = SessionData(ByteBuffer.wrap(DATA), null)
                         sequenceNum = 1
                     },
                 )
@@ -252,12 +252,12 @@ class SessionDataWaitingForHandlerTest {
         val receivedEvents = listOf(
             sessionState to SessionEvent().apply {
                 sessionId = SESSION_ID
-                payload = SessionData(ByteBuffer.wrap(DATA))
+                payload = SessionData(ByteBuffer.wrap(DATA), null)
                 sequenceNum = 1
             },
             sessionStateTwo to SessionEvent().apply {
                 sessionId = SESSION_ID_2
-                payload = SessionData(ByteBuffer.wrap(MORE_DATA))
+                payload = SessionData(ByteBuffer.wrap(MORE_DATA), null)
                 sequenceNum = 1
             }
         )
@@ -284,7 +284,7 @@ class SessionDataWaitingForHandlerTest {
         val receivedEvents = listOf(
             sessionState to SessionEvent().apply {
                 sessionId = SESSION_ID
-                payload = SessionData(ByteBuffer.wrap(DATA))
+                payload = SessionData(ByteBuffer.wrap(DATA), null)
                 sequenceNum = 1
             }
         )
@@ -334,7 +334,7 @@ class SessionDataWaitingForHandlerTest {
                 listOf(
                     sessionState to SessionEvent().apply {
                         sessionId = SESSION_ID
-                        payload = SessionData(ByteBuffer.wrap(DATA))
+                        payload = SessionData(ByteBuffer.wrap(DATA), null)
                         sequenceNum = 1
                     },
                     sessionStateTwo to SessionEvent().apply {

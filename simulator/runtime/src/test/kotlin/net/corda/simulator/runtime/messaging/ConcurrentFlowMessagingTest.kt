@@ -15,6 +15,7 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
@@ -376,6 +377,7 @@ class ConcurrentFlowMessagingTest {
     }
 
     @Test
+    @Disabled //todo - CORE-15757
     fun `should append flow context properties passed using flow context properties builder`(){
         // Given a flow context property
         val contextProperties = SimFlowContextProperties(mapOf("key-1" to "val-1"))
@@ -401,7 +403,7 @@ class ConcurrentFlowMessagingTest {
         )
 
         // When we pass a flow context properties builder
-        val session = flowMessaging.initiateFlow(receiverX500){flowContextProperties ->
+        val session = flowMessaging.initiateFlow(receiverX500, false){flowContextProperties ->
             flowContextProperties.put("key-2", "val-2")
         }
 

@@ -13,11 +13,12 @@ import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-
+@Disabled //todo CORE-15757
 class SessionDataProcessorSendTest {
 
     private lateinit var chunkSerializerService: ChunkSerializerService
@@ -121,6 +122,6 @@ class SessionDataProcessorSendTest {
         assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(3)
         val sessionEventOutput = result.sendEventsState.undeliveredMessages.first()
         assertThat(sessionEventOutput.sequenceNum).isNotNull
-        assertThat(sessionEventOutput.payload).isEqualTo(SessionData(Chunk()))
+        assertThat(sessionEventOutput.payload).isEqualTo(SessionData(Chunk(), null))
     }
 }

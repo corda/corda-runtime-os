@@ -65,8 +65,6 @@ fun generateErrorEvent(
         .setInitiatingIdentity(initiatingIdentity)
         .setInitiatedIdentity(initiatedIdentity)
         .setSessionId(sessionId)
-        .setReceivedSequenceNum(0)
-        .setOutOfOrderSequenceNums(emptyList())
         .setPayload(sessionError)
         .build()
 }
@@ -85,9 +83,7 @@ fun generateErrorSessionStateFromSessionEvent(errorMessage: String, sessionEvent
         .setSessionId(sessionEvent.sessionId)
         .setSessionStartTime(instant)
         .setLastReceivedMessageTime(instant)
-        .setLastSentMessageTime(instant)
         .setCounterpartyIdentity(sessionEvent.initiatingIdentity)
-        .setSendAck(false)
         .setReceivedEventsState(SessionProcessState(0, listOf()))
         .setSendEventsState(SessionProcessState(0, listOf()))
         .setStatus(SessionStateType.ERROR)

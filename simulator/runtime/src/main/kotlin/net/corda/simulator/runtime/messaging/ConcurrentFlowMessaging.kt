@@ -64,6 +64,19 @@ class ConcurrentFlowMessaging(
         return doInitiate(x500Name, null)
     }
 
+    override fun initiateFlow(x500Name: MemberX500Name, requireClose: Boolean): FlowSession {
+        //todo - CORE-15757
+        TODO("Not yet implemented")
+    }
+
+    override fun initiateFlow(
+        x500Name: MemberX500Name,
+        requireClose: Boolean,
+        flowContextPropertiesBuilder: FlowContextPropertiesBuilder
+    ): FlowSession {
+        TODO("Not yet implemented")
+    }
+
     private fun doInitiate(
         x500Name: MemberX500Name,
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder?): FlowSession {
@@ -119,12 +132,6 @@ class ConcurrentFlowMessaging(
         return initiatorSession
     }
 
-    override fun initiateFlow(
-        x500Name: MemberX500Name,
-        flowContextPropertiesBuilder: FlowContextPropertiesBuilder
-    ): FlowSession {
-        return doInitiate(x500Name, flowContextPropertiesBuilder)
-    }
 
     /**
      * Not yet implemented.

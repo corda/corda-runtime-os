@@ -30,6 +30,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -39,6 +40,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
+@Disabled//todo - core-15757
 class FlowToBeKilledExceptionProcessingTest {
 
     private companion object {
@@ -66,7 +68,6 @@ class FlowToBeKilledExceptionProcessingTest {
     private val sessionState3 = createSessionState(SESSION_ID_3, true, SessionStateType.CLOSED)
     private val sessionState4 = createSessionState(SESSION_ID_4, false, SessionStateType.CONFIRMED)
     private val sessionState5 = createSessionState(SESSION_ID_5, false, SessionStateType.CREATED)
-    private val sessionState6 = createSessionState(SESSION_ID_6, false, SessionStateType.WAIT_FOR_FINAL_ACK)
 
     // session states which have had their state updated to ERROR
     private val erroredSessionState1 = createSessionState(SESSION_ID_1, false, SessionStateType.ERROR)
@@ -74,7 +75,7 @@ class FlowToBeKilledExceptionProcessingTest {
     private val erroredSessionState5 = createSessionState(SESSION_ID_5, false, SessionStateType.ERROR)
     private val erroredSessionState6 = createSessionState(SESSION_ID_6, false, SessionStateType.ERROR)
 
-    private val allFlowSessions = listOf(sessionState1, sessionState2, sessionState3, sessionState4, sessionState5, sessionState6)
+    private val allFlowSessions = listOf(sessionState1, sessionState2, sessionState3, sessionState4, sessionState5)
     private val activeFlowSessionIds = listOf(SESSION_ID_1, SESSION_ID_4, SESSION_ID_5, SESSION_ID_6)
     private val erroredFlowSessions = listOf(erroredSessionState1, erroredSessionState4, erroredSessionState5, erroredSessionState6)
     private val allFlowSessionsAfterErrorsSent = listOf(

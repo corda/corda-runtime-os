@@ -51,7 +51,6 @@ fun closeSession(
 
     //partyB send close to partyA
     partyB.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
-    partyB.assertStatus(SessionStateType.WAIT_FOR_FINAL_ACK)
     //partyA receive close and send ack to partyB
     partyA.processNextReceivedMessage(sendMessages = true)
     partyA.assertStatus(SessionStateType.CLOSED)

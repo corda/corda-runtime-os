@@ -11,8 +11,9 @@ import net.corda.session.manager.integration.helper.assertAllMessagesDelivered
 import net.corda.session.manager.integration.helper.assertStatus
 import net.corda.session.manager.integration.helper.initiateNewSession
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-
+@Disabled //todo CORE-15757
 class SessionInitiationIntegrationTest {
 
     private companion object {

@@ -48,6 +48,7 @@ class FlowFactoryImpl @Activate constructor(
 
     override fun createInitiatedFlow(
         flowStartContext: FlowStartContext,
+        requireClose: Boolean,
         sandboxGroupContext: SandboxGroupContext,
         contextProperties: Map<String, String>
     ): FlowLogicAndArgs {
@@ -59,6 +60,7 @@ class FlowFactoryImpl @Activate constructor(
 
             val flowSession = flowSessionFactory.createInitiatedFlowSession(
                 flowStartContext.statusKey.id, // The ID on a start context is the session ID
+                requireClose,
                 MemberX500Name.parse(flowStartContext.initiatedBy.x500Name),
                 contextProperties
             )

@@ -88,9 +88,8 @@ fun createOutboundRecord(
     instant: Instant,
     sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
     flowConfig: SmartConfig,
-    receivedSequenceNumber: Int = sessionEvent.sequenceNum,
     outputTopic: String
-): Record<*, *> {
+) : Record<*, *> {
     val sessionId = sessionEvent.sessionId
     return Record(
         outputTopic, sessionId, generateAppMessage(
@@ -101,8 +100,6 @@ fun createOutboundRecord(
                 null,
                 sessionEvent.initiatingIdentity,
                 sessionEvent.initiatedIdentity,
-                receivedSequenceNumber,
-                emptyList(),
                 payload
             ),
             sessionEventSerializer,

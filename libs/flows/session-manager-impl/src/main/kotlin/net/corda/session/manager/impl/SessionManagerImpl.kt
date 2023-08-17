@@ -1,9 +1,7 @@
 package net.corda.session.manager.impl
 
 import net.corda.data.chunking.Chunk
-import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
@@ -13,12 +11,8 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.chunking.MessagingChunkFactory
-import net.corda.schema.configuration.FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW
-import net.corda.schema.configuration.FlowConfig.SESSION_MESSAGE_RESEND_WINDOW
-import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
 import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
-import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.setErrorState
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
@@ -46,9 +40,8 @@ class SessionManagerImpl @Activate constructor(
 
     override fun processMessageReceived(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant):
             SessionState {
-        val updatedSessionState = sessionState?.let {
-            it.lastReceivedMessageTime = instant
-            processAcks(event, it)
+        val updatedSessionState = sessionState?.apply {
+            lastReceivedMessageTime = instant
         }
 
         return sessionEventProcessorFactory.createEventReceivedProcessor(key, event, updatedSessionState, instant).execute()
@@ -105,72 +98,13 @@ class SessionManagerImpl @Activate constructor(
         identity: HoldingIdentity,
     ): Pair<SessionState,
             List<SessionEvent>> {
-        var messagesToReturn = getMessagesToSendAndUpdateSendState(sessionState, instant, config)
-
-        //add heartbeat if no messages sent recently, add ack if needs to be sent, error session if no heartbeat received within timeout
-        messagesToReturn = handleHeartbeatAndAcknowledgements(sessionState, config, instant, messagesToReturn, identity)
-
-        if (messagesToReturn.isNotEmpty()) {
-            sessionState.sendAck = false
-            sessionState.lastSentMessageTime = instant
-        }
-
+        val messagesToReturn = getMessagesToSendAndUpdateSendState(sessionState, instant)
         return Pair(sessionState, messagesToReturn)
     }
 
     override fun errorSession(sessionState: SessionState) : SessionState {
         sessionState.status = SessionStateType.ERROR
         return sessionState
-    }
-
-    /**
-     * If no heartbeat received from counterparty after session timeout has been reached, error the session
-     * If no messages to send, and current time has surpassed the heartbeat window (message resend window), send a new ack.
-     * If no messages to send, and there are messages received to be acked, send an ack.
-     * else return back [messagesToReturn] unedited
-     * @param sessionState to update
-     * @param config contains message resend window and heartbeat timeout values
-     * @param instant for timestamps of new messages
-     * @param messagesToReturn add any new messages to send to this list
-     * @param identity identity of the party sending messages
-     * @return Messages to send to the counterparty
-     */
-    private fun handleHeartbeatAndAcknowledgements(
-        sessionState: SessionState,
-        config: SmartConfig,
-        instant: Instant,
-        messagesToReturn: List<SessionEvent>,
-        identity: HoldingIdentity,
-    ): List<SessionEvent> {
-        val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
-        val lastReceivedMessageTime = sessionState.lastReceivedMessageTime
-
-        val sessionTimeoutTimestamp = lastReceivedMessageTime.plusMillis(config.getLong(SESSION_HEARTBEAT_TIMEOUT_WINDOW))
-        val scheduledHeartbeatTimestamp = sessionState.lastSentMessageTime.plusMillis(messageResendWindow)
-
-        return if (instant > sessionTimeoutTimestamp) {
-            //send an error if the session has timed out
-            val updatedSessionState = errorSession(sessionState)
-            val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(updatedSessionState, identity)
-            listOf(
-                generateErrorEvent(
-                    updatedSessionState,
-                    initiatingIdentity,
-                    initiatedIdentity,
-                    "Session has timed out. No messages received since $lastReceivedMessageTime",
-                    "SessionTimeout-Heartbeat",
-                    instant
-                ).apply {
-                    this.initiatedIdentity = initiatedIdentity
-                    this.initiatingIdentity = initiatingIdentity
-                }
-            )
-
-        } else if (messagesToReturn.isEmpty() && (instant > scheduledHeartbeatTimestamp || sessionState.sendAck)) {
-            listOf(generateAck(sessionState, instant, identity))
-        } else {
-            messagesToReturn
-        }
     }
 
     /**
@@ -188,20 +122,10 @@ class SessionManagerImpl @Activate constructor(
     private fun getMessagesToSendAndUpdateSendState(
         sessionState: SessionState,
         instant: Instant,
-        config: SmartConfig,
     ): List<SessionEvent> {
         val sessionEvents = filterSessionEvents(sessionState, instant)
         if (sessionEvents.isEmpty()) return emptyList()
 
-        //update events with the latest ack info from the current state
-        sessionEvents.forEach { eventToSend ->
-            eventToSend.receivedSequenceNum = sessionState.receivedEventsState.lastProcessedSequenceNum
-            eventToSend.outOfOrderSequenceNums = sessionState.receivedEventsState.undeliveredMessages.map { it.sequenceNum }
-        }
-
-        //remove SessionAcks/SessionErrors and increase timestamp of messages to be sent that are awaiting acknowledgement
-        val messageResendWindow = config.getLong(SESSION_MESSAGE_RESEND_WINDOW)
-        updateSessionStateSendEvents(sessionState, instant, messageResendWindow, sessionEvents)
 
         logger.debug {
             "Dispatching events for session [${sessionState.sessionId}]: " +
@@ -238,105 +162,6 @@ class SessionManagerImpl @Activate constructor(
             pastEventsAndErrors.firstOrNull { it.payload is SessionInit }?.let { listOf(it) } ?: emptyList()
         } else {
             pastEventsAndErrors
-        }
-    }
-
-    /**
-     * Remove Acks and Errors from the session state sendEvents.undeliveredMessages as these cannot be acked by a counterparty.
-     * Increase the timestamps of messages with a timestamp less than [instantInMillis]
-     * by the configurable value of the [messageResendWindow]. This will avoid message resends in quick succession.
-     * @param sessionState to update the sendEventsState.undeliveredMessages.
-     * @param instant to update the sendEventsState.undeliveredMessages.
-     * @param messageResendWindow time to wait between resending messages.
-     * @param dispatchedEvents list of events which have been dispatched to the counterparty.
-     */
-    private fun updateSessionStateSendEvents(
-        sessionState: SessionState,
-        instant: Instant,
-        messageResendWindow: Long,
-        dispatchedEvents: List<SessionEvent>,
-    ) {
-        sessionState.sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages
-            .filter { it.payload !is SessionError }
-            .onEach { message ->
-                if (message in dispatchedEvents) {
-                    message.timestamp = instant.plusMillis(messageResendWindow)
-                }
-            }
-    }
-
-    /**
-     * Remove any messages from the send events state that have been acknowledged by the counterparty.
-     * Examine the [sessionEvent] to get the highest contiguous sequence number received by the other side
-     * as well as any out of order messages
-     * they have also received. Remove these events if present from the sendEvents undelivered messages.
-     * If the current session state has a status of WAIT_FOR_FINAL_ACK and the ack info contains the sequence number of the session close
-     * message then the session can be set to CLOSED.
-     * If the current session state has a status of CREATED and the SessionInit has been acked then the session can be set to CONFIRMED
-     *
-     * @param sessionEvent to get ack info from
-     * @param sessionState to get the sent events
-     * @return Session state updated with any messages that were delivered to the counterparty removed from [sessionState].sendEventsState
-     */
-    private fun processAcks(sessionEvent: SessionEvent, sessionState: SessionState): SessionState {
-        val highestContiguousSeqNum = sessionEvent.receivedSequenceNum
-        val outOfOrderSeqNums = sessionEvent.outOfOrderSequenceNums
-
-        val undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.filter {
-            it.sequenceNum == null ||
-                    (it.sequenceNum > highestContiguousSeqNum &&
-                            (outOfOrderSeqNums.isNullOrEmpty() || !outOfOrderSeqNums.contains(it.sequenceNum)))
-        }
-
-        return sessionState.apply {
-            sendEventsState.undeliveredMessages = undeliveredMessages
-            val nonAckUndeliveredMessages = undeliveredMessages.filter { it.payload !is SessionAck }
-            if (status == SessionStateType.WAIT_FOR_FINAL_ACK && nonAckUndeliveredMessages.isEmpty()) {
-                status = SessionStateType.CLOSED
-            } else if (status == SessionStateType.CREATED && !nonAckUndeliveredMessages.any { it.sequenceNum == 1 }) {
-                status = SessionStateType.CONFIRMED
-            }
-        }
-    }
-
-    /**
-     * Generate an SessionAck containing the latest info regarding messages received.
-     * @param sessionState to examine which messages have been received
-     * @param instant to set timestamp on SessionAck
-     * @param identity Identity of the party calling this method
-     * @return A SessionAck SessionEvent with ack fields set on the SessionEvent based on messages received from a counterparty
-     */
-    private fun generateAck(sessionState: SessionState, instant: Instant, identity: HoldingIdentity): SessionEvent {
-        val receivedEventsState = sessionState.receivedEventsState
-        val outOfOrderSeqNums = receivedEventsState.undeliveredMessages
-            .filter { it.sequenceNum > receivedEventsState.lastProcessedSequenceNum }
-            .map { it.sequenceNum }
-        val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(sessionState, identity)
-        return SessionEvent.newBuilder()
-            .setMessageDirection(MessageDirection.OUTBOUND)
-            .setTimestamp(instant)
-            .setSequenceNum(null)
-            .setInitiatingIdentity(initiatingIdentity)
-            .setInitiatedIdentity(initiatedIdentity)
-            .setSessionId(sessionState.sessionId)
-            .setReceivedSequenceNum(receivedEventsState.lastProcessedSequenceNum)
-            .setOutOfOrderSequenceNums(outOfOrderSeqNums)
-            .setPayload(SessionAck())
-            .build()
-    }
-
-    /**
-     * Get the initiating and initiated identities.
-     * @param sessionState Session state
-     * @param identity The identity of the party to send messages from
-     * @return Pair with initiating party as the first identity, initiated party as the second identity
-     */
-    private fun getInitiatingAndInitiatedParties(sessionState: SessionState, identity: HoldingIdentity):
-            Pair<HoldingIdentity, HoldingIdentity> {
-        return if (sessionState.sessionId.contains(INITIATED_SESSION_ID_SUFFIX)) {
-            Pair(sessionState.counterpartyIdentity, identity)
-        } else {
-            Pair(identity, sessionState.counterpartyIdentity)
         }
     }
 

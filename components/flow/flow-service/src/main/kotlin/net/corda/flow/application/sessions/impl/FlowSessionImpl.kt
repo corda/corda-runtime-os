@@ -29,7 +29,8 @@ class FlowSessionImpl(
     private val flowFiberService: FlowFiberService,
     private val serializationService: SerializationServiceInternal,
     private val flowContext: FlowContext,
-    direction: Direction
+    direction: Direction,
+    private val requireClose: Boolean
 ) : FlowSession, FlowSessionInternal {
 
     private companion object {
@@ -130,11 +131,13 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun close() {
-        if (isSessionConfirmed) {
+        if (requireClose) {
+            //todo CORE-15757 - do we need to suspend if close received already
             fiber.suspend(FlowIORequest.CloseSessions(setOf(sourceSessionId)))
-            log.trace { "Closed session: $sourceSessionId" }
+            log.trace { "Closing session: $sourceSessionId" }
         } else {
-            log.debug { "Ignoring close on uninitiated session: $sourceSessionId" }
+            //todo CORE-15757 - do we need to suspend to update to closed state or will we just do that when the flow finishes
+            log.debug { "Ignoring close session: $sourceSessionId" }
         }
     }
 
@@ -171,6 +174,7 @@ class FlowSessionImpl(
         return SessionInfo(
             sourceSessionId,
             counterparty,
+            requireClose,
             contextUserProperties = flowContext.flattenUserProperties(),
             contextPlatformProperties = flowContext.flattenPlatformProperties()
         )

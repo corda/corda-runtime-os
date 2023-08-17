@@ -52,13 +52,6 @@ interface StepSetup {
         initiatedIdentity: HoldingIdentity? = null
     ): FlowIoRequestSetup
 
-    fun sessionAckEventReceived(
-        flowId: String,
-        sessionId: String,
-        receivedSequenceNum: Int,
-        outOfOrderSeqNums: List<Int> = emptyList()
-    ): FlowIoRequestSetup
-
     fun sessionDataEventReceived(
         flowId: String,
         sessionId: String,
