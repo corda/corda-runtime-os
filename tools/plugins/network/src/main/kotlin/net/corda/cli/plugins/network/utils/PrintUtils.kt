@@ -9,6 +9,7 @@ import com.fasterxml.jackson.datatype.jsr310.ser.InstantSerializer
 import com.fasterxml.jackson.datatype.jsr310.deser.InstantDeserializer
 import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.cli.plugins.network.output.Output
+import net.corda.rest.RestResource
 import java.time.Instant
 
 class PrintUtils {
@@ -37,6 +38,12 @@ class PrintUtils {
             }
         }
 
+        /**
+         * This function [verifyAndPrintError] is present to address the issue
+         * of the RemoteClient in rest-client automatically converts any non-200 codes into exceptions.
+         * In this case, a 409 is converted into a ResourceAlreadyExistsException
+         * with the payload of the body as the message of the exception.
+         */
         fun verifyAndPrintError(action: () -> Unit) {
             try {
                 action()

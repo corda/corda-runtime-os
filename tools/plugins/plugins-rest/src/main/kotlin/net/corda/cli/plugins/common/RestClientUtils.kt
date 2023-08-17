@@ -9,6 +9,7 @@ import net.corda.rest.client.exceptions.ClientSslHandshakeException
 import net.corda.rest.exception.ResourceAlreadyExistsException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.net.MalformedURLException
 import java.time.Duration
 import kotlin.reflect.KClass
 import kotlin.system.exitProcess
@@ -96,7 +97,7 @@ object RestClientUtils {
     private fun validateTargetUrl(url: String) {
         try {
             URL(url)
-        } catch (e: Exception) {
+        } catch (e: MalformedURLException) {
             throw IllegalArgumentException("Error: Invalid target URL")
         }
     }
