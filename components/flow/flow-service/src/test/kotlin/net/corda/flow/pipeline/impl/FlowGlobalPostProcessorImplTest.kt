@@ -239,7 +239,7 @@ class FlowGlobalPostProcessorImplTest {
 
     @Test
     fun `Adds no output records containing schedule cleanup events when there are no CLOSED or ERRORed or sessions`() {
-        sessionState1.status = SessionStateType.WAIT_FOR_FINAL_ACK
+        sessionState1.status = SessionStateType.CREATED
         sessionState2.status = SessionStateType.CONFIRMED
 
         val outputContext = flowGlobalPostProcessor.postProcess(testContext)

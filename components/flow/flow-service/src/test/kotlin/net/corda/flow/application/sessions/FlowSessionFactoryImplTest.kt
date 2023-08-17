@@ -44,7 +44,7 @@ class FlowSessionFactoryImplTest {
 
     @Test
     fun `can create an initiated flow session`() {
-        val session = flowSessionFactory.createInitiatedFlowSession(SESSION_ID, BOB_X500_NAME, contextMap)
+        val session = flowSessionFactory.createInitiatedFlowSession(SESSION_ID, true, BOB_X500_NAME, contextMap)
         assertEquals(BOB_X500_NAME, session.counterparty)
         assertEquals("value", session.contextProperties["key"])
         session.send(HI)
@@ -53,7 +53,7 @@ class FlowSessionFactoryImplTest {
 
     @Test
     fun `can create an initiating flow session`() {
-        val session = flowSessionFactory.createInitiatingFlowSession(SESSION_ID, BOB_X500_NAME, null)
+        val session = flowSessionFactory.createInitiatingFlowSession(SESSION_ID, true, BOB_X500_NAME, null)
         assertEquals(BOB_X500_NAME, session.counterparty)
         session.send(HI)
         verify(flowFiber).suspend(any<FlowIORequest.Send>())
@@ -62,7 +62,7 @@ class FlowSessionFactoryImplTest {
     @Test
     fun `can create an initiating flow session with a context property builder`() {
         val contextBuilder = mock<FlowContextPropertiesBuilder>()
-        val session = flowSessionFactory.createInitiatingFlowSession(SESSION_ID, BOB_X500_NAME, contextBuilder)
+        val session = flowSessionFactory.createInitiatingFlowSession(SESSION_ID, true, BOB_X500_NAME, contextBuilder)
         assertEquals(BOB_X500_NAME, session.counterparty)
         session.send(HI)
         verify(contextBuilder).apply(any())
@@ -71,7 +71,7 @@ class FlowSessionFactoryImplTest {
 
     @Test
     fun `initiated sessions are given immutable context`() {
-        val session = flowSessionFactory.createInitiatedFlowSession(SESSION_ID, BOB_X500_NAME, contextMap)
+        val session = flowSessionFactory.createInitiatedFlowSession(SESSION_ID, true, BOB_X500_NAME, contextMap)
         assertEquals("value", session.contextProperties["key"])
         assertThrows<CordaRuntimeException> { session.contextProperties.put("key2", "value2") }
 
@@ -83,7 +83,7 @@ class FlowSessionFactoryImplTest {
 
     @Test
     fun `initiating sessions are given immutable context pulled from Corda when no builder is passed`() {
-        val session = flowSessionFactory.createInitiatingFlowSession(SESSION_ID, BOB_X500_NAME, null)
+        val session = flowSessionFactory.createInitiatingFlowSession(SESSION_ID, true, BOB_X500_NAME, null)
 
         assertEquals(mockFlowFiberService.platformValue, session.contextProperties[mockFlowFiberService.platformKey])
         assertEquals(mockFlowFiberService.userValue, session.contextProperties[mockFlowFiberService.userKey])
@@ -100,7 +100,7 @@ class FlowSessionFactoryImplTest {
     @Test
     fun `can create an initiating session and mutate its context with a builder`() {
         val session =
-            flowSessionFactory.createInitiatingFlowSession(SESSION_ID, BOB_X500_NAME) { flowContextProperties ->
+            flowSessionFactory.createInitiatingFlowSession(SESSION_ID, true, BOB_X500_NAME) { flowContextProperties ->
                 // Additional user context
                 flowContextProperties.put("extraUserKey", "extraUserValue")
                 // Addition platform context via the Corda internal extension function

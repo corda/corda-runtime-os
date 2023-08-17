@@ -42,15 +42,21 @@ class FlowMessagingImpl @Activate constructor(
 
     @Suspendable
     override fun initiateFlow(x500Name: MemberX500Name): FlowSession {
-        return doInitiateFlow(x500Name, null)
+        return initiateFlow(x500Name, true)
+    }
+
+    @Suspendable
+    override fun initiateFlow(x500Name: MemberX500Name, requireClose: Boolean): FlowSession {
+        return doInitiateFlow(x500Name, requireClose, null)
     }
 
     @Suspendable
     override fun initiateFlow(
         x500Name: MemberX500Name,
+        requireClose: Boolean,
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder
     ): FlowSession {
-        return doInitiateFlow(x500Name, flowContextPropertiesBuilder)
+        return doInitiateFlow(x500Name, requireClose, flowContextPropertiesBuilder)
     }
 
     @Suspendable
@@ -162,14 +168,17 @@ class FlowMessagingImpl @Activate constructor(
     }
 
     @Suspendable
+    //todo - CORE-15757
+    @Suppress("unused_parameter")
     private fun doInitiateFlow(
         x500Name: MemberX500Name,
+        requireClose: Boolean,
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder?
     ): FlowSession {
         val sessionId = UUID.randomUUID().toString()
         checkFlowCanBeInitiated()
         addSessionIdToFlowStackItem(sessionId)
-        return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, flowContextPropertiesBuilder)
+        return flowSessionFactory.createInitiatingFlowSession(sessionId, requireClose, x500Name, flowContextPropertiesBuilder)
     }
 
     private fun checkFlowCanBeInitiated() {

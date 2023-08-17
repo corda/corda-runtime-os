@@ -7,6 +7,7 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.InboundUnauthenticatedMessage
 import net.corda.data.p2p.app.InboundUnauthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.Component
@@ -122,7 +123,7 @@ internal class OutboundMessageProcessor(
     }
 
     private fun checkSourceAndDestinationValid(
-        source: HoldingIdentity, destination: HoldingIdentity
+        source: HoldingIdentity, destination: HoldingIdentity, filter: MembershipStatusFilter = MembershipStatusFilter.ACTIVE
     ): String? {
         val cordaSource = try {
             source.toCorda()
@@ -134,15 +135,21 @@ internal class OutboundMessageProcessor(
         } catch (e: Exception) {
             return "destination '${destination.x500Name}' is not a valid X500 name: ${e.message}"
         }
-        return if (source.groupId != destination.groupId) {
-            "group IDs do not match"
-        } else if (!linkManagerHostingMap.isHostedLocally(cordaSource)) {
-            "source ID is not locally hosted"
-        } else if (linkManagerHostingMap.isHostedLocally(cordaDestination)) {
-            validateCanMessage(cordaSource, cordaDestination, outbound = true, inbound = true)
-        } else {
-            validateCanMessage(cordaSource, cordaDestination, outbound = true)
+        if (source.groupId != destination.groupId) {
+            return "group IDs do not match"
         }
+        if (!linkManagerHostingMap.isHostedLocally(cordaSource)) {
+            return "source ID is not locally hosted"
+        }
+        // Perform a stricter locally-hosted check on the destination, which includes session key matching, to guard
+        // against scenarios such as when a message is being sent to a duplicate holding identity on another cluster,
+        // but is instead routed to a matching holding identity which is hosted locally.
+        membershipGroupReaderProvider.lookup(cordaSource, cordaDestination, filter)?.let {
+            if (linkManagerHostingMap.isHostedLocallyAndSessionKeyMatch(it)) {
+                return validateCanMessage(cordaSource, cordaDestination, outbound = true, inbound = true)
+            }
+        }
+        return validateCanMessage(cordaSource, cordaDestination, outbound = true)
     }
 
     /**
@@ -189,10 +196,13 @@ internal class OutboundMessageProcessor(
             return emptyList()
         }
 
-        val destMemberInfo = membershipGroupReaderProvider.lookup(
+        val destinationMemberInfo = membershipGroupReaderProvider.lookup(
             message.header.source.toCorda(),
             message.header.destination.toCorda()
-        )
+        ) ?: return emptyList<Record<String, *>>().also {
+            logger.warn("Trying to send unauthenticated message ${message.header.messageId} from ${message.header.source.toCorda()} " +
+                    "to ${message.header.destination.toCorda()}, but destination is not part of the network. Message was discarded.")
+        }
         val inboundMessage = InboundUnauthenticatedMessage(
             InboundUnauthenticatedMessageHeader(
                 message.header.subsystem,
@@ -200,10 +210,10 @@ internal class OutboundMessageProcessor(
             ),
             message.payload,
         )
-        if (linkManagerHostingMap.isHostedLocally(message.header.destination.toCorda())) {
+        if (linkManagerHostingMap.isHostedLocallyAndSessionKeyMatch(destinationMemberInfo)) {
             recordInboundMessagesMetric(inboundMessage)
             return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(inboundMessage)))
-        } else if (destMemberInfo != null) {
+        } else {
             val source = message.header.source.toCorda()
             val groupPolicy = groupPolicyProvider.getGroupPolicy(source)
             if (groupPolicy == null) {
@@ -214,12 +224,13 @@ internal class OutboundMessageProcessor(
                 return emptyList()
             }
 
-            val linkOutMessage = MessageConverter.linkOutFromUnauthenticatedMessage(inboundMessage, source, destMemberInfo, groupPolicy)
+            val linkOutMessage = MessageConverter.linkOutFromUnauthenticatedMessage(
+                inboundMessage,
+                source,
+                destinationMemberInfo,
+                groupPolicy
+            )
             return listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), linkOutMessage))
-        } else {
-            logger.warn("Trying to send unauthenticated message ${message.header.messageId} from ${message.header.source.toCorda()} " +
-                    "to ${message.header.destination.toCorda()}, but destination is not part of the network. Message was discarded.")
-            return emptyList()
         }
     }
 
@@ -243,7 +254,7 @@ internal class OutboundMessageProcessor(
         }
 
         val discardReason = checkSourceAndDestinationValid(
-            messageAndKey.message.header.source, messageAndKey.message.header.destination
+            messageAndKey.message.header.source, messageAndKey.message.header.destination, messageAndKey.message.header.statusFilter
         )
 
         if (discardReason != null) {
@@ -266,7 +277,19 @@ internal class OutboundMessageProcessor(
 
         val source = messageAndKey.message.header.source.toCorda()
         val destination = messageAndKey.message.header.destination.toCorda()
-        if (linkManagerHostingMap.isHostedLocally(destination)) {
+        val destinationMemberInfo = membershipGroupReaderProvider.lookup(
+            source, destination, messageAndKey.message.header.statusFilter
+        ) ?: return if (isReplay) {
+            emptyList()
+        } else {
+            listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId))
+        }.also {
+            logger.warn("Trying to send authenticated message (${messageAndKey.message.header.messageId}) from $source to $destination, " +
+                    "but the destination is not part of the network. Filter was " +
+                    "${messageAndKey.message.header.statusFilter} Message will be retried later.")
+        }
+
+        if (linkManagerHostingMap.isHostedLocallyAndSessionKeyMatch(destinationMemberInfo)) {
             recordInboundMessagesMetric(messageAndKey.message)
             return if (isReplay) {
                 listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
@@ -278,28 +301,13 @@ internal class OutboundMessageProcessor(
                     recordForLMReceivedMarker(messageAndKey.message.header.messageId)
                 )
             }
-        } else if (
-            membershipGroupReaderProvider.lookup(
-                source,
-                destination,
-                messageAndKey.message.header.statusFilter
-            ) != null
-        ) {
+        } else {
             val markers = if (isReplay) {
                 emptyList()
             } else {
                 listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId))
             }
             return processNoTtlRemoteAuthenticatedMessage(messageAndKey, isReplay) + markers
-        } else {
-            logger.warn("Trying to send authenticated message (${messageAndKey.message.header.messageId}) from $source to $destination, " +
-                    "but the destination is not part of the network. Filter was " +
-                    "${messageAndKey.message.header.statusFilter} Message will be retried later.")
-            return if (isReplay) {
-                emptyList()
-            } else {
-                listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId))
-            }
         }
     }
     private fun processNoTtlRemoteAuthenticatedMessage(

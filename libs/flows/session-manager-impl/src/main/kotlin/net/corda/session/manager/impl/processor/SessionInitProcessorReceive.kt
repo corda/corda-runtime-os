@@ -46,9 +46,7 @@ class SessionInitProcessorReceive(
                 }
             } else {
                 logger.debug { "Received duplicate SessionInit on key $key for session which was not null: $sessionState" }
-                sessionState.apply {
-                    sendAck = true
-                }
+                sessionState
             }
         } else {
             val sessionId = sessionEvent.sessionId
@@ -58,8 +56,6 @@ class SessionInitProcessorReceive(
                 .setSessionId(sessionId)
                 .setSessionStartTime(instant)
                 .setLastReceivedMessageTime(instant)
-                .setLastSentMessageTime(instant)
-                .setSendAck(true)
                 .setCounterpartyIdentity(sessionEvent.initiatingIdentity)
                 .setReceivedEventsState(SessionProcessState(seqNum, mutableListOf(sessionEvent)))
                 .setSendEventsState(SessionProcessState(0, mutableListOf()))

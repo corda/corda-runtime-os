@@ -15,6 +15,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.math.BigDecimal
 import java.nio.ByteBuffer
+import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY_DTO
 
 class SimpleTokenFilterStrategyTest {
 
@@ -50,7 +51,7 @@ class SimpleTokenFilterStrategyTest {
             availableTokens = listOf(t1, t2, t3)
         }
         val tc = TokenCacheImpl(pool, EntityConverterImpl())
-        val query = ClaimQuery("r1", "f1", BigDecimal(1), null, null, POOL_CACHE_KEY)
+        val query = ClaimQuery("r1", "f1", BigDecimal(1), null, null, POOL_CACHE_KEY_DTO)
 
         val result = target.filterTokens(tc, query).toList()
         println(result)
@@ -58,21 +59,21 @@ class SimpleTokenFilterStrategyTest {
 
     @Test
     fun `tag regex should match token tag null owner matches anything`() {
-        val query = ClaimQuery("r1", "f1", BigDecimal(1), "(t1)", null, POOL_CACHE_KEY)
+        val query = ClaimQuery("r1", "f1", BigDecimal(1), "(t1)", null, POOL_CACHE_KEY_DTO)
 
         assertThat(target.filterTokens(inputTokens, query)).containsOnly(token1, token2)
     }
 
     @Test
     fun `owner hash should match token owner hash null tag regex matches anything`() {
-        val query = ClaimQuery("r1", "f1", BigDecimal(1), null, "h1", POOL_CACHE_KEY)
+        val query = ClaimQuery("r1", "f1", BigDecimal(1), null, "h1", POOL_CACHE_KEY_DTO)
 
         assertThat(target.filterTokens(inputTokens, query)).containsOnly(token1, token2)
     }
 
     @Test
     fun `owner hash and tag should match token owner hash and tag`() {
-        val query = ClaimQuery("r1", "f1", BigDecimal(1), "t2", "h1", POOL_CACHE_KEY)
+        val query = ClaimQuery("r1", "f1", BigDecimal(1), "t2", "h1", POOL_CACHE_KEY_DTO)
 
         assertThat(target.filterTokens(inputTokens, query)).containsOnly(token2)
     }

@@ -19,19 +19,15 @@ import net.corda.ledger.utxo.token.cache.services.UtxoTokenMapper
 import net.corda.ledger.utxo.token.cache.services.mapToToken
 import org.osgi.service.component.annotations.Reference
 
-@Component(
-    service = [ UtxoTokenRepository::class]
-)
+@Component(service = [UtxoTokenRepository::class])
 class UtxoTokenRepositoryImpl @Activate constructor(
     @Reference
-    private val sqlQueryProvider: SqlQueryProvider,
+    private val sqlQueryProvider: SqlQueryProvider
+) : UtxoTokenRepository {
 
-) : UtxoTokenRepository
-{
     private companion object {
         private val QUERY_RESULT_TOKEN_LIMIT = 1500
     }
-
 
     override fun findTokens(
         entityManager: EntityManager,
@@ -82,13 +78,13 @@ class UtxoTokenRepositoryImpl @Activate constructor(
     }
 
     private fun setParameterIfNecessaryOwnerHash(ownerHash: String?, query: Query) {
-        if(ownerHash != null) {
+        if (ownerHash != null) {
             query.setParameter(SQL_PARAMETER_OWNER_HASH, ownerHash)
         }
     }
 
     private fun setParameterIfNecessaryRegexTag(regexTag: String?, query: Query) {
-        if(regexTag != null) {
+        if (regexTag != null) {
             query.setParameter(SQL_PARAMETER_TAG_FILTER, regexTag)
         }
     }

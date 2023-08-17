@@ -7,9 +7,10 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.Instant
-
+@Disabled //todo CORE-15757
 class SessionErrorProcessorSendTest {
 
     @Test

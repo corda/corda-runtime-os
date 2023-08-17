@@ -10,16 +10,13 @@ import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.ledger.utxo.token.cache.entities.AvailTokenQueryResult
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.repositories.UtxoTokenRepository
-import net.corda.orm.JpaEntitiesSet
 import net.corda.ledger.utxo.token.cache.entities.TokenBalance
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
+import net.corda.orm.JpaEntitiesSet
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.VirtualNodeInfo
-import org.slf4j.LoggerFactory
 
-@Component(
-    service = [AvailableTokenService::class]
-)
+@Component(service = [AvailableTokenService::class])
 class AvailableTokenServiceImpl @Activate constructor(
     @Reference
     private val virtualNodeInfoService: VirtualNodeInfoReadService,
@@ -28,15 +25,10 @@ class AvailableTokenServiceImpl @Activate constructor(
     @Reference
     private val utxoTokenRepository: UtxoTokenRepository
 ) : AvailableTokenService, SingletonSerializeAsToken {
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
-
     override fun findAvailTokens(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?): AvailTokenQueryResult {
         val virtualNode = getVirtualNodeInfo(poolKey)
 
-        val entityManagerFactory = createEntityManagerFactory(virtualNode)
+        val entityManagerFactory = getOrCreateEntityManagerFactory(virtualNode)
 
         return utxoTokenRepository.findTokens(entityManagerFactory.createEntityManager(), poolKey, ownerHash, tagRegex)
     }
@@ -48,7 +40,7 @@ class AvailableTokenServiceImpl @Activate constructor(
         claimedTokens: Collection<CachedToken>
     ): TokenBalance {
         val virtualNode = getVirtualNodeInfo(poolKey)
-        val entityManagerFactory = createEntityManagerFactory(virtualNode)
+        val entityManagerFactory = getOrCreateEntityManagerFactory(virtualNode)
 
         val totalBalance = utxoTokenRepository.queryBalance(entityManagerFactory.createEntityManager(), poolKey, ownerHash, tagRegex)
         val claimedBalance = claimedTokens.sumOf { it.amount }
@@ -57,8 +49,8 @@ class AvailableTokenServiceImpl @Activate constructor(
         return TokenBalance(availableBalance, totalBalance)
     }
 
-    private fun createEntityManagerFactory(virtualNode: VirtualNodeInfo) =
-        dbConnectionManager.createEntityManagerFactory(
+    private fun getOrCreateEntityManagerFactory(virtualNode: VirtualNodeInfo) =
+        dbConnectionManager.getOrCreateEntityManagerFactory(
             virtualNode.vaultDmlConnectionId,
             JpaEntitiesSet.create("emptySet", emptySet()) // No entity required. The mapping will be manually done
         )

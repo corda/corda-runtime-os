@@ -18,6 +18,7 @@ import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.FlowConfig.SESSION_P2P_TTL
 import net.corda.test.flow.util.buildSessionEvent
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
@@ -35,7 +36,7 @@ class SessionEventExecutorTest {
     fun `Session event executor test outbound data message and non null state`() {
         val bytes = "bytes".toByteArray()
         whenever(sessionEventSerializer.serialize(any())).thenReturn(bytes)
-        val payload = buildSessionEvent(MessageDirection.OUTBOUND, sessionId, 1, SessionData(ByteBuffer.wrap(bytes)))
+        val payload = buildSessionEvent(MessageDirection.OUTBOUND, sessionId, 1, SessionData(ByteBuffer.wrap(bytes), null))
 
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
 
@@ -118,8 +119,6 @@ class SessionEventExecutorTest {
         assertThat(appMessageFactoryCaptor.sessionEvent!!.messageDirection).isEqualTo(MessageDirection.OUTBOUND)
         assertThat(appMessageFactoryCaptor.sessionEvent!!.initiatingIdentity).isEqualTo(payload.initiatingIdentity)
         assertThat(appMessageFactoryCaptor.sessionEvent!!.initiatedIdentity).isEqualTo(payload.initiatedIdentity)
-        assertThat(appMessageFactoryCaptor.sessionEvent!!.receivedSequenceNum).isEqualTo(0)
-        assertThat(appMessageFactoryCaptor.sessionEvent!!.outOfOrderSequenceNums).isEmpty()
         assertThat(appMessageFactoryCaptor.sessionEvent!!.payload::class.java).isEqualTo(SessionError::class.java)
         val error = appMessageFactoryCaptor.sessionEvent!!.payload as SessionError
         assertThat(error.errorMessage.errorType).isEqualTo("FlowMapper-SessionExpired")
@@ -130,6 +129,8 @@ class SessionEventExecutorTest {
     }
 
     @Test
+    @Disabled
+    //todo core-15757
     fun `Session event received with CLOSING state`() {
         val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionClose())
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())

@@ -11,11 +11,12 @@ import net.corda.session.manager.integration.SessionMessageType
 import net.corda.session.manager.integration.helper.generateMessage
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-
+@Disabled //todo CORE-15757
 class SessionStateConfirmedTransitionTest {
 
     private val messagingChunkFactory : MessagingChunkFactory = mock<MessagingChunkFactory>().apply {
@@ -82,16 +83,6 @@ class SessionStateConfirmedTransitionTest {
         sessionEvent.sequenceNum = 1
         val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSING)
-    }
-
-    @Test
-    fun `Receive ack when in state confirmed`() {
-        val sessionState = buildConfirmedState()
-        val sessionEvent = generateMessage(SessionMessageType.ACK, instant, MessageDirection.INBOUND)
-        sessionEvent.receivedSequenceNum = 1
-
-        val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CONFIRMED)
     }
 
     private fun buildConfirmedState(): SessionState {

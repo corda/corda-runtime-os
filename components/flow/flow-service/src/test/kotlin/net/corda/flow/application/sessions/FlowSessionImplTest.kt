@@ -244,7 +244,8 @@ class FlowSessionImplTest {
         mockFlowFiberService,
         serializationService,
         flowContext,
-        FlowSessionImpl.Direction.INITIATED_SIDE
+        FlowSessionImpl.Direction.INITIATED_SIDE,
+        true
     )
 
     private fun createInitiatingSession() = FlowSessionImpl(
@@ -253,7 +254,8 @@ class FlowSessionImplTest {
         mockFlowFiberService,
         serializationService,
         flowContext,
-        FlowSessionImpl.Direction.INITIATING_SIDE
+        FlowSessionImpl.Direction.INITIATING_SIDE,
+        true
     )
 
 }

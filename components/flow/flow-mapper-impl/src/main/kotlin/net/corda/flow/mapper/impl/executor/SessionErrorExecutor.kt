@@ -79,8 +79,7 @@ class SessionErrorExecutor(
                                 instant,
                                 sessionEventSerializer,
                                 appMessageFactory,
-                                flowConfig,
-                                sessionEvent.receivedSequenceNum
+                                flowConfig
                             )
                         )
                     )

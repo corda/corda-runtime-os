@@ -44,7 +44,7 @@ class FlowContextPropertiesInitiator : ClientStartableFlow{
 
         flowEngine.flowContextProperties.put("key-2", "initiator")
 
-        val flowSession2 = flowMessaging.initiateFlow(participants[1]){ flowContextProperties ->
+        val flowSession2 = flowMessaging.initiateFlow(participants[1], false){ flowContextProperties ->
             flowContextProperties.put("key-4", "from-builder")
         }
         flowSession2.send(Member.CHARLIE)

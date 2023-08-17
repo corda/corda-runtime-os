@@ -37,6 +37,7 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
+import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.Flow
@@ -89,6 +90,9 @@ class FlowRunnerImplTest {
     }
     private val platformContext = KeyValueStore().apply {
         this["platform"] = "platform"
+    }
+    private val sessionContext = KeyValueStore().apply {
+        this[FLOW_SESSION_REQUIRE_CLOSE] = "true"
     }
 
     init {
@@ -165,6 +169,7 @@ class FlowRunnerImplTest {
         val sessionInit = SessionInit().apply {
             contextPlatformProperties = platformContext.avro
             contextUserProperties = userContext.avro
+            contextSessionProperties = sessionContext.avro
         }
 
         val flowStartContext = FlowStartContext().apply {
@@ -194,6 +199,7 @@ class FlowRunnerImplTest {
         whenever(
             flowFactory.createInitiatedFlow(
                 flowStartContext,
+                true,
                 sandboxGroupContext,
                 localContextProperties.counterpartySessionProperties
             )

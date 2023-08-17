@@ -3,7 +3,6 @@ package net.corda.session.manager.impl.factory
 import java.time.Instant
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionConfirm
 import net.corda.data.flow.event.session.SessionData
@@ -13,7 +12,6 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.session.manager.SessionManagerException
 import net.corda.session.manager.impl.SessionEventProcessor
-import net.corda.session.manager.impl.processor.SessionAckProcessorReceive
 import net.corda.session.manager.impl.processor.SessionCloseProcessorReceive
 import net.corda.session.manager.impl.processor.SessionCloseProcessorSend
 import net.corda.session.manager.impl.processor.SessionConfirmProcessorReceive
@@ -57,7 +55,6 @@ class SessionEventProcessorFactory @Activate constructor(
             is SessionData -> SessionDataProcessorReceive(key, sessionState, sessionEvent, instant)
             is SessionClose -> SessionCloseProcessorReceive(key, sessionState, sessionEvent, instant)
             is SessionError -> SessionErrorProcessorReceive(key, sessionState, sessionEvent, payload.errorMessage, instant)
-            is SessionAck -> SessionAckProcessorReceive(key, sessionState, sessionEvent, instant)
             is SessionConfirm -> SessionConfirmProcessorReceive(key, sessionState, sessionEvent, payload, instant)
             else -> throw NotImplementedError(
                 "The session event type '${payload.javaClass.name}' is not supported."

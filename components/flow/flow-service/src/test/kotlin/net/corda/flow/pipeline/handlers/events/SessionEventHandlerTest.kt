@@ -1,15 +1,11 @@
 package net.corda.flow.pipeline.handlers.events
 
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.stream.Stream
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
@@ -51,6 +47,8 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Instant
+import java.util.stream.Stream
 
 @Suppress("MaxLineLength")
 class SessionEventHandlerTest {
@@ -66,7 +64,6 @@ class SessionEventHandlerTest {
         @JvmStatic
         fun nonInitSessionEventTypes(): Stream<Arguments> {
             return Stream.of(
-                Arguments.of(SessionAck()),
                 Arguments.of(SessionData()),
                 Arguments.of(SessionClose()),
                 Arguments.of(SessionError()),
@@ -184,7 +181,6 @@ class SessionEventHandlerTest {
         val payload = SessionInit.newBuilder()
             .setFlowId(FLOW_ID)
             .setCpiId(CPI_ID)
-            .setPayload(ByteBuffer.wrap(byteArrayOf()))
             .setContextPlatformProperties(emptyKeyValuePairList())
             .setContextUserProperties(emptyKeyValuePairList())
             .setContextSessionProperties(sessionContextProperties())
@@ -205,8 +201,6 @@ class SessionEventHandlerTest {
             .setMessageDirection(MessageDirection.INBOUND)
             .setTimestamp(Instant.now())
             .setSequenceNum(1)
-            .setReceivedSequenceNum(0)
-            .setOutOfOrderSequenceNums(listOf(0))
             .setPayload(payload)
             .setInitiatedIdentity(ALICE_X500_HOLDING_IDENTITY)
             .setInitiatingIdentity(BOB_X500_HOLDING_IDENTITY)
