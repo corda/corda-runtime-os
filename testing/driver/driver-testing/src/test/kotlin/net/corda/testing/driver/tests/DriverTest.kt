@@ -30,6 +30,7 @@ class DriverTest {
     private val zaphod = MemberX500Name.parse("CN=Zaphod, OU=Testing, O=HGTTG, L=Sirius, C=BG")
     private val logger = LoggerFactory.getLogger(DriverTest::class.java)
 
+    @Suppress("JUnitMalformedDeclaration")
     @RegisterExtension
     private val driver = DriverNodes(alice, bob).withNotary(lucy, 1).forEachTest()
 

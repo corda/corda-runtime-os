@@ -380,15 +380,18 @@ internal class DriverDSLImpl(
     }
 
     override fun startNodes(memberNames: Set<MemberX500Name>): List<VirtualNodeInfo> {
-        require(memberNames.isNotEmpty()) {
+        val networkMembers = memberNames.filterTo(linkedSetOf(), members::containsKey)
+        with(memberNames - networkMembers) {
+            require(isEmpty()) {
+                "Non-member X500 names: $this"
+            }
+        }
+        require(networkMembers.isNotEmpty()) {
             "Each node needs at least one member."
         }
         try {
-            return driverFramework.loadCordapps(memberNames).onEach { vNode ->
-                val member = vNode.holdingIdentity.x500Name
-                if (member in members.keys) {
-                    virtualNodeInfo[keyFor(vNode.cpiIdentifier.name, member)] = vNode
-                }
+            return driverFramework.loadCordapps(networkMembers).onEach { vNode ->
+                virtualNodeInfo[VirtualNodeKey(vNode.cpiIdentifier.name, vNode.holdingIdentity.x500Name)] = vNode
             }
         } catch (e: RuntimeException) {
             throw e
@@ -406,7 +409,7 @@ internal class DriverDSLImpl(
     }
 
     override fun nodeFor(groupName: String, member: MemberX500Name): VirtualNodeInfo {
-        return virtualNodeInfo[keyFor(groupName, member)]
+        return virtualNodeInfo[VirtualNodeKey(groupName, member)]
             ?: throw AssertionError("VirtualNodeInfo not found for member=${member.commonName}, group=$groupName")
     }
 
@@ -444,8 +447,6 @@ internal class DriverDSLImpl(
 }
 
 private data class VirtualNodeKey(val groupName: String, val member: MemberX500Name)
-
-private fun keyFor(groupName: String, member: MemberX500Name) = VirtualNodeKey(groupName, member)
 
 private class ServiceImpl<T : Any>(
     private val service: T,
