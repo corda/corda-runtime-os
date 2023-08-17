@@ -11,18 +11,18 @@ import org.osgi.service.component.annotations.Reference
 
 
 /**
- * An implementation of the RPCServer interface.
+ * An implementation of the RPCEndpointManager interface.
  *
  * @param cordaAvroSerializationFactory The CordaAvroSerializationFactory service used for Avro serialization and deserialization.
  * @param javalinServer The JavalinServer service used for server operations. This must be previously initialized and started
  */
-@Component(service = [RPCServer::class])
-class RPCServerImpl @Activate constructor(
+@Component(service = [RPCEndpointManager::class])
+class RPCEndpointManagerImpl @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = JavalinServer::class)
     private val javalinServer: JavalinServer
-) : RPCServer {
+) : RPCEndpointManager {
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)

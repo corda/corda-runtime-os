@@ -3,20 +3,18 @@ plugins {
     id 'corda.common-publishing'
 }
 
-description 'Rpc Server for '
+description 'RPC server for interworker communication'
 
 dependencies {
-
-    compileOnly "org.osgi:osgi.annotation"
-    compileOnly "org.osgi:osgi.core"
-    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiServiceComponentVersion"
+    compileOnly 'org.osgi:org.osgi.service.component.annotations$osgiServiceComponentVersion'
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     implementation "net.corda:corda-avro-schema"
-    implementation project(':libs:serialization:serialization-avro')
-    implementation project(':components:rpc:rpc-server')
+
     implementation project(':applications:workers:worker-common')
+    implementation project(':components:rpc:rpc-server')
+    implementation project(':libs:serialization:serialization-avro')
 
     implementation "io.javalin:javalin-osgi:$javalinVersion"
     constraints {
@@ -27,6 +25,6 @@ dependencies {
     }
 
 
-    testImplementation platform('org.junit:junit-bom:5.9.1')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
