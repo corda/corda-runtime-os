@@ -31,11 +31,12 @@ configurations {
 
 dependencies {
     compileOnly "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-    testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
+    testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     integrationTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+    integrationTestRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('jar', Jar) {
