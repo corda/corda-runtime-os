@@ -252,10 +252,10 @@ class TransactionSignatureServiceImpl @Activate constructor(
     private fun getAvailableKeysFor(publicKeys: Iterable<PublicKey>): List<PublicKey> {
         val availableKeys = signingService.findMySigningKeys(publicKeys.toSet()).values.filterNotNull()
         if (availableKeys.isEmpty()) {
-            throw (TransactionNoAvailableKeysException(
-                "The publicKeys do not have any private counterparts available.",
+            throw TransactionNoAvailableKeysException(
+                "Cannot sign transaction(s) - no private keys were found for the requested public keys.",
                 null
-            ))
+            )
         }
         return availableKeys
     }

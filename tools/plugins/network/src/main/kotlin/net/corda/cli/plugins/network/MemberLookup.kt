@@ -6,11 +6,12 @@ import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfo
 import net.corda.cli.plugins.network.output.Output
+import net.corda.cli.plugins.network.utils.HoldingIdentityUtils.getHoldingIdentity
 import net.corda.cli.plugins.network.utils.PrintUtils.Companion.printJsonOutput
 import picocli.CommandLine
 
-@CommandLine.Command(name = "members-list", description = ["Shows the list of members on the network."])
-class MemberList(private val output: Output = ConsoleOutput()) : RestCommand(), Runnable {
+@CommandLine.Command(name = "members", description = ["Shows the list of members on the network."])
+class MemberLookup(private val output: Output = ConsoleOutput()) : RestCommand(), Runnable {
 
     @CommandLine.Option(
         names = ["-h", "--holding-identity-short-hash"],
@@ -18,6 +19,21 @@ class MemberList(private val output: Output = ConsoleOutput()) : RestCommand(), 
         description = ["Short hash of the holding identity to be checked."]
     )
     var holdingIdentityShortHash: String? = null
+
+    @CommandLine.Option(
+        names = ["-g", "--group"],
+        arity = "1",
+        description = ["Group ID of holding identity performing the lookup. " +
+                "Required if running this command with X.500 name. Defaults to last created group."]
+    )
+    var group: String? = null
+
+    @CommandLine.Option(
+        names = ["-n", "--name"],
+        arity = "0..1",
+        description = ["X.500 name of the holding identity performing the lookup"]
+    )
+    var name: String? = null
 
     @CommandLine.Option(
         names = ["-cn"],
@@ -61,19 +77,28 @@ class MemberList(private val output: Output = ConsoleOutput()) : RestCommand(), 
     )
     var country: String? = null
 
-    private fun performMembersLookup(): List<RestMemberInfo> {
-        requireNotNull(holdingIdentityShortHash) { "Holding identity short hash was not provided." }
+    @CommandLine.Option(
+        names = ["-s", "--status"],
+        arity = "1..*",
+        description = ["Status (\"ACTIVE\", \"SUSPENDED\") to filter members by. " +
+                "Multiple -s arguments may be provided. By default, only ACTIVE members are filtered. " +
+                "Only an MGM can view suspended members."]
+    )
+    var status: List<String>? = null
 
+    private fun performMembersLookup(): List<RestMemberInfo> {
+        val holdingIdentity = getHoldingIdentity(holdingIdentityShortHash, name, group)
         val result: List<RestMemberInfo> = createRestClient(MemberLookupRestResource::class).use { client ->
             val memberLookupProxy = client.start().proxy
             memberLookupProxy.lookup(
-                holdingIdentityShortHash.toString(),
+                holdingIdentity,
                 commonName,
                 organization,
                 organizationUnit,
                 locality,
                 state,
-                country
+                country,
+                status.orEmpty()
             ).members
         }
 

@@ -14,6 +14,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.flow.impl.cache.StateAndRefCache
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.ALICE_X500_HOLDING_IDENTITY
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.AbstractUtxoLedgerExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionExternalEventFactory
@@ -40,6 +41,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -60,6 +62,7 @@ class UtxoLedgerPersistenceServiceImplTest {
     private val sandbox = mock<SandboxGroupContext>()
     private val virtualNodeContext = mock<VirtualNodeContext>()
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
+    private val stateAndRefCache = mock<StateAndRefCache>()
 
     private lateinit var utxoLedgerPersistenceService: UtxoLedgerPersistenceService
 
@@ -72,7 +75,8 @@ class UtxoLedgerPersistenceServiceImplTest {
             externalEventExecutor,
             serializationService,
             utxoLedgerTransactionFactory,
-            utxoSignedTransactionFactory
+            utxoSignedTransactionFactory,
+            stateAndRefCache
         )
 
         whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)
@@ -86,6 +90,7 @@ class UtxoLedgerPersistenceServiceImplTest {
         whenever(sandbox.virtualNodeContext).thenReturn(virtualNodeContext)
         whenever(virtualNodeContext.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
         whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
+        whenever(stateAndRefCache.putAll(any())).doAnswer {}
     }
 
     @Test
