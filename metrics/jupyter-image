@@ -1,0 +1,10 @@
+FROM jupyter/minimal-notebook
+
+# Install necessary dependencies
+RUN pip install pandas openpyxl jupyter jupyterlab requests
+
+# Set working directory
+WORKDIR /home/jovyan
+
+# Start Jupyter Notebook
+CMD ["start-notebook.sh"]
