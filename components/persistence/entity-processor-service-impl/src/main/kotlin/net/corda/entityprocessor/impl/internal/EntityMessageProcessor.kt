@@ -1,5 +1,6 @@
 package net.corda.entityprocessor.impl.internal
 
+import net.corda.db.schema.DbSchema
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.KeyValuePairList
 import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
@@ -36,6 +37,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
+import java.sql.SQLIntegrityConstraintViolationException
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -63,6 +65,18 @@ class EntityMessageProcessor(
 ) : DurableProcessor<String, EntityRequest> {
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        const val PERSISTENCE_REQUEST_ID_PK_NAME = "PK_${DbSchema.VNODE_PERSISTENCE_REQUEST_ID_TABLE}"
+        const val SQL_PK_VIOLATION_CODE = "23505"
+
+        fun isDuplicateRequest(e: Exception): Boolean =
+            (e.cause?.cause?.cause as? SQLIntegrityConstraintViolationException).let {
+                it?.sqlState == SQL_PK_VIOLATION_CODE &&
+                        it.message?.contains(
+                            "$PERSISTENCE_REQUEST_ID_PK_NAME table: ${DbSchema.VNODE_PERSISTENCE_REQUEST_ID_TABLE}",
+                            ignoreCase = true
+                        ) == true
+            }
     }
 
     override val keyClass = String::class.java
@@ -160,10 +174,14 @@ class EntityMessageProcessor(
                         entityResponse
                     )
                 } catch (e: PersistenceException) {
-                    responseFactory.successResponse(
-                        request.flowExternalEventContext,
-                        EntityResponse(emptyList(), KeyValuePairList(emptyList()))
-                    )
+                    if (isDuplicateRequest(e)) {
+                        responseFactory.successResponse(
+                            request.flowExternalEventContext,
+                            EntityResponse(emptyList(), KeyValuePairList(emptyList()))
+                        )
+                    } else {
+                        throw e
+                    }
                 }
             }
 
@@ -198,10 +216,14 @@ class EntityMessageProcessor(
                         entityResponse
                     )
                 } catch (e: PersistenceException) {
-                    responseFactory.successResponse(
-                        request.flowExternalEventContext,
-                        EntityResponse(emptyList(), KeyValuePairList(emptyList()))
-                    )
+                    if (isDuplicateRequest(e)) {
+                        responseFactory.successResponse(
+                            request.flowExternalEventContext,
+                            EntityResponse(emptyList(), KeyValuePairList(emptyList()))
+                        )
+                    } else {
+                        throw e
+                    }
                 }
             }
 

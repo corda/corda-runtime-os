@@ -42,6 +42,7 @@ dependencies {
 
     implementation 'net.corda:corda-application'
     implementation 'net.corda:corda-config-schema'
+    implementation 'net.corda:corda-db-schema'
     implementation 'net.corda:corda-topic-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
