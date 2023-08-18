@@ -17,8 +17,11 @@ import net.corda.libs.external.messaging.serialization.ExternalMessagingRouteCon
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepositoryImpl
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
+import net.corda.membership.client.MemberResourceClient
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -51,6 +54,9 @@ internal class VirtualNodeWriterFactory(
     private val virtualNodeDbAdmin: VirtualNodesDbAdmin,
     private val schemaMigrator: LiquibaseSchemaMigrator,
     private val groupPolicyParser: GroupPolicyParser,
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    private val memberResourceClient: MemberResourceClient,
+    private val membershipQueryClient: MembershipQueryClient,
     private val memberInfoFactory: MemberInfoFactory,
     private val cpiCpkRepositoryFactory: CpiCpkRepositoryFactory,
     private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository(),
@@ -130,7 +136,11 @@ internal class VirtualNodeWriterFactory(
                 oldVirtualNodeEntityRepository,
                 publisher,
                 migrationUtility,
-                externalMessagingRouteConfigGenerator = externalMessagingRouteConfigGenerator
+                membershipGroupReaderProvider,
+                memberResourceClient,
+                membershipQueryClient,
+                externalMessagingRouteConfigGenerator = externalMessagingRouteConfigGenerator,
+
             ),
 
             VirtualNodeCreateRequest::class.java to CreateVirtualNodeOperationHandler(
