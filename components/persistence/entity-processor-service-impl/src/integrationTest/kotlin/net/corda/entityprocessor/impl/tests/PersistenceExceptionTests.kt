@@ -49,6 +49,7 @@ import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -338,6 +339,26 @@ class PersistenceExceptionTests {
         assertEquals(dogVersion1, dogVersion2)
     }
 
+    @Test
+    fun `should distinguish duplicate persistence request from actual error in persistence request`() {
+        createDogDb()
+        val dogId = UUID.randomUUID()
+        val persistEntitiesRequest = createDogPersistRequest(dogId)
+
+        val record1 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
+        assertNull(((record1.single().value as FlowEvent).payload as ExternalEventResponse).error)
+        // duplicate request
+        val record2 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
+        // The below should not contain a PK violation error as it should be identified it is the same persistence request
+        // and therefore not executed
+        assertNull(((record2.single().value as FlowEvent).payload as ExternalEventResponse).error)
+
+        val userDuplicatePersistEntitiesRequest = createDogPersistRequest(dogId)
+        // the following should now throw as it is different request that violates PK
+        val record3 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), userDuplicatePersistEntitiesRequest)))
+        assertNotNull(((record3.single().value as FlowEvent).payload as ExternalEventResponse).error)
+    }
+
     private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
 
     private fun createVersionedDogPersistRequest(): EntityRequest {
@@ -348,10 +369,10 @@ class PersistenceExceptionTests {
         return createPersistEntitiesRequest(listOf(ByteBuffer.wrap(serialisedDog)))
     }
 
-    private fun createDogPersistRequest(): EntityRequest {
+    private fun createDogPersistRequest(dogId :UUID = UUID.randomUUID()): EntityRequest {
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
         // create dog using dog-aware sandbox
-        val dog = sandbox.createDog("Stray", owner = "Not Known").instance
+        val dog = sandbox.createDog("Stray", id = dogId, owner = "Not Known").instance
         val serialisedDog = sandbox.getSerializationService().serialize(dog).bytes
         return createPersistEntitiesRequest(listOf(ByteBuffer.wrap(serialisedDog)))
     }
