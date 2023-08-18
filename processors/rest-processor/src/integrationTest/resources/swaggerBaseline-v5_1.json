@@ -2043,7 +2043,7 @@
     "/mgm/{holdingidentityshorthash}/activate" : {
       "post" : {
         "tags" : [ "MGM API" ],
-        "description" : "",
+        "description" : "This endpoint enables you to activate a previously suspended member.",
         "operationId" : "post_mgm__holdingidentityshorthash__activate",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -2897,7 +2897,7 @@
     "/mgm/{holdingidentityshorthash}/suspend" : {
       "post" : {
         "tags" : [ "MGM API" ],
-        "description" : "",
+        "description" : "The suspend endpoint enables you to suspend a member.",
         "operationId" : "post_mgm__holdingidentityshorthash__suspend",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",

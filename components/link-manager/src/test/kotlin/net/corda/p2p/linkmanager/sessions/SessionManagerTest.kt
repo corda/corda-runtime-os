@@ -267,8 +267,9 @@ class SessionManagerTest {
         }
         on { dominoTile } doReturn sessionReplayerDominoTile
     }
+    private val sessionId = "sessionId"
     private val protocolInitiator = mock<AuthenticationProtocolInitiator> {
-        on { sessionId } doReturn "sessionId"
+        on { sessionId } doReturn sessionId
     }
     private val secondProtocolInitiator = mock<AuthenticationProtocolInitiator> {
         on { sessionId } doReturn "anotherSessionId"
@@ -1442,7 +1443,7 @@ class SessionManagerTest {
         sessionManager.processSessionMessage(LinkInMessage(responderHello))
         assertTrue(sessionManager.processOutboundMessage(message) is SessionManager.SessionState.SessionAlreadyPending)
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.sessionTimeout.plus(5.millis))
-        verify(outboundSessionPool.constructed().last()).replaceSession(sessionId, protocolInitiator)
+        verify(outboundSessionPool.constructed().last()).replaceSession(counterparties, sessionId, protocolInitiator)
 
         sessionManager.stop()
         resourceHolder.close()
@@ -1502,10 +1503,18 @@ class SessionManagerTest {
         whenever(protocolInitiator.getSession()).thenReturn(session)
         sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))
 
-        whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
+        whenever(outboundSessionPool.constructed().last().replaceSession(
+            eq(counterparties),
+            eq(sessionId),
+            any(),
+        )).thenReturn(true)
         whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.sessionTimeout.plus(5.millis))
-        verify(outboundSessionPool.constructed().last()).replaceSession(protocolInitiator.sessionId, secondProtocolInitiator)
+        verify(outboundSessionPool.constructed().last()).replaceSession(
+            counterparties,
+            protocolInitiator.sessionId,
+            secondProtocolInitiator,
+        )
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
             .publish(listOf(Record(SESSION_OUT_PARTITIONS, protocolInitiator.sessionId, null)))
 
@@ -1560,10 +1569,16 @@ class SessionManagerTest {
         sessionManager.start()
         startSendingHeartbeats(sessionManager)
 
-        whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
+        whenever(outboundSessionPool.constructed().last().replaceSession(eq(counterparties), eq(sessionId), any())).thenReturn(true)
         whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(mock())
         mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.sessionTimeout.plus(5.millis))
-        verify(outboundSessionPool.constructed().last()).replaceSession(protocolInitiator.sessionId, secondProtocolInitiator)
+        verify(
+            outboundSessionPool.constructed().last())
+            .replaceSession(
+                counterparties,
+                protocolInitiator.sessionId,
+                secondProtocolInitiator,
+            )
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
             .publish(listOf(Record(SESSION_OUT_PARTITIONS, protocolInitiator.sessionId, null)))
         sessionManager.stop()
@@ -1686,7 +1701,7 @@ class SessionManagerTest {
         }
         sessionManager.start()
 
-        whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
+        whenever(outboundSessionPool.constructed().last().replaceSession(eq(counterparties), eq(sessionId), any())).thenReturn(true)
         whenever(outboundSessionPool.constructed().last().getAllSessionIds()).thenAnswer { (listOf(protocolInitiator.sessionId)) }
         startSendingHeartbeats(sessionManager)
 
@@ -1756,7 +1771,7 @@ class SessionManagerTest {
         }
         sessionManager.start()
 
-        whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
+        whenever(outboundSessionPool.constructed().last().replaceSession(eq(counterparties), eq(sessionId), any())).thenReturn(true)
         whenever(outboundSessionPool.constructed().last().getAllSessionIds()).thenAnswer { (listOf(protocolInitiator.sessionId)) }
         startSendingHeartbeats(sessionManager)
 
@@ -1823,7 +1838,7 @@ class SessionManagerTest {
             whenever(it.publish(any())).doAnswer { publish() }
         }
         sessionManager.start()
-        whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
+        whenever(outboundSessionPool.constructed().last().replaceSession(eq(counterparties), eq(sessionId), any())).thenReturn(true)
         whenever(outboundSessionPool.constructed().last().getAllSessionIds()).thenAnswer { (listOf(protocolInitiator.sessionId)) }
 
         startSendingHeartbeats(sessionManager)
@@ -1852,7 +1867,7 @@ class SessionManagerTest {
 
         whenever(session.sessionId).doAnswer { protocolInitiator.sessionId }
         whenever(protocolInitiator.getSession()).thenReturn(session)
-        whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
+        whenever(outboundSessionPool.constructed().last().replaceSession(eq(counterparties), eq(sessionId), any())).thenReturn(true)
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
 
         assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
@@ -1874,7 +1889,7 @@ class SessionManagerTest {
             counterparties
         )
 
-        verify(outboundSessionPool.constructed().last()).replaceSession(protocolInitiator.sessionId, protocolInitiator)
+        verify(outboundSessionPool.constructed().last()).replaceSession(counterparties, protocolInitiator.sessionId, protocolInitiator)
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
             .publish(listOf(Record(SESSION_OUT_PARTITIONS, protocolInitiator.sessionId, null))
         )
@@ -1986,7 +2001,7 @@ class SessionManagerTest {
 
         whenever(session.sessionId).doAnswer{protocolInitiator.sessionId}
         whenever(protocolInitiator.getSession()).thenReturn(session)
-        whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
+        whenever(outboundSessionPool.constructed().last().replaceSession(eq(counterparties), eq(sessionId), any())).thenReturn(true)
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
         whenever(groupPolicyProvider.getGroupPolicy(OUR_PARTY)).thenReturn(null)
 

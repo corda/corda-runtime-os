@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.token.cache.handlers
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.ledger.utxo.token.cache.Helper.toDto
 import net.corda.ledger.utxo.token.cache.entities.BalanceQuery
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
@@ -20,7 +19,7 @@ class TokenBalanceQueryEventHandler(
         event: BalanceQuery
     ): Record<String, FlowEvent> {
 
-        val tokenBalance = availableTokenService.queryBalance(event.poolKey.toDto(), event.ownerHash, event.tagRegex, state.claimedTokens())
+        val tokenBalance = availableTokenService.queryBalance(event.poolKey, event.ownerHash, event.tagRegex, state.claimedTokens())
 
         return recordFactory.getBalanceResponse(
             event.flowId,

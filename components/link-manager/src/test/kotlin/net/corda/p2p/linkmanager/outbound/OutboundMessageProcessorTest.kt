@@ -94,6 +94,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `authenticated messages are dropped when source and destination identities are in different groups`() {
+        val destination = membersAndGroups.first.getGroupReader(localIdentity).lookup(myIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocallyAndSessionKeyMatch(destination)).doReturn(true)
         val payload = "test"
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
@@ -288,6 +290,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `authenticated messages are dropped if inbound membership messaging validation for message to locally host identity fails`() {
+        val destination = membersAndGroups.first.getGroupReader(myIdentity).lookup(localIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocallyAndSessionKeyMatch(destination)).doReturn(true)
         whenever(
             networkMessagingValidator.validateInbound(any(), any())
         ).doReturn(Either.Right("foo-bar"))
@@ -370,6 +374,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `if destination identity is hosted locally, unauthenticated messages are looped back`() {
+        val destination = membersAndGroups.first.getGroupReader(localIdentity).lookup(myIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocallyAndSessionKeyMatch(destination)).doReturn(true)
         val payload = "test"
         val unauthenticatedMsg = OutboundUnauthenticatedMessage(
             OutboundUnauthenticatedMessageHeader(
@@ -645,6 +651,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `unauthenticated messages are dropped if inbound network membership validation fails when destination is local`() {
+        val destination = membersAndGroups.first.getGroupReader(localIdentity).lookup(myIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocallyAndSessionKeyMatch(destination)).doReturn(true)
         whenever(
             networkMessagingValidator.validateInbound(any(), any())
         ).doReturn(Either.Right("foo-bar"))
@@ -677,6 +685,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `unauthenticated messages are dropped if outbound network membership validation fails when destination is local`() {
+        val destination = membersAndGroups.first.getGroupReader(localIdentity).lookup(myIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocallyAndSessionKeyMatch(destination)).doReturn(true)
         whenever(
             networkMessagingValidator.validateOutbound(any(), any())
         ).doReturn(Either.Right("foo-bar"))
@@ -925,6 +935,8 @@ class OutboundMessageProcessorTest {
 
     @Test
     fun `processReplayedAuthenticatedMessage will loop back message if destination is locally hosted`() {
+        val destination = membersAndGroups.first.getGroupReader(localIdentity).lookup(myIdentity.x500Name)!!
+        whenever(hostingMap.isHostedLocallyAndSessionKeyMatch(destination)).doReturn(true)
         val payload = "test"
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(

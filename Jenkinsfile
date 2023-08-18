@@ -1,6 +1,6 @@
 @Library('corda-shared-build-pipeline-steps@bm/CORE-16228') _
 
-cordaPipeline(
+cordaPipelineKubernetesAgent(
     dailyBuildCron: 'H H/6 * * *',
     runIntegrationTests: true,
     createPostgresDb: true,
