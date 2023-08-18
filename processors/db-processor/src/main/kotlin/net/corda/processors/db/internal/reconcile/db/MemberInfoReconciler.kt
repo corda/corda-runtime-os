@@ -144,16 +144,17 @@ class MemberInfoReconciler(
 
         override fun getAllVersionedRecords(): Stream<VersionedRecord<String, PersistentMemberInfo>> {
             return recordsMap.entries.stream().mapNotNull {
-                val name = parseName(it.value)
                 val version = try {
                     it.value.serializedMgmContext.array().deserializeContext(keyValuePairListDeserializer)
                         .getOrDefault(SERIAL, null)?.toInt()
                 } catch (e: NumberFormatException) {
+                    val name = parseName(it.value)
                     logger.warn("Record for $name in ${it.value.viewOwningMember}'s member " +
                             "list doesn't contain a valid serial number.")
                     return@mapNotNull null
                 }
                 if (version == null) {
+                    val name = parseName(it.value)
                     logger.warn("Record for $name in ${it.value.viewOwningMember}'s member " +
                         "list doesn't contain a serial number.")
                     return@mapNotNull null

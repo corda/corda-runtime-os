@@ -323,17 +323,11 @@ class MemberInfoReconcilerTest {
             val key = "Key"
             val serialNumber = 26
 
-            val memberContextBytes = ByteBuffer.wrap(byteArrayOf(0))
-            val signedData = mock<SignedData> {
-                on { data } doReturn memberContextBytes
-            }
             val mgmContextBytes = ByteBuffer.wrap(byteArrayOf(1))
-            whenever(deserializer.deserialize(memberContextBytes.array()))
-                .doReturn(KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, "O=Alice, L=London, C=GB"))))
             whenever(deserializer.deserialize(mgmContextBytes.array()))
                 .doReturn(KeyValuePairList(listOf(KeyValuePair(MemberInfoExtension.SERIAL, serialNumber.toString()))))
             val memberInfo = mock<PersistentMemberInfo> {
-                on { signedMemberContext } doReturn signedData
+                on { signedMemberContext } doReturn mock()
                 on { serializedMgmContext } doReturn mgmContextBytes
             }
             processor.firstValue.onNext(Record("topic", key, memberInfo), null, emptyMap())
@@ -359,24 +353,18 @@ class MemberInfoReconcilerTest {
             val key1 = "Key1"
             val serialNumber1 = 32
 
-            val memberContextBytes = ByteBuffer.wrap(byteArrayOf(0))
-            val signedData = mock<SignedData> {
-                on { data } doReturn memberContextBytes
-            }
             val mgmContextBytes = ByteBuffer.wrap(byteArrayOf(1))
             val mgmContextBytes1 = ByteBuffer.wrap(byteArrayOf(2))
-            whenever(deserializer.deserialize(memberContextBytes.array()))
-                .doReturn(KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, "O=Alice, L=London, C=GB"))))
             whenever(deserializer.deserialize(mgmContextBytes.array()))
                 .doReturn(KeyValuePairList(listOf(KeyValuePair(MemberInfoExtension.SERIAL, serialNumber.toString()))))
             whenever(deserializer.deserialize(mgmContextBytes1.array()))
                 .doReturn(KeyValuePairList(listOf(KeyValuePair(MemberInfoExtension.SERIAL, serialNumber1.toString()))))
             val memberInfo = mock<PersistentMemberInfo> {
-                on { signedMemberContext } doReturn signedData
+                on { signedMemberContext } doReturn mock()
                 on { serializedMgmContext } doReturn mgmContextBytes
             }
             val memberInfo1 =  mock<PersistentMemberInfo> {
-                on { signedMemberContext } doReturn signedData
+                on { signedMemberContext } doReturn mock()
                 on { serializedMgmContext } doReturn mgmContextBytes1
             }
             processor.firstValue.onSnapshot(mapOf(key to memberInfo, key1 to memberInfo1))
