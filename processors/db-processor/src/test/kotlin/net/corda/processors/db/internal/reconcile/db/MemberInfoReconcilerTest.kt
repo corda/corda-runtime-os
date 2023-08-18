@@ -432,6 +432,30 @@ class MemberInfoReconcilerTest {
 
             assertThat(memberInfoReconciler.reconcilerReadWriter.getAllVersionedRecords().toList()).isEmpty()
         }
+
+        @Test
+        fun `getAllVersionedRecords handles ContextDeserializationException`() {
+            handler.firstValue.processEvent(configChangedEvent, coordinator)
+
+            val key = "Key"
+            val memberContextBytes = ByteBuffer.wrap(byteArrayOf(0))
+            val signedData = mock<SignedData> {
+                on { data } doReturn memberContextBytes
+            }
+            val mgmContextBytes = ByteBuffer.wrap(byteArrayOf(1))
+            whenever(deserializer.deserialize(memberContextBytes.array()))
+                .doReturn(KeyValuePairList(emptyList()))
+            whenever(deserializer.deserialize(mgmContextBytes.array()))
+                .doReturn(null)
+            val memberInfo = mock<PersistentMemberInfo> {
+                on { viewOwningMember } doReturn AvroHoldingIdentity("O=Alice, L=London, C=GB", "GROUP_ID")
+                on { signedMemberContext } doReturn signedData
+                on { serializedMgmContext } doReturn mgmContextBytes
+            }
+            processor.firstValue.onNext(Record("topic", key, memberInfo), null, emptyMap())
+
+            assertThat(memberInfoReconciler.reconcilerReadWriter.getAllVersionedRecords().toList()).isEmpty()
+        }
     }
 
     @Nested

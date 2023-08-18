@@ -147,6 +147,11 @@ class MemberInfoReconciler(
                 val version = try {
                     it.value.serializedMgmContext.array().deserializeContext(keyValuePairListDeserializer)
                         .getOrDefault(SERIAL, null)?.toInt()
+                } catch (e: ContextDeserializationException) {
+                    val name = parseName(it.value)
+                    logger.warn("Could not deserialize mgm provided context in " +
+                            "record for $name in ${it.value.viewOwningMember}'s list.")
+                    return@mapNotNull null
                 } catch (e: NumberFormatException) {
                     val name = parseName(it.value)
                     logger.warn("Record for $name in ${it.value.viewOwningMember}'s member " +
