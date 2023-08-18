@@ -38,10 +38,9 @@ dependencies {
     }
     integrationTestRuntimeOnly files(configurations.quasarBundles)
 
-    integrationTestImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-    integrationTestImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
+    integrationTestImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
     integrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
-    integrationTestRuntimeOnly "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
+    integrationTestRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     integrationTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     integrationTestRuntimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"

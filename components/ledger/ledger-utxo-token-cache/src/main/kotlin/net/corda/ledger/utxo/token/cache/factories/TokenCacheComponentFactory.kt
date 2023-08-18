@@ -10,6 +10,7 @@ import net.corda.ledger.utxo.token.cache.handlers.TokenClaimQueryEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenClaimReleaseEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenLedgerChangeEventHandler
+import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.ledger.utxo.token.cache.services.SimpleTokenFilterStrategy
 import net.corda.ledger.utxo.token.cache.services.TokenCacheComponent
 import net.corda.ledger.utxo.token.cache.services.TokenCacheSubscriptionHandlerImpl
@@ -31,20 +32,22 @@ class TokenCacheComponentFactory @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = ExternalEventResponseFactory::class)
-    private val externalEventResponseFactory: ExternalEventResponseFactory
+    private val externalEventResponseFactory: ExternalEventResponseFactory,
+    @Reference(service = AvailableTokenService::class)
+    private val availableTokenService: AvailableTokenService
 ) {
     fun create(): TokenCacheComponent {
 
         val entityConverter = EntityConverterImpl()
         val eventConverter = EventConverterImpl(entityConverter)
-        val recordFactory = RecordFactoryImpl(externalEventResponseFactory)
+        val recordFactory = RecordFactoryImpl(externalEventResponseFactory, entityConverter)
         val tokenFilterStrategy = SimpleTokenFilterStrategy()
 
         val eventHandlerMap = mapOf<Class<*>, TokenEventHandler<in TokenEvent>>(
-            createHandler(TokenClaimQueryEventHandler(tokenFilterStrategy, recordFactory)),
+            createHandler(TokenClaimQueryEventHandler(tokenFilterStrategy, recordFactory, availableTokenService)),
             createHandler(TokenClaimReleaseEventHandler(recordFactory)),
             createHandler(TokenLedgerChangeEventHandler()),
-            createHandler(TokenBalanceQueryEventHandler(tokenFilterStrategy, recordFactory)),
+            createHandler(TokenBalanceQueryEventHandler(recordFactory, availableTokenService)),
         )
 
         val tokenCacheEventHandlerFactory = TokenCacheEventProcessorFactoryImpl(

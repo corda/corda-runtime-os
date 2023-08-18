@@ -31,6 +31,12 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
+import net.corda.membership.client.MemberResourceClient
+import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.toMap
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.membership.read.MembershipGroupReaderProvider
 
 @Suppress("LongParameterList")
 internal class VirtualNodeUpgradeOperationHandler(
@@ -38,6 +44,9 @@ internal class VirtualNodeUpgradeOperationHandler(
     private val oldVirtualNodeEntityRepository: VirtualNodeEntityRepository,
     private val virtualNodeInfoPublisher: Publisher,
     private val migrationUtility: MigrationUtility,
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    private val memberResourceClient: MemberResourceClient,
+    private val membershipQueryClient: MembershipQueryClient,
     private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository(),
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
     private val externalMessagingRouteConfigGenerator: ExternalMessagingRouteConfigGenerator
@@ -56,7 +65,9 @@ internal class VirtualNodeUpgradeOperationHandler(
         request.validateMandatoryFields()
 
         try {
-            upgradeVirtualNodeCpi(requestTimestamp, requestId, request)
+            val (upgradedVNodeInfo, cpkChangelogs) = upgradeVirtualNodeEntityTransaction(requestTimestamp, requestId, request)
+            upgradeVirtualNodeCpi(requestId, request, upgradedVNodeInfo, cpkChangelogs)
+            reRegisterMember(upgradedVNodeInfo)
         } catch (e: Exception) {
             handleUpgradeException(e, requestId, request, requestTimestamp)
         }
@@ -92,22 +103,11 @@ internal class VirtualNodeUpgradeOperationHandler(
     }
 
     private fun upgradeVirtualNodeCpi(
-        requestTimestamp: Instant,
         requestId: String,
-        request: VirtualNodeUpgradeRequest
+        request: VirtualNodeUpgradeRequest,
+        upgradedVNodeInfo: VirtualNodeInfo,
+        cpkChangelogs: List<CpkDbChangeLog>
     ) {
-        val (upgradedVNodeInfo, cpkChangelogs) = entityManagerFactory.createEntityManager().transaction { em ->
-            val (virtualNode, targetCpi) = validateUpgradeRequest(em, request, requestId)
-
-            val externalMessagingRouteConfig = externalMessagingRouteConfigGenerator.generateUpgradeConfig(
-                virtualNode,
-                targetCpi.cpiId,
-                targetCpi.cpksMetadata
-            )
-
-            upgradeVirtualNodeEntity(em, request, requestId, requestTimestamp, targetCpi, externalMessagingRouteConfig)
-        }
-
         publishVirtualNodeInfo(upgradedVNodeInfo)
 
         if (migrationUtility.areChangesetsDeployedOnVault(
@@ -188,6 +188,56 @@ internal class VirtualNodeUpgradeOperationHandler(
         }
 
         return Pair(currentVirtualNode, targetCpiMetadata)
+    }
+
+    // Re-register the member if the member already exists
+    // after the virtual node has been upgraded, so that the member CPI version is up-to-date
+    private fun reRegisterMember(upgradedVNodeInfo: VirtualNodeInfo) {
+        val holdingIdentity = upgradedVNodeInfo.holdingIdentity
+        val registrationRequestsCheck = membershipQueryClient.queryRegistrationRequests(holdingIdentity)
+        if (
+            registrationRequestsCheck is MembershipQueryResult.Success
+            && registrationRequestsCheck.payload.isNotEmpty()
+        ) {
+            val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
+            val x500Name = membershipGroupReader.owningMember
+            val registrationRequest = membershipQueryClient
+                .queryRegistrationRequests(holdingIdentity, x500Name, limit = 1)
+            val registrationContext = (registrationRequest as MembershipQueryResult.Success)
+                .payload
+                .first()
+                .memberProvidedContext
+                .toMap().toMutableMap()
+
+            if (registrationContext.containsKey(MemberInfoExtension.SERIAL)) {
+                registrationContext[MemberInfoExtension.SERIAL] =
+                    membershipGroupReader.lookup(x500Name)?.serial.toString()
+            }
+
+            memberResourceClient.startRegistration(
+                holdingIdentity.shortHash,
+                registrationContext
+            )
+        }
+    }
+
+    private fun upgradeVirtualNodeEntityTransaction(
+        requestTimestamp: Instant,
+        requestId: String,
+        request: VirtualNodeUpgradeRequest
+    ): Pair<VirtualNodeInfo, List<CpkDbChangeLog>> {
+        val (upgradedVNodeInfo, cpkChangelogs) = entityManagerFactory.createEntityManager().transaction { em ->
+            val (virtualNode, targetCpi) = validateUpgradeRequest(em, request, requestId)
+
+            val externalMessagingRouteConfig = externalMessagingRouteConfigGenerator.generateUpgradeConfig(
+                virtualNode,
+                targetCpi.cpiId,
+                targetCpi.cpksMetadata
+            )
+
+            upgradeVirtualNodeEntity(em, request, requestId, requestTimestamp, targetCpi, externalMessagingRouteConfig)
+        }
+        return Pair(upgradedVNodeInfo, cpkChangelogs)
     }
 
     private fun upgradeVirtualNodeEntity(

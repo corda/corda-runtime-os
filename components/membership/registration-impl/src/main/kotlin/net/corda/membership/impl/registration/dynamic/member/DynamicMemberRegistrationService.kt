@@ -51,7 +51,6 @@ import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
 import net.corda.membership.impl.registration.verifiers.OrderVerifier
 import net.corda.membership.impl.registration.verifiers.P2pEndpointVerifier
 import net.corda.membership.impl.registration.verifiers.RegistrationContextCustomFieldsVerifier
-import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -319,6 +318,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                     ?: previousInfo?.serial
                     ?: 0
 
+                verifyReRegistrationIsEnabled(serialInfo, previousInfo?.serial, mgm.platformVersion,)
+
                 val message = MembershipRegistrationRequest(
                     registrationId.toString(),
                     signedMemberContext,
@@ -449,11 +450,10 @@ class DynamicMemberRegistrationService @Activate constructor(
 
             previousRegistrationContext?.let { previous ->
                 ((newRegistrationContext.entries - previous.entries) + (previous.entries - newRegistrationContext.entries)).filter {
-                    it.key.startsWith(ENDPOINTS) ||
-                            it.key.startsWith(SESSION_KEYS) ||
-                            it.key.startsWith(LEDGER_KEYS) ||
-                            it.key.startsWith(ROLES_PREFIX) ||
-                            it.key.startsWith("corda.notary")
+                    it.key.startsWith(SESSION_KEYS) ||
+                    it.key.startsWith(LEDGER_KEYS) ||
+                    it.key.startsWith(ROLES_PREFIX) ||
+                    it.key.startsWith("corda.notary")
                 }.apply {
                     require(isEmpty()) {
                         throw InvalidMembershipRegistrationException(
@@ -464,6 +464,23 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
 
             return newRegistrationContext
+        }
+
+        /**
+         * Verify MGM is not on 5.0 platform, since re-registration is not supported by that version.
+         * If submitted serial or member's current serial suggests re-registration attempt,
+         * we will mark their request as INVALID.
+         */
+        @Suppress("ComplexCondition")
+        private fun verifyReRegistrationIsEnabled(
+            submittedSerial: Long,
+            currentSerial: Long?,
+            mgmPlatformVersion: Int,
+        ) {
+            if ((submittedSerial > 0 || (currentSerial != null && currentSerial > 0)) && mgmPlatformVersion < 50100) {
+                throw InvalidMembershipRegistrationException("MGM is on a lower version where re-registration " +
+                        "is not supported.")
+            }
         }
 
         private fun getTlsSubject(member: HoldingIdentity): Map<String, String> {
