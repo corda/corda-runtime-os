@@ -1,6 +1,5 @@
 package net.corda.session.manager.impl.processor.helper
 
-import java.time.Instant
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -9,6 +8,8 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
+import net.corda.session.manager.Constants
+import java.time.Instant
 
 /**
  * Generate an error SessionEvent.
@@ -138,4 +139,8 @@ fun setErrorState(
             generateErrorEvent(sessionState, sessionEvent, errorMessage, errorType, instant)
         )
     }
+}
+
+fun isInitiatedIdentity(sessionEvent: SessionEvent): Boolean {
+    return sessionEvent.sessionId.contains(Constants.INITIATED_SESSION_ID_SUFFIX)
 }

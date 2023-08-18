@@ -1,6 +1,5 @@
 package net.corda.session.manager.impl.processor
 
-import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
@@ -8,9 +7,11 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
+import net.corda.session.manager.impl.processor.helper.isInitiatedIdentity
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 /**
  * Handle send of a [SessionClose] event.
@@ -44,6 +45,7 @@ class SessionCloseProcessorSend(
      *      - if status is already CLOSED - do nothing
      *
      */
+
     override fun execute(): SessionState {
         val sessionId = sessionEvent.sessionId
         val currentStatus = sessionState?.status
@@ -115,28 +117,29 @@ class SessionCloseProcessorSend(
         sessionState: SessionState,
         sessionId: String,
         nextSeqNum: Int,
-    ) = when (val currentState = sessionState.status) {
-        SessionStateType.CONFIRMED -> {
-            sessionState.apply {
-                logger.trace { "Currently in CONFIRMED. Changing to CLOSING. nextSeqNum: $nextSeqNum, adding this event to send " +
-                        "${sessionEvent.sequenceNum}, $sessionId" }
-                status = SessionStateType.CLOSING
-                sendEventsState.lastProcessedSequenceNum = nextSeqNum
-                sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(sessionEvent)
+    ) : SessionState {
+        val requireClose = sessionState.requireClose
+        var status = sessionState.status
+        return if (isInitiatedIdentity(sessionEvent) && status !== SessionStateType.CLOSED) {
+            if (requireClose) {
+                sessionState.apply {
+                    logger.trace {
+                        "Sending SessionClose and setting status to CLOSED. nextSeqNum: $nextSeqNum, adding this event to send " +
+                                "${sessionEvent.sequenceNum}, $sessionId"
+                    }
+                    status = SessionStateType.CLOSED
+                    sendEventsState.lastProcessedSequenceNum = nextSeqNum
+                    sendEventsState.undeliveredMessages =
+                        sessionState.sendEventsState.undeliveredMessages.plus(sessionEvent)
+                }
+            } else {
+                status = SessionStateType.CLOSED
+                sessionState
             }
-        }
-        SessionStateType.CLOSING -> {
-            logger.trace { "Currently in CLOSING. Changing to WAIT_FOR_FINAL_ACK. nextSeqNum: $nextSeqNum, adding this event to send " +
-                    "${sessionEvent.sequenceNum}, $sessionId" }
-            // Doesn't go to closed until ack received
-            sessionState.apply {
-                sendEventsState.lastProcessedSequenceNum = nextSeqNum
-                sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(sessionEvent)
-            }
-        }
-        else -> {
-            val errorMessage = "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
-                    "$currentState. Current SessionState: $sessionState."
+        } else {
+            val errorMessage =
+                "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
+                        "$status. Current SessionState: $sessionState."
             logAndGenerateErrorResult(errorMessage, sessionState, "SessionClose-InvalidStatus")
         }
     }
