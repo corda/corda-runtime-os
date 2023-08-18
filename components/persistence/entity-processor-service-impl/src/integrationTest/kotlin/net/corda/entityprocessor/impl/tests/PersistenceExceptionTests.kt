@@ -406,7 +406,7 @@ class PersistenceExceptionTests {
     }
 
     private fun createDb(liquibaseScript: String, entityClass: Class<*>) {
-        val requestIdsTable = ClassloaderChangeLog.ChangeLogResourceFiles(
+        val vnodeVaultSchema = ClassloaderChangeLog.ChangeLogResourceFiles(
             DbSchema::class.java.packageName,
             listOf("net/corda/db/schema/vnode-vault/db.changelog-master.xml"),
             DbSchema::class.java.classLoader
@@ -419,7 +419,7 @@ class PersistenceExceptionTests {
                 entityClass.classLoader
             )
 
-        val cl = ClassloaderChangeLog(linkedSetOf(requestIdsTable, sandboxedSchema))
+        val cl = ClassloaderChangeLog(linkedSetOf(vnodeVaultSchema, sandboxedSchema))
         val ds = dbConnectionManager.getDataSource(virtualNodeInfo.vaultDmlConnectionId)
         ds.connection.use {
             lbm.updateDb(it, cl)
