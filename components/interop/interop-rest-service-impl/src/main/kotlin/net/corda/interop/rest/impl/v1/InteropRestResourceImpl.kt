@@ -254,7 +254,7 @@ internal class InteropRestResourceImpl @Activate constructor(
             InteropIdentityResponse(
                 interopIdentity.x500Name,
                 UUID.fromString(interopIdentity.groupId),
-                vNodeShortHash.toString(),
+                interopIdentity.owningVirtualNodeShortHash.toString(),
                 interopIdentity.facadeIds,
                 MemberX500Name.parse(interopIdentity.x500Name).organization,
                 interopIdentity.endpointUrl,
