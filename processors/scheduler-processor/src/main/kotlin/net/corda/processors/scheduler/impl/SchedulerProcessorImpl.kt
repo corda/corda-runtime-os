@@ -1,7 +1,8 @@
 package net.corda.processors.scheduler.impl
 
 import net.corda.components.scheduler.Schedule
-import net.corda.components.scheduler.SchedulerFactory
+import net.corda.components.scheduler.TriggerPublisher
+import net.corda.components.scheduler.impl.SchedulerFactoryImpl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.db.connection.manager.DbConnectionManager
@@ -11,7 +12,6 @@ import net.corda.libs.scheduler.datamodel.SchedulerEntities
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
@@ -36,8 +36,8 @@ class SchedulerProcessorImpl @Activate constructor(
     private val entitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = SchedulerFactory::class)
-    private val schedulerFactory: SchedulerFactory,
+    @Reference(service = TriggerPublisher::class)
+    private val triggerPublisher: TriggerPublisher,
     ): SchedulerProcessor {
     init {
         // define the different DB Entity Sets
@@ -50,23 +50,24 @@ class SchedulerProcessorImpl @Activate constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val REGISTRATION = "REGISTRATION"
     }
 
     private val dependentComponents = DependentComponents.of(
         ::dbConnectionManager,
-        ::configurationReadService,
+        ::triggerPublisher
+        // TODO - CORE-16331: plug in config
+        //::configurationReadService,
     )
     private val lifecycleCoordinator =
         coordinatorFactory.createCoordinator<SchedulerProcessorImpl>(dependentComponents, ::eventHandler)
 
-    // NOTE: hardcoding schedulers here until CORE-16331 is picked up, when we should take this from config
+    // now just hardcoding schedulers here until CORE-16331 is picked up, when we should take this from config
     private val schedules = listOf(
         // example schedule, delete when we have a real one
         Schedule("say-hello", 60, "telephone"),
         Schedule("say-goodbye", 600, "telephone"),
     )
-    private val schedulers = Schedulers(schedules, schedulerFactory)
+    private var schedulers: Schedulers? = null
 
     override fun start(bootConfig: SmartConfig) {
         logger.info("Scheduler processor starting.")
@@ -81,7 +82,7 @@ class SchedulerProcessorImpl @Activate constructor(
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
-            is StartEvent -> onStartEvent()
+            is StartEvent -> logger.debug("Scheduler Processor Start")
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
             is ConfigChangedEvent -> onConfigChangedEvent(event)
             is BootConfigEvent -> onBootConfigEvent(event)
@@ -114,6 +115,15 @@ class SchedulerProcessorImpl @Activate constructor(
 //                    )
 //                )
 //            }
+            if (null == schedulers) {
+                val schedulerFactory = SchedulerFactoryImpl(
+                    triggerPublisher,
+                    dbConnectionManager,
+                    coordinatorFactory)
+                schedulers = Schedulers(schedules, schedulerFactory)
+                schedulers?.start()
+            }
+
         }
         coordinator.updateStatus(event.status)
     }
@@ -121,21 +131,12 @@ class SchedulerProcessorImpl @Activate constructor(
     private fun onConfigChangedEvent(
         event: ConfigChangedEvent,
     ) {
-        schedulers.onConfigChanged(event)
-    }
-
-    private fun onStartEvent() {
-        schedulers.start()
-
-        lifecycleCoordinator.createManagedResource(REGISTRATION) {
-            lifecycleCoordinator.followStatusChangesByName(
-                setOf(LifecycleCoordinatorName.forComponent<DbConnectionManager>())
-            )
-        }
+        schedulers?.onConfigChanged(event)
     }
 
     private fun onStopEvent() {
-        schedulers.stop()
+        schedulers?.stop()
+        schedulers = null
     }
 
     data class BootConfigEvent(val config: SmartConfig) : LifecycleEvent

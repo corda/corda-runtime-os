@@ -2,9 +2,7 @@ package net.corda.libs.scheduler.datamodel
 
 import net.corda.libs.scheduler.datamodel.db.TaskSchedulerLogEntityRepository
 import javax.persistence.EntityManagerFactory
-import org.osgi.service.component.annotations.Component
 
-@Component(service = [SchedulerLog::class])
 class SchedulerLogImpl(
     private val emf: EntityManagerFactory,
     private val logEntityRepository: TaskSchedulerLogEntityRepository = TaskSchedulerLogEntityRepository()

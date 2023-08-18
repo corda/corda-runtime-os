@@ -14,13 +14,18 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.net.InetAddress
 import kotlin.math.min
 
 class SchedulerEventHandler(
     private val schedule: Schedule,
     private val publisher: TriggerPublisher,
     private val schedulerLog: SchedulerLog,
-    private val schedulerName: String = System.getenv("HOSTNAME")
+    private val schedulerName: String =
+        System.getenv("HOSTNAME")?:
+        InetAddress.getLocalHost()?.canonicalHostName?:
+        System.getenv("COMPUTERNAME")?:
+        "<UNKNOWN>"
     ) : LifecycleEventHandler {
 
     private val name = "${SchedulerEventHandler::class.java.name}-${schedule.taskName}"
