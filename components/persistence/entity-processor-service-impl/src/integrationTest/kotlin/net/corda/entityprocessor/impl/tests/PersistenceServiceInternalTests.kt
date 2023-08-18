@@ -34,6 +34,7 @@ import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getCatClass
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getOwnerClass
+import net.corda.db.schema.DbSchema
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.entityprocessor.impl.internal.PersistenceServiceInternal
 import net.corda.entityprocessor.impl.internal.getClass
@@ -177,6 +178,11 @@ class PersistenceServiceInternalTests {
         catClass = sandbox.sandboxGroup.getCatClass()
         val cl = ClassloaderChangeLog(
             linkedSetOf(
+                ClassloaderChangeLog.ChangeLogResourceFiles(
+                    DbSchema::class.java.packageName,
+                    listOf("net/corda/db/schema/vnode-vault/db.changelog-master.xml"),
+                    DbSchema::class.java.classLoader
+                ),
                 ClassloaderChangeLog.ChangeLogResourceFiles(
                     dogClass.packageName, listOf("migration/db.changelog-master.xml"),
                     classLoader = dogClass.classLoader
