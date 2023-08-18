@@ -37,6 +37,7 @@ dependencies {
     implementation project(":libs:tracing")
     implementation project(":libs:utilities")
     implementation project(':libs:virtual-node:sandbox-group-context')
+    implementation project(":libs:virtual-node:virtual-node-datamodel")
     implementation project(":libs:serialization:serialization-avro")
 
     implementation 'net.corda:corda-application'
@@ -48,6 +49,7 @@ dependencies {
     testImplementation project(':testing:db-testkit')
     testImplementation project(':testing:persistence-testkit')
 
+    testImplementation 'net.corda:corda-db-schema'
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"

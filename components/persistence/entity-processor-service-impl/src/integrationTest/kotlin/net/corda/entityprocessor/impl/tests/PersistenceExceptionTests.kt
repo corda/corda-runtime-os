@@ -15,13 +15,13 @@ import net.corda.data.persistence.PersistEntities
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.messagebus.testkit.DBSetup
-import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.createVersionedDog
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getVersionedDogClass
+import net.corda.db.schema.DbSchema
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
@@ -32,10 +32,13 @@ import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.testing.sandboxes.SandboxSetup
+import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.testing.sandboxes.fetchService
-import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
+import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
@@ -48,8 +51,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
@@ -81,13 +82,19 @@ class PersistenceExceptionTests {
         const val DOGS_TABLE = "migration/db.changelog-master.xml"
         const val DOGS_TABLE_WITHOUT_PK = "dogs-without-pk.xml"
         const val VERSIONED_DOGS_TABLE = "versioned-dogs.xml"
+
+        private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
+        fun generateHoldingIdentity() = createTestHoldingIdentity(X500_NAME, UUID.randomUUID().toString())
     }
 
-    @Suppress("JUnitMalformedDeclaration")
     @RegisterExtension
-    private val sandboxLifecycle = AllTestsLifecycle()
+    private val beforeEachLifecycle = EachTestLifecycle()
 
-    private lateinit var virtualNodeService: VirtualNodeService
+//    private lateinit var virtualNodeService: VirtualNodeService
+    private lateinit var virtualNodeLoader: VirtualNodeLoader
+
+    private lateinit var sandboxGroupContextComponent: SandboxGroupContextComponent
+
     private lateinit var cpiInfoReadService: CpiInfoReadService
     private lateinit var cpkReadService: CpkReadService
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
@@ -97,6 +104,8 @@ class PersistenceExceptionTests {
     lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
     private lateinit var dbConnectionManager: FakeDbConnectionManager
+
+    private lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
     private lateinit var entitySandboxService: EntitySandboxService
     private lateinit var processor: EntityMessageProcessor
 
@@ -105,6 +114,8 @@ class PersistenceExceptionTests {
 
     @InjectService
     lateinit var lbm: LiquibaseSchemaMigrator
+
+    private var dbCounter = 0
 
     @BeforeAll
     fun setup(
@@ -117,37 +128,42 @@ class PersistenceExceptionTests {
     ) {
         logger.info("Setup test (test Directory: $testDirectory)")
         sandboxSetup.configure(bundleContext, testDirectory)
-        sandboxLifecycle.accept(sandboxSetup) {
-            virtualNodeService = sandboxSetup.fetchService(timeout = 5000)
+        // the below code block runs before every test
+        beforeEachLifecycle.accept(sandboxSetup) {
+            virtualNodeLoader = sandboxSetup.fetchService(timeout = 5000)
             cpiInfoReadService = sandboxSetup.fetchService(timeout = 5000)
             cpkReadService = sandboxSetup.fetchService(timeout = 5000)
             virtualNodeInfoReadService = sandboxSetup.fetchService(timeout = 5000)
             responseFactory = sandboxSetup.fetchService(timeout = 5000)
+            sandboxGroupContextComponent =
+                sandboxSetup.fetchService<SandboxGroupContextComponent>(timeout = 5000)
+                    .also {
+                        it.resizeCaches(2)
+                    }
         }
 
-        virtualNodeInfo = virtualNodeService.load(Resources.EXTENDABLE_CPB)
-        cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
-    }
+            virtualNodeInfo = virtualNodeLoader.loadVirtualNode(Resources.EXTENDABLE_CPB, generateHoldingIdentity())
+            cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
 
-    @BeforeEach
-    fun setUpBeforeEach() {
-        dbConnectionManager = FakeDbConnectionManager(
-            listOf(Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node")),
-            "PersistenceExceptionTests"
-        )
-        entitySandboxService =
-            EntitySandboxServiceFactory().create(
-                virtualNodeService.sandboxGroupContextComponent,
-                cpkReadService,
-                virtualNodeInfoReadService,
-                dbConnectionManager
+            dbConnectionManager = FakeDbConnectionManager(
+                listOf(Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node")),
+                "PersistenceExceptionTests${dbCounter++}"
             )
-        processor = EntityMessageProcessor(
-            currentSandboxGroupContext,
-            entitySandboxService,
-            responseFactory,
-            this::noOpPayloadCheck
-        )
+
+            entitySandboxService =
+                EntitySandboxServiceFactory().create(
+                    sandboxGroupContextComponent,
+                    cpkReadService,
+                    virtualNodeInfoReadService,
+                    dbConnectionManager
+                )
+            processor = EntityMessageProcessor(
+                currentSandboxGroupContext,
+                entitySandboxService,
+                responseFactory,
+                this::noOpPayloadCheck
+            )
+        }
     }
 
     @AfterEach
@@ -192,7 +208,7 @@ class PersistenceExceptionTests {
 
         val brokenEntitySandboxService =
             EntitySandboxServiceFactory().create(
-                virtualNodeService.sandboxGroupContextComponent,
+                sandboxGroupContextComponent,
                 cpkReadService,
                 brokenVirtualNodeInfoReadService,
                 dbConnectionManager
@@ -248,8 +264,8 @@ class PersistenceExceptionTests {
         assertThat(response.error.exception.errorType).isEqualTo(CordaRuntimeException::class.java.name)
     }
 
-    @Disabled("This test is disabled for now because currently we do execute duplicate persistence requests." +
-            "It should be re-enabled after deduplication work is done in epic CORE-5909")
+//    @Disabled("This test is disabled for now because currently we do execute duplicate persistence requests." +
+//            "It should be re-enabled after deduplication work is done in epic CORE-5909")
     @Test
     fun `on duplicate persistence request don't execute it - with PK constraint does not throw PK violation`() {
         createDogDb()
@@ -264,8 +280,6 @@ class PersistenceExceptionTests {
         assertNull(((record2.single().value as FlowEvent).payload as ExternalEventResponse).error)
     }
 
-    @Disabled("This test is disabled for now because currently we do execute duplicate persistence requests." +
-            "It should be re-enabled after deduplication work is done in epic CORE-5909")
     @Test
     fun `on duplicate persistence request don't execute it - without PK constraint does not add duplicate DB entry`() {
         createDogDb(DOGS_TABLE_WITHOUT_PK)
@@ -282,8 +296,6 @@ class PersistenceExceptionTests {
         assertEquals(1, dogDbCount)
     }
 
-    @Disabled("This test is disabled for now because currently we do execute duplicate persistence requests." +
-            "It should be re-enabled after deduplication work is done in epic CORE-5909")
     @Test
     fun `on duplicate persistence request don't execute it - statically updated field isn't getting updated in DB`() {
         createVersionedDogDb()
@@ -373,15 +385,20 @@ class PersistenceExceptionTests {
     }
 
     private fun createDb(liquibaseScript: String, entityClass: Class<*>) {
-        val cl = ClassloaderChangeLog(
-            linkedSetOf(
-                ClassloaderChangeLog.ChangeLogResourceFiles(
-                    entityClass.packageName,
-                    listOf(liquibaseScript),
-                    entityClass.classLoader
-                )
-            )
+        val requestIdsTable = ClassloaderChangeLog.ChangeLogResourceFiles(
+            DbSchema::class.java.packageName,
+            listOf("net/corda/db/schema/vnode-vault/db.changelog-master.xml"),
+            DbSchema::class.java.classLoader
         )
+
+        val sandboxedSchema =
+            ClassloaderChangeLog.ChangeLogResourceFiles(
+                entityClass.packageName,
+                listOf(liquibaseScript),
+                entityClass.classLoader
+            )
+
+        val cl = ClassloaderChangeLog(linkedSetOf(requestIdsTable, sandboxedSchema))
         val ds = dbConnectionManager.getDataSource(virtualNodeInfo.vaultDmlConnectionId)
         ds.connection.use {
             lbm.updateDb(it, cl)
@@ -390,7 +407,7 @@ class PersistenceExceptionTests {
 
     private fun getDogDbCount(connectionId: UUID, dogDBTable: String = "dog"): Int =
         dbConnectionManager
-            .getDataSource(connectionId).connection.use { connection ->
+                .getDataSource(connectionId).connection.use { connection ->
                 connection.prepareStatement("SELECT count(*) FROM $dogDBTable").use {
                     it.executeQuery().use { rs ->
                         if (!rs.next()) {

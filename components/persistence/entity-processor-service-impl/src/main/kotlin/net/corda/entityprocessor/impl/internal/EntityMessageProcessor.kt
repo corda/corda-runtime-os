@@ -1,6 +1,7 @@
 package net.corda.entityprocessor.impl.internal
 
 import net.corda.crypto.core.parseSecureHash
+import net.corda.data.KeyValuePairList
 import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.persistence.DeleteEntities
@@ -13,6 +14,8 @@ import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
 import net.corda.flow.utils.toMap
+import net.corda.libs.virtualnode.datamodel.repository.RequestsIdsRepository
+import net.corda.libs.virtualnode.datamodel.repository.RequestsIdsRepositoryImpl
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
@@ -35,6 +38,8 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
+import java.util.UUID
+import javax.persistence.PersistenceException
 
 fun SandboxGroupContext.getClass(fullyQualifiedClassName: String) =
     this.sandboxGroup.loadClassFromMainBundles(fullyQualifiedClassName)
@@ -54,6 +59,7 @@ class EntityMessageProcessor(
     private val entitySandboxService: EntitySandboxService,
     private val responseFactory: ResponseFactory,
     private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
+    private val requestsIdsRepository: RequestsIdsRepository = RequestsIdsRepositoryImpl()
 ) : DurableProcessor<String, EntityRequest> {
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -137,54 +143,73 @@ class EntityMessageProcessor(
 
         val persistenceServiceInternal = PersistenceServiceInternal(sandbox::getClass, payloadCheck)
 
-        return entityManagerFactory.createEntityManager().transaction {
-            when (val entityRequest = request.request) {
-                is PersistEntities -> responseFactory.successResponse(
-                    request.flowExternalEventContext,
-                    persistenceServiceInternal.persist(serializationService, it, entityRequest)
-                )
+        return try {
+            entityManagerFactory.createEntityManager().transaction {
+                when (val entityRequest = request.request) {
+                    is PersistEntities -> {
+                        val requestId = request.flowExternalEventContext.requestId
+                        // We should require requestId to be a UUID to avoid request ids collisions
+                        requestsIdsRepository.put(UUID.fromString(requestId), it)
+                        val entityResponse =
+                            persistenceServiceInternal.persist(serializationService, it, entityRequest)
+                        responseFactory.successResponse(
+                            request.flowExternalEventContext,
+                            entityResponse
+                        )
+                    }
 
-                is DeleteEntities -> responseFactory.successResponse(
-                    request.flowExternalEventContext,
-                    persistenceServiceInternal.deleteEntities(serializationService, it, entityRequest)
-                )
-
-                is DeleteEntitiesById -> responseFactory.successResponse(
-                    request.flowExternalEventContext,
-                    persistenceServiceInternal.deleteEntitiesByIds(
-                        serializationService,
-                        it,
-                        entityRequest
-                    )
-                )
-
-                is MergeEntities -> responseFactory.successResponse(
-                    request.flowExternalEventContext,
-                    persistenceServiceInternal.merge(serializationService, it, entityRequest)
-                )
-
-                is FindEntities -> responseFactory.successResponse(
-                    request.flowExternalEventContext,
-                    persistenceServiceInternal.find(serializationService, it, entityRequest)
-                )
-
-                is FindAll -> responseFactory.successResponse(
-                    request.flowExternalEventContext,
-                    persistenceServiceInternal.findAll(serializationService, it, entityRequest)
-                )
-
-                is FindWithNamedQuery -> responseFactory.successResponse(
-                    request.flowExternalEventContext,
-                    persistenceServiceInternal.findWithNamedQuery(serializationService, it, entityRequest)
-                )
-
-                else -> {
-                    responseFactory.fatalErrorResponse(
+                    is DeleteEntities -> responseFactory.successResponse(
                         request.flowExternalEventContext,
-                        CordaRuntimeException("Unknown command")
+                        persistenceServiceInternal.deleteEntities(serializationService, it, entityRequest)
                     )
+
+                    is DeleteEntitiesById -> responseFactory.successResponse(
+                        request.flowExternalEventContext,
+                        persistenceServiceInternal.deleteEntitiesByIds(
+                            serializationService,
+                            it,
+                            entityRequest
+                        )
+                    )
+
+                    is MergeEntities -> {
+                        val requestId = request.flowExternalEventContext.requestId
+                        // We should require requestId to be a UUID to avoid request ids collisions
+                        requestsIdsRepository.put(UUID.fromString(requestId), it)
+                        val entityResponse = persistenceServiceInternal.merge(serializationService, it, entityRequest)
+                        responseFactory.successResponse(
+                            request.flowExternalEventContext,
+                            entityResponse
+                        )
+                    }
+                    is FindEntities -> responseFactory.successResponse(
+                        request.flowExternalEventContext,
+                        persistenceServiceInternal.find(serializationService, it, entityRequest)
+                    )
+
+                    is FindAll -> responseFactory.successResponse(
+                        request.flowExternalEventContext,
+                        persistenceServiceInternal.findAll(serializationService, it, entityRequest)
+                    )
+
+                    is FindWithNamedQuery -> responseFactory.successResponse(
+                        request.flowExternalEventContext,
+                        persistenceServiceInternal.findWithNamedQuery(serializationService, it, entityRequest)
+                    )
+
+                    else -> {
+                        responseFactory.fatalErrorResponse(
+                            request.flowExternalEventContext,
+                            CordaRuntimeException("Unknown command")
+                        )
+                    }
                 }
             }
+        } catch (e: PersistenceException) {
+            responseFactory.successResponse(
+                request.flowExternalEventContext,
+                EntityResponse(emptyList(), KeyValuePairList(emptyList()))
+            )
         }
     }
 
