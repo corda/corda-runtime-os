@@ -1,7 +1,5 @@
 package net.corda.flow.pipeline.sessions.impl
 
-import java.nio.ByteBuffer
-import java.time.Instant
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.MessageDirection
@@ -28,6 +26,8 @@ import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.nio.ByteBuffer
+import java.time.Instant
 
 @Suppress("TooManyFunctions")
 @Component(service = [FlowSessionManager::class])
@@ -196,6 +196,15 @@ class FlowSessionManagerImpl @Activate constructor(
         return sessionIds
             .map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
             .filter { sessionState -> sessionState.status == status }
+    }
+
+    override fun getSessionsWithRequireClose(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>
+    ): List<SessionState> {
+        return sessionIds
+            .map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
+            .filter { sessionState -> sessionState.requireClose }
     }
 
     override fun getSessionsWithStatuses(

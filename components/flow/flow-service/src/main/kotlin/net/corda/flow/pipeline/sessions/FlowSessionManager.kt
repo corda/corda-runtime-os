@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.sessions
 
-import java.time.Instant
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
@@ -15,6 +14,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name
+import java.time.Instant
 
 /**
  * [FlowSessionManager] encapsulates the logic of [SessionManager] with a specific focus on its usage within the flow event pipeline.
@@ -236,5 +236,33 @@ interface FlowSessionManager {
     fun getSessionsWithNextMessageClose(
         checkpoint: FlowCheckpoint,
         sessionIds: List<String>
+    ): List<SessionState>
+
+    /**
+     * Get the states for which requireClose is true
+     * @param checkpoint The checkpoint to check states within
+     * @param sessionIds The sessions to check
+     * @return [Boolean] true if those states have requireClose set to true
+     */
+    fun getSessionsWithRequireClose(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>
+    ): List<SessionState>
+
+    /**
+     * Update [status] for the sessions passed in.
+     *
+     * @param checkpoint The flow's [FlowCheckpoint].
+     * @param sessionIds The session ids to check the status of.
+     * @param status The acceptable status the sessions can have.
+     *
+     * @return A list of [SessionState]s that have a [SessionState.status] of [status].
+     *
+     * @throws []FlowSessionStateException] If a session does not exist within the flow's [FlowCheckpoint].
+     */
+    fun getSessionsWithStatus(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        status: SessionStateType
     ): List<SessionState>
 }
