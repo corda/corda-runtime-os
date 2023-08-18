@@ -152,7 +152,7 @@ class EntityMessageProcessor(
 
                 try {
                     val entityResponse = em.transaction {
-                        requestsIdsRepository.put(requestId, it)
+                        requestsIdsRepository.persist(requestId, it)
                         persistenceServiceInternal.persist(serializationService, it, entityRequest)
                     }
                     responseFactory.successResponse(
@@ -190,7 +190,7 @@ class EntityMessageProcessor(
                 // We should require requestId to be a UUID to avoid request ids collisions
                 try {
                     val entityResponse = em.transaction {
-                        requestsIdsRepository.put(requestId, it)
+                        requestsIdsRepository.persist(requestId, it)
                         persistenceServiceInternal.merge(serializationService, it, entityRequest)
                     }
                     responseFactory.successResponse(

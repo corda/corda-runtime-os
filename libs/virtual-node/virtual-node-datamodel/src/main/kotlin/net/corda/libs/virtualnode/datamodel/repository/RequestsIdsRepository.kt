@@ -5,11 +5,11 @@ import java.util.UUID
 import javax.persistence.EntityManager
 
 interface RequestsIdsRepository {
-    fun put(requestId: UUID, em: EntityManager)
+    fun persist(requestId: UUID, em: EntityManager)
 }
 
 class RequestsIdsRepositoryImpl : RequestsIdsRepository {
-    override fun put(requestId: UUID, em: EntityManager) {
+    override fun persist(requestId: UUID, em: EntityManager) {
         em.persist(
             PersistenceRequestIdEntity(
                 requestId.toString()
