@@ -3,10 +3,11 @@ package net.corda.applications.workers.workercommon
 import io.javalin.Javalin
 import org.osgi.service.component.annotations.Component
 
-@Component(service = [JavalinServer::class])
-class JavalinServer {
+@Component(service = [WorkerWebServer::class])
+class JavalinServer: WorkerWebServer<Javalin?> {
+
     private val javalinServer: Javalin? = null
-    fun getServer(): Javalin? {
+    override fun getServer(): Javalin? {
         return javalinServer
     }
 }

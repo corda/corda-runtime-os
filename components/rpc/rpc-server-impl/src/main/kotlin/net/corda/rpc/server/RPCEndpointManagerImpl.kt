@@ -1,8 +1,11 @@
 package net.corda.rpc.server
 
+import io.javalin.Javalin
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import io.javalin.http.Handler
 import net.corda.applications.workers.workercommon.JavalinServer
+import net.corda.applications.workers.workercommon.WorkerWebServer
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.eclipse.jetty.http.HttpStatus
 import org.slf4j.LoggerFactory
 import org.osgi.service.component.annotations.Activate
@@ -21,7 +24,7 @@ class RPCEndpointManagerImpl @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = JavalinServer::class)
-    private val javalinServer: JavalinServer
+    private val javalinServer: WorkerWebServer<Javalin?>
 ) : RPCEndpointManager {
 
     private companion object {
@@ -67,7 +70,7 @@ class RPCEndpointManagerImpl @Activate constructor(
                 }
             })
         } else {
-            throw Exception("The Javalin Server must be initialized before routes are added")
+            throw CordaRuntimeException("The Web Server must be initialized before endpoints are added")
         }
     }
 }

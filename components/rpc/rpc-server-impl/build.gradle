@@ -9,6 +9,7 @@ dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiServiceComponentVersion"
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation "net.corda:corda-application:$cordaApiVersion"
 
     implementation project(':applications:workers:worker-common')
     implementation project(':components:rpc:rpc-server')
@@ -21,7 +22,6 @@ dependencies {
                     'This might be resolved in the future versions of Javalin.'
         }
     }
-
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

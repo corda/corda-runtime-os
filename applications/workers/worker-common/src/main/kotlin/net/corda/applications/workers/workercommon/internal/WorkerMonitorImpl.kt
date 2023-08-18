@@ -28,6 +28,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.applications.workers.workercommon.JavalinServer
+import net.corda.applications.workers.workercommon.WorkerWebServer
 
 /**
  * An implementation of [WorkerMonitor].
@@ -40,7 +41,7 @@ internal class WorkerMonitorImpl @Activate constructor(
     @Reference(service = LifecycleRegistry::class)
     private val lifecycleRegistry: LifecycleRegistry,
     @Reference(service = JavalinServer::class)
-    private val javalinServer: JavalinServer
+    private val javalinServer: WorkerWebServer<Javalin?>
 ) : WorkerMonitor {
     private val logger = LoggerFactory.getLogger(this::class.java)
 

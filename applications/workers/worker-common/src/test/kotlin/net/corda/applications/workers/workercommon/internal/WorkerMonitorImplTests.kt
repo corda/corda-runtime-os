@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.net.HttpURLConnection
 import java.net.URL
+import net.corda.applications.workers.workercommon.JavalinServer
 
 /** Tests of [WorkerMonitorImpl]. */
 class WorkerMonitorImplTests {
@@ -102,7 +103,7 @@ class WorkerMonitorImplTests {
     /** Creates and starts a [WorkerMonitor] that wraps a [LifecycleRegistry] with the given [componentStatuses]. */
     private fun startHealthMonitor(componentStatuses: Map<LifecycleCoordinatorName, CoordinatorStatus>): WorkerMonitor {
         val lifecycleRegistry = TestLifecycleRegistry(componentStatuses)
-        val healthMonitor = WorkerMonitorImpl(lifecycleRegistry)
+        val healthMonitor = WorkerMonitorImpl(lifecycleRegistry, JavalinServer())
         healthMonitor.listen(0, this.javaClass.simpleName)
         return healthMonitor
     }
