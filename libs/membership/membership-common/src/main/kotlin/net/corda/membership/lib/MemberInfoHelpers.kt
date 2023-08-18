@@ -45,7 +45,7 @@ fun retrieveSignatureSpec(signatureName: String) = if (signatureName.isEmpty()) 
 @Throws(ContextDeserializationException::class)
 fun ByteArray.deserializeContext(
     cordaAvroDeserializer: CordaAvroDeserializer<KeyValuePairList>,
-): Map<String, String?> {
+): Map<String, String> {
     return cordaAvroDeserializer.deserialize(this)?.items?.associate { it.key to it.value }
         ?: throw ContextDeserializationException
 }

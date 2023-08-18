@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
@@ -59,6 +60,7 @@ internal class VirtualNodeWriterFactory(
     private val membershipQueryClient: MembershipQueryClient,
     private val memberInfoFactory: MemberInfoFactory,
     private val cpiCpkRepositoryFactory: CpiCpkRepositoryFactory,
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository(),
 ) {
 
@@ -139,8 +141,8 @@ internal class VirtualNodeWriterFactory(
                 membershipGroupReaderProvider,
                 memberResourceClient,
                 membershipQueryClient,
-                externalMessagingRouteConfigGenerator = externalMessagingRouteConfigGenerator,
-
+                externalMessagingRouteConfigGenerator,
+                cordaAvroSerializationFactory,
             ),
 
             VirtualNodeCreateRequest::class.java to CreateVirtualNodeOperationHandler(

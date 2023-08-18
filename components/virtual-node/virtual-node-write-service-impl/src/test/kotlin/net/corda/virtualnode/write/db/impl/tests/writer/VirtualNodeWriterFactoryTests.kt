@@ -98,8 +98,10 @@ class VirtualNodeWriterFactoryTests {
             getSubscriptionFactory(),
             publisherFactory,
             getDbConnectionManager(),
-            mock(), mock(), mock(), mock(), mock(), mock(),
-            CpiCpkRepositoryFactory())
+            mock(), mock(), mock(), mock(), mock(), mock(), mock(),
+            CpiCpkRepositoryFactory(),
+            mock(),
+        )
         virtualNodeWriterFactory.create(expectedConfig, externalMsgConfig, vnodeDatasourceConfig)
 
         verify(publisherFactory).createPublisher(expectedPublisherConfig, expectedConfig)
@@ -126,8 +128,9 @@ class VirtualNodeWriterFactoryTests {
             subscriptionFactory,
             getPublisherFactory(),
             getDbConnectionManager(),
-            mock(), mock(), mock(), mock(), mock(), mock(),
-            CpiCpkRepositoryFactory()
+            mock(), mock(), mock(), mock(), mock(), mock(), mock(),
+            CpiCpkRepositoryFactory(),
+            mock(),
         )
 
         val processor = argumentCaptor<VirtualNodeAsyncOperationProcessor>()

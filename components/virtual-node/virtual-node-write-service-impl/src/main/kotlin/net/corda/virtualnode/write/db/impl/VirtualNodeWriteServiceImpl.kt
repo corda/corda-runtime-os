@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
@@ -45,6 +46,8 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
     membershipQueryClient: MembershipQueryClient,
     @Reference(service = MemberInfoFactory::class)
     val memberInfoFactory: MemberInfoFactory,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) : VirtualNodeWriteService {
     private val coordinator = let {
         val vNodeWriterFactory = VirtualNodeWriterFactory(
@@ -58,7 +61,8 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
             memberResourceClient,
             membershipQueryClient,
             memberInfoFactory,
-            CpiCpkRepositoryFactory()
+            CpiCpkRepositoryFactory(),
+            cordaAvroSerializationFactory,
         )
         val eventHandler = VirtualNodeWriteEventHandler(configReadService, vNodeWriterFactory)
         coordinatorFactory.createCoordinator<VirtualNodeWriteService>(eventHandler)
