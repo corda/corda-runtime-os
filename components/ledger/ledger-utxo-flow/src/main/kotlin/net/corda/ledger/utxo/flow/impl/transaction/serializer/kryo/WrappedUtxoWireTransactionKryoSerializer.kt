@@ -12,6 +12,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import org.slf4j.LoggerFactory
 
 @Component(
     service = [ CheckpointInternalCustomSerializer::class, UsedByFlow::class ],
@@ -29,6 +30,8 @@ class WrappedUtxoWireTransactionKryoSerializer @Activate constructor(
     }
 
     override fun read(input: CheckpointInput, type: Class<out WrappedUtxoWireTransaction>): WrappedUtxoWireTransaction {
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        log.info("CORE-16436 WrappedUtxoWireTransactionKryoSerializer serialization service: ${serialisationService.javaClass}")
         val wireTransaction = input.readClassAndObject() as WireTransaction
         return WrappedUtxoWireTransaction(
             wireTransaction,

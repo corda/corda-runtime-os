@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.data.transaction
 import net.corda.ledger.utxo.data.state.LazyStateAndRefImpl
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.utxo.ContractState
+import org.slf4j.LoggerFactory
 import java.util.Objects
 
 data class UtxoTransactionOutputDto(
@@ -27,10 +28,14 @@ data class UtxoTransactionOutputDto(
 
     override fun hashCode(): Int = Objects.hash(transactionId, leafIndex, info, data)
 
-    fun <T : ContractState> toStateAndRef(serializationService: SerializationService) =
-        LazyStateAndRefImpl<T>(
+    fun <T : ContractState> toStateAndRef(serializationService: SerializationService): LazyStateAndRefImpl<T> {
+        val log = LoggerFactory.getLogger("UtxoTransactionOutputDto")
+        log.info("CORE-16436 toStateAndRef serialization service: ${serializationService.javaClass}")
+
+        return LazyStateAndRefImpl<T>(
             this,
             null,
             serializationService
         )
+    }
 }
