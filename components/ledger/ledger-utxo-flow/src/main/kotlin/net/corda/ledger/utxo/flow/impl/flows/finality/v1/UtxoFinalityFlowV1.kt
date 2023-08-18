@@ -62,36 +62,26 @@ class UtxoFinalityFlowV1(
         val transferAdditionalSignatures = version == UtxoFinalityVersion.V1 || sessions.size > 1
 
         addTransactionIdToFlowContext(flowEngine, transactionId)
-        log.info("Starting finality flow for transaction: {}", transactionId)
+        log.trace("Starting finality flow for transaction: {}", transactionId)
         verifyExistingSignatures(initialTransaction)
-        log.info("verify initial transactionin finality flow for transaction: {}", transactionId)
         verifyTransaction(initialTransaction)
 
         // Initial verifications passed, the transaction can be saved in the database.
-        log.info("persist unverified transaction for transaction: {}", transactionId)
         persistUnverifiedTransaction()
 
-        log.info("sendTransactionAndBackchainToCounterparties for transaction: {}", transactionId)
         sendTransactionAndBackchainToCounterparties(transferAdditionalSignatures)
-        log.info("receiveSignaturesAndAddToTransaction for transaction: {}", transactionId)
         val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction()
-        log.info("verifyAllReceivedSignatures for transaction: {}", transactionId)
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
-        log.info("persistTransactionWithCounterpartySignatures for transaction: {}", transactionId)
         persistTransactionWithCounterpartySignatures(transaction)
 
         if (transferAdditionalSignatures) {
-            log.info("transferAdditionalSignatures for transaction: {}", transactionId)
             sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
         }
 
-        log.info("notarize for transaction: {}", transactionId)
         val (notarizedTransaction, notarySignatures) = notarize(transaction)
-        log.info("persistNotarizedTransaction for transaction: {}", transactionId)
         persistNotarizedTransaction(notarizedTransaction)
-        log.info("sendNotarySignaturesToCounterparties for transaction: {}", transactionId)
         sendNotarySignaturesToCounterparties(notarySignatures)
-        log.info("Finalisation of transaction {} has been finished.", transactionId)
+        log.trace("Finalisation of transaction {} has been finished.", transactionId)
         return notarizedTransaction
     }
 

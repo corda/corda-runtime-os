@@ -11,9 +11,9 @@ import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowCont
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.flows.finality.v1.FinalityNotarizationFailureType.Companion.toFinalityNotarizationFailureType
 import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersService
-import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.trace
@@ -51,27 +51,20 @@ class UtxoReceiveFinalityFlowV1(
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
-        log.info("RECEIVE - receiveTransactionAndBackchain")
         val (initialTransaction, transferAdditionalSignatures) = receiveTransactionAndBackchain()
         val transactionId = initialTransaction.id
-        log.info("RECEIVE - addTransactionIdToFlowContext for transaction: {}", transactionId)
         addTransactionIdToFlowContext(flowEngine, transactionId)
-        log.info("RECEIVE - verifyExistingSignatures for transaction: {}", transactionId)
         verifyExistingSignatures(initialTransaction, session)
-        log.info("RECEIVE - verifyTransaction for transaction: {}", transactionId)
         verifyTransaction(initialTransaction)
         var transaction = if (validateTransaction(initialTransaction)) {
             if (log.isTraceEnabled) {
                 log.trace( "Successfully validated transaction: $transactionId")
             }
-            log.info("RECEIVE - signTransaction for transaction: {}", transactionId)
             val (transaction, payload) = signTransaction(initialTransaction)
-            log.info("RECEIVE - persist unverfied for transaction: {}", transactionId)
             persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
             if (log.isDebugEnabled) {
                 log.debug( "Recorded transaction with the initial and our signatures: $transactionId")
             }
-            log.info("RECEIVE - send signed transaction for transaction: {}", transactionId)
             session.send(payload)
             transaction
         } else {
@@ -84,11 +77,8 @@ class UtxoReceiveFinalityFlowV1(
             throw CordaRuntimeException(payload.message)
         }
 
-        log.info("RECEIVE -receiveAndPersistSignaturesOrSkip for transaction: {}", transactionId)
         transaction = receiveAndPersistSignaturesOrSkip(transaction, transferAdditionalSignatures)
-        log.info("RECEIVE -receiveNotarySignaturesAndAddToTransaction for transaction: {}", transactionId)
         transaction = receiveNotarySignaturesAndAddToTransaction(transaction)
-        log.info("RECEIVE -persistNotarizedTransaction for transaction: {}", transactionId)
         persistNotarizedTransaction(transaction)
         return transaction
     }
