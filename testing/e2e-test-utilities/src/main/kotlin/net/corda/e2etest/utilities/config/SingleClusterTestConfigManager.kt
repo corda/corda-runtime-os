@@ -18,6 +18,7 @@ class SingleClusterTestConfigManager(
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val GET_CONFIG_TIMEOUT_SECONDS = 30L
     }
 
     private val flattenedOverrides: MutableMap<String, Map<String, Any?>> = ConcurrentHashMap()
@@ -72,7 +73,7 @@ class SingleClusterTestConfigManager(
             if(newConfig != previousSourceConfig) {
                 updateConfig(newConfig, section)
 
-                eventually(duration = Duration.ofSeconds(30)) {
+                eventually(duration = Duration.ofSeconds(GET_CONFIG_TIMEOUT_SECONDS)) {
                     with(getConfig(section)) {
                         assertThat(version).isNotEqualTo(previousVersion)
                         assertThat(sourceConfig).isEqualTo(newConfig)
@@ -96,7 +97,7 @@ class SingleClusterTestConfigManager(
             )
             updateConfig(preTestConfig, section)
 
-            eventually(duration = Duration.ofSeconds(30)) {
+            eventually(duration = Duration.ofSeconds(GET_CONFIG_TIMEOUT_SECONDS)) {
                 val newConfig = getConfig(section)
                 assertThat(newConfig.version).isNotEqualTo(previousVersion)
                 assertThat(newConfig.sourceConfig).isEqualTo(preTestConfig)
