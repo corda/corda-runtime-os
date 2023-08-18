@@ -37,20 +37,17 @@ class RPCEndpointManagerImpl @Activate constructor(
      */
     override fun <REQ : Any, RESP : Any> registerEndpoint(endpoint: String, handler: (REQ) -> RESP, clazz: Class<REQ>) {
         val server = javalinServer.getServer()
+
+        val avroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({
+            log.error("Failed to deserialize payload for request")
+        }, clazz)
+
+        val avroSerializer = cordaAvroSerializationFactory.createAvroSerializer<RESP> {
+            log.error("Failed to serialize payload for response")
+        }
+
         if (server != null) {
             server.post(endpoint, Handler { context ->
-
-                val avroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({
-                    log.error("Failed to deserialize payload for request")
-                    context.result("Failed to deserialize request payload")
-                    context.status(HttpStatus.INTERNAL_SERVER_ERROR_500)
-                }, clazz)
-
-                val avroSerializer = cordaAvroSerializationFactory.createAvroSerializer<RESP> {
-                    log.error("Failed to serialize payload for response")
-                    context.result("Failed to serialize response payload")
-                    context.status(HttpStatus.INTERNAL_SERVER_ERROR_500)
-                }
 
                 val payload = avroDeserializer.deserialize(context.bodyAsBytes())
 

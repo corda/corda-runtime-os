@@ -6,11 +6,9 @@ plugins {
 description 'RPC server for interworker communication'
 
 dependencies {
-    compileOnly 'org.osgi:org.osgi.service.component.annotations$osgiServiceComponentVersion'
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiServiceComponentVersion"
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-
-    implementation "net.corda:corda-avro-schema"
 
     implementation project(':applications:workers:worker-common')
     implementation project(':components:rpc:rpc-server')
