@@ -467,13 +467,18 @@ class MembershipPersistenceRPCProcessorTest {
     @Test
     fun `query member info returns success`() {
         val actualQuery = mock<TypedQuery<MemberInfoEntity>>()
-        val root = mock<Root<MemberInfoEntity>>()
+        val isDeletedPath = mock<Path<Boolean>>()
+        val equalsDeleted = mock<Predicate>()
+        val root = mock<Root<MemberInfoEntity>> {
+            on { get<Boolean>("isDeleted") } doReturn isDeletedPath
+        }
         val query = mock<CriteriaQuery<MemberInfoEntity>> {
             on { from(eq(MemberInfoEntity::class.java)) } doReturn root
             on { select(root) } doReturn mock
-            on { where() } doReturn mock
+            on { where(any()) } doReturn mock
         }
         whenever(criteriaBuilder.createQuery(MemberInfoEntity::class.java)).thenReturn(query)
+        whenever(criteriaBuilder.equal(isDeletedPath, false)).thenReturn(equalsDeleted)
         whenever(entityManager.createQuery(query)).thenReturn(actualQuery)
         whenever(actualQuery.resultList).thenReturn(emptyList())
 

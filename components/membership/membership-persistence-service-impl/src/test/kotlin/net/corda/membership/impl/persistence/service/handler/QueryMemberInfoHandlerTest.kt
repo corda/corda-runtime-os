@@ -49,6 +49,7 @@ import javax.persistence.TypedQuery
 import javax.persistence.criteria.CriteriaBuilder
 import javax.persistence.criteria.CriteriaQuery
 import javax.persistence.criteria.Path
+import javax.persistence.criteria.Predicate
 import javax.persistence.criteria.Root
 
 class QueryMemberInfoHandlerTest {
@@ -90,9 +91,12 @@ class QueryMemberInfoHandlerTest {
     private val holdingIdPath = mock<Path<String>>()
     private val inStatus = mock<CriteriaBuilder.In<String>>()
     private val statusPath = mock<Path<String>>()
+    private val isDeletedPath = mock<Path<Boolean>>()
+    private val equalsDeleted = mock<Predicate>()
     private val root = mock<Root<MemberInfoEntity>> {
         on { get<String>("memberX500Name") } doReturn holdingIdPath
         on { get<String>("status") } doReturn statusPath
+        on { get<Boolean>("isDeleted") } doReturn isDeletedPath
     }
     private val query = mock<CriteriaQuery<MemberInfoEntity>> {
         on { from(eq(MemberInfoEntity::class.java)) } doReturn root
@@ -100,11 +104,13 @@ class QueryMemberInfoHandlerTest {
         on { where() } doReturn mock
         on { where(any()) } doReturn mock
         on { where(any(), any()) } doReturn mock
+        on { where(any(), any(), any()) } doReturn mock
     }
     private val criteriaBuilder = mock<CriteriaBuilder> {
         on { createQuery(MemberInfoEntity::class.java) } doReturn query
         on { `in`(holdingIdPath) } doReturn inHoldingId
         on { `in`(statusPath) } doReturn inStatus
+        on { equal(isDeletedPath, false) } doReturn equalsDeleted
     }
     private val entityManager: EntityManager = mock {
         on { transaction } doReturn entityTransaction

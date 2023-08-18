@@ -821,7 +821,7 @@ class StartRegistrationHandlerTest {
             )).entries
         }
         whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
-        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
             .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
@@ -838,7 +838,7 @@ class StartRegistrationHandlerTest {
             )).entries
         }
         whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
-        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
             .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
@@ -908,7 +908,7 @@ class StartRegistrationHandlerTest {
             on { entries } doReturn newContextEntries
         }
         whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
-        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
             .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
@@ -926,7 +926,7 @@ class StartRegistrationHandlerTest {
             on { entries } doReturn newContextEntries
         }
         whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
-        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
             .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
@@ -952,8 +952,8 @@ class StartRegistrationHandlerTest {
             on { entries } doReturn newContextEntries
         }
         whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
-        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
-            .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
+        whenever(membershipQueryClient.queryMemberInfo(
+            eq(mgmHoldingIdentity.toCorda()), any(), anyOrNull())).doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
         val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
@@ -978,7 +978,7 @@ class StartRegistrationHandlerTest {
             on { entries } doReturn newContextEntries
         }
         whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
-        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
             .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
@@ -1005,7 +1005,7 @@ class StartRegistrationHandlerTest {
             on { entries } doReturn memberContextEntries.entries
         }
         whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
-        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
             .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))

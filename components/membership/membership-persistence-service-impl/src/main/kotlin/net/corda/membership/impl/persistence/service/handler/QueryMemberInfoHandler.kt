@@ -36,6 +36,7 @@ internal class QueryMemberInfoHandler(
                     }
                     predicates.add(inStatus)
                 }
+                predicates.add(criteriaBuilder.equal(root.get<Boolean>("isDeleted"), false))
                 em.createQuery(
                     memberQueryBuilder.select(root).where(*predicates.toTypedArray())
                 ).resultList.map {
