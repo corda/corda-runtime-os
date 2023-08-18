@@ -23,7 +23,7 @@ internal class FlowExecutionPipelineStage(
 ) {
 
     private companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.name)
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass.name)
     }
 
     fun runFlow(context: FlowEventContext<Any>, timeout: Long) : FlowEventContext<Any> {
