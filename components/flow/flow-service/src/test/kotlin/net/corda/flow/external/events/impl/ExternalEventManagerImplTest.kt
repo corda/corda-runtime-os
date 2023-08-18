@@ -449,4 +449,57 @@ class ExternalEventManagerImplTest {
         assertEquals(now.plusSeconds(1), updatedExternalEventState.sendTimestamp)
         assertNull(record)
     }
+
+    @ParameterizedTest
+    @EnumSource(names = ["RETRY", "OK"])
+    @Suppress("MaxLineLength")
+    fun `getEventToSend sets the state status to RETRY, increments the retry count, sets the exception and returns an external event if the sendTimestamp is surpassed and the status is OK`(stateType: ExternalEventStateType) {
+        val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
+        val key = ByteBuffer.wrap(KEY.toByteArray())
+        val payload = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
+
+        val externalEvent = ExternalEvent().apply {
+            this.topic = TOPIC
+            this.key = key
+            this.payload = payload
+            this.timestamp = now.minusSeconds(10)
+        }
+
+        val externalEventState = ExternalEventState().apply {
+            requestId = REQUEST_ID_1
+            eventToSend = externalEvent
+            sendTimestamp = now.minusSeconds(1)
+            status = ExternalEventStateStatus(stateType, ExceptionEnvelope())
+        }
+
+        whenever(config.getLong(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW)).thenReturn(1.seconds.toMillis())
+
+        val (updatedExternalEventState, record) = externalEventManager.getEventToSend(
+            externalEventState,
+            now,
+            config
+        )
+
+        assertEquals(now, updatedExternalEventState.eventToSend.timestamp)
+        assertEquals(now.plusSeconds(1), updatedExternalEventState.sendTimestamp)
+        assertEquals(TOPIC, record!!.topic)
+        assertEquals(key.array(), record.key)
+        assertEquals(payload.array(), record.value)
+        if(stateType == ExternalEventStateType.OK) {
+            val expectedException = ExceptionEnvelope(
+                "NoResponse",
+                "Received no response for external event request, ensure all workers are running"
+            )
+
+            assertEquals(ExternalEventStateType.RETRY, updatedExternalEventState.status.type)
+            assertEquals(1, updatedExternalEventState.retries)
+            assertEquals(expectedException, updatedExternalEventState.status.exception)
+        } else{
+            val nullExceptionEnvelope = ExceptionEnvelope(null, null)
+
+            assertEquals(ExternalEventStateType.RETRY, updatedExternalEventState.status.type)
+            assertEquals(0, updatedExternalEventState.retries)
+            assertEquals(nullExceptionEnvelope, updatedExternalEventState.status.exception)
+        }
+    }
 }

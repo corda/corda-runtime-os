@@ -8,6 +8,7 @@ import net.corda.membership.rest.v1.types.response.RestMemberInfo
 import net.corda.cli.plugins.network.output.Output
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils.getHoldingIdentity
 import net.corda.cli.plugins.network.utils.PrintUtils.Companion.printJsonOutput
+import net.corda.cli.plugins.network.utils.PrintUtils.Companion.verifyAndPrintError
 import picocli.CommandLine
 
 @CommandLine.Command(name = "members", description = ["Shows the list of members on the network."])
@@ -106,7 +107,9 @@ class MemberLookup(private val output: Output = ConsoleOutput()) : RestCommand()
     }
 
     override fun run() {
-        val result = performMembersLookup()
-        printJsonOutput(result, output)
+        verifyAndPrintError {
+            val result = performMembersLookup()
+            printJsonOutput(result, output)
+        }
     }
 }

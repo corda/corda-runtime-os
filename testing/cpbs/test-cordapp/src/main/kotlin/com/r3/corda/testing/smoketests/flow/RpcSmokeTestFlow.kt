@@ -1,5 +1,15 @@
 package com.r3.corda.testing.smoketests.flow
 
+import com.r3.corda.testing.bundles.dogs.Dog
+import com.r3.corda.testing.smoketests.flow.digest.CustomDigestAlgorithm
+import com.r3.corda.testing.smoketests.flow.messages.InitiatedSmokeTestMessage
+import com.r3.corda.testing.smoketests.flow.messages.JsonSerializationFlowOutput
+import com.r3.corda.testing.smoketests.flow.messages.JsonSerializationInput
+import com.r3.corda.testing.smoketests.flow.messages.JsonSerializationOutput
+import com.r3.corda.testing.smoketests.flow.messages.RpcSmokeTestInput
+import com.r3.corda.testing.smoketests.flow.messages.RpcSmokeTestOutput
+import java.time.Instant
+import java.util.UUID
 import net.corda.v5.application.crypto.CompositeKeyGenerator
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
@@ -13,6 +23,7 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.application.messaging.ExternalMessaging
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
@@ -22,18 +33,7 @@ import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
-import com.r3.corda.testing.bundles.dogs.Dog
-import com.r3.corda.testing.smoketests.flow.digest.CustomDigestAlgorithm
-import com.r3.corda.testing.smoketests.flow.messages.InitiatedSmokeTestMessage
-import com.r3.corda.testing.smoketests.flow.messages.JsonSerializationFlowOutput
-import com.r3.corda.testing.smoketests.flow.messages.JsonSerializationInput
-import com.r3.corda.testing.smoketests.flow.messages.JsonSerializationOutput
-import com.r3.corda.testing.smoketests.flow.messages.RpcSmokeTestInput
-import com.r3.corda.testing.smoketests.flow.messages.RpcSmokeTestOutput
 import org.slf4j.LoggerFactory
-import java.time.Instant
-import java.util.UUID
-import net.corda.v5.application.messaging.ExternalMessaging
 
 @Suppress("unused", "TooManyFunctions")
 @InitiatingFlow(protocol = "smoke-test-protocol")
@@ -56,7 +56,6 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         "persistence_find_bulk" to this::persistenceFindDogs,
         "persistence_findall" to { persistenceFindAllDogs() },
         "persistence_query" to { persistenceQueryDogs() },
-        "flow_session_primitives" to this::sendPrimitiveValuesAcrossFlowSession,
         "crypto_sign_and_verify" to this::signAndVerify,
         "crypto_verify_invalid_signature" to this::verifyInvalidSignature,
         "crypto_get_default_signature_spec" to this::getDefaultSignatureSpec,
@@ -245,24 +244,6 @@ class RpcSmokeTestFlow : ClientStartableFlow {
             log.info("Received response from session '${session}'.")
 
             outputs.add("${x500}=${response.message}")
-        }
-
-        return outputs.joinToString("; ")
-    }
-
-    @Suspendable
-    private fun sendPrimitiveValuesAcrossFlowSession(
-        input: RpcSmokeTestInput
-    ): String {
-        val sessions = input.getValue("sessions").split(";")
-        log.info("Session Primitives - Starting sessions for '${input.getValue("sessions")}'")
-        val outputs = mutableListOf<String>()
-        sessions.forEachIndexed { _, x500 ->
-            val response = flowEngine.subFlow(
-                SendReceivePrimitiveMessagingFlow(MemberX500Name.parse(x500))
-            )
-
-            outputs.add(response)
         }
 
         return outputs.joinToString("; ")

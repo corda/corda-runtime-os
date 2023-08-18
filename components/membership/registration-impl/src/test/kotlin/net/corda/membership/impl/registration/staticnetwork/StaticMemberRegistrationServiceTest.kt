@@ -444,6 +444,7 @@ class StaticMemberRegistrationServiceTest {
             val hostedIdentityPublished = publishedHostedIdentity.value as HostedIdentityEntry
             assertEquals(alice.groupId, hostedIdentityPublished.holdingIdentity.groupId)
             assertEquals(alice.x500Name.toString(), hostedIdentityPublished.holdingIdentity.x500Name)
+            assertEquals(ALICE_KEY, hostedIdentityPublished.preferredSessionKeyAndCert.sessionPublicKey)
         }
 
         @Test

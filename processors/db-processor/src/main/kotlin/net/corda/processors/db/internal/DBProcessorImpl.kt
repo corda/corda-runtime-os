@@ -1,5 +1,6 @@
 package net.corda.processors.db.internal
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.read.ChunkReadService
 import net.corda.configuration.read.ConfigChangedEvent
@@ -32,13 +33,19 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.certificate.service.CertificatesService
 import net.corda.membership.certificates.datamodel.CertificateEntities
+import net.corda.membership.client.MemberResourceClient
 import net.corda.membership.datamodel.MembershipEntities
 import net.corda.membership.group.policy.validation.MembershipGroupPolicyValidator
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.service.MembershipPersistenceService
 import net.corda.membership.read.GroupParametersReaderService
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.permissions.model.RbacEntities
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
@@ -114,6 +121,20 @@ class DBProcessorImpl @Activate constructor(
     private val membershipGroupPolicyValidator: MembershipGroupPolicyValidator,
     @Reference(service = AllowedCertificatesReaderWriterService::class)
     private val allowedCertificatesReaderWriterService: AllowedCertificatesReaderWriterService,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    serializationFactory: CordaAvroSerializationFactory,
+    @Reference(service = SubscriptionFactory::class)
+    private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = MembershipGroupReaderProvider::class)
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = MemberResourceClient::class)
+    private val memberResourceClient: MemberResourceClient,
+    @Reference(service = MembershipQueryClient::class)
+    private val membershipQueryClient: MembershipQueryClient,
+    @Reference(service = MembershipPersistenceClient::class)
+    private val membershipPersistenceClient: MembershipPersistenceClient,
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -165,6 +186,10 @@ class DBProcessorImpl @Activate constructor(
         ::groupParametersReaderService,
         ::membershipGroupPolicyValidator,
         ::allowedCertificatesReaderWriterService,
+        ::membershipGroupReaderProvider,
+        ::memberResourceClient,
+        ::membershipQueryClient,
+        ::membershipPersistenceClient,
     )
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(dependentComponents, ::eventHandler)
 
@@ -184,6 +209,10 @@ class DBProcessorImpl @Activate constructor(
         groupParametersFactory,
         CpiCpkRepositoryFactory(),
         allowedCertificatesReaderWriterService,
+        serializationFactory,
+        subscriptionFactory,
+        publisherFactory,
+        configurationReadService
     )
 
     override fun start(bootConfig: SmartConfig) {
