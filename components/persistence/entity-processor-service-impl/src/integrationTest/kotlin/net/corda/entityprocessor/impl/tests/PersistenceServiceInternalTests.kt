@@ -101,7 +101,12 @@ class PersistenceServiceInternalTests {
     private companion object {
         const val TOPIC = "pretend-topic"
         private const val TIMEOUT_MILLIS = 10000L
-        private val EXTERNAL_EVENT_CONTEXT = ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
+        private val EXTERNAL_EVENT_CONTEXT =
+            ExternalEventContext(
+                UUID.randomUUID().toString(),
+                "flow id",
+                KeyValuePairList(emptyList())
+            )
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
