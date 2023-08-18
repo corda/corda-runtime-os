@@ -13,6 +13,7 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
+import org.slf4j.LoggerFactory
 import java.security.PublicKey
 
 class WrappedUtxoWireTransaction(
@@ -24,6 +25,7 @@ class WrappedUtxoWireTransaction(
         const val notaryNameIndex: Int = 0
         const val notaryKeyIndex: Int = 1
         const val timeWindowIndex: Int = 2
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     init{
@@ -81,6 +83,7 @@ class WrappedUtxoWireTransaction(
             wireTransaction
                 .getComponentGroupList(UtxoComponentGroup.OUTPUTS.ordinal).size
         ) { index ->
+            log.info("CORE-16346 WrappedUtxoWireTransaction.outputStateAndRefs serialization service: ${serializationService.javaClass}")
             UtxoTransactionOutputDto(
                 id.toString(), index,
                 wireTransaction
