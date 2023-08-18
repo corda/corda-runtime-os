@@ -87,15 +87,15 @@ class DistributeMemberInfoActionHandler(
                         "Distributing the member info will be reattempted.")
             }
         }.firstOrNull() ?: return recordToRequeueDistribution(key, request) {
-            logger.info("The MemberInfo retrieved from the message bus for ${updatedMember.x500Name} is not present yet. " +
-                    "Republishing the distribute command to be processed later when the MemberInfo is available.")
+            logger.info("Could not retrieve MemberInfo from the database for ${updatedMember.x500Name}. " +
+                    "Republishing the distribute command to be processed later.")
         }
 
         request.minimumUpdatedMemberSerial?.let {
             if (request.minimumUpdatedMemberSerial > updatedMemberInfo.serial) {
                 return recordToRequeueDistribution(key, request) {
                     logger.info(
-                        "The MemberInfo retrieved from the message bus for ${updatedMember.x500Name} has serial" +
+                        "The MemberInfo retrieved from the database for ${updatedMember.x500Name} has serial" +
                             " ${updatedMemberInfo.serial}, which is an old version. Republishing the distribute command to be processed " +
                             "later when the MemberInfo with serial ${request.minimumUpdatedMemberSerial} is available."
                     )
