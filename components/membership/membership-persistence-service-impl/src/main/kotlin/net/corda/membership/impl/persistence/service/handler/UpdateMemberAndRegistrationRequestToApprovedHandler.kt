@@ -98,6 +98,7 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
                     member.memberSignatureSpec,
                     serializedMgmContext,
                     member.serialNumber,
+                    isDeleted = false
                 )
             )
 
