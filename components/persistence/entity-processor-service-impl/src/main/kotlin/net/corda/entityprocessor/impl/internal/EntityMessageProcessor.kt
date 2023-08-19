@@ -180,6 +180,7 @@ class EntityMessageProcessor(
                             EntityResponse(emptyList(), KeyValuePairList(emptyList()))
                         )
                     } else {
+                        logger.error("Error on handling PersistEntities", e)
                         throw e
                     }
                 }
