@@ -37,7 +37,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
-import java.sql.SQLIntegrityConstraintViolationException
+import java.sql.SQLException
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -68,8 +68,8 @@ class EntityMessageProcessor(
 
         const val SQL_PK_VIOLATION_CODE = "23505"
 
-        fun isDuplicateRequest(e: Exception): Boolean =
-            (e.cause?.cause?.cause as? SQLIntegrityConstraintViolationException).let {
+        fun isDuplicateRequest(e: PersistenceException): Boolean =
+            (e.cause?.cause?.cause as? SQLException).let {
                 it?.sqlState == SQL_PK_VIOLATION_CODE &&
                         it.message?.contains(
                             DbSchema.VNODE_PERSISTENCE_REQUEST_ID_TABLE,
