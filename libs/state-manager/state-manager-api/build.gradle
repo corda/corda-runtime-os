@@ -1,0 +1,14 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+description 'State Manager API'
+
+dependencies {
+    compileOnly "org.osgi:osgi.annotation"
+    api project(":libs:configuration:configuration-core")
+
+    implementation "net.corda:corda-base"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+}

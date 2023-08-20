@@ -1,0 +1,42 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+description 'State Manager Implementation'
+
+dependencies {
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-db-schema"
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-config-schema"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation "javax.persistence:javax.persistence-api"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    api project(":libs:state-manager:state-manager-api")
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(':libs:utilities')
+    implementation project(':libs:db:db-core')
+    implementation project(':libs:db:db-orm')
+    implementation project(':libs:serialization:serialization-avro')
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    integrationTestImplementation project(':libs:db:db-admin')
+    integrationTestImplementation project(':libs:db:db-admin-impl')
+    integrationTestImplementation project(':libs:db:db-orm-impl')
+    integrationTestImplementation project(':testing:db-testkit')
+    integrationTestImplementation project(':testing:test-utilities')
+
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+}
+
+tasks.named('jar', Jar) {
+    bnd '''\
+DynamicImport-Package: org.hibernate.proxy
+'''
+}
