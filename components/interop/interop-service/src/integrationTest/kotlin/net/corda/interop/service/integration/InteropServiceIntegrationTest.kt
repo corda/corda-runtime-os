@@ -1,8 +1,8 @@
 package net.corda.interop.service.integration
 
 import com.typesafe.config.ConfigValueFactory
-import net.corda.configuration.read.ConfigurationReadService
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
@@ -57,7 +57,7 @@ import java.util.concurrent.TimeUnit
 // To run the test outside Intellij:
 // ./gradlew clean :components:interop:interop-service:integrationTest
 // ./gradlew clean :components:interop:interop-service:testOSGi
-// TODO consider reenabling and fixing
+// TODO CORE-16387 consider reenabling and fixing
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class InteropServiceIntegrationTest {

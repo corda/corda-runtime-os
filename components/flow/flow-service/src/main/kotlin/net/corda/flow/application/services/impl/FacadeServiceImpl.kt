@@ -37,6 +37,7 @@ class FacadeServiceImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    //TODO CORE-16382 Change input of facadeId from String to FacadeId Object.
     @Suspendable
     override fun <T : Any?> getProxy(facadeId: String?, expectedType: Class<T>?, interOpIdentity: InterOpIdentityInfo): T {
         logger.info("Creating Proxy for: facadeId=$facadeId," +

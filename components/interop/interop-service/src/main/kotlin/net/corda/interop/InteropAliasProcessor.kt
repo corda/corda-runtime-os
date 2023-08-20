@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
+//TODO remove as part of CORE-16388
 class InteropAliasProcessor(
     private val publisher: Publisher,
     private val aliases: MutableList<Pair<HoldingIdentity, HoldingIdentity>> = mutableListOf()

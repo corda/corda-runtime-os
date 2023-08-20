@@ -1,7 +1,5 @@
 package net.corda.interop.identity.write.impl
 
-import java.time.Instant
-import java.util.concurrent.atomic.AtomicReference
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
@@ -14,6 +12,8 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.util.concurrent.atomic.AtomicReference
 
 
 @Suppress("ForbiddenComment")
@@ -52,6 +52,7 @@ class MembershipInfoProducer(val publisher: AtomicReference<Publisher?>) {
             val viewOwningMemberHoldingIdentity = HoldingIdentity(
                 MemberX500Name.parse(ownedInteropIdentity.x500Name), ownedInteropIdentity.groupId)
 
+            //todo CORE-16385 Remove hardcoded values
             return newInteropIdentities.map { identityToPublish ->
 
                 val memberContext = listOf(

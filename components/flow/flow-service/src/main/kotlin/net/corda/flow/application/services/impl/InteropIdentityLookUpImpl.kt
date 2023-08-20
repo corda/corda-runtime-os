@@ -25,10 +25,6 @@ class InteropIdentityLookUpImpl @Activate constructor(
 
     @Suspendable
     override fun lookup(applicationName: String): InterOpIdentityInfo? {
-//        logger.info("Number Of Identities In Repo: ${getInteropRegistry().getIdentitiesByApplicationName().size}")
-//        getInteropRegistry().getIdentitiesByApplicationName().forEach{
-//            logger.info("${it.key}")
-//        }
         val identityInfo = getInteropRegistry().getIdentitiesByApplicationName()[applicationName] ?: return null
         return InteropIdentityInfoImpl(identityInfo.applicationName,identityInfo.facadeIds,identityInfo.x500Name,identityInfo.groupId)
     }

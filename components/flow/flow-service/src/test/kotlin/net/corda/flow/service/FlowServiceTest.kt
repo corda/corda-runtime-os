@@ -1,6 +1,5 @@
 package net.corda.flow.service
 
-import java.util.stream.Stream
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.external.messaging.services.ExternalMessagingRoutingService
@@ -20,6 +19,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import java.util.stream.Stream
 
 class FlowServiceTest {
 
@@ -32,7 +32,6 @@ class FlowServiceTest {
                 Arguments.of(LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()),
                 Arguments.of(LifecycleCoordinatorName.forComponent<CpiInfoReadService>()),
                 Arguments.of(LifecycleCoordinatorName.forComponent<FlowExecutor>())//,
-                //Arguments.of(LifecycleCoordinatorName.forComponent<InteropIdentityRegistryService>())
             )
         }
     }
@@ -40,7 +39,6 @@ class FlowServiceTest {
     private val flowExecutor = mock<FlowExecutor>()
     private val flowWakeUpScheduler = mock<FlowWakeUpScheduler>()
     private val externalMessagingRoutingService = mock<ExternalMessagingRoutingService>()
-    //private val interopIdentityRegistryService = mock<InteropIdentityRegistryService>()
     private val exampleConfig = mapOf(
         ConfigKeys.BOOT_CONFIG to MINIMUM_SMART_CONFIG,
         ConfigKeys.MESSAGING_CONFIG to MINIMUM_SMART_CONFIG,

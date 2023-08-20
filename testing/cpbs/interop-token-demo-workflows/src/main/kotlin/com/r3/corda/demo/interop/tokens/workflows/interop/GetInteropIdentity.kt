@@ -44,7 +44,5 @@ class GetInteropIdentity : ClientStartableFlow {
                     "'$requestBody' because: '${e.message}'")
             throw e
         }
-
-
     }
 }

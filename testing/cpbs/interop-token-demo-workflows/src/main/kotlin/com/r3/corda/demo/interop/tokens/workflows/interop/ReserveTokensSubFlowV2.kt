@@ -26,8 +26,6 @@ class ReserveTokensSubFlowV2(private val alias: MemberX500Name, private val inte
         log.info("${this::class.java.simpleName}.call() starting")
         log.info("Calling facade method '$facadeId' to $alias")
 
-        alias.organization
-
         val identityInfo = interopIdentityLookUp.lookup(alias.organization)
 
         val client: TokensFacade =
