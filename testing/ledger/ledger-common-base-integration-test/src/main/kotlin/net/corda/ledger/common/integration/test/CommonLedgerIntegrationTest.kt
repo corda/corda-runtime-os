@@ -5,8 +5,6 @@ import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
 import net.corda.internal.serialization.SerializationServiceImpl
-import net.corda.internal.serialization.amqp.DeserializationInput
-import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.helper.createSerializerFactory
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
@@ -100,8 +98,8 @@ abstract class CommonLedgerIntegrationTest {
         serializationService = SerializationServiceImpl(
             // Use different SerializerFactories for serializationOutput and deserializationInput to not let them share
             // anything unintentionally
-            serializationOutput = SerializationOutput(sandboxGroupContext.createSerializerFactory()),
-            deserializationInput = DeserializationInput(sandboxGroupContext.createSerializerFactory()),
+            outputFactory = sandboxGroupContext.createSerializerFactory(),
+            inputFactory = sandboxGroupContext.createSerializerFactory(),
             context = AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxGroupContext.sandboxGroup)
         )
 
