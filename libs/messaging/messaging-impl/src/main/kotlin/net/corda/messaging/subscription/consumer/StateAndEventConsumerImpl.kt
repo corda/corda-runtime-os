@@ -364,7 +364,9 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    override fun updateInMemoryStatePostCommit(updatedStates: MutableMap<Int, MutableMap<K, S?>>, clock: Clock) {
+    private val updatedStatesForPosting = mutableListOf<Map<K, S?>>()
+
+    override fun updateInMemoryStatePostCommit(updatedStates: Map<Int, MutableMap<K, S?>>, clock: Clock) {
         val updatedStatesByKey = mutableMapOf<K, S?>()
         updatedStates.forEach { (partitionId, states) ->
             for (entry in states) {
@@ -383,8 +385,23 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                 }
             }
         }
+        synchronized(this) {
+            updatedStatesForPosting.add(updatedStatesByKey)
+        }
+    }
 
-        stateAndEventListener?.onPostCommit(updatedStatesByKey)
+    override fun postUpdates() {
+        val states = synchronized(this) {
+            updatedStatesForPosting.toList().also {
+                updatedStatesForPosting.clear()
+            }
+        }
+        // Rebalancing is done as a side effect of poll, therefore we must fire off all callbacks in the same thread
+        // that we poll in. This class doesn't have direct knowledge of that, so we expose this function to the public
+        // api in order that the client can call it itself
+        states.forEach {
+            stateAndEventListener?.onPostCommit(it)
+        }
     }
 
     override fun resetPollInterval() {
