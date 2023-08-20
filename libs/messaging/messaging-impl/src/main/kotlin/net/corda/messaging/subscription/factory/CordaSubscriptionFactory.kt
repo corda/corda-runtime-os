@@ -30,6 +30,7 @@ import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.subscription.CompactedSubscriptionImpl
 import net.corda.messaging.subscription.DurableSubscriptionImpl
 import net.corda.messaging.subscription.EventLogSubscriptionImpl
+import net.corda.messaging.subscription.FlowStateAndEventSubscriptionImpl
 import net.corda.messaging.subscription.PubSubSubscriptionImpl
 import net.corda.messaging.subscription.RPCSubscriptionImpl
 import net.corda.messaging.subscription.StateAndEventSubscriptionImpl
@@ -141,6 +142,25 @@ class CordaSubscriptionFactory @Activate constructor(
             lifecycleCoordinatorFactory,
             messagingChunkFactory.createChunkSerializerService(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)),
             stateAndEventListener
+        )
+    }
+
+    override fun <K : Any, S : Any, E : Any> createFlowStateAndEventSubscription(
+        subscriptionConfig: SubscriptionConfig,
+        processor: StateAndEventProcessor<K, S, E>,
+        messagingConfig: SmartConfig,
+        stateAndEventListener: StateAndEventListener<K, S>?
+    ): StateAndEventSubscription<K, S, E> {
+        val config = getConfig(SubscriptionType.STATE_AND_EVENT, subscriptionConfig, messagingConfig)
+        val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
+        return FlowStateAndEventSubscriptionImpl(
+            config,
+            stateAndEventBuilder,
+            processor,
+            serializer,
+            lifecycleCoordinatorFactory,
+            messagingChunkFactory.createChunkSerializerService(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)),
+            stateAndEventListener,
         )
     }
 

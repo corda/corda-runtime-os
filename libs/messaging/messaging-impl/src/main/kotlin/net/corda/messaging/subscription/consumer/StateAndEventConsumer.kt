@@ -69,7 +69,7 @@ interface StateAndEventConsumer<K : Any, S : Any, E : Any> : AutoCloseable {
      * [updatedStates] is a map of key/value pairs mapped by partition ID.
      * Updates to the in memory store are saved with a timestamp calculated using the [clock] instance.
      */
-    fun updateInMemoryStatePostCommit(updatedStates: MutableMap<Int, MutableMap<K, S?>>, clock: Clock)
+    fun updateInMemoryStatePostCommit(updatedStates: Map<Int, MutableMap<K, S?>>, clock: Clock)
 
     /**
      * Reset the poll interval if the consumers are close to exceeding the poll interval timeout.
@@ -97,4 +97,6 @@ interface StateAndEventConsumer<K : Any, S : Any, E : Any> : AutoCloseable {
      */
     val eventConsumer: CordaConsumer<K, E>
     val stateConsumer: CordaConsumer<K, S>
+
+    fun postUpdates()
 }

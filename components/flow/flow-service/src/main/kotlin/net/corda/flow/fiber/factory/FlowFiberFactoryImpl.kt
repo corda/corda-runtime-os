@@ -3,6 +3,7 @@ package net.corda.flow.fiber.factory
 import co.paralleluniverse.concurrent.util.ScheduledSingleThreadExecutor
 import co.paralleluniverse.fibers.FiberExecutorScheduler
 import co.paralleluniverse.fibers.FiberScheduler
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import net.corda.flow.fiber.FiberExceptionConstants
@@ -19,6 +20,9 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 @Component
 @Suppress("Unused")
@@ -31,10 +35,33 @@ class FlowFiberFactoryImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val currentScheduler: FiberScheduler = FiberExecutorScheduler(
-        "Same thread scheduler",
-        ScheduledSingleThreadExecutor()
+//    private val scheduler = FiberExecutorScheduler("Flow fiber scheduler", ThreadPoolExecutor(5, 5,
+//                                                   0L, TimeUnit.MILLISECONDS,
+//                                                   ThreadFactoryBuilder().setNameFormat("flow-worker").setThreadFactory(::FastThreadLocalThread).build())
+//    )
+
+    private val currentScheduler = FiberExecutorScheduler(
+        "Flow fiber scheduler",
+        object : ThreadPoolExecutor(
+            8,
+            8,
+            0L,
+            TimeUnit.MILLISECONDS,
+            LinkedBlockingQueue(),
+            ThreadFactoryBuilder().setNameFormat("flow-worker-%d").setDaemon(false).build()
+        ) {
+
+
+            override fun execute(command: Runnable) {
+                super.execute(command)
+            }
+        }
     )
+
+//    private val currentScheduler: FiberScheduler = FiberExecutorScheduler(
+//        "Same thread scheduler",
+//        ScheduledSingleThreadExecutor()
+//    )
 
     override fun createAndStartFlowFiber(
         flowFiberExecutionContext: FlowFiberExecutionContext,
