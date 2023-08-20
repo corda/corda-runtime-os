@@ -16,6 +16,7 @@ dependencies {
 
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:messaging:message-bus')
+    implementation project(':libs:state-manager:state-manager-api')
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'

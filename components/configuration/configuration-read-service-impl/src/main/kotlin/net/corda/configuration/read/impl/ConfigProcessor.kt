@@ -16,6 +16,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
+import net.corda.schema.configuration.ConfigKeys.STATE_STORAGE_CONFIG
 
 // This should be used by our class that needs to cache config
 
@@ -97,6 +98,11 @@ internal class ConfigProcessor(
         val dbConfig = configMerger.getDbConfig(bootConfig, config[DB_CONFIG])
         if (!dbConfig.isEmpty) {
             config[DB_CONFIG] = dbConfig
+        }
+
+        val stateStorageConfig = configMerger.getStateStorageConfig(bootConfig, config[STATE_STORAGE_CONFIG])
+        if (!stateStorageConfig.isEmpty) {
+            config[STATE_STORAGE_CONFIG] = stateStorageConfig
         }
 
         // at this point config is fully populated and verified

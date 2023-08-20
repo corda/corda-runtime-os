@@ -3,6 +3,7 @@ package net.corda.libs.configuration.merger.impl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.merger.ConfigMerger
+import net.corda.libs.statemanager.configuration.StateManagerConfigMerger
 import net.corda.messagebus.api.configuration.BusConfigMerger
 import net.corda.messagebus.api.configuration.getConfigOrEmpty
 import net.corda.schema.configuration.BootConfig.BOOT_DB
@@ -13,7 +14,9 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [ConfigMerger::class])
 class ConfigMergerImpl @Activate constructor(
     @Reference(service = BusConfigMerger::class)
-    private val busConfigMerger: BusConfigMerger
+    private val busConfigMerger: BusConfigMerger,
+    @Reference(service = StateManagerConfigMerger::class)
+    private val stateManagerConfigMerger: StateManagerConfigMerger
 ) : ConfigMerger {
 
     override fun getMessagingConfig(bootConfig: SmartConfig, messagingConfig: SmartConfig?): SmartConfig {
@@ -26,5 +29,9 @@ class ConfigMergerImpl @Activate constructor(
         val updatedDbConfig = dbConfig?: SmartConfigImpl.empty()
         val bootDBParamsConfig = bootConfig.getConfigOrEmpty(BOOT_DB)
         return bootDBParamsConfig.withFallback(updatedDbConfig)
+    }
+
+    override fun getStateStorageConfig(bootConfig: SmartConfig, stateStorageConfig: SmartConfig?): SmartConfig {
+        return stateManagerConfigMerger.getStateManagerConfig(bootConfig, stateStorageConfig)
     }
 }

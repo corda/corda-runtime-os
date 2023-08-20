@@ -1,0 +1,20 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+description 'State Manager Implementation'
+
+dependencies {
+    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiServiceComponentVersion"
+
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-config-schema"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation "javax.persistence:javax.persistence-api"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    api project(":libs:state-manager:state-manager-api")
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(':libs:utilities')
+}
