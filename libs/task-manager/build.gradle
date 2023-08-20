@@ -1,0 +1,14 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Task manager'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation:8.0.1'
+
+    implementation project(":libs:metrics")
+
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+}
