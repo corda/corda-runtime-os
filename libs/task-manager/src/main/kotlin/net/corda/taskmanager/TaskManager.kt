@@ -1,4 +1,4 @@
-package net.corda.flow.taskmanager
+package net.corda.taskmanager
 
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executor

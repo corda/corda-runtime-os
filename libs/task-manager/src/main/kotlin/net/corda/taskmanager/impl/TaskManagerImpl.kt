@@ -1,6 +1,6 @@
-package net.corda.flow.taskmanager.impl
+package net.corda.taskmanager.impl
 
-import net.corda.flow.taskmanager.TaskManager
+import net.corda.taskmanager.TaskManager
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
