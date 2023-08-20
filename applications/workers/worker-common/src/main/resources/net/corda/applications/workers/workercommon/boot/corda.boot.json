@@ -192,6 +192,56 @@
         }
       }
     },
+    "stateManager": {
+      "description": "Configuration options for the state manager.",
+      "properties": {
+        "stateManagerType": {
+          "description": "The type of state manager.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "database": {
+          "description": "Database params",
+          "properties": {
+            "jdbc": {
+              "description": "The JDBC database info",
+              "properties": {
+                "url": {
+                  "description": "The JDBC URL used by the db worker",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "directory": {
+                  "description": "The JDBC directory",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "user": {
+              "description": "Cluster admin username to connect to the database with.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pass": {
+              "description": "Cluster admin password to connect to the database with.",
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    },
     "additionalProperties": false
   },
   "additionalProperties": false

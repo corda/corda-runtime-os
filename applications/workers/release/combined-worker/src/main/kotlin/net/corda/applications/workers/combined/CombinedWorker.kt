@@ -131,11 +131,13 @@ class CombinedWorker @Activate constructor(
         val databaseConfig = PathAndConfig(BootConfig.BOOT_DB, params.databaseParams)
         val cryptoConfig = PathAndConfig(BootConfig.BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
         val restConfig = PathAndConfig(BootConfig.BOOT_REST, params.restParams)
+        val stateManagerConfig = PathAndConfig(BootConfig.BOOT_STATE_MANAGER, params.stateManagerParams)
+
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(databaseConfig, cryptoConfig, restConfig),
+            listOf(databaseConfig, cryptoConfig, restConfig, stateManagerConfig),
         )
 
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
@@ -231,6 +233,9 @@ private class CombinedWorkerParams {
     // TODO - remove when reviewing crypto config
     @Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])
     var hsmId = ""
+
+    @Option(names = ["-S", "--${BootConfig.BOOT_STATE_MANAGER}"], description = ["Configuration for the state manager."])
+    var stateManagerParams = emptyMap<String, String>()
 
     /**
      * Combined worker parameter for JDBC URL should be the schemaless database URL because the combined worker sets up
