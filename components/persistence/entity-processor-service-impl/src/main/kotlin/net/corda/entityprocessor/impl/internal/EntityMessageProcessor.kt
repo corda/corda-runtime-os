@@ -66,14 +66,13 @@ class EntityMessageProcessor(
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        const val PERSISTENCE_REQUEST_ID_PK_NAME = "PK_${DbSchema.VNODE_PERSISTENCE_REQUEST_ID_TABLE}"
         const val SQL_PK_VIOLATION_CODE = "23505"
 
         fun isDuplicateRequest(e: Exception): Boolean =
             (e.cause?.cause?.cause as? SQLIntegrityConstraintViolationException).let {
                 it?.sqlState == SQL_PK_VIOLATION_CODE &&
                         it.message?.contains(
-                            "$PERSISTENCE_REQUEST_ID_PK_NAME table: ${DbSchema.VNODE_PERSISTENCE_REQUEST_ID_TABLE}",
+                            DbSchema.VNODE_PERSISTENCE_REQUEST_ID_TABLE,
                             ignoreCase = true
                         ) == true
             }
@@ -180,7 +179,6 @@ class EntityMessageProcessor(
                             EntityResponse(emptyList(), KeyValuePairList(emptyList()))
                         )
                     } else {
-                        logger.error("Error on handling PersistEntities", e)
                         throw e
                     }
                 }
