@@ -24,7 +24,9 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-config-schema"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
+    implementation ("org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion") {
+        exclude group: 'org.xerial.snappy'
+    }
     constraints {
         implementation("org.xerial.snappy:snappy-java:$xerialSnappyVersion") {
             because 'Kafka Client uses an older version of Snappy library which is exposed to CVE-2023-34455. ' +

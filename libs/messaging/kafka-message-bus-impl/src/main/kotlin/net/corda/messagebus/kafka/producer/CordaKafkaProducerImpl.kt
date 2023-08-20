@@ -19,6 +19,7 @@ import net.corda.tracing.addTraceContextToRecord
 import net.corda.tracing.getOrCreateBatchPublishTracing
 import net.corda.tracing.traceSend
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.clients.producer.Callback
@@ -144,7 +145,11 @@ class CordaKafkaProducerImpl(
      * @param callback for error handling in async producers
      * @param partition partition to send to. defaults to null.
      */
-    private fun sendRecord(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback? = null, partition: Int? = null) {
+    private fun sendRecord(
+        record: CordaProducerRecord<*, *>,
+        callback: CordaProducer.Callback? = null,
+        partition: Int? = null
+    ) {
         val chunkedRecords = chunkSerializerService.generateChunkedRecords(record)
         if (chunkedRecords.isNotEmpty()) {
             sendChunks(chunkedRecords, callback, partition)
@@ -290,6 +295,41 @@ class CordaKafkaProducerImpl(
         records: List<CordaConsumerRecord<*, *>>
     ) {
         trySendOffsetsToTransaction(consumer, records.toKafkaRecords())
+    }
+
+    private data class OffsetsImpl(
+        val offsets: Map<TopicPartition, OffsetAndMetadata>,
+    ) : CordaProducer.Offsets
+
+    private data class MetadataImpl(
+        val metaData: ConsumerGroupMetadata
+    ) : CordaProducer.Metadata
+
+    override fun getOffsets(
+        records: List<CordaConsumerRecord<*, *>>
+    ): CordaProducer.Offsets = OffsetsImpl(
+        getRecordListOffsets(records.toKafkaRecords(), topicPrefix)
+    )
+
+    override fun getMetadata(
+        consumer: CordaConsumer<*, *>
+    ): CordaProducer.Metadata = MetadataImpl(
+        (consumer as CordaKafkaConsumerImpl).groupMetadata()
+    )
+
+    override fun sendRecordOffsetsToTransaction(offsets: CordaProducer.Offsets, metadata: CordaProducer.Metadata) {
+        tryWithCleanupOnFailure("sending offset for transaction") {
+            producer.sendOffsetsToTransaction(
+                (offsets as OffsetsImpl).offsets,
+                //@@@ use group Id only which means we can be flexible on which offsets we pass here
+                //if we use the entire metadata extracted when offsets were extracted and then skip writing some offsets
+                //we end up with
+                //  Caused by: org.apache.kafka.clients.consumer.CommitFailedException:
+                //  Transaction offset Commit failed due to consumer group metadata mismatch: Specified group generation id is not valid.
+                //according to Kafka header docs this affects fencing in some way, to be investigated
+                ConsumerGroupMetadata((metadata as MetadataImpl).metaData.groupId())
+            )
+        }
     }
 
     private fun trySendOffsetsToTransaction(

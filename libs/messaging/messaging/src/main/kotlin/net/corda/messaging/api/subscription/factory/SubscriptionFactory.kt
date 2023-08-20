@@ -170,4 +170,11 @@ interface SubscriptionFactory {
         rpcConfig: SyncRPCConfig,
         processor: SyncRPCProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE>
+
+    fun <K : Any, S : Any, E : Any> createFlowStateAndEventSubscription(
+        subscriptionConfig: SubscriptionConfig,
+        processor: StateAndEventProcessor<K, S, E>,
+        messagingConfig: SmartConfig,
+        stateAndEventListener: StateAndEventListener<K, S>?
+    ): StateAndEventSubscription<K, S, E>
 }
