@@ -35,7 +35,7 @@ internal class FlowEventPipelineImpl(
 ) : FlowEventPipeline {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun eventPreProcessing(): FlowEventPipelineImpl {
@@ -46,7 +46,13 @@ internal class FlowEventPipelineImpl(
          * should re-write the event the pipeline should process the event to be retried, in place of the default
          * wakeup behavior
          */
-        val updatedContext = if (context.checkpoint.inRetryState && context.inputEventPayload is Wakeup) {
+        val updatedContext = if (context.inputEventPayload is Wakeup) {
+            if (!context.checkpoint.inRetryState) {
+                // No Wakeup events should be in the system if the flow is not in retrying state, so this is now a fatal
+                // error.
+                log.warn("Flow received a Wakeup event when not in retrying state.")
+                throw FlowFatalException("Flow received a Wakeup event when not in retrying state.")
+            }
             log.debug(
                 "Flow is in retry state, using retry event " +
                         "${context.checkpoint.retryEvent.payload::class.qualifiedName} for the pipeline processing."

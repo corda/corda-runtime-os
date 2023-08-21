@@ -54,7 +54,6 @@ class FlowExecutorImpl constructor(
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val CONSUMER_GROUP = "FlowEventConsumer"
-        private const val SUBSCRIPTION_RESOURCE = "flow-subscription-resource"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowExecutor> { event, _ -> eventHandler(event) }
