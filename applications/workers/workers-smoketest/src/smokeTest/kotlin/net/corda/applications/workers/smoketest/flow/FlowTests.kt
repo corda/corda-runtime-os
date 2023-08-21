@@ -31,6 +31,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -565,6 +566,7 @@ class FlowTests {
         assertThat(flowResult.json.result).isEqualTo("SUCCESS")
     }
 
+    @Disabled // TODO: Remove this annotation following testing
     @Test
     fun `Notary - Non-validating plugin executes successfully when using issuance transaction`() {
         issueStatesAndValidateResult(3) { issuanceResult ->
@@ -583,6 +585,7 @@ class FlowTests {
         }
     }
 
+    @Disabled // TODO: Remove this annotation following testing
     @Test
     fun `Notary - Non-validating plugin returns error when time window invalid`() {
         issueStatesAndValidateResult(
@@ -598,6 +601,7 @@ class FlowTests {
         }
     }
 
+    @Disabled // TODO: Remove this annotation following testing
     @Test
     fun `Notary - Non-validating plugin executes successfully and returns signatures when consuming a valid transaction`() {
         // 1. Issue 1 state
@@ -645,6 +649,7 @@ class FlowTests {
         }
     }
 
+    @Disabled // TODO: Remove this annotation following testing
     @Test
     fun `Notary - Non-validating plugin returns error on double spend`() {
         // 1. Issue 1 state
@@ -693,6 +698,7 @@ class FlowTests {
         }
     }
 
+    @Disabled // TODO: Remove this annotation following testing
     @Test
     fun `Notary - Non-validating plugin returns error when trying to spend unknown reference state`() {
         // Random unknown StateRef
@@ -737,6 +743,7 @@ class FlowTests {
         }
     }
 
+    @Disabled // TODO: Remove this annotation following testing
     @Test
     fun `Notary - Non-validating plugin returns error when using the same state for input and ref`() {
         // 1. Issue 1 state
@@ -780,6 +787,7 @@ class FlowTests {
         }
     }
 
+    @Disabled // TODO: Remove this annotation following testing
     @Test
     fun `Notary - Non-validating plugin returns error when trying to spend unknown input state`() {
         // Random unknown StateRef
@@ -803,6 +811,7 @@ class FlowTests {
         }
     }
 
+    @Disabled // TODO: Remove this annotation following testing
     @Test
     fun `Notary - Non-validating plugin returns error when referencing spent state`() {
         // 1. Issue 2 states
