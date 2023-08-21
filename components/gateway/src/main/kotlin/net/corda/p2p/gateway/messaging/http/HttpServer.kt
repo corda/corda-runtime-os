@@ -75,7 +75,7 @@ internal class HttpServer(
      */
     @Throws(IllegalStateException::class)
     override fun write(statusCode: HttpResponseStatus, destination: SocketAddress, message: ByteArray) {
-        logger.info("QQQ write to $destination")
+        logger.info("QQQ port ${serverConfiguration.hostPort} write to $destination")
         val channel = clientChannels[destination]
         if (channel == null) {
             throw IllegalStateException("Connection to $destination not active")
@@ -93,17 +93,17 @@ internal class HttpServer(
     }
 
     override fun onOpen(event: HttpConnectionEvent) {
-        logger.info("QQQ onOpen event $event")
+        logger.info("QQQ port ${serverConfiguration.hostPort} onOpen event $event")
         clientChannels[event.channel.remoteAddress()] = event.channel
     }
 
     override fun onClose(event: HttpConnectionEvent) {
-        logger.info("QQQ onClose event $event")
+        logger.info("QQQ port ${serverConfiguration.hostPort} onClose event $event")
         clientChannels.remove(event.channel.remoteAddress())
     }
 
     override fun onRequest(request: HttpRequest) {
-        logger.info("QQQ onRequest from ${request.destination}")
+        logger.info("QQQ port ${serverConfiguration.hostPort} onRequest from ${request.destination}")
         eventListener.onRequest(this, request)
     }
 
@@ -114,7 +114,7 @@ internal class HttpServer(
             pipeline.addLast("sslHandler", createServerSslHandler(keyStore, serverTrustManager))
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, SERVER_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpServerCodec())
-            pipeline.addLast(HttpServerChannelHandler(this@HttpServer, maxRequestSize, serverConfiguration.urlPath, logger))
+            pipeline.addLast(HttpServerChannelHandler(this@HttpServer, maxRequestSize, serverConfiguration.urlPath, logger, serverConfiguration.hostPort))
         }
     }
 

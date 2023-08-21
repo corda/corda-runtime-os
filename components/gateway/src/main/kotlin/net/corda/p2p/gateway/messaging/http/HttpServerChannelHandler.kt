@@ -21,7 +21,9 @@ import java.lang.IndexOutOfBoundsException
 class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                                private val maxRequestSize: Long,
                                private val urlPath: String,
-                               private val logger: Logger): BaseHttpChannelHandler(serverListener, logger, HandlerType.SERVER) {
+                               private val logger: Logger,
+                               private val port: Int,
+): BaseHttpChannelHandler(serverListener, logger, HandlerType.SERVER) {
 
     private var responseCode: HttpResponseStatus? = null
 
@@ -30,7 +32,7 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
      */
     @Suppress("ComplexMethod")
     override fun channelRead0(ctx: ChannelHandlerContext, msg: HttpObject) {
-        logger.info("QQQ in channelRead0 from $ctx")
+        logger.info("QQQ in port $port channelRead0 from $ctx ")
         if (msg is HttpRequest) {
             responseCode = msg.validate(maxRequestSize, urlPath)
             if (responseCode != HttpResponseStatus.OK) {
