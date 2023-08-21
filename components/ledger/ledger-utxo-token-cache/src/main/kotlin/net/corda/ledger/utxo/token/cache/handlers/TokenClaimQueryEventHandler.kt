@@ -30,9 +30,9 @@ class TokenClaimQueryEventHandler(
         if (selectionResult.first < event.targetAmount) {
             val findResult = availableTokenService.findAvailTokens(event.poolKey, event.ownerHash, event.tagRegex)
             tokenCache.add(findResult.tokens)
+            selectionResult = selectTokens(tokenCache, state, event)
         }
 
-        selectionResult = selectTokens(tokenCache, state, event)
         val selectedAmount = selectionResult.first
         val selectedTokens = selectionResult.second
 
@@ -49,7 +49,7 @@ class TokenClaimQueryEventHandler(
         }
     }
 
-    fun selectTokens(
+    private fun selectTokens(
         tokenCache: TokenCache,
         state: PoolCacheState,
         event: ClaimQuery
