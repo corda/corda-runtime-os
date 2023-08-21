@@ -2,7 +2,6 @@ package net.corda.flow.mapper.impl.executor
 
 import com.typesafe.config.ConfigValueFactory
 import net.corda.avro.serialization.CordaAvroSerializer
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
@@ -11,7 +10,6 @@ import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfigImpl
-import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.FlowConfig.SESSION_P2P_TTL
 import net.corda.test.flow.util.buildSessionEvent
@@ -19,15 +17,18 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class SessionInitExecutorTest {
 
     private val sessionEventSerializer = mock<CordaAvroSerializer<SessionEvent>>()
     private val flowConfig = SmartConfigImpl.empty().withValue(SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
+    private val sessionInitHelper = mock<SessionInitHelper>()
 
     @Test
-    fun `Outbound session init creates new state and forwards to P2P`() {
+    fun `Outbound session init executes session init helper`() {
         val bytes = "bytes".toByteArray()
         whenever(sessionEventSerializer.serialize(any())).thenReturn(bytes)
 
@@ -35,26 +36,12 @@ class SessionInitExecutorTest {
         val sessionInit = SessionInit("", flowId, emptyKeyValuePairList(), emptyKeyValuePairList())
         val payload =
             buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, sessionInit, contextSessionProps = emptyKeyValuePairList())
-        val result =
-            SessionInitExecutor("sessionId", payload, sessionInit, null, sessionEventSerializer, flowConfig).execute()
-        val state = result.flowMapperState
-        val outboundEvents = result.outputEvents
-
-        assertThat(state).isNotNull
-        assertThat(state?.flowId).isEqualTo(flowId)
-        assertThat(state?.status).isEqualTo(FlowMapperStateType.OPEN)
-        assertThat(state?.expiryTime).isEqualTo(null)
-
-        assertThat(outboundEvents.size).isEqualTo(1)
-        val outboundEvent = outboundEvents.first()
-        assertThat(outboundEvent.topic).isEqualTo(P2P_OUT_TOPIC)
-        assertThat(outboundEvent.key).isEqualTo("sessionId")
-        assertThat(payload.sessionId).isEqualTo("sessionId")
-        assertThat(outboundEvent.value!!::class).isEqualTo(AppMessage::class)
+        SessionInitExecutor("sessionId", payload, sessionInit, null, sessionEventSerializer, flowConfig, sessionInitHelper).execute()
+        verify(sessionInitHelper, times(1)).processSessionInit(any(), any(), any())
     }
 
     @Test
-    fun `Inbound session init creates new state and forwards to flow event`() {
+    fun `Inbound session init executes session init helper`() {
         val sessionInit = SessionInit("", null, emptyKeyValuePairList(), emptyKeyValuePairList())
         val payload = buildSessionEvent(
             MessageDirection.INBOUND,
@@ -63,29 +50,17 @@ class SessionInitExecutorTest {
             sessionInit,
             contextSessionProps = emptyKeyValuePairList()
         )
-        val result = SessionInitExecutor(
+        SessionInitExecutor(
             "sessionId-INITIATED",
             payload,
             sessionInit,
             null,
             sessionEventSerializer,
-            flowConfig
+            flowConfig,
+            sessionInitHelper
         ).execute()
 
-        val state = result.flowMapperState
-        val outboundEvents = result.outputEvents
-
-        assertThat(state).isNotNull
-        assertThat(state?.flowId).isNotNull
-        assertThat(state?.status).isEqualTo(FlowMapperStateType.OPEN)
-        assertThat(state?.expiryTime).isEqualTo(null)
-
-        assertThat(outboundEvents.size).isEqualTo(1)
-        val outboundEvent = outboundEvents.first()
-        assertThat(outboundEvent.topic).isEqualTo(FLOW_EVENT_TOPIC)
-        assertThat(outboundEvent.key::class).isEqualTo(String::class)
-        assertThat(outboundEvent.value!!::class).isEqualTo(FlowEvent::class)
-        assertThat(payload.sessionId).isEqualTo("sessionId-INITIATED")
+        verify(sessionInitHelper, times(1)).processSessionInit(any(), any(), any())
     }
 
     @Test
@@ -98,7 +73,8 @@ class SessionInitExecutorTest {
             sessionInit,
             FlowMapperState(),
             sessionEventSerializer,
-            flowConfig
+            flowConfig,
+            sessionInitHelper
         ).execute()
 
         val state = result.flowMapperState
@@ -129,7 +105,8 @@ class SessionInitExecutorTest {
             retrySessionInit,
             flowMapperState,
             sessionEventSerializer,
-            flowConfig
+            flowConfig,
+            sessionInitHelper
         ).execute()
 
         assertThat(resultOutbound.outputEvents).isNotEmpty
@@ -160,7 +137,8 @@ class SessionInitExecutorTest {
             retrySessionInit,
             flowMapperState,
             sessionEventSerializer,
-            flowConfig
+            flowConfig,
+            sessionInitHelper
         ).execute()
 
         assertThat(resultOutbound.outputEvents).isEmpty()

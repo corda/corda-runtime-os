@@ -16,6 +16,7 @@ import net.corda.flow.mapper.impl.executor.ScheduleCleanupEventExecutor
 import net.corda.flow.mapper.impl.executor.SessionErrorExecutor
 import net.corda.flow.mapper.impl.executor.SessionEventExecutor
 import net.corda.flow.mapper.impl.executor.SessionInitExecutor
+import net.corda.flow.mapper.impl.executor.SessionInitHelper
 import net.corda.flow.mapper.impl.executor.StartFlowExecutor
 import net.corda.flow.mapper.impl.executor.generateAppMessage
 import net.corda.libs.configuration.SmartConfig
@@ -32,7 +33,7 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
 ) : FlowMapperEventExecutorFactory {
 
     private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
-
+    private val sessionInitHelper = SessionInitHelper(sessionEventSerializer)
     override fun create(
         eventKey: String,
         flowMapperEvent: FlowMapperEvent,
@@ -50,7 +51,8 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                             sessionPayload,
                             state,
                             sessionEventSerializer,
-                            flowConfig
+                            flowConfig,
+                            sessionInitHelper
                         )
                     }
                     is SessionError -> {
@@ -72,7 +74,8 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                             instant,
                             sessionEventSerializer,
                             ::generateAppMessage,
-                            flowConfig
+                            flowConfig,
+                            sessionInitHelper
                         )
                     }
                 }

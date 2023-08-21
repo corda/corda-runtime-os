@@ -26,7 +26,8 @@ class SessionEventExecutor(
     private val instant: Instant,
     private val sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
     private val appMessageFactory: (SessionEvent, CordaAvroSerializer<SessionEvent>, SmartConfig) -> AppMessage,
-    private val flowConfig: SmartConfig
+    private val flowConfig: SmartConfig,
+    private val sessionInitHelper: SessionInitHelper
 ) : FlowMapperEventExecutor {
 
     private companion object {
@@ -40,8 +41,7 @@ class SessionEventExecutor(
         val payload = sessionEvent.payload
         val sessionInit = getInitPayload(payload)
         return if (flowMapperState == null && sessionInit != null) {
-            //TODO - CORE 15757 might be a nicer way to do this
-            SessionInitExecutor(eventKey, sessionEvent, sessionInit, null, sessionEventSerializer, flowConfig).execute()
+            sessionInitHelper.processSessionInit(sessionEvent, sessionInit, flowConfig)
         } else if (flowMapperState == null) {
             handleNullState()
         } else {

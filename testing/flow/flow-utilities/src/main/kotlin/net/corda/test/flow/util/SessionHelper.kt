@@ -43,7 +43,7 @@ fun buildSessionEvent(
     timestamp: Instant = Instant.now(),
     initiatingIdentity: HoldingIdentity = HoldingIdentity("alice", "group1"),
     initiatedIdentity: HoldingIdentity = HoldingIdentity("bob", "group1"),
-    contextSessionProps: KeyValuePairList?,
+    contextSessionProps: KeyValuePairList? = null
 ): SessionEvent {
     return SessionEvent.newBuilder()
         .setSessionId(sessionId)
