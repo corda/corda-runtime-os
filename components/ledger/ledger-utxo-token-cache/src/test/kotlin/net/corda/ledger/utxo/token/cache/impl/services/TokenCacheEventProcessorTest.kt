@@ -3,17 +3,18 @@ package net.corda.ledger.utxo.token.cache.impl.services
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
-import net.corda.messaging.api.records.Record
 import net.corda.ledger.utxo.token.cache.converters.EntityConverter
 import net.corda.ledger.utxo.token.cache.converters.EventConverter
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
+import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
 import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
-import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY_DTO
+import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import net.corda.ledger.utxo.token.cache.services.TokenCacheEventProcessor
+import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -30,6 +31,7 @@ class TokenCacheEventProcessorTest {
     private val tokenCacheEventHandlerMap = mutableMapOf<Class<*>, TokenEventHandler<in TokenEvent>>()
     private val event = FakeTokenEvent()
     private val tokenCache = mock<TokenCache>()
+    private val tokenPoolCache = mock<TokenPoolCache>()
     private val cachePoolState = mock<PoolCacheState>()
     private val stateIn = TokenPoolCacheState()
     private val tokenPoolCacheEvent = TokenPoolCacheEvent(POOL_CACHE_KEY, null)
@@ -44,11 +46,12 @@ class TokenCacheEventProcessorTest {
         @Suppress("unchecked_cast")
         tokenCacheEventHandlerMap[FakeTokenEvent::class.java] = mockHandler as TokenEventHandler<in TokenEvent>
         whenever(eventConverter.convert(tokenPoolCacheEvent)).thenReturn(event)
+        whenever(tokenPoolCache.get(POOL_KEY)).thenReturn(tokenCache)
     }
 
     @Test
     fun `when an unexpected processing exception is thrown the event will be sent to the DLQ`() {
-        val target = TokenCacheEventProcessor(eventConverter, entityConverter, tokenCacheEventHandlerMap)
+        val target = TokenCacheEventProcessor(eventConverter, entityConverter,tokenPoolCache, tokenCacheEventHandlerMap)
         whenever(eventConverter.convert(any())).thenThrow(IllegalStateException())
 
         val result = target.onNext(stateIn, eventIn)
@@ -61,7 +64,7 @@ class TokenCacheEventProcessorTest {
     @Test
     fun `when the event has no payload the event should be sent to the DLQ`() {
 
-        val target = TokenCacheEventProcessor(eventConverter, entityConverter, tokenCacheEventHandlerMap)
+        val target = TokenCacheEventProcessor(eventConverter, entityConverter,tokenPoolCache, tokenCacheEventHandlerMap)
 
         val result = target.onNext(stateIn, eventIn)
 
@@ -74,7 +77,7 @@ class TokenCacheEventProcessorTest {
     fun `when a handler does not exist for the event type send the event to the DLQ`() {
         tokenPoolCacheEvent.payload = 1
 
-        val target = TokenCacheEventProcessor(eventConverter, entityConverter, tokenCacheEventHandlerMap)
+        val target = TokenCacheEventProcessor(eventConverter, entityConverter,tokenPoolCache, tokenCacheEventHandlerMap)
 
         val result = target.onNext(stateIn, eventIn)
 
@@ -96,13 +99,13 @@ class TokenCacheEventProcessorTest {
             this.tokenClaims = listOf()
         }
 
-        whenever(entityConverter.toTokenCache(stateIn)).thenReturn(tokenCache)
         whenever(entityConverter.toPoolCacheState(stateIn)).thenReturn(cachePoolState)
+        whenever(entityConverter.toTokenPoolKey(POOL_CACHE_KEY)).thenReturn(POOL_KEY)
         whenever(cachePoolState.toAvro()).thenReturn(outputState)
         whenever(mockHandler.handle(tokenCache, cachePoolState, event))
             .thenReturn(handlerResponse)
 
-        val target = TokenCacheEventProcessor(eventConverter, entityConverter, tokenCacheEventHandlerMap)
+        val target = TokenCacheEventProcessor(eventConverter, entityConverter,tokenPoolCache, tokenCacheEventHandlerMap)
 
         val result = target.onNext(stateIn, eventIn)
 
@@ -119,13 +122,13 @@ class TokenCacheEventProcessorTest {
         val outputState = TokenPoolCacheState()
         val handlerResponse = Record<String, FlowEvent>("", "", null)
 
-        whenever(entityConverter.toTokenCache(any())).thenReturn(tokenCache)
         whenever(entityConverter.toPoolCacheState(any())).thenReturn(cachePoolState)
         whenever(cachePoolState.toAvro()).thenReturn(outputState)
+        whenever(entityConverter.toTokenPoolKey(POOL_CACHE_KEY)).thenReturn(POOL_KEY)
         whenever(mockHandler.handle(tokenCache, cachePoolState, event))
             .thenReturn(handlerResponse)
 
-        val target = TokenCacheEventProcessor(eventConverter, entityConverter, tokenCacheEventHandlerMap)
+        val target = TokenCacheEventProcessor(eventConverter, entityConverter,tokenPoolCache, tokenCacheEventHandlerMap)
 
         val result = target.onNext(null, eventIn)
 
@@ -145,7 +148,7 @@ class TokenCacheEventProcessorTest {
 
     class FakeTokenEvent : TokenEvent {
         override val poolKey: TokenPoolKey
-            get() = POOL_CACHE_KEY_DTO
+            get() = POOL_KEY
 
     }
 }

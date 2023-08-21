@@ -19,11 +19,14 @@ import net.corda.schema.Schemas
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
+@Suppress("LongParameterList")
 class TokenCacheSubscriptionHandlerImpl constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val subscriptionFactory: SubscriptionFactory,
     private val tokenCacheEventProcessorFactory: TokenCacheEventProcessorFactory,
-    private val toServiceConfig: (Map<String, SmartConfig>) -> SmartConfig
+    private val serviceConfiguration:ServiceConfiguration,
+    private val toMessagingConfig: (Map<String, SmartConfig>) -> SmartConfig,
+    private val toTokenConfig: (Map<String, SmartConfig>) -> SmartConfig,
 ) : TokenCacheSubscriptionHandler {
 
     companion object {
@@ -39,7 +42,8 @@ class TokenCacheSubscriptionHandlerImpl constructor(
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
-            val messagingConfig = toServiceConfig(config)
+            serviceConfiguration.init(toTokenConfig(config))
+            val messagingConfig = toMessagingConfig(config)
 
             // close the lifecycle registration first to prevent a down signal to the coordinator
             subscriptionRegistrationHandle?.close()
