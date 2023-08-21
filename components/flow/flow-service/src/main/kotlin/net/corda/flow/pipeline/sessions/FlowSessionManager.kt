@@ -265,4 +265,19 @@ interface FlowSessionManager {
         sessionIds: List<String>,
         status: SessionStateType
     ): List<SessionState>
+
+
+    /**
+     * If Initiating is provided get the sessions that are Initiating
+     * If Initiated is provided get the sessions that are Initiated
+     * @param checkpoint The checkpoint to check states within
+     * @param sessionIds The sessions to check
+     * @param sessionSide Initiated or Initiating
+     * @return a list of sessions started by the side provided
+     */
+    fun getSessionsBySessionSide(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        sessionSide: String
+    ): List<SessionState>
 }

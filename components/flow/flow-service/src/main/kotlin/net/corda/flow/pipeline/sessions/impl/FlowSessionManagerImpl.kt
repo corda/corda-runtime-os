@@ -14,6 +14,7 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.factory.FlowRecordFactory
+import net.corda.flow.pipeline.handlers.requests.helper.isInitiatingIdentity
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
@@ -212,6 +213,31 @@ class FlowSessionManagerImpl @Activate constructor(
                 .map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
                 .filter { sessionState -> !sessionState.requireClose }
         }
+    }
+
+    override fun getSessionsBySessionSide(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        sessionSide: String
+    ): List<SessionState> {
+            sessionIds.filter { isInitiatingIdentity(it) }
+        val matchedSessions = sessionIds.map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
+
+    }
+    }
+
+    override fun updateStatus(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        status: SessionStateType
+    ): List<SessionState> {
+        val matchedSessions = sessionIds.map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
+        matchedSessions.
+         statuses.map {
+            getSessionsWithStatus(checkpoint, sessionIds, it)
+        }.flatten()
+        return matchedSessions
+
     }
 
     override fun getSessionsWithStatuses(
