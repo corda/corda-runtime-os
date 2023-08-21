@@ -215,15 +215,11 @@ class FlowSessionManagerImpl @Activate constructor(
         }
     }
 
-    override fun getSessionsBySessionSide(
+    override fun getInitiatingAndInitiatedSessions(
         checkpoint: FlowCheckpoint,
-        sessionIds: List<String>,
-        sessionSide: String
-    ): List<SessionState> {
-            sessionIds.filter { isInitiatingIdentity(it) }
-        val matchedSessions = sessionIds.map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
-
-    }
+        sessionIds: List<String>
+    ): Pair<List<String>, List<String>> {
+        return sessionIds.partition { isInitiatingIdentity(it) }
     }
 
     override fun updateStatus(
