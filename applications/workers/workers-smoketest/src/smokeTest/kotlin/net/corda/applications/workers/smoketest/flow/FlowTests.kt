@@ -3,8 +3,6 @@ package net.corda.applications.workers.smoketest.flow
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import java.util.UUID
-import kotlin.text.Typography.quote
 import net.corda.applications.workers.smoketest.utils.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.utils.TEST_CPI_NAME
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
@@ -37,6 +35,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
+import java.util.UUID
+import kotlin.text.Typography.quote
 
 @Suppress("Unused", "FunctionName")
 //The flow tests must go last as one test updates the messaging config which is highly disruptive to subsequent test runs. The real
@@ -182,8 +182,8 @@ class FlowTests {
         val requestBody = RpcSmokeTestInput().apply {
             command = "start_sessions"
             data = mapOf(
-                "sessions" to "${bobX500}",
-                "messages" to "m1"
+                "sessions" to "${bobX500};${charlyX500}",
+                "messages" to "m1;m2"
             )
         }
 
@@ -196,7 +196,7 @@ class FlowTests {
         assertThat(flowResult.flowError).isNull()
         assertThat(flowResult.json.command).isEqualTo("start_sessions")
         assertThat(flowResult.json.result)
-            .isEqualTo("${bobX500}=echo:m1")
+            .isEqualTo("${bobX500}=echo:m1; ${charlyX500}=echo:m2")
     }
 
     @Test

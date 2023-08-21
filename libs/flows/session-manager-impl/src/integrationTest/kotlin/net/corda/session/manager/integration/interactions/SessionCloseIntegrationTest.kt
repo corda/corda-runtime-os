@@ -23,8 +23,7 @@ class SessionCloseIntegrationTest {
         private const val FIVE_SECONDS = 5000L
         private const val THIRTY_SECONDS = 30000L
         private val testConfig = ConfigFactory.empty()
-            .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(FIVE_SECONDS))
-            .withValue(FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(THIRTY_SECONDS))
+            .withValue(FlowConfig.SESSION_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(THIRTY_SECONDS))
         private val configFactory = SmartConfigFactory.createWithoutSecurityServices()
         private val testSmartConfig = configFactory.create(testConfig)
     }

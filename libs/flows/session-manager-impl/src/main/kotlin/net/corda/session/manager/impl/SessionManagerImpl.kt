@@ -11,9 +11,11 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.utils.toMap
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.chunking.MessagingChunkFactory
+import net.corda.schema.configuration.FlowConfig
 import net.corda.session.manager.Constants
 import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
+import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.setErrorState
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
@@ -117,7 +119,8 @@ class SessionManagerImpl @Activate constructor(
         identity: HoldingIdentity,
     ): Pair<SessionState,
             List<SessionEvent>> {
-        val messagesToReturn = getMessagesToSend(sessionState)
+        val sessionEvents = getMessagesToSend(sessionState)
+        val messagesToReturn= handleSessionTimeouts(sessionState, config, instant, sessionEvents, identity)
         sessionState.sendEventsState.undeliveredMessages = emptyList()
         return Pair(sessionState, messagesToReturn)
     }
@@ -147,6 +150,63 @@ class SessionManagerImpl @Activate constructor(
         }
 
         return sessionEvents
+    }
+
+    /**
+     * If no message received from counterparty after session timeout has been reached, error the session
+     * else return back [messagesToReturn]
+     * @param sessionState to update
+     * @param config contains message resend window and heartbeat timeout values
+     * @param instant for timestamps of new messages
+     * @param sessionEvents session events to send
+     * @param identity identity of the party sending messages
+     * @return Messages to send to the counterparty
+     */
+    private fun handleSessionTimeouts(
+        sessionState: SessionState,
+        config: SmartConfig,
+        instant: Instant,
+        sessionEvents: List<SessionEvent>,
+        identity: HoldingIdentity,
+    ): List<SessionEvent> {
+        val lastReceivedMessageTime = sessionState.lastReceivedMessageTime
+
+        val sessionTimeoutTimestamp = lastReceivedMessageTime.plusMillis(config.getLong(FlowConfig.SESSION_TIMEOUT_WINDOW))
+
+        return if (instant > sessionTimeoutTimestamp) {
+            //send an error if the session has timed out
+            val updatedSessionState = errorSession(sessionState)
+            val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(updatedSessionState, identity)
+            listOf(
+                generateErrorEvent(
+                    updatedSessionState,
+                    initiatingIdentity,
+                    initiatedIdentity,
+                    "Session has timed out. No messages received since $lastReceivedMessageTime",
+                    "SessionTimeout-Heartbeat",
+                    instant
+                ).apply {
+                    this.initiatedIdentity = initiatedIdentity
+                    this.initiatingIdentity = initiatingIdentity
+                }
+            )
+
+        } else sessionEvents
+    }
+
+    /**
+     * Get the initiating and initiated identities.
+     * @param sessionState Session state
+     * @param identity The identity of the party to send messages from
+     * @return Pair with initiating party as the first identity, initiated party as the second identity
+     */
+    private fun getInitiatingAndInitiatedParties(sessionState: SessionState, identity: HoldingIdentity):
+            Pair<HoldingIdentity, HoldingIdentity> {
+        return if (sessionState.sessionId.contains(Constants.INITIATED_SESSION_ID_SUFFIX)) {
+            Pair(sessionState.counterpartyIdentity, identity)
+        } else {
+            Pair(identity, sessionState.counterpartyIdentity)
+        }
     }
 
     /**

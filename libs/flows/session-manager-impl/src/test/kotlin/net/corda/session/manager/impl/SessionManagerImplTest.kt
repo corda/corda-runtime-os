@@ -34,12 +34,10 @@ class SessionManagerImplTest {
     private lateinit var sessionManager: SessionManager
     private val realBytes = ByteArray(500)
     private val realBytesBuffer = ByteBuffer.wrap(realBytes)
-    private val testResendWindow = 5000L
-    private val testHeartbeatTimeout = 30000L
+    private val sessionTimeout = 30000L
     private val testIdentity = HoldingIdentity()
     private val testConfig = ConfigFactory.empty()
-        .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(testResendWindow))
-        .withValue(FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(testHeartbeatTimeout))
+        .withValue(FlowConfig.SESSION_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(sessionTimeout))
     private val configFactory = SmartConfigFactory.createWithoutSecurityServices()
     private val testSmartConfig = configFactory.create(testConfig)
 
@@ -138,6 +136,36 @@ class SessionManagerImplTest {
         assertThat(messagesToSend.size).isEqualTo(2)
         //validate all acks removed
         assertThat(outputState.sendEventsState.undeliveredMessages.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `Send error for session timed out`() {
+        val instant = Instant.now()
+        val sessionState = buildSessionState(
+            SessionStateType.CONFIRMED,
+            0,
+            listOf(),
+            4,
+            listOf(),
+            instant
+        )
+
+        //validate no heartbeat
+        val (firstUpdatedState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
+        assertThat(messagesToSend.size).isEqualTo(0)
+        assertThat(firstUpdatedState.status).isEqualTo(SessionStateType.CONFIRMED)
+
+        //Validate heartbeat
+        val (secondUpdatedState, secondMessagesToSend) = sessionManager.getMessagesToSend(
+            sessionState, instant.plusMillis(sessionTimeout  + 1),
+            testSmartConfig,
+            testIdentity
+        )
+
+        assertThat(secondMessagesToSend.size).isEqualTo(1)
+        assertThat(secondUpdatedState.status).isEqualTo(SessionStateType.ERROR)
+        val messageToSend = secondMessagesToSend.first()
+        assertThat(messageToSend.payload::class.java).isEqualTo(SessionError::class.java)
     }
 
     @Test
