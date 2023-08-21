@@ -10,7 +10,6 @@ import javax.persistence.Version
 @Entity
 @Table(name = "state")
 internal class StateEntity(
-    // Getters and setters
     @Id
     @Column(name = "key", length = 255)
     val key: String,

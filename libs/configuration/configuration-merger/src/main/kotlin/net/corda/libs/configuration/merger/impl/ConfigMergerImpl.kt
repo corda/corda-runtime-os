@@ -15,8 +15,8 @@ import org.osgi.service.component.annotations.Reference
 class ConfigMergerImpl @Activate constructor(
     @Reference(service = BusConfigMerger::class)
     private val busConfigMerger: BusConfigMerger,
-    @Reference(service = StateManagerConfigMerger::class)
-    private val stateManagerConfigMerger: StateManagerConfigMerger
+//    @Reference(service = StateManagerConfigMerger::class)
+//    private val stateManagerConfigMerger: StateManagerConfigMerger
 ) : ConfigMerger {
 
     override fun getMessagingConfig(bootConfig: SmartConfig, messagingConfig: SmartConfig?): SmartConfig {
@@ -31,7 +31,7 @@ class ConfigMergerImpl @Activate constructor(
         return bootDBParamsConfig.withFallback(updatedDbConfig)
     }
 
-    override fun getStateStorageConfig(bootConfig: SmartConfig, stateStorageConfig: SmartConfig?): SmartConfig {
-        return stateManagerConfigMerger.getStateManagerConfig(bootConfig, stateStorageConfig)
-    }
+//    override fun getStateStorageConfig(bootConfig: SmartConfig, stateStorageConfig: SmartConfig?): SmartConfig {
+//        return stateManagerConfigMerger.getStateManagerConfig(bootConfig, stateStorageConfig)
+//    }
 }

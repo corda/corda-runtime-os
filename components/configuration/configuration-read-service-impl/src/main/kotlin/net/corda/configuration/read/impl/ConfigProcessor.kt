@@ -2,6 +2,7 @@ package net.corda.configuration.read.impl
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.config.Configuration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -13,10 +14,9 @@ import net.corda.messaging.api.records.Record
 import net.corda.reconciliation.VersionedRecord
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
-import java.util.concurrent.ConcurrentHashMap
-import net.corda.schema.configuration.ConfigKeys.STATE_STORAGE_CONFIG
 
 // This should be used by our class that needs to cache config
 
@@ -100,10 +100,10 @@ internal class ConfigProcessor(
             config[DB_CONFIG] = dbConfig
         }
 
-        val stateStorageConfig = configMerger.getStateStorageConfig(bootConfig, config[STATE_STORAGE_CONFIG])
-        if (!stateStorageConfig.isEmpty) {
-            config[STATE_STORAGE_CONFIG] = stateStorageConfig
-        }
+//        val stateStorageConfig = configMerger.getStateStorageConfig(bootConfig, config[STATE_MANAGER_CONFIG])
+//        if (!stateStorageConfig.isEmpty) {
+//            config[STATE_MANAGER_CONFIG] = stateStorageConfig
+//        }
 
         // at this point config is fully populated and verified
         return config
