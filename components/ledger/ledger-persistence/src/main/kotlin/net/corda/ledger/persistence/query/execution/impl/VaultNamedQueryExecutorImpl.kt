@@ -116,6 +116,10 @@ class VaultNamedQueryExecutorImpl(
                 offsetOverride = internalOffset
             )
 
+            // If we have no filter, there's no need to continue the loop
+            if (vaultNamedQuery.filter == null)
+                return contractStateResults
+
             // If we can't fetch more states we just return the result set as-is
             if (contractStateResults.isEmpty())
                 break
@@ -124,11 +128,9 @@ class VaultNamedQueryExecutorImpl(
             internalOffset += contractStateResults.size
 
             // Apply filters (if there's any) and add the filtered results to the final result set
-            vaultNamedQuery.filter?.let { vaultNamedQueryFilter ->
-                filteredResults.addAll(contractStateResults.filter {
-                    vaultNamedQueryFilter.filter(it, deserializedParams)
-                })
-            }
+            filteredResults.addAll(contractStateResults.filter {
+                vaultNamedQuery.filter.filter(it, deserializedParams)
+            })
         }
 
         // Make sure we don't return more than the limit even if the list has overflown
