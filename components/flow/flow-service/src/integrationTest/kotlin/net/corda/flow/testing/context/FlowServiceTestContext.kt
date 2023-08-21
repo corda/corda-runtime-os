@@ -375,10 +375,6 @@ class FlowServiceTestContext @Activate constructor(
         )
     }
 
-    override fun wakeupEventReceived(flowId: String): FlowIoRequestSetup {
-        return addTestRun(createFlowEventRecord(flowId, Wakeup()))
-    }
-
     override fun externalEventReceived(flowId: String, requestId: String, payload: Any): FlowIoRequestSetup {
         return addTestRun(
             createFlowEventRecord(

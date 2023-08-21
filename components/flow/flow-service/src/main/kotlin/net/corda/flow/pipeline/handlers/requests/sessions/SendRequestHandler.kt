@@ -22,8 +22,6 @@ import org.osgi.service.component.annotations.Reference
 class SendRequestHandler @Activate constructor(
     @Reference(service = FlowSessionManager::class)
     private val flowSessionManager: FlowSessionManager,
-    @Reference(service = FlowRecordFactory::class)
-    private val flowRecordFactory: FlowRecordFactory,
     @Reference(service = InitiateFlowRequestService::class)
     private val initiateFlowRequestService: InitiateFlowRequestService,
 ) : FlowRequestHandler<FlowIORequest.Send> {
@@ -52,7 +50,6 @@ class SendRequestHandler @Activate constructor(
             throw FlowPlatformException("Failed to send: ${e.message}. $PROTOCOL_MISMATCH_HINT", e)
         }
 
-        val wakeup = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
-        return context.copy(outputRecords = context.outputRecords + wakeup)
+        return context
     }
 }

@@ -79,16 +79,10 @@ class SendExternalMessageRequestHandler @Activate constructor(
         context: FlowEventContext<Any>,
         externalMessage: Record<String, String>? = null
     ): FlowEventContext<Any> {
-
-        val records = mutableListOf<Record<*, *>>(
-            flowRecordFactory.createFlowEventRecord(
-                context.checkpoint.flowId,
-                WakeupEvent()
-            )
-        )
-
-        if (externalMessage != null) {
-            records.add(externalMessage)
+        val records = if (externalMessage != null) {
+            listOf(externalMessage)
+        } else {
+            listOf()
         }
 
         return context.copy(outputRecords = context.outputRecords + records)

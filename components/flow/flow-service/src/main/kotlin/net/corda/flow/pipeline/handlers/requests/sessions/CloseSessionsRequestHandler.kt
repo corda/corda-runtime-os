@@ -21,9 +21,7 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [FlowRequestHandler::class])
 class CloseSessionsRequestHandler @Activate constructor(
     @Reference(service = FlowSessionManager::class)
-    private val flowSessionManager: FlowSessionManager,
-    @Reference(service = FlowRecordFactory::class)
-    private val flowRecordFactory: FlowRecordFactory
+    private val flowSessionManager: FlowSessionManager
 ) : FlowRequestHandler<FlowIORequest.CloseSessions> {
 
     override val type = FlowIORequest.CloseSessions::class.java
@@ -47,24 +45,16 @@ class CloseSessionsRequestHandler @Activate constructor(
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.CloseSessions): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
-
-        val hasNoSessionsOrAllClosed = try {
+        try {
             val sessionsToClose = getSessionsToClose(checkpoint, request)
 
             checkpoint.putSessionStates(flowSessionManager.sendCloseMessages(checkpoint, sessionsToClose, Instant.now()))
-
-            sessionsToClose.isEmpty() || flowSessionManager.doAllSessionsHaveStatus(checkpoint, sessionsToClose, SessionStateType.CLOSED)
         } catch (e: FlowSessionStateException) {
             // TODO CORE-4850 Wakeup with error when session does not exist
             throw FlowFatalException(e.message, e)
         }
 
-        return if (hasNoSessionsOrAllClosed) {
-            val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
-            context.copy(outputRecords = context.outputRecords + listOf(record))
-        } else {
-            context
-        }
+        return context
     }
 
     private fun getSessionsToClose(checkpoint: FlowCheckpoint, request: FlowIORequest.CloseSessions): List<String> {

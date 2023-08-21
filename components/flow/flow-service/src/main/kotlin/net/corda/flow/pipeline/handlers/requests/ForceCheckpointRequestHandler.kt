@@ -28,7 +28,6 @@ class ForceCheckpointRequestHandler @Activate constructor(
         context: FlowEventContext<Any>,
         request: FlowIORequest.ForceCheckpoint
     ): FlowEventContext<Any> {
-        val record = flowRecordFactory.createFlowEventRecord(context.checkpoint.flowId, Wakeup())
-        return context.copy(outputRecords = context.outputRecords + record)
+        return context
     }
 }

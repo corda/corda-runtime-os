@@ -18,10 +18,6 @@ import org.osgi.service.component.annotations.Reference
 
 @Component(service = [FlowRequestHandler::class])
 class ReceiveRequestHandler @Activate constructor(
-    @Reference(service = FlowSessionManager::class)
-    private val flowSessionManager: FlowSessionManager,
-    @Reference(service = FlowRecordFactory::class)
-    private val flowRecordFactory: FlowRecordFactory,
     @Reference(service = InitiateFlowRequestService::class)
     private val initiateFlowRequestService: InitiateFlowRequestService,
 ) : FlowRequestHandler<FlowIORequest.Receive> {
@@ -33,22 +29,8 @@ class ReceiveRequestHandler @Activate constructor(
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.Receive): FlowEventContext<Any> {
-        val checkpoint = context.checkpoint
-
         //generate init messages for sessions which do not exist yet
         initiateFlowRequestService.initiateFlowsNotInitiated(context, request.sessions)
-
-        val hasReceivedEvents = try {
-            flowSessionManager.hasReceivedEvents(checkpoint, request.sessions.map { it.sessionId })
-        } catch (e: FlowSessionStateException) {
-            throw FlowPlatformException("Failed to receive: ${e.message}. $PROTOCOL_MISMATCH_HINT", e)
-        }
-
-        return if (hasReceivedEvents) {
-            val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
-            context.copy(outputRecords = context.outputRecords + listOf(record))
-        } else {
-            context
-        }
+        return context
     }
 }

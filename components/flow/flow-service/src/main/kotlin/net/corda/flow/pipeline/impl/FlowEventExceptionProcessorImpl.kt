@@ -201,8 +201,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
             removeCachedFlowFiber(checkpoint)
 
-            val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
-            flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + record))
+            flowEventContextConverter.convert(context)
         }
     }
 

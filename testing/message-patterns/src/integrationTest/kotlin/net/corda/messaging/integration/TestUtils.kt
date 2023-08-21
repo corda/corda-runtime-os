@@ -34,7 +34,7 @@ fun getDummyRecords(topic: String, recordCount: Int, keyCount: Int): List<Record
     for (i in 1..keyCount) {
         val key = "key$i"
         for (j in 1..recordCount) {
-            records.add(Record(topic, key, Wakeup()))
+            records.add(Record(topic, key, DemoRecord(i)))
         }
     }
     return records
