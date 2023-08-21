@@ -254,16 +254,13 @@ interface FlowSessionManager {
 
     /**
      * Update [status] for the sessions passed in.
-     *
      * @param checkpoint The flow's [FlowCheckpoint].
-     * @param sessionIds The session ids to check the status of.
+     * @param sessionIds The session ids to update the status of.
      * @param status The acceptable status the sessions can have.
+     * @return A list of [SessionState]s that have been updated to the new [status].
      *
-     * @return A list of [SessionState]s that have a [SessionState.status] of [status].
-     *
-     * @throws []FlowSessionStateException] If a session does not exist within the flow's [FlowCheckpoint].
      */
-    fun getSessionsWithStatus(
+    fun updateStatus(
         checkpoint: FlowCheckpoint,
         sessionIds: List<String>,
         status: SessionStateType
