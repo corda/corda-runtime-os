@@ -410,6 +410,23 @@ class MemberInfoReconcilerTest {
         }
 
         @Test
+        fun `name parsing when exception is thrown handles old version of persistent info`() {
+            handler.firstValue.processEvent(configChangedEvent, coordinator)
+
+            val key = "Key"
+            val memberInfo = mock<PersistentMemberInfo> {
+                on { viewOwningMember } doReturn AvroHoldingIdentity("O=Alice, L=London, C=GB", "GROUP_ID")
+                on { memberContext } doReturn KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, "Alice")))
+                on { mgmContext } doReturn KeyValuePairList(listOf(KeyValuePair(MemberInfoExtension.SERIAL, "ABCD")))
+                on { signedMemberContext } doReturn null
+                on { serializedMgmContext } doReturn null
+            }
+            processor.firstValue.onNext(Record("topic", key, memberInfo), null, emptyMap())
+
+            assertThat(memberInfoReconciler.reconcilerReadWriter.getAllVersionedRecords().toList()).isEmpty()
+        }
+
+        @Test
         fun `getAllVersionedRecords handles NumberFormatException`() {
             handler.firstValue.processEvent(configChangedEvent, coordinator)
 
