@@ -4,22 +4,23 @@ import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.membership.rest.v1.MGMRestResource
-import picocli.CommandLine
+import picocli.CommandLine.Option
+import picocli.CommandLine.Command
 import java.io.File
 import com.fasterxml.jackson.databind.ObjectMapper
 
-@CommandLine.Command(
+@Command(
     name = "export-group-policy",
     description = ["Export the group policy from the MGM"]
 )
 class ExportGroupPolicy : Runnable, RestCommand() {
-    @CommandLine.Option(
+    @Option(
         names = ["--save"],
         description = ["Save the exported group policy to a specific location"]
     )
     var saveLocation: String? = null
 
-    @CommandLine.Option(
+    @Option(
         names = ["-h", "--holding-identity-short-hash"],
         arity = "1",
         description = ["Short hash of the holding identity to be checked."]
