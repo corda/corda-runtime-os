@@ -1,6 +1,7 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
 import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
@@ -31,9 +32,12 @@ class CloseSessionsRequestHandler @Activate constructor(
 
     override val type = FlowIORequest.CloseSessions::class.java
 
+    private val INITIATING = "initiating"
+    private val initiated = false
+
     override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.CloseSessions): WaitingFor {
         val sessionsToClose = try {
-            getSessionsToClose(context.checkpoint, request)
+            getSessionsToClose(context.checkpoint, request, initiating)
         } catch (e: IllegalArgumentException) {
             // TODO Wakeup flow with an error
             throw FlowFatalException(
@@ -56,7 +60,11 @@ class CloseSessionsRequestHandler @Activate constructor(
             val sessionsToCloseForInitiated = getSessionsToClose(checkpoint, request, false)
 
             // if I am the initiated party i.e ends with INITIATED_SESSION_ID_SUFFIX
-            checkpoint.putSessionStates(flowSessionManager.sendCloseMessages(checkpoint, sessionsToCloseForInitiated, Instant.now()))
+            if(sessionsToCloseForInitiated.isNotEmpty()) {
+                checkpoint.putSessionStates(flowSessionManager.sendCloseMessages(checkpoint, sessionsToCloseForInitiated, Instant.now()))
+            } else if (sessionsToCloseForInitiating.isNotEmpty()) {
+
+            }
 
 
             /**
@@ -83,7 +91,38 @@ class CloseSessionsRequestHandler @Activate constructor(
         }
     }
 
-    private fun getSessionsToClose(checkpoint: FlowCheckpoint, request: FlowIORequest.CloseSessions, initiatingIdentity: Boolean): List<String> {
+    private fun filterOutStatuses(
+        checkpoint: FlowCheckpoint,
+        request: FlowIORequest.CloseSessions,
+        statusesToFilterOut: Set<SessionStateType>
+    ): List<String> {
+        val sessions = request.sessions.toList()
+        val sessionsToFilterOut = flowSessionManager.getSessionsWithStatuses(checkpoint, sessions, statusesToFilterOut)
+        sessions - sessionsToFilterOut.map { it.sessionId }
+        return sessions
+    }
+
+    private fun filterByRequireClose(
+        checkpoint: FlowCheckpoint,
+        request: FlowIORequest.CloseSessions
+    ): List<String> {
+        val sessions = request.sessions.toList()
+        val sessionsToFilterOut = flowSessionManager.getSessionsByRequireClose(checkpoint, sessions)
+        sessions - sessionsToFilterOut.map { it.sessionId }
+        return sessions
+    }
+
+    private fun filterByIdentity(
+        checkpoint: FlowCheckpoint,
+        request: FlowIORequest.CloseSessions
+    ): List<String> {
+        val sessions = request.sessions.toList()
+        val sessionsToFilterOut = flowSessionManager.getSessionsWithRequireCloseTrue(checkpoint, sessions)
+        sessions - sessionsToFilterOut.map { it.sessionId }
+        return sessions
+    }
+
+    private fun getSessionsToClose(checkpoint: FlowCheckpoint, request: FlowIORequest.CloseSessions, identity: Boolean): List<String> {
 
         /**
          * else if i am initiating party i.e i dont end with INITIATED_SESSION_ID_SUFFIX
@@ -104,7 +143,7 @@ class CloseSessionsRequestHandler @Activate constructor(
         val requiredCloseSessions = flowSessionManager.getSessionsWithRequireClose(checkpoint, sessions)
         sessions - requiredCloseSessions.map { it.sessionId }
 
-        return if(initiatingIdentity) {
+        return if(identity == "initiating") {
             sessions.filter { isInitiatingIdentity(it) }
         } else {
             sessions.filterNot { isInitiatingIdentity(it) }

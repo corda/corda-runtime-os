@@ -198,13 +198,20 @@ class FlowSessionManagerImpl @Activate constructor(
             .filter { sessionState -> sessionState.status == status }
     }
 
-    override fun getSessionsWithRequireClose(
+    override fun getSessionsByRequireClose(
         checkpoint: FlowCheckpoint,
-        sessionIds: List<String>
+        sessionIds: List<String>,
+        requireClose: Boolean
     ): List<SessionState> {
-        return sessionIds
-            .map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
-            .filter { sessionState -> sessionState.requireClose }
+        return if(requireClose) {
+            sessionIds
+                .map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
+                .filter { sessionState -> sessionState.requireClose }
+        } else {
+            sessionIds
+                .map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
+                .filter { sessionState -> !sessionState.requireClose }
+        }
     }
 
     override fun getSessionsWithStatuses(

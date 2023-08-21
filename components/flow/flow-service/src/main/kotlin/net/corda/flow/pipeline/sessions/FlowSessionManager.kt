@@ -238,15 +238,18 @@ interface FlowSessionManager {
         sessionIds: List<String>
     ): List<SessionState>
 
+
     /**
-     * Get the states for which requireClose is true
+     * If false is provided get the sessions for which requireClose is false
+     * If true is provided get the sessions for which requireClose is true
      * @param checkpoint The checkpoint to check states within
      * @param sessionIds The sessions to check
-     * @return [Boolean] true if those states have requireClose set to true
+     * @return The list of states that have requireClose set to the value provided
      */
-    fun getSessionsWithRequireClose(
+    fun getSessionsByRequireClose(
         checkpoint: FlowCheckpoint,
-        sessionIds: List<String>
+        sessionIds: List<String>,
+        requireClose: Boolean
     ): List<SessionState>
 
     /**
