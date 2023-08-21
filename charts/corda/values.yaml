@@ -339,7 +339,7 @@ bootstrap:
             # -- the password secret key
             key: ""
 
-    # State Manager configuration, should the state manager type be "DATABASE"
+    # State Manager configuration
     statemanager:
       # -- the schema in which the state-manager entities will be stored
       schema: statemanager

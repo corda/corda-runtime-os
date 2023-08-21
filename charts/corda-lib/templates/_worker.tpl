@@ -276,6 +276,13 @@ spec:
           - "-ddatabase.pool.keepaliveTimeSeconds={{ .clusterDbConnectionPool.keepaliveTimeSeconds }}"
           - "-ddatabase.pool.validationTimeoutSeconds={{ .clusterDbConnectionPool.validationTimeoutSeconds }}"
           {{- end }}
+          {{- if $optionalArgs.stateManagerAccess }}
+          - "-Sstatemanager.stateManagerType=DATABASE"
+          - "-Sstatemanager.database.user=$(DB_CLUSTER_USERNAME)"
+          - "-Sstatemanager.database.pass=$(DB_CLUSTER_PASSWORD)"
+          - "-Sstatemanager.database.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" $.Values.db.cluster.host }}:{{ $.Values.db.cluster.port }}/{{ $.Values.db.cluster.database }}?currentSchema={{ $.Values.db.cluster.schema }}"
+          - "-Sstatemanager.database.jdbc.directory=/opt/jdbc-driver"
+          {{- end }}
           {{- if $.Values.tracing.endpoint }}
           - "--send-trace-to={{ $.Values.tracing.endpoint }}"
           {{- end }}
