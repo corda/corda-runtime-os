@@ -8,7 +8,7 @@ import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
-import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersServiceInternal
+import net.corda.ledger.utxo.flow.impl.groupparameters.GroupParametersServiceInternal
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationParameters
@@ -41,8 +41,8 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
     private val serializationService: SerializationService,
     @Reference(service = UtxoLedgerGroupParametersPersistenceService::class)
     private val utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService,
-    @Reference(service = CurrentGroupParametersServiceInternal::class)
-    private val currentGroupParametersService: CurrentGroupParametersServiceInternal,
+    @Reference(service = GroupParametersServiceInternal::class)
+    private val currentGroupParametersService: GroupParametersServiceInternal,
     @Reference(service = CurrentSandboxGroupContext::class)
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = SignedGroupParametersVerifier::class)
@@ -79,7 +79,7 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
     private fun fetchAndVerifySignedGroupParameters(transaction: UtxoLedgerTransaction): SignedGroupParameters {
         val membershipGroupParametersHashString = transaction.getMembershipGroupParametersHash()
 
-        val currentGroupParameters = currentGroupParametersService.currentGroupParameters
+        val currentGroupParameters = currentGroupParametersService.groupParameters
         val signedGroupParameters =
             if (currentGroupParameters.hash.toString() == membershipGroupParametersHashString) {
                 currentGroupParameters
