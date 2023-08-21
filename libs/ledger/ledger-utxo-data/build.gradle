@@ -17,7 +17,6 @@ dependencies {
     implementation project(':libs:membership:membership-common')
     implementation project(':libs:membership:membership-impl')
     implementation project(':libs:sandbox-types')
-    implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:utilities')
 
