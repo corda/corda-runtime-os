@@ -55,6 +55,7 @@ class StateAndEventSubscriptionImplTest {
     private val rebalanceListener: StateAndEventConsumerRebalanceListener = mock()
     private val lifeCycleCoordinatorMockHelper = LifeCycleCoordinatorMockHelper()
 
+
     private data class Mocks(
         val builder: StateAndEventBuilder,
         val producer: CordaProducer,
@@ -68,6 +69,8 @@ class StateAndEventSubscriptionImplTest {
         val stateConsumer: CordaConsumer<String, String> = mock()
         val producer: CordaProducer = mock()
         val builder: StateAndEventBuilder = mock()
+        doAnswer { eventConsumer }.whenever(stateAndEventConsumer).nullableEventConsumer
+        doAnswer { stateConsumer }.whenever(stateAndEventConsumer).stateConsumer
 
         val topicPartition = CordaTopicPartition(TOPIC, 0)
         val state = CordaConsumerRecord(TOPIC_PREFIX + TOPIC, 0, 0, "key", "state5", 0)
@@ -82,8 +85,6 @@ class StateAndEventSubscriptionImplTest {
         }.whenever(
             stateAndEventConsumer
         ).waitForFunctionToFinish(any(), any(), any())
-        doAnswer { eventConsumer }.whenever(stateAndEventConsumer).eventConsumer
-        doAnswer { stateConsumer }.whenever(stateAndEventConsumer).stateConsumer
         doAnswer { false }.whenever(stateAndEventConsumer).resetPollInterval()
         doAnswer { producer }.whenever(builder).createProducer(any(), anyOrNull())
         doAnswer { setOf(topicPartition) }.whenever(stateConsumer).assignment()
@@ -519,7 +520,6 @@ class StateAndEventSubscriptionImplTest {
         records.add(CordaConsumerRecord(TOPIC, 1, 1, "key1", "value1", 1))
 
         var callCount = 0
-        val eventConsumer = stateAndEventConsumer.eventConsumer
         doAnswer {
             when (callCount++) {
                 0 ->
@@ -527,7 +527,7 @@ class StateAndEventSubscriptionImplTest {
                 else ->
                     mutableListOf()
             }
-        }.whenever(eventConsumer).poll(any())
+        }.whenever(stateAndEventConsumer).poll(any())
         doThrow(StateAndEventConsumer.RebalanceInProgressException("test"))
             .whenever(stateAndEventConsumer).resetPollInterval()
 
@@ -550,8 +550,6 @@ class StateAndEventSubscriptionImplTest {
         waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { subscription.isRunning && callCount <= 1 }
         subscription.close()
 
-        verify(eventConsumer, never()).resume(any())
-        verify(stateAndEventConsumer.stateConsumer, never()).resume(any())
         verify(producer, never()).beginTransaction()
         verify(producer, never()).sendRecords(any())
         verify(producer, never()).sendRecordOffsetsToTransaction(any(), any())

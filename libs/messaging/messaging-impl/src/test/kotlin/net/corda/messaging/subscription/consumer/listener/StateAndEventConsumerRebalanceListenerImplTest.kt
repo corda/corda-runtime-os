@@ -99,15 +99,12 @@ class StateAndEventConsumerRebalanceListenerImplTest {
     private fun setupMocks(): Mocks {
         val listener: StateAndEventListener<String, String> = mock()
         val stateAndEventConsumer: StateAndEventConsumer<String, String, String> = mock()
-        val eventConsumer: CordaConsumer<String, String> = mock()
         val stateConsumer: CordaConsumer<String, String> = mock()
 
         val topicPartitions = setOf(CordaTopicPartition(TOPIC, 0))
         val mapFactory = mock<MapFactory<String, Pair<Long, String>>>()
 
         doAnswer { topicPartitions }.whenever(stateConsumer).assignment()
-        whenever(stateAndEventConsumer.eventConsumer).thenReturn(eventConsumer)
-        whenever(stateAndEventConsumer.stateConsumer).thenReturn(stateConsumer)
 
         return Mocks(listener, stateAndEventConsumer, mapFactory, topicPartitions)
     }

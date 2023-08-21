@@ -7,6 +7,7 @@ import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListener
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.time.Clock
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -95,6 +96,7 @@ interface StateAndEventConsumer<K : Any, S : Any, E : Any> : AutoCloseable {
     fun beginningOffsets(newStatePartitions: List<CordaTopicPartition>): Map<CordaTopicPartition, Long>
 
     fun endOffsets(newStatePartitions: List<CordaTopicPartition>): Map<CordaTopicPartition, Long>
+    fun poll(timeout: Duration): Unit
 
     /**
      * Direct access to [eventConsumer] and [stateConsumer].

@@ -298,6 +298,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     override fun endOffsets(newStatePartitions: List<CordaTopicPartition>)
         = eventConsumer.endOffsets(newStatePartitions)
 
+    override fun poll(timeout: Duration) {
+        eventConsumer.poll(timeout)
+    }
+
     /**
      * Helper method to poll events from a paused [eventConsumer], should only be used to prevent it from being kicked
      * out of the consumer group and only when all partitions are paused as to not lose any events.

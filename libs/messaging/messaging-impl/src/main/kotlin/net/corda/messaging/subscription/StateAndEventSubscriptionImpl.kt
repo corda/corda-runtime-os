@@ -50,7 +50,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     private var nullableProducer: CordaProducer? = null
     private var nullableStateAndEventConsumer: StateAndEventConsumer<K, S, E>? = null
-    private var nullableEventConsumer: CordaConsumer<K, E>? = null
     private var threadLooper =
         ThreadLooper(log, config, lifecycleCoordinatorFactory, "state/event processing thread", ::runConsumeLoop)
 
@@ -65,10 +64,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 ?: throw IllegalStateException("Unexpected access to null stateAndEventConsumer.")
         }
 
-    private val eventConsumer: CordaConsumer<K, E>
-        get() {
-            return nullableEventConsumer ?: throw IllegalStateException("Unexpected access to null eventConsumer.")
-        }
 
     private val eventTopic = config.topic
     private val stateTopic = getStateAndEventStateTopic(config.topic)
