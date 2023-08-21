@@ -4,6 +4,7 @@ import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
+import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListener
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.time.Clock
 import java.util.concurrent.CompletableFuture
@@ -89,12 +90,17 @@ interface StateAndEventConsumer<K : Any, S : Any, E : Any> : AutoCloseable {
      */
     @Throws(RebalanceInProgressException::class)
     fun waitForFunctionToFinish(function: () -> Any, maxTimeout: Long, timeoutErrorMessage: String) : CompletableFuture<Any>
+    fun subscribe(eventTopic: String, rebalanceListener: StateAndEventConsumerRebalanceListener)
+    fun assignment(): Set<CordaTopicPartition>
+    fun beginningOffsets(newStatePartitions: List<CordaTopicPartition>): Map<CordaTopicPartition, Long>
+
+    fun endOffsets(newStatePartitions: List<CordaTopicPartition>): Map<CordaTopicPartition, Long>
 
     /**
      * Direct access to [eventConsumer] and [stateConsumer].
      * @Suppress("ForbiddenComment")
      * TODO: remove direct access to consumers. See https://r3-cev.atlassian.net/browse/CORE-9569.
      */
-    val eventConsumer: CordaConsumer<K, E>
-    val stateConsumer: CordaConsumer<K, S>
+    //val eventConsumer: CordaConsumer<K, E>
+    //val stateConsumer: CordaConsumer<K, S>
 }

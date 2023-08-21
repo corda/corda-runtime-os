@@ -137,10 +137,8 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     }
                 )
                 nullableRebalanceListener = rebalanceListener
-                val eventConsumerTmp = stateAndEventConsumerTmp.eventConsumer
                 nullableStateAndEventConsumer = stateAndEventConsumerTmp
-                nullableEventConsumer = eventConsumerTmp
-                eventConsumerTmp.subscribe(eventTopic, rebalanceListener)
+                nullableStateAndEventConsumer!!.subscribe(eventTopic, rebalanceListener)
                 threadLooper.updateLifecycleStatus(LifecycleStatus.UP)
 
                 while (!threadLooper.loopStopped) {

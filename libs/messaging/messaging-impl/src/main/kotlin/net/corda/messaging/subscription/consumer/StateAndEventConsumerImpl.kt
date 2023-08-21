@@ -10,6 +10,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.constants.MetricsConstants
+import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListener
 import net.corda.messaging.utils.tryGetResult
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getStateAndEventStateTopic
@@ -26,11 +27,13 @@ import java.util.concurrent.Executors
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private val config: ResolvedSubscriptionConfig,
-    override val eventConsumer: CordaConsumer<K, E>,
-    override val stateConsumer: CordaConsumer<K, S>,
+    private val eventConsumer: CordaConsumer<K, E>,
+    private val stateConsumer: CordaConsumer<K, S>,
     private val partitionState: StateAndEventPartitionState<K, S>,
     private val stateAndEventListener: StateAndEventListener<K, S>?
 ) : StateAndEventConsumer<K, S, E>, Resource {
+    //override val eventConsumer get() = _eventConsumer
+    //override val stateConsumer get() = _stateConsumer
 
     companion object {
         //short timeout for poll of paused partitions when waiting for processor to finish
@@ -279,6 +282,21 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
         return future
     }
+
+    override fun subscribe(
+        eventTopic: String,
+        rebalanceListener: StateAndEventConsumerRebalanceListener
+    ) {
+        eventConsumer.subscribe(eventTopic, rebalanceListener)
+    }
+
+    override fun assignment(): Set<CordaTopicPartition> = eventConsumer.assignment()
+
+    override fun beginningOffsets(newStatePartitions: List<CordaTopicPartition>)
+        = eventConsumer.beginningOffsets(newStatePartitions)
+
+    override fun endOffsets(newStatePartitions: List<CordaTopicPartition>)
+        = eventConsumer.endOffsets(newStatePartitions)
 
     /**
      * Helper method to poll events from a paused [eventConsumer], should only be used to prevent it from being kicked

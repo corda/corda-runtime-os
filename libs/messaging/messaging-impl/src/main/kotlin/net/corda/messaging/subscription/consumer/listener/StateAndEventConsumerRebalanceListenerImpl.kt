@@ -21,7 +21,6 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
     private val currentStates = partitionState.currentStates
-    private val stateConsumer = stateAndEventConsumer.stateConsumer
 
     /**
      *  This rebalance is called for the event consumer, though most of the work is to ensure the state consumer
@@ -33,7 +32,7 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
         stateAndEventConsumer.onPartitionsAssigned(partitions.toSet())
 
         val newStatePartitions = partitions.toStateTopics()
-        val statePartitions = stateConsumer.assignment() + newStatePartitions
+        val statePartitions = stateAndEventConsumer.assignment() + newStatePartitions
 
         // Initialise the housekeeping here but the sync and updates
         // will be handled in the normal poll cycle
@@ -80,8 +79,8 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
     }
 
     private fun filterSyncablePartitions(newStatePartitions: List<CordaTopicPartition>): List<Pair<Int, Long>> {
-        val beginningOffsets = stateConsumer.beginningOffsets(newStatePartitions)
-        val endOffsets = stateConsumer.endOffsets(newStatePartitions)
+        val beginningOffsets = stateAndEventConsumer.beginningOffsets(newStatePartitions)
+        val endOffsets = stateAndEventConsumer.endOffsets(newStatePartitions)
         return newStatePartitions.mapNotNull {
             val beginningOffset = beginningOffsets[it] ?: 0
             val endOffset = endOffsets[it] ?: 0
