@@ -1,10 +1,15 @@
 package net.corda.membership.impl.rest.v1
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.crypto.core.ShortHash
+import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
 import net.corda.data.membership.common.ApprovalRuleType.STANDARD
+import net.corda.data.membership.common.RegistrationRequestDetails
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
@@ -15,6 +20,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
+import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
@@ -25,6 +31,7 @@ import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.rest.v1.types.RestGroupParameters
+import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidStateChangeException
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.test.util.time.MockTimeFacilitiesProvider
@@ -48,6 +55,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -105,8 +113,13 @@ class MGMRestResourceTest {
     private val suspensionActivationParameters = SuspensionActivationParameters(subject, 1, REASON)
     private val deprecatedSuspensionActivationParameters
         = net.corda.membership.rest.v1.types.request.SuspensionActivationParameters(subject, 1, REASON)
+    private val deserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
+    }
 
     private val mgmRestResource = MGMRestResourceImpl(
+        cordaAvroSerializationFactory,
         lifecycleCoordinatorFactory,
         mgmResourceClient,
         configurationGetService,
@@ -406,6 +419,31 @@ class MGMRestResourceTest {
                 mgmRestResource.viewRegistrationRequests(INVALID_SHORT_HASH)
             }
         }
+
+        @Test
+        fun `viewRegistrationRequests throws internal server exception when deserializing the context fails`() {
+            val request = RegistrationRequestDetails(
+                mock(),
+                mock(),
+                RegistrationStatus.APPROVED,
+                REQUEST_ID,
+                HOLDING_IDENTITY_ID,
+                1,
+                mock {
+                     on { data } doReturn ByteBuffer.wrap(byteArrayOf(0))
+                },
+                mock(),
+                null,
+                SERIAL,
+            )
+            whenever(mgmResourceClient.viewRegistrationRequests(any(), eq(null), eq(false)))
+                .doReturn(listOf(request))
+            whenever(deserializer.deserialize(any())).thenThrow(ContextDeserializationException)
+
+            assertThrows<InternalServerException> {
+                mgmRestResource.viewRegistrationRequests(HOLDING_IDENTITY_ID)
+            }
+        }
     }
 
     @Nested
@@ -461,6 +499,17 @@ class MGMRestResourceTest {
             )).doThrow(mock<IllegalArgumentException>())
 
             assertThrows<BadRequestException> {
+                mgmRestResource.approveRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
+            }
+        }
+
+        @Test
+        fun `approveRegistrationRequest throws internal server exception when deserializing the context fails`() {
+            whenever(mgmResourceClient.reviewRegistrationRequest(
+                ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), true
+            )).doThrow(mock<ContextDeserializationException>())
+
+            assertThrows<InternalServerException> {
                 mgmRestResource.approveRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
             }
         }

@@ -316,27 +316,18 @@ open class SoftCryptoService(
     }
 
     override fun sign(spec: SigningWrappedSpec, data: ByteArray, context: Map<String, String>): ByteArray {
-        recoverable("sign check requirements") {
-            require(data.isNotEmpty()) {
-                "Signing of an empty array is not permitted."
-            }
-            require(supportedSchemes.containsKey(spec.keyScheme)) {
-                "Unsupported key scheme: ${spec.keyScheme.codeName}"
-            }
-            require(spec.keyScheme.canDo(KeySchemeCapability.SIGN)) {
-                "Key scheme: ${spec.keyScheme.codeName} cannot be used for signing."
-            }
+        val startTime = System.nanoTime()
+        require(data.isNotEmpty()) {
+            "Signing of an empty array is not permitted."
+        }
+        require(supportedSchemes.containsKey(spec.keyScheme)) {
+            "Unsupported key scheme: ${spec.keyScheme.codeName}"
+        }
+        require(spec.keyScheme.canDo(KeySchemeCapability.SIGN)) {
+            "Key scheme: ${spec.keyScheme.codeName} cannot be used for signing."
         }
         logger.debug { "sign(spec=$spec)" }
-        return sign(
-            spec,
-            obtainAndStorePrivateKey(spec.publicKey, spec.keyMaterialSpec, computeTenantId(context)),
-            data
-        )
-    }
-
-    private fun sign(spec: SigningWrappedSpec, privateKey: PrivateKey, data: ByteArray): ByteArray {
-        val startTime = System.nanoTime()
+        val privateKey = obtainAndStorePrivateKey(spec.publicKey, spec.keyMaterialSpec, computeTenantId(context))
         val signingData = spec.signatureSpec.getSigningData(digestService, data)
         val signatureBytes = recoverable("sign") {
             if (spec.signatureSpec is CustomSignatureSpec && spec.keyScheme.algorithmName == "RSA") {

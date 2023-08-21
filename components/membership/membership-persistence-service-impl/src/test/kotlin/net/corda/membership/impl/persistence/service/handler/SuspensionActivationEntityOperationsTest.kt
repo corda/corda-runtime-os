@@ -4,12 +4,14 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.PersistentMemberInfo
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.test.util.time.TestClock
@@ -60,8 +62,10 @@ class SuspensionActivationEntityOperationsTest {
         on { serialize(any()) } doReturn byteArrayOf(0)
     }
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
-
-    private val handler = SuspensionActivationEntityOperations(clock, keyValuePairListDeserializer, keyValuePairListSerializer)
+    private val memberInfoFactory = mock<MemberInfoFactory> {
+        on { createPersistentMemberInfo(any(), any(), any(), any(), any(), any()) } doReturn mock()
+    }
+    private val handler = SuspensionActivationEntityOperations(clock, keyValuePairListSerializer, memberInfoFactory)
 
     @Suppress("LongParameterList")
     private fun mockMemberInfoEntity(
@@ -195,10 +199,20 @@ class SuspensionActivationEntityOperationsTest {
             )
         )
         val serializedMGMContext = byteArrayOf(0)
-        whenever(keyValuePairListSerializer.serialize(mgmContext)).doReturn(serializedMGMContext)
+        val updatedContextCapture = argumentCaptor<KeyValuePairList>()
+        whenever(keyValuePairListSerializer.serialize(updatedContextCapture.capture())).doReturn(serializedMGMContext)
         whenever(em.merge(entityCapture.capture())).doReturn(mock())
         val mgmHoldingIdentity = AvroHoldingIdentity("MGM", knownGroupId)
         val newStatus = "newStatus"
+        val persistentMemberInfoMock = mock<PersistentMemberInfo>()
+        whenever(memberInfoFactory.createPersistentMemberInfo(
+            eq(mgmHoldingIdentity),
+            eq(contextBytes),
+            eq(serializedMGMContext),
+            eq(signatureKey),
+            eq(signatureContent),
+            eq(SIGNATURE_SPEC))
+        ).doReturn(persistentMemberInfoMock)
 
         val persistentMemberInfo = handler.updateStatus(
             em,
@@ -221,14 +235,15 @@ class SuspensionActivationEntityOperationsTest {
             assertThat(memberSignatureContent).isEqualTo(signatureContent)
             assertThat(memberSignatureSpec).isEqualTo(SIGNATURE_SPEC)
         }
-        assertThat(persistentMemberInfo.viewOwningMember).isEqualTo(mgmHoldingIdentity)
-        assertThat(persistentMemberInfo.memberContext).isEqualTo(memberContext)
-        assertThat(persistentMemberInfo.mgmContext.items).containsExactlyInAnyOrder(
-            KeyValuePair(STATUS, newStatus),
-            KeyValuePair(MODIFIED_TIME, clock.instant().toString()),
-            KeyValuePair(SERIAL, (SERIAL_NUMBER + 1).toString()),
-            KeyValuePair("KEY", "value")
-        )
+        assertThat(persistentMemberInfo).isEqualTo(persistentMemberInfoMock)
+        with(updatedContextCapture.firstValue) {
+            assertThat(this.items).containsExactlyInAnyOrder(
+                KeyValuePair(STATUS, newStatus),
+                KeyValuePair(MODIFIED_TIME, clock.instant().toString()),
+                KeyValuePair(SERIAL, (SERIAL_NUMBER + 1).toString()),
+                KeyValuePair("KEY", "value")
+            )
+        }
     }
 
     @Test
@@ -239,28 +254,6 @@ class SuspensionActivationEntityOperationsTest {
             handler.updateStatus(em, knownX500Name.toString(), mock(), mock(), mock(), "")
         }.apply {
             assertThat(this.message).contains("Failed to serialize")
-        }
-    }
-
-    @Test
-    fun `updateStatus throws exception if MGM-provided context cannot be deserialized`() {
-        val mockEntity = mock<MemberInfoEntity> {
-            on { mgmContext } doReturn contextBytes
-            on { memberContext } doReturn contextBytes
-            on { groupId } doReturn knownGroupId
-            on { memberX500Name } doReturn knownX500Name.toString()
-            on { serialNumber } doReturn SERIAL_NUMBER
-            on { status } doReturn "status"
-            on { memberSignatureKey } doReturn signatureKey
-            on { memberSignatureContent } doReturn signatureContent
-            on { memberSignatureSpec} doReturn SIGNATURE_SPEC
-        }
-        whenever(keyValuePairListDeserializer.deserialize(contextBytes)).doReturn(null)
-
-        assertThrows<MembershipPersistenceException> {
-            handler.updateStatus(em, knownX500Name.toString(), mock { on {groupId} doReturn knownGroupId }, mockEntity, mock(), "")
-        }.apply {
-            assertThat(this.message).contains("Failed to deserialize")
         }
     }
 }

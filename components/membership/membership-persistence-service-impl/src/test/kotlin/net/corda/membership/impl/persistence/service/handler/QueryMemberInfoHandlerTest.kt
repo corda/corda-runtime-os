@@ -1,11 +1,15 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.core.ShortHash
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.core.ShortHash
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.db.connection.manager.DbConnectionManager
@@ -13,6 +17,8 @@ import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.MemberInfoEntity
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.TestRandom
@@ -31,15 +37,20 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import javax.persistence.TypedQuery
+import javax.persistence.criteria.CriteriaBuilder
+import javax.persistence.criteria.CriteriaQuery
+import javax.persistence.criteria.Path
+import javax.persistence.criteria.Predicate
+import javax.persistence.criteria.Root
 
 class QueryMemberInfoHandlerTest {
 
@@ -74,8 +85,37 @@ class QueryMemberInfoHandlerTest {
     private val testMemberVal = "MEMBER"
 
     private val entityTransaction: EntityTransaction = mock()
+
+    private val actualQuery = mock<TypedQuery<MemberInfoEntity>>()
+    private val inHoldingId = mock<CriteriaBuilder.In<String>>()
+    private val holdingIdPath = mock<Path<String>>()
+    private val inStatus = mock<CriteriaBuilder.In<String>>()
+    private val statusPath = mock<Path<String>>()
+    private val isDeletedPath = mock<Path<Boolean>>()
+    private val equalsDeleted = mock<Predicate>()
+    private val root = mock<Root<MemberInfoEntity>> {
+        on { get<String>("memberX500Name") } doReturn holdingIdPath
+        on { get<String>("status") } doReturn statusPath
+        on { get<Boolean>("isDeleted") } doReturn isDeletedPath
+    }
+    private val query = mock<CriteriaQuery<MemberInfoEntity>> {
+        on { from(eq(MemberInfoEntity::class.java)) } doReturn root
+        on { select(root) } doReturn mock
+        on { where() } doReturn mock
+        on { where(any()) } doReturn mock
+        on { where(any(), any()) } doReturn mock
+        on { where(any(), any(), any()) } doReturn mock
+    }
+    private val criteriaBuilder = mock<CriteriaBuilder> {
+        on { createQuery(MemberInfoEntity::class.java) } doReturn query
+        on { `in`(holdingIdPath) } doReturn inHoldingId
+        on { `in`(statusPath) } doReturn inStatus
+        on { equal(isDeletedPath, false) } doReturn equalsDeleted
+    }
     private val entityManager: EntityManager = mock {
         on { transaction } doReturn entityTransaction
+        on { createQuery(eq(query)) } doReturn actualQuery
+        on { criteriaBuilder } doReturn criteriaBuilder
     }
     private val entityManagerFactory: EntityManagerFactory = mock {
         on { createEntityManager() } doReturn entityManager
@@ -92,7 +132,30 @@ class QueryMemberInfoHandlerTest {
     private val jpaEntitiesRegistry: JpaEntitiesRegistry = mock {
         on { get(eq(CordaDb.Vault.persistenceUnitName)) } doReturn mock()
     }
-    private val memberInfoFactory: MemberInfoFactory = mock()
+    private val signatureKey = "pk-$otherX500Name".toByteArray()
+    private val signatureContent = "sig-$otherX500Name".toByteArray()
+    private val signatureName = "dummySignatureSpec"
+    private val memberContext = mock<SignedData> {
+        on { signature } doReturn CryptoSignatureWithKey(ByteBuffer.wrap(signatureKey), ByteBuffer.wrap(signatureContent))
+        on { signatureSpec } doReturn CryptoSignatureSpec(signatureName, null, null)
+    }
+    private val mgmContext = ByteBuffer.wrap(byteArrayOf(1))
+    private val persistentInfo = mock<PersistentMemberInfo> {
+        on { signedMemberContext } doReturn memberContext
+        on { serializedMgmContext } doReturn mgmContext
+    }
+    private val memberInfoFactory: MemberInfoFactory = mock {
+        on {
+            createPersistentMemberInfo(
+                ourHoldingIdentity.toAvro(),
+                memberContextBytes,
+                mgmContextBytes,
+                signatureKey,
+                signatureContent,
+                signatureName,
+            )
+        } doReturn persistentInfo
+    }
     private val keyValueDeserializer: CordaAvroDeserializer<KeyValuePairList> = mock {
         on { deserialize(eq(memberContextBytes)) } doReturn KeyValuePairList(
             listOf(
@@ -136,9 +199,9 @@ class QueryMemberInfoHandlerTest {
         "OK",
         clock.instant(),
         memberContextBytes,
-        "pk-$otherX500Name".toByteArray(),
-        "sig-$otherX500Name".toByteArray(),
-        "dummySignatureSpec",
+        signatureKey,
+        signatureContent,
+        signatureName,
         mgmContextBytes,
         1L,
         isDeleted = false
@@ -155,16 +218,13 @@ class QueryMemberInfoHandlerTest {
         ourHoldingIdentity.toAvro(),
     )
 
-    private fun getQueryMemberInfo(queryIdentities: List<HoldingIdentity>) = QueryMemberInfo(
-        queryIdentities.map { it.toAvro() }
-    )
+    private fun getQueryMemberInfo(holdingIdentityFilter: List<HoldingIdentity>, statusFilter: List<String> = emptyList()) =
+        QueryMemberInfo(holdingIdentityFilter.map { it.toAvro() }, statusFilter)
 
 
     @Test
     fun `invoke with no query identity returns results if results are available`() {
-        val memberInfoQuery = mock<TypedQuery<MemberInfoEntity>>()
-        whenever(entityManager.createQuery(any(), eq(MemberInfoEntity::class.java))).thenReturn(memberInfoQuery)
-        whenever(memberInfoQuery.resultList).thenReturn(listOf(memberInfoEntity))
+        whenever(actualQuery.resultList).thenReturn(listOf(memberInfoEntity))
 
         val requestContext = getMemberRequestContext()
         val result = queryMemberInfoHandler.invoke(
@@ -174,18 +234,21 @@ class QueryMemberInfoHandlerTest {
 
         assertThat(result.members).isNotEmpty.hasSize(1)
         with(result.members.first()) {
-            assertThat(viewOwningMember).isEqualTo(requestContext.holdingIdentity)
-            assertThat(memberContext.items.first { it.key == testKey }.value).isEqualTo(testMemberVal)
-            assertThat(mgmContext.items.first { it.key == testKey }.value).isEqualTo(testMgmVal)
+            assertThat(serializedMgmContext).isEqualTo(persistentInfo.serializedMgmContext)
+            assertThat(signedMemberContext).isEqualTo(persistentInfo.signedMemberContext)
+            assertThat(signedMemberContext.signature).isEqualTo(
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(memberInfoEntity.memberSignatureKey),
+                    ByteBuffer.wrap(memberInfoEntity.memberSignatureContent),
+                )
+            )
+            assertThat(signedMemberContext.signatureSpec)
+                .isEqualTo(CryptoSignatureSpec(memberInfoEntity.memberSignatureSpec, null, null))
         }
+        verify(inHoldingId, never()).value(any<String>())
+        verify(inStatus, never()).value(any<String>())
         verify(entityManager, never()).find<MemberInfoEntity>(any(), any())
-        verify(entityManager).createQuery(any(), eq(MemberInfoEntity::class.java))
-        verify(cordaAvroSerializationFactory).createAvroDeserializer<KeyValuePairList>(any(), any())
-        with(argumentCaptor<ByteArray>()) {
-            verify(keyValueDeserializer, times(2)).deserialize(capture())
-            assertThat(firstValue).isEqualTo(memberContextBytes)
-            assertThat(secondValue).isEqualTo(mgmContextBytes)
-        }
+        verify(entityManager).createQuery(any<CriteriaQuery<MemberInfoEntity>>())
         with(argumentCaptor<ShortHash>()) {
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
@@ -209,10 +272,10 @@ class QueryMemberInfoHandlerTest {
         )
 
         assertThat(result.members).isEmpty()
+        verify(inHoldingId, never()).value(any<String>())
+        verify(inStatus, never()).value(any<String>())
         verify(entityManager, never()).find<MemberInfoEntity>(any(), any())
-        verify(entityManager).createQuery(any(), eq(MemberInfoEntity::class.java))
-        verify(cordaAvroSerializationFactory, never()).createAvroDeserializer<KeyValuePairList>(any(), any())
-        verify(keyValueDeserializer, never()).deserialize(any())
+        verify(memberInfoFactory, never()).createPersistentMemberInfo(any(), any(), any(), any(), any(), any())
         with(argumentCaptor<ShortHash>()) {
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
@@ -226,31 +289,29 @@ class QueryMemberInfoHandlerTest {
 
     @Test
     fun `invoke with a query identity returns results if results are available`() {
-        val memberInfoQuery = mock<TypedQuery<MemberInfoEntity>> {
-            on { resultList } doReturn listOf(memberInfoEntity)
-            on { setParameter(any<String>(), any()) } doReturn it
-        }
-        whenever(
-            entityManager.createQuery(any(), eq(MemberInfoEntity::class.java))
-        ).thenReturn(memberInfoQuery)
+        whenever(actualQuery.resultList).thenReturn(listOf(memberInfoEntity))
+
         val requestContext = getMemberRequestContext()
-        val results = queryMemberInfoHandler.invoke(
+        val result = queryMemberInfoHandler.invoke(
             requestContext,
             getQueryMemberInfo(listOf(otherHoldingIdentity))
         )
-        assertThat(results.members).isNotEmpty.hasSize(1)
-        with(results.members.first()) {
-            assertThat(viewOwningMember).isEqualTo(requestContext.holdingIdentity)
-            assertThat(memberContext.items.first { it.key == testKey }.value).isEqualTo(testMemberVal)
-            assertThat(mgmContext.items.first { it.key == testKey }.value).isEqualTo(testMgmVal)
+        assertThat(result.members).isNotEmpty.hasSize(1)
+        with(result.members.first()) {
+            assertThat(serializedMgmContext).isEqualTo(persistentInfo.serializedMgmContext)
+            assertThat(signedMemberContext).isEqualTo(persistentInfo.signedMemberContext)
+            assertThat(signedMemberContext.signature).isEqualTo(
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(memberInfoEntity.memberSignatureKey),
+                    ByteBuffer.wrap(memberInfoEntity.memberSignatureContent),
+                )
+            )
+            assertThat(signedMemberContext.signatureSpec).isEqualTo(
+                CryptoSignatureSpec(memberInfoEntity.memberSignatureSpec, null, null)
+            )
         }
-        verify(entityManager).createQuery(any(), eq(MemberInfoEntity::class.java))
-        verify(cordaAvroSerializationFactory).createAvroDeserializer<KeyValuePairList>(any(), any())
-        with(argumentCaptor<ByteArray>()) {
-            verify(keyValueDeserializer, times(2)).deserialize(capture())
-            assertThat(firstValue).isEqualTo(memberContextBytes)
-            assertThat(secondValue).isEqualTo(mgmContextBytes)
-        }
+        verify(inHoldingId).value(otherHoldingIdentity.x500Name.toString())
+        verify(inStatus, never()).value(any<String>())
         with(argumentCaptor<ShortHash>()) {
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
@@ -264,21 +325,16 @@ class QueryMemberInfoHandlerTest {
 
     @Test
     fun `invoke with a query identity returns no results if no results are available`() {
-        val memberInfoQuery = mock<TypedQuery<MemberInfoEntity>> {
-            on { resultList } doReturn emptyList()
-            on { setParameter(any<String>(), any()) } doReturn it
-        }
-        whenever(
-            entityManager.createQuery(any(), eq(MemberInfoEntity::class.java))
-        ).thenReturn(memberInfoQuery)
+        whenever(actualQuery.resultList).thenReturn(emptyList())
+
         val result = queryMemberInfoHandler.invoke(
             getMemberRequestContext(),
             getQueryMemberInfo(listOf(otherHoldingIdentity))
         )
         assertThat(result.members).isEmpty()
-        verify(entityManager).createQuery(any(), eq(MemberInfoEntity::class.java))
-        verify(cordaAvroSerializationFactory, never()).createAvroDeserializer<KeyValuePairList>(any(), any())
-        verify(keyValueDeserializer, never()).deserialize(any())
+        verify(inHoldingId).value(otherHoldingIdentity.x500Name.toString())
+        verify(inStatus, never()).value(any<String>())
+        verify(memberInfoFactory, never()).createPersistentMemberInfo(any(), any(), any(), any(), any(), any())
         with(argumentCaptor<ShortHash>()) {
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
@@ -290,4 +346,70 @@ class QueryMemberInfoHandlerTest {
         verify(entityManager).close()
     }
 
+    @Test
+    fun `invoke with query statuses returns results if results are available`() {
+        whenever(actualQuery.resultList).thenReturn(listOf(memberInfoEntity))
+
+        val requestContext = getMemberRequestContext()
+        val result = queryMemberInfoHandler.invoke(
+            requestContext,
+            getQueryMemberInfo(emptyList(), listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED))
+        )
+        assertThat(result.members).isNotEmpty.hasSize(1)
+        with(result.members.first()) {
+            assertThat(serializedMgmContext).isEqualTo(persistentInfo.serializedMgmContext)
+            assertThat(signedMemberContext).isEqualTo(persistentInfo.signedMemberContext)
+            assertThat(signedMemberContext.signature).isEqualTo(
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(memberInfoEntity.memberSignatureKey),
+                    ByteBuffer.wrap(memberInfoEntity.memberSignatureContent),
+                )
+            )
+            assertThat(signedMemberContext.signatureSpec).isEqualTo(
+                CryptoSignatureSpec(memberInfoEntity.memberSignatureSpec, null, null)
+            )
+        }
+        verify(inStatus).value(MEMBER_STATUS_ACTIVE)
+        verify(inStatus).value(MEMBER_STATUS_SUSPENDED)
+        verify(inHoldingId, never()).value(any<String>())
+        verify(jpaEntitiesRegistry).get(any())
+        verify(entityManagerFactory).createEntityManager()
+        verify(entityTransaction).begin()
+        verify(entityTransaction).commit()
+        verify(entityManager).close()
+    }
+
+
+    @Test
+    fun `invoke with query identities and statuses returns results if results are available`() {
+        whenever(actualQuery.resultList).thenReturn(listOf(memberInfoEntity))
+
+        val requestContext = getMemberRequestContext()
+        val result = queryMemberInfoHandler.invoke(
+            requestContext,
+            getQueryMemberInfo(listOf(otherHoldingIdentity), listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED))
+        )
+        assertThat(result.members).isNotEmpty.hasSize(1)
+        with(result.members.first()) {
+            assertThat(serializedMgmContext).isEqualTo(persistentInfo.serializedMgmContext)
+            assertThat(signedMemberContext).isEqualTo(persistentInfo.signedMemberContext)
+            assertThat(signedMemberContext.signature).isEqualTo(
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(memberInfoEntity.memberSignatureKey),
+                    ByteBuffer.wrap(memberInfoEntity.memberSignatureContent),
+                )
+            )
+            assertThat(signedMemberContext.signatureSpec).isEqualTo(
+                CryptoSignatureSpec(memberInfoEntity.memberSignatureSpec, null, null)
+            )
+        }
+        verify(inHoldingId).value(otherHoldingIdentity.x500Name.toString())
+        verify(inStatus).value(MEMBER_STATUS_ACTIVE)
+        verify(inStatus).value(MEMBER_STATUS_SUSPENDED)
+        verify(jpaEntitiesRegistry).get(any())
+        verify(entityManagerFactory).createEntityManager()
+        verify(entityTransaction).begin()
+        verify(entityTransaction).commit()
+        verify(entityManager).close()
+    }
 }
