@@ -22,6 +22,7 @@ import net.corda.ledger.utxo.token.cache.services.TokenCacheSubscriptionHandlerI
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -42,7 +43,9 @@ class TokenCacheComponentFactory @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoService: VirtualNodeInfoReadService,
     @Reference(service = DbConnectionManager::class)
-    private val dbConnectionManager: DbConnectionManager
+    private val dbConnectionManager: DbConnectionManager,
+    @Reference(service = JpaEntitiesRegistry::class)
+    private val jpaEntitiesRegistry: JpaEntitiesRegistry
 ) {
     fun create(): TokenCacheComponent {
 
@@ -57,6 +60,7 @@ class TokenCacheComponentFactory @Activate constructor(
         val availableTokenService = AvailableTokenServiceImpl(
             virtualNodeInfoService,
             dbConnectionManager,
+            jpaEntitiesRegistry,
             utxoTokenRepository,
             serviceConfiguration
         )

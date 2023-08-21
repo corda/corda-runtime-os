@@ -51,6 +51,7 @@ class AvailableTokenServiceImplTest {
     val availableTokenServiceImpl = AvailableTokenServiceImpl(
         virtualNodeInfoService,
         dbConnectionManager,
+        mock(),
         utxoTokenRepository,
         serviceConfiguration
     )
