@@ -34,7 +34,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
     private val mockUtxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
     private val mockUtxoLedgerTransactionVerificationService = mock<UtxoLedgerTransactionVerificationService>()
     private val mockUtxoLedgerGroupParametersPersistenceService = mock<UtxoLedgerGroupParametersPersistenceService>()
-    private val mockCurrentGroupParametersService = mockCurrentGroupParametersService()
+    private val mockGroupParametersService = mockGroupParametersService()
     private val mockSignedGroupParametersVerifier = mock<SignedGroupParametersVerifier>()
 
     val mockUtxoLedgerStateQueryService = mock<UtxoLedgerStateQueryService>()
@@ -82,7 +82,7 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         utxoLedgerTransactionFactory,
         mockUtxoLedgerTransactionVerificationService,
         mockUtxoLedgerGroupParametersPersistenceService,
-        mockCurrentGroupParametersService,
+        mockGroupParametersService,
         mockSignedGroupParametersVerifier
     )
     val utxoLedgerService = UtxoLedgerServiceImpl(
