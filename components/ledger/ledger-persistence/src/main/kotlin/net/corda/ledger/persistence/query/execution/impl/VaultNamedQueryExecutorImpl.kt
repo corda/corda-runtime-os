@@ -31,7 +31,6 @@ class VaultNamedQueryExecutorImpl(
         const val UTXO_TX_COMPONENT_TABLE = "utxo_transaction_component"
         const val TIMESTAMP_LIMIT_PARAM_NAME = "Corda_TimestampLimit"
 
-        // TODO Should this be configurable or hard-coded?
         const val RESULT_SET_FILL_RETRY_LIMIT = 5
 
         val log = LoggerFactory.getLogger(VaultNamedQueryExecutorImpl::class.java)
@@ -75,7 +74,6 @@ class VaultNamedQueryExecutorImpl(
         // Return the filtered/transformed/collected (if present) result to the caller
         return EntityResponse.newBuilder()
             .setResults(collectedResults.map { ByteBuffer.wrap(serializationService.serialize(it).bytes) })
-            // TODO Should `numberOfRowsFromQuery` be the number of rows before or after filtering?
             .setMetadata(KeyValuePairList(listOf(KeyValuePair("numberOfRowsFromQuery", filteredAndTransformedResults.size.toString()))))
             .build()
     }
@@ -126,9 +124,11 @@ class VaultNamedQueryExecutorImpl(
             internalOffset += contractStateResults.size
 
             // Apply filters (if there's any) and add the filtered results to the final result set
-            filteredResults.addAll(contractStateResults.filter {
-                vaultNamedQuery.filter?.filter(it, deserializedParams) ?: true
-            })
+            vaultNamedQuery.filter?.let { vaultNamedQueryFilter ->
+                filteredResults.addAll(contractStateResults.filter {
+                    vaultNamedQueryFilter.filter(it, deserializedParams)
+                })
+            }
         }
 
         // Make sure we don't return more than the limit even if the list has overflown
