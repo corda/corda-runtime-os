@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
@@ -18,6 +19,7 @@ import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.membership.client.MemberResourceClient
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -56,7 +58,9 @@ internal class VirtualNodeWriterFactory(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val memberResourceClient: MemberResourceClient,
     private val membershipQueryClient: MembershipQueryClient,
+    private val memberInfoFactory: MemberInfoFactory,
     private val cpiCpkRepositoryFactory: CpiCpkRepositoryFactory,
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository(),
 ) {
 
@@ -126,7 +130,7 @@ internal class VirtualNodeWriterFactory(
                 virtualNodesDmlPoolConfig
             )
 
-        val recordFactory = RecordFactoryImpl(UTCClock())
+        val recordFactory = RecordFactoryImpl(UTCClock(), memberInfoFactory)
 
         val handlerMap = mutableMapOf<Class<*>, VirtualNodeAsyncOperationHandler<*>>(
             VirtualNodeUpgradeRequest::class.java to VirtualNodeUpgradeOperationHandler(
@@ -137,8 +141,8 @@ internal class VirtualNodeWriterFactory(
                 membershipGroupReaderProvider,
                 memberResourceClient,
                 membershipQueryClient,
-                externalMessagingRouteConfigGenerator = externalMessagingRouteConfigGenerator,
-
+                externalMessagingRouteConfigGenerator,
+                cordaAvroSerializationFactory,
             ),
 
             VirtualNodeCreateRequest::class.java to CreateVirtualNodeOperationHandler(

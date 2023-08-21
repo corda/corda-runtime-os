@@ -1,5 +1,8 @@
 package net.corda.membership.impl.read.subscription
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
@@ -27,6 +30,10 @@ import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.messaging.api.records.Record
 import net.corda.test.util.time.TestClock
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
+import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.SignedData
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -39,8 +46,10 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
 
@@ -78,13 +87,27 @@ class MemberListProcessorTest {
         private lateinit var charlie: MemberInfo
         private lateinit var charlieIdentity: HoldingIdentity
 
+        private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>>()
+        private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
+        private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+            on {
+                createAvroDeserializer(
+                    any(),
+                    eq(KeyValuePairList::class.java)
+                )
+            } doReturn keyValuePairListDeserializer
+            on {
+                createAvroSerializer<KeyValuePairList>(any())
+            } doReturn keyValuePairListSerializer
+        }
+
         private lateinit var memberListProcessor: MemberListProcessor
         private lateinit var memberListFromTopic: Map<String, PersistentMemberInfo>
 
         private lateinit var membershipGroupReadCache: MembershipGroupReadCache
 
         @Suppress("SpreadOperator")
-        private fun createTestMemberInfo(x500Name: String, status: String): MemberInfo = memberInfoFactory.create(
+        private fun createTestMemberInfo(x500Name: String, status: String): MemberInfo = memberInfoFactory.createMemberInfo(
             sortedMapOf(
                 PARTY_NAME to x500Name,
                 String.format(PARTY_SESSION_KEYS, 0) to knownKeyAsString,
@@ -112,14 +135,26 @@ class MemberListProcessorTest {
                 if (!selfOwned && holdingIdentity != aliceIdentity) {
                     topicData[aliceIdentity.shortHash.value + holdingIdentity.shortHash.value] = PersistentMemberInfo(
                         aliceIdentity.toAvro(),
-                        member.memberProvidedContext.toAvro(),
-                        member.mgmProvidedContext.toAvro()
+                        null,
+                        null,
+                        SignedData(
+                            member.memberProvidedContext.toAvro().toByteBuffer(),
+                            CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())),
+                            CryptoSignatureSpec("", null, null),
+                        ),
+                        member.mgmProvidedContext.toAvro().toByteBuffer(),
                     )
                 }
                 topicData[holdingIdentity.shortHash.value] = PersistentMemberInfo(
                     holdingIdentity.toAvro(),
-                    member.memberProvidedContext.toAvro(),
-                    member.mgmProvidedContext.toAvro()
+                    null,
+                    null,
+                    SignedData(
+                        member.memberProvidedContext.toAvro().toByteBuffer(),
+                        CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())),
+                        CryptoSignatureSpec("", null, null),
+                    ),
+                    member.mgmProvidedContext.toAvro().toByteBuffer(),
                 )
             }
             return topicData
@@ -152,10 +187,22 @@ class MemberListProcessorTest {
                 ) to keyEncodingService.encodeAsString(ledgerKey)
             }
 
+        private fun mockSerializer(members : List<MemberInfo>) = members.forEach { member ->
+            whenever(
+                keyValuePairListDeserializer.deserialize(member.mgmProvidedContext.toAvro().toByteBuffer().array())
+            ).thenReturn(member.mgmProvidedContext.toAvro())
+            whenever(
+                keyValuePairListDeserializer.deserialize(member.memberProvidedContext.toAvro().toByteBuffer().array())
+            ).thenReturn(member.memberProvidedContext.toAvro())
+        }
+
         @JvmStatic
         @BeforeAll
         fun setUp() {
-            memberInfoFactory = MemberInfoFactoryImpl(LayeredPropertyMapMocks.createFactory(converters))
+            memberInfoFactory = MemberInfoFactoryImpl(
+                LayeredPropertyMapMocks.createFactory(converters),
+                cordaAvroSerializationFactory
+            )
             membershipGroupReadCache = MembershipGroupReadCache.Impl()
             memberListProcessor = MemberListProcessor(membershipGroupReadCache, memberInfoFactory)
             whenever(keyEncodingService.decodePublicKey(knownKeyAsString)).thenReturn(knownKey)
@@ -167,6 +214,7 @@ class MemberListProcessorTest {
             charlie = createTestMemberInfo("O=Charlie,L=London,C=GB", MEMBER_STATUS_SUSPENDED)
             charlieIdentity = HoldingIdentity(charlie.name, charlie.groupId)
             memberListFromTopic = convertToTestTopicData(listOf(alice, bob, charlie))
+            mockSerializer(listOf(alice, bob, charlie))
         }
     }
 
@@ -198,6 +246,7 @@ class MemberListProcessorTest {
         memberListProcessor.onSnapshot(memberListFromTopic)
         val newMember = createTestMemberInfo("O=NewMember,L=London,C=GB", MEMBER_STATUS_ACTIVE)
         val newMemberIdentity = HoldingIdentity(newMember.name, newMember.groupId)
+        mockSerializer(listOf(newMember))
         val topicData = convertToTestTopicData(listOf(newMember), true).entries.first()
         val newRecord = Record("dummy-topic", topicData.key, topicData.value)
         memberListProcessor.onNext(newRecord, null, memberListFromTopic)
@@ -208,12 +257,19 @@ class MemberListProcessorTest {
     fun `Member list cache is successfully updated with changed record`() {
         memberListProcessor.onSnapshot(memberListFromTopic)
         val updatedAlice = createTestMemberInfo(aliceIdentity.x500Name.toString(), MEMBER_STATUS_PENDING)
+        mockSerializer(listOf(updatedAlice))
         val topicData = convertToTestTopicData(listOf(updatedAlice), true).entries.first()
         val newRecord = Record("dummy-topic", topicData.key, topicData.value)
         val oldValue = PersistentMemberInfo(
             aliceIdentity.toAvro(),
-            alice.memberProvidedContext.toAvro(),
-            alice.mgmProvidedContext.toAvro()
+            null,
+            null,
+            SignedData(
+                alice.memberProvidedContext.toAvro().toByteBuffer(),
+                CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())),
+                CryptoSignatureSpec("", null, null),
+            ),
+            alice.mgmProvidedContext.toAvro().toByteBuffer(),
         )
         memberListProcessor.onNext(newRecord, oldValue, memberListFromTopic)
         assertThat(membershipGroupReadCache.memberListCache.get(aliceIdentity))
@@ -226,12 +282,19 @@ class MemberListProcessorTest {
         val memberList = convertToTestTopicData(listOf(oldAlice), true)
         memberListProcessor.onSnapshot(memberList)
         val updatedAlice = createTestMemberInfo(aliceIdentity.x500Name.toString(), MEMBER_STATUS_ACTIVE)
+        mockSerializer(listOf(updatedAlice))
         val topicData = convertToTestTopicData(listOf(updatedAlice), true).entries.first()
         val newRecord = Record("dummy-topic", topicData.key, topicData.value)
         val oldValue = PersistentMemberInfo(
             aliceIdentity.toAvro(),
-            oldAlice.memberProvidedContext.toAvro(),
-            oldAlice.mgmProvidedContext.toAvro()
+            null,
+            null,
+            SignedData(
+                oldAlice.memberProvidedContext.toAvro().toByteBuffer(),
+                CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())),
+                CryptoSignatureSpec("", null, null),
+            ),
+            oldAlice.mgmProvidedContext.toAvro().toByteBuffer(),
         )
         memberListProcessor.onNext(newRecord, oldValue, memberList)
         assertThat(membershipGroupReadCache.memberListCache.get(aliceIdentity))

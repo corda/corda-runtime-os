@@ -35,11 +35,11 @@ internal class SuspendMemberHandler(
     private val notaryUpdater: GroupParametersNotaryUpdater
     = GroupParametersNotaryUpdater(persistenceHandlerServices.keyEncodingService, persistenceHandlerServices.clock),
     suspensionActivationEntityOperationsFactory:
-        (clock: Clock, serializer: CordaAvroDeserializer<KeyValuePairList>, deserializer: CordaAvroSerializer<KeyValuePairList>)
+        (clock: Clock, serializer: CordaAvroSerializer<KeyValuePairList>)
     -> SuspensionActivationEntityOperations
-    = { clock: Clock, serializer: CordaAvroDeserializer<KeyValuePairList>, deserializer: CordaAvroSerializer<KeyValuePairList>
+    = { clock: Clock, serializer: CordaAvroSerializer<KeyValuePairList>
         ->
-        SuspensionActivationEntityOperations(clock, serializer, deserializer)
+        SuspensionActivationEntityOperations(clock, serializer, persistenceHandlerServices.memberInfoFactory)
     }
 ) : BasePersistenceHandler<SuspendMember, SuspendMemberResponse>(persistenceHandlerServices) {
     override val operation = SuspendMember::class.java
@@ -61,7 +61,7 @@ internal class SuspendMemberHandler(
         }
     }
     private val suspensionActivationEntityOperations =
-        suspensionActivationEntityOperationsFactory(clock, keyValuePairListDeserializer, keyValuePairListSerializer)
+        suspensionActivationEntityOperationsFactory(clock, keyValuePairListSerializer)
 
     private fun serializeProperties(context: KeyValuePairList): ByteArray {
         return wrapWithNullErrorHandling({
@@ -91,7 +91,7 @@ internal class SuspendMemberHandler(
                 currentMgmContext,
                 MEMBER_STATUS_SUSPENDED
             )
-            val updatedGroupParameters = if (memberInfoFactory.create(updatedMemberInfo).isNotary()) {
+            val updatedGroupParameters = if (memberInfoFactory.createMemberInfo(updatedMemberInfo).isNotary()) {
                 logger.info("Suspending notary member ${context.holdingIdentity}.")
                 try {
                     updateGroupParameters(
@@ -139,7 +139,7 @@ internal class SuspendMemberHandler(
 
         val parametersMap =
             keyValuePairListDeserializer.deserializeKeyValuePairList(previous.singleResult.parameters).toMap()
-        val notaryInfo = memberInfoFactory.create(memberInfo)
+        val notaryInfo = memberInfoFactory.createMemberInfo(memberInfo)
         val notary = notaryInfo.notaryDetails
             ?: throw MembershipPersistenceException(
                 "Cannot add notary to group parameters - notary details not found."
@@ -162,7 +162,7 @@ internal class SuspendMemberHandler(
         val otherMembers = em.createQuery(memberQuery)
             .setLockMode(LockModeType.PESSIMISTIC_WRITE)
             .resultStream.map {
-                memberInfoFactory.create(
+                memberInfoFactory.createMemberInfo(
                     keyValuePairListDeserializer.deserializeKeyValuePairList(it.memberContext).toSortedMap(),
                     keyValuePairListDeserializer.deserializeKeyValuePairList(it.mgmContext).toSortedMap(),
                 )
