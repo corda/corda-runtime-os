@@ -16,7 +16,6 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.whenever
 
-@Disabled//todo - core-15757
 class SessionUtilsTest {
 
     private val flowFiberService: FlowFiberService = mock()

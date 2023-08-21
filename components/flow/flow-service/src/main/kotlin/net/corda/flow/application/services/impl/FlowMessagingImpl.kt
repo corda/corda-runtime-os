@@ -7,6 +7,7 @@ import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.sessions.FlowSessionInternal
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
+import net.corda.flow.application.sessions.utils.SessionUtils.verifySessionStatusNotErrorOrClose
 import net.corda.flow.application.versioning.impl.sessions.VersionReceivingFlowSession
 import net.corda.flow.application.versioning.impl.sessions.VersionSendingFlowSession
 import net.corda.flow.fiber.FlowFiber
@@ -25,7 +26,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.util.UUID
-import net.corda.flow.application.sessions.utils.SessionUtils.verifySessionStatusNotErrorOrClose
 
 @Suppress("TooManyFunctions")
 @Component(service = [FlowMessaging::class, UsedByFlow::class], scope = PROTOTYPE)
@@ -168,7 +168,6 @@ class FlowMessagingImpl @Activate constructor(
     }
 
     @Suspendable
-    //todo - CORE-15757
     @Suppress("unused_parameter")
     private fun doInitiateFlow(
         x500Name: MemberX500Name,

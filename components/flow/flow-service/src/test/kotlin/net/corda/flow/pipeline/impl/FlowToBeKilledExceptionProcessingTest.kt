@@ -40,7 +40,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-@Disabled//todo - core-15757
 class FlowToBeKilledExceptionProcessingTest {
 
     private companion object {

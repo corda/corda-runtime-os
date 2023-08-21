@@ -15,7 +15,6 @@ import net.corda.flow.testing.tests.SESSION_ID_2
  */
 fun initiateSingleFlow(setup: StepSetup): FlowIoRequestSetup {
     return setup.startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-
 }
 
 /**

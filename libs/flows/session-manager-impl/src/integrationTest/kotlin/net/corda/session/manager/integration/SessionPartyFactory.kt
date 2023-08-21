@@ -13,7 +13,6 @@ class SessionPartyFactory {
         val aliceMessageBus = MessageBus()
         val bobMessageBus = MessageBus()
 
-        // TODO - CORE-15757
         val alice = SessionParty(aliceMessageBus, bobMessageBus, config, buildSessionState(SessionStateType.CREATED, 0, emptyList(), 0, emptyList()))
         val bob = SessionParty(bobMessageBus, aliceMessageBus, config, buildSessionState(SessionStateType.CONFIRMED, 0, emptyList(), 0, emptyList()))
 

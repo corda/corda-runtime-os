@@ -14,7 +14,7 @@ import org.mockito.kotlin.whenever
 import java.time.Clock
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-@Disabled //todo CORE-15757
+
 class FlowMapperListenerTest {
 
     private val eventTopic = "eventTopic"
