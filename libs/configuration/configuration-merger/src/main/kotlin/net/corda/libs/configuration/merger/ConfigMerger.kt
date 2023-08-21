@@ -32,5 +32,5 @@ interface ConfigMerger {
      * @param stateStorageConfig stateStorage config taken from the topic
      * @return stateStorage config with boot config values merged into it.
      */
-//    fun getStateStorageConfig(bootConfig: SmartConfig, stateStorageConfig: SmartConfig?): SmartConfig
+    fun getStateManagerConfig(bootConfig: SmartConfig, stateStorageConfig: SmartConfig?): SmartConfig
 }

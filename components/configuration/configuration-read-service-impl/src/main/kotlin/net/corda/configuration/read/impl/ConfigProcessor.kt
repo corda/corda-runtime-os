@@ -100,10 +100,10 @@ internal class ConfigProcessor(
             config[DB_CONFIG] = dbConfig
         }
 
-//        val stateStorageConfig = configMerger.getStateStorageConfig(bootConfig, config[STATE_MANAGER_CONFIG])
-//        if (!stateStorageConfig.isEmpty) {
-//            config[STATE_MANAGER_CONFIG] = stateStorageConfig
-//        }
+        val stateManagerConfig = configMerger.getStateManagerConfig(bootConfig, config[STATE_MANAGER_CONFIG])
+        if (!stateManagerConfig.isEmpty) {
+            config[STATE_MANAGER_CONFIG] = stateManagerConfig
+        }
 
         // at this point config is fully populated and verified
         return config
