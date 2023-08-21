@@ -17,6 +17,7 @@ import net.corda.crypto.cipher.suite.getParamsSafely
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.DigitalSignatureWithKey
@@ -298,6 +299,10 @@ open class SoftCryptoService(
         data: ByteArray,
         context: Map<String, String>,
     ): DigitalSignatureWithKey {
+        val category = context["category"]
+        if (!category.isNullOrEmpty() && !CryptoConsts.Categories.all.contains(category)) {
+            throw CryptoException("Category value is invalid")
+        }
         val record =
             CordaMetrics.Metric.Crypto.GetOwnedKeyRecordTimer.builder()
                 .withTag(CordaMetrics.Tag.OperationName, SIGN_OPERATION_NAME)
@@ -306,6 +311,10 @@ open class SoftCryptoService(
                 .recordCallable {
                     getOwnedKeyRecord(tenantId, publicKey)
                 }!!
+
+        if (!category.isNullOrEmpty() && !record.data.category.equals(category)) {
+            throw CryptoException("Provided category does not match the key's category")
+        }
 
         logger.debug { "sign(tenant=$tenantId, publicKey=${record.data.id})" }
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
