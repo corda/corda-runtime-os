@@ -18,21 +18,21 @@ import org.slf4j.LoggerFactory
 class InteropIdentityLookUpImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService,
-    ) :
-    InteropIdentityLookUp, UsedByFlow, SingletonSerializeAsToken {
+    ) : InteropIdentityLookUp, UsedByFlow, SingletonSerializeAsToken {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
     @Suspendable
     override fun lookup(applicationName: String): InterOpIdentityInfo? {
         val identityInfo = getInteropRegistry().getIdentitiesByApplicationName()[applicationName] ?: return null
-        return InteropIdentityInfoImpl(identityInfo.applicationName,identityInfo.facadeIds,identityInfo.x500Name,identityInfo.groupId)
+        return InteropIdentityInfoImpl(identityInfo.applicationName, identityInfo.facadeIds,
+            identityInfo.x500Name, identityInfo.groupId)
     }
 
     @Suspendable
     override fun lookup(facadeId: FacadeId): List<InterOpIdentityInfo> {
         val identityInfo = getInteropRegistry().getIdentitiesByFacadeId()[facadeId.toString()]  ?: return emptyList()
-        return identityInfo.map { InteropIdentityInfoImpl(it.applicationName, it.facadeIds, it.x500Name,it.groupId) }
+        return identityInfo.map { InteropIdentityInfoImpl(it.applicationName, it.facadeIds, it.x500Name, it.groupId) }
     }
 
     @Suspendable
@@ -50,7 +50,6 @@ data class InteropIdentityInfoImpl(
     override fun getApplicationName(): String {
         return applicationName
     }
-
 
     override fun getFacadeIds(): List<FacadeId> {
         return facadeIds

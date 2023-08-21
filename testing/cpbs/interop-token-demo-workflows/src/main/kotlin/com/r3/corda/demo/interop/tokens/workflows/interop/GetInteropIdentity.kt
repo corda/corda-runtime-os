@@ -31,7 +31,6 @@ class GetInteropIdentity : ClientStartableFlow {
     override fun call(requestBody: ClientRequestBody): String {
         log.info("GetInteropIdentity.call() called")
 
-
         try {
             val flowArgs = requestBody.getRequestBodyAs(jsonMarshallingService, GetInteropIdentityArgs::class.java)
             val interopIdentity = interopIdentityLookUp.lookup(flowArgs.applicationName)

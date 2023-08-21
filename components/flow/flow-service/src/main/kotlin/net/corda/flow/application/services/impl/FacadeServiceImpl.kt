@@ -49,7 +49,7 @@ class FacadeServiceImpl @Activate constructor(
         val x500Name = MemberX500Name.parse(interOpIdentity.x500Name)
         val groupId = interOpIdentity.groupId
         val marshaller = JacksonJsonMarshallerAdaptor(jsonMarshallingService)
-        val transportLayer = MessagingDispatcher(flowMessaging, jsonMarshallingService,x500Name , groupId)
+        val transportLayer = MessagingDispatcher(flowMessaging, jsonMarshallingService, x500Name , groupId)
         return facade.getClientProxy(marshaller, expectedType, transportLayer)
     }
 

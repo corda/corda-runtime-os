@@ -65,7 +65,7 @@ class ReserveTokensFlow : ClientStartableFlow {
         val interOPIdentity = interopIdentityLookUp.lookup(alias.organization)
 
         val client: TokensFacade =
-            facadeService.getProxy(facadeId, TokensFacade::class.java,interOPIdentity)
+            facadeService.getProxy(facadeId, TokensFacade::class.java, interOPIdentity)
 
         val responseObject = client.reserveTokensV1("USD", BigDecimal(100))
         val response = responseObject.toString()

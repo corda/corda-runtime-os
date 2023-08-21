@@ -1,9 +1,9 @@
 package com.r3.corda.testing.interop
 
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.interop.FacadeService
 import net.corda.v5.application.interop.InteropIdentityLookUp
 import net.corda.v5.application.interop.facade.FacadeId
@@ -11,7 +11,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
-import java.lang.IllegalArgumentException
 
 @InitiatingFlow(protocol = "invoke_facade_method")
 class FacadeInvocationFlow : ClientStartableFlow {
@@ -42,8 +41,6 @@ class FacadeInvocationFlow : ClientStartableFlow {
         val alias = MemberX500Name.parse(getArgument(args,"alias"))
         val payload = getArgument(args, "payload")
         val hostNetwork = getArgument(args, "hostNetwork")
-
-
 
         val aliasMember = interopIdentityLookUp.lookup(hostNetwork) ?: throw NullPointerException("$hostNetwork no in LookUp")
         log.info("AliasMemberInfo for $alias  : $aliasMember")
