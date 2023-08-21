@@ -8,7 +8,9 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getPa
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupWebserver
 import net.corda.applications.workers.workercommon.WorkerMonitor
+import net.corda.applications.workers.workercommon.web.WorkerWebServer
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
@@ -36,6 +38,8 @@ class FlowWorker @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = WorkerMonitor::class)
     private val workerMonitor: WorkerMonitor,
+    @Reference(service = WorkerWebServer::class)
+    private val webServer: WorkerWebServer,
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = PlatformInfoProvider::class)
@@ -64,6 +68,8 @@ class FlowWorker @Activate constructor(
         JavaSerialisationFilter.install()
 
         val params = getParams(args, FlowWorkerParams())
+
+        setupWebserver(webServer, params.defaultParams)
         if (printHelpOrVersion(params.defaultParams, FlowWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
@@ -82,7 +88,7 @@ class FlowWorker @Activate constructor(
         logger.info("Flow worker stopping.")
         flowProcessor.stop()
         verificationProcessor.stop()
-        workerMonitor.stop()
+        webServer.stop()
         shutdownTracing()
     }
 }

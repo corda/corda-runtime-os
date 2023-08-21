@@ -1,5 +1,5 @@
-package net.corda.rpc.server
+package net.corda.applications.workers.workercommon
 
-interface RPCEndpointManager {
+interface RPCSubscription {
     fun <REQ: Any, RESP: Any> registerEndpoint(endpoint: String, handler: (REQ) -> RESP, clazz: Class<REQ>)
 }

@@ -1,9 +1,0 @@
-plugins {
-    id 'corda.common-publishing'
-    id 'corda.common-library'
-}
-
-dependencies {
-    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-}
-

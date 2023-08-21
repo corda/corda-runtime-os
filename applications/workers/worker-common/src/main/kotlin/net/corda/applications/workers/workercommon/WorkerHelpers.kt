@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.InputStream
 import java.lang.management.ManagementFactory
+import net.corda.applications.workers.workercommon.web.WorkerWebServer
 import kotlin.math.absoluteValue
 import kotlin.random.Random
 
@@ -153,8 +154,12 @@ class WorkerHelpers {
         /** Sets up the [workerMonitor] based on the [params]. */
         fun setupMonitor(workerMonitor: WorkerMonitor, params: DefaultWorkerParams, workerType: String) {
             if (!params.disableWorkerMonitor) {
-                workerMonitor.listen(params.workerMonitorPort, workerType)
+                workerMonitor.registerEndpoints(workerType)
             }
+        }
+
+        fun setupWebserver(workerWebServer: WorkerWebServer, params: DefaultWorkerParams) {
+            workerWebServer.listen(params.workerMonitorPort)
         }
 
         fun startBanner() {

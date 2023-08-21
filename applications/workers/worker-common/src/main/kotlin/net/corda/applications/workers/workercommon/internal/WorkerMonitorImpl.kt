@@ -1,7 +1,6 @@
 package net.corda.applications.workers.workercommon.internal
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.javalin.Javalin
 import io.javalin.core.util.Header
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
@@ -17,18 +16,13 @@ import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.metrics.CordaMetrics
-import net.corda.utilities.classload.executeWithThreadContextClassLoader
-import net.corda.utilities.executeWithStdErrSuppressed
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
-import org.osgi.framework.FrameworkUtil
-import org.osgi.framework.wiring.BundleWiring
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
-import net.corda.applications.workers.workercommon.JavalinServer
-import net.corda.applications.workers.workercommon.WorkerWebServer
+import net.corda.applications.workers.workercommon.web.JavalinServer
+import net.corda.applications.workers.workercommon.web.WorkerWebServer
 
 /**
  * An implementation of [WorkerMonitor].
@@ -41,12 +35,10 @@ internal class WorkerMonitorImpl @Activate constructor(
     @Reference(service = LifecycleRegistry::class)
     private val lifecycleRegistry: LifecycleRegistry,
     @Reference(service = JavalinServer::class)
-    private val javalinServer: WorkerWebServer<Javalin?>
+    private val webServer: WorkerWebServer
 ) : WorkerMonitor {
     private val logger = LoggerFactory.getLogger(this::class.java)
 
-    // The use of Javalin is temporary, and will be replaced in the future.
-    private var server = javalinServer.getServer()
     private val objectMapper = ObjectMapper()
     private val prometheusRegistry: PrometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     private val lastLogMessage = ConcurrentHashMap(mapOf(HTTP_HEALTH_ROUTE to "", HTTP_STATUS_ROUTE to ""))
@@ -66,46 +58,46 @@ internal class WorkerMonitorImpl @Activate constructor(
     }
 
 
-    override fun listen(port: Int, workerType: String) {
+    override fun registerEndpoints(workerType: String) {
         setupMetrics(workerType)
-        server = Javalin
-            .create()
-            .apply { startServer(this, port) }
-            .get(HTTP_HEALTH_ROUTE) { context ->
-                val unhealthyComponents = componentWithStatus(setOf(LifecycleStatus.ERROR))
-                val status = if (unhealthyComponents.isEmpty()) {
-                    clearLastLogMessageForRoute(HTTP_HEALTH_ROUTE)
-                    HTTP_OK_CODE
-                } else {
-                    logIfDifferentFromLastMessage(
-                        HTTP_HEALTH_ROUTE,
-                        "Status is unhealthy. The status of $unhealthyComponents has error."
-                    )
-                    HTTP_SERVICE_UNAVAILABLE_CODE
-                }
-                context.status(status)
-                context.header(Header.CACHE_CONTROL, NO_CACHE)
+        webServer.get(HTTP_HEALTH_ROUTE) { context ->
+            val unhealthyComponents = componentWithStatus(setOf(LifecycleStatus.ERROR))
+            val status = if (unhealthyComponents.isEmpty()) {
+                clearLastLogMessageForRoute(HTTP_HEALTH_ROUTE)
+                HTTP_OK_CODE
+            } else {
+                logIfDifferentFromLastMessage(
+                    HTTP_HEALTH_ROUTE,
+                    "Status is unhealthy. The status of $unhealthyComponents has error."
+                )
+                HTTP_SERVICE_UNAVAILABLE_CODE
             }
-            .get(HTTP_STATUS_ROUTE) { context ->
-                val notReadyComponents = componentWithStatus(setOf(LifecycleStatus.DOWN, LifecycleStatus.ERROR))
-                val status = if (notReadyComponents.isEmpty()) {
-                    clearLastLogMessageForRoute(HTTP_STATUS_ROUTE)
-                    HTTP_OK_CODE
-                } else {
-                    logIfDifferentFromLastMessage(
-                        HTTP_STATUS_ROUTE,
-                        "There are components with error or down state: $notReadyComponents."
-                    )
-                    HTTP_SERVICE_UNAVAILABLE_CODE
-                }
-                context.status(status)
-                context.result(objectMapper.writeValueAsString(lifecycleRegistry.componentStatus()))
-                context.header(Header.CACHE_CONTROL, NO_CACHE)
+            context.status(status)
+            context.header(Header.CACHE_CONTROL, NO_CACHE)
+            context
+        }
+        webServer.get(HTTP_STATUS_ROUTE) { context ->
+            val notReadyComponents = componentWithStatus(setOf(LifecycleStatus.DOWN, LifecycleStatus.ERROR))
+            val status = if (notReadyComponents.isEmpty()) {
+                clearLastLogMessageForRoute(HTTP_STATUS_ROUTE)
+                HTTP_OK_CODE
+            } else {
+                logIfDifferentFromLastMessage(
+                    HTTP_STATUS_ROUTE,
+                    "There are components with error or down state: $notReadyComponents."
+                )
+                HTTP_SERVICE_UNAVAILABLE_CODE
             }
-            .get(HTTP_METRICS_ROUTE) { context ->
-                context.result(prometheusRegistry.scrape())
-                context.header(Header.CACHE_CONTROL, NO_CACHE)
-            }
+            context.status(status)
+            context.result(objectMapper.writeValueAsString(lifecycleRegistry.componentStatus()))
+            context.header(Header.CACHE_CONTROL, NO_CACHE)
+            context
+        }
+        webServer.get(HTTP_METRICS_ROUTE) { context ->
+            context.result(prometheusRegistry.scrape())
+            context.header(Header.CACHE_CONTROL, NO_CACHE)
+            context
+        }
     }
 
     private fun clearLastLogMessageForRoute(route: String) {
@@ -116,31 +108,6 @@ internal class WorkerMonitorImpl @Activate constructor(
         val lastLogMessage = lastLogMessage.put(route, logMessage)
         if (logMessage != lastLogMessage) {
             logger.warn(logMessage)
-        }
-    }
-
-    override val port get() = server?.port()
-
-    override fun stop() {
-        server?.stop()
-    }
-
-    /** Starts a Javalin server on [port]. */
-    private fun startServer(server: Javalin, port: Int) {
-        val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
-
-        if (bundle == null) {
-            server.start(port)
-        } else {
-            // We temporarily switch the context class loader to allow Javalin to find `WebSocketServletFactory`.
-            executeWithThreadContextClassLoader(bundle.adapt(BundleWiring::class.java).classLoader) {
-                // Required because Javalin prints an error directly to stderr if it cannot find a logging
-                // implementation via standard class loading mechanism. This mechanism is not appropriate for OSGi.
-                // The logging implementation is found correctly in practice.
-                executeWithStdErrSuppressed {
-                    server.start(port)
-                }
-            }
         }
     }
 

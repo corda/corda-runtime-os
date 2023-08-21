@@ -9,7 +9,9 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getPa
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupWebserver
 import net.corda.applications.workers.workercommon.WorkerMonitor
+import net.corda.applications.workers.workercommon.web.WorkerWebServer
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
@@ -38,6 +40,8 @@ class RestWorker @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = WorkerMonitor::class)
     private val workerMonitor: WorkerMonitor,
+    @Reference(service = WorkerWebServer::class)
+    private val webServer: WorkerWebServer,
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = PlatformInfoProvider::class)
@@ -63,6 +67,7 @@ class RestWorker @Activate constructor(
 
         val params = getParams(args, RestWorkerParams())
         params.validate()
+        setupWebserver(webServer, params.defaultParams)
         if (printHelpOrVersion(params.defaultParams, RestWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
@@ -81,7 +86,7 @@ class RestWorker @Activate constructor(
     override fun shutdown() {
         logger.info("REST worker stopping.")
         processor.stop()
-        workerMonitor.stop()
+        webServer.stop()
         shutdownTracing()
     }
 }

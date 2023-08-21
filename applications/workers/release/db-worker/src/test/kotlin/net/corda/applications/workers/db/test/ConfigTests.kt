@@ -7,6 +7,8 @@ import net.corda.application.banner.StartupBanner
 import net.corda.applications.workers.db.DBWorker
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.WorkerMonitor
+import net.corda.applications.workers.workercommon.web.WorkerWebServer
+import net.corda.applications.workers.workercommon.web.WebContext
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
@@ -53,6 +55,7 @@ class ConfigTests {
             mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
+            DummyWorkerWebServer(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
             applicationBanner,
@@ -97,6 +100,7 @@ class ConfigTests {
             mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
+            DummyWorkerWebServer(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
             applicationBanner,
@@ -131,6 +135,7 @@ class ConfigTests {
             mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
+            DummyWorkerWebServer(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
             applicationBanner,
@@ -163,6 +168,7 @@ class ConfigTests {
             mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
+            DummyWorkerWebServer(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
             applicationBanner,
@@ -189,6 +195,7 @@ class ConfigTests {
             mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
+            DummyWorkerWebServer(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
             applicationBanner,
@@ -223,9 +230,21 @@ class ConfigTests {
 
     /** A no-op [WorkerMonitor]. */
     private class DummyWorkerMonitor : WorkerMonitor {
-        override fun listen(port: Int, workerType: String) = Unit
+        override fun registerEndpoints(workerType: String) = Unit
+    }
+
+    private class DummyWorkerWebServer : WorkerWebServer {
         override fun stop() = throw NotImplementedError()
+        override fun get(endpoint: String, handle: (WebContext) -> WebContext) {
+            TODO("Not yet implemented")
+        }
+
+        override fun post(endpoint: String, handle: (WebContext) -> WebContext) {
+            TODO("Not yet implemented")
+        }
+
         override val port = 7000
+        override fun listen(port: Int) = Unit
     }
 
     private class DummyValidatorFactory : ConfigurationValidatorFactory {
