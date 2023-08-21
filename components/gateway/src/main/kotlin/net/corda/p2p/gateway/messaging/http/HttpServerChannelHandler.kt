@@ -30,6 +30,7 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
      */
     @Suppress("ComplexMethod")
     override fun channelRead0(ctx: ChannelHandlerContext, msg: HttpObject) {
+        logger.info("QQQ in channelRead0 from $ctx")
         if (msg is HttpRequest) {
             responseCode = msg.validate(maxRequestSize, urlPath)
             if (responseCode != HttpResponseStatus.OK) {
@@ -45,11 +46,11 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                 return
             }
 
-            logger.debug { "Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
+            logger.info("QQQ Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
                     "Protocol version: ${msg.protocolVersion()}\n" +
                     "Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}\n" +
                     "Request URI: ${msg.uri()}\n" +
-                    "Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]}\n" }
+                    "Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]}\n")
 
             // initialise byte array to read the request into
             allocateBodyBuffer(ctx, msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())

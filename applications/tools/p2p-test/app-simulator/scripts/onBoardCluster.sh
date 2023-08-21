@@ -22,7 +22,7 @@ config_gateway() {
    else
      tls_type="ONE_WAY"
    fi
-   raw_config=$(jq -n --arg tls_type "$tls_type" '.sslConfig.revocationCheck.mode="OFF" | .sslConfig.tlsType=$tls_type')
+   raw_config=$(jq -n --arg tls_type "$tls_type" '.sslConfig.revocationCheck.mode="OFF" | .sslConfig.tlsType=$tls_type | .serversConfiguration[0].hostPort=8080 | .serversConfiguration[1].hostPort=8081')
    body=$(jq -n --arg raw_config "$raw_config" --arg version $config_version '.section="corda.p2p.gateway" | .config=$raw_config |.schemaVersion.major=1 | .schemaVersion.minor=0| .version=$version')
    curl --fail-with-body -s -S --insecure -u admin:admin -X PUT  -d "$body" https://$1/api/v1/config
 }
@@ -305,6 +305,9 @@ on_board_node() {
 
    CPI_CHECKSUM=$(cpi_checksum $1 $CPI_ID)
 
+   mkdir -p "$WORKING_DIR/temp"
+   echo $CPI_CHECKSUM >  "$WORKING_DIR/temp/$1.cpi"
+
    NODE_HOLDING_ID_SHORT_HASH=$(create_vnode $1 $CPI_CHECKSUM $2)
    echo "$2 Holding Id Short Hash $NODE_HOLDING_ID_SHORT_HASH"
 
@@ -326,6 +329,23 @@ on_board_node() {
      echo Upload Signed TLS certificate
      upload_certificate $1 "$WORKING_DIR"/ca/$4/certificate.pem
    fi
+
+   complete_network_setup $1 $NODE_HOLDING_ID_SHORT_HASH $NODE_SESSION_KEY_ID
+   register_node $1 $NODE_HOLDING_ID_SHORT_HASH $NODE_SESSION_KEY_ID $5 $NODE_LEDGER_KEY_ID
+}
+on_board_node_2() {
+   CPI_CHECKSUM=$(cat "$WORKING_DIR/temp/$1.cpi")
+
+   echo "CPI_CHECKSUM = $CPI_CHECKSUM"
+
+   NODE_HOLDING_ID_SHORT_HASH=$(create_vnode $1 $CPI_CHECKSUM $2)
+   echo "$2 Holding Id Short Hash $NODE_HOLDING_ID_SHORT_HASH"
+
+   NODE_SESSION_KEY_ID=$(assign_hsm_and_generate_session_key_pair $1 $NODE_HOLDING_ID_SHORT_HASH)
+   echo Node $2 Session Key Id: $NODE_SESSION_KEY_ID
+
+   NODE_LEDGER_KEY_ID=$(assign_hsm_and_generate_ledger_key_pair $1 $NODE_HOLDING_ID_SHORT_HASH)
+   echo Node $2 Ledger Key Id: $NODE_LEDGER_KEY_ID
 
    complete_network_setup $1 $NODE_HOLDING_ID_SHORT_HASH $NODE_SESSION_KEY_ID
    register_node $1 $NODE_HOLDING_ID_SHORT_HASH $NODE_SESSION_KEY_ID $5 $NODE_LEDGER_KEY_ID
@@ -359,3 +379,6 @@ on_board_mgm
 on_board_node $A_RPC $A_X500_NAME $A_GATEWAY_ADDRESS a_tls $A_GATEWAY_ENDPOINT
 
 on_board_node $B_RPC $B_X500_NAME $B_GATEWAY_ADDRESS b_tls $B_GATEWAY_ENDPOINT
+
+B_GATEWAY_ENDPOINT_2=https://$B_GATEWAY_ADDRESS:8081
+on_board_node_2 $B_RPC "C=GB,L=London,O=Charlie" $B_GATEWAY_ADDRESS b_tls $B_GATEWAY_ENDPOINT_2
