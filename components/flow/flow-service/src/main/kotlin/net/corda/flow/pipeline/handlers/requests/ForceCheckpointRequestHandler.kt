@@ -10,10 +10,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [FlowRequestHandler::class])
-class ForceCheckpointRequestHandler @Activate constructor(
-    @Reference(service = FlowRecordFactory::class)
-    private val flowRecordFactory: FlowRecordFactory
-) : FlowRequestHandler<FlowIORequest.ForceCheckpoint> {
+class ForceCheckpointRequestHandler @Activate constructor() : FlowRequestHandler<FlowIORequest.ForceCheckpoint> {
 
     override val type = FlowIORequest.ForceCheckpoint::class.java
 
