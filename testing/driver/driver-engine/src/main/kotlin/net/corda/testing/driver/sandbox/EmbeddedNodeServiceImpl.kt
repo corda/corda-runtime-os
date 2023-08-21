@@ -198,10 +198,10 @@ class EmbeddedNodeServiceImpl @Activate constructor(
             val properties = Hashtable<String, Any>()
             properties[CORDA_MEMBER_COUNT] = network.size
             network.entries.forEachIndexed { idx, entry ->
-                properties["$CORDA_MEMBER_X500_NAME.$idx"] = entry.key.toString()
+                properties[CORDA_MEMBER_X500_NAME.format(idx)] = entry.key.toString()
                 entry.value.also { keyPair ->
-                    properties["$CORDA_MEMBER_PRIVATE_KEY.$idx"] = keyPair.private.encoded
-                    properties["$CORDA_MEMBER_PUBLIC_KEY.$idx"] = keyPair.public.encoded
+                    properties[CORDA_MEMBER_PRIVATE_KEY.format(idx)] = keyPair.private.encoded
+                    properties[CORDA_MEMBER_PUBLIC_KEY.format(idx)] = keyPair.public.encoded
                 }
             }
             config.update(properties)
