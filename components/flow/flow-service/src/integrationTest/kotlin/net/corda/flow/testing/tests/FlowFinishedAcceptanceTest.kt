@@ -104,11 +104,6 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
             }
         }
 
-        `when` {
-            wakeupEventReceived(FLOW_ID1)
-                .completedSuccessfullyWith(DONE)
-        }
-
         then {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()

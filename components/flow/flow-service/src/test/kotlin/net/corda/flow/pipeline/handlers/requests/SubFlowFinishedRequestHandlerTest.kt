@@ -54,7 +54,7 @@ class SubFlowFinishedRequestHandlerTest {
     private val record = Record("", "", FlowEvent())
     private val testContext = RequestHandlerTestContext(Any())
     private val flowSessionManager = testContext.flowSessionManager
-    private val handler = SubFlowFinishedRequestHandler(flowSessionManager, testContext.flowRecordFactory)
+    private val handler = SubFlowFinishedRequestHandler(flowSessionManager)
 
     private fun createFlowStackItem(isInitiatingFlow: Boolean, sessions: List<FlowStackItemSession> = SESSIONS) =
         FlowStackItem.newBuilder()

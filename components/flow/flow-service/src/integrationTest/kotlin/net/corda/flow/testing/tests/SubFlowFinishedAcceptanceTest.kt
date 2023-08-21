@@ -33,7 +33,6 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         @JvmStatic
         fun wakeupAndSessionAck(): Stream<Arguments> {
             return Stream.of(
-                Arguments.of(Wakeup::class.simpleName, { dsl: StepSetup -> dsl.wakeupEventReceived(FLOW_ID1) }),
                 Arguments.of(
                     SessionAck::class.simpleName,
                     { dsl: StepSetup -> dsl.sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2) }

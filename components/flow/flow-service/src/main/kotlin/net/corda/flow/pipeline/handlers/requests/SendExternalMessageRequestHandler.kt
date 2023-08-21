@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests
 
-import net.corda.data.flow.event.Wakeup as WakeupEvent
 import net.corda.data.flow.state.waiting.Wakeup as WakeupState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.external.messaging.services.ExternalMessagingRecordFactory

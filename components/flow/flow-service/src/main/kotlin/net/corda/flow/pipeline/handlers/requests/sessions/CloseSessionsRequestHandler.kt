@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
 import java.time.Instant
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
@@ -9,7 +8,6 @@ import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException

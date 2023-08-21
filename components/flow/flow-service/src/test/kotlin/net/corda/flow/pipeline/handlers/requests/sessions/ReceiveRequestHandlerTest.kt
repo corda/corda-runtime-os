@@ -27,7 +27,7 @@ class ReceiveRequestHandlerTest {
     private val flowEventContext = testContext.flowEventContext
     private val flowSessionManager = testContext.flowSessionManager
     private val receiveRequestHandler =
-        ReceiveRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory, testContext.initiateFlowReqService)
+        ReceiveRequestHandler(testContext.initiateFlowReqService)
 
     @Test
     fun `Returns an updated WaitingFor of SessionData`() {

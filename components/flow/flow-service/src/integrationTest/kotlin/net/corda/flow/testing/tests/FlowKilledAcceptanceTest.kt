@@ -86,10 +86,6 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY, flowOperationalStatus = OperationalStatus.INACTIVE)
         }
 
-        `when` {
-            wakeupEventReceived(FLOW_ID1)
-        }
-
         then {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()

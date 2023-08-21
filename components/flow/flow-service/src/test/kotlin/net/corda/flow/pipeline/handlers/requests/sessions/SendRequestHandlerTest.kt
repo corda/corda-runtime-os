@@ -35,7 +35,7 @@ class SendRequestHandlerTest {
         )
     )
     private val handler =
-        SendRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory, testContext.initiateFlowReqService)
+        SendRequestHandler(testContext.flowSessionManager, testContext.initiateFlowReqService)
 
 
     @Suppress("Unused")
