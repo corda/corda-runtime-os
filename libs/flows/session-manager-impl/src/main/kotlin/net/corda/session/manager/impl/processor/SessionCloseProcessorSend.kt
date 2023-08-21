@@ -138,7 +138,7 @@ class SessionCloseProcessorSend(
             }
         } else {
             val errorMessage =
-                "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
+                "Tried to send SessionClose when requireClose is set to false. Key: $key sessionId: $sessionId, session status is " +
                         "$status. Current SessionState: $sessionState."
             logAndGenerateErrorResult(errorMessage, sessionState, "SessionClose-InvalidStatus")
         }
