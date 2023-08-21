@@ -14,6 +14,8 @@ import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.ledger.utxo.token.cache.repositories.UtxoTokenRepository
 import net.corda.ledger.utxo.token.cache.services.AvailableTokenServiceImpl
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
+import net.corda.orm.JpaEntitiesRegistry
+import net.corda.orm.JpaEntitiesSet
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -48,10 +50,14 @@ class AvailableTokenServiceImplTest {
         whenever(shortHolderId).thenReturn(SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "random".toByteArray()).toHexString())
     }
 
+    private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry>().apply {
+        whenever(get(any())).thenReturn(JpaEntitiesSet.create("empty", emptySet()))
+    }
+
     val availableTokenServiceImpl = AvailableTokenServiceImpl(
         virtualNodeInfoService,
         dbConnectionManager,
-        mock(),
+        jpaEntitiesRegistry,
         utxoTokenRepository,
         serviceConfiguration
     )
