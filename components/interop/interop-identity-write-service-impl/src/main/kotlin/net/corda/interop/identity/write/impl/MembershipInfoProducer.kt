@@ -20,10 +20,11 @@ import java.util.concurrent.atomic.AtomicReference
 class MembershipInfoProducer(val publisher: AtomicReference<Publisher?>) {
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val INTEROP_ROLE = "interop"
+        private const val INTEROP_MAPPING_X500_NAME = "corda.interop.mapping.x500name"
+        private const val INTEROP_MAPPING_GROUP = "corda.interop.mapping.group"
 
         // TODO: CORE-15749 - Key generation and interop certificates
-        private const val INTEROP_GROUP_ID = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
-
         private val DUMMY_CERTIFICATE =
             this::class.java.getResource("/dummy_certificate.pem")?.readText()
         private val DUMMY_PUBLIC_SESSION_KEY =
@@ -61,22 +62,22 @@ class MembershipInfoProducer(val publisher: AtomicReference<Publisher?>) {
                     KeyValuePair(String.format(MemberInfoExtension.PROTOCOL_VERSION, "0"), identityToPublish.endpointProtocol),
                     KeyValuePair(String.format(MemberInfoExtension.PARTY_SESSION_KEYS, 0), DUMMY_CERTIFICATE),
                     KeyValuePair(MemberInfoExtension.SESSION_KEYS_HASH.format(0), sessionKeyHash),
-                    KeyValuePair(MemberInfoExtension.GROUP_ID, INTEROP_GROUP_ID),
+                    KeyValuePair(MemberInfoExtension.GROUP_ID, ownedInteropIdentity.groupId),
                     KeyValuePair(MemberInfoExtension.LEDGER_KEYS_KEY.format(0), DUMMY_PUBLIC_SESSION_KEY),
                     KeyValuePair(MemberInfoExtension.LEDGER_KEY_HASHES_KEY.format(0), ledgerKeyHashesKey),
                     KeyValuePair(MemberInfoExtension.LEDGER_KEY_SIGNATURE_SPEC.format(0), "SHA256withECDSA"),
                     KeyValuePair(MemberInfoExtension.SOFTWARE_VERSION, "5.0.0.0-Fox10-RC03"),
                     KeyValuePair(MemberInfoExtension.PLATFORM_VERSION, "5000"),
-                    KeyValuePair(MemberInfoExtension.INTEROP_ROLE, "interop"),
-                    KeyValuePair("corda.interop.mapping.x500name", realHoldingIdentity.x500Name.toString()),
-                    KeyValuePair("corda.interop.mapping.group", realHoldingIdentity.groupId)
+                    KeyValuePair(MemberInfoExtension.INTEROP_ROLE, INTEROP_ROLE),
+                    KeyValuePair(INTEROP_MAPPING_X500_NAME, realHoldingIdentity.x500Name.toString()),
+                    KeyValuePair(INTEROP_MAPPING_GROUP, realHoldingIdentity.groupId)
                 ).sorted()
 
                 Record(
                     Schemas.Membership.MEMBER_LIST_TOPIC,
                     "${ownedInteropIdentity.shortHash}-${identityToPublish.shortHash}",
                     PersistentMemberInfo(
-                        viewOwningMemberHoldingIdentity.copy(groupId = INTEROP_GROUP_ID).toAvro(),
+                        viewOwningMemberHoldingIdentity.copy(groupId = ownedInteropIdentity.groupId).toAvro(),
                         KeyValuePairList(memberContext),
                         KeyValuePairList(mgmContext)
                     )
