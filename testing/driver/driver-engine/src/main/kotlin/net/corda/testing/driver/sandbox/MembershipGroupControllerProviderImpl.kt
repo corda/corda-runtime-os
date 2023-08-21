@@ -252,8 +252,8 @@ class MembershipGroupControllerProviderImpl @Activate constructor(
         return buildMap {
             val memberCount = properties[CORDA_MEMBER_COUNT] as? Int ?: 0
             for (idx in 0 until memberCount) {
-                val memberX500Name = (properties["$CORDA_MEMBER_X500_NAME.$idx"] as? String)?.let(MemberX500Name::parse)
-                val publicKey = (properties["$CORDA_MEMBER_PUBLIC_KEY.$idx"] as? ByteArray)?.let(schemeMetadata::decodePublicKey)
+                val memberX500Name = (properties[CORDA_MEMBER_X500_NAME.format(idx)] as? String)?.let(MemberX500Name::parse)
+                val publicKey = (properties[CORDA_MEMBER_PUBLIC_KEY.format(idx)] as? ByteArray)?.let(schemeMetadata::decodePublicKey)
 
                 if (memberX500Name != null && publicKey != null) {
                     this[memberX500Name] = publicKey

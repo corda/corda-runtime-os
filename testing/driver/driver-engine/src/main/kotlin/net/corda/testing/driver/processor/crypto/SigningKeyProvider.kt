@@ -55,11 +55,12 @@ class SigningKeyProvider @Activate constructor(
 
     init {
         val localKeys = linkedMapOf<MemberX500Name, SigningKeyInfo>()
+        @Suppress("MaxLineLength")
         (properties[CORDA_MEMBER_COUNT] as? Int)?.also { localCount ->
             for (idx in 0 until localCount) {
-                (properties["$CORDA_MEMBER_X500_NAME.$idx"] as? String)?.let(MemberX500Name::parse)?.also { localMember ->
-                    (properties["$CORDA_MEMBER_PUBLIC_KEY.$idx"] as? ByteArray)?.let(schemeMetadata::decodePublicKey)?.let { publicKey ->
-                        (properties["$CORDA_MEMBER_PRIVATE_KEY.$idx"] as? ByteArray)?.also { privateBytes ->
+                (properties[CORDA_MEMBER_X500_NAME.format(idx)] as? String)?.let(MemberX500Name::parse)?.also { localMember ->
+                    (properties[CORDA_MEMBER_PUBLIC_KEY.format(idx)] as? ByteArray)?.let(schemeMetadata::decodePublicKey)?.let { publicKey ->
+                        (properties[CORDA_MEMBER_PRIVATE_KEY.format(idx)] as? ByteArray)?.also { privateBytes ->
                             val alias = UUID.randomUUID().toString()
                             val keyScheme = schemeMetadata.findKeyScheme(publicKey)
                             val keyFactory = schemeMetadata.findKeyFactory(keyScheme)
