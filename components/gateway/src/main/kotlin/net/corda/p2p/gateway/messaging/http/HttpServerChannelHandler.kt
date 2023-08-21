@@ -24,6 +24,9 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                                private val logger: Logger,
                                private val port: Int,
 ): BaseHttpChannelHandler(serverListener, logger, HandlerType.SERVER) {
+    init {
+        logger.info("QQQ for port $port I am ${hashCode()}")
+    }
 
     private var responseCode: HttpResponseStatus? = null
 

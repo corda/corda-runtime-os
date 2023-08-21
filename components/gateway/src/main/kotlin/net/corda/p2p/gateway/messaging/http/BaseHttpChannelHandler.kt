@@ -45,11 +45,13 @@ abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionL
     protected fun readBytesFromBodyBuffer(): ByteArray {
         val byteArray = ByteArray(messageBodyBuf!!.readableBytes())
         messageBodyBuf!!.readBytes(byteArray)
+        logger.info("QQQ  ${hashCode()} - readBytesFromBodyBuffer")
         return byteArray
     }
 
     override fun channelActive(ctx: ChannelHandlerContext) {
         val ch = ctx.channel()
+        logger.info("QQQ  ${hashCode()} - channelActive")
         logger.info("New client connection ${ch.id()} from ${ch.localAddress()} to ${ch.remoteAddress()}")
     }
 
@@ -66,6 +68,7 @@ abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionL
     }
 
     override fun userEventTriggered(ctx: ChannelHandlerContext, evt: Any) {
+        logger.info("QQQ  ${hashCode()} - userEventTriggered ($ctx, $evt)")
         when (evt) {
             is SslHandshakeCompletionEvent -> {
                 if (evt.isSuccess) {

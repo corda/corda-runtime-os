@@ -114,7 +114,9 @@ internal class HttpServer(
             pipeline.addLast("sslHandler", createServerSslHandler(keyStore, serverTrustManager))
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, SERVER_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpServerCodec())
-            pipeline.addLast(HttpServerChannelHandler(this@HttpServer, maxRequestSize, serverConfiguration.urlPath, logger, serverConfiguration.hostPort))
+            pipeline.addLast(
+                HttpServerChannelHandler(this@HttpServer, maxRequestSize, serverConfiguration.urlPath, logger, serverConfiguration.hostPort)
+            )
         }
     }
 
