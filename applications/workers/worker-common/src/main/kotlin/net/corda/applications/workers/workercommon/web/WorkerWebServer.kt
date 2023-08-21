@@ -11,5 +11,6 @@ interface WorkerWebServer {
     fun stop()
 
     fun get(endpoint: String, handle: (WebContext) -> WebContext)
+
     fun post(endpoint: String, handle: (WebContext) -> WebContext)
 }

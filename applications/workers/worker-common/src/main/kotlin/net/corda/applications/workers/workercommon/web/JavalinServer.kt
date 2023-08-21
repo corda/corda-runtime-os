@@ -57,7 +57,7 @@ class JavalinServer() : WorkerWebServer {
     }
 
     override fun post(endpoint: String, handle: (WebContext) -> WebContext) {
-        server.get(endpoint) {
+        server.post(endpoint) {
             handle(JavalinContext(it))
         }
     }
