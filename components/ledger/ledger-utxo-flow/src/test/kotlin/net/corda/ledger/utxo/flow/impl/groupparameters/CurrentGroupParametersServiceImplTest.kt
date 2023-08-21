@@ -21,7 +21,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 
-class GroupParametersServiceImplTest {
+class CurrentGroupParametersServiceImplTest {
     private val holdingIdentity = HoldingIdentity(MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB"), "group")
     private val virtualNode = mock<VirtualNodeContext> {
         on { holdingIdentity } doReturn holdingIdentity
@@ -53,7 +53,7 @@ class GroupParametersServiceImplTest {
     private val groupPolicyProvider = mock<GroupPolicyProvider> {
         on { getGroupPolicy(holdingIdentity) } doReturn groupPolicy
     }
-    private val impl = GroupParametersServiceImpl(
+    private val impl = CurrentGroupParametersServiceImpl(
         currentSandboxGroupContext,
         membershipGroupReaderProvider,
         keyEncodingService,
@@ -62,7 +62,7 @@ class GroupParametersServiceImplTest {
 
     @Test
     fun `get return the correct parameters`() {
-        assertThat(impl.getGroupParameters()).isEqualTo(parameters)
+        assertThat(impl.getCurrentGroupParameters()).isEqualTo(parameters)
     }
 
     @Test
@@ -70,7 +70,7 @@ class GroupParametersServiceImplTest {
         whenever(membershipGroupReader.signedGroupParameters).doReturn(null)
 
         assertThrows<IllegalArgumentException> {
-            impl.getGroupParameters()
+            impl.getCurrentGroupParameters()
         }
     }
 

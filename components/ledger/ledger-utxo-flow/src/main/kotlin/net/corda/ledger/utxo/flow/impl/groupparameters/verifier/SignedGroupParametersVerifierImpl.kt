@@ -2,7 +2,7 @@ package net.corda.ledger.utxo.flow.impl.groupparameters.verifier
 
 import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
-import net.corda.ledger.utxo.flow.impl.groupparameters.GroupParametersServiceInternal
+import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersServiceInternal
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
@@ -25,8 +25,8 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 class SignedGroupParametersVerifierImpl @Activate constructor(
     @Reference(service = SignatureVerificationService::class)
     private val signatureVerificationService: SignatureVerificationService,
-    @Reference(service = GroupParametersServiceInternal::class)
-    private val currentGroupParametersService: GroupParametersServiceInternal
+    @Reference(service = CurrentGroupParametersServiceInternal::class)
+    private val currentGroupParametersService: CurrentGroupParametersServiceInternal
 ): SignedGroupParametersVerifier, UsedByFlow, SingletonSerializeAsToken {
 
     override fun verify(
