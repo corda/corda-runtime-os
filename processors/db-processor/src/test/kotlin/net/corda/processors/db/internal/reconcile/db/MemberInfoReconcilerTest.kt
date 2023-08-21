@@ -386,6 +386,30 @@ class MemberInfoReconcilerTest {
         }
 
         @Test
+        fun `getAllVersionedRecords handles old version of persistent info`() {
+            handler.firstValue.processEvent(configChangedEvent, coordinator)
+            val key = "Key"
+            val serialNumber = 26
+
+            val memberInfo = mock<PersistentMemberInfo> {
+                on { mgmContext } doReturn KeyValuePairList(listOf(KeyValuePair(MemberInfoExtension.SERIAL, serialNumber.toString())))
+                on { signedMemberContext } doReturn null
+                on { serializedMgmContext } doReturn null
+            }
+            processor.firstValue.onNext(Record("topic", key, memberInfo), null, emptyMap())
+
+            val records = memberInfoReconciler.reconcilerReadWriter.getAllVersionedRecords()
+
+            assertThat(records).hasSize(1)
+                .anySatisfy {
+                    assertThat(it.isDeleted).isFalse
+                    assertThat(it.key).isEqualTo(key)
+                    assertThat(it.version).isEqualTo(serialNumber)
+                    assertThat(it.value).isEqualTo(memberInfo)
+                }
+        }
+
+        @Test
         fun `getAllVersionedRecords handles NumberFormatException`() {
             handler.firstValue.processEvent(configChangedEvent, coordinator)
 

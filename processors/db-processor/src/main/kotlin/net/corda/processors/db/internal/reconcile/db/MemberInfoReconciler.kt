@@ -27,6 +27,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.deserializeContext
+import net.corda.membership.lib.toSortedMap
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -145,8 +146,13 @@ class MemberInfoReconciler(
         override fun getAllVersionedRecords(): Stream<VersionedRecord<String, PersistentMemberInfo>> {
             return recordsMap.entries.stream().mapNotNull {
                 val version = try {
-                    it.value.serializedMgmContext.array().deserializeContext(keyValuePairListDeserializer)
-                        .getOrDefault(SERIAL, null)?.toInt()
+                    // we can have old schema version (5.0) of persistent information in case of platform upgrade
+                    if (it.value.mgmContext == null ) {
+                        it.value.serializedMgmContext.array().deserializeContext(keyValuePairListDeserializer)
+                            .getOrDefault(SERIAL, null)?.toInt()
+                    } else {
+                        it.value.mgmContext.items.singleOrNull { keyValuePair -> keyValuePair.key == SERIAL }?.value?.toInt()
+                    }
                 } catch (e: ContextDeserializationException) {
                     val name = parseName(it.value)
                     logger.warn("Could not deserialize mgm provided context in " +
@@ -190,8 +196,13 @@ class MemberInfoReconciler(
 
         private fun parseName(memberInfo: PersistentMemberInfo): String? {
             return try {
-                memberInfo.signedMemberContext.data.array().deserializeContext(keyValuePairListDeserializer)
-                    .getOrDefault(PARTY_NAME, null)
+                // we can have old schema version (5.0) of persistent information in case of platform upgrade
+                if (memberInfo.memberContext == null) {
+                    memberInfo.signedMemberContext.data.array().deserializeContext(keyValuePairListDeserializer)
+                        .getOrDefault(PARTY_NAME, null)
+                } else {
+                    memberInfo.memberContext.toSortedMap()[PARTY_NAME]
+                }
             } catch (e: ContextDeserializationException) {
                 logger.warn("Could not retrieve name from member provided context. " +
                         "Deserialization of the context failed.")
