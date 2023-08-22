@@ -4,11 +4,11 @@ plugins {
     id 'corda.docker-app'
 }
 
-description 'DB Worker'
+description 'Persistence Worker'
 
 osgiRun {
     frameworkProperties.putAll(
-        'org.osgi.framework.security': 'osgi'
+            'org.osgi.framework.security': 'osgi'
     )
 }
 
@@ -23,10 +23,7 @@ dependencies {
     implementation project(':libs:platform-info')
     implementation project(':libs:tracing')
     // Processor list must be kept in sync with workersForProcessor in net.corda.cli.plugins.topicconfig.Create
-    implementation project(':processors:db-processor')
     implementation project(':processors:persistence-processor')
-    implementation project(':processors:uniqueness-processor')
-    implementation project(':processors:token-cache-processor')
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
@@ -62,7 +59,7 @@ dependencies {
     //
     // dockerImageJdbc "org.ops4j.pax.jdbc:pax-jdbc-VENDOR:1.5.3"
     // dockerImageJdbc "com.VENDOR.database.jdbc:vendor-jdbc-WRAPPED-AS-A-BUNDLE:$vendorVersion"
-    // 
+    //
     // NOTE: PLEASE MAKE SURE NOT TO PUBLISH A DOCKER IMAGE PUBLICLY WITH THESE WRAPPED DRIVERS,
     //             UNLESS ABSOLUTELY SURE WE CAN DISTRIBUTE IT!!
 }
