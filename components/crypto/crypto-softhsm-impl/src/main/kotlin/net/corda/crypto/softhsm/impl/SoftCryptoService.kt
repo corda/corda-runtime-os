@@ -299,10 +299,6 @@ open class SoftCryptoService(
         data: ByteArray,
         context: Map<String, String>,
     ): DigitalSignatureWithKey {
-        val category = context["category"]
-        if (!category.isNullOrEmpty() && !CryptoConsts.Categories.all.contains(category)) {
-            throw CryptoException("Category value is invalid")
-        }
         val record =
             CordaMetrics.Metric.Crypto.GetOwnedKeyRecordTimer.builder()
                 .withTag(CordaMetrics.Tag.OperationName, SIGN_OPERATION_NAME)
@@ -312,20 +308,24 @@ open class SoftCryptoService(
                     getOwnedKeyRecord(tenantId, publicKey)
                 }!!
 
-        if (!category.isNullOrEmpty() && !record.data.category.equals(category)) {
-            throw CryptoException("Provided category does not match the key's category")
-        }
 
         logger.debug { "sign(tenant=$tenantId, publicKey=${record.data.id})" }
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
         val spec =
-            SigningWrappedSpec(getKeySpec(record, publicKey, tenantId), record.publicKey, scheme, signatureSpec)
+            SigningWrappedSpec(getKeySpec(record, publicKey, tenantId), record.publicKey, scheme, signatureSpec, record.data.category)
         val signedBytes = sign(spec, data, context + mapOf(CRYPTO_TENANT_ID to tenantId))
         return DigitalSignatureWithKey(record.publicKey, signedBytes)
     }
 
     override fun sign(spec: SigningWrappedSpec, data: ByteArray, context: Map<String, String>): ByteArray {
         val startTime = System.nanoTime()
+        val category = context["category"]
+        require(category.isNullOrEmpty() || CryptoConsts.Categories.all.contains(category)) {
+            "Category value $category is not recognised"
+        }
+        require(category.isNullOrEmpty() || spec.category.equals(category)) {
+            "Provided category $category does not match the key's category ${spec.category}"
+        }
         require(data.isNotEmpty()) {
             "Signing of an empty array is not permitted."
         }

@@ -3,12 +3,7 @@ package net.corda.crypto.softhsm.impl
 import net.corda.base.internal.OpaqueBytes
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
-import net.corda.crypto.cipher.suite.CRYPTO_CATEGORY
-import net.corda.crypto.cipher.suite.CRYPTO_TENANT_ID
-import net.corda.crypto.cipher.suite.GeneratedWrappedKey
-import net.corda.crypto.cipher.suite.KeyGenerationSpec
-import net.corda.crypto.cipher.suite.KeyMaterialSpec
-import net.corda.crypto.cipher.suite.SigningWrappedSpec
+import net.corda.crypto.cipher.suite.*
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.component.test.utils.generateKeyPair
@@ -197,6 +192,19 @@ class SoftCryptoServiceOperationsTests {
         verifySign(softFreshKeys.getValue(scheme), spec)
     }
 
+    @Test
+    fun `Should throw IllegalArgumentException when signing with invalid key category`() {
+        val scheme = schemeMetadata.schemes.first { it.codeName == RSA_CODE_NAME }
+        val key = softAliasedKeys.getValue(scheme)
+        assertThrows<IllegalArgumentException> {
+            cryptoService.sign(
+                makeSigningWrappedSpec(scheme, key, CryptoConsts.Categories.LEDGER),
+                ByteArray(2),
+                defaultContext + mapOf("category" to "fake")
+            )
+        }
+    }
+
 
     @ParameterizedTest
     @MethodSource("deterministicSignatureSchemes")
@@ -238,13 +246,15 @@ class SoftCryptoServiceOperationsTests {
     private fun makeSigningWrappedSpec(
         scheme: KeyScheme,
         key: GeneratedWrappedKey,
+        category: String? = null
     ): SigningWrappedSpec {
         val signatureSpec = schemeMetadata.supportedSignatureSpec(scheme).first()
         return SigningWrappedSpec(
             publicKey = key.publicKey,
             keyMaterialSpec = KeyMaterialSpec(key.keyMaterial, knownWrappingKeyAlias, key.encodingVersion),
             keyScheme = scheme,
-            signatureSpec = signatureSpec
+            signatureSpec = signatureSpec,
+            category = category
         )
     }
 
