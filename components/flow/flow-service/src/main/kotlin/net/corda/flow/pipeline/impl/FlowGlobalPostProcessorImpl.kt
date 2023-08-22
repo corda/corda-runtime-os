@@ -25,8 +25,11 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.state.asFlowContext
+import net.corda.flow.utils.toMap
 import net.corda.interop.identity.registry.InteropIdentityRegistryService
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toCorda
 
 
 @Suppress("LongParameterList")
@@ -92,19 +95,15 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                 flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event)
             }
     }
-    private fun interopCounterpartyExists(checkpoint: FlowCheckpoint, sessionState: SessionState): Boolean {
+
+    private fun interopCounterpartyExists(checkpoint: FlowCheckpoint, counterparty: HoldingIdentity): Boolean {
         val registryView = interopIdentityRegistryService.getVirtualNodeRegistryView(checkpoint.holdingIdentity.shortHash)
         val identities = registryView.getIdentitiesByShortHash()
-
-        val counterparty = HoldingIdentity(
-            MemberX500Name.parse(sessionState.counterpartyIdentity.x500Name),
-            sessionState.counterpartyIdentity.groupId
-        )
 
         val counterpartyExists = identities.containsKey(counterparty.shortHash)
 
         if (!counterpartyExists) {
-            log.warn("Interop counterparty '${sessionState.counterpartyIdentity}' does not exist!")
+            log.warn("Interop counterparty '${counterparty}' does not exist!")
         }
 
         return counterpartyExists
@@ -125,7 +124,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         val groupReader = membershipGroupReaderProvider.getGroupReader(context.checkpoint.holdingIdentity)
 
         val counterpartyExists = when (sessionState.isInteropSession) {
-            true -> interopCounterpartyExists(checkpoint, sessionState)
+            true -> interopCounterpartyExists(checkpoint, sessionState.counterpartyIdentity.toCorda())
             false -> groupReader.lookup(counterparty) != null
         }
 
@@ -152,7 +151,6 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                 sessionState.lastReceivedMessageTime,
                 sessionState.sessionStartTime
             ).plusMillis(timeoutWindow)
-
             if (expiryTime < now) {
                 sessionManager.errorSession(sessionState)
                 if (doesCheckpointExist) {
