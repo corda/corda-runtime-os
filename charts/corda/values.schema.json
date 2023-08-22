@@ -1267,7 +1267,8 @@
                 "membership",
                 "rest",
                 "p2pLinkManager",
-                "p2pGateway"
+                "p2pGateway",
+                "uniqueness"
             ],
             "additionalProperties": false,
             "properties": {
@@ -1916,6 +1917,118 @@
                             }]
                         }
                     ]
+                },
+                "uniqueness": {
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/worker"
+                        },
+                        {
+                            "additionalProperties": false,
+                            "required": [
+                                "clusterDbConnectionPool"
+                            ],
+                            "properties": {
+                                "image": {},
+                                "javaOptions": {},
+                                "annotations": {},
+                                "replicaCount": {},
+                                "debug": {},
+                                "logging": {},
+                                "profiling": {},
+                                "resources": {},
+                                "kafka": {},
+                                "clusterDbConnectionPool": {
+                                    "type": "object",
+                                    "default": {},
+                                    "title": "uniqueness worker JDBC connection pool configuration for cluster DB",
+                                    "required": [
+                                        "maxSize",
+                                        "idleTimeoutSeconds",
+                                        "maxLifetimeSeconds",
+                                        "keepaliveTimeSeconds",
+                                        "validationTimeoutSeconds"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "maxSize": {
+                                            "type": "integer",
+                                            "default": 5,
+                                            "title": "uniqueness worker maximum JDBC connection pool size for cluster DB",
+                                            "examples": [
+                                                5
+                                            ]
+                                        },
+                                        "minSize": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                },
+                                                {
+                                                    "type": "null"
+                                                }
+                                            ],
+                                            "default": null,
+                                            "title": "uniqueness worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value"
+                                        },
+                                        "idleTimeoutSeconds": {
+                                            "type": "integer",
+                                            "default": 120,
+                                            "minimum": 0,
+                                            "title": "maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
+                                        },
+                                        "maxLifetimeSeconds": {
+                                            "type": "integer",
+                                            "default": 1800,
+                                            "minimum": 1,
+                                            "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
+                                        },
+                                        "keepaliveTimeSeconds": {
+                                            "type": "integer",
+                                            "default": 0,
+                                            "minimum": 0,
+                                            "title": "interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
+                                        },
+                                        "validationTimeoutSeconds": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "default": 5,
+                                            "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
+                                        }
+                                    }
+                                }
+                            },
+                            "examples": [{
+                                "image": {
+                                    "registry": "",
+                                    "repository": "corda-os-uniqueness-worker",
+                                    "tag": ""
+                                },
+                                "replicaCount": 1,
+                                "debug": {
+                                    "enabled": false,
+                                    "suspend": false
+                                },
+                                "logging": {
+                                    "level": "warn"
+                                },
+                                "profiling": {
+                                    "enabled": false
+                                },
+                                "resources": {
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    },
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    }
+                                }
+                            }]
+                        }
+                    ]
                 }
             },
             "examples": [{
@@ -2134,6 +2247,34 @@
                     },
                     "service": {
                         "port": 8080
+                    }
+                },
+                "uniqueness": {
+                    "image": {
+                        "registry": "corda-os-docker.software.r3.com",
+                        "repository": "corda-os-uniqueness-worker",
+                        "tag": ""
+                    },
+                    "replicaCount": 1,
+                    "debug": {
+                        "enabled": false,
+                        "suspend": false
+                    },
+                    "logging": {
+                        "level": "warn"
+                    },
+                    "profiling": {
+                        "enabled": false
+                    },
+                    "resources": {
+                        "requests": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        },
+                        "limits": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        }
                     }
                 }
             }]

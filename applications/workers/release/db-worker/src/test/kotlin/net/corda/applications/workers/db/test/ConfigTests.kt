@@ -1,7 +1,6 @@
 package net.corda.applications.workers.db.test
 
 import com.typesafe.config.Config
-import java.io.InputStream
 import net.corda.application.addon.CordaAddonResolver
 import net.corda.application.banner.StartupBanner
 import net.corda.applications.workers.db.DBWorker
@@ -29,6 +28,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.osgi.framework.Bundle
+import java.io.InputStream
 
 /**
  * Tests handling of command-line arguments for the [DBWorker].
@@ -51,7 +51,6 @@ class ConfigTests {
         val dbProcessor = DummyDBProcessor()
         val dbWorker = DBWorker(
             dbProcessor,
-            mock(),
             mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
@@ -97,7 +96,6 @@ class ConfigTests {
         val dbWorker = DBWorker(
             dbProcessor,
             mock(),
-            mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
             DummyWorkerWebServer(),
@@ -132,7 +130,6 @@ class ConfigTests {
         val dbWorker = DBWorker(
             dbProcessor,
             mock(),
-            mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
             DummyWorkerWebServer(),
@@ -165,7 +162,6 @@ class ConfigTests {
         val dbWorker = DBWorker(
             dbProcessor,
             mock(),
-            mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
             DummyWorkerWebServer(),
@@ -191,7 +187,6 @@ class ConfigTests {
         val dbProcessor = DummyDBProcessor()
         val dbWorker = DBWorker(
             dbProcessor,
-            mock(),
             mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),

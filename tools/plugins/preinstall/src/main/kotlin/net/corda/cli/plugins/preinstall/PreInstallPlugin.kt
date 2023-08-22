@@ -252,7 +252,9 @@ class PreInstallPlugin : Plugin() {
         @JsonProperty("p2pLinkManager")
         val p2pLinkManager: KafkaWorker?,
         @JsonProperty("p2pGateway")
-        val p2pGateway: KafkaWorker?
+        val p2pGateway: KafkaWorker?,
+        @JsonProperty("uniqueness")
+        val uniqueness: KafkaWorker?
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -367,7 +369,9 @@ class PreInstallPlugin : Plugin() {
         @JsonProperty("p2pLinkManager")
         val p2pLinkManager: Resources?,
         @JsonProperty("p2pGateway")
-        val p2pGateway: Resources?
+        val p2pGateway: Resources?,
+        @JsonProperty("uniqueness")
+        val uniqueness: Resources?
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)

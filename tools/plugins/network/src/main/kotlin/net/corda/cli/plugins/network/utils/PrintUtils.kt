@@ -7,14 +7,14 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.jsr310.ser.InstantSerializer
 import com.fasterxml.jackson.datatype.jsr310.deser.InstantDeserializer
+import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.cli.plugins.network.output.Output
 import java.time.Instant
 
 class PrintUtils {
     companion object {
+        val objectMapper = jacksonObjectMapper()
         inline fun <reified T> printJsonOutput(result: Any, output: T) {
-
-            val objectMapper = jacksonObjectMapper()
             val module = SimpleModule()
 
             module.addSerializer(Instant::class.java, InstantSerializer.INSTANCE)
@@ -27,8 +27,12 @@ class PrintUtils {
             pp.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE)
 
             val jsonString = objectMapper.writer(pp).writeValueAsString(result)
+            val formattedString = jsonString
+                .replace("\\n", "")
+                .replace("\\","")
+                .replace("\"\"", "")
             when (output) {
-                is Output -> output.generateOutput(jsonString)
+                is Output -> output.generateOutput(formattedString)
                 else -> throw IllegalArgumentException("Unsupported output type")
             }
         }
@@ -37,7 +41,11 @@ class PrintUtils {
             try {
                 action()
             } catch (e: Exception) {
-                System.err.println("Error: ${e.message}")
+                /**
+                 * This is present to address the issue of the RemoteClient in
+                 * rest-client automatically converting any non-200 codes into exceptions with the response body as message.
+                 */
+                printJsonOutput(e.localizedMessage, ConsoleOutput())
             }
         }
     }

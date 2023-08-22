@@ -1,12 +1,17 @@
 package net.corda.virtualnode.write.db.impl
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.client.MemberResourceClient
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.virtualnode.write.db.VirtualNodeWriteService
@@ -33,6 +38,16 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
     schemaMigrator: LiquibaseSchemaMigrator,
     @Reference(service = GroupPolicyParser::class)
     private val groupPolicyParser: GroupPolicyParser,
+    @Reference(service = MembershipGroupReaderProvider::class)
+    membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = MemberResourceClient::class)
+    memberResourceClient: MemberResourceClient,
+    @Reference(service = MembershipQueryClient::class)
+    membershipQueryClient: MembershipQueryClient,
+    @Reference(service = MemberInfoFactory::class)
+    val memberInfoFactory: MemberInfoFactory,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) : VirtualNodeWriteService {
     private val coordinator = let {
         val vNodeWriterFactory = VirtualNodeWriterFactory(
@@ -42,7 +57,12 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
             VirtualNodesDbAdmin(dbConnectionManager),
             schemaMigrator,
             groupPolicyParser,
-            CpiCpkRepositoryFactory()
+            membershipGroupReaderProvider,
+            memberResourceClient,
+            membershipQueryClient,
+            memberInfoFactory,
+            CpiCpkRepositoryFactory(),
+            cordaAvroSerializationFactory,
         )
         val eventHandler = VirtualNodeWriteEventHandler(configReadService, vNodeWriterFactory)
         coordinatorFactory.createCoordinator<VirtualNodeWriteService>(eventHandler)

@@ -56,7 +56,7 @@ internal class AddNotaryToGroupParametersHandler(
                 criteriaBuilder.notEqual(root.get<String>("memberX500Name"), notary.name.toString())
             )
         return entityManager.createQuery(memberQuery).setLockMode(LockModeType.PESSIMISTIC_WRITE).resultList.map {
-            memberInfoFactory.create(
+            memberInfoFactory.createMemberInfo(
                 deserializer.deserializeKeyValuePairList(it.memberContext).toSortedMap(),
                 deserializer.deserializeKeyValuePairList(it.mgmContext).toSortedMap(),
             )
@@ -106,7 +106,7 @@ internal class AddNotaryToGroupParametersHandler(
         }
 
             val parametersMap = deserializer.deserializeKeyValuePairList(previous.singleResult.parameters).toMap()
-            val notaryInfo = memberInfoFactory.create(notaryMemberInfo)
+            val notaryInfo = memberInfoFactory.createMemberInfo(notaryMemberInfo)
             val notary = notaryInfo.notaryDetails
                 ?: throw MembershipPersistenceException(
                     "Cannot add notary to group parameters - notary details not found."

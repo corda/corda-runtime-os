@@ -1,8 +1,11 @@
 package net.corda.membership.impl.rest.v1
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.ShortHash
+import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
@@ -29,35 +32,40 @@ import net.corda.membership.rest.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.rest.v1.types.response.PreAuthToken
 import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
+import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.rest.v1.types.response.MemberInfoSubmitted
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.membership.rest.v1.types.response.RegistrationStatus
 import net.corda.membership.lib.approval.ApprovalRuleParams
+import net.corda.membership.lib.deserializeContext
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.verifiers.GroupParametersUpdateVerifier
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
-import net.corda.membership.lib.toMap
 import net.corda.membership.rest.v1.types.RestGroupParameters
 import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
+import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidStateChangeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.read.rest.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.util.regex.PatternSyntaxException
 import javax.persistence.PessimisticLockException
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus as AvroPreAuthTokenStatus
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 @Component(service = [PluggableRestResource::class])
 class MGMRestResourceImpl internal constructor(
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val mgmResourceClient: MGMResourceClient,
     private val configurationGetService: ConfigurationGetService,
@@ -67,6 +75,8 @@ class MGMRestResourceImpl internal constructor(
 
     @Activate
     constructor(
+        @Reference(service = CordaAvroSerializationFactory::class)
+        cordaAvroSerializationFactory: CordaAvroSerializationFactory,
         @Reference(service = LifecycleCoordinatorFactory::class)
         coordinatorFactory: LifecycleCoordinatorFactory,
         @Reference(service = MGMResourceClient::class)
@@ -76,12 +86,25 @@ class MGMRestResourceImpl internal constructor(
         @Reference(service = PlatformInfoProvider::class)
         platformInfoProvider: PlatformInfoProvider
     ) : this(
+        cordaAvroSerializationFactory,
         coordinatorFactory,
         mgmResourceClient,
         configurationGetService,
         UTCClock(),
         platformInfoProvider
     )
+
+    private companion object {
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
+    private val deserializer: CordaAvroDeserializer<KeyValuePairList> =
+        cordaAvroSerializationFactory.createAvroDeserializer(
+            {
+                logger.error("Failed to deserialize key value pair list.")
+            },
+            KeyValuePairList::class.java
+        )
 
     private interface InnerMGMRestResource {
         fun generateGroupPolicy(
@@ -539,16 +562,20 @@ class MGMRestResourceImpl internal constructor(
             requestSubjectX500Name: String?,
             viewHistoric: Boolean,
         ): Collection<RestRegistrationRequestStatus> {
-            val requestSubject = requestSubjectX500Name?.let {
-                parseX500Name("requestSubjectX500Name", it)
+            return try {
+                val requestSubject = requestSubjectX500Name?.let {
+                    parseX500Name("requestSubjectX500Name", it)
+                }
+                handleCommonErrors(holdingIdentityShortHash) {
+                    mgmResourceClient.viewRegistrationRequests(
+                        it,
+                        requestSubject,
+                        viewHistoric,
+                    )
+                }.map { it.toRest() }
+            } catch (e: ContextDeserializationException) {
+                throw InternalServerException("${e.message}")
             }
-            return handleCommonErrors(holdingIdentityShortHash) {
-                mgmResourceClient.viewRegistrationRequests(
-                    it,
-                    requestSubject,
-                    viewHistoric,
-                )
-            }.map { it.toRest() }
         }
 
         override fun approveRegistrationRequest(
@@ -564,6 +591,8 @@ class MGMRestResourceImpl internal constructor(
                 }
             } catch (e: IllegalArgumentException) {
                 throw BadRequestException("${e.message}")
+            } catch (e: ContextDeserializationException) {
+                throw InternalServerException("${e.message}")
             }
         }
 
@@ -657,7 +686,7 @@ class MGMRestResourceImpl internal constructor(
                 registrationSent,
                 registrationLastModified,
                 registrationStatus.fromAvro(),
-                MemberInfoSubmitted(memberProvidedContext.toMap()),
+                MemberInfoSubmitted(memberProvidedContext.data.array().deserializeContext(deserializer)),
                 reason,
                 serial,
             )

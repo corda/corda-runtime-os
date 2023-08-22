@@ -19,7 +19,6 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
 import net.corda.processors.token.cache.TokenCacheProcessor
-import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
@@ -36,8 +35,6 @@ import picocli.CommandLine.Option
 class DBWorker @Activate constructor(
     @Reference(service = DBProcessor::class)
     private val processor: DBProcessor,
-    @Reference(service = UniquenessProcessor::class)
-    private val uniquenessProcessor: UniquenessProcessor,
     @Reference(service = TokenCacheProcessor::class)
     private val tokenCacheProcessor: TokenCacheProcessor,
     @Reference(service = Shutdown::class)
@@ -87,7 +84,6 @@ class DBWorker @Activate constructor(
         )
 
         processor.start(config)
-        uniquenessProcessor.start()
         tokenCacheProcessor.start(config)
     }
 

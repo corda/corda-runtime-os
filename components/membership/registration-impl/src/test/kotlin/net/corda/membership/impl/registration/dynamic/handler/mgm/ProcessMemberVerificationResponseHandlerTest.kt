@@ -1,7 +1,10 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
@@ -59,6 +62,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.util.UUID
 
 class ProcessMemberVerificationResponseHandlerTest {
@@ -128,13 +132,15 @@ class ProcessMemberVerificationResponseHandlerTest {
     private val memberContext = mock<KeyValuePairList> {
         on { items } doReturn memberContextKeyValues
     }
+    private val memberContextBytes = byteArrayOf(1)
     private val registrationContextKeyValues = emptyList<KeyValuePair>()
     private val registrationContext = mock<KeyValuePairList> {
         on { items } doReturn registrationContextKeyValues
     }
+    private val registrationContextBytes = byteArrayOf(2)
     private val requestStatus = mock<RegistrationRequestDetails> {
-        on { memberProvidedContext } doReturn memberContext
-        on { registrationContext } doReturn registrationContext
+        on { memberProvidedContext } doReturn SignedData(ByteBuffer.wrap(memberContextBytes), mock(), mock())
+        on { registrationContext } doReturn SignedData(ByteBuffer.wrap(registrationContextBytes), mock(), mock())
     }
     private val membershipQueryClient = mock<MembershipQueryClient> {
         on {
@@ -164,11 +170,18 @@ class ProcessMemberVerificationResponseHandlerTest {
         on { isMgm(member) } doReturn false
     }
     private val config = mock<SmartConfig>()
+    private val deserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
+        on { deserialize(eq(memberContextBytes)) } doReturn memberContext
+        on { deserialize(eq(registrationContextBytes)) } doReturn registrationContext
+    }
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
+    }
 
     private val processMemberVerificationResponseHandler = ProcessMemberVerificationResponseHandler(
         membershipPersistenceClient,
         mock(),
-        mock(),
+        cordaAvroSerializationFactory,
         memberTypeChecker,
         config,
         membershipQueryClient,

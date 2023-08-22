@@ -26,7 +26,7 @@ class MemberListProcessor(
     override fun onSnapshot(currentData: Map<String, PersistentMemberInfo>) {
         currentData.entries.groupBy(
             { it.value.viewOwningMember },
-            { memberInfoFactory.create(it.value) }
+            { memberInfoFactory.createMemberInfo(it.value) }
         ).forEach { (owner, memberInfos) ->
             membershipGroupReadCache.memberListCache.put(owner.toCorda(), memberInfos)
         }
@@ -41,7 +41,7 @@ class MemberListProcessor(
         currentData: Map<String, PersistentMemberInfo>
     ) {
         newRecord.value?.let { newMemberInfo ->
-            memberInfoFactory.create(newMemberInfo).apply {
+            memberInfoFactory.createMemberInfo(newMemberInfo).apply {
                 membershipGroupReadCache.memberListCache.put(
                     newMemberInfo.viewOwningMember.toCorda(),
                     this
