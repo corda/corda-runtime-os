@@ -247,7 +247,7 @@ interface FlowSessionManager {
     fun getRequireCloseTrueAndFalse(
         checkpoint: FlowCheckpoint,
         sessionIds: List<String>
-    ): Pair<List<SessionState>, List<SessionState>>
+    ): Pair<List<String>, List<String>>
 
     /**
      * Update [status] for the sessions passed in.

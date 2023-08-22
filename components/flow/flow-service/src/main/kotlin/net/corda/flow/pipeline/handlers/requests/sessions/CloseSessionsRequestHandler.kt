@@ -56,7 +56,6 @@ class CloseSessionsRequestHandler @Activate constructor(
             val initiatingSessions = initiatingAndInitiated.first
             val initiatedSessions = initiatingAndInitiated.second
 
-
             // if I am the initiated party i.e ends with INITIATED_SESSION_ID_SUFFIX
             if(initiatedSessions.isNotEmpty()) {
                 checkpoint.putSessionStates(flowSessionManager.sendCloseMessages(checkpoint, initiatedSessions, Instant.now()))
@@ -77,21 +76,20 @@ class CloseSessionsRequestHandler @Activate constructor(
              */
 
             if (initiatingSessions.isNotEmpty()) {
-                val requireCloseTrueAndFalse = filterByRequireClose(checkpoint, initiatingSessions)
+                closeSessionsAlreadyInClosing(checkpoint, initiatingSessions)
+
+                val requireCloseTrueAndFalse = flowSessionManager.getRequireCloseTrueAndFalse(checkpoint, initiatingSessions)
                 val requireCloseTrue = requireCloseTrueAndFalse.first
                 val requireCloseFalse = requireCloseTrueAndFalse.second
 
                 if(requireCloseFalse.isNotEmpty()) {
-
+                    flowSessionManager.updateStatus(checkpoint, requireCloseFalse, SessionStateType.CLOSED)
                 }
 
                 if (requireCloseTrue.isNotEmpty()) {
-
-
+                    flowSessionManager.updateStatus(checkpoint, requireCloseFalse, SessionStateType.CLOSING)
                 }
-
             }
-
 
             sessionsToClose.isEmpty() || flowSessionManager.doAllSessionsHaveStatus(checkpoint, sessionsToClose, SessionStateType.CLOSED)
         } catch (e: FlowSessionStateException) {
@@ -107,17 +105,18 @@ class CloseSessionsRequestHandler @Activate constructor(
         }
     }
 
-    private fun filterByState(checkpoint: FlowCheckpoint, sessions: List<String>): List<String> {
+    private fun closeSessionsAlreadyInClosing(checkpoint: FlowCheckpoint, sessions: List<String>) {
+        val statesAlreadyInClosing = flowSessionManager.getSessionsWithStatus(checkpoint, sessions, SessionStateType.CLOSING)
+        val sessionsAlreadyInClosing = statesAlreadyInClosing.map { it.sessionId }
+        flowSessionManager.updateStatus(checkpoint, sessionsAlreadyInClosing, SessionStateType.CLOSED)
+    }
+
+
+    private fun filterOutErrorAndClosed(checkpoint: FlowCheckpoint, sessions: List<String>): List<String> {
         val statusToFilterOut = setOf(SessionStateType.ERROR, SessionStateType.CLOSED)
         val statesInErrorOrClosed = flowSessionManager.getSessionsWithStatuses(checkpoint, sessions, statusToFilterOut)
         val sessionsInErrorOrClosed = statesInErrorOrClosed.map { it.sessionId }
         return sessions - sessionsInErrorOrClosed
-    }
-
-    private fun filterByRequireClose(checkpoint: FlowCheckpoint, sessions: List<String>): Pair<List<String>, List<String>>{
-        val sessionsWithRequireCloseTrueAndFalse = flowSessionManager.getRequireCloseTrueAndFalse(checkpoint, sessions)
-        val sessionsWithRequireCloseFalse = sessionsWithRequireCloseTrueAndFalse.second
-        sessions -= sessionsWithRequireCloseFalse.map { it.sessionId }
     }
 
     private fun getSessionsToCloseForWaitingFor(
@@ -130,11 +129,11 @@ class CloseSessionsRequestHandler @Activate constructor(
         val initiatingAndInitiated = flowSessionManager.getInitiatingAndInitiatedSessions(sessions)
         val initiatingSessions = initiatingAndInitiated.first
 
-        //filter out ERROR or CLOSED
-        val filteredSessions = filterByState(checkpoint, initiatingSessions)
+        //filter out states
+        val filteredSessions = filterOutErrorAndClosed(checkpoint, initiatingSessions)
 
         //filter out RequireClose false
-        val requireCloseSessions = filterByRequireClose(checkpoint, filteredSessions)
+        val requireCloseSessions = flowSessionManager.getRequireCloseTrueAndFalse(checkpoint, filteredSessions)
 
         return requireCloseSessions.first
     }

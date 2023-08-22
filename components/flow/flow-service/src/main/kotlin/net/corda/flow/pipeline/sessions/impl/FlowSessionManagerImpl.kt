@@ -202,10 +202,11 @@ class FlowSessionManagerImpl @Activate constructor(
     override fun getRequireCloseTrueAndFalse(
         checkpoint: FlowCheckpoint,
         sessionIds: List<String>
-    ): Pair<List<SessionState>, List<SessionState>> {
-        return sessionIds
+    ): Pair<List<String>, List<String>> {
+        val statePair = sessionIds
             .map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
             .partition { sessionState -> sessionState.requireClose }
+        return Pair(statePair.first.map { it.sessionId }, statePair.second.map { it.sessionId })
     }
 
     override fun getInitiatingAndInitiatedSessions(
