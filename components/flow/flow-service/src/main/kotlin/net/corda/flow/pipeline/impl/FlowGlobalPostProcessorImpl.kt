@@ -29,6 +29,7 @@ import net.corda.interop.identity.registry.InteropIdentityRegistryService
 import net.corda.virtualnode.HoldingIdentity
 
 
+@Suppress("LongParameterList")
 @Component(service = [FlowGlobalPostProcessor::class])
 class FlowGlobalPostProcessorImpl @Activate constructor(
     @Reference(service = ExternalEventManager::class)
@@ -43,7 +44,6 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = InteropIdentityRegistryService::class)
     private val interopIdentityRegistryService: InteropIdentityRegistryService
-
 ) : FlowGlobalPostProcessor {
 
     private companion object {
@@ -145,9 +145,8 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         /**
          * If the counterparty doesn't exist in our network, don't send our queued messages yet.
          * If we've also exceeded the [SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW], throw a [FlowPlatformException]
-         * This check is not performed for interop sessions, where the counterparty exists on another cluster.
          */
-        if (!counterpartyExists && !sessionState.isInteropSession) {
+        if (!counterpartyExists) {
             val timeoutWindow = context.config.getLong(SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW)
             val expiryTime = maxOf(
                 sessionState.lastReceivedMessageTime,
