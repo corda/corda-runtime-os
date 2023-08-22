@@ -7,7 +7,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
-import net.corda.ledger.utxo.flow.impl.groupparameters.GroupParametersServiceInternal
+import net.corda.ledger.utxo.flow.impl.groupparameters.GroupParametersLookupInternal
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
@@ -32,8 +32,8 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
     private val utxoLedgerStateQueryService: UtxoLedgerStateQueryService,
     @Reference(service = UtxoLedgerGroupParametersPersistenceService::class)
     private val utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService,
-    @Reference(service = GroupParametersServiceInternal::class)
-    private val groupParametersService: GroupParametersServiceInternal
+    @Reference(service = GroupParametersLookupInternal::class)
+    private val groupParametersLookup: GroupParametersLookupInternal
 ) : UtxoLedgerTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -85,7 +85,7 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
             requireNotNull((wireTransaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()) {
                 "Membership group parameters hash cannot be found in the transaction metadata."
             }
-        val currentGroupParameters = groupParametersService.currentGroupParameters
+        val currentGroupParameters = groupParametersLookup.currentGroupParameters
         val groupParameters =
             if (currentGroupParameters.hash.toString() == membershipGroupParametersHashString) {
                 currentGroupParameters

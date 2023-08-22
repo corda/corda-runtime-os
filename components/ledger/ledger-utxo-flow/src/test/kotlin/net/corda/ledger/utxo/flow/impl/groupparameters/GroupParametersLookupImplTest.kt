@@ -21,7 +21,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 
-class GroupParametersServiceImplTest {
+class GroupParametersLookupImplTest {
     private val holdingIdentity = HoldingIdentity(MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB"), "group")
     private val virtualNode = mock<VirtualNodeContext> {
         on { holdingIdentity } doReturn holdingIdentity
@@ -53,7 +53,7 @@ class GroupParametersServiceImplTest {
     private val groupPolicyProvider = mock<GroupPolicyProvider> {
         on { getGroupPolicy(holdingIdentity) } doReturn groupPolicy
     }
-    private val impl = GroupParametersServiceImpl(
+    private val impl = GroupParametersLookupImpl(
         currentSandboxGroupContext,
         membershipGroupReaderProvider,
         keyEncodingService,
