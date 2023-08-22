@@ -53,7 +53,7 @@ fMTdCNm5Klag/h/ogvYRXxYFvr+4l5hOzK1IJJWoftGi4s1f1pgv/sbi2DXKNPOP
     fun `string containing single line certificate is not reformatted`() {
         PrintUtils.printJsonOutput(
             singleLineCert,
-            AssertOutputCertInJsonStringContainsLineBreaks()
+            AssertCertInJsonStringIsValidOutput()
         )
     }
 
@@ -61,7 +61,7 @@ fMTdCNm5Klag/h/ogvYRXxYFvr+4l5hOzK1IJJWoftGi4s1f1pgv/sbi2DXKNPOP
     fun `string containing multiline certificate is not reformatted`() {
         PrintUtils.printJsonOutput(
             multiLineCert,
-            AssertOutputCertInJsonStringContainsLineBreaks()
+            AssertCertInJsonStringIsValidOutput()
         )
     }
 
@@ -69,7 +69,7 @@ fMTdCNm5Klag/h/ogvYRXxYFvr+4l5hOzK1IJJWoftGi4s1f1pgv/sbi2DXKNPOP
     fun `json object with string containing single line certificate is not reformatted`() {
         PrintUtils.printJsonOutput(
             mapOf(testObjectKey to singleLineCert),
-            AssertOutputCertInJsonObjectContainsLineBreaks()
+            AssertCertInJsonObjectIsValidOutput()
         )
     }
 
@@ -77,11 +77,11 @@ fMTdCNm5Klag/h/ogvYRXxYFvr+4l5hOzK1IJJWoftGi4s1f1pgv/sbi2DXKNPOP
     fun `json object with string containing multiline certificate is not reformatted`() {
         PrintUtils.printJsonOutput(
             mapOf(testObjectKey to multiLineCert),
-            AssertOutputCertInJsonObjectContainsLineBreaks()
+            AssertCertInJsonObjectIsValidOutput()
         )
     }
 
-    private inner class AssertOutputCertInJsonStringContainsLineBreaks: Output {
+    private inner class AssertCertInJsonStringIsValidOutput: Output {
         override fun generateOutput(content: String) {
             jacksonObjectMapper().readTree(content).apply {
                 assertThat(isTextual).isTrue
@@ -90,7 +90,7 @@ fMTdCNm5Klag/h/ogvYRXxYFvr+4l5hOzK1IJJWoftGi4s1f1pgv/sbi2DXKNPOP
         }
     }
 
-    private inner class AssertOutputCertInJsonObjectContainsLineBreaks: Output {
+    private inner class AssertCertInJsonObjectIsValidOutput: Output {
         override fun generateOutput(content: String) {
             jacksonObjectMapper().readTree(content).apply {
                 assertThat(contains(testObjectKey)).isTrue
