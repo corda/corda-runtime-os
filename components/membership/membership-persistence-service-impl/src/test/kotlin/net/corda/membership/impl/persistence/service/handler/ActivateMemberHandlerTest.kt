@@ -128,7 +128,7 @@ class ActivateMemberHandlerTest {
         on { memberProvidedContext } doReturn mock()
     }
     private val memberInfoFactory = mock<MemberInfoFactory> {
-        on { create(persistentMemberInfo) } doReturn memberInfo
+        on { createMemberInfo(persistentMemberInfo) } doReturn memberInfo
     }
     private val persistenceHandlerServices: PersistenceHandlerServices = mock {
         on { clock } doReturn clock
@@ -144,7 +144,7 @@ class ActivateMemberHandlerTest {
     private val handler: ActivateMemberHandler = ActivateMemberHandler(
         persistenceHandlerServices,
         addNotaryToGroupParametersHandler
-    ) { _, _, _ -> suspensionActivationEntityOperations }
+    ) { _, _ -> suspensionActivationEntityOperations }
     private val context = MembershipRequestContext(
         clock.instant(),
         UUID(0, 1).toString(),
@@ -175,7 +175,7 @@ class ActivateMemberHandlerTest {
         val mockMemberInfo = mock<MemberInfo> {
             on { memberProvidedContext } doReturn mockMemberContext
         }
-        whenever(memberInfoFactory.create(persistentMemberInfo)).thenReturn(mockMemberInfo)
+        whenever(memberInfoFactory.createMemberInfo(persistentMemberInfo)).thenReturn(mockMemberInfo)
         val groupParameters = mock<SignedGroupParameters>()
         whenever(addNotaryToGroupParametersHandler.addNotaryToGroupParameters(em, persistentMemberInfo)).doReturn(groupParameters)
 

@@ -38,6 +38,7 @@ import net.corda.membership.datamodel.MembershipEntities
 import net.corda.membership.group.policy.validation.MembershipGroupPolicyValidator
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -135,6 +136,8 @@ class DBProcessorImpl @Activate constructor(
     private val membershipQueryClient: MembershipQueryClient,
     @Reference(service = MembershipPersistenceClient::class)
     private val membershipPersistenceClient: MembershipPersistenceClient,
+    @Reference(service = MemberInfoFactory::class)
+    private val memberInfoFactory: MemberInfoFactory,
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -212,7 +215,8 @@ class DBProcessorImpl @Activate constructor(
         serializationFactory,
         subscriptionFactory,
         publisherFactory,
-        configurationReadService
+        configurationReadService,
+        memberInfoFactory,
     )
 
     override fun start(bootConfig: SmartConfig) {
