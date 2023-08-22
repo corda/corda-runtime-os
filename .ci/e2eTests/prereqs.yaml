@@ -12,3 +12,4 @@ kafka:
           - "p2pGateway"
           - "p2pLinkManager"
           - "rest"
+          - "uniqueness"
