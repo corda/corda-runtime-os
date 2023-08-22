@@ -57,11 +57,13 @@ class VaultNamedQueryExecutorImpl(
 
         // Fetch and filter the results and try to fill up the page size then map the results
         // mapNotNull has no effect as of now, but we keep it for safety purposes
-        val filteredAndTransformedResults = filterResultsAndFillPageSize(
+        val (fetchedRecords, newOffset) = filterResultsAndFillPageSize(
             request,
             vaultNamedQuery,
             deserializedParams
-        ).mapNotNull {
+        )
+
+        val filteredAndTransformedResults = fetchedRecords.mapNotNull {
             vaultNamedQuery.mapper?.transform(it, deserializedParams) ?: it
         }
 
@@ -71,10 +73,13 @@ class VaultNamedQueryExecutorImpl(
             deserializedParams
         )?.results?.filterNotNull() ?: filteredAndTransformedResults
 
-        // Return the filtered/transformed/collected (if present) result to the caller
+        // Return the filtered/transformed/collected (if present) result and the offset to continue the paging from to the caller
         return EntityResponse.newBuilder()
             .setResults(collectedResults.map { ByteBuffer.wrap(serializationService.serialize(it).bytes) })
-            .setMetadata(KeyValuePairList(listOf(KeyValuePair("numberOfRowsFromQuery", filteredAndTransformedResults.size.toString()))))
+            .setMetadata(KeyValuePairList(listOf(
+                KeyValuePair("numberOfRowsFromQuery", filteredAndTransformedResults.size.toString()),
+                KeyValuePair("newOffset", newOffset.toString())
+            )))
             .build()
     }
 
@@ -93,12 +98,15 @@ class VaultNamedQueryExecutorImpl(
      *
      * If any of these conditions happen, we just return the result set as-is without filling
      * up the "page size".
+     *
+     * Will return a pair of the fetched and "filtered" results from the database and the offset
+     * that the paging can be continued from.
      */
     private fun filterResultsAndFillPageSize(
         request: FindWithNamedQuery,
         vaultNamedQuery: VaultNamedQuery,
         deserializedParams: Map<String, Any>
-    ): List<StateAndRef<ContractState>> {
+    ): Pair<List<StateAndRef<ContractState>>, Int> {
         val filteredResults = mutableListOf<StateAndRef<ContractState>>()
 
         var internalOffset = request.offset
@@ -107,22 +115,24 @@ class VaultNamedQueryExecutorImpl(
         while (filteredResults.size < request.limit && currentRetry < RESULT_SET_FILL_RETRY_LIMIT) {
             ++currentRetry
 
-            log.debug("Executing try: $currentRetry, fetched ${filteredResults.size} number of results so far.")
+            log.trace("Executing try: $currentRetry, fetched ${filteredResults.size} number of results so far.")
 
             // Fetch the state and refs for the given transaction IDs
             val contractStateResults = fetchStateAndRefs(
                 request,
                 vaultNamedQuery.query.query,
-                offsetOverride = internalOffset
+                offset = internalOffset
             )
 
             // If we have no filter, there's no need to continue the loop
-            if (vaultNamedQuery.filter == null)
-                return contractStateResults
+            if (vaultNamedQuery.filter == null) {
+                return Pair(contractStateResults, contractStateResults.size)
+            }
 
             // If we can't fetch more states we just return the result set as-is
-            if (contractStateResults.isEmpty())
+            if (contractStateResults.isEmpty()) {
                 break
+            }
 
             // Increase the internal offset, so we don't fetch the same results multiple times
             internalOffset += contractStateResults.size
@@ -133,8 +143,10 @@ class VaultNamedQueryExecutorImpl(
             })
         }
 
-        // Make sure we don't return more than the limit even if the list has overflown
-        return filteredResults.take(request.limit)
+        return Pair(
+            filteredResults.take(request.limit), // Make sure we don't return more than the limit even if the list has overflown
+            internalOffset - (filteredResults.size - request.limit) // subtract the extra size we removed from the results from the offset
+        )
     }
 
     /**
@@ -144,7 +156,7 @@ class VaultNamedQueryExecutorImpl(
     private fun fetchStateAndRefs(
         request: FindWithNamedQuery,
         whereJson: String?,
-        offsetOverride: Int? = null
+        offset: Int
     ): List<StateAndRef<ContractState>> {
 
         validateParameters(request)
@@ -179,7 +191,7 @@ class VaultNamedQueryExecutorImpl(
                 query.setParameter(rec.key, serializationService.deserialize(bytes))
             }
 
-            query.firstResult = offsetOverride ?: request.offset
+            query.firstResult = offset
             query.maxResults = request.limit
 
             query.resultList as List<Tuple>

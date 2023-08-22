@@ -31,9 +31,9 @@ data class ResultSetImpl<R> internal constructor(
         if (!hasNext()) {
             throw NoSuchElementException("The result set has no more pages to query")
         }
-        val (serializedResults, numberOfRowsFromQuery) = resultSetExecutor.execute(serializedParameters, offset)
+        val (serializedResults, numberOfRowsFromQuery, newOffset) = resultSetExecutor.execute(serializedParameters, offset)
         hasNext = limit in 1..numberOfRowsFromQuery
-        offset += limit
+        offset = newOffset
         results = serializedResults.map { serializationService.deserialize(it.array(), resultClass) }
         return results
     }

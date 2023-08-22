@@ -16,10 +16,11 @@ fun interface ResultSetExecutor<R> : Serializable {
      * @param serializedParameters The serialized parameters of the [ResultSet].
      * @param offset The current offset of the [ResultSet].
      *
-     * @return A [Results] containing the serialized results and the number of rows the database retrieved from its query.
+     * @return A [Results] containing the serialized results, the number of rows the database retrieved from its query
+     * and the new offset to continue the paging from.
      */
     @Suspendable
     fun execute(serializedParameters: Map<String, ByteBuffer>, offset: Int): Results
 
-    data class Results(val serializedResults: List<ByteBuffer>, val numberOfRowsFromQuery: Int)
+    data class Results(val serializedResults: List<ByteBuffer>, val numberOfRowsFromQuery: Int, val newOffset: Int)
 }
