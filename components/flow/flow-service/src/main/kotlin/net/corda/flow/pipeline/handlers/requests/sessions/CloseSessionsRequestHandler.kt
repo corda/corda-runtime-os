@@ -51,30 +51,47 @@ class CloseSessionsRequestHandler @Activate constructor(
 
         val hasNoSessionsOrAllClosed = try {
             val sessionsToClose = getSessionsToClose(checkpoint, request)
+
             val initiatingAndInitiated = flowSessionManager.getInitiatingAndInitiatedSessions(sessionsToClose)
             val initiatingSessions = initiatingAndInitiated.first
             val initiatedSessions = initiatingAndInitiated.second
+
 
             // if I am the initiated party i.e ends with INITIATED_SESSION_ID_SUFFIX
             if(initiatedSessions.isNotEmpty()) {
                 checkpoint.putSessionStates(flowSessionManager.sendCloseMessages(checkpoint, initiatedSessions, Instant.now()))
             }
 
-            if (initiatingSessions.isNotEmpty()) {
-
-            }
             /**
              *  if i am initiating party i.e i dont end with INITIATED_SESSION_ID_SUFFIX
-                 if requireClose == false
-                 - set status to CLOSED
-                    - flowSessionManager.setStatus(sessionId, CLOSED)
-                else if requireClose == true
-                    if status == CLOSING
-                        - set status closed
-                    else
-                        - set status CLOSING]
-                        - flowSessionManager.setStatus(sessionId, CLOSING)
+            if requireClose == false
+            - set status to CLOSED
+            - flowSessionManager.setStatus(sessionId, CLOSED)
+            else if requireClose == true
+            - set status CLOSING]
+            - flowSessionManager.setStatus(sessionId, CLOSING)
+            else
+            if status == CLOSING
+            - set status closed
+
              */
+
+            if (initiatingSessions.isNotEmpty()) {
+                val requireCloseTrueAndFalse = filterByRequireClose(checkpoint, initiatingSessions)
+                val requireCloseTrue = requireCloseTrueAndFalse.first
+                val requireCloseFalse = requireCloseTrueAndFalse.second
+
+                if(requireCloseFalse.isNotEmpty()) {
+
+                }
+
+                if (requireCloseTrue.isNotEmpty()) {
+
+
+                }
+
+            }
+
 
             sessionsToClose.isEmpty() || flowSessionManager.doAllSessionsHaveStatus(checkpoint, sessionsToClose, SessionStateType.CLOSED)
         } catch (e: FlowSessionStateException) {
