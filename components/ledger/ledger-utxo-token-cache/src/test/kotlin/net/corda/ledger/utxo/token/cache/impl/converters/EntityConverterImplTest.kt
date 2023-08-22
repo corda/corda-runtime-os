@@ -139,8 +139,8 @@ class EntityConverterImplTest {
         val result = EntityConverterImpl()
             .toTokenPoolKey( tokenClaimRelease)
 
-        assertThat(result.symbol).isEqualTo("sym")
         assertThat(result.tokenType).isEqualTo("tt")
+        assertThat(result.symbol).isEqualTo("sym")
         assertThat(result.notaryX500Name).isEqualTo("not")
         assertThat(result.issuerHash).isEqualTo("ih")
         assertThat(result.shortHolderId).isEqualTo("shid")
