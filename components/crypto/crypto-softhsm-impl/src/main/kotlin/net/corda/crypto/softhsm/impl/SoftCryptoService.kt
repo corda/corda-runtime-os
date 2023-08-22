@@ -308,7 +308,6 @@ open class SoftCryptoService(
                     getOwnedKeyRecord(tenantId, publicKey)
                 }!!
 
-
         logger.debug { "sign(tenant=$tenantId, publicKey=${record.data.id})" }
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
         val spec =
