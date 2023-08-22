@@ -252,13 +252,6 @@ class FlowEventPipelineImplTest {
         verify(runFlowFiberFuture.interruptable).attemptInterrupt()
         verify(checkpoint, never()).serializedFiber
     }
-
-    @Test
-    fun `setCheckpointSuspendedOn sets the checkpoint's suspendedOn property when output is set`() {
-        val pipeline = buildPipeline(FlowIORequest.ForceCheckpoint)
-        pipeline.setCheckpointSuspendedOn()
-        verify(checkpoint).suspendedOn = FlowIORequest.ForceCheckpoint::class.qualifiedName
-    }
 */
     @Test
     fun `globalPostProcessing calls the FlowGlobalPostProcessor when output is set`() {

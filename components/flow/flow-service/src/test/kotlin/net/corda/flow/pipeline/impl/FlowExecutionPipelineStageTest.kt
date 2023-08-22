@@ -8,6 +8,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.fiber.Interruptable
 import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.metrics.FlowIORequestTypeConverter
 import net.corda.flow.pipeline.events.FlowEventContext
@@ -29,6 +30,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.util.concurrent.Future
+import java.util.concurrent.TimeoutException
 
 class FlowExecutionPipelineStageTest {
 
@@ -216,6 +218,42 @@ class FlowExecutionPipelineStageTest {
     }
 
     @Test
+    fun `when the timer expires for running the flow, fail it and attempt to interrupt`() {
+        val waitingForHandlers = createWaitingForHandlerMap(
+            mapOf(
+                WaitingFor(SessionConfirmation()) to FlowContinuation.Run(),
+                WaitingFor(ExternalEventResponse()) to FlowContinuation.Continue
+            )
+        )
+        val checkpoint = mock<FlowCheckpoint>()
+        val newContext = createContext(waitingFor = WaitingFor(ExternalEventResponse()))
+        val requestHandlers = createRequestHandlerMap(
+            mapOf(
+                fiberOutput to Pair(WaitingFor(ExternalEventResponse()), newContext),
+                FlowIORequest.FlowFailed(IllegalArgumentException()) to Pair(WaitingFor(null), newContext)
+            )
+        )
+        val fiberOutputs = listOf(FlowIORequest.FlowFailed(IllegalArgumentException()))
+        val fiberFuture = mock<FiberFuture>()
+        val flowRunner = createFlowRunner(fiberOutputs, timeoutFlow = true, fiberFuture = fiberFuture)
+        val stage = FlowExecutionPipelineStage(
+            waitingForHandlers,
+            requestHandlers,
+            flowRunner,
+            fiberCache,
+            ioRequestTypeConverter
+        )
+
+        val context = createContext(checkpoint = checkpoint)
+        val outputContext = stage.runFlow(context, TIMEOUT)
+        assertEquals(newContext, outputContext)
+        verifyInteractions(fiberOutputs)
+        verify(checkpoint).waitingFor = WaitingFor(null)
+        verify(checkpoint).suspendedOn = FlowIORequest.FlowFailed::class.qualifiedName
+        verify(fiberFuture).interruptable
+    }
+
+    @Test
     fun `when there is no suitable waitingFor handler, throws fatal exception`() {
         val waitingForHandlers = createWaitingForHandlerMap(
             mapOf(
@@ -283,10 +321,6 @@ class FlowExecutionPipelineStageTest {
         // Fiber cache
         verify(fiberCache, times(suspends.filter { (it as FlowIORequest.FlowSuspended<*>).cacheableFiber != null }.size)).put(any(), any())
         verify(fiberCache, times(other.size)).remove(any<FlowKey>())
-
-        // Checkpoint
-//        verify(checkpoint, times(suspends.size)).suspendedOn = any()
-//        verify(checkpoint, times(suspends.size)).waitingFor = any()
     }
 
     private fun createWaitingForHandlerMap(
@@ -323,13 +357,24 @@ class FlowExecutionPipelineStageTest {
     }
 
     private fun createFlowRunner(
-        results: List<FlowIORequest<Any?>>
+        results: List<FlowIORequest<Any?>>,
+        timeoutFlow: Boolean = false,
+        fiberFuture: FiberFuture = mock<FiberFuture>()
     ) : FlowRunner {
         val flowRunner = mock<FlowRunner>()
-        val fiberFuture = mock<FiberFuture>()
         val future = mock<Future<FlowIORequest<*>>>()
         whenever(fiberFuture.future).thenReturn(future)
-        whenever(future.get(any(), any())).thenAnswer(AdditionalAnswers.returnsElementsOf<FlowIORequest<*>>(results))
+        if (!timeoutFlow) {
+            whenever(
+                future.get(
+                    any(),
+                    any()
+                )
+            ).thenAnswer(AdditionalAnswers.returnsElementsOf<FlowIORequest<*>>(results))
+        } else {
+            whenever(fiberFuture.interruptable).thenReturn(mock<Interruptable>())
+            whenever(future.get(any(), any())).thenThrow(TimeoutException("Foo"))
+        }
         whenever(flowRunner.runFlow(any(), any())).thenReturn(fiberFuture)
         return flowRunner
     }
