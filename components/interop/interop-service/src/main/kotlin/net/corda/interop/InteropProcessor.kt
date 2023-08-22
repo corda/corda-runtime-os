@@ -256,7 +256,7 @@ class InteropProcessor(
                 "event=${event.payload::class.java}, session/seq=${event.sessionId}/${event.sequenceNum}")
 
     private fun lookupOwningIdentity(interopIdentity: HoldingIdentity): HoldingIdentity {
-        val errorPrefix = "Failed to find owning identity of '${interopIdentity.x500Name}'"
+        val errorPrefix: String by lazy { "Failed to find owning identity of '${interopIdentity.x500Name}'" }
 
         val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(interopIdentity)
 
@@ -266,18 +266,32 @@ class InteropProcessor(
 
         val memberProvidedContext = memberInfo.memberProvidedContext
 
-        val x500Name = memberProvidedContext.get(MemberInfoExtension.INTEROP_MAPPING_X500_NAME)
-        val groupId = memberProvidedContext.get(MemberInfoExtension.INTEROP_MAPPING_GROUP)
+        val x500NameString = memberProvidedContext.get(MemberInfoExtension.INTEROP_MAPPING_X500_NAME)
+        val groupIdString = memberProvidedContext.get(MemberInfoExtension.INTEROP_MAPPING_GROUP)
 
-        checkNotNull(x500Name) {
+        checkNotNull(x500NameString) {
             "$errorPrefix, holding identity x500 name is missing from member provided context."
         }
 
-        checkNotNull(groupId) {
+        checkNotNull(groupIdString) {
             "$errorPrefix, holding identity group id is missing from member provided context."
         }
 
-        return HoldingIdentity(MemberX500Name.parse(x500Name), groupId)
+        val x500Name = try {
+            MemberX500Name.parse(x500NameString)
+        } catch (e: Exception) {
+            throw IllegalStateException(
+                "$errorPrefix, x500 name '$x500NameString' from member provided context is invalid.", e)
+        }
+
+        try {
+            UUID.fromString(groupIdString)
+        } catch (e: Exception) {
+            throw IllegalStateException(
+                "$errorPrefix, groupId '$groupIdString' from member provided context is not a valid UUID.", e)
+        }
+
+        return HoldingIdentity(x500Name, groupIdString)
     }
 
     /**
