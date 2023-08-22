@@ -14,6 +14,13 @@ import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
+/**
+ * Pipeline stage to run user code and update the checkpoint with the output.
+ *
+ * This class is responsible for deciding whether to run user code and updating the checkpoint object with the outputs
+ * of the execution. Once [runFlow] has been called, the user code part of the flow should have been executed as far as
+ * is possible with the current data available to it.
+ */
 internal class FlowExecutionPipelineStage(
     private val flowWaitingForHandlers: Map<Class<*>, FlowWaitingForHandler<out Any>>,
     private val flowRequestHandlers: Map<Class<out FlowIORequest<*>>, FlowRequestHandler<out FlowIORequest<*>>>,
@@ -26,6 +33,16 @@ internal class FlowExecutionPipelineStage(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass.name)
     }
 
+    /**
+     * Run the user code and update the checkpoint object with the results of this execution.
+     *
+     * This class may choose to run the user code multiple times if the required data to do so is available. It should
+     * return to the caller once the user code has been executed to the point where more data is required.
+     *
+     * @param context The current flow context.
+     * @param timeout Timeout for an individual flow execution.
+     * @return FlowEventContext Updated context for the flow.
+     */
     fun runFlow(context: FlowEventContext<Any>, timeout: Long) : FlowEventContext<Any> {
         var currentContext = context
         var continuation = flowReady(currentContext)
@@ -53,6 +70,10 @@ internal class FlowExecutionPipelineStage(
         val future = flowRunner.runFlow(context, continuation)
 
         val fiberResult = try {
+            // The user code may run multiple times as part of the same event processing. This means this timeout will
+            // not necessarily guarantee that the processing finishes before the underlying consumer timeout occurs.
+            // For now this is a known limitation, but the message patterns should be changed to ensure that the
+            // processing step does not block the consumer to the point where it cannot process messages any more.
             future.future.get(timeout, TimeUnit.MILLISECONDS)
         } catch (e: TimeoutException) {
             logger.warn("Flow execution timeout, Flow marked as failed, interrupt attempted")
