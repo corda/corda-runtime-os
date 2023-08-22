@@ -15,7 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 )
 class ExportGroupPolicy : Runnable, RestCommand() {
     @Option(
-        names = ["--save"],
+        names = ["--save", "-s"],
         description = ["Location to save the group policy file to (defaults to ~/.corda/gp/groupPolicy.json)"]
     )
     var saveLocation: File = File(File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json")
