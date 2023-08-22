@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 
 @Suppress("ForbiddenComment")
-class MembershipInfoProducer(val publisher: AtomicReference<Publisher?>) {
+class MembershipInfoProducer(private val publisher: AtomicReference<Publisher?>) {
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val INTEROP_ROLE = "interop"
@@ -35,7 +35,7 @@ class MembershipInfoProducer(val publisher: AtomicReference<Publisher?>) {
          * view of [ownedInteropIdentity].
          */
         private fun createInteropIdentityMemberInfo(
-            realHoldingIdentity: HoldingIdentity,
+            realHoldingIdentity: HoldingIdentity?,
             ownedInteropIdentity: InteropIdentity,
             newInteropIdentities: List<InteropIdentity>
         ): List<Record<String, PersistentMemberInfo>> {
@@ -56,7 +56,7 @@ class MembershipInfoProducer(val publisher: AtomicReference<Publisher?>) {
             //todo CORE-16385 Remove hardcoded values
             return newInteropIdentities.map { identityToPublish ->
 
-                val memberContext = listOf(
+                val memberContext = arrayListOf(
                     KeyValuePair(MemberInfoExtension.PARTY_NAME, identityToPublish.x500Name),
                     KeyValuePair(String.format(MemberInfoExtension.URL_KEY, "0"), identityToPublish.endpointUrl),
                     KeyValuePair(String.format(MemberInfoExtension.PROTOCOL_VERSION, "0"), identityToPublish.endpointProtocol),
@@ -69,9 +69,16 @@ class MembershipInfoProducer(val publisher: AtomicReference<Publisher?>) {
                     KeyValuePair(MemberInfoExtension.SOFTWARE_VERSION, "5.0.0.0-Fox10-RC03"),
                     KeyValuePair(MemberInfoExtension.PLATFORM_VERSION, "5000"),
                     KeyValuePair(MemberInfoExtension.INTEROP_ROLE, INTEROP_ROLE),
-                    KeyValuePair(INTEROP_MAPPING_X500_NAME, realHoldingIdentity.x500Name.toString()),
-                    KeyValuePair(INTEROP_MAPPING_GROUP, realHoldingIdentity.groupId)
                 ).sorted()
+
+                if (realHoldingIdentity != null) {
+                    memberContext.plus(
+                        listOf(
+                            KeyValuePair(INTEROP_MAPPING_X500_NAME, realHoldingIdentity.x500Name.toString()),
+                            KeyValuePair(INTEROP_MAPPING_GROUP, realHoldingIdentity.groupId)
+                        )
+                    ).sorted()
+                }
 
                 Record(
                     Schemas.Membership.MEMBER_LIST_TOPIC,
@@ -87,7 +94,7 @@ class MembershipInfoProducer(val publisher: AtomicReference<Publisher?>) {
     }
 
     fun publishMemberInfo(
-        realHoldingIdentity: HoldingIdentity,
+        realHoldingIdentity: HoldingIdentity?,
         ownedInteropIdentity: InteropIdentity,
         newInteropIdentities: List<InteropIdentity>
     ) {

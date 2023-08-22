@@ -101,11 +101,18 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
                 "The interop group ${identity.groupId} does not contain an interop identity for holding identity $vNodeShortHash.")
         }
 
-        val vNodeInfo = checkNotNull(virtualNodeInfoReadService.getByHoldingIdentityShortHash(vNodeShortHash)) {
-            "No holding identity with short hash $vNodeShortHash"
+        // This may be null when the owning virtual node is hosted on a different cluster
+        val realHoldingIdentity =
+            virtualNodeInfoReadService.getByHoldingIdentityShortHash(identity.owningVirtualNodeShortHash)?.holdingIdentity
+
+        // If the interop identity is owned by the virtual node, we need to ensure the real holding identity is known
+        if (identity.owningVirtualNodeShortHash == vNodeShortHash) {
+            checkNotNull(realHoldingIdentity) {
+                "Could not find real holding identity of virtual node '$vNodeShortHash'."
+            }
         }
 
-        membershipInfoProducer.publishMemberInfo(vNodeInfo.holdingIdentity, ownedInteropIdentity, listOf(identity))
+        membershipInfoProducer.publishMemberInfo(realHoldingIdentity, ownedInteropIdentity, listOf(identity))
     }
 
     private fun writeInteropIdentityTopic(vNodeShortHash: ShortHash, identity: InteropIdentity) {
