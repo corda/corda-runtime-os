@@ -1,22 +1,22 @@
 package net.corda.membership.certificate.publisher.impl
 
-import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.p2p.mtls.MemberAllowedCertificateSubject
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
-import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SUBJECT
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.messaging.api.records.Record
+import net.corda.v5.membership.MemberContext
+import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
 internal class ProcessorTest {
-    private val processor = MemberInfoProcessor()
+    private val memberInfoFactory = mock<MemberInfoFactory>()
+    private val processor = MemberInfoProcessor(memberInfoFactory)
 
     @Nested
     inner class OnNextTests {
@@ -24,17 +24,17 @@ internal class ProcessorTest {
             Record(
                 "topic",
                 "key1",
-                createMemberInfo("subject1"),
+                mockPersistentMemberInfo("subject1"),
             ),
             Record(
                 "topic",
                 "key2",
-                createMemberInfo("subject2"),
+                mockPersistentMemberInfo("subject2"),
             ),
             Record(
                 "topic",
                 "key3",
-                createMemberInfo("subject3"),
+                mockPersistentMemberInfo("subject3"),
             ),
             Record(
                 "topic",
@@ -44,17 +44,12 @@ internal class ProcessorTest {
             Record(
                 "topic",
                 "key5",
-                createMemberInfo(null),
+                mockPersistentMemberInfo(null),
             ),
             Record(
                 "topic",
                 "key6",
-                createMemberInfo("subject", active = false),
-            ),
-            Record(
-                "topic",
-                "key7",
-                createMemberInfo("subject", active = null),
+                mockPersistentMemberInfo("subject", active = false),
             ),
         )
 
@@ -109,53 +104,30 @@ internal class ProcessorTest {
                 it.key == "key6" && it.value == null
             }
         }
-
-        @Test
-        fun `it returns null if status is not defined`() {
-            val records = processor.onNext(events)
-
-            assertThat(records).anySatisfy {
-                it.key == "key7" && it.value == null
-            }
-        }
     }
 
     private fun createMemberInfo(
         subject: String?,
-        active: Boolean? = true,
-    ): PersistentMemberInfo {
-        val status = if (active != null) {
-            listOf(
-                KeyValuePair(
-                    STATUS,
-                    if (active) {
-                        MEMBER_STATUS_ACTIVE
-                    } else {
-                        MEMBER_STATUS_SUSPENDED
-                    }
-                )
-            )
-        } else {
-            emptyList()
-        }
-
-        val subjectKeyPair = if (subject == null) {
-            emptyList()
-        } else {
-            listOf(
-                KeyValuePair(
-                    TLS_CERTIFICATE_SUBJECT,
-                    subject
-                ),
-            )
+        active: Boolean,
+    ): MemberInfo {
+        val memberContext = mock<MemberContext> {
+            on { parseOrNull(TLS_CERTIFICATE_SUBJECT, String::class.java) } doReturn subject
         }
         return mock {
-            on { mgmContext } doReturn KeyValuePairList(
-                status
-            )
-            on { memberContext } doReturn KeyValuePairList(
-                subjectKeyPair
-            )
+            on { memberProvidedContext } doReturn memberContext
+            on { isActive } doReturn active
         }
+    }
+
+    private fun mockPersistentMemberInfo(
+        subject: String?,
+        active: Boolean = true,
+    ): PersistentMemberInfo {
+        val persistentMemberInfo = mock<PersistentMemberInfo>()
+        val memberInfo = createMemberInfo(subject, active)
+        whenever(
+            memberInfoFactory.createMemberInfo(persistentMemberInfo)
+        ).thenReturn(memberInfo)
+        return persistentMemberInfo
     }
 }

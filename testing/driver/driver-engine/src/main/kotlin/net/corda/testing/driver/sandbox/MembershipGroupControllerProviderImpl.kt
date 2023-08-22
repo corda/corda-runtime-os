@@ -206,7 +206,7 @@ class MembershipGroupControllerProviderImpl @Activate constructor(
                     this += parseNotaryInfo(notary)
                 }
             }
-            memberInfoFactory.create(memberContext, mgmContext)
+            memberInfoFactory.createMemberInfo(memberContext, mgmContext)
         }
     }
 
@@ -301,7 +301,7 @@ class MembershipGroupControllerProviderImpl @Activate constructor(
 
         override fun updateMembership(memberInfo: MemberInfo, mgmContext: SortedMap<String, String?>) {
             membershipInfo[HoldingIdentity(memberInfo.name, groupId)] =
-                memberInfoFactory.create(memberInfo.memberProvidedContext.toWire().toSortedMap(), mgmContext)
+                memberInfoFactory.createMemberInfo(memberInfo.memberProvidedContext.toWire().toSortedMap(), mgmContext)
         }
 
         private fun MemberInfo.filterBy(filter: MembershipStatusFilter): Boolean {

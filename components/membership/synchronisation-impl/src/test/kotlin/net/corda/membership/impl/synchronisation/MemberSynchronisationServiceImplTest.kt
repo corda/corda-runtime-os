@@ -4,10 +4,6 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.toCorda
-import net.corda.avro.serialization.CordaAvroDeserializer
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -46,6 +42,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
@@ -94,7 +91,6 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
-import java.util.SortedMap
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFailsWith
 import net.corda.data.membership.SignedGroupParameters as AvroGroupParameters
@@ -152,57 +148,47 @@ class MemberSynchronisationServiceImplTest {
     }
     private val participantName = MemberX500Name("Bob", "London", "GB")
     private val participantId = HoldingIdentity(participantName, GROUP_NAME).toAvro()
-    private val memberProvidedContext = mock<MemberContext> {
+    private val participantMemberProvidedContext = mock<MemberContext> {
         on { entries } doReturn mapOf(PARTY_NAME to participantName.toString()).entries
     }
-    private val mgmProvidedContext = mock<MGMContext> {
+    private val participantMgmProvidedContext = mock<MGMContext> {
         on { entries } doReturn emptySet()
     }
-    private val participant: MemberInfo = mock {
-        on { memberProvidedContext } doReturn memberProvidedContext
-        on { mgmProvidedContext } doReturn mgmProvidedContext
+    private val memberSignature = mock<CryptoSignatureWithKey>()
+    private val memberSignatureSpec = mock<CryptoSignatureSpec>()
+    private val participant: SelfSignedMemberInfo = mock {
+        on { memberProvidedContext } doReturn participantMemberProvidedContext
+        on { mgmProvidedContext } doReturn participantMgmProvidedContext
+        on { memberContextBytes } doReturn MEMBER_CONTEXT_BYTES
+        on { mgmContextBytes } doReturn MGM_CONTEXT_BYTES
+        on { memberSignature } doReturn memberSignature
+        on { memberSignatureSpec } doReturn memberSignatureSpec
         on { name } doReturn participantName
         on { groupId } doReturn GROUP_NAME
     }
-    private val memberInfoFactory: MemberInfoFactory = mock {
-        on { create(any()) } doReturn participant
-        on { create(any<SortedMap<String, String?>>(), any()) } doReturn participant
-    }
     private val memberName = MemberX500Name("Alice", "London", "GB")
     private val member = HoldingIdentity(memberName, GROUP_NAME)
-    private val memberContextList = KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, participantName.toString())))
-    private val mgmContextList = KeyValuePairList(listOf())
-    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> = mock {
-        on { deserialize(MEMBER_CONTEXT_BYTES) } doReturn memberContextList
-        on { deserialize(MGM_CONTEXT_BYTES) } doReturn mgmContextList
-        on { deserialize(GROUP_PARAMETERS_BYTES) } doReturn mock()
-    }
-    private val serializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
-    }
     private val memberContextData: ByteBuffer = mock {
         on { array() } doReturn MEMBER_CONTEXT_BYTES
     }
     private val mgmContextData: ByteBuffer = mock {
         on { array() } doReturn MGM_CONTEXT_BYTES
     }
-    private val memberSignature = mock<CryptoSignatureWithKey>()
-    private val memberSignatureSpec = mock<CryptoSignatureSpec>()
     private val mgmSignature = mock<CryptoSignatureWithKey>()
     private val mgmSignatureSpec = mock<CryptoSignatureSpec>()
-    private val memberContext = SignedData(
+    private val signedMemberContext = SignedData(
         memberContextData,
         memberSignature,
         memberSignatureSpec
     )
-    private val mgmContext = SignedData(
+    private val signedMgmContext = SignedData(
         mgmContextData,
         mgmSignature,
         mgmSignatureSpec
     )
     private val signedMemberInfo: SignedMemberInfo = mock {
-        on { memberContext } doReturn memberContext
-        on { mgmContext } doReturn mgmContext
+        on { memberContext } doReturn signedMemberContext
+        on { mgmContext } doReturn signedMgmContext
     }
     private val hash = SecureHash("algo", ByteBuffer.wrap(byteArrayOf(1, 2, 3)))
     private val signedMemberships: SignedMemberships = mock {
@@ -245,7 +231,7 @@ class MemberSynchronisationServiceImplTest {
         on { root } doReturn hash.toCorda()
     }
     private val merkleTreeGenerator = mock<MerkleTreeGenerator> {
-        on { generateTree(any()) } doReturn tree
+        on { generateTreeUsingMembers(any()) } doReturn tree
         on { createTree(any()) } doReturn tree
     }
     private val memberMgmContext = mock<MGMContext> {
@@ -254,7 +240,7 @@ class MemberSynchronisationServiceImplTest {
     private val memberMemberContext = mock<MemberContext> {
         on { parse(GROUP_ID, String::class.java) } doReturn GROUP_NAME
     }
-    private val memberInfo = mock<MemberInfo> {
+    private val memberInfo = mock<SelfSignedMemberInfo> {
         on { mgmProvidedContext } doReturn memberMgmContext
         on { memberProvidedContext } doReturn memberMemberContext
         on { name } doReturn MemberX500Name.parse("O=Alice, L=London, C=GB")
@@ -266,10 +252,18 @@ class MemberSynchronisationServiceImplTest {
         on { parse(GROUP_ID, String::class.java) } doReturn GROUP_NAME
         on { parseList(SESSION_KEYS, PublicKey::class.java) } doReturn listOf(mock())
     }
-    private val mgmInfo = mock<MemberInfo> {
+    private val mgmInfo = mock<SelfSignedMemberInfo> {
         on { name } doReturn MemberX500Name.parse("O=MGM, L=London, C=GB")
         on { mgmProvidedContext } doReturn mgmMgmContext
         on { memberProvidedContext } doReturn mgmMemberContext
+    }
+    private val persistentParticipant = mock<PersistentMemberInfo> {
+        on { signedMemberContext } doReturn signedMemberContext
+        on { serializedMgmContext } doReturn mgmContextData
+    }
+    private val memberInfoFactory: MemberInfoFactory = mock {
+        on { createSelfSignedMemberInfo(any(), any(), any(), any()) } doReturn participant
+        on { createPersistentMemberInfo(any(), any(), any(), any(), any()) } doReturn persistentParticipant
     }
     private val groupReader = mock<MembershipGroupReader> {
         on { lookup() } doReturn listOf(memberInfo, mgmInfo)
@@ -295,19 +289,20 @@ class MemberSynchronisationServiceImplTest {
         on { create(any<AvroGroupParameters>()) } doReturn groupParameters
     }
     private val synchronisationService = MemberSynchronisationServiceImpl(
-        publisherFactory,
-        configurationReadService,
+        MemberSynchronisationServiceImpl.Services(
+            publisherFactory,
+            configurationReadService,
+            memberInfoFactory,
+            groupReaderProvider,
+            verifier,
+            locallyHostedMembersReader,
+            p2pRecordsFactory,
+            merkleTreeGenerator,
+            clock,
+            persistenceClient,
+            groupParametersFactory,
+        ),
         lifecycleCoordinatorFactory,
-        serializationFactory,
-        memberInfoFactory,
-        groupReaderProvider,
-        verifier,
-        locallyHostedMembersReader,
-        p2pRecordsFactory,
-        merkleTreeGenerator,
-        clock,
-        persistenceClient,
-        groupParametersFactory,
     )
 
     private fun postStartEvent() {
@@ -368,16 +363,16 @@ class MemberSynchronisationServiceImplTest {
         val producedRecords = synchronisationService.processMembershipUpdates(updates)
 
         assertSoftly {
-            it.assertThat(producedRecords).hasSize(2)
+            assertThat(producedRecords).hasSize(2)
 
-            val publishedMember = producedRecords.first()
-            it.assertThat(publishedMember.topic).isEqualTo(MEMBER_LIST_TOPIC)
-            it.assertThat(publishedMember.key).isEqualTo("${member.shortHash}-${participant.id}")
-            it.assertThat(publishedMember.value).isInstanceOf(PersistentMemberInfo::class.java)
-            val value = publishedMember.value as? PersistentMemberInfo
-            val name = value?.memberContext?.items?.firstOrNull { item -> item.key == PARTY_NAME }?.value
-            it.assertThat(name).isEqualTo(participantName.toString())
-            it.assertThat(value?.mgmContext?.items).isEmpty()
+            val publishedPersistentMemberInfo = producedRecords.first()
+            it.assertThat(publishedPersistentMemberInfo.topic).isEqualTo(MEMBER_LIST_TOPIC)
+            it.assertThat(publishedPersistentMemberInfo.key).isEqualTo("${member.shortHash}-${participant.id}")
+            it.assertThat(publishedPersistentMemberInfo.value).isInstanceOf(PersistentMemberInfo::class.java)
+            val value = publishedPersistentMemberInfo.value as? PersistentMemberInfo
+            assertThat(value).isEqualTo(persistentParticipant)
+            assertThat(value?.signedMemberContext).isEqualTo(signedMemberContext)
+            assertThat(value?.serializedMgmContext).isEqualTo(mgmContextData)
         }
     }
 
@@ -584,7 +579,7 @@ class MemberSynchronisationServiceImplTest {
             on { parse(GROUP_ID, String::class.java) } doReturn GROUP_NAME
         }
         val memberInfo = mock<MemberInfo> {
-            on { mgmProvidedContext } doReturn mgmProvidedContext
+            on { mgmProvidedContext } doReturn participantMgmProvidedContext
             on { memberProvidedContext } doReturn memberContext
             on { name } doReturn MemberX500Name("Member", "London", "GB")
         }
@@ -599,7 +594,7 @@ class MemberSynchronisationServiceImplTest {
 
         verify(
             merkleTreeGenerator
-        ).generateTree(
+        ).generateTreeUsingMembers(
             argThat {
                 this.contains(memberInfo) && this.contains(participant) && !this.contains(mgmInfo)
             }
@@ -617,7 +612,7 @@ class MemberSynchronisationServiceImplTest {
 
         verify(
             merkleTreeGenerator
-        ).generateTree(
+        ).generateTreeUsingMembers(
             listOf(participant)
         )
     }
@@ -638,7 +633,7 @@ class MemberSynchronisationServiceImplTest {
 
         verify(
             merkleTreeGenerator
-        ).generateTree(
+        ).generateTreeUsingMembers(
             listOf(memberInfo)
         )
     }

@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.sessions
 
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
@@ -25,7 +26,12 @@ class OutboundSessionPoolTest {
     @Test
     fun `can add a pending sessions to the session pool`() {
         val pool = OutboundSessionPool({1}, {0})
-        val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
+        val sessionCounterparties = SessionManager.SessionCounterparties(
+            ourId = mock(),
+            counterpartyId = mock(),
+            status = MembershipStatusFilter.ACTIVE,
+            serial = 4L,
+        )
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
         for (i in 0 until POOL_SIZE) {
@@ -42,7 +48,12 @@ class OutboundSessionPoolTest {
     @Test
     fun `can get a pending session from the session pool by sessionId`() {
         val pool = OutboundSessionPool({1}, {0})
-        val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
+        val sessionCounterparties = SessionManager.SessionCounterparties(
+            ourId = mock(),
+            counterpartyId = mock(),
+            status = MembershipStatusFilter.ACTIVE,
+            serial = 4L,
+        )
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
         for (i in 0 until POOL_SIZE) {
@@ -62,7 +73,12 @@ class OutboundSessionPoolTest {
     @Test
     fun `can add a sessions to the session pool`() {
         val pool = OutboundSessionPool({1}, {0})
-        val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
+        val sessionCounterparties = SessionManager.SessionCounterparties(
+            ourId = mock(),
+            counterpartyId = mock(),
+            status = MembershipStatusFilter.ACTIVE,
+            serial = 4L,
+        )
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
         for (i in 0 until POOL_SIZE) {
@@ -88,7 +104,12 @@ class OutboundSessionPoolTest {
     @Test
     fun `can get a session from the session pool by sessionId`() {
         val pool = OutboundSessionPool({1}, {0})
-        val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
+        val sessionCounterparties = SessionManager.SessionCounterparties(
+            ourId = mock(),
+            counterpartyId = mock(),
+            status = MembershipStatusFilter.ACTIVE,
+            serial = 4L,
+        )
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
         for (i in 0 until POOL_SIZE) {
@@ -122,7 +143,12 @@ class OutboundSessionPoolTest {
             }
         }
         val pool = OutboundSessionPool({1}, ::fakeRand)
-        val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
+        val sessionCounterparties = SessionManager.SessionCounterparties(
+            ourId = mock(),
+            counterpartyId = mock(),
+            status = MembershipStatusFilter.ACTIVE,
+            serial = 4L,
+        )
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
         for (i in 0 until POOL_SIZE) {
@@ -163,7 +189,12 @@ class OutboundSessionPoolTest {
             }
         }
         val pool = OutboundSessionPool({0}, ::fakeRand)
-        val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
+        val sessionCounterparties = SessionManager.SessionCounterparties(
+            ourId = mock(),
+            counterpartyId = mock(),
+            status = MembershipStatusFilter.ACTIVE,
+            serial = 4L,
+        )
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
         for (i in 0 until POOL_SIZE) {
@@ -205,7 +236,12 @@ class OutboundSessionPoolTest {
         }
 
         val pool = OutboundSessionPool({1L}, ::fakeRand)
-        val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
+        val sessionCounterparties = SessionManager.SessionCounterparties(
+            ourId = mock(),
+            counterpartyId = mock(),
+            status = MembershipStatusFilter.ACTIVE,
+            serial = 4L,
+        )
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
         for (i in 0 until POOL_SIZE) {
@@ -245,7 +281,12 @@ class OutboundSessionPoolTest {
         }
 
         val pool = OutboundSessionPool({1L}, ::fakeRand)
-        val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
+        val sessionCounterparties = SessionManager.SessionCounterparties(
+            ourId = mock(),
+            counterpartyId = mock(),
+            status = MembershipStatusFilter.ACTIVE,
+            serial = 4L,
+        )
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
         for (i in 0 until POOL_SIZE) {
@@ -269,7 +310,7 @@ class OutboundSessionPoolTest {
             on { sessionId } doReturn "newSession"
         }
 
-        pool.replaceSession(timedOutSessionId, newPendingSession)
+        pool.replaceSession(sessionCounterparties, timedOutSessionId, newPendingSession)
 
         val gotSessions = mutableListOf<Session>()
         for (i in 0 until (POOL_SIZE - 1) * POOL_SIZE) {
@@ -291,7 +332,12 @@ class OutboundSessionPoolTest {
         }
 
         val pool = OutboundSessionPool({1L}, ::fakeRand)
-        val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
+        val sessionCounterparties = SessionManager.SessionCounterparties(
+            ourId = mock(),
+            counterpartyId = mock(),
+            status = MembershipStatusFilter.ACTIVE,
+            serial = 4L,
+        )
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
         for (i in 0 until POOL_SIZE) {
@@ -314,7 +360,7 @@ class OutboundSessionPoolTest {
         val newPendingSession = mock<AuthenticationProtocolInitiator> {
             on { sessionId } doReturn "newSession"
         }
-        pool.replaceSession(timedOutSessionId, newPendingSession)
+        pool.replaceSession(sessionCounterparties, timedOutSessionId, newPendingSession)
 
         val mockSession = mock<Session> {
             on { sessionId } doReturn "newSession"
@@ -347,7 +393,12 @@ class OutboundSessionPoolTest {
         }
 
         val pool = OutboundSessionPool(::getWeightForSession, ::fakeRand)
-        val sessionCounterparties = mock<SessionManager.SessionCounterparties>()
+        val sessionCounterparties = SessionManager.SessionCounterparties(
+            ourId = mock(),
+            counterpartyId = mock(),
+            status = MembershipStatusFilter.ACTIVE,
+            serial = 4L,
+        )
 
         val authenticationProtocols = mutableListOf<AuthenticationProtocolInitiator>()
         for (i in 0 until POOL_SIZE) {

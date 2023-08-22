@@ -52,7 +52,6 @@ class DistributeGroupParametersActionHandler(
     ),
     private val membershipPackageFactory: MembershipPackageFactory = MembershipPackageFactory(
         clock,
-        cordaAvroSerializationFactory,
         cipherSchemeMetadata,
         DistributionType.STANDARD,
         merkleTreeGenerator,
