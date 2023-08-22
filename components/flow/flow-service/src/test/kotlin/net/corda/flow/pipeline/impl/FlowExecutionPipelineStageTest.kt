@@ -8,6 +8,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.fiber.Interruptable
 import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.metrics.FlowIORequestTypeConverter
 import net.corda.flow.pipeline.events.FlowEventContext
@@ -23,11 +24,13 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.AdditionalAnswers
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.util.concurrent.Future
+import java.util.concurrent.TimeoutException
 
 class FlowExecutionPipelineStageTest {
 
@@ -60,7 +63,8 @@ class FlowExecutionPipelineStageTest {
                 WaitingFor(ExternalEventResponse()) to FlowContinuation.Continue
             )
         )
-        val newContext = createContext(WaitingFor(ExternalEventResponse()))
+        val checkpoint = mock<FlowCheckpoint>()
+        val newContext = createContext(waitingFor = WaitingFor(ExternalEventResponse()))
         val requestHandlers = createRequestHandlerMap(
             mapOf(fiberOutput to Pair(WaitingFor(ExternalEventResponse()), newContext))
         )
@@ -74,10 +78,12 @@ class FlowExecutionPipelineStageTest {
             ioRequestTypeConverter
         )
 
-        val context = createContext()
+        val context = createContext(checkpoint = checkpoint)
         val outputContext = stage.runFlow(context, TIMEOUT)
         assertEquals(newContext, outputContext)
         verifyInteractions(fiberOutputs)
+        verify(checkpoint).waitingFor = WaitingFor(ExternalEventResponse())
+        verify(checkpoint).suspendedOn = fiberOutput::class.qualifiedName
     }
 
     @Test
@@ -88,8 +94,10 @@ class FlowExecutionPipelineStageTest {
                 WaitingFor(ExternalEventResponse()) to FlowContinuation.Run()
             )
         )
-        val newContext = createContext(WaitingFor(ExternalEventResponse()))
-        val secondContext = createContext(WaitingFor(null))
+        val checkpoint = mock<FlowCheckpoint>()
+        val newCheckpoint = mock<FlowCheckpoint>()
+        val newContext = createContext(checkpoint = newCheckpoint, waitingFor = WaitingFor(ExternalEventResponse()))
+        val secondContext = createContext(waitingFor = WaitingFor(null))
         val requestHandlers = createRequestHandlerMap(
             mapOf(
                 fiberOutput to Pair(WaitingFor(ExternalEventResponse()), newContext),
@@ -106,10 +114,77 @@ class FlowExecutionPipelineStageTest {
             ioRequestTypeConverter
         )
 
-        val context = createContext()
+        val context = createContext(checkpoint = checkpoint)
         val outputContext = stage.runFlow(context, TIMEOUT)
         assertEquals(secondContext, outputContext)
         verifyInteractions(fiberOutputs)
+        verify(checkpoint).waitingFor = WaitingFor(ExternalEventResponse())
+        verify(checkpoint).suspendedOn = fiberOutput::class.qualifiedName
+        verify(newCheckpoint).waitingFor = WaitingFor(null)
+        verify(newCheckpoint).suspendedOn = FlowIORequest.FlowFinished::class.qualifiedName
+    }
+
+    @Test
+    fun `when the fiber is not run at all, context is not updated`() {
+        val waitingForHandlers = createWaitingForHandlerMap(
+            mapOf(
+                WaitingFor(SessionConfirmation()) to FlowContinuation.Continue,
+                WaitingFor(ExternalEventResponse()) to FlowContinuation.Continue
+            )
+        )
+        val checkpoint = mock<FlowCheckpoint>()
+        val newContext = createContext(waitingFor = WaitingFor(ExternalEventResponse()))
+        val requestHandlers = createRequestHandlerMap(
+            mapOf(fiberOutput to Pair(WaitingFor(ExternalEventResponse()), newContext))
+        )
+        val fiberOutputs = listOf<FlowIORequest<Any?>>()
+        val flowRunner = createFlowRunner(fiberOutputs)
+        val stage = FlowExecutionPipelineStage(
+            waitingForHandlers,
+            requestHandlers,
+            flowRunner,
+            fiberCache,
+            ioRequestTypeConverter
+        )
+
+        val context = createContext(checkpoint = checkpoint)
+        val outputContext = stage.runFlow(context, TIMEOUT)
+        assertEquals(context, outputContext)
+        verifyInteractions(fiberOutputs)
+        verify(checkpoint, never()).waitingFor = any()
+        verify(checkpoint, never()).suspendedOn = any()
+    }
+
+    @Test
+    fun `when the flow is to be resumed with an error, context is updated correctly`() {
+        // The choice of waiting for values doesn't matter here.
+        val waitingForHandlers = createWaitingForHandlerMap(
+            mapOf(
+                WaitingFor(SessionConfirmation()) to FlowContinuation.Error(Exception()),
+                WaitingFor(ExternalEventResponse()) to FlowContinuation.Continue
+            )
+        )
+        val checkpoint = mock<FlowCheckpoint>()
+        val newContext = createContext(waitingFor = WaitingFor(ExternalEventResponse()))
+        val requestHandlers = createRequestHandlerMap(
+            mapOf(fiberOutput to Pair(WaitingFor(ExternalEventResponse()), newContext))
+        )
+        val fiberOutputs = listOf(flowSuspended)
+        val flowRunner = createFlowRunner(fiberOutputs)
+        val stage = FlowExecutionPipelineStage(
+            waitingForHandlers,
+            requestHandlers,
+            flowRunner,
+            fiberCache,
+            ioRequestTypeConverter
+        )
+
+        val context = createContext(checkpoint = checkpoint)
+        val outputContext = stage.runFlow(context, TIMEOUT)
+        assertEquals(newContext, outputContext)
+        verifyInteractions(fiberOutputs)
+        verify(checkpoint).waitingFor = WaitingFor(ExternalEventResponse())
+        verify(checkpoint).suspendedOn = fiberOutput::class.qualifiedName
     }
 
     @Test
@@ -119,7 +194,8 @@ class FlowExecutionPipelineStageTest {
                 WaitingFor(SessionConfirmation()) to FlowContinuation.Run()
             )
         )
-        val newContext = createContext(WaitingFor(null))
+        val checkpoint = mock<FlowCheckpoint>()
+        val newContext = createContext(waitingFor = WaitingFor(null))
         val requestHandlers = createRequestHandlerMap(
             mapOf(FlowIORequest.FlowFailed(IllegalArgumentException()) to Pair(WaitingFor(null), newContext))
         )
@@ -133,10 +209,48 @@ class FlowExecutionPipelineStageTest {
             ioRequestTypeConverter
         )
 
-        val context = createContext()
+        val context = createContext(checkpoint = checkpoint)
         val outputContext = stage.runFlow(context, TIMEOUT)
         assertEquals(newContext, outputContext)
         verifyInteractions(fiberOutputs)
+        verify(checkpoint).waitingFor = WaitingFor(null)
+        verify(checkpoint).suspendedOn = FlowIORequest.FlowFailed::class.qualifiedName
+    }
+
+    @Test
+    fun `when the timer expires for running the flow, fail it and attempt to interrupt`() {
+        val waitingForHandlers = createWaitingForHandlerMap(
+            mapOf(
+                WaitingFor(SessionConfirmation()) to FlowContinuation.Run(),
+                WaitingFor(ExternalEventResponse()) to FlowContinuation.Continue
+            )
+        )
+        val checkpoint = mock<FlowCheckpoint>()
+        val newContext = createContext(waitingFor = WaitingFor(ExternalEventResponse()))
+        val requestHandlers = createRequestHandlerMap(
+            mapOf(
+                fiberOutput to Pair(WaitingFor(ExternalEventResponse()), newContext),
+                FlowIORequest.FlowFailed(IllegalArgumentException()) to Pair(WaitingFor(null), newContext)
+            )
+        )
+        val fiberOutputs = listOf(FlowIORequest.FlowFailed(IllegalArgumentException()))
+        val fiberFuture = mock<FiberFuture>()
+        val flowRunner = createFlowRunner(fiberOutputs, timeoutFlow = true, fiberFuture = fiberFuture)
+        val stage = FlowExecutionPipelineStage(
+            waitingForHandlers,
+            requestHandlers,
+            flowRunner,
+            fiberCache,
+            ioRequestTypeConverter
+        )
+
+        val context = createContext(checkpoint = checkpoint)
+        val outputContext = stage.runFlow(context, TIMEOUT)
+        assertEquals(newContext, outputContext)
+        verifyInteractions(fiberOutputs)
+        verify(checkpoint).waitingFor = WaitingFor(null)
+        verify(checkpoint).suspendedOn = FlowIORequest.FlowFailed::class.qualifiedName
+        verify(fiberFuture).interruptable
     }
 
     @Test
@@ -145,7 +259,7 @@ class FlowExecutionPipelineStageTest {
             mapOf(
             )
         )
-        val newContext = createContext(WaitingFor(ExternalEventResponse()))
+        val newContext = createContext(waitingFor = WaitingFor(ExternalEventResponse()))
         val requestHandlers = createRequestHandlerMap(
             mapOf(fiberOutput to Pair(WaitingFor(ExternalEventResponse()), newContext))
         )
@@ -231,10 +345,10 @@ class FlowExecutionPipelineStageTest {
     }
 
     private fun createContext(
+        checkpoint: FlowCheckpoint = mock<FlowCheckpoint>(),
         waitingFor: WaitingFor? = WaitingFor(SessionConfirmation())
     ) : FlowEventContext<Any> {
         val context = mock<FlowEventContext<Any>>()
-        val checkpoint = mock<FlowCheckpoint>()
         whenever(context.checkpoint).thenReturn(checkpoint)
         whenever(context.flowMetrics).thenReturn(metrics)
         whenever(checkpoint.waitingFor).thenReturn(waitingFor)
@@ -243,13 +357,24 @@ class FlowExecutionPipelineStageTest {
     }
 
     private fun createFlowRunner(
-        results: List<FlowIORequest<Any?>>
+        results: List<FlowIORequest<Any?>>,
+        timeoutFlow: Boolean = false,
+        fiberFuture: FiberFuture = mock<FiberFuture>()
     ) : FlowRunner {
         val flowRunner = mock<FlowRunner>()
-        val fiberFuture = mock<FiberFuture>()
         val future = mock<Future<FlowIORequest<*>>>()
         whenever(fiberFuture.future).thenReturn(future)
-        whenever(future.get(any(), any())).thenAnswer(AdditionalAnswers.returnsElementsOf<FlowIORequest<*>>(results))
+        if (!timeoutFlow) {
+            whenever(
+                future.get(
+                    any(),
+                    any()
+                )
+            ).thenAnswer(AdditionalAnswers.returnsElementsOf<FlowIORequest<*>>(results))
+        } else {
+            whenever(fiberFuture.interruptable).thenReturn(mock<Interruptable>())
+            whenever(future.get(any(), any())).thenThrow(TimeoutException("Foo"))
+        }
         whenever(flowRunner.runFlow(any(), any())).thenReturn(fiberFuture)
         return flowRunner
     }
