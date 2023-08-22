@@ -11,13 +11,13 @@ import net.corda.ledger.utxo.flow.impl.groupparameters.GroupParametersLookupInte
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
-import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
+import net.corda.v5.membership.GroupParameters
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -80,7 +80,7 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
         )
     }
 
-    override fun getGroupParameters(wireTransaction: WireTransaction): SignedGroupParameters {
+    override fun getGroupParameters(wireTransaction: WireTransaction): GroupParameters {
         val membershipGroupParametersHashString =
             requireNotNull((wireTransaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()) {
                 "Membership group parameters hash cannot be found in the transaction metadata."

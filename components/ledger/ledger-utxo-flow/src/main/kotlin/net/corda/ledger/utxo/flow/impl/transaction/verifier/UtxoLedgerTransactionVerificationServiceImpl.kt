@@ -71,10 +71,10 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
     @Suspendable
     private fun verifySignedGroupParameters(transaction: UtxoLedgerTransaction): SignedGroupParameters {
         val signedGroupParameters =
-            transaction.groupParameters
+            transaction.groupParameters as SignedGroupParameters
         signedGroupParametersVerifier.verify(
             transaction,
-            signedGroupParameters as SignedGroupParameters
+            signedGroupParameters
         )
         return signedGroupParameters
     }
