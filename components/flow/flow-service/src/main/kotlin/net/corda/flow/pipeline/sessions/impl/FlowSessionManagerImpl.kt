@@ -220,12 +220,11 @@ class FlowSessionManagerImpl @Activate constructor(
         sessionIds: List<String>,
         status: SessionStateType
     ): List<SessionState> {
-        val matchedSessions = sessionIds.map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
-        matchedSessions.map {
-            getSessionsWithStatus(
-        }.flatten()
-        return matchedSessions
-
+        return sessionIds
+            .map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
+            .onEach {
+                it.status = SessionStateType.CLOSED
+            }
     }
 
     override fun getSessionsWithStatuses(
