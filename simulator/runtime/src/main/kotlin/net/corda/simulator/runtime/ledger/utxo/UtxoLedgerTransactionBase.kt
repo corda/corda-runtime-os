@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.simulator.runtime.ledger.consensual.SimTransactionMetadata
 import net.corda.simulator.runtime.serialization.BaseSerializationService
@@ -152,6 +153,7 @@ data class UtxoLedgerTransactionBase(
         return emptyList() // TODO Not yet Implemented
     }
 
+    @JsonIgnore
     override fun getGroupParameters(): GroupParameters {
         TODO("Not implemented")
     }
