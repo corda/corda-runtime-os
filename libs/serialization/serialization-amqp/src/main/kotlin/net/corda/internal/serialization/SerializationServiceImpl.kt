@@ -3,6 +3,7 @@ package net.corda.internal.serialization
 import net.corda.base.internal.sequence
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
+import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.serialization.SerializationContext
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.serialization.SerializedBytes
@@ -10,8 +11,8 @@ import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 
 class SerializationServiceImpl(
-    private val serializationOutput: SerializationOutput,
-    private val deserializationInput: DeserializationInput,
+    private val outputFactory: SerializerFactory,
+    private val inputFactory: SerializerFactory,
     private val context: SerializationContext
 ) : SerializationService {
 
@@ -19,7 +20,7 @@ class SerializationServiceImpl(
         return try {
             @Suppress("deprecation", "removal")
             java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
-                serializationOutput.serialize(obj, context)
+                SerializationOutput(outputFactory).serialize(obj, context)
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception
@@ -30,7 +31,7 @@ class SerializationServiceImpl(
         return try {
             @Suppress("deprecation", "removal")
             java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
-                deserializationInput.deserialize(serializedBytes.unwrap(), clazz, context)
+                DeserializationInput(inputFactory).deserialize(serializedBytes.unwrap(), clazz, context)
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception
@@ -41,7 +42,7 @@ class SerializationServiceImpl(
         return try {
             @Suppress("deprecation", "removal")
             java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
-                deserializationInput.deserialize(bytes.sequence(), clazz, context)
+                DeserializationInput(inputFactory).deserialize(bytes.sequence(), clazz, context)
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception

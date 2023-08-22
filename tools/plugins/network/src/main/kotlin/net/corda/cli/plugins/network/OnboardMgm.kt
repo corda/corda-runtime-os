@@ -4,7 +4,7 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
-import net.corda.cli.plugins.network.utils.PrintUtils.Companion.verifyAndPrintError
+import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.membership.rest.v1.MGMRestResource
 import picocli.CommandLine.Command

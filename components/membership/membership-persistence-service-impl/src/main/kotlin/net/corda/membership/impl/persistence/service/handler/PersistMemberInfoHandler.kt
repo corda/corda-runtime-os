@@ -2,7 +2,6 @@ package net.corda.membership.impl.persistence.service.handler
 
 import javax.persistence.LockModeType
 import net.corda.avro.serialization.CordaAvroDeserializer
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistMemberInfo
@@ -14,43 +13,31 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
-import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.virtualnode.toCorda
 
 internal class PersistMemberInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<PersistMemberInfo, Unit>(persistenceHandlerServices) {
     override val operation = PersistMemberInfo::class.java
-    private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
-        cordaAvroSerializationFactory.createAvroSerializer {
-            logger.error("Failed to serialize key value pair list.")
-        }
+
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroDeserializer(
             { logger.error("Failed to deserialize key value pair list.") },
             KeyValuePairList::class.java
         )
 
-    private fun serializeContext(context: KeyValuePairList): ByteArray {
-        return wrapWithNullErrorHandling({
-            MembershipPersistenceException("Failed to serialize key value pair list.", it)
-        }) {
-            keyValuePairListSerializer.serialize(context)
-        }
-    }
-
     private fun deserialize(data: ByteArray): KeyValuePairList {
         return keyValuePairListDeserializer.deserialize(data) ?: throw MembershipPersistenceException(
-            "Failed to serialize key value pair list."
+            "Failed to deserialize key value pair list."
         )
     }
 
-
     override fun invoke(context: MembershipRequestContext, request: PersistMemberInfo) {
-        if (request.members.isNotEmpty()) {
+        if (request.signedMembers.isNotEmpty()) {
+            logger.info("Persisting member information.")
             transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-                request.members.forEach {
-                    val newMemberInfo = memberInfoFactory.create(it.persistentMemberInfo)
+                request.signedMembers.forEach {
+                    val newMemberInfo = memberInfoFactory.createMemberInfo(it)
                     logger.info(
                         "Persisting member information representing ${newMemberInfo.name} as viewed " +
                                 "by ${context.holdingIdentity.x500Name} in group ${context.holdingIdentity.groupId}."
@@ -69,13 +56,15 @@ internal class PersistMemberInfoHandler(
                     if (!newPendingVersion && oldMemberInfo?.serialNumber == newMemberInfo.serial) {
                         val currentMemberContext = deserialize(oldMemberInfo.memberContext)
                         val currentMgmContext = deserialize(oldMemberInfo.mgmContext)
-                        if (currentMemberContext.items != it.persistentMemberInfo.memberContext.items) {
+                        val updatedMemberContext = deserialize(it.signedMemberContext.data.array())
+                        val updatedMGMContext = deserialize(it.serializedMgmContext.array())
+                        if (currentMemberContext.items != updatedMemberContext.items) {
                             throw MembershipPersistenceException(
                                 "Cannot update member info with same serial number " +
                                         "(${newMemberInfo.serial}): member context differs from original."
                             )
                         }
-                        if (currentMgmContext.toMap().removeTime() != it.persistentMemberInfo.mgmContext.toMap()
+                        if (currentMgmContext.toMap().removeTime() != updatedMGMContext.toMap()
                                 .removeTime()
                         ) {
                             throw MembershipPersistenceException(
@@ -92,11 +81,11 @@ internal class PersistMemberInfoHandler(
                         newMemberInfo.status == MEMBER_STATUS_PENDING,
                         newMemberInfo.status,
                         clock.instant(),
-                        serializeContext(it.persistentMemberInfo.memberContext),
-                        it.memberSignature.publicKey.array(),
-                        it.memberSignature.bytes.array(),
-                        it.memberSignatureSpec.signatureName,
-                        serializeContext(it.persistentMemberInfo.mgmContext),
+                        it.signedMemberContext.data.array(),
+                        it.signedMemberContext.signature.publicKey.array(),
+                        it.signedMemberContext.signature.bytes.array(),
+                        it.signedMemberContext.signatureSpec.signatureName,
+                        it.serializedMgmContext.array(),
                         newMemberInfo.serial,
                         isDeleted = false
                     )

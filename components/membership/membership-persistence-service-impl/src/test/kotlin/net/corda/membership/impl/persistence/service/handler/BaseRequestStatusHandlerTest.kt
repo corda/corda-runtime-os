@@ -59,22 +59,16 @@ class BaseRequestStatusHandlerTest {
             REASON,
         )
 
-        val deserializedContext = KeyValuePairList(
+        val deserializedMemberContext = KeyValuePairList(
             listOf(
                 KeyValuePair("key", "value"),
                 KeyValuePair("registrationProtocolVersion", PROTOCOL_VERSION.toString())
             )
         )
-        val deserializedRegistrationContext = KeyValuePairList(
-            listOf(
-                KeyValuePair("key-1", "value-1")
-            )
-        )
     }
 
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
-        on { deserialize(memberContext) } doReturn deserializedContext
-        on { deserialize(registrationContext) } doReturn deserializedRegistrationContext
+        on { deserialize(memberContext) } doReturn deserializedMemberContext
     }
     private val serializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
@@ -102,23 +96,23 @@ class BaseRequestStatusHandlerTest {
             softly.assertThat(details.registrationLastModified).isEqualTo(modified)
             softly.assertThat(details.registrationStatus).isEqualTo(RegistrationStatus.SENT_TO_MGM)
             softly.assertThat(details.registrationProtocolVersion).isEqualTo(PROTOCOL_VERSION)
-            softly.assertThat(details.memberProvidedContext).isEqualTo(deserializedContext)
-            softly.assertThat(details.memberSignature).isEqualTo(
+            softly.assertThat(details.memberProvidedContext.data.array()).isEqualTo(memberContext)
+            softly.assertThat(details.memberProvidedContext.signature).isEqualTo(
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(memberSignatureKey),
                     ByteBuffer.wrap(memberSignatureContent)
                 )
             )
-            softly.assertThat(details.memberSignatureSpec)
+            softly.assertThat(details.memberProvidedContext.signatureSpec)
                 .isEqualTo(CryptoSignatureSpec(SIGNATURE_SPEC, null, null))
-            softly.assertThat(details.registrationContext).isEqualTo(deserializedRegistrationContext)
-            softly.assertThat(details.registrationContextSignature).isEqualTo(
+            softly.assertThat(details.registrationContext.data.array()).isEqualTo(registrationContext)
+            softly.assertThat(details.registrationContext.signature).isEqualTo(
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(registrationSignatureKey),
                     ByteBuffer.wrap(registrationSignatureContent)
                 )
             )
-            softly.assertThat(details.registrationContextSignatureSpec)
+            softly.assertThat(details.registrationContext.signatureSpec)
                 .isEqualTo(CryptoSignatureSpec(REG_SIGNATURE_SPEC, null, null))
             softly.assertThat(details.reason).isEqualTo(REASON)
         }
@@ -148,7 +142,7 @@ class BaseRequestStatusHandlerTest {
         val details = with(handler) {
             entityWithEmptySignatureSpec.toDetails()
         }
-        assertThat(details.memberSignatureSpec)
+        assertThat(details.memberProvidedContext.signatureSpec)
             .isEqualTo(CryptoSignatureSpec(emptySpec, null, null))
     }
 
@@ -251,7 +245,7 @@ class BaseRequestStatusHandlerTest {
 
     @Test
     fun `toDetails return default protocol version if context is null`() {
-        whenever(keyValuePairListDeserializer.deserialize(memberContext)).doReturn(KeyValuePairList())
+        whenever(keyValuePairListDeserializer.deserialize(memberContext)).doReturn(KeyValuePairList(emptyList()))
 
         val details = with(handler) {
             entity.toDetails()
@@ -262,7 +256,7 @@ class BaseRequestStatusHandlerTest {
 
     @Test
     fun `toDetails sets reason to null by default`() {
-        whenever(keyValuePairListDeserializer.deserialize(memberContext)).doReturn(KeyValuePairList())
+        whenever(keyValuePairListDeserializer.deserialize(memberContext)).doReturn(KeyValuePairList(emptyList()))
         val entity = RegistrationRequestEntity(
             REGISTRATION_ID,
             HOLDING_ID_HASH,

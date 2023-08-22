@@ -2,6 +2,8 @@ package net.corda.p2p.linkmanager.sessions
 
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.linkmanager.sessions.OutboundSessionPool.SessionCounterpartiesKey.Companion.toKey
+import net.corda.virtualnode.HoldingIdentity
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 
@@ -16,8 +18,8 @@ internal class OutboundSessionPool(
     private val calculateWeightForSession: (sessionId: String) -> Long?,
     private val genRandomNumber: (until: Long) -> Long = { until -> Random.nextLong(until) }
 ) {
-    private val outboundSessions = ConcurrentHashMap<SessionManager.SessionCounterparties, ConcurrentHashMap<String, SessionType>>()
-    private val counterpartiesForSessionId = ConcurrentHashMap<String, SessionManager.SessionCounterparties>()
+    private val outboundSessions = ConcurrentHashMap<SessionCounterpartiesKey, ConcurrentHashMap<String, SessionType>>()
+    private val counterpartiesForSessionId = ConcurrentHashMap<String, SessionCounterpartiesKey>()
 
     sealed class SessionType {
         data class PendingSession(
@@ -25,7 +27,21 @@ internal class OutboundSessionPool(
             val protocol: AuthenticationProtocolInitiator
         ) : SessionType()
 
-        data class ActiveSession(val sessionCounterparties: SessionManager.SessionCounterparties, val session: Session) : SessionType()
+        data class ActiveSession(val sessionCounterparties: SessionManager.BaseCounterparties, val session: Session) : SessionType()
+    }
+    private data class SessionCounterpartiesKey(
+        override val ourId: HoldingIdentity,
+        override val counterpartyId: HoldingIdentity,
+        val serial: Long,
+    ): SessionManager.BaseCounterparties {
+        companion object {
+            fun SessionManager.SessionCounterparties.toKey() : SessionCounterpartiesKey =
+                SessionCounterpartiesKey(
+                    ourId = this.ourId,
+                    counterpartyId = this.counterpartyId,
+                    serial = this.serial,
+                )
+        }
     }
 
     sealed class SessionPoolStatus {
@@ -40,7 +56,9 @@ internal class OutboundSessionPool(
      * [SessionPoolStatus.SessionPending] is returned, otherwise [SessionPoolStatus.NewSessionsNeeded] is returned.
      */
     fun getNextSession(sessionCounterparties: SessionManager.SessionCounterparties): SessionPoolStatus {
-        val outboundSessionsForCounterparties = outboundSessions[sessionCounterparties] ?: return SessionPoolStatus.NewSessionsNeeded
+        val outboundSessionsForCounterparties =
+            outboundSessions[sessionCounterparties.toKey()]
+                ?: return SessionPoolStatus.NewSessionsNeeded
 
         val activeSessions = outboundSessionsForCounterparties.mapNotNull { (_, session) ->
             session as? SessionType.ActiveSession
@@ -107,31 +125,32 @@ internal class OutboundSessionPool(
         sessionCounterparties: SessionManager.SessionCounterparties,
         authenticationProtocols: List<AuthenticationProtocolInitiator>
     ) {
-        outboundSessions.compute(sessionCounterparties) { _, _ ->
+        outboundSessions.compute(sessionCounterparties.toKey()) { _, _ ->
             val sessionsMap = ConcurrentHashMap<String, SessionType>()
             authenticationProtocols.forEach { sessionsMap[it.sessionId] = SessionType.PendingSession(sessionCounterparties, it) }
             sessionsMap
         }
-        authenticationProtocols.forEach{ counterpartiesForSessionId[it.sessionId] = sessionCounterparties }
+        authenticationProtocols.forEach{ counterpartiesForSessionId[it.sessionId] = sessionCounterparties.toKey() }
     }
 
     /**
      * Remove a single [AuthenticationProtocolInitiator] or [Session] in the pool and replace it
      * with a [AuthenticationProtocolInitiator].
      */
-    fun replaceSession(timedOutSessionId: String,
-                       newPendingSession: AuthenticationProtocolInitiator
+    fun replaceSession(
+        counterparties: SessionManager.SessionCounterparties,
+        timedOutSessionId: String,
+        newPendingSession: AuthenticationProtocolInitiator,
     ): Boolean {
         var removed = false
-        val counterparties = counterpartiesForSessionId[timedOutSessionId] ?: return removed
-        outboundSessions.computeIfPresent(counterparties) { _, sessions ->
+        outboundSessions.computeIfPresent(counterparties.toKey()) { _, sessions ->
             sessions.remove(timedOutSessionId) ?: return@computeIfPresent sessions
             removed = true
             sessions[newPendingSession.sessionId] = SessionType.PendingSession(counterparties, newPendingSession)
             sessions
         }
         counterpartiesForSessionId.remove(timedOutSessionId)
-        if (removed) counterpartiesForSessionId[newPendingSession.sessionId] = counterparties
+        if (removed) counterpartiesForSessionId[newPendingSession.sessionId] = counterparties.toKey()
         return removed
     }
 
@@ -139,11 +158,8 @@ internal class OutboundSessionPool(
      * Remove all the Sessions in the pool for a set of [sessionCounterparties]
      */
     fun removeSessions(sessionCounterparties: SessionManager.SessionCounterparties) {
-        val removedSessions = outboundSessions.remove(sessionCounterparties)
-        if (removedSessions != null) {
-            for (sessionId in removedSessions.keys()) {
-                counterpartiesForSessionId.remove(sessionId)
-            }
+        outboundSessions.remove(sessionCounterparties.toKey())?.also { removedSessions ->
+            removedSessions.keys.forEach(counterpartiesForSessionId::remove)
         }
     }
 
