@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.session.SessionState
 import net.corda.flow.RequestHandlerTestContext
 import net.corda.flow.application.sessions.SessionInfo
