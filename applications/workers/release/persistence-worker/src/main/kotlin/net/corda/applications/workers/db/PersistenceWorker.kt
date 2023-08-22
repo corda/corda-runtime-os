@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import picocli.CommandLine.Mixin
 
-/** The worker for uniqueness checks. */
+/** The worker for persistence processor. */
 @Suppress("Unused", "LongParameterList")
 @Component(service = [Application::class])
 class PersistenceWorker @Activate constructor(
