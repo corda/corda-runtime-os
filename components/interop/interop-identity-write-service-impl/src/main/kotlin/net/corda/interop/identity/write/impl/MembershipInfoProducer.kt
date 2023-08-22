@@ -69,7 +69,7 @@ class MembershipInfoProducer(private val publisher: AtomicReference<Publisher?>)
                     KeyValuePair(MemberInfoExtension.SOFTWARE_VERSION, "5.0.0.0-Fox10-RC03"),
                     KeyValuePair(MemberInfoExtension.PLATFORM_VERSION, "5000"),
                     KeyValuePair(MemberInfoExtension.INTEROP_ROLE, INTEROP_ROLE),
-                )
+                ).sorted()
 
                 if (realHoldingIdentity != null) {
                     memberContext.plus(
