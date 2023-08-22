@@ -273,7 +273,7 @@ class InteropProcessor(
         }
 
         val groupId = checkNotNull(memberProvidedContext.get(contextGroupIDKey)) {
-            "$errorPrefix, '$contextX500NameKey' property missing from member provided context."
+            "$errorPrefix, property '$contextGroupIDKey' is missing from member provided context."
         }
 
         return HoldingIdentity(MemberX500Name.parse(x500Name), groupId)
