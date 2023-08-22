@@ -186,7 +186,8 @@ class SoftCryptoServiceOperationsTests {
                             encodingVersion = key.encodingVersion
                         ),
                         keyScheme = scheme,
-                        signatureSpec = spec
+                        signatureSpec = spec,
+                        category = CryptoConsts.Categories.LEDGER
                     ),
                     UUID.randomUUID().toString().toByteArray(),
                     defaultContext
@@ -195,6 +196,35 @@ class SoftCryptoServiceOperationsTests {
         }
         verifySign(softAliasedKeys.getValue(scheme), spec)
         verifySign(softFreshKeys.getValue(scheme), spec)
+    }
+
+    @Test
+    fun `Should throw IllegalArgumentException when signing with invalid key category`() {
+        assertThrows<IllegalArgumentException> {
+            signCategoryTest("fake")
+        }
+    }
+
+    @Test
+    fun `Should throw IllegalArgumentException when signing with valid non matching key category`() {
+        assertThrows<IllegalArgumentException> {
+            signCategoryTest(CryptoConsts.Categories.TLS)
+        }
+    }
+
+    @Test
+    fun `Should succeed when signing with valid matching key category`() {
+        signCategoryTest(CryptoConsts.Categories.LEDGER)
+    }
+
+    private fun signCategoryTest(category: String) {
+        val scheme = schemeMetadata.schemes.first { it.codeName == RSA_CODE_NAME }
+        val key = softAliasedKeys.getValue(scheme)
+        cryptoService.sign(
+            makeSigningWrappedSpec(scheme, key, CryptoConsts.Categories.LEDGER),
+            ByteArray(2),
+            defaultContext + mapOf("category" to category)
+        )
     }
 
 
@@ -238,13 +268,15 @@ class SoftCryptoServiceOperationsTests {
     private fun makeSigningWrappedSpec(
         scheme: KeyScheme,
         key: GeneratedWrappedKey,
+        category: String? = CryptoConsts.Categories.LEDGER
     ): SigningWrappedSpec {
         val signatureSpec = schemeMetadata.supportedSignatureSpec(scheme).first()
         return SigningWrappedSpec(
             publicKey = key.publicKey,
             keyMaterialSpec = KeyMaterialSpec(key.keyMaterial, knownWrappingKeyAlias, key.encodingVersion),
             keyScheme = scheme,
-            signatureSpec = signatureSpec
+            signatureSpec = signatureSpec,
+            category = category
         )
     }
 
