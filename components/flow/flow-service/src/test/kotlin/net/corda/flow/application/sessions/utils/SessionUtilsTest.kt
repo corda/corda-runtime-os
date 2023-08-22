@@ -8,7 +8,6 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
