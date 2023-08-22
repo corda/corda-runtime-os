@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline.handlers.waiting.sessions
 
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
@@ -24,7 +23,6 @@ class CounterpartyFlowInfoWaitingForHandlerTest {
     private companion object {
         const val SESSION_ID = "session id"
         const val ANOTHER_SESSION_ID = "another session id"
-        val sessions = listOf(SESSION_ID, ANOTHER_SESSION_ID)
     }
 
     private val checkpoint = mock<FlowCheckpoint>()
