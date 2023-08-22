@@ -18,7 +18,7 @@ class ExportGroupPolicy : Runnable, RestCommand() {
         names = ["--save"],
         description = ["Location to save the group policy file to (defaults to ~/.corda/gp/groupPolicy.json)"]
     )
-    var saveLocation: String = File(System.getProperty("user.home"), ".corda/gp/groupPolicy.json").path
+    var saveLocation: File = File(File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json")
 
     @Option(
         names = ["-h", "--holding-identity-short-hash"],
