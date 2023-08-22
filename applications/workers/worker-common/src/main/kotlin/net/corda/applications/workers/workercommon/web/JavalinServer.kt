@@ -11,7 +11,7 @@ import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
 
 @Component(service = [WorkerWebServer::class])
-class JavalinServer() : WorkerWebServer {
+class JavalinServer : WorkerWebServer {
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)

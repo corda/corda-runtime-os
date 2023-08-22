@@ -2,7 +2,6 @@ package net.corda.applications.workers.workercommon.web
 
 import io.javalin.http.Context
 import java.io.InputStream
-import net.corda.applications.workers.workercommon.web.WebContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
 
 class JavalinContext(private val ctx: Context) : WebContext {
