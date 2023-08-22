@@ -1,6 +1,9 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.core.ShortHash
+import net.corda.data.KeyValuePairList
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
@@ -32,8 +35,9 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.membership.client.MemberResourceClient
+import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.lib.MemberInfoExtension
-import net.corda.membership.lib.toMap
+import net.corda.membership.lib.deserializeContext
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -47,13 +51,23 @@ internal class VirtualNodeUpgradeOperationHandler(
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val memberResourceClient: MemberResourceClient,
     private val membershipQueryClient: MembershipQueryClient,
+    private val externalMessagingRouteConfigGenerator: ExternalMessagingRouteConfigGenerator,
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository(),
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
-    private val externalMessagingRouteConfigGenerator: ExternalMessagingRouteConfigGenerator
 ) : VirtualNodeAsyncOperationHandler<VirtualNodeUpgradeRequest> {
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
+    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
+        cordaAvroSerializationFactory.createAvroDeserializer(
+            {
+                logger.error("Failed to deserialize key value pair list.")
+            },
+            KeyValuePairList::class.java
+        )
     }
 
     override fun handle(
@@ -203,21 +217,27 @@ internal class VirtualNodeUpgradeOperationHandler(
             val x500Name = membershipGroupReader.owningMember
             val registrationRequest = membershipQueryClient
                 .queryRegistrationRequests(holdingIdentity, x500Name, limit = 1)
-            val registrationContext = (registrationRequest as MembershipQueryResult.Success)
-                .payload
-                .first()
-                .memberProvidedContext
-                .toMap().toMutableMap()
+            try {
+                val registrationContext = (registrationRequest as MembershipQueryResult.Success)
+                    .payload
+                    .first()
+                    .memberProvidedContext.data.array()
+                    .deserializeContext(keyValuePairListDeserializer)
+                    .toMutableMap()
 
-            if (registrationContext.containsKey(MemberInfoExtension.SERIAL)) {
-                registrationContext[MemberInfoExtension.SERIAL] =
-                    membershipGroupReader.lookup(x500Name)?.serial.toString()
+                if (registrationContext.containsKey(MemberInfoExtension.SERIAL)) {
+                    registrationContext[MemberInfoExtension.SERIAL] =
+                        membershipGroupReader.lookup(x500Name)?.serial.toString()
+                }
+
+                memberResourceClient.startRegistration(
+                    holdingIdentity.shortHash,
+                    registrationContext,
+                )
+            } catch (e: ContextDeserializationException) {
+                logger.warn("Could not deserialize previous registration context for ${holdingIdentity.shortHash}. " +
+                        "Re-registration won't be attempted.")
             }
-
-            memberResourceClient.startRegistration(
-                holdingIdentity.shortHash,
-                registrationContext
-            )
         }
     }
 

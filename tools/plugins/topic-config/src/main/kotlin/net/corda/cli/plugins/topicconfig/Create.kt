@@ -70,7 +70,7 @@ class Create(
         "link-manager" to listOf("p2pLinkManager", "combined"),
         "persistence" to listOf("persistence", "combined"),
         "rest" to listOf("rest", "combined"),
-        "uniqueness" to listOf("db", "combined")
+        "uniqueness" to listOf("uniqueness", "combined")
     )
 
     fun getTopicConfigs(): List<TopicConfig> {

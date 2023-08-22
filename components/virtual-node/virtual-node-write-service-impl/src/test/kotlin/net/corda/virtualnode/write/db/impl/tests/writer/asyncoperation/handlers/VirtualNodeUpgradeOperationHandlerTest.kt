@@ -1,7 +1,10 @@
 package net.corda.virtualnode.write.db.impl.tests.writer.asyncoperation.handlers
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
+import net.corda.data.KeyValuePairList
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
@@ -37,6 +40,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -96,6 +100,11 @@ class VirtualNodeUpgradeOperationHandlerTest {
         whenever(it.findByCpiId(any(), any())).thenReturn(cpkDbChangelogs)
     }
 
+    private val deserializer= mock<CordaAvroDeserializer<KeyValuePairList>>()
+    private val cordaAvroSerializationFactory= mock<CordaAvroSerializationFactory> {
+        on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
+    }
+
     private val handler = VirtualNodeUpgradeOperationHandler(
         entityManagerFactory,
         oldVirtualNodeEntityRepository,
@@ -104,9 +113,10 @@ class VirtualNodeUpgradeOperationHandlerTest {
         membershipGroupReaderProvider,
         memberResourceClient,
         membershipQueryClient,
+        externalMessagingRouteConfigGenerator,
+        cordaAvroSerializationFactory,
         mockCpkDbChangeLogRepository,
         virtualNodeRepository,
-        externalMessagingRouteConfigGenerator
     )
 
     private val holdingIdentity = HoldingIdentity(

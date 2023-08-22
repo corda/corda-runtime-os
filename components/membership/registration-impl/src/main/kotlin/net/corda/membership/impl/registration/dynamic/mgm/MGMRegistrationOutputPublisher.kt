@@ -1,21 +1,22 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
-import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.event.MembershipEvent
 import net.corda.data.membership.event.registration.MgmOnboarded
-import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.EVENT_TOPIC
 import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toAvro
 
-internal class MGMRegistrationOutputPublisher {
+internal class MGMRegistrationOutputPublisher(
+    private val memberInfoFactory: MemberInfoFactory,
+) {
 
     fun createRecords(
-        mgmInfo: MemberInfo
+        mgmInfo: SelfSignedMemberInfo
     ): Collection<Record<*, *>> {
         val holdingIdentity = mgmInfo.holdingIdentity
         val holdingIdentityShortHash = holdingIdentity.shortHash.value
@@ -23,10 +24,9 @@ internal class MGMRegistrationOutputPublisher {
         val mgmRecord = Record(
             MEMBER_LIST_TOPIC,
             "$holdingIdentityShortHash-$holdingIdentityShortHash",
-            PersistentMemberInfo(
+            memberInfoFactory.createPersistentMemberInfo(
                 avroHoldingIdentity,
-                mgmInfo.memberProvidedContext.toAvro(),
-                mgmInfo.mgmProvidedContext.toAvro()
+                mgmInfo,
             )
         )
 

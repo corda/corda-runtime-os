@@ -1,10 +1,10 @@
 package net.corda.cli.plugins.preinstall
 
-import net.corda.cli.plugins.preinstall.PreInstallPlugin.ResourceConfig
-import net.corda.cli.plugins.preinstall.PreInstallPlugin.ResourceValues
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.Configurations
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.PluginContext
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.ReportEntry
+import net.corda.cli.plugins.preinstall.PreInstallPlugin.ResourceConfig
+import net.corda.cli.plugins.preinstall.PreInstallPlugin.ResourceValues
 import picocli.CommandLine
 import picocli.CommandLine.Parameters
 import java.util.concurrent.Callable
@@ -166,6 +166,7 @@ class CheckLimits : Callable<Int>, PluginContext() {
         checkResources(yaml.workers?.rest?.resources, "rest")
         checkResources(yaml.workers?.p2pLinkManager?.resources, "P2P link manager")
         checkResources(yaml.workers?.p2pGateway?.resources, "P2P gateway")
+        checkResources(yaml.workers?.uniqueness?.resources, "uniqueness")
 
         return if (report.testsPassed()) {
             logger.info(report.toString())

@@ -12,3 +12,4 @@ kafka:
           - "p2pLinkManager"
           - "persistence"
           - "rest"
+          - "uniqueness"
