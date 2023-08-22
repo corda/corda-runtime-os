@@ -6,9 +6,9 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.waiting.WaitingFor
+import net.corda.data.flow.state.waiting.external.ExternalEventResponse
 import net.corda.flow.BOB_X500
 import net.corda.flow.FLOW_ID_1
-import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
@@ -22,13 +22,11 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.params.provider.Arguments
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.stream.Stream
 import net.corda.data.flow.state.waiting.Wakeup as WakeUpWaitingFor
 
 class FlowEventPipelineImplTest {
@@ -60,19 +58,23 @@ class FlowEventPipelineImplTest {
         })
     }
 
-    private val inputContext = buildFlowEventContext<Any>(checkpoint, wakeUpEvent)
+    private val defaultinputContext = buildFlowEventContext<Any>(checkpoint, wakeUpEvent)
     private val outputContext = buildFlowEventContext<Any>(checkpoint, wakeUpEvent)
 
     private val wakeUpFlowEventHandler = mock<FlowEventHandler<Any>>().apply {
-        whenever(preProcess(inputContext)).thenReturn(outputContext)
+        whenever(preProcess(defaultinputContext)).thenReturn(outputContext)
     }
 
     private val startFlowEventHandler = mock<FlowEventHandler<Any>>().apply {
-        whenever(preProcess(inputContext)).thenReturn(outputContext)
+        whenever(preProcess(defaultinputContext)).thenReturn(outputContext)
+    }
+
+    private val externalEventResponseEventHandler = mock<FlowEventHandler<Any>>().apply {
+        whenever(preProcess(any())).thenReturn(outputContext)
     }
 
     private val flowGlobalPostProcessor = mock<FlowGlobalPostProcessor>().apply {
-        whenever(postProcess(inputContext)).thenReturn(outputContext)
+        whenever(postProcess(defaultinputContext)).thenReturn(outputContext)
     }
 
     private val mockFlowExecutionPipelineStage = mock<FlowExecutionPipelineStage>().apply {
@@ -84,9 +86,12 @@ class FlowEventPipelineImplTest {
         whenever(get(any())).thenReturn(virtualNodeInfo)
     }
 
-    private fun buildPipeline(): FlowEventPipelineImpl {
+    private fun buildPipeline(inputContext: FlowEventContext<Any> = defaultinputContext): FlowEventPipelineImpl {
         return FlowEventPipelineImpl(
-            mapOf(Wakeup::class.java to wakeUpFlowEventHandler, StartFlow::class.java to startFlowEventHandler),
+            mapOf(
+                Wakeup::class.java to wakeUpFlowEventHandler,
+                StartFlow::class.java to startFlowEventHandler,
+                ExternalEventResponse::class.java to externalEventResponseEventHandler),
             mockFlowExecutionPipelineStage,
             flowGlobalPostProcessor,
             inputContext,
@@ -94,21 +99,12 @@ class FlowEventPipelineImplTest {
         )
     }
 
-    companion object {
-        @JvmStatic
-        fun runFlowContinuationConditions(): Stream<Arguments> {
-            return Stream.of(
-                Arguments.of(FlowContinuation.Run()),
-                Arguments.of(FlowContinuation.Error(Exception()))
-            )
-        }
-    }
-
     @Test
     fun `eventPreProcessing with no retry calls the event handler`() {
-        val pipeline = buildPipeline()
+        val context = buildFlowEventContext<Any>(checkpoint, ExternalEventResponse("foo"))
+        val pipeline = buildPipeline(context)
         assertEquals(outputContext, pipeline.eventPreProcessing().context)
-        verify(wakeUpFlowEventHandler).preProcess(inputContext)
+        verify(externalEventResponseEventHandler).preProcess(context)
     }
 
     @Test
@@ -155,20 +151,20 @@ class FlowEventPipelineImplTest {
     fun `execute flow invokes the execute flow pipeline stage`() {
         val pipeline = buildPipeline()
         pipeline.executeFlow(RUN_OR_CONTINUE_TIMEOUT)
-        verify(mockFlowExecutionPipelineStage).runFlow(inputContext, RUN_OR_CONTINUE_TIMEOUT)
+        verify(mockFlowExecutionPipelineStage).runFlow(defaultinputContext, RUN_OR_CONTINUE_TIMEOUT)
     }
 
     @Test
     fun `globalPostProcessing calls the FlowGlobalPostProcessor when output is set`() {
         val pipeline = buildPipeline()
         assertEquals(outputContext, pipeline.globalPostProcessing().context)
-        verify(flowGlobalPostProcessor).postProcess(inputContext)
+        verify(flowGlobalPostProcessor).postProcess(defaultinputContext)
     }
 
     @Test
     fun `globalPostProcessing calls the FlowGlobalPostProcessor when output is not set`() {
         val pipeline = buildPipeline()
         assertEquals(outputContext, pipeline.globalPostProcessing().context)
-        verify(flowGlobalPostProcessor).postProcess(inputContext)
+        verify(flowGlobalPostProcessor).postProcess(defaultinputContext)
     }
 }
