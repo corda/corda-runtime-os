@@ -11,8 +11,8 @@ class ServiceConfigurationImpl : ServiceConfiguration {
         this.config = config
     }
 
-    override val cachedTokenPageSize: Int
-        get() = config?.getInt(UTXO_TOKEN_CACHED_TOKEN_PAGE_SIZE)
-            ?:throw IllegalStateException("The token service has not been configured.")
+    override val cachedTokenPageSize: Int = 1500
+//        get() = config?.getInt(UTXO_TOKEN_CACHED_TOKEN_PAGE_SIZE)
+//            ?:throw IllegalStateException("The token service has not been configured.")
 
 }
