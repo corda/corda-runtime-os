@@ -21,6 +21,9 @@ class WrappedUtxoWireTransaction(
     private val serializationService: SerializationService
 ) {
 
+    init{
+        log.warn("WrappedUtxoWireTransaction init", Exception());
+    }
     companion object {
         const val notaryNameIndex: Int = 0
         const val notaryKeyIndex: Int = 1
