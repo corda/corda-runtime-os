@@ -205,6 +205,30 @@ class SoftCryptoServiceOperationsTests {
         }
     }
 
+    @Test
+    fun `Should throw IllegalArgumentException when signing with valid non matching key category`() {
+        val scheme = schemeMetadata.schemes.first { it.codeName == RSA_CODE_NAME }
+        val key = softAliasedKeys.getValue(scheme)
+        assertThrows<IllegalArgumentException> {
+            cryptoService.sign(
+                makeSigningWrappedSpec(scheme, key, CryptoConsts.Categories.LEDGER),
+                ByteArray(2),
+                defaultContext + mapOf("category" to CryptoConsts.Categories.TLS)
+            )
+        }
+    }
+
+    @Test
+    fun `Should succeed when signing with valid matching key category`() {
+        val scheme = schemeMetadata.schemes.first { it.codeName == RSA_CODE_NAME }
+        val key = softAliasedKeys.getValue(scheme)
+        cryptoService.sign(
+            makeSigningWrappedSpec(scheme, key, CryptoConsts.Categories.LEDGER),
+            ByteArray(2),
+            defaultContext + mapOf("category" to CryptoConsts.Categories.LEDGER)
+        )
+    }
+
 
     @ParameterizedTest
     @MethodSource("deterministicSignatureSchemes")
