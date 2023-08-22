@@ -16,9 +16,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 class ExportGroupPolicy : Runnable, RestCommand() {
     @Option(
         names = ["--save"],
-        description = ["Save the exported group policy to a specific location"]
+        description = ["Location to save the group policy file to (defaults to ~/.corda/gp/groupPolicy.json)"]
     )
-    var saveLocation: String? = null
+    var saveLocation: String = File(System.getProperty("user.home"), ".corda/gp/groupPolicy.json").path
 
     @Option(
         names = ["-h", "--holding-identity-short-hash"],
@@ -48,19 +48,18 @@ class ExportGroupPolicy : Runnable, RestCommand() {
             }
         }
 
-        val groupPolicyFile = saveLocation?.let { File(it) } ?: getDefaultGroupPolicyFile()
-        groupPolicyFile.parentFile.mkdirs()
+        val groupPolicyFile = File(saveLocation)
+        groupPolicyFile.parentFile?.mkdirs()
+
+        if (!groupPolicyFile.exists()) {
+            groupPolicyFile.createNewFile()
+        }
+
         objectMapper.writerWithDefaultPrettyPrinter()
             .writeValue(
                 groupPolicyFile,
                 objectMapper.readTree(groupPolicyResponse)
             )
         println("Group policy exported and saved to: ${groupPolicyFile.absolutePath}")
-    }
-
-    private fun getDefaultGroupPolicyFile(): File {
-        val defaultLocation = File(System.getProperty("user.home"), ".corda/groupPolicy.json")
-        defaultLocation.parentFile.mkdirs()
-        return defaultLocation
     }
 }
