@@ -14,6 +14,7 @@ import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.impl.FlowEventPipelineImpl
+import net.corda.flow.pipeline.impl.FlowExecutionPipelineStage
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.impl.FlowCheckpointFactory
@@ -73,17 +74,20 @@ class FlowEventPipelineFactoryImplTest {
 
     @Test
     fun `Creates a FlowEventPipeline instance`() {
-
-        val expected = FlowEventPipelineImpl(
-            mapOf(Wakeup::class.java to flowEventHandler),
+        val expectedFlowExecutorStage = FlowExecutionPipelineStage(
             mapOf(net.corda.data.flow.state.waiting.Wakeup::class.java to flowWaitingForHandler),
             mapOf(FlowIORequest.ForceCheckpoint::class.java to flowRequestHandler),
             flowRunner,
+            flowFiberCache,
+            flowIORequestTypeConverter
+        )
+
+        val expected = FlowEventPipelineImpl(
+            mapOf(Wakeup::class.java to flowEventHandler),
+            expectedFlowExecutorStage,
             flowGlobalPostProcessor,
             flowEventContext,
             mock(),
-            flowFiberCache,
-            flowIORequestTypeConverter
         )
         val result = factory.create(checkpoint, flowEvent, config, emptyMap(), flowEventContext.flowTraceContext, 0)
         assertEquals(expected.context, result.context)

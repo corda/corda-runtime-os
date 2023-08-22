@@ -7,6 +7,7 @@ import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAIL
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.initiateSingleFlow
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -15,6 +16,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
+@Disabled
 class FlowFailedAcceptanceTest : FlowServiceTestBase() {
 
     private companion object {

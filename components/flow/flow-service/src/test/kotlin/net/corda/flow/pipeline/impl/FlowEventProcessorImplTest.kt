@@ -102,10 +102,8 @@ class FlowEventProcessorImplTest {
     private val flowEventPipeline = mock<FlowEventPipeline>().apply {
         whenever(eventPreProcessing()).thenReturn(this)
         whenever(virtualNodeFlowOperationalChecks()).thenReturn(this)
-        whenever(runOrContinue(any())).thenReturn(this)
-        whenever(setCheckpointSuspendedOn()).thenReturn(this)
-        whenever(setWaitingFor()).thenReturn(this)
-        whenever(requestPostProcessing()).thenReturn(this)
+
+        whenever(executeFlow(any())).thenReturn(this)
         whenever(globalPostProcessing()).thenReturn(this)
         whenever(context).thenReturn(updatedContext)
     }
@@ -174,10 +172,8 @@ class FlowEventProcessorImplTest {
         processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
         inOrder(flowEventPipeline) {
             verify(flowEventPipeline).eventPreProcessing()
-            verify(flowEventPipeline).runOrContinue(any())
-            verify(flowEventPipeline).setCheckpointSuspendedOn()
-            verify(flowEventPipeline).setWaitingFor()
-            verify(flowEventPipeline).requestPostProcessing()
+            verify(flowEventPipeline).virtualNodeFlowOperationalChecks()
+            verify(flowEventPipeline).executeFlow(any())
             verify(flowEventPipeline).globalPostProcessing()
         }
     }

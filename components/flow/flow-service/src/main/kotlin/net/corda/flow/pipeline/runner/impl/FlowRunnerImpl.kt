@@ -15,6 +15,8 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
+import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
+import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
@@ -53,11 +55,18 @@ class FlowRunnerImpl @Activate constructor(
                     "${platformInfoProvider.localWorkerPlatformVersion}.  The flow must be restarted.")
         }
 
+        val waitingFor = context.checkpoint.waitingFor?.value
         return when (val receivedEvent = context.inputEvent.payload) {
-            is StartFlow -> startFlow(context, receivedEvent)
+            is StartFlow -> {
+                if (waitingFor is WaitingForStartFlow) {
+                    startFlow(context, receivedEvent)
+                } else {
+                    resumeFlow(context, flowContinuation)
+                }
+            }
             is SessionEvent -> {
                 val payload = receivedEvent.payload
-                if (payload is SessionInit) {
+                if (payload is SessionInit && waitingFor is WaitingForSessionInit) {
                     startInitiatedFlow(context, payload)
                 } else {
                     resumeFlow(context, flowContinuation)

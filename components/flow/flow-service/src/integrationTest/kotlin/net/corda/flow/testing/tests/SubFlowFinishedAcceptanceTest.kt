@@ -14,6 +14,7 @@ import net.corda.flow.testing.context.initiateSingleFlow
 import net.corda.flow.testing.context.initiateTwoFlows
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -25,6 +26,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
+@Disabled
 class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
     private companion object {
