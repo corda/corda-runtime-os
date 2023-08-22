@@ -25,11 +25,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.flow.state.asFlowContext
-import net.corda.flow.utils.toMap
 import net.corda.interop.identity.registry.InteropIdentityRegistryService
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.toCorda
 
 
 @Suppress("LongParameterList")
