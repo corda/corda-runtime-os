@@ -23,6 +23,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.AdditionalAnswers
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -60,7 +61,8 @@ class FlowExecutionPipelineStageTest {
                 WaitingFor(ExternalEventResponse()) to FlowContinuation.Continue
             )
         )
-        val newContext = createContext(WaitingFor(ExternalEventResponse()))
+        val checkpoint = mock<FlowCheckpoint>()
+        val newContext = createContext(waitingFor = WaitingFor(ExternalEventResponse()))
         val requestHandlers = createRequestHandlerMap(
             mapOf(fiberOutput to Pair(WaitingFor(ExternalEventResponse()), newContext))
         )
@@ -74,10 +76,12 @@ class FlowExecutionPipelineStageTest {
             ioRequestTypeConverter
         )
 
-        val context = createContext()
+        val context = createContext(checkpoint = checkpoint)
         val outputContext = stage.runFlow(context, TIMEOUT)
         assertEquals(newContext, outputContext)
         verifyInteractions(fiberOutputs)
+        verify(checkpoint).waitingFor = WaitingFor(ExternalEventResponse())
+        verify(checkpoint).suspendedOn = fiberOutput::class.qualifiedName
     }
 
     @Test
@@ -88,8 +92,10 @@ class FlowExecutionPipelineStageTest {
                 WaitingFor(ExternalEventResponse()) to FlowContinuation.Run()
             )
         )
-        val newContext = createContext(WaitingFor(ExternalEventResponse()))
-        val secondContext = createContext(WaitingFor(null))
+        val checkpoint = mock<FlowCheckpoint>()
+        val newCheckpoint = mock<FlowCheckpoint>()
+        val newContext = createContext(checkpoint = newCheckpoint, waitingFor = WaitingFor(ExternalEventResponse()))
+        val secondContext = createContext(waitingFor = WaitingFor(null))
         val requestHandlers = createRequestHandlerMap(
             mapOf(
                 fiberOutput to Pair(WaitingFor(ExternalEventResponse()), newContext),
@@ -106,10 +112,14 @@ class FlowExecutionPipelineStageTest {
             ioRequestTypeConverter
         )
 
-        val context = createContext()
+        val context = createContext(checkpoint = checkpoint)
         val outputContext = stage.runFlow(context, TIMEOUT)
         assertEquals(secondContext, outputContext)
         verifyInteractions(fiberOutputs)
+        verify(checkpoint).waitingFor = WaitingFor(ExternalEventResponse())
+        verify(checkpoint).suspendedOn = fiberOutput::class.qualifiedName
+        verify(newCheckpoint).waitingFor = WaitingFor(null)
+        verify(newCheckpoint).suspendedOn = FlowIORequest.FlowFinished::class.qualifiedName
     }
 
     @Test
@@ -120,7 +130,8 @@ class FlowExecutionPipelineStageTest {
                 WaitingFor(ExternalEventResponse()) to FlowContinuation.Continue
             )
         )
-        val newContext = createContext(WaitingFor(ExternalEventResponse()))
+        val checkpoint = mock<FlowCheckpoint>()
+        val newContext = createContext(waitingFor = WaitingFor(ExternalEventResponse()))
         val requestHandlers = createRequestHandlerMap(
             mapOf(fiberOutput to Pair(WaitingFor(ExternalEventResponse()), newContext))
         )
@@ -134,10 +145,12 @@ class FlowExecutionPipelineStageTest {
             ioRequestTypeConverter
         )
 
-        val context = createContext()
+        val context = createContext(checkpoint = checkpoint)
         val outputContext = stage.runFlow(context, TIMEOUT)
         assertEquals(context, outputContext)
         verifyInteractions(fiberOutputs)
+        verify(checkpoint, never()).waitingFor = any()
+        verify(checkpoint, never()).suspendedOn = any()
     }
 
     @Test
@@ -149,7 +162,8 @@ class FlowExecutionPipelineStageTest {
                 WaitingFor(ExternalEventResponse()) to FlowContinuation.Continue
             )
         )
-        val newContext = createContext(WaitingFor(ExternalEventResponse()))
+        val checkpoint = mock<FlowCheckpoint>()
+        val newContext = createContext(waitingFor = WaitingFor(ExternalEventResponse()))
         val requestHandlers = createRequestHandlerMap(
             mapOf(fiberOutput to Pair(WaitingFor(ExternalEventResponse()), newContext))
         )
@@ -163,10 +177,12 @@ class FlowExecutionPipelineStageTest {
             ioRequestTypeConverter
         )
 
-        val context = createContext()
+        val context = createContext(checkpoint = checkpoint)
         val outputContext = stage.runFlow(context, TIMEOUT)
         assertEquals(newContext, outputContext)
         verifyInteractions(fiberOutputs)
+        verify(checkpoint).waitingFor = WaitingFor(ExternalEventResponse())
+        verify(checkpoint).suspendedOn = fiberOutput::class.qualifiedName
     }
 
     @Test
@@ -176,7 +192,8 @@ class FlowExecutionPipelineStageTest {
                 WaitingFor(SessionConfirmation()) to FlowContinuation.Run()
             )
         )
-        val newContext = createContext(WaitingFor(null))
+        val checkpoint = mock<FlowCheckpoint>()
+        val newContext = createContext(waitingFor = WaitingFor(null))
         val requestHandlers = createRequestHandlerMap(
             mapOf(FlowIORequest.FlowFailed(IllegalArgumentException()) to Pair(WaitingFor(null), newContext))
         )
@@ -190,10 +207,12 @@ class FlowExecutionPipelineStageTest {
             ioRequestTypeConverter
         )
 
-        val context = createContext()
+        val context = createContext(checkpoint = checkpoint)
         val outputContext = stage.runFlow(context, TIMEOUT)
         assertEquals(newContext, outputContext)
         verifyInteractions(fiberOutputs)
+        verify(checkpoint).waitingFor = WaitingFor(null)
+        verify(checkpoint).suspendedOn = FlowIORequest.FlowFailed::class.qualifiedName
     }
 
     @Test
@@ -202,7 +221,7 @@ class FlowExecutionPipelineStageTest {
             mapOf(
             )
         )
-        val newContext = createContext(WaitingFor(ExternalEventResponse()))
+        val newContext = createContext(waitingFor = WaitingFor(ExternalEventResponse()))
         val requestHandlers = createRequestHandlerMap(
             mapOf(fiberOutput to Pair(WaitingFor(ExternalEventResponse()), newContext))
         )
@@ -264,6 +283,10 @@ class FlowExecutionPipelineStageTest {
         // Fiber cache
         verify(fiberCache, times(suspends.filter { (it as FlowIORequest.FlowSuspended<*>).cacheableFiber != null }.size)).put(any(), any())
         verify(fiberCache, times(other.size)).remove(any<FlowKey>())
+
+        // Checkpoint
+//        verify(checkpoint, times(suspends.size)).suspendedOn = any()
+//        verify(checkpoint, times(suspends.size)).waitingFor = any()
     }
 
     private fun createWaitingForHandlerMap(
@@ -288,10 +311,10 @@ class FlowExecutionPipelineStageTest {
     }
 
     private fun createContext(
+        checkpoint: FlowCheckpoint = mock<FlowCheckpoint>(),
         waitingFor: WaitingFor? = WaitingFor(SessionConfirmation())
     ) : FlowEventContext<Any> {
         val context = mock<FlowEventContext<Any>>()
-        val checkpoint = mock<FlowCheckpoint>()
         whenever(context.checkpoint).thenReturn(checkpoint)
         whenever(context.flowMetrics).thenReturn(metrics)
         whenever(checkpoint.waitingFor).thenReturn(waitingFor)

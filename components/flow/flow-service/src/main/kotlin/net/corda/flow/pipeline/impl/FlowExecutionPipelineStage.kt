@@ -28,7 +28,7 @@ internal class FlowExecutionPipelineStage(
 
     fun runFlow(context: FlowEventContext<Any>, timeout: Long) : FlowEventContext<Any> {
         var currentContext = context
-        var continuation = flowReady(context)
+        var continuation = flowReady(currentContext)
         while (continuation != FlowContinuation.Continue) {
             val output = executeFlow(currentContext, continuation, timeout)
             currentContext = updateContext(output, currentContext)
