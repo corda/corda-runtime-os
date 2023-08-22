@@ -113,6 +113,63 @@ class FlowExecutionPipelineStageTest {
     }
 
     @Test
+    fun `when the fiber is not run at all, context is not updated`() {
+        val waitingForHandlers = createWaitingForHandlerMap(
+            mapOf(
+                WaitingFor(SessionConfirmation()) to FlowContinuation.Continue,
+                WaitingFor(ExternalEventResponse()) to FlowContinuation.Continue
+            )
+        )
+        val newContext = createContext(WaitingFor(ExternalEventResponse()))
+        val requestHandlers = createRequestHandlerMap(
+            mapOf(fiberOutput to Pair(WaitingFor(ExternalEventResponse()), newContext))
+        )
+        val fiberOutputs = listOf<FlowIORequest<Any?>>()
+        val flowRunner = createFlowRunner(fiberOutputs)
+        val stage = FlowExecutionPipelineStage(
+            waitingForHandlers,
+            requestHandlers,
+            flowRunner,
+            fiberCache,
+            ioRequestTypeConverter
+        )
+
+        val context = createContext()
+        val outputContext = stage.runFlow(context, TIMEOUT)
+        assertEquals(context, outputContext)
+        verifyInteractions(fiberOutputs)
+    }
+
+    @Test
+    fun `when the flow is to be resumed with an error, context is updated correctly`() {
+        // The choice of waiting for values doesn't matter here.
+        val waitingForHandlers = createWaitingForHandlerMap(
+            mapOf(
+                WaitingFor(SessionConfirmation()) to FlowContinuation.Error(Exception()),
+                WaitingFor(ExternalEventResponse()) to FlowContinuation.Continue
+            )
+        )
+        val newContext = createContext(WaitingFor(ExternalEventResponse()))
+        val requestHandlers = createRequestHandlerMap(
+            mapOf(fiberOutput to Pair(WaitingFor(ExternalEventResponse()), newContext))
+        )
+        val fiberOutputs = listOf(flowSuspended)
+        val flowRunner = createFlowRunner(fiberOutputs)
+        val stage = FlowExecutionPipelineStage(
+            waitingForHandlers,
+            requestHandlers,
+            flowRunner,
+            fiberCache,
+            ioRequestTypeConverter
+        )
+
+        val context = createContext()
+        val outputContext = stage.runFlow(context, TIMEOUT)
+        assertEquals(newContext, outputContext)
+        verifyInteractions(fiberOutputs)
+    }
+
+    @Test
     fun `when the flow fails, context is updated correctly`() {
         val waitingForHandlers = createWaitingForHandlerMap(
             mapOf(

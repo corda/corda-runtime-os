@@ -259,33 +259,6 @@ class FlowEventPipelineImplTest {
         pipeline.setCheckpointSuspendedOn()
         verify(checkpoint).suspendedOn = FlowIORequest.ForceCheckpoint::class.qualifiedName
     }
-
-    @Test
-    fun `setCheckpointSuspendedOn does not set the checkpoint's suspendedOn property when output is not set`() {
-        val pipeline = buildPipeline(output = null)
-        pipeline.setCheckpointSuspendedOn()
-        verify(checkpoint, never()).suspendedOn
-    }
-
-    @Test
-    fun `requestPostProcessing calls the appropriate request handler when output is set`() {
-        val pipeline = buildPipeline(output = FlowIORequest.ForceCheckpoint)
-        assertEquals(outputContext, pipeline.requestPostProcessing().context)
-        verify(flowRequestHandler).postProcess(inputContext, FlowIORequest.ForceCheckpoint)
-    }
-
-    @Test
-    fun `requestPostProcessing does not call a request handler when output is not set`() {
-        val pipeline = buildPipeline(output = null)
-        assertEquals(pipeline, pipeline.requestPostProcessing())
-        verify(flowRequestHandler, never()).postProcess(inputContext, FlowIORequest.ForceCheckpoint)
-    }
-
-    @Test
-    fun `requestPostProcessing throws an exception if the appropriate request handler cannot be found`() {
-        val pipeline = buildPipeline(output = FlowIORequest.WaitForSessionConfirmations)
-        assertThrows<FlowFatalException> { pipeline.requestPostProcessing() }
-    }
 */
     @Test
     fun `globalPostProcessing calls the FlowGlobalPostProcessor when output is set`() {
