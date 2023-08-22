@@ -129,6 +129,8 @@ class MemberSynchronisationServiceImpl internal constructor(
         coordinatorFactory,
     )
 
+    // A wrapper that holds the services used by  this class. Introduce to avoid the OSGi issue with
+    // two constructors with the same number of arguments.
     internal data class Services(
         val publisherFactory: PublisherFactory,
         val configurationReadService: ConfigurationReadService,
