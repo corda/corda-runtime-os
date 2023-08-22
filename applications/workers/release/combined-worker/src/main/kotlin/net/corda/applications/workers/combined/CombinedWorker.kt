@@ -168,7 +168,7 @@ class CombinedWorker @Activate constructor(
 
         cryptoProcessor.start(config)
         dbProcessor.start(config)
-        uniquenessProcessor.start()
+        uniquenessProcessor.start(config)
         tokenCacheProcessor.start(config)
         flowProcessor.start(config)
         verificationProcessor.start(config)

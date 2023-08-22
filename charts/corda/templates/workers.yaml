@@ -13,3 +13,6 @@
 {{- include "corda.worker" ( list $ .Values.workers.rest "rest"
   ( dict "httpPort" 8888 "tlsSecretName" ( include "corda.restTlsSecretName" $ ) "additionalWorkerArgs" ( list "-rtls.crt.path=/tls/tls.crt" "-rtls.key.path=/tls/tls.key" "-rtls.ca.crt.path=/tls/ca.crt"  ) )
 ) }}
+{{- include "corda.worker" ( list $ .Values.workers.uniqueness "uniqueness"
+  ( dict "clusterDbAccess" true )
+) }}
