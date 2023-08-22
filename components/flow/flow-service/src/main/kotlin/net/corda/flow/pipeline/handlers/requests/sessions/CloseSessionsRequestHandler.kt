@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
 import net.corda.data.flow.event.Wakeup
-import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
@@ -11,8 +10,6 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
-import net.corda.flow.pipeline.handlers.requests.helper.isInitiatedIdentity
-import net.corda.flow.pipeline.handlers.requests.helper.isInitiatingIdentity
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
@@ -34,7 +31,7 @@ class CloseSessionsRequestHandler @Activate constructor(
 
     override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.CloseSessions): WaitingFor {
         val sessionsToClose = try {
-            getSessionsToClose(context.checkpoint, request)
+            getSessionsToCloseForWaitingFor(context.checkpoint, request)
         } catch (e: IllegalArgumentException) {
             // TODO Wakeup flow with an error
             throw FlowFatalException(
@@ -54,23 +51,29 @@ class CloseSessionsRequestHandler @Activate constructor(
 
         val hasNoSessionsOrAllClosed = try {
             val sessionsToClose = getSessionsToClose(checkpoint, request)
+            val initiatingAndInitiated = flowSessionManager.getInitiatingAndInitiatedSessions(sessionsToClose)
+            val initiatingSessions = initiatingAndInitiated.first
+            val initiatedSessions = initiatingAndInitiated.second
 
             // if I am the initiated party i.e ends with INITIATED_SESSION_ID_SUFFIX
-            if(sessionsToClose.isNotEmpty()) {
-                checkpoint.putSessionStates(flowSessionManager.sendCloseMessages(checkpoint, sessionsToClose, Instant.now()))
-            } else if (sessionsToClose.isNotEmpty()) {
-                sessionsToClose = filterOutRequireClose(checkpoint, request, requireClose = false)
+            if(initiatedSessions.isNotEmpty()) {
+                checkpoint.putSessionStates(flowSessionManager.sendCloseMessages(checkpoint, initiatedSessions, Instant.now()))
             }
 
+            if (initiatingSessions.isNotEmpty()) {
 
+            }
             /**
-             * else if i am initiating party i.e i dont end with INITIATED_SESSION_ID_SUFFIX
+             *  if i am initiating party i.e i dont end with INITIATED_SESSION_ID_SUFFIX
                  if requireClose == false
                  - set status to CLOSED
-            - flowSessionManager.setStatus(sessionId, CLOSED)
-            else if requireClose == true
-                 - set status CLOSING]
-                 - flowSessionManager.setStatus(sessionId, CLOSING)
+                    - flowSessionManager.setStatus(sessionId, CLOSED)
+                else if requireClose == true
+                    if status == CLOSING
+                        - set status closed
+                    else
+                        - set status CLOSING]
+                        - flowSessionManager.setStatus(sessionId, CLOSING)
              */
 
             sessionsToClose.isEmpty() || flowSessionManager.doAllSessionsHaveStatus(checkpoint, sessionsToClose, SessionStateType.CLOSED)
@@ -87,6 +90,38 @@ class CloseSessionsRequestHandler @Activate constructor(
         }
     }
 
+    private fun filterByState(checkpoint: FlowCheckpoint, sessions: List<String>): List<String> {
+        val statusToFilterOut = setOf(SessionStateType.ERROR, SessionStateType.CLOSED)
+        val statesInErrorOrClosed = flowSessionManager.getSessionsWithStatuses(checkpoint, sessions, statusToFilterOut)
+        val sessionsInErrorOrClosed = statesInErrorOrClosed.map { it.sessionId }
+        return sessions - sessionsInErrorOrClosed
+    }
+
+    private fun filterByRequireClose(checkpoint: FlowCheckpoint, sessions: List<String>): Pair<List<String>, List<String>>{
+        val sessionsWithRequireCloseTrueAndFalse = flowSessionManager.getRequireCloseTrueAndFalse(checkpoint, sessions)
+        val sessionsWithRequireCloseFalse = sessionsWithRequireCloseTrueAndFalse.second
+        sessions -= sessionsWithRequireCloseFalse.map { it.sessionId }
+    }
+
+    private fun getSessionsToCloseForWaitingFor(
+        checkpoint: FlowCheckpoint,
+        request: FlowIORequest.CloseSessions
+    ): List<String> {
+        val sessions = getSessionsToClose(checkpoint, request)
+
+        //filter out initiated
+        val initiatingAndInitiated = flowSessionManager.getInitiatingAndInitiatedSessions(sessions)
+        val initiatingSessions = initiatingAndInitiated.first
+
+        //filter out ERROR or CLOSED
+        val filteredSessions = filterByState(checkpoint, initiatingSessions)
+
+        //filter out RequireClose false
+        val requireCloseSessions = filterByRequireClose(checkpoint, filteredSessions)
+
+        return requireCloseSessions.first
+    }
+
     private fun getSessionsToClose(checkpoint: FlowCheckpoint, request: FlowIORequest.CloseSessions): List<String> {
         /**
          * else if i am initiating party i.e i dont end with INITIATED_SESSION_ID_SUFFIX
@@ -99,14 +134,6 @@ class CloseSessionsRequestHandler @Activate constructor(
          */
 
         val sessions = request.sessions.toMutableList()
-
-        val statusToFilterOut = setOf(SessionStateType.ERROR, SessionStateType.CLOSED)
-        val sessionsInErrorOrClosed = flowSessionManager.getSessionsWithStatuses(checkpoint, sessions, statusToFilterOut)
-        sessions -=  sessionsInErrorOrClosed.map { it.sessionId }
-
-        val sessionsWithRequireCloseFalse = flowSessionManager.getSessionsByRequireClose(checkpoint, sessions, requireClose = false)
-        sessions -= sessionsWithRequireCloseFalse.map { it.sessionId }
-
         return sessions
     }
 }

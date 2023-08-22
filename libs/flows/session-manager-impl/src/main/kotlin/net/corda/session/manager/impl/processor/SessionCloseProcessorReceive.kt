@@ -1,6 +1,5 @@
 package net.corda.session.manager.impl.processor
 
-import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
@@ -12,6 +11,7 @@ import net.corda.session.manager.impl.processor.helper.recalcHighWatermark
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 
 /**
@@ -41,17 +41,6 @@ class SessionCloseProcessorReceive(
             logger.debug { errorMessage }
             generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionClose-NullSessionState", instant)
         } else {
-
-            /**
-             * if status is CLOSED/ERROR do nothing
-             * else (CREATED/CONFIRMED) (i.e we have not called session.close yet)
-             *  - set status to be CLOSING
-             *  else if CLOSING (i.e weve called session.close already)
-             *  - set status to CLOSED
-             *
-             */
-
-
             val seqNum = sessionEvent.sequenceNum
             val receivedEventsState = sessionState.receivedEventsState
             val lastProcessedSeqNum = receivedEventsState.lastProcessedSequenceNum
@@ -66,7 +55,6 @@ class SessionCloseProcessorReceive(
                 sessionState
             } else {
                 sessionState.receivedEventsState.apply {
-                    undeliveredMessages = undeliveredMessages.plus(sessionEvent).distinctBy { it.sequenceNum }.sortedBy { it.sequenceNum }
                     lastProcessedSequenceNum = recalcHighWatermark(undeliveredMessages, lastProcessedSeqNum)
                 }
 
@@ -92,7 +80,6 @@ class SessionCloseProcessorReceive(
                     logger.trace { "Updating session state to ${SessionStateType.CLOSED} for session state $sessionState" }
                     status = SessionStateType.CLOSED
                 }
-
             }
         }
         else -> {

@@ -199,24 +199,16 @@ class FlowSessionManagerImpl @Activate constructor(
             .filter { sessionState -> sessionState.status == status }
     }
 
-    override fun getSessionsByRequireClose(
+    override fun getRequireCloseTrueAndFalse(
         checkpoint: FlowCheckpoint,
-        sessionIds: List<String>,
-        requireClose: Boolean
-    ): List<SessionState> {
-        return if(requireClose) {
-            sessionIds
-                .map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
-                .filter { sessionState -> sessionState.requireClose }
-        } else {
-            sessionIds
-                .map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
-                .filter { sessionState -> !sessionState.requireClose }
-        }
+        sessionIds: List<String>
+    ): Pair<List<SessionState>, List<SessionState>> {
+        return sessionIds
+            .map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
+            .partition { sessionState -> sessionState.requireClose }
     }
 
     override fun getInitiatingAndInitiatedSessions(
-        checkpoint: FlowCheckpoint,
         sessionIds: List<String>
     ): Pair<List<String>, List<String>> {
         return sessionIds.partition { isInitiatingIdentity(it) }
@@ -228,9 +220,8 @@ class FlowSessionManagerImpl @Activate constructor(
         status: SessionStateType
     ): List<SessionState> {
         val matchedSessions = sessionIds.map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
-        matchedSessions.
-         statuses.map {
-            getSessionsWithStatus(checkpoint, sessionIds, it)
+        matchedSessions.map {
+            getSessionsWithStatus(
         }.flatten()
         return matchedSessions
 
