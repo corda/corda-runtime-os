@@ -31,7 +31,6 @@ import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC3_D
 import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC3_OUTPUT
 import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC3_TEMPLATE
 import net.corda.messaging.integration.getDemoRecords
-import net.corda.messaging.integration.getDummyRecords
 import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.getStringRecords
 import net.corda.messaging.integration.getTopicConfig
