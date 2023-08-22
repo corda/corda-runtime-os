@@ -196,7 +196,7 @@ class DurableSubscriptionIntegrationTest {
 
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC3, false)
         publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
-        val futures = publisher.publish(getDummyRecords(DURABLE_TOPIC3, 5, 2))
+        val futures = publisher.publish(getStringRecords(DURABLE_TOPIC3, 5, 2))
         assertThat(futures.size).isEqualTo(10)
         futures.forEach { it.get(10, TimeUnit.SECONDS) }
         val futures2 = publisher.publish(getDemoRecords(DURABLE_TOPIC3, 5, 2))

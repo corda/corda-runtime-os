@@ -29,17 +29,6 @@ fun getDemoRecords(topic: String, recordCount: Int, keyCount: Int): List<Record<
     return records
 }
 
-fun getDummyRecords(topic: String, recordCount: Int, keyCount: Int): List<Record<*, *>> {
-    val records = mutableListOf<Record<*, *>>()
-    for (i in 1..keyCount) {
-        val key = "key$i"
-        for (j in 1..recordCount) {
-            records.add(Record(topic, key, DemoRecord(i)))
-        }
-    }
-    return records
-}
-
 fun getStringRecords(topic: String, recordCount: Int, keyCount: Int): List<Record<String, String>> {
     val records = mutableListOf<Record<String, String>>()
     for (i in 1..keyCount) {
