@@ -48,13 +48,7 @@ class ExportGroupPolicy : Runnable, RestCommand() {
             }
         }
 
-        val groupPolicyFile = File(saveLocation)
-        groupPolicyFile.parentFile?.mkdirs()
-
-        if (!groupPolicyFile.exists()) {
-            groupPolicyFile.createNewFile()
-        }
-
+        saveLocation.parentFile.mkdirs()
         objectMapper.writerWithDefaultPrettyPrinter()
             .writeValue(
                 groupPolicyFile,
