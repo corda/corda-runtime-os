@@ -4,7 +4,6 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import java.util.*
 import net.corda.data.demo.DemoRecord
-import net.corda.data.flow.event.Wakeup
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.CLIENT_ID
 import org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG

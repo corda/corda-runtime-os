@@ -4,7 +4,6 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus
 import net.corda.messaging.api.records.Record
@@ -18,7 +17,7 @@ interface FlowRecordFactory {
      * Creates a generic [FlowEvent] record
      *
      * @param flowId The id of the flow generating or receiving the event.
-     * @param payload The instance of the specific flow event to be carried by the record. Valid types are [StartFlow], [Wakeup],
+     * @param payload The instance of the specific flow event to be carried by the record. Valid types are [StartFlow],
      * [SessionEvent].
      * @return a new instance of a [FlowEvent] record.
      */

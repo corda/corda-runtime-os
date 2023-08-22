@@ -31,7 +31,7 @@ import net.corda.data.flow.state.waiting.Wakeup as WakeUpWaitingFor
 
 class FlowEventPipelineImplTest {
 
-    private val wakeUpEvent = Wakeup()
+    private val payload = ExternalEventResponse("foo")
     private val waitingForWakeup = WaitingFor(WakeUpWaitingFor())
     private val retryStartFlow = StartFlow()
 
@@ -58,8 +58,8 @@ class FlowEventPipelineImplTest {
         })
     }
 
-    private val defaultinputContext = buildFlowEventContext<Any>(checkpoint, wakeUpEvent)
-    private val outputContext = buildFlowEventContext<Any>(checkpoint, wakeUpEvent)
+    private val defaultinputContext = buildFlowEventContext<Any>(checkpoint, payload)
+    private val outputContext = buildFlowEventContext<Any>(checkpoint, payload)
 
     private val wakeUpFlowEventHandler = mock<FlowEventHandler<Any>>().apply {
         whenever(preProcess(defaultinputContext)).thenReturn(outputContext)
@@ -113,7 +113,8 @@ class FlowEventPipelineImplTest {
         whenever(checkpoint.inRetryState).thenReturn(true)
         whenever(checkpoint.retryEvent).thenReturn(retryEvent)
         whenever(startFlowEventHandler.preProcess(any())).thenReturn(retryHandlerOutputContext)
-        val pipeline = buildPipeline()
+        val context = buildFlowEventContext<Any>(checkpoint, Wakeup())
+        val pipeline = buildPipeline(context)
 
         assertEquals(retryHandlerOutputContext, pipeline.eventPreProcessing().context)
         verify(startFlowEventHandler).preProcess(argThat { this.inputEvent == retryEvent && this.inputEventPayload == retryEvent.payload })

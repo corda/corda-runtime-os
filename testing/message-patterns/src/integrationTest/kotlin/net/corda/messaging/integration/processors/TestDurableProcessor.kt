@@ -2,7 +2,6 @@ package net.corda.messaging.integration.processors
 
 import java.util.concurrent.CountDownLatch
 import net.corda.data.demo.DemoRecord
-import net.corda.data.flow.event.Wakeup
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 

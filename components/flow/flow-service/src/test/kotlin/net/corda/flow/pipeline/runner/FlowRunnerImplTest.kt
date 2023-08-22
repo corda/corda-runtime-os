@@ -6,7 +6,6 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
@@ -280,7 +279,7 @@ class FlowRunnerImplTest {
     @Test
     fun `other event types resume existing flow`() {
         val flowContinuation = FlowContinuation.Run()
-        val context = buildFlowEventContext<Any>(flowCheckpoint, Wakeup())
+        val context = buildFlowEventContext<Any>(flowCheckpoint, net.corda.data.flow.event.external.ExternalEventResponse())
 
         whenever(flowFiberFactory.createAndResumeFlowFiber(flowFiberExecutionContext, flowContinuation)).thenReturn(
             fiberFuture
@@ -294,7 +293,7 @@ class FlowRunnerImplTest {
     @Test
     fun `resuming a flow fails when the platform version is different`() {
         val flowContinuation = FlowContinuation.Run()
-        val context = buildFlowEventContext<Any>(flowCheckpoint, Wakeup())
+        val context = buildFlowEventContext<Any>(flowCheckpoint, net.corda.data.flow.event.external.ExternalEventResponse())
 
         whenever(flowCheckpoint.initialPlatformVersion).thenReturn(500100)
 

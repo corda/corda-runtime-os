@@ -6,6 +6,7 @@ import java.nio.ByteBuffer
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.checkpoint.Checkpoint
@@ -49,7 +50,7 @@ class FlowEventExceptionProcessorImplTest {
     private val flowConfig = ConfigFactory.empty()
         .withValue(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS, ConfigValueFactory.fromAnyRef(2))
     private val smartFlowConfig = SmartConfigFactory.createWithoutSecurityServices().create(flowConfig)
-    private val inputEvent = Wakeup()
+    private val inputEvent = ExternalEventResponse()
     private val context = buildFlowEventContext<Any>(checkpoint = flowCheckpoint, inputEventPayload = inputEvent)
     private val converterResponse = StateAndEventProcessor.Response<Checkpoint>(
         null,
@@ -101,7 +102,7 @@ class FlowEventExceptionProcessorImplTest {
         val key = FlowKey()
         val flowStatusUpdateRecord = Record("", key, flowStatusUpdate)
         val flowId = "f1"
-        val flowEventRecord = Record("", flowId, FlowEvent(flowId, Wakeup()))
+        val flowEventRecord = Record("", flowId, FlowEvent(flowId, ExternalEventResponse()))
         whenever(flowCheckpoint.flowId).thenReturn(flowId)
         whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
         whenever(flowMessageFactory.createFlowRetryingStatusMessage(flowCheckpoint)).thenReturn(flowStatusUpdate)
@@ -129,7 +130,7 @@ class FlowEventExceptionProcessorImplTest {
         val flowStatusUpdate = FlowStatus()
         val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
         val flowId = "f1"
-        val flowEventRecord = Record("", flowId, FlowEvent(flowId, Wakeup()))
+        val flowEventRecord = Record("", flowId, FlowEvent(flowId, ExternalEventResponse()))
         whenever(flowCheckpoint.flowId).thenReturn(flowId)
         whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
         whenever(flowMessageFactory.createFlowRetryingStatusMessage(flowCheckpoint)).thenReturn(flowStatusUpdate)
@@ -260,7 +261,7 @@ class FlowEventExceptionProcessorImplTest {
     fun `failure to create a status message does not prevent transient failure handling from succeeding`() {
         val error = FlowTransientException("error")
         val flowId = "f1"
-        val flowEventRecord = Record("", flowId, FlowEvent(flowId, Wakeup()))
+        val flowEventRecord = Record("", flowId, FlowEvent(flowId, ExternalEventResponse()))
         whenever(flowCheckpoint.flowId).thenReturn(flowId)
         whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
         whenever(flowMessageFactory.createFlowRetryingStatusMessage(flowCheckpoint)).thenThrow(IllegalStateException())

@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline.handlers.requests
 
 import java.util.stream.Stream
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.data.flow.state.session.SessionState
@@ -219,7 +218,7 @@ class SubFlowFinishedRequestHandlerTest {
             eq(nonErroredSessions),
             any()
         )
-        verify(testContext.flowRecordFactory, never()).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
+        verify(testContext.flowRecordFactory, never()).createFlowEventRecord(eq(testContext.flowId), any())
         assertThat(outputContext.outputRecords).hasSize(0)
     }
 
