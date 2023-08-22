@@ -48,7 +48,6 @@ import java.security.Provider
 import java.security.PublicKey
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
@@ -212,9 +211,10 @@ class SoftCryptoServiceOperationsTests {
 
     @Test
     fun `Should throw IllegalArgumentException when signing with valid non matching key category`() {
-        assertThrows<IllegalArgumentException> {
+        val exception = assertThrows<IllegalArgumentException> {
             signCategoryTest(CryptoConsts.Categories.TLS)
         }
+        assertThat(exception.message).contains("does not match the key's category")
     }
 
     @Test
