@@ -24,10 +24,10 @@ class JavalinServer : WorkerWebServer {
         log.debug("Starting Worker Web Server on port: $port")
         server = Javalin
             .create()
-            .apply { start(port) }
+            .apply { startServer(port) }
     }
 
-    private fun start(port: Int) {
+    private fun startServer(port: Int) {
         val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
 
         if (bundle == null) {
