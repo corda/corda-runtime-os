@@ -25,13 +25,17 @@ class WrappedUtxoWireTransactionKryoSerializer @Activate constructor(
 ) : CheckpointInternalCustomSerializer<WrappedUtxoWireTransaction>, UsedByFlow {
     override val type: Class<WrappedUtxoWireTransaction> get() = WrappedUtxoWireTransaction::class.java
 
+    companion object {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
     override fun write(output: CheckpointOutput, obj: WrappedUtxoWireTransaction) {
+        log.info("CORE-16346 WrappedUtxoWireTransactionKryoSerializer.write serialization service: ${serialisationService.javaClass}")
         output.writeClassAndObject(obj.wireTransaction)
     }
 
     override fun read(input: CheckpointInput, type: Class<out WrappedUtxoWireTransaction>): WrappedUtxoWireTransaction {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        log.info("CORE-16346 WrappedUtxoWireTransactionKryoSerializer serialization service: ${serialisationService.javaClass}")
+        log.info("CORE-16346 WrappedUtxoWireTransactionKryoSerializer.read serialization service: ${serialisationService.javaClass}")
         val wireTransaction = input.readClassAndObject() as WireTransaction
         return WrappedUtxoWireTransaction(
             wireTransaction,
