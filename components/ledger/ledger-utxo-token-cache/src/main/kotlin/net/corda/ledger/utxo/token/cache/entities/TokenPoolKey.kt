@@ -8,8 +8,8 @@ data class TokenPoolKey(
     val issuerHash: String,
     val notaryX500Name: String,
     val symbol: String
-){
-    fun toAvro():TokenPoolCacheKey{
+) {
+    fun toAvro(): TokenPoolCacheKey {
         return TokenPoolCacheKey.newBuilder()
             .setShortHolderId(shortHolderId)
             .setTokenType(tokenType)
