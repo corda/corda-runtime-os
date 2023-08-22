@@ -2,6 +2,8 @@ package net.corda.processors.persistence.internal
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.cpk.read.CpkReadService
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.entityprocessor.FlowPersistenceService
@@ -36,6 +38,10 @@ class PersistenceProcessorImpl @Activate constructor(
     private val entitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
+    @Reference(service = CpiInfoReadService::class)
+    private val cpiInfoReadService: CpiInfoReadService,
+    @Reference(service = CpkReadService::class)
+    private val cpkReadService: CpkReadService,
     @Reference(service = LedgerPersistenceService::class)
     private val ledgerPersistenceService: LedgerPersistenceService,
     @Reference(service = FlowPersistenceService::class)
@@ -52,6 +58,8 @@ class PersistenceProcessorImpl @Activate constructor(
     private val dependentComponents = DependentComponents.of(
         ::dbConnectionManager,
         ::configurationReadService,
+        ::cpiInfoReadService,
+        ::cpkReadService,
         ::ledgerPersistenceService,
         ::flowPersistenceService,
     )
