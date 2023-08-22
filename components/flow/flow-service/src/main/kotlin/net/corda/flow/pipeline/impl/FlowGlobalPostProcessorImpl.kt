@@ -96,11 +96,11 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             }
     }
 
-    private fun interopCounterpartyExists(checkpoint: FlowCheckpoint, counterparty: HoldingIdentity): Boolean {
+    private fun interopCounterpartyExists(checkpoint: FlowCheckpoint, counterparty: MemberX500Name): Boolean {
         val registryView = interopIdentityRegistryService.getVirtualNodeRegistryView(checkpoint.holdingIdentity.shortHash)
-        val identities = registryView.getIdentitiesByShortHash()
+        val identities = registryView.getIdentitiesByApplicationName()
 
-        val counterpartyExists = identities.containsKey(counterparty.shortHash)
+        val counterpartyExists = identities.containsKey(counterparty.organization)
 
         if (!counterpartyExists) {
             log.warn("Interop counterparty '${counterparty}' does not exist!")
@@ -124,7 +124,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         val groupReader = membershipGroupReaderProvider.getGroupReader(context.checkpoint.holdingIdentity)
 
         val counterpartyExists = when (sessionState.isInteropSession) {
-            true -> interopCounterpartyExists(checkpoint, sessionState.counterpartyIdentity.toCorda())
+            true -> interopCounterpartyExists(checkpoint, counterparty)
             false -> groupReader.lookup(counterparty) != null
         }
 
@@ -132,11 +132,11 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             when (sessionState.isInteropSession) {
                 true -> {
                     "[${context.checkpoint.holdingIdentity.x500Name}] has failed to create an interop flow with " +
-                            "counterparty: [${counterparty}] as the recipient doesn't exist in the interop group."
+                            "counterparty: [$counterparty] as the interop identity cannot be found."
                 }
                 false -> {
                     "[${context.checkpoint.holdingIdentity.x500Name}] has failed to create a flow with counterparty: " +
-                            "[${counterparty}] as the recipient doesn't exist in the network."
+                            "[$counterparty] as the recipient doesn't exist in the network."
                 }
             }
         }
