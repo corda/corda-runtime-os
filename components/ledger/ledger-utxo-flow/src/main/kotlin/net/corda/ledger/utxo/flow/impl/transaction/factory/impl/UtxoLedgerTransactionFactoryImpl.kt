@@ -7,16 +7,17 @@ import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
+import net.corda.ledger.utxo.flow.impl.groupparameters.GroupParametersServiceInternal
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
-import net.corda.v5.membership.GroupParameters
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -30,7 +31,9 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
     @Reference(service = UtxoLedgerStateQueryService::class)
     private val utxoLedgerStateQueryService: UtxoLedgerStateQueryService,
     @Reference(service = UtxoLedgerGroupParametersPersistenceService::class)
-    private val utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService
+    private val utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService,
+    @Reference(service = GroupParametersServiceInternal::class)
+    private val groupParametersService: GroupParametersServiceInternal
 ) : UtxoLedgerTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -77,18 +80,23 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
         )
     }
 
-    private fun getGroupParameters(wireTransaction: WireTransaction): GroupParameters {
+    override fun getGroupParameters(wireTransaction: WireTransaction): SignedGroupParameters {
         val membershipGroupParametersHashString =
             requireNotNull((wireTransaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()) {
-                "The membership group parameter hash for the transaction ${wireTransaction.id} is not found."
+                "Membership group parameters hash cannot be found in the transaction metadata."
             }
-        return requireNotNull(
-            utxoLedgerGroupParametersPersistenceService.find(
-                parseSecureHash(membershipGroupParametersHashString)
-            )
-        ) {
-            "Signed group parameters $membershipGroupParametersHashString related to the transaction" +
-                    " ${wireTransaction.id} cannot be accessed."
+        val currentGroupParameters = groupParametersService.currentGroupParameters
+        val groupParameters =
+            if (currentGroupParameters.hash.toString() == membershipGroupParametersHashString) {
+                currentGroupParameters
+            } else {
+                val membershipGroupParametersHash = parseSecureHash(membershipGroupParametersHashString)
+                utxoLedgerGroupParametersPersistenceService.find(membershipGroupParametersHash)
+            }
+        requireNotNull(groupParameters) {
+            "Signed group parameters $membershipGroupParametersHashString related to the transaction " +
+                    "${wireTransaction.id} cannot be accessed."
         }
+        return groupParameters
     }
 }
