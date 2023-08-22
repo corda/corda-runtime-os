@@ -53,7 +53,7 @@ class MembershipInfoProducer(private val publisher: AtomicReference<Publisher?>)
             //todo CORE-16385 Remove hardcoded values
             return newInteropIdentities.map { identityToPublish ->
 
-                val memberContext = listOf(
+                var memberContext = listOf(
                     KeyValuePair(MemberInfoExtension.PARTY_NAME, identityToPublish.x500Name),
                     KeyValuePair(String.format(MemberInfoExtension.URL_KEY, "0"), identityToPublish.endpointUrl),
                     KeyValuePair(String.format(MemberInfoExtension.PROTOCOL_VERSION, "0"), identityToPublish.endpointProtocol),
@@ -69,7 +69,7 @@ class MembershipInfoProducer(private val publisher: AtomicReference<Publisher?>)
                 ).sorted()
 
                 if (realHoldingIdentity != null) {
-                    memberContext.plus(
+                    memberContext = memberContext.plus(
                         listOf(
                             KeyValuePair(MemberInfoExtension.INTEROP_MAPPING_X500_NAME, realHoldingIdentity.x500Name.toString()),
                             KeyValuePair(MemberInfoExtension.INTEROP_MAPPING_GROUP, realHoldingIdentity.groupId)
