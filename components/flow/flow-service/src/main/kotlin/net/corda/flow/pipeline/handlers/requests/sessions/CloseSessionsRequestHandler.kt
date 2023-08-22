@@ -50,7 +50,7 @@ class CloseSessionsRequestHandler @Activate constructor(
         val checkpoint = context.checkpoint
 
         val hasNoSessionsOrAllClosed = try {
-            val sessionsToClose = getSessionsToClose(checkpoint, request)
+            val sessionsToClose = getSessionsToClose(request)
 
             val initiatingAndInitiated = flowSessionManager.getInitiatingAndInitiatedSessions(sessionsToClose)
             val initiatingSessions = initiatingAndInitiated.first
@@ -91,6 +91,7 @@ class CloseSessionsRequestHandler @Activate constructor(
                 }
             }
 
+            //TODO - @Lorcan Can I delete this?
             sessionsToClose.isEmpty() || flowSessionManager.doAllSessionsHaveStatus(checkpoint, sessionsToClose, SessionStateType.CLOSED)
         } catch (e: FlowSessionStateException) {
             // TODO CORE-4850 Wakeup with error when session does not exist
@@ -123,7 +124,7 @@ class CloseSessionsRequestHandler @Activate constructor(
         checkpoint: FlowCheckpoint,
         request: FlowIORequest.CloseSessions
     ): List<String> {
-        val sessions = getSessionsToClose(checkpoint, request)
+        val sessions = getSessionsToClose(request)
 
         //filter out initiated
         val initiatingAndInitiated = flowSessionManager.getInitiatingAndInitiatedSessions(sessions)
@@ -138,7 +139,7 @@ class CloseSessionsRequestHandler @Activate constructor(
         return requireCloseSessions.first
     }
 
-    private fun getSessionsToClose(checkpoint: FlowCheckpoint, request: FlowIORequest.CloseSessions): List<String> {
+    private fun getSessionsToClose(request: FlowIORequest.CloseSessions): List<String> {
         /**
          * else if i am initiating party i.e i dont end with INITIATED_SESSION_ID_SUFFIX
         if requireClose == false
@@ -149,7 +150,6 @@ class CloseSessionsRequestHandler @Activate constructor(
          && filter out sessions in status ERROR or CLOSED
          */
 
-        val sessions = request.sessions.toMutableList()
-        return sessions
+        return request.sessions.toMutableList()
     }
 }
