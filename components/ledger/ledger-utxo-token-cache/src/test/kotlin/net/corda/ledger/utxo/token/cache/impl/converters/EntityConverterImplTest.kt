@@ -143,5 +143,6 @@ class EntityConverterImplTest {
         assertThat(result.tokenType).isEqualTo("tt")
         assertThat(result.notaryX500Name).isEqualTo("not")
         assertThat(result.issuerHash).isEqualTo("ih")
+        assertThat(result.shortHolderId).isEqualTo("shid")
     }
 }
