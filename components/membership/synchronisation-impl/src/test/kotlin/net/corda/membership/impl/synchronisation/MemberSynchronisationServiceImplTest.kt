@@ -289,18 +289,20 @@ class MemberSynchronisationServiceImplTest {
         on { create(any<AvroGroupParameters>()) } doReturn groupParameters
     }
     private val synchronisationService = MemberSynchronisationServiceImpl(
-        publisherFactory,
-        configurationReadService,
+        MemberSynchronisationServiceImpl.Services(
+            publisherFactory,
+            configurationReadService,
+            memberInfoFactory,
+            groupReaderProvider,
+            verifier,
+            locallyHostedMembersReader,
+            p2pRecordsFactory,
+            merkleTreeGenerator,
+            clock,
+            persistenceClient,
+            groupParametersFactory,
+        ),
         lifecycleCoordinatorFactory,
-        memberInfoFactory,
-        groupReaderProvider,
-        verifier,
-        locallyHostedMembersReader,
-        p2pRecordsFactory,
-        merkleTreeGenerator,
-        clock,
-        persistenceClient,
-        groupParametersFactory,
     )
 
     private fun postStartEvent() {
