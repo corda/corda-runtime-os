@@ -33,6 +33,7 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 import net.corda.interop.identity.registry.InteropIdentityRegistryService
+import net.corda.membership.lib.MemberInfoExtension
 
 class InteropProcessor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
@@ -265,15 +266,15 @@ class InteropProcessor(
 
         val memberProvidedContext = memberInfo.memberProvidedContext
 
-        val contextX500NameKey = "corda.interop.mapping.x500name"
-        val contextGroupIDKey = "corda.interop.mapping.group"
+        val x500Name = memberProvidedContext.get(MemberInfoExtension.INTEROP_MAPPING_X500_NAME)
+        val groupId = memberProvidedContext.get(MemberInfoExtension.INTEROP_MAPPING_GROUP)
 
-        val x500Name = checkNotNull(memberProvidedContext.get(contextX500NameKey)) {
-            "$errorPrefix, property '$contextX500NameKey' is missing from member provided context."
+        checkNotNull(x500Name) {
+            "$errorPrefix, holding identity x500 name is missing from member provided context."
         }
 
-        val groupId = checkNotNull(memberProvidedContext.get(contextGroupIDKey)) {
-            "$errorPrefix, property '$contextGroupIDKey' is missing from member provided context."
+        checkNotNull(groupId) {
+            "$errorPrefix, holding identity group id is missing from member provided context."
         }
 
         return HoldingIdentity(MemberX500Name.parse(x500Name), groupId)

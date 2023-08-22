@@ -20,9 +20,6 @@ import java.util.concurrent.atomic.AtomicReference
 class MembershipInfoProducer(private val publisher: AtomicReference<Publisher?>) {
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val INTEROP_ROLE = "interop"
-        private const val INTEROP_MAPPING_X500_NAME = "corda.interop.mapping.x500name"
-        private const val INTEROP_MAPPING_GROUP = "corda.interop.mapping.group"
 
         // TODO: CORE-15749 - Key generation and interop certificates
         private val DUMMY_CERTIFICATE =
@@ -68,14 +65,14 @@ class MembershipInfoProducer(private val publisher: AtomicReference<Publisher?>)
                     KeyValuePair(MemberInfoExtension.LEDGER_KEY_SIGNATURE_SPEC.format(0), "SHA256withECDSA"),
                     KeyValuePair(MemberInfoExtension.SOFTWARE_VERSION, "5.0.0.0-Fox10-RC03"),
                     KeyValuePair(MemberInfoExtension.PLATFORM_VERSION, "5000"),
-                    KeyValuePair(MemberInfoExtension.INTEROP_ROLE, INTEROP_ROLE),
+                    KeyValuePair(MemberInfoExtension.INTEROP_ROLE, "interop"),
                 ).sorted()
 
                 if (realHoldingIdentity != null) {
                     memberContext.plus(
                         listOf(
-                            KeyValuePair(INTEROP_MAPPING_X500_NAME, realHoldingIdentity.x500Name.toString()),
-                            KeyValuePair(INTEROP_MAPPING_GROUP, realHoldingIdentity.groupId)
+                            KeyValuePair(MemberInfoExtension.INTEROP_MAPPING_X500_NAME, realHoldingIdentity.x500Name.toString()),
+                            KeyValuePair(MemberInfoExtension.INTEROP_MAPPING_GROUP, realHoldingIdentity.groupId)
                         )
                     ).sorted()
                 }
