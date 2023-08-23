@@ -1,6 +1,5 @@
 package net.corda.interop.rest.impl.v1
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ArrayNode
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.ShortHash
@@ -31,6 +30,7 @@ import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.json.serialization.jacksonObjectMapper
 import net.corda.rest.response.ResponseEntity
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.debug
@@ -70,6 +70,7 @@ internal class InteropRestResourceImpl @Activate constructor(
         private val requiredKeys = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.REST_CONFIG)
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
+        private val mapper =  jacksonObjectMapper()
     }
 
     /**
@@ -123,7 +124,7 @@ internal class InteropRestResourceImpl @Activate constructor(
     }
 
     private fun getGroupIdFieldFromGroupPolicy(groupPolicyString: String): String {
-        val groupPolicyJson = ObjectMapper().readTree(groupPolicyString)
+        val groupPolicyJson = mapper.readTree(groupPolicyString)
 
         check(groupPolicyJson.has("groupId")) {
             "Malformed group policy json. Group ID field missing from policy."
@@ -158,7 +159,7 @@ internal class InteropRestResourceImpl @Activate constructor(
             vNodeInfo.holdingIdentity.x500Name.locality,
             vNodeInfo.holdingIdentity.x500Name.country
         ).toString()
-        val json = ObjectMapper().writeValueAsString(createInteropIdentityRestRequest.groupPolicy)
+        val json = mapper.writeValueAsString(createInteropIdentityRestRequest.groupPolicy)
         interopGroupPolicyValidator.validateGroupPolicy(json)
 
         try {
@@ -306,10 +307,13 @@ internal class InteropRestResourceImpl @Activate constructor(
         val groupPolicy = checkNotNull(interopGroupPolicyReadService.getGroupPolicy(interopIdentityToExport.groupId)) {
             "Could not find group policy info for interop identity $validInteropIdentityShortHash"
         }
-        val node = ObjectMapper().readTree(groupPolicy)
+        val node = mapper.readTree(groupPolicy)
         logger.info("The contents of the json node are: $node")
+        check(node.has("p2pParameters")) { "Field 'p2pParameters' missing from response." }
         val p2pParameters = node.get("p2pParameters")
+        check(p2pParameters.has("tlsTrustRoots")) { "Field 'tlsTrustRoots' missing from response." }
         val tlsTrustRoot = p2pParameters.get("tlsTrustRoots") as ArrayNode
+        check(tlsTrustRoot.isArray) { "Expected '$tlsTrustRoot' to be an array." }
         val tlsCerts = tlsTrustRoot.map { it.textValue() }
 
         return ExportInteropIdentityRest.Response(
@@ -354,7 +358,7 @@ internal class InteropRestResourceImpl @Activate constructor(
         val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(validHoldingIdentityShortHash)
         val vNodeShortHash = vNodeInfo.getVNodeShortHash()
 
-        val json = ObjectMapper().writeValueAsString(importInteropIdentityRestRequest.groupPolicy)
+        val json = mapper.writeValueAsString(importInteropIdentityRestRequest.groupPolicy)
 
         val interopGroupId = try {
             val groupIdField = getGroupIdFieldFromGroupPolicy(json)
