@@ -1,7 +1,6 @@
 package net.corda.flow.testing.tests
 
 import java.util.stream.Stream
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
@@ -33,7 +32,6 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         @JvmStatic
         fun wakeupAndSessionAck(): Stream<Arguments> {
             return Stream.of(
-                Arguments.of(Wakeup::class.simpleName, { dsl: StepSetup -> dsl.wakeupEventReceived(FLOW_ID1) }),
                 Arguments.of(
                     SessionAck::class.simpleName,
                     { dsl: StepSetup -> dsl.sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2) }
@@ -557,9 +555,6 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         `when` {
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 3)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
-
-            wakeupEventReceived(FLOW_ID1)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         then {

@@ -85,8 +85,6 @@ interface StepSetup {
         initiatedIdentity: HoldingIdentity? = null
     ): FlowIoRequestSetup
 
-    fun wakeupEventReceived(flowId: String): FlowIoRequestSetup
-
     fun externalEventReceived(flowId: String, requestId: String, payload: Any): FlowIoRequestSetup
 
     fun externalEventErrorReceived(

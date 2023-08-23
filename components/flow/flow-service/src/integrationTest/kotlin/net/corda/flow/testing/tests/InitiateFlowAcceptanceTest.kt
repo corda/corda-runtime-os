@@ -69,11 +69,6 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(FlowIORequest.Send(mapOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
         }
 
-        `when` {
-            wakeupEventReceived(FLOW_ID1)
-                .suspendsWith(FlowIORequest.CounterPartyFlowInfo(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName)))
-        }
-
         then {
             expectOutputForFlow(FLOW_ID1) {
                 noFlowEvents()

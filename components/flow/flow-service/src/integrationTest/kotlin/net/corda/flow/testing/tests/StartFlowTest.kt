@@ -41,11 +41,6 @@ class StartFlowTest : FlowServiceTestBase() {
             }
         }
 
-        `when` {
-            wakeupEventReceived(FLOW_ID1)
-                .completedSuccessfullyWith("hello")
-        }
-
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowStatus(FlowStates.COMPLETED, result = "hello")
@@ -117,11 +112,6 @@ class StartFlowTest : FlowServiceTestBase() {
             }
         }
 
-        // Retry a second time
-        `when` {
-            wakeupEventReceived(FLOW_ID1)
-        }
-
         then {
             expectOutputForFlow(FLOW_ID1) {
                 noFlowEvents()
@@ -134,11 +124,6 @@ class StartFlowTest : FlowServiceTestBase() {
         // retry the start flow successfully
         given {
             virtualNode(CPI1, BOB_HOLDING_IDENTITY)
-        }
-
-        `when` {
-            wakeupEventReceived(FLOW_ID1)
-                .suspendsWith(FlowIORequest.InitialCheckpoint)
         }
 
         then {
@@ -170,11 +155,6 @@ class StartFlowTest : FlowServiceTestBase() {
                 checkpointHasRetry(1)
                 flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
-        }
-
-        // Retry a second time
-        `when` {
-            wakeupEventReceived(FLOW_ID1)
         }
 
         then {

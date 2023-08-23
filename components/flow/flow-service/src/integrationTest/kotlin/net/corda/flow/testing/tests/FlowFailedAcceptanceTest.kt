@@ -53,11 +53,6 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
             }
         }
 
-        `when` {
-            wakeupEventReceived(FLOW_ID1)
-                .completedWithError(EXCEPTION)
-        }
-
         then {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()

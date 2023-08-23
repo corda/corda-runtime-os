@@ -88,11 +88,6 @@ class SendAcceptanceTest : FlowServiceTestBase() {
             }
         }
 
-        `when` {
-            wakeupEventReceived(FLOW_ID1)
-                .suspendsWith(FlowIORequest.FlowFailed(Exception()))
-        }
-
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWithError<CordaRuntimeException>()
@@ -114,20 +109,6 @@ class SendAcceptanceTest : FlowServiceTestBase() {
                     mapOf(
                         SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
                         SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_2,
-                    )))
-
-            wakeupEventReceived(FLOW_ID1)
-                .suspendsWith(FlowIORequest.Send(
-                    mapOf(
-                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_3,
-                        SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_4,
-                    )))
-
-            wakeupEventReceived(FLOW_ID1)
-                .suspendsWith(FlowIORequest.Send(
-                    mapOf(
-                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_5,
-                        SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_6,
                     )))
         }
 

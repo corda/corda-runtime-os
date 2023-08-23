@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.factory
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.fiber.FlowIORequest
@@ -27,8 +27,7 @@ import org.mockito.kotlin.whenever
 
 class FlowEventPipelineFactoryImplTest {
 
-    private val wakeupPayload = Wakeup()
-    private val flowEvent = FlowEvent(FLOW_ID_1, wakeupPayload)
+    private val flowEvent = FlowEvent(FLOW_ID_1, ExternalEventResponse())
     private val checkpoint = Checkpoint()
     private val flowCheckpoint = mock<FlowCheckpoint>()
     private val flowRunner = mock<FlowRunner>()
@@ -46,8 +45,8 @@ class FlowEventPipelineFactoryImplTest {
 
     private val flowEventHandler = mock<FlowEventHandler<Any>>().also { handler ->
         @Suppress("unchecked_cast")
-        val casted = handler as FlowEventHandler<Wakeup>
-        whenever(casted.type).thenReturn(Wakeup::class.java)
+        val casted = handler as FlowEventHandler<ExternalEventResponse>
+        whenever(casted.type).thenReturn(ExternalEventResponse::class.java)
     }
     private val flowWaitingForHandler = mock<FlowWaitingForHandler<Any>>().also { flowWaiting ->
         @Suppress("unchecked_cast")
@@ -83,7 +82,7 @@ class FlowEventPipelineFactoryImplTest {
         )
 
         val expected = FlowEventPipelineImpl(
-            mapOf(Wakeup::class.java to flowEventHandler),
+            mapOf(ExternalEventResponse::class.java to flowEventHandler),
             expectedFlowExecutorStage,
             flowGlobalPostProcessor,
             flowEventContext,

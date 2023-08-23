@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.Wakeup
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.events.FlowEventContext
@@ -35,39 +34,20 @@ internal class FlowEventPipelineImpl(
 ) : FlowEventPipeline {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun eventPreProcessing(): FlowEventPipelineImpl {
         log.trace { "Preprocessing of ${context.inputEventPayload::class.qualifiedName}" }
 
-        /**
-         * If the checkpoint is in a retry step and we receive a Wakeup then we
-         * should re-write the event the pipeline should process the event to be retried, in place of the default
-         * wakeup behavior
-         */
-        val updatedContext = if (context.checkpoint.inRetryState && context.inputEventPayload is Wakeup) {
-            log.debug(
-                "Flow is in retry state, using retry event " +
-                        "${context.checkpoint.retryEvent.payload::class.qualifiedName} for the pipeline processing."
-            )
-            context.copy(
-                inputEvent = context.checkpoint.retryEvent,
-                inputEventPayload = context.checkpoint.retryEvent.payload,
-                isRetryEvent = true
-            )
-        } else {
-            context
-        }
+        val handler = getFlowEventHandler(context.inputEvent)
 
-        val handler = getFlowEventHandler(updatedContext.inputEvent)
-
-        context = handler.preProcess(updatedContext)
+        context = handler.preProcess(context)
 
         // For now, we do this here as we need to be sure the flow start context exists, as for a
         // start flow event it won't exist until we have run the preProcess() for the start flow
         // event handler
-        context.flowMetrics.flowEventReceived(updatedContext.inputEventPayload::class.java.name)
+        context.flowMetrics.flowEventReceived(context.inputEventPayload::class.java.name)
 
         val checkpoint = context.checkpoint
 

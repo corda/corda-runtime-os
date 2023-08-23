@@ -1,7 +1,6 @@
 package net.corda.flow.testing.tests
 
 import java.util.stream.Stream
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionData
 import net.corda.flow.application.sessions.SessionInfo
@@ -36,9 +35,8 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         val DATA_MESSAGE_6 = byteArrayOf(6)
 
         @JvmStatic
-        fun wakeupAndSessionAck(): Stream<Arguments> {
+        fun sessionAck(): Stream<Arguments> {
             return Stream.of(
-                Arguments.of(Wakeup::class.simpleName, { dsl: StepSetup -> dsl.wakeupEventReceived(FLOW_ID1) }),
                 Arguments.of(
                     SessionAck::class.simpleName,
                     { dsl: StepSetup -> dsl.sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1) }
@@ -143,7 +141,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     }
 
     @ParameterizedTest(name = "Receiving a {0} event does not resume the flow and resends any unacknowledged events")
-    @MethodSource("wakeupAndSessionAck")
+    @MethodSource("sessionAck")
     fun `Receiving a wakeup or session ack event does not resume the flow and resends any unacknowledged events`(
         @Suppress("UNUSED_PARAMETER") name: String,
         parameter: (StepSetup) -> Unit
@@ -345,11 +343,6 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
                     SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
-                )))
-
-            wakeupEventReceived(FLOW_ID1)
-                .suspendsWith(FlowIORequest.Receive(setOf(
-                    SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
                 )))
         }
 
@@ -611,13 +604,6 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
                     mapOf(
                         SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_2,
                     )))
-
-            wakeupEventReceived(FLOW_ID1)
-                .suspendsWith(FlowIORequest.Send(
-                    mapOf(
-                        SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_2,
-                    )))
-
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Receive(

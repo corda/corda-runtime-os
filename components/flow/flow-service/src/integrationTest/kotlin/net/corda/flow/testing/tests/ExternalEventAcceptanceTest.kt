@@ -244,11 +244,6 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
                 )
         }
 
-
-        `when` {
-            wakeupEventReceived(FLOW_ID1)
-        }
-
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
@@ -276,11 +271,6 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
                         EXTERNAL_EVENT_CONTEXT
                     )
                 )
-        }
-
-
-        `when` {
-            wakeupEventReceived(FLOW_ID1)
         }
 
         then {
@@ -394,11 +384,6 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
 
         // Wait for the resend window to be passed
         Thread.sleep(10.seconds.toMillis())
-
-        `when` {
-            wakeupEventReceived(FLOW_ID1)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
-        }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
