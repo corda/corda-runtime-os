@@ -1,5 +1,9 @@
 package net.corda.interop.identity.write.impl
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.databind.node.TextNode
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.interop.identity.write.InteropIdentityWriteService
@@ -75,16 +79,32 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
         }
     }
 
-    override fun publishGroupPolicy(groupId: String, groupPolicy: String) : String {
-        var returnId = groupId
-        if(groupPolicy.contains(CREATE_ID)) {
-             returnId = UUID.randomUUID().toString()
-            val groupPolicyContent = groupPolicy.replace(CREATE_ID, returnId)
-            interopGroupPolicyProducer.publishInteropGroupPolicy(returnId, groupPolicyContent)
-        } else {
-            interopGroupPolicyProducer.publishInteropGroupPolicy(returnId, groupPolicy)
+    override fun publishGroupPolicy(groupId: String, groupPolicy: String): String {
+        val json = ObjectMapper().readTree(groupPolicy) as ObjectNode
+
+        require(json.hasNonNull("groupId")) {
+            "Invalid group policy, 'groupId' field is missing or null"
         }
-        return returnId
+
+        require(json.get("groupId").isTextual) {
+            "Invalid group policy, 'groupId' field is not a text node."
+        }
+
+        val finalGroupId = when(val inputGroupId = json.get("groupId").asText()) {
+            "CREATE_ID" -> UUID.randomUUID()
+            else -> try {
+                UUID.fromString(inputGroupId)
+            } catch (e: Exception) {
+                throw IllegalArgumentException("Invalid group policy, 'groupId' field is not a valid UUID.")
+            }
+        }
+
+        json.set<TextNode>("groupId", JsonNodeFactory.instance.textNode(finalGroupId.toString()))
+        val finalGroupPolicy = json.toString()
+
+        interopGroupPolicyProducer.publishInteropGroupPolicy(finalGroupId.toString(), finalGroupPolicy)
+        
+        return finalGroupId.toString()
     }
 
     private fun writeMemberInfoTopic(vNodeShortHash: ShortHash, identity: InteropIdentity) {
