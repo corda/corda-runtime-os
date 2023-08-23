@@ -229,7 +229,7 @@ class PlatformClassSerializationTests {
 
         val cause = Throwable("TestException")
 
-        val exception = CordaRuntimeException("TestClassName", "Nobody Expects The Spanish Inquisition", cause)
+        val exception = CordaRuntimeException("TestClassName", "Test Exception Message", cause)
 
         kryo.writeClassAndObject(output, exception)
         val tested = kryo.readClassAndObject(Input(output.buffer)) as CordaRuntimeException
