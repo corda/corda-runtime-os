@@ -3,7 +3,6 @@ package net.corda.ledger.utxo.data.state
 import net.corda.crypto.core.parseSecureHash
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
-import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
@@ -13,7 +12,6 @@ import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
 import org.slf4j.LoggerFactory
-import java.lang.Exception
 
 /**
  * Lazy [StateRef]. It stores initially the serialized form of the represented state and ref.
