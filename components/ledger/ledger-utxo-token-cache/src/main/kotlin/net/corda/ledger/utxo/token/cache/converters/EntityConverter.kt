@@ -82,7 +82,7 @@ interface EntityConverter {
     fun amountToBigDecimal(avroTokenAmount: TokenAmount): BigDecimal
 
     /**
-     * Creates a [TokenPoolKey] from an Avro [TokenPoolCacheState]
+     * Creates a [TokenPoolKey] from an Avro [TokenPoolCacheKey]
      *
      * @param avroTokenPoolKey The Avro representation of a token pool cache key
      *
