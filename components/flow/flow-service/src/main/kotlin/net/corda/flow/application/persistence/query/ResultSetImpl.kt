@@ -15,6 +15,16 @@ data class ResultSetImpl<R> internal constructor(
     private val resultSetExecutor: ResultSetExecutor<R>
 ) : PagedQuery.ResultSet<R> {
 
+    init {
+        // Ideally this will never happen, but we keep this check in here for safety
+        require(offset >= 0) {
+            "Offset cannot be negative or zero"
+        }
+        require(limit > 0) {
+            "Limit cannot be negative or zero"
+        }
+    }
+
     private var results: List<R> = emptyList()
     private var hasNext: Boolean = true
 
@@ -44,7 +54,6 @@ data class ResultSetImpl<R> internal constructor(
         // Example:
         // `limit` = 5, `numberOfRowsFromQuery` = 5, `hasNext = 5 % 5 == 0` => `hasNext =  0 == 0` == true
         hasNext = numberOfRowsFromQuery != 0  // If there are no rows left there are no more pages to fetch
-                && limit != 0 // If the limit is 0 it means we fetch everything in one go so there are no pages left
                 && numberOfRowsFromQuery % limit == 0
         offset += numberOfRowsFromQuery
         results = serializedResults.map { serializationService.deserialize(it.array(), resultClass) }

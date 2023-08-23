@@ -6,6 +6,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
@@ -60,12 +61,6 @@ class ResultSetImplTest {
     }
 
     @Test
-    fun `hasNext returns true when the limit is 0 and next has not been called yet`() {
-        val resultSet = this.resultSet.copy(limit = 0)
-        assertThat(resultSet.hasNext()).isTrue
-    }
-
-    @Test
     fun `hasNext returns true when the number of rows returned from next is equal to the limit`() {
         whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults)
         resultSet.next()
@@ -89,11 +84,17 @@ class ResultSetImplTest {
     }
 
     @Test
-    fun `hasNext returns false when the limit is 0 and next has been called`() {
-        val resultSet = this.resultSet.copy(limit = 0)
-        whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults.copy(numberOfRowsFromQuery = 1))
-        resultSet.next()
-        assertThat(resultSet.hasNext()).isFalse
+    fun `result set cannot be instantiated with zero limit`() {
+        assertThrows<IllegalArgumentException> {
+            this.resultSet.copy(limit = 0)
+        }
+    }
+
+    @Test
+    fun `result set cannot be instantiated with negative offset`() {
+        assertThrows<IllegalArgumentException> {
+            this.resultSet.copy(offset = -1)
+        }
     }
 
     @Test
@@ -121,12 +122,5 @@ class ResultSetImplTest {
         whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults.copy(numberOfRowsFromQuery = 2))
         resultSet.next()
         assertThatThrownBy { resultSet.next() }.isInstanceOf(NoSuchElementException::class.java)
-    }
-
-    @Test
-    fun `next returns empty list when limit is 0`() {
-        val resultSet = this.resultSet.copy(limit = 0)
-        whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(ResultSetExecutor.Results(emptyList(), 0))
-        assertThat(resultSet.next()).isEmpty()
     }
 }
