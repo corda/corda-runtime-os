@@ -80,7 +80,7 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
         )
     }
 
-    override fun getGroupParameters(wireTransaction: WireTransaction): GroupParameters {
+    private fun getGroupParameters(wireTransaction: WireTransaction): GroupParameters {
         val membershipGroupParametersHashString =
             requireNotNull((wireTransaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()) {
                 "Membership group parameters hash cannot be found in the transaction metadata."

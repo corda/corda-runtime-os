@@ -5,7 +5,6 @@ import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
-import net.corda.v5.membership.GroupParameters
 
 /**
  * Factory to create a [UtxoLedgerTransaction]s.
@@ -28,6 +27,4 @@ interface UtxoLedgerTransactionFactory {
         inputStateAndRefs: List<UtxoTransactionOutputDto>,
         referenceStateAndRefs: List<UtxoTransactionOutputDto>
     ): UtxoLedgerTransactionInternal
-
-    fun getGroupParameters(wireTransaction: WireTransaction): GroupParameters
 }

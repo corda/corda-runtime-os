@@ -46,7 +46,8 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
     override fun verify(transaction: UtxoLedgerTransaction) {
         recordSuspendable(::transactionVerificationFlowTimer) @Suspendable {
 
-            val signedGroupParameters = verifySignedGroupParameters(transaction)
+            val signedGroupParameters = transaction.groupParameters as SignedGroupParameters
+            signedGroupParametersVerifier.verify(transaction, signedGroupParameters)
             verifyNotaryAllowed(transaction, signedGroupParameters)
 
             val verificationResult = externalEventExecutor.execute(
@@ -66,17 +67,6 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
                 )
             }
         }
-    }
-
-    @Suspendable
-    private fun verifySignedGroupParameters(transaction: UtxoLedgerTransaction): SignedGroupParameters {
-        val signedGroupParameters =
-            transaction.groupParameters as SignedGroupParameters
-        signedGroupParametersVerifier.verify(
-            transaction,
-            signedGroupParameters
-        )
-        return signedGroupParameters
     }
 
     private fun UtxoLedgerTransaction.toContainer() =
