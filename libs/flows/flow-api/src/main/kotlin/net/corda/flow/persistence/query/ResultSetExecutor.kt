@@ -22,5 +22,5 @@ fun interface ResultSetExecutor<R> : Serializable {
     @Suspendable
     fun execute(serializedParameters: Map<String, ByteBuffer>, offset: Int): Results
 
-    data class Results(val serializedResults: List<ByteBuffer>, val numberOfRowsFromQuery: Int, val newOffset: Int)
+    data class Results(val serializedResults: List<ByteBuffer>, val numberOfRowsFromQuery: Int)
 }

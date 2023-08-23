@@ -49,8 +49,7 @@ class VaultNamedQueryExternalEventFactory(
     override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): ResultSetExecutor.Results {
         return ResultSetExecutor.Results(
             serializedResults = response.results,
-            numberOfRowsFromQuery = response.metadata.items.single { it.key == "numberOfRowsFromQuery" }.value.toInt(),
-            newOffset = response.metadata.items.single { it.key == "newOffset" }.value.toInt()
+            numberOfRowsFromQuery = response.metadata.items.single { it.key == "numberOfRowsFromQuery" }.value.toInt()
         )
     }
 }

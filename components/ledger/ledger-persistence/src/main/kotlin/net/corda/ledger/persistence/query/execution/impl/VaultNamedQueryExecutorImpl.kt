@@ -77,10 +77,8 @@ class VaultNamedQueryExecutorImpl(
         return EntityResponse.newBuilder()
             .setResults(collectedResults.map { ByteBuffer.wrap(serializationService.serialize(it).bytes) })
             .setMetadata(KeyValuePairList(listOf(
-                KeyValuePair("numberOfRowsFromQuery", filteredAndTransformedResults.size.toString()),
-                KeyValuePair("newOffset", newOffset.toString())
-            )))
-            .build()
+                KeyValuePair("numberOfRowsFromQuery", (newOffset - request.offset).toString())
+            ))).build()
     }
 
     /**
@@ -131,7 +129,7 @@ class VaultNamedQueryExecutorImpl(
 
             // If we can't fetch more states we just return the result set as-is
             if (contractStateResults.isEmpty()) {
-                break
+                return Pair(emptyList(), internalOffset)
             }
 
             // Increase the internal offset, so we don't fetch the same results multiple times

@@ -37,8 +37,7 @@ class FindAllExternalEventFactory: ExternalEventFactory<FindAllParameters, Entit
 
         return ResultSetExecutor.Results(
             serializedResults = response.results,
-            numberOfRowsFromQuery = numberOfRowsFromQuery,
-            newOffset = numberOfRowsFromQuery
+            numberOfRowsFromQuery = numberOfRowsFromQuery
         )
     }
 }

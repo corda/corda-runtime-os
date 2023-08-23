@@ -38,8 +38,7 @@ class NamedQueryExternalEventFactory : ExternalEventFactory<NamedQueryParameters
 
         return ResultSetExecutor.Results(
             serializedResults = response.results,
-            numberOfRowsFromQuery = numberOfRowsFromQuery,
-            newOffset = numberOfRowsFromQuery
+            numberOfRowsFromQuery = numberOfRowsFromQuery
         )
     }
 }
