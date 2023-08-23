@@ -1,6 +1,5 @@
 package net.corda.flow.mapper.impl.executor
 
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
@@ -8,9 +7,9 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
-import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
+import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import org.slf4j.LoggerFactory
@@ -21,18 +20,14 @@ class SessionEventExecutor(
     private val eventKey: String,
     private val sessionEvent: SessionEvent,
     private val flowMapperState: FlowMapperState?,
-    private val instant: Instant,
-    private val sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
-    private val appMessageFactory: (SessionEvent, CordaAvroSerializer<SessionEvent>, SmartConfig) -> AppMessage,
-    private val flowConfig: SmartConfig
-) : FlowMapperEventExecutor {
+    private val flowConfig: SmartConfig,
+    private val recordFactory: RecordFactory,
+    private val instant: Instant
+    ) : FlowMapperEventExecutor {
 
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
-
-    private val messageDirection = sessionEvent.messageDirection
-    private val outputTopic = getSessionEventOutputTopic(messageDirection)
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
@@ -50,24 +45,17 @@ class SessionEventExecutor(
                 "Flow mapper received session event for session which does not exist. Session may have expired. Returning error to " +
                         "counterparty. Key: $eventKey, Event: class ${sessionEvent.payload::class.java}, $sessionEvent"
             )
-            val sessionId = sessionEvent.sessionId
-            FlowMapperResult(
-                null, listOf(
-                    createP2PRecord(
-                        sessionEvent,
-                        SessionError(
-                            ExceptionEnvelope(
-                                "FlowMapper-SessionExpired",
-                                "Tried to process session event for expired session with sessionId $sessionId"
-                            )
-                        ),
-                        instant,
-                        sessionEventSerializer,
-                        appMessageFactory,
-                        flowConfig
-                    )
-                )
+            val outputRecord = recordFactory.forwardError(
+                sessionEvent,
+                ExceptionEnvelope(
+                    "FlowMapper-SessionExpired",
+                    "Tried to process session event for expired session with sessionId ${sessionEvent.sessionId}"
+                ),
+                instant,
+                flowConfig,
+                sessionEvent.messageDirection,
             )
+            FlowMapperResult(null, listOf(outputRecord))
         } else {
             log.warn(
                 "Flow mapper received error event from counterparty for session which does not exist. Session may have expired. " +
@@ -81,6 +69,7 @@ class SessionEventExecutor(
      * Output the session event to the correct topic and key
      */
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
+        val messageDirection = sessionEvent.messageDirection
         val errorMsg = "Flow mapper received error event from counterparty for session which does not exist. " +
                 "Session may have expired. Key: $eventKey, Event: $sessionEvent. "
 
@@ -98,12 +87,9 @@ class SessionEventExecutor(
                 }
             }
             FlowMapperStateType.OPEN -> {
+                val outputTopic = recordFactory.getSessionEventOutputTopic(sessionEvent, messageDirection)
                 val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
-                    Record(
-                        outputTopic,
-                        sessionEvent.sessionId,
-                        appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig)
-                    )
+                    recordFactory.forwardEvent(sessionEvent, instant, flowConfig, messageDirection)
                 } else {
                     Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
                 }

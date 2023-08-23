@@ -35,11 +35,13 @@ dependencies {
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:flow:flow-utilities")
 
+    integrationTestImplementation project(":components:membership:locally-hosted-identities-service")
     integrationTestImplementation project(":testing:db-message-bus-testkit")
     integrationTestImplementation project(":libs:flows:flow-utils")
 
     integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
     integrationTestRuntimeOnly project(":components:flow:flow-mapper-impl")
+    integrationTestRuntimeOnly project(":components:membership:locally-hosted-identities-service-impl")
     integrationTestRuntimeOnly project(":libs:crypto:cipher-suite-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly project(":libs:messaging:messaging-impl")

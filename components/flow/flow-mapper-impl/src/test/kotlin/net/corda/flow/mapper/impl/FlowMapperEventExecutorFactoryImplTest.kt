@@ -10,6 +10,7 @@ import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.flow.mapper.impl.executor.ExecuteCleanupEventExecutor
 import net.corda.flow.mapper.impl.executor.ScheduleCleanupEventExecutor
 import net.corda.flow.mapper.impl.executor.SessionErrorExecutor
@@ -31,8 +32,9 @@ class FlowMapperEventExecutorFactoryImplTest {
     @BeforeEach
     fun setup() {
         val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
+        val recordFactory: RecordFactory = mock()
         whenever(cordaAvroSerializationFactory.createAvroSerializer<SessionEvent>(anyOrNull())).thenReturn(mock())
-        executorFactoryImpl = FlowMapperEventExecutorFactoryImpl(cordaAvroSerializationFactory)
+        executorFactoryImpl = FlowMapperEventExecutorFactoryImpl(cordaAvroSerializationFactory, recordFactory)
     }
 
     @Test

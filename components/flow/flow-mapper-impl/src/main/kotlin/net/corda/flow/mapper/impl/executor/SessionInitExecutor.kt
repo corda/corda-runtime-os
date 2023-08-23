@@ -9,11 +9,14 @@ import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
+import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 @Suppress("LongParameterList")
 class SessionInitExecutor(
@@ -23,6 +26,8 @@ class SessionInitExecutor(
     private val flowMapperState: FlowMapperState?,
     private val sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
     private val flowConfig: SmartConfig,
+    private val recordFactory: RecordFactory,
+    private val instant: Instant
 ) : FlowMapperEventExecutor {
 
     private companion object {
@@ -30,7 +35,6 @@ class SessionInitExecutor(
     }
 
     private val messageDirection = sessionEvent.messageDirection
-    private val outputTopic = getSessionEventOutputTopic(messageDirection)
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
@@ -43,16 +47,8 @@ class SessionInitExecutor(
             log.debug { "Duplicate SessionInit event received. Key: $eventKey, Event: $sessionEvent" }
             if (messageDirection == MessageDirection.OUTBOUND) {
                 sessionInit.flowId = null
-                FlowMapperResult(
-                    flowMapperState,
-                    listOf(
-                        Record(
-                            outputTopic,
-                            eventKey,
-                            generateAppMessage(sessionEvent, sessionEventSerializer, flowConfig)
-                        )
-                    )
-                )
+                val outputRecord = recordFactory.forwardEvent(sessionEvent, instant, flowConfig, messageDirection)
+                FlowMapperResult(flowMapperState, listOf(outputRecord))
             } else {
                 CordaMetrics.Metric.FlowMapperDeduplicationCount.builder()
                     .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)
@@ -63,7 +59,7 @@ class SessionInitExecutor(
     }
 
     private fun processSessionInit(sessionEvent: SessionEvent, sessionInit: SessionInit): FlowMapperResult {
-        val (flowKey, outputRecordKey, outputRecordValue) =
+        val (flowKey, outputRecord) =
             getSessionInitOutputs(
                 messageDirection,
                 sessionEvent,
@@ -72,7 +68,7 @@ class SessionInitExecutor(
 
         return FlowMapperResult(
             FlowMapperState(flowKey, null, FlowMapperStateType.OPEN),
-            listOf(Record(outputTopic, outputRecordKey, outputRecordValue))
+            listOf(outputRecord)
         )
     }
 
@@ -90,7 +86,10 @@ class SessionInitExecutor(
         return if (messageDirection == MessageDirection.INBOUND) {
             val flowId = generateFlowId()
             sessionInit.flowId = flowId
-            SessionInitOutputs(flowId, flowId, FlowEvent(flowId, sessionEvent))
+            SessionInitOutputs(
+                flowId,
+                Record(FLOW_EVENT_TOPIC, flowId, FlowEvent(flowId, sessionEvent))
+            )
         } else {
             //reusing SessionInit object for inbound and outbound traffic rather than creating a new object identical to SessionInit
             //with an extra field of flowKey. set flowkey to null to not expose it on outbound messages
@@ -100,15 +99,13 @@ class SessionInitExecutor(
 
             SessionInitOutputs(
                 tmpFLowEventKey,
-                sessionEvent.sessionId,
-                generateAppMessage(sessionEvent, sessionEventSerializer, flowConfig)
+                recordFactory.forwardEvent(sessionEvent, instant, flowConfig, sessionEvent.messageDirection)
             )
         }
     }
 
     data class SessionInitOutputs(
         val flowId: String,
-        val outputRecordKey: Any,
-        val outputRecordValue: Any
+        val record: Record<*, *>
     )
 }

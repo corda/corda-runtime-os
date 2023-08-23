@@ -10,7 +10,6 @@ import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
 import net.corda.schema.configuration.FlowConfig.SESSION_P2P_TTL
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_SUBSYSTEM
 import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
@@ -27,28 +26,28 @@ fun generateFlowId(): String {
 }
 
 /**
- * Inbound records should be directed to the flow event topic.
- * Outbound records should be directed to the p2p out topic.
- * @return the output topic based on [messageDirection].
- */
-fun getSessionEventOutputTopic(messageDirection: MessageDirection): String {
-    return if (messageDirection == MessageDirection.INBOUND) {
-        Schemas.Flow.FLOW_EVENT_TOPIC
-    } else {
-        Schemas.P2P.P2P_OUT_TOPIC
-    }
-}
-
-/**
  * Get the source and destination holding identity from the [sessionEvent].
  * @param sessionEvent Session event to extract identities from
  * @return Source and destination identities for a SessionEvent message.
  */
-private fun getSourceAndDestinationIdentity(sessionEvent: SessionEvent): Pair<HoldingIdentity, HoldingIdentity> {
+fun getSourceAndDestinationIdentity(sessionEvent: SessionEvent): Pair<HoldingIdentity, HoldingIdentity> {
     return if (sessionEvent.sessionId.contains(INITIATED_SESSION_ID_SUFFIX)) {
         Pair(sessionEvent.initiatedIdentity, sessionEvent.initiatingIdentity)
     } else {
         Pair(sessionEvent.initiatingIdentity, sessionEvent.initiatedIdentity)
+    }
+}
+
+/**
+ * Get the destination holding identity from the [sessionEvent].
+ * @param sessionEvent Session event to extract identity from
+ * @return destination identity for a SessionEvent message.
+ */
+fun getDestinationIdentity(sessionEvent: SessionEvent): HoldingIdentity {
+    return if (sessionEvent.sessionId.contains(INITIATED_SESSION_ID_SUFFIX)) {
+        sessionEvent.initiatedIdentity
+    } else {
+        sessionEvent.initiatingIdentity
     }
 }
 
@@ -83,22 +82,22 @@ fun generateAppMessage(
  * @param payload Flow event payload
  * @param instant Instant
  * @param sessionEventSerializer Serializer for session events
- * @param appMessageFactory AppMessage factory
  * @param flowConfig config
  * @param receivedSequenceNumber Received sequence number of the session event
+ * @param outputTopic topic where the record should be sent
  */
 @Suppress("LongParameterList")
-fun createP2PRecord(
+fun createOutboundRecord(
     sessionEvent: SessionEvent,
     payload: Any,
     instant: Instant,
     sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
-    appMessageFactory: (SessionEvent, CordaAvroSerializer<SessionEvent>, SmartConfig) -> AppMessage,
-    flowConfig: SmartConfig
+    flowConfig: SmartConfig,
+    outputTopic: String
 ) : Record<*, *> {
     val sessionId = sessionEvent.sessionId
     return Record(
-        Schemas.P2P.P2P_OUT_TOPIC, sessionId, appMessageFactory(
+        outputTopic, sessionId, generateAppMessage(
             SessionEvent(
                 MessageDirection.OUTBOUND,
                 instant,

@@ -1,30 +1,27 @@
 package net.corda.flow.mapper.impl.executor
 
-import java.time.Instant
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
-import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
+import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 @Suppress("LongParameterList")
 class SessionErrorExecutor(
     private val eventKey: String,
     private val sessionEvent: SessionEvent,
     private val flowMapperState: FlowMapperState?,
-    private val instant: Instant,
-    private val sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
-    private val appMessageFactory: (SessionEvent, CordaAvroSerializer<SessionEvent>, SmartConfig) -> AppMessage,
-    private val flowConfig: SmartConfig
+    private val flowConfig: SmartConfig,
+    private val recordFactory: RecordFactory,
+    private val instant: Instant
 ) : FlowMapperEventExecutor {
 
     private companion object {
@@ -35,8 +32,6 @@ class SessionErrorExecutor(
     }
 
     private val messageDirection = sessionEvent.messageDirection
-    private val outputTopic = getSessionEventOutputTopic(messageDirection)
-
     private val defaultMsg = "$messageDirection flow mapper received error event while in $flowMapperState, {} event. " +
             "Key: $eventKey, Event: $sessionEvent"
     private val missingSessionMsg = "$messageDirection flow mapper received error event from counterparty for session " +
@@ -52,7 +47,6 @@ class SessionErrorExecutor(
     }
 
     private fun processSessionErrorEvents(flowMapperState: FlowMapperState): FlowMapperResult {
-        val sessionId = sessionEvent.sessionId
         return when (flowMapperState.status) {
             null -> {
                 log.debug("FlowMapperState with null status. Key: {}, Event: {}.", eventKey, sessionEvent)
@@ -65,25 +59,21 @@ class SessionErrorExecutor(
             FlowMapperStateType.OPEN -> {
                 log.debug(defaultMsg.format(FORWARDING))
                 flowMapperState.status = FlowMapperStateType.ERROR
+                val messageDirection = sessionEvent.messageDirection
                 if (messageDirection == MessageDirection.OUTBOUND) {
-                    FlowMapperResult(
-                        flowMapperState, listOf(
-                            createP2PRecord(
-                                sessionEvent,
-                                SessionError(
-                                    ExceptionEnvelope(
-                                        "FlowMapper-SessionError",
-                                        "Received SessionError with sessionId $sessionId"
-                                    )
-                                ),
-                                instant,
-                                sessionEventSerializer,
-                                appMessageFactory,
-                                flowConfig
-                            )
-                        )
+                    val outputRecord = recordFactory.forwardError(
+                        sessionEvent,
+                        ExceptionEnvelope(
+                            "FlowMapper-SessionError",
+                            "Received SessionError with sessionId ${sessionEvent.sessionId}"
+                        ),
+                        instant,
+                        flowConfig,
+                        messageDirection
                     )
+                    FlowMapperResult(flowMapperState, listOf(outputRecord))
                 } else {
+                    val outputTopic = recordFactory.getSessionEventOutputTopic(sessionEvent, messageDirection)
                     val outputRecord = Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
                     FlowMapperResult(flowMapperState, listOf(outputRecord))
                 }

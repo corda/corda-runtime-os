@@ -1,20 +1,22 @@
 plugins {
     id 'corda.common-library'
     id 'corda.common-publishing'
-    id 'corda.osgi-test-conventions'
 }
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
+    implementation project(":components:membership:locally-hosted-identities-service")
     implementation project(":components:flow:flow-mapper")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:flows:session-manager")
+    implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(":libs:metrics")
     implementation project(':libs:utilities')
     implementation project(":libs:serialization:serialization-avro")
+    implementation project(":libs:lifecycle:lifecycle")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
@@ -28,12 +30,6 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:flow:flow-utilities")
     testImplementation project(":libs:flows:flow-utils")
-
-    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
-
-    //to get serializzation factory impl
-    integrationTestRuntimeOnly project(":libs:messaging:db-message-bus-impl")
-    integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
 }
 
 description 'Flow Mapper Library Impl'
