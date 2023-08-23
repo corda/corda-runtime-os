@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.inOrder
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -35,7 +36,6 @@ class FlowExecutorImplTest {
     private val coordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val flowEventProcessorFactory = mock<FlowEventProcessorFactory>()
     private val subscriptionFactory = mock<SubscriptionFactory>()
-    private val flowExecutorRebalanceListener = mock<FlowExecutorRebalanceListener>()
     private val toMessagingConfig: (Map<String, SmartConfig>) -> SmartConfig = {
         messagingConfig
     }
@@ -57,7 +57,7 @@ class FlowExecutorImplTest {
                 any(),
                 any(),
                 any(),
-                any()
+                anyOrNull()
             )
         ).thenReturn(subscription)
 
@@ -141,7 +141,7 @@ class FlowExecutorImplTest {
                 any(),
                 any(),
                 any(),
-                any()
+                anyOrNull()
             )
         ).thenReturn(subscription2)
 
@@ -174,7 +174,6 @@ class FlowExecutorImplTest {
             coordinatorFactory,
             subscriptionFactory,
             flowEventProcessorFactory,
-            flowExecutorRebalanceListener,
             toMessagingConfig
         )
     }

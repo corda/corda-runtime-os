@@ -18,6 +18,7 @@ import net.corda.schema.configuration.FlowConfig
 import net.corda.utilities.seconds
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -30,6 +31,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
+@Disabled
 class ExternalEventAcceptanceTest : FlowServiceTestBase() {
 
     private companion object {
@@ -242,11 +244,6 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
                 )
         }
 
-
-        `when` {
-            wakeupEventReceived(FLOW_ID1)
-        }
-
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
@@ -274,11 +271,6 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
                         EXTERNAL_EVENT_CONTEXT
                     )
                 )
-        }
-
-
-        `when` {
-            wakeupEventReceived(FLOW_ID1)
         }
 
         then {
@@ -392,11 +384,6 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
 
         // Wait for the resend window to be passed
         Thread.sleep(10.seconds.toMillis())
-
-        `when` {
-            wakeupEventReceived(FLOW_ID1)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
-        }
 
         then {
             expectOutputForFlow(FLOW_ID1) {

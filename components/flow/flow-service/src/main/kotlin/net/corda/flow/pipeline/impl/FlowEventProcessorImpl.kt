@@ -88,10 +88,7 @@ class FlowEventProcessorImpl(
                 pipeline
                     .eventPreProcessing()
                     .virtualNodeFlowOperationalChecks()
-                    .runOrContinue(flowTimeout)
-                    .setCheckpointSuspendedOn()
-                    .setWaitingFor()
-                    .requestPostProcessing()
+                    .executeFlow(flowTimeout)
                     .globalPostProcessing()
                     .context
             )

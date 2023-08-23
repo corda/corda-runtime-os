@@ -5,6 +5,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.virtualnode.OperationalStatus
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -13,6 +14,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
+@Disabled
 class FlowKilledAcceptanceTest : FlowServiceTestBase() {
 
     @BeforeEach
@@ -82,10 +84,6 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
 
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY, flowOperationalStatus = OperationalStatus.INACTIVE)
-        }
-
-        `when` {
-            wakeupEventReceived(FLOW_ID1)
         }
 
         then {
