@@ -41,6 +41,12 @@ workers:
         username:
           value: "alice"
 
+  flow-mapper:
+    kafka:
+      sasl:
+        username:
+          value: "alice"
+
   membership:
     kafka:
       sasl:

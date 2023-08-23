@@ -5,6 +5,8 @@
   ( dict "clusterDbAccess" true )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.flow "flow" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.verification "verification" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.flow-mapper "flow-mapper" ) }}
 {{- include "corda.worker" ( list $ .Values.workers.membership "membership" ) }}
 {{- include "corda.worker" ( list $ .Values.workers.p2pGateway "p2pGateway"
   ( dict "httpPort" 8080 )

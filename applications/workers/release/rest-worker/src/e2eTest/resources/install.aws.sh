@@ -29,12 +29,13 @@ kubectl create secret generic kafka-credentials -n "${NAMESPACE}" \
   --from-literal=crypto="${KAFKA_PASSWORDS_ARRAY[1]}" \
   --from-literal=db="${KAFKA_PASSWORDS_ARRAY[2]}" \
   --from-literal=flow="${KAFKA_PASSWORDS_ARRAY[3]}" \
-  --from-literal=membership="${KAFKA_PASSWORDS_ARRAY[4]}" \
-  --from-literal=p2pGateway="${KAFKA_PASSWORDS_ARRAY[5]}" \
-  --from-literal=p2pLinkManager="${KAFKA_PASSWORDS_ARRAY[6]}" \
-  --from-literal=persistence="${KAFKA_PASSWORDS_ARRAY[7]}" \
-  --from-literal=rest="${KAFKA_PASSWORDS_ARRAY[8]}" \
-  --from-literal=uniqueness="${KAFKA_PASSWORDS_ARRAY[9]}"
+  --from-literal=flow-mapper="${KAFKA_PASSWORDS_ARRAY[4]}" \
+  --from-literal=membership="${KAFKA_PASSWORDS_ARRAY[5]}" \
+  --from-literal=p2pGateway="${KAFKA_PASSWORDS_ARRAY[6]}" \
+  --from-literal=p2pLinkManager="${KAFKA_PASSWORDS_ARRAY[7]}" \
+  --from-literal=persistence="${KAFKA_PASSWORDS_ARRAY[8]}" \
+  --from-literal=rest="${KAFKA_PASSWORDS_ARRAY[9]}" \
+  --from-literal=uniqueness="${KAFKA_PASSWORDS_ARRAY[10]}"
 
 helm install corda \
   ./charts/corda \
