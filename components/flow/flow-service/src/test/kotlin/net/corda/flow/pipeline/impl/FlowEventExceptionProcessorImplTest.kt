@@ -5,7 +5,6 @@ import com.typesafe.config.ConfigValueFactory
 import java.nio.ByteBuffer
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus

@@ -4,7 +4,6 @@ import net.corda.crypto.core.ShortHash
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.flow.state.waiting.external.ExternalEventResponse
 import net.corda.flow.BOB_X500
@@ -23,7 +22,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever

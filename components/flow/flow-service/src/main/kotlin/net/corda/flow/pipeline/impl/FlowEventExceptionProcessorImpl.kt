@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.event.StartFlow
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.output.FlowStates
