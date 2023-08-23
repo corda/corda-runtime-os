@@ -26,7 +26,6 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
-import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.runner.impl.FlowRunnerImpl
 import net.corda.flow.pipeline.runner.impl.remoteToLocalContextMapper
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
@@ -62,7 +61,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 
 class FlowRunnerImplTest {
 
@@ -235,7 +234,7 @@ class FlowRunnerImplTest {
                 x500Name = MemberX500Name("R3", "London", "GB").toString()
             }
         }
-        whenever(flowCheckpoint.waitingFor).thenReturn(WaitingFor(WaitingForSessionInit("foo")))
+        whenever(flowCheckpoint.waitingFor).thenReturn(WaitingFor(WaitingForStartFlow))
 
         val logicAndArgs = InitiatedFlow(initiatedFlow, mock())
 

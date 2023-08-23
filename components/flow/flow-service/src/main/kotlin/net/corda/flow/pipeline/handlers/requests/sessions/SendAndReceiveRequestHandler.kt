@@ -39,7 +39,6 @@ class SendAndReceiveRequestHandler @Activate constructor(
         initiateFlowRequestService.initiateFlowsNotInitiated(context, request.sessionToInfo.keys)
 
         try {
-            val sessionIdToPayload = request.sessionToInfo.mapKeys { it.key.sessionId }
             checkpoint.putSessionStates(flowSessionManager.sendDataMessages(checkpoint, request.sessionToInfo, Instant.now()))
         } catch (e: FlowSessionStateException) {
             throw FlowPlatformException("Failed to send/receive: ${e.message}. $PROTOCOL_MISMATCH_HINT", e)

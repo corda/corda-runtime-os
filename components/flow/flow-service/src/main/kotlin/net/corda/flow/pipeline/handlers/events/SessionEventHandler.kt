@@ -15,6 +15,7 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
+import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.protocol.FlowAndProtocolVersion
@@ -161,7 +162,7 @@ class SessionEventHandler @Activate constructor(
 
         checkpointInitializer.initialize(
             context.checkpoint,
-            WaitingFor(Wakeup()),
+            WaitingFor(WaitingForStartFlow),
             holdingIdentity
         ) {
             val protocolStore = try {
