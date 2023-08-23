@@ -52,12 +52,6 @@ class SessionInitHelper(private val recordFactory: RecordFactory) {
         )
     }
 
-    /**
-     * Get a helper object to obtain:
-     * - flow key
-     * - output record key
-     * - output record value
-     */
     private fun getSessionInitOutputs(
         messageDirection: MessageDirection?,
         sessionEvent: SessionEvent,
@@ -77,7 +71,6 @@ class SessionInitHelper(private val recordFactory: RecordFactory) {
             //with an extra field of flowKey. set flowkey to null to not expose it on outbound messages
             val tmpFLowEventKey = sessionInit.flowId
             sessionInit.flowId = null
-            sessionEvent.payload = sessionInit
 
             SessionInitOutputs(
                 tmpFLowEventKey,
