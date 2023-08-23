@@ -36,7 +36,7 @@ data class LazyStateAndRefImpl<out T : ContractState>(
     }
 
     init{
-        WrappedUtxoWireTransaction.log.warn("LazyStateAndRefImpl init", Exception("LazyStateAndRefImpl init"));
+        log.warn("LazyStateAndRefImpl init", Exception("LazyStateAndRefImpl init"));
     }
 
     val stateAndRef: StateAndRef<@UnsafeVariance T> by lazy(LazyThreadSafetyMode.PUBLICATION) {
