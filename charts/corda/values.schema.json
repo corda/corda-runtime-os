@@ -1863,24 +1863,122 @@
                                 "service": {
                                     "type": "object",
                                     "default": {},
-                                    "title": "p2p-gateway worker worker service configuration",
+                                    "title": "P2P gateway worker service configuration",
                                     "required": [
-                                        "port"
+                                        "type",
+                                        "externalTrafficPolicy",
+                                        "loadBalancerSourceRanges",
+                                        "annotations"
                                     ],
                                     "additionalProperties": false,
                                     "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "default": "",
+                                            "title": "the type for the P2P gateway worker service",
+                                            "examples": [
+                                                "ClusterIP"
+                                            ]
+                                        },
                                         "port": {
                                             "type": "integer",
-                                            "default": 8080,
-                                            "title": "the Gateway HTTP port",
+                                            "default": 443,
+                                            "title": "the HTTP port for the P2P gateway worker service",
                                             "examples": [
-                                                8080
+                                                443
+                                            ]
+                                        },
+                                        "externalTrafficPolicy": {
+                                            "type": "string",
+                                            "default": "",
+                                            "title": "the traffic policy for the P2P gateway worker service",
+                                            "examples": [
+                                                ""
+                                            ]
+                                        },
+                                        "loadBalancerSourceRanges": {
+                                            "type": "array",
+                                            "default": [],
+                                            "title": "the LoadBalancer source ranges to limit access to the P2P gateway worker service",
+                                            "items": {},
+                                            "examples": [
+                                                []
+                                            ]
+                                        },
+                                        "annotations": {
+                                            "type": "object",
+                                            "default": {},
+                                            "title": "the annotations for P2P gateway worker service",
+                                            "required": [],
+                                            "properties": {},
+                                            "examples": [
+                                                {}
                                             ]
                                         }
                                     },
-                                    "examples": [{
-                                        "port": 8080
-                                    }]
+                                    "examples": [
+                                        {
+                                            "type": "ClusterIP",
+                                            "port": 443,
+                                            "externalTrafficPolicy": "",
+                                            "loadBalancerSourceRanges": [],
+                                            "annotations": {}
+                                        }
+                                    ]
+                                },
+                                "ingress": {
+                                    "type": "object",
+                                    "default": {},
+                                    "title": "P2P gateway worker ingress configuration",
+                                    "required": [
+                                        "annotations",
+                                        "hosts"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "annotations": {
+                                            "type": "object",
+                                            "default": {},
+                                            "title": "the annotations for P2P gateway worker ingress",
+                                            "required": [],
+                                            "properties": {},
+                                            "examples": [
+                                                {
+                                                    "cert-manager.io/cluster-issuer": "production",
+                                                    "nginx.ingress.kubernetes.io/backend-protocol": "HTTPS"
+                                                }
+                                            ]
+                                        },
+                                        "className": {
+                                            "type": "string",
+                                            "default": "",
+                                            "title": "the className for the P2P gateway worker ingress",
+                                            "examples": [
+                                                "nginx"
+                                            ]
+                                        },
+                                        "hosts": {
+                                            "type": "array",
+                                            "default": [],
+                                            "title": "the hosts for P2P gateway worker ingress",
+                                            "items": {},
+                                            "examples": [
+                                                ["p2p-gateway-worker-1234.dev.corda.cloud"]
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "annotations": {
+                                                "cert-manager.io/cluster-issuer": "production",
+                                                "nginx.ingress.kubernetes.io/backend-protocol": "HTTPS"
+                                            },
+                                            "className": "nginx",
+                                            "hosts": [
+                                                "p2p-gateway-worker-1234.dev.corda.cloud"
+                                            ]
+                                        }
+                                    ]
                                 }
                             },
                             "examples": [{
@@ -2131,9 +2229,6 @@
                             "cpu": "1",
                             "memory": "2048Mi"
                         }
-                    },
-                    "service": {
-                        "port": 8080
                     }
                 }
             }]
