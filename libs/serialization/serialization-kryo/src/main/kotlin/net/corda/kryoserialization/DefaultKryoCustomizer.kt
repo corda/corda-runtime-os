@@ -27,6 +27,7 @@ import net.corda.kryoserialization.serializers.LoggerSerializer
 import net.corda.kryoserialization.serializers.NonSerializableSerializer
 import net.corda.kryoserialization.serializers.ThrowableSerializer
 import net.corda.kryoserialization.serializers.X509CertificateSerializer
+import net.corda.kryoserialization.serializers.X500PrincipalSerializer
 import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.utilities.LazyMappedList
 import org.apache.avro.specific.SpecificRecord
@@ -42,6 +43,7 @@ import java.lang.reflect.Modifier.isPublic
 import java.security.cert.CertPath
 import java.security.cert.X509Certificate
 import java.util.Collections.unmodifiableSet
+import javax.security.auth.x500.X500Principal
 
 class DefaultKryoCustomizer {
 
@@ -94,6 +96,7 @@ class DefaultKryoCustomizer {
 
                 addDefaultSerializer(Logger::class.java, LoggerSerializer)
                 addDefaultSerializer(X509Certificate::class.java, X509CertificateSerializer)
+                addDefaultSerializer(X500Principal::class.java, X500PrincipalSerializer())
                 addDefaultSerializer(Class::class.java, classSerializer)
                 addDefaultSerializer(
                     LinkedHashMapIteratorSerializer.getIterator()::class.java.superclass,

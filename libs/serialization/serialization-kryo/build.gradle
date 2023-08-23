@@ -53,6 +53,9 @@ dependencies {
     testRuntimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:framework-extension"
     testImplementation project(":testing:kryo-serialization-testkit")
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+    testImplementation project(":libs:flows:flow-api")
+    testImplementation project(":components:flow:flow-service")
+    testImplementation project(":libs:crypto:crypto-core")
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project('cpks:serializable-cpk-one')
