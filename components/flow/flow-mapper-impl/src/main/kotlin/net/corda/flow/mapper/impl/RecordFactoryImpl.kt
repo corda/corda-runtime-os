@@ -47,7 +47,8 @@ class RecordFactoryImpl @Activate constructor(
                 sessionEvent.initiatedIdentity,
                 SessionError(
                     exceptionEnvelope
-                )
+                ),
+                sessionEvent.contextSessionProperties
             )
             Record(outputTopic, errEvent.sessionId, FlowMapperEvent(errEvent))
         } else {

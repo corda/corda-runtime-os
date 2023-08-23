@@ -36,7 +36,7 @@ class SessionEventExecutor(
         val payload = sessionEvent.payload
         val sessionInit = getInitPayload(payload)
         return if (flowMapperState == null && sessionInit != null) {
-            sessionInitHelper.processSessionInit(sessionEvent, sessionInit, flowConfig)
+            sessionInitHelper.processSessionInit(sessionEvent, sessionInit, flowConfig, instant)
         } else if (flowMapperState == null) {
             handleNullState()
         } else {

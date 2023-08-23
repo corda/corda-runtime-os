@@ -1,6 +1,5 @@
 package net.corda.flow.mapper.impl.executor
 
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
@@ -9,9 +8,7 @@ import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
-import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -22,7 +19,6 @@ class SessionInitExecutor(
     private val sessionEvent: SessionEvent,
     private val sessionInit: SessionInit,
     private val flowMapperState: FlowMapperState?,
-    private val sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
     private val flowConfig: SmartConfig,
     private val recordFactory: RecordFactory,
     private val instant: Instant,
@@ -40,7 +36,7 @@ class SessionInitExecutor(
             CordaMetrics.Metric.FlowMapperCreationCount.builder()
                 .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)
                 .build().increment()
-            sessionInitHelper.processSessionInit(sessionEvent, sessionInit, flowConfig)
+            sessionInitHelper.processSessionInit(sessionEvent, sessionInit, flowConfig, instant)
         } else {
             //duplicate
             log.debug { "Duplicate SessionInit event received. Key: $eventKey, Event: $sessionEvent" }
@@ -56,55 +52,4 @@ class SessionInitExecutor(
             }
         }
     }
-
-    private fun processSessionInit(sessionEvent: SessionEvent, sessionInit: SessionInit): FlowMapperResult {
-        val (flowKey, outputRecord) =
-            getSessionInitOutputs(
-                messageDirection,
-                sessionEvent,
-                sessionInit
-            )
-
-        return FlowMapperResult(
-            FlowMapperState(flowKey, null, FlowMapperStateType.OPEN),
-            listOf(outputRecord)
-        )
-    }
-
-    /**
-     * Get a helper object to obtain:
-     * - flow key
-     * - output record key
-     * - output record value
-     */
-    private fun getSessionInitOutputs(
-        messageDirection: MessageDirection?,
-        sessionEvent: SessionEvent,
-        sessionInit: SessionInit,
-    ): SessionInitOutputs {
-        return if (messageDirection == MessageDirection.INBOUND) {
-            val flowId = generateFlowId()
-            sessionInit.flowId = flowId
-            SessionInitOutputs(
-                flowId,
-                Record(FLOW_EVENT_TOPIC, flowId, FlowEvent(flowId, sessionEvent))
-            )
-        } else {
-            //reusing SessionInit object for inbound and outbound traffic rather than creating a new object identical to SessionInit
-            //with an extra field of flowKey. set flowkey to null to not expose it on outbound messages
-            val tmpFLowEventKey = sessionInit.flowId
-            sessionInit.flowId = null
-            sessionEvent.payload = sessionInit
-
-            SessionInitOutputs(
-                tmpFLowEventKey,
-                recordFactory.forwardEvent(sessionEvent, instant, flowConfig, sessionEvent.messageDirection)
-            )
-        }
-    }
-
-    data class SessionInitOutputs(
-        val flowId: String,
-        val record: Record<*, *>
-    )
 }

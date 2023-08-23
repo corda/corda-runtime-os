@@ -1,6 +1,5 @@
 package net.corda.flow.mapper.impl
 
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.ExecuteCleanup
@@ -28,20 +27,17 @@ import java.time.Instant
 
 @Component(service = [FlowMapperEventExecutorFactory::class])
 class FlowMapperEventExecutorFactoryImpl @Activate constructor(
-    @Reference(service = CordaAvroSerializationFactory::class)
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = RecordFactory::class)
     private val recordFactory: RecordFactory
 ) : FlowMapperEventExecutorFactory {
-    private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
-    private val sessionInitHelper = SessionInitHelper(sessionEventSerializer)
+    private val sessionInitHelper = SessionInitHelper(recordFactory)
     override fun create(
         eventKey: String,
         flowMapperEvent: FlowMapperEvent,
         state: FlowMapperState?,
         flowConfig: SmartConfig,
         instant: Instant
-        ): FlowMapperEventExecutor {
+    ): FlowMapperEventExecutor {
         return when (val flowMapperEventPayload = flowMapperEvent.payload) {
             is SessionEvent -> {
                 when (val sessionPayload = flowMapperEventPayload.payload) {
@@ -51,12 +47,13 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                             flowMapperEventPayload,
                             sessionPayload,
                             state,
-                            sessionEventSerializer,
                             flowConfig,
-                            sessionInitHelper,
-                            recordFactory
+                            recordFactory,
+                            instant,
+                            sessionInitHelper
                         )
                     }
+
                     is SessionError -> {
                         SessionErrorExecutor(
                             eventKey,
@@ -65,8 +62,9 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                             flowConfig,
                             recordFactory,
                             instant
-                            )
+                        )
                     }
+
                     else -> {
                         SessionEventExecutor(
                             eventKey,
@@ -75,12 +73,12 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                             flowConfig,
                             recordFactory,
                             instant,
-                            recordFactory,
                             sessionInitHelper
-                            )
+                        )
                     }
                 }
             }
+
             is StartFlow -> StartFlowExecutor(eventKey, FLOW_EVENT_TOPIC, flowMapperEventPayload, state)
             is ExecuteCleanup -> ExecuteCleanupEventExecutor(eventKey)
             is ScheduleCleanup -> ScheduleCleanupEventExecutor(eventKey, flowMapperEventPayload, state)

@@ -30,11 +30,12 @@ class SessionInitExecutorTest {
     private val sessionInitHelper = mock<SessionInitHelper>()
 
     private val record = Record("Topic", "Key", "Value")
-    private val recordFactory = mock<RecordFactory>(){
+    private val recordFactory = mock<RecordFactory>() {
         on { forwardError(any(), any(), any(), any(), any()) } doReturn record
         on { forwardEvent(any(), any(), any(), any()) } doReturn record
         on { getSessionEventOutputTopic(any(), any()) } doReturn "Topic"
     }
+
     @Test
     fun `Outbound session init executes session init helper`() {
         val bytes = "bytes".toByteArray()
@@ -44,18 +45,17 @@ class SessionInitExecutorTest {
         val sessionInit = SessionInit("", flowId, emptyKeyValuePairList(), emptyKeyValuePairList())
         val payload =
             buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, sessionInit, contextSessionProps = emptyKeyValuePairList())
-        val result =
-            SessionInitExecutor(
-                "sessionId",
-                payload,
-                sessionInit,
-                null,
-                sessionEventSerializer,
-                flowConfig,
-                recordFactory,
-                Instant.now()
-                ).execute()
-        verify(sessionInitHelper, times(1)).processSessionInit(any(), any(), any())
+        SessionInitExecutor(
+            "sessionId",
+            payload,
+            sessionInit,
+            null,
+            flowConfig,
+            recordFactory,
+            Instant.now(),
+            sessionInitHelper
+        ).execute()
+        verify(sessionInitHelper, times(1)).processSessionInit(any(), any(), any(), any())
 
     }
 
@@ -74,14 +74,13 @@ class SessionInitExecutorTest {
             payload,
             sessionInit,
             null,
-            sessionEventSerializer,
             flowConfig,
             recordFactory,
             Instant.now(),
             sessionInitHelper
-            ).execute()
+        ).execute()
 
-            verify(sessionInitHelper, times(1)).processSessionInit(any(), any(), any())
+        verify(sessionInitHelper, times(1)).processSessionInit(any(), any(), any(), any())
     }
 
     @Test
@@ -93,7 +92,6 @@ class SessionInitExecutorTest {
             payload,
             sessionInit,
             FlowMapperState(),
-            sessionEventSerializer,
             flowConfig,
             recordFactory,
             Instant.now(),
@@ -126,7 +124,6 @@ class SessionInitExecutorTest {
             payload,
             retrySessionInit,
             flowMapperState,
-            sessionEventSerializer,
             flowConfig,
             recordFactory,
             Instant.now(),
@@ -159,7 +156,6 @@ class SessionInitExecutorTest {
             payload,
             retrySessionInit,
             flowMapperState,
-            sessionEventSerializer,
             flowConfig,
             recordFactory,
             Instant.now(),

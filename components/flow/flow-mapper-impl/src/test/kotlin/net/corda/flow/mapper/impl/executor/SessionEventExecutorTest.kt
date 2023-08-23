@@ -7,7 +7,6 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
-import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
@@ -177,16 +176,17 @@ class SessionEventExecutorTest {
     fun `Session Data with null state and init info`() {
         val payload =
             buildSessionEvent(MessageDirection.INBOUND, sessionId, 1,  SessionData(ByteBuffer.allocate(1), SessionInit()))
-        val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
 
         SessionEventExecutor(
-            sessionId, payload,
+            sessionId,
+            payload,
+            null,
             flowConfig,
             recordFactory,
             Instant.now(),
             sessionInitHelper
         ).execute()
-        verify(sessionInitHelper, times(1)).processSessionInit(any(), any(), any())
+        verify(sessionInitHelper, times(1)).processSessionInit(any(), any(), any(), any())
     }
 
 }
