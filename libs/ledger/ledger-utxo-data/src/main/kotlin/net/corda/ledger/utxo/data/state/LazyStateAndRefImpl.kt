@@ -11,7 +11,7 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
-import org.slf4j.LoggerFactory
+import java.lang.Exception
 
 /**
  * Lazy [StateRef]. It stores initially the serialized form of the represented state and ref.
@@ -29,16 +29,7 @@ data class LazyStateAndRefImpl<out T : ContractState>(
     private val serializationService: SerializationService
 ) : StateAndRef<@UnsafeVariance T> {
 
-    companion object {
-        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
-
-    init{
-        log.warn("LazyStateAndRefImpl init", Exception("LazyStateAndRefImpl init"));
-    }
-
     val stateAndRef: StateAndRef<@UnsafeVariance T> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        log.info("CORE-16346 LazyStateAndRefImpl.stateAndRef serialization service: ${serializationService.javaClass}")
         deserializedStateAndRef ?: serializedStateAndRef.deserializeToStateAndRef<T>(serializationService)
     }
 
@@ -79,8 +70,6 @@ data class LazyStateAndRefImpl<out T : ContractState>(
 private fun <T : ContractState> UtxoTransactionOutputDto.deserializeToStateAndRef(
     serializationService: SerializationService
 ): StateAndRef<T> {
-    val log = LoggerFactory.getLogger("UtxoTransactionOutputDto")
-    log.info("CORE-16346 UtxoTransactionOutputDto.deserializeToStateAndRef serialization service: ${serializationService.javaClass}")
     val info = try{
         serializationService.deserialize<UtxoOutputInfoComponent>(info)
     } catch (e: Exception){
