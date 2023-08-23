@@ -4,11 +4,12 @@ import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.cli.plugins.network.output.Output
-import net.corda.cli.plugins.network.utils.PrintUtils.Companion.printJsonOutput
+import net.corda.cli.plugins.network.utils.PrintUtils.printJsonOutput
 import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.RestGroupParameters
 import picocli.CommandLine
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils.getHoldingIdentity
+import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 
 @CommandLine.Command(
     name = "group-parameters",
@@ -48,7 +49,8 @@ class GroupParametersLookup(private val output: Output = ConsoleOutput()) : Rest
     }
 
     override fun run() {
-        val result = performGroupParametersLookup()
-        printJsonOutput(result, output)
+        verifyAndPrintError {
+            printJsonOutput(performGroupParametersLookup(), output)
+        }
     }
 }

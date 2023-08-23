@@ -34,13 +34,14 @@ data class ObjectAndEnvelope<out T>(val obj: T, val envelope: Envelope)
  * @param serializerFactory This is the factory for [AMQPSerializer] instances and can be shared across multiple
  * instances and threads.
  */
-class DeserializationInput constructor(
+class DeserializationInput(
     private val serializerFactory: SerializerFactory
 ) {
-    private val objectHistory: MutableList<Any> = mutableListOf()
-    private val logger = LoggerFactory.getLogger(this::class.java)
+    private val objectHistory = mutableListOf<Any>()
 
     companion object {
+        private val logger = LoggerFactory.getLogger(DeserializationInput::class.java)
+
         @VisibleForTesting
         @Throws(AMQPNoTypeNotSerializableException::class)
         fun <T> withDataBytes(

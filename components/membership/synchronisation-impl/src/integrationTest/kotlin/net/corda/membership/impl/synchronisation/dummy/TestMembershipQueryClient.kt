@@ -1,5 +1,8 @@
 package net.corda.membership.impl.synchronisation.dummy
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.StaticNetworkInfo
@@ -7,17 +10,21 @@ import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus
+import net.corda.layeredpropertymap.toAvro
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
+import net.corda.membership.impl.synchronisation.SynchronisationIntegrationTest
+import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -29,17 +36,24 @@ import java.util.UUID
 /**
  * Created for mocking and simplifying membership query client functionalities used by the membership services.
  */
-interface TestMembershipQueryClient : MembershipQueryClient
+interface TestMembershipQueryClient : MembershipQueryClient {
+    fun loadMembers(memberList: List<MemberInfo>)
+}
 
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [MembershipQueryClient::class, TestMembershipQueryClient::class])
 class TestMembershipQueryClientImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = MemberInfoFactory::class)
+    private val memberInfoFactory: MemberInfoFactory,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) : TestMembershipQueryClient {
     companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service"
+        private lateinit var members: List<SelfSignedMemberInfo>
     }
 
     private val coordinator =
@@ -49,21 +63,38 @@ class TestMembershipQueryClientImpl @Activate constructor(
             }
         }
 
-    override fun queryMemberInfo(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Collection<MemberInfo>> {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
+    private val serializer: CordaAvroSerializer<KeyValuePairList> =
+        cordaAvroSerializationFactory.createAvroSerializer { }
+
+    override fun loadMembers(memberList: List<MemberInfo>) {
+        members = memberList.map {
+            memberInfoFactory.createSelfSignedMemberInfo(
+                serializer.serialize(it.memberProvidedContext.toAvro())!!,
+                serializer.serialize(it.mgmProvidedContext.toAvro())!!,
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(it.holdingIdentity.x500Name.toString().toByteArray()),
+                    ByteBuffer.wrap(it.holdingIdentity.x500Name.toString().toByteArray()),
+                ),
+                CryptoSignatureSpec("", null, null),
+            )
         }
     }
 
     override fun queryMemberInfo(
         viewOwningIdentity: HoldingIdentity,
-        queryFilter: Collection<HoldingIdentity>
-    ): MembershipQueryResult<Collection<MemberInfo>> {
-        with(UNIMPLEMENTED_FUNCTION) {
-            logger.warn(this)
-            throw UnsupportedOperationException(this)
+        statusFilter: List<String>,
+    ): MembershipQueryResult<Collection<SelfSignedMemberInfo>> = MembershipQueryResult.Success(members)
+
+    override fun queryMemberInfo(
+        viewOwningIdentity: HoldingIdentity,
+        holdingIdentityFilter: Collection<HoldingIdentity>,
+        statusFilter: List<String>,
+    ): MembershipQueryResult<Collection<SelfSignedMemberInfo>> {
+        val result = mutableListOf<SelfSignedMemberInfo>()
+        holdingIdentityFilter.forEach { id ->
+            result.addAll(members.filter { it.holdingIdentity == id })
         }
+        return MembershipQueryResult.Success(result)
     }
 
     override fun queryRegistrationRequest(
@@ -86,21 +117,6 @@ class TestMembershipQueryClientImpl @Activate constructor(
             logger.warn(this)
             throw UnsupportedOperationException(this)
         }
-    }
-
-    override fun queryMembersSignatures(
-        viewOwningIdentity: HoldingIdentity,
-        holdingsIdentities: Collection<HoldingIdentity>
-    ): MembershipQueryResult<Map<HoldingIdentity, Pair<CryptoSignatureWithKey, CryptoSignatureSpec>>> {
-        return MembershipQueryResult.Success(
-            holdingsIdentities.associateWith {
-                CryptoSignatureWithKey(
-                    ByteBuffer.wrap(viewOwningIdentity.toAvro().x500Name.toByteArray()),
-                    ByteBuffer.wrap(viewOwningIdentity.toAvro().x500Name.toByteArray())
-                ) to
-                        CryptoSignatureSpec("", null, null)
-            }
-        )
     }
 
     override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Pair<LayeredPropertyMap, Long>> {

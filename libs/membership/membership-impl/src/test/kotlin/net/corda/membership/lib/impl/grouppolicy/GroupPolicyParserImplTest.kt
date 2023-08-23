@@ -1,8 +1,11 @@
 package net.corda.membership.lib.impl.grouppolicy
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
+import net.corda.data.KeyValuePairList
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MPV_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
@@ -70,7 +73,13 @@ class GroupPolicyParserImplTest {
             PublicKeyHashConverter()
         )
     )
-    private val memberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
+    private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>>()
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on {
+            createAvroSerializer<KeyValuePairList>(any())
+        } doReturn keyValuePairListSerializer
+    }
+    private val memberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory, cordaAvroSerializationFactory)
     private val groupPolicyParser = GroupPolicyParserImpl(memberInfoFactory)
     private val persistedProperties = buildPersistedProperties(layeredPropertyMapFactory)
 

@@ -27,6 +27,12 @@ private class FakeTransactionSignatureService: TransactionSignatureServiceIntern
         publicKey: PublicKey
     ) {}
 
+    override fun verifySignature(
+        secureHash: SecureHash,
+        signatureWithMetadata: DigitalSignatureAndMetadata,
+        publicKey: PublicKey
+    ) {}
+
     override fun getIdOfPublicKey(publicKey: PublicKey, digestAlgorithmName: String): SecureHash = SecureHashImpl(
         digestAlgorithmName,
         MessageDigest.getInstance(digestAlgorithmName).digest(publicKey.encoded)

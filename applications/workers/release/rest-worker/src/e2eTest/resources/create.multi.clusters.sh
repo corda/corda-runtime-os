@@ -35,7 +35,8 @@ create_cluster() {
     --from-literal=membership="${KAFKA_PASSWORDS_ARRAY[4]}" \
     --from-literal=p2pGateway="${KAFKA_PASSWORDS_ARRAY[5]}" \
     --from-literal=p2pLinkManager="${KAFKA_PASSWORDS_ARRAY[6]}" \
-    --from-literal=rest="${KAFKA_PASSWORDS_ARRAY[7]}"
+    --from-literal=rest="${KAFKA_PASSWORDS_ARRAY[7]}" \
+    --from-literal=uniqueness="${KAFKA_PASSWORDS_ARRAY[8]}"
 
   helm install corda \
     ./charts/corda \

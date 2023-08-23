@@ -198,6 +198,11 @@ class MemberInfoExtension {
         val MemberInfo.modifiedTime: Instant?
             get() = mgmProvidedContext.parse(MODIFIED_TIME)
 
+        /** TLS certificate subject for member. */
+        @JvmStatic
+        val MemberInfo.tlsCertificateSubject: String?
+            get() = memberProvidedContext.parseOrNull(TLS_CERTIFICATE_SUBJECT)
+
         /** Collection of ledger key hashes for member's node. */
         @JvmStatic
         val MemberInfo.ledgerKeyHashes: Collection<SecureHash>

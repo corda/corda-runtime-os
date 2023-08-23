@@ -200,27 +200,6 @@ class FlowTests {
     }
 
     @Test
-    fun `Flow Session - Send and receive primitive values across a session`() {
-        val requestBody = RpcSmokeTestInput().apply {
-            command = "flow_session_primitives"
-            data = mapOf("sessions" to bobX500)
-        }
-
-        val requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
-
-        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(flowResult.json).isNotNull
-        assertThat(flowResult.flowError).isNull()
-        assertThat(flowResult.json.command).isEqualTo("flow_session_primitives")
-        assertThat(flowResult.json.result)
-            .isEqualTo("Successfully received 8 items.\n" +
-                    "Successfully received 8 items from receiveAll.\n" +
-                    "Successfully received 8 items from receiveAllMap.\n")
-    }
-
-    @Test
     fun `Persistence - persist a single entity`() {
         val id = UUID.randomUUID()
         val flowResult = persistDog(id)

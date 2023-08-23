@@ -8,10 +8,7 @@ import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.bytes
 import net.corda.crypto.core.toAvro
 import net.corda.crypto.core.toCorda
-import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.data.KeyValuePairList
-import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.MembershipPackage
@@ -37,8 +34,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.toSortedMap
-import net.corda.membership.lib.toWire
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.Verifier
@@ -74,21 +69,9 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 @Component(service = [SynchronisationService::class])
-@Suppress("LongParameterList")
 class MemberSynchronisationServiceImpl internal constructor(
-    private val publisherFactory: PublisherFactory,
-    private val configurationReadService: ConfigurationReadService,
+    private val services: Services,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val serializationFactory: CordaAvroSerializationFactory,
-    private val memberInfoFactory: MemberInfoFactory,
-    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    private val verifier: Verifier,
-    private val membersReader: LocallyHostedMembersReader,
-    private val p2pRecordsFactory: P2pRecordsFactory,
-    private val merkleTreeGenerator: MerkleTreeGenerator,
-    private val clock: Clock,
-    private val membershipPersistenceClient: MembershipPersistenceClient,
-    private val groupParametersFactory: GroupParametersFactory,
 ) : MemberSynchronisationService {
     @Suppress("LongParameterList")
     @Activate
@@ -118,31 +101,48 @@ class MemberSynchronisationServiceImpl internal constructor(
         @Reference(service = GroupParametersFactory::class)
         groupParametersFactory: GroupParametersFactory,
     ) : this(
-        publisherFactory,
-        configurationReadService,
+            Services(
+                publisherFactory,
+                configurationReadService,
+                memberInfoFactory,
+                membershipGroupReaderProvider,
+                Verifier(
+                    signatureVerificationService,
+                    keyEncodingService,
+                ),
+                LocallyHostedMembersReader(
+                    virtualNodeInfoReadService,
+                    membershipGroupReaderProvider,
+                ),
+                P2pRecordsFactory(
+                    cordaAvroSerializationFactory,
+                    UTCClock(),
+                ),
+                MerkleTreeGenerator(
+                    merkleTreeProvider,
+                    cordaAvroSerializationFactory,
+                ),
+                UTCClock(),
+                membershipPersistenceClient,
+                groupParametersFactory,
+            ),
         coordinatorFactory,
-        cordaAvroSerializationFactory,
-        memberInfoFactory,
-        membershipGroupReaderProvider,
-        Verifier(
-            signatureVerificationService,
-            keyEncodingService,
-        ),
-        LocallyHostedMembersReader(
-            virtualNodeInfoReadService,
-            membershipGroupReaderProvider,
-        ),
-        P2pRecordsFactory(
-            cordaAvroSerializationFactory,
-            UTCClock(),
-        ),
-        MerkleTreeGenerator(
-            merkleTreeProvider,
-            cordaAvroSerializationFactory,
-        ),
-        UTCClock(),
-        membershipPersistenceClient,
-        groupParametersFactory,
+    )
+
+    // A wrapper that holds the services used by  this class. Introduce to avoid the OSGi issue with
+    // two constructors with the same number of arguments.
+    internal data class Services(
+        val publisherFactory: PublisherFactory,
+        val configurationReadService: ConfigurationReadService,
+        val memberInfoFactory: MemberInfoFactory,
+        val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+        val verifier: Verifier,
+        val membersReader: LocallyHostedMembersReader,
+        val p2pRecordsFactory: P2pRecordsFactory,
+        val merkleTreeGenerator: MerkleTreeGenerator,
+        val clock: Clock,
+        val membershipPersistenceClient: MembershipPersistenceClient,
+        val groupParametersFactory: GroupParametersFactory,
     )
 
     /**
@@ -205,7 +205,7 @@ class MemberSynchronisationServiceImpl internal constructor(
     private fun activate(membershipConfigurations: SmartConfig) {
         impl = ActiveImpl(membershipConfigurations)
         coordinator.updateStatus(LifecycleStatus.UP)
-        membersReader.readAllLocalMembers().forEach {
+        services.membersReader.readAllLocalMembers().forEach {
             impl.cancelCurrentRequestAndScheduleNewOne(it.member, it.mgm)
         }
     }
@@ -242,11 +242,6 @@ class MemberSynchronisationServiceImpl internal constructor(
                 TimeUnit.MINUTES.toMillis(it)
             }
 
-        private val deserializer: CordaAvroDeserializer<KeyValuePairList> =
-            serializationFactory.createAvroDeserializer({
-                logger.error("Deserialization of KeyValuePairList from MembershipPackage failed while processing membership updates.")
-            }, KeyValuePairList::class.java)
-
         private fun delayToNextRequestInMilliSeconds(): Long {
             // Add noise to prevent all the members to ask for sync in the same time
             return maxDelayBetweenRequestsInMillis -
@@ -257,13 +252,13 @@ class MemberSynchronisationServiceImpl internal constructor(
             mgm: MemberInfo,
             membershipPackage: MembershipPackage
         ) = with(membershipPackage.groupParameters) {
-            verifier.verify(
+            services.verifier.verify(
                 mgm.sessionInitiationKeys,
                 mgmSignature,
                 mgmSignatureSpec,
                 groupParameters.array()
             )
-            groupParametersFactory.create(this)
+            services.groupParametersFactory.create(this)
         }
 
         override fun cancelCurrentRequestAndScheduleNewOne(
@@ -282,7 +277,7 @@ class MemberSynchronisationServiceImpl internal constructor(
         override fun processMembershipUpdates(updates: ProcessMembershipUpdates): List<Record<*, *>> {
             val viewOwningMember = updates.synchronisationMetaData.member.toCorda()
             val mgm = updates.synchronisationMetaData.mgm.toCorda()
-            val groupReader = membershipGroupReaderProvider.getGroupReader(viewOwningMember)
+            val groupReader = services.membershipGroupReaderProvider.getGroupReader(viewOwningMember)
             val mgmInfo = groupReader.lookup().firstOrNull { it.isMgm } ?: throw CordaRuntimeException(
                 "Could not find MGM info in the member list for member ${viewOwningMember.x500Name}"
             )
@@ -291,17 +286,15 @@ class MemberSynchronisationServiceImpl internal constructor(
             return try {
                 cancelCurrentRequestAndScheduleNewOne(viewOwningMember, mgm)
                 val updateMembersInfo = updates.membershipPackage.memberships?.memberships?.map { update ->
-                    val memberContext = deserializer.deserialize(update.memberContext.data.array())
-                        ?: throw CordaRuntimeException("Invalid member context")
-                    val mgmContext = deserializer.deserialize(update.mgmContext.data.array())
-                        ?: throw CordaRuntimeException("Invalid MGM context")
-                    val memberInfo = memberInfoFactory.create(
-                        memberContext.toSortedMap(),
-                        mgmContext.toSortedMap()
+                    val selfSignedMemberInfo = services.memberInfoFactory.createSelfSignedMemberInfo(
+                        update.memberContext.data.array(),
+                        update.mgmContext.data.array(),
+                        update.memberContext.signature,
+                        update.memberContext.signatureSpec,
                     )
 
-                    verifier.verify(
-                        memberInfo.sessionInitiationKeys,
+                    services.verifier.verify(
+                        selfSignedMemberInfo.sessionInitiationKeys,
                         update.memberContext.signature,
                         update.memberContext.signatureSpec,
                         update.memberContext.data.array()
@@ -312,29 +305,30 @@ class MemberSynchronisationServiceImpl internal constructor(
                         update.mgmContext.data.array()
                     )
 
-                    verifier.verify(
+                    services.verifier.verify(
                         mgmInfo.sessionInitiationKeys,
                         update.mgmContext.signature,
                         update.mgmContext.signatureSpec,
-                        merkleTreeGenerator
+                        services.merkleTreeGenerator
                             .createTree(contextByteArray)
                             .root
                             .bytes
                     )
 
-                    memberInfo
+                    selfSignedMemberInfo
                 }?.associateBy { it.id } ?: emptyMap()
 
-                val persistentMemberInfoRecords = updateMembersInfo.entries.map { (id, memberInfo) ->
-                    val persistentMemberInfo = PersistentMemberInfo(
-                        viewOwningMember.toAvro(),
-                        memberInfo.memberProvidedContext.toWire(),
-                        memberInfo.mgmProvidedContext.toWire(),
-                    )
+                val persistentMemberInfoRecords = updateMembersInfo.map { (_, memberInfo) ->
                     Record(
                         MEMBER_LIST_TOPIC,
-                        "${viewOwningMember.shortHash}-$id",
-                        persistentMemberInfo
+                        "${viewOwningMember.shortHash}-${memberInfo.id}",
+                        services.memberInfoFactory.createPersistentMemberInfo(
+                            viewOwningMember.toAvro(),
+                            memberInfo.memberContextBytes,
+                            memberInfo.mgmContextBytes,
+                            memberInfo.memberSignature,
+                            memberInfo.memberSignatureSpec,
+                        )
                     )
                 }
 
@@ -352,10 +346,10 @@ class MemberSynchronisationServiceImpl internal constructor(
                     val latestViewOwnerMemberInfo =
                         updateMembersInfo[viewOwnerShortHash] ?: knownMembers[viewOwnerShortHash]
                     val expectedHash = if (latestViewOwnerMemberInfo?.status == MEMBER_STATUS_SUSPENDED) {
-                        merkleTreeGenerator.generateTree(listOf(latestViewOwnerMemberInfo)).root
+                        services.merkleTreeGenerator.generateTreeUsingMembers(listOf(latestViewOwnerMemberInfo)).root
                     } else {
                         val allMembers = knownMembers + updateMembersInfo
-                        merkleTreeGenerator.generateTree(allMembers.values).root
+                        services.merkleTreeGenerator.generateTreeUsingMembers(allMembers.values).root
                     }
                     if (packageHash != expectedHash) {
                         persistentMemberInfoRecords + createSynchronisationRequestMessage(
@@ -373,7 +367,7 @@ class MemberSynchronisationServiceImpl internal constructor(
                         it,
                         updates.membershipPackage
                     )
-                    membershipPersistenceClient
+                    services.membershipPersistenceClient
                         .persistGroupParameters(viewOwningMember, groupParameters)
                         .createAsyncCommands()
                 }
@@ -405,16 +399,16 @@ class MemberSynchronisationServiceImpl internal constructor(
             memberIdentity.x500Name,
             MembershipStatusFilter.ACTIVE_OR_SUSPENDED
         ) ?: throw CordaRuntimeException("Unknown member $memberIdentity")
-        val memberHash = merkleTreeGenerator.generateTree(listOf(member))
+        val memberHash = services.merkleTreeGenerator.generateTreeUsingMembers(listOf(member))
             .root
             .toAvro()
-        return p2pRecordsFactory.createAuthenticatedMessageRecord(
+        return services.p2pRecordsFactory.createAuthenticatedMessageRecord(
             source = memberIdentity.toAvro(),
             destination = mgm.toAvro(),
             content = MembershipSyncRequest(
                 DistributionMetaData(
                     UUID.randomUUID().toString(),
-                    clock.instant(),
+                    services.clock.instant(),
                 ),
                 memberHash,
                 // TODO Set Bloom filter
@@ -434,7 +428,7 @@ class MemberSynchronisationServiceImpl internal constructor(
         return try {
             listOf(
                 createSynchronisationRequestMessage(
-                    groupReader = membershipGroupReaderProvider.getGroupReader(viewOwningMember),
+                    groupReader = services.membershipGroupReaderProvider.getGroupReader(viewOwningMember),
                     memberIdentity = viewOwningMember,
                     mgm = mgm,
                 ),
@@ -470,7 +464,7 @@ class MemberSynchronisationServiceImpl internal constructor(
                     "asking MGM to send sync package"
         )
         try {
-            val groupReader = membershipGroupReaderProvider.getGroupReader(request.member)
+            val groupReader = services.membershipGroupReaderProvider.getGroupReader(request.member)
             val syncRequest = createSynchronisationRequestMessage(
                 groupReader,
                 request.member,
@@ -512,7 +506,7 @@ class MemberSynchronisationServiceImpl internal constructor(
         when (event.status) {
             LifecycleStatus.UP -> {
                 configHandle?.close()
-                configHandle = configurationReadService.registerComponentForUpdates(
+                configHandle = services.configurationReadService.registerComponentForUpdates(
                     coordinator,
                     setOf(BOOT_CONFIG, MESSAGING_CONFIG, MEMBERSHIP_CONFIG)
                 )
@@ -527,7 +521,7 @@ class MemberSynchronisationServiceImpl internal constructor(
     // re-creates the publisher with the new config, sets the lifecycle status to UP when the publisher is ready for the first time
     private fun handleConfigChange(event: ConfigChangedEvent) {
         _publisher?.close()
-        _publisher = publisherFactory.createPublisher(
+        _publisher = services.publisherFactory.createPublisher(
             PublisherConfig("member-synchronisation-service"),
             event.config.getConfig(MESSAGING_CONFIG)
         )
