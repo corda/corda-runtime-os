@@ -16,7 +16,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
-@Disabled
+@Disabled//todo - CORE-15747
 class FlowFailedAcceptanceTest : FlowServiceTestBase() {
 
     private companion object {
@@ -83,7 +83,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given the flow has a WAIT_FOR_FINAL_ACK session receiving a session close event and then failing the flow schedules flow and session cleanup`() {
         given {
-            initiateSingleFlow(this, 2)
+            initiateSingleFlow(this)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
@@ -91,8 +91,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 3)
-                .completedWithError(EXCEPTION)
+
         }
 
         then {

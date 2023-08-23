@@ -20,7 +20,6 @@ class SessionConfirmProcessorReceive(
     private val key: Any,
     private val sessionState: SessionState?,
     private val sessionEvent: SessionEvent,
-    private val sessionConfirm: SessionConfirm,
     private val instant: Instant,
 ) : SessionEventProcessor {
 
@@ -38,15 +37,14 @@ class SessionConfirmProcessorReceive(
                 .distinctBy { it.sequenceNum }.sortedBy { it.sequenceNum }
 
             sessionState.apply {
-                counterpartySessionProperties = sessionConfirm.contextSessionProperties
+                sessionProperties = sessionEvent.contextSessionProperties
                 //recalc high watermark but do not add the session confirm to the undelivered messages
                 receivedEventsState.lastProcessedSequenceNum =
                     recalcHighWatermark(eventsReceived, receivedEventsState.lastProcessedSequenceNum)
             }
 
             logger.trace {
-                "Received SessionConfirm on key $key with receivedSequenceNum ${sessionEvent.receivedSequenceNum} " +
-                        "and outOfOrderSequenceNums ${sessionEvent.outOfOrderSequenceNums} for session state: $sessionState"
+                "Received SessionConfirm on key $key for session state: $sessionState"
             }
 
             return sessionState

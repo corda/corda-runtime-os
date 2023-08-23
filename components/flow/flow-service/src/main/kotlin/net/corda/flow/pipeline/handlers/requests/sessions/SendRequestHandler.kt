@@ -1,8 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
-import java.time.Instant
-import net.corda.data.flow.state.waiting.SessionConfirmation
-import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
@@ -15,6 +12,7 @@ import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Instant
 
 @Component(service = [FlowRequestHandler::class])
 class SendRequestHandler @Activate constructor(
@@ -27,23 +25,15 @@ class SendRequestHandler @Activate constructor(
     override val type = FlowIORequest.Send::class.java
 
     override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.Send): WaitingFor {
-        val sessionsNotInitiated = initiateFlowRequestService.getSessionsNotInitiated(context, request.sessionPayloads.keys)
-        return if (sessionsNotInitiated.isNotEmpty()) {
-            return WaitingFor(SessionConfirmation(sessionsNotInitiated.map { it.sessionId }, SessionConfirmationType.INITIATE))
-        } else {
-            WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
-        }
+        return WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.Send): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
-
         try {
-            //generate init messages for sessions which do not exist yet
+            //generate session states for sessions which do not exist yet
             initiateFlowRequestService.initiateFlowsNotInitiated(context, request.sessionPayloads.keys)
-
-            val sessionIdToPayload = request.sessionPayloads.map { it.key.sessionId to it.value }.toMap()
-            checkpoint.putSessionStates(flowSessionManager.sendDataMessages(checkpoint, sessionIdToPayload, Instant.now()))
+            checkpoint.putSessionStates(flowSessionManager.sendDataMessages(checkpoint, request.sessionPayloads, Instant.now()))
         } catch (e: FlowSessionStateException) {
             throw FlowPlatformException("Failed to send: ${e.message}. $PROTOCOL_MISMATCH_HINT", e)
         }

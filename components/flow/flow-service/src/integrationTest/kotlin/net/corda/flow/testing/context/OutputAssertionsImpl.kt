@@ -8,7 +8,6 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionConfirm
 import net.corda.data.flow.event.session.SessionData
@@ -51,9 +50,7 @@ class OutputAssertionsImpl(
     val asserts = mutableListOf<(TestRun) -> Unit>()
 
     override fun sessionAckEvents(vararg sessionIds: String, initiatingIdentity: HoldingIdentity?, initiatedIdentity: HoldingIdentity?) {
-        asserts.add { testRun ->
-            findAndAssertSessionEvents<SessionAck>(testRun, sessionIds.toList(), initiatingIdentity, initiatedIdentity)
-        }
+
     }
 
     override fun sessionConfirmEvents(

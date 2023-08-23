@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory
  */
 class SessionCloseProcessorSend(
     private val key: Any,
-    private val sessionState: SessionState?,
+    private val sessionState: SessionState,
     private val sessionEvent: SessionEvent,
     private val instant: Instant
 ) : SessionEventProcessor {
@@ -34,12 +34,9 @@ class SessionCloseProcessorSend(
 
     override fun execute(): SessionState {
         val sessionId = sessionEvent.sessionId
-        val currentStatus = sessionState?.status
+        val currentStatus = sessionState.status
         return when {
-            sessionState == null -> {
-                handleNullSession(sessionId)
-            }
-            currentStatus == SessionStateType.CLOSED || currentStatus == SessionStateType.WAIT_FOR_FINAL_ACK -> {
+            currentStatus == SessionStateType.CLOSED -> {
                 sessionState
             }
             currentStatus == SessionStateType.ERROR -> {
@@ -118,7 +115,6 @@ class SessionCloseProcessorSend(
                     "${sessionEvent.sequenceNum}, $sessionId" }
             // Doesn't go to closed until ack received
             sessionState.apply {
-                status = SessionStateType.WAIT_FOR_FINAL_ACK
                 sendEventsState.lastProcessedSequenceNum = nextSeqNum
                 sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(sessionEvent)
             }

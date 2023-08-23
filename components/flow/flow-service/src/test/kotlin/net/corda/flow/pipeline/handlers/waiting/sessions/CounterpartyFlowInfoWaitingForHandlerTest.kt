@@ -78,7 +78,7 @@ class CounterpartyFlowInfoWaitingForHandlerTest {
     fun `Flow Engine resumes the flow when the session is in a state which confirms initiation`() {
         whenever(checkpoint.getSessionState(sessionState.sessionId)).thenReturn(sessionState.apply {
             status = SessionStateType.CONFIRMED
-            counterpartySessionProperties = emptyKeyValuePairList()
+            sessionProperties = emptyKeyValuePairList()
         })
 
         val continuation = sessionConfirmationWaitingForHandler.runOrContinue(inputContext, CounterPartyFlowInfo(SESSION_ID))

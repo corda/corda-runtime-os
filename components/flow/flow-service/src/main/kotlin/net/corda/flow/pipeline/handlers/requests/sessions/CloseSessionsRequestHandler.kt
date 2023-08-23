@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
-import java.time.Instant
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
@@ -10,7 +9,6 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.sessions.FlowSessionManager
-import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -42,16 +40,14 @@ class CloseSessionsRequestHandler @Activate constructor(
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.CloseSessions): FlowEventContext<Any> {
+
+        //TODO CORE-15757 / CORE-16184 - implement close properly
         val checkpoint = context.checkpoint
-        try {
-            val sessionsToClose = getSessionsToClose(checkpoint, request)
-
-            checkpoint.putSessionStates(flowSessionManager.sendCloseMessages(checkpoint, sessionsToClose, Instant.now()))
-        } catch (e: FlowSessionStateException) {
-            // TODO CORE-4850 Wakeup with error when session does not exist
-            throw FlowFatalException(e.message, e)
+        val sessionsToClose = getSessionsToClose(checkpoint, request)
+        context.checkpoint.sessions.onEach {
+            if (sessionsToClose.contains(it.sessionId))
+                it.status = SessionStateType.CLOSED
         }
-
         return context
     }
 

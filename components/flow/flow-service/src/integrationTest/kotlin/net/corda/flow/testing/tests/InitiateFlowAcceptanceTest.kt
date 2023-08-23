@@ -16,7 +16,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
-@Disabled
+@Disabled//todo - CORE-15747
 class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
 
     @BeforeEach
@@ -84,8 +84,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
+
         }
 
         then {
@@ -153,7 +152,6 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
         }
 
         then {

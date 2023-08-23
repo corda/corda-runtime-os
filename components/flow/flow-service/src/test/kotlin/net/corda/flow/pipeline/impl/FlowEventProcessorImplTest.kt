@@ -76,8 +76,7 @@ class FlowEventProcessorImplTest {
             .setTimestamp(Instant.now())
             .setSessionId("SessionId")
             .setSequenceNum(1)
-            .setReceivedSequenceNum(0)
-            .setOutOfOrderSequenceNums(emptyList())
+            .setContextSessionProperties(null)
             .build()
 
     private val flowKey = "flow id"

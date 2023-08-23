@@ -53,20 +53,7 @@ class SendRequestHandlerTest {
     @Test
     fun `Waiting for Wakeup event`() {
         val waitingFor = handler.getUpdatedWaitingFor(testContext.flowEventContext, ioRequest)
-        verify(testContext.initiateFlowReqService).getSessionsNotInitiated(any(), any())
-
         assertThat(waitingFor.value).isInstanceOf(net.corda.data.flow.state.waiting.Wakeup()::class.java)
-    }
-
-    @Test
-    fun `Waiting for session confirmation event`() {
-        whenever(testContext.initiateFlowReqService.getSessionsNotInitiated(any(), any())).thenReturn(setOf(
-            SessionInfo
-            (sessionId1, testContext.counterparty)))
-        val waitingFor = handler.getUpdatedWaitingFor(testContext.flowEventContext, ioRequest)
-        verify(testContext.initiateFlowReqService).getSessionsNotInitiated(any(), any())
-
-        assertThat(waitingFor.value).isInstanceOf(net.corda.data.flow.state.waiting.SessionConfirmation()::class.java)
     }
 
     @Test

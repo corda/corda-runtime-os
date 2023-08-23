@@ -5,7 +5,6 @@ import java.time.Instant
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
@@ -25,7 +24,6 @@ fun generateMessage(
         SessionMessageType.DATA -> generateData(instant, messageDirection)
         SessionMessageType.ERROR -> generateError(instant, messageDirection)
         SessionMessageType.CLOSE -> generateClose(instant, messageDirection)
-        SessionMessageType.ACK -> generateAck(instant, messageDirection)
     }
 }
 
@@ -33,21 +31,16 @@ fun generateInit(instant: Instant, messageDirection: MessageDirection = MessageD
     val sessionInit = SessionInit.newBuilder()
         .setCpiId("cpiId")
         .setFlowId(null)
-        .setPayload(ByteBuffer.wrap("some bytes".toByteArray()))
         .setContextPlatformProperties(emptyKeyValuePairList())
         .setContextUserProperties(emptyKeyValuePairList())
-        .setContextSessionProperties(emptyKeyValuePairList())
         .build()
     return generateSessionEvent(sessionInit, instant, messageDirection)
 }
 
 fun generateData(instant: Instant, messageDirection: MessageDirection): SessionEvent {
-    return generateSessionEvent(SessionData(ByteBuffer.wrap("bytes".toByteArray())), instant, messageDirection)
+    return generateSessionEvent(SessionData(ByteBuffer.wrap("bytes".toByteArray()), null), instant, messageDirection)
 }
 
-fun generateAck(instant: Instant, messageDirection: MessageDirection = MessageDirection.OUTBOUND): SessionEvent {
-    return generateSessionEvent(SessionAck(), instant, messageDirection)
-}
 
 fun generateError(instant: Instant, messageDirection: MessageDirection): SessionEvent {
     return generateSessionEvent(
@@ -62,5 +55,5 @@ fun generateClose(instant: Instant, messageDirection: MessageDirection): Session
 }
 
 fun generateSessionEvent(payload: Any, instant: Instant, messageDirection: MessageDirection): SessionEvent {
-    return buildSessionEvent(messageDirection, "sessionId", null, payload, 0, mutableListOf(), instant)
+    return buildSessionEvent(messageDirection, "sessionId", null, payload, instant, contextSessionProps = emptyKeyValuePairList())
 }

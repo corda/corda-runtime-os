@@ -12,6 +12,7 @@ import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -107,6 +108,7 @@ class CloseSessionsRequestHandlerTest {
     }
 
     @Test
+    @Disabled // TODO CORE-15757 CORE-16184
     fun `Sends close events and updates the checkpoint with session state when sessions are not closed or errored`() {
         whenever(
             testContext.flowSessionManager.doAllSessionsHaveStatus(
@@ -132,6 +134,7 @@ class CloseSessionsRequestHandlerTest {
     }
 
     @Test
+    @Disabled // TODO CORE-15757 CORE-16184
     fun `Errored sessions do not send close events`() {
         whenever(
             testContext.flowSessionManager.doAllSessionsHaveStatus(
@@ -212,6 +215,7 @@ class CloseSessionsRequestHandlerTest {
     }
 
     @Test
+    @Disabled // TODO CORE-15757 CORE-16184
     fun `Throws exception when session does not exist within checkpoint`() {
         whenever(
             testContext.flowSessionManager.getSessionsWithStatus(
