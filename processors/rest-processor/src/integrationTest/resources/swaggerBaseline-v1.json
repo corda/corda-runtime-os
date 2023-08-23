@@ -5525,9 +5525,7 @@
         "type" : "object",
         "properties" : {
           "groupPolicy" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
+            "$ref" : "#/components/schemas/GroupPolicy"
           },
           "members" : {
             "uniqueItems" : false,
@@ -5555,9 +5553,7 @@
         "type" : "object",
         "properties" : {
           "groupPolicy" : {
-            "type" : "string",
-            "nullable" : false,
-            "example" : "string"
+            "$ref" : "#/components/schemas/GroupPolicy"
           },
           "members" : {
             "uniqueItems" : false,

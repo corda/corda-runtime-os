@@ -1,6 +1,7 @@
 package net.corda.interop.rest.impl.v1
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ArrayNode
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
@@ -11,8 +12,10 @@ import net.corda.interop.identity.write.InteropIdentityWriteService
 import net.corda.libs.interop.endpoints.v1.InteropRestResource
 import net.corda.libs.interop.endpoints.v1.types.CreateInteropIdentityRest
 import net.corda.libs.interop.endpoints.v1.types.ExportInteropIdentityRest
+import net.corda.libs.interop.endpoints.v1.types.GroupPolicy
 import net.corda.libs.interop.endpoints.v1.types.ImportInteropIdentityRest
 import net.corda.libs.interop.endpoints.v1.types.InteropIdentityResponse
+import net.corda.libs.interop.endpoints.v1.types.P2pParameters
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -41,7 +44,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
-
 
 @Suppress("LongParameterList")
 @Component(service = [PluggableRestResource::class])
@@ -179,6 +181,10 @@ internal class InteropRestResourceImpl @Activate constructor(
                     "Cannot import members when creating a new interop group."
                 )
             }
+        } else if (groupIdField == vNodeInfo.holdingIdentity.groupId) {
+            throw InvalidInputDataException(
+                "Cannot use the groupId of your own identity during the creation of interop identity."
+            )
         } else {
             validateUUID(groupIdField) {
                 "Malformed group policy. Group ID must be a valid uuid or 'CREATE_ID', got: $groupIdField"
@@ -300,6 +306,12 @@ internal class InteropRestResourceImpl @Activate constructor(
         val groupPolicy = checkNotNull(interopGroupPolicyReadService.getGroupPolicy(interopIdentityToExport.groupId)) {
             "Could not find group policy info for interop identity $validInteropIdentityShortHash"
         }
+        val node = ObjectMapper().readTree(groupPolicy)
+        logger.info("The contents of the json node are: $node")
+        val p2pParameters = node.get("p2pParameters")
+        val tlsTrustRoot = p2pParameters.get("tlsTrustRoots") as ArrayNode
+        val tlsCerts = tlsTrustRoot.map { it.textValue() }
+
         return ExportInteropIdentityRest.Response(
             listOf(
                 ExportInteropIdentityRest.MemberData(
@@ -310,7 +322,20 @@ internal class InteropRestResourceImpl @Activate constructor(
                     interopIdentityToExport.facadeIds.map { it.toString() }
                 )
             ),
-            groupPolicy
+
+            GroupPolicy(
+                node.get("fileFormatVersion").asInt(),
+                node.get("groupId").asText(),
+                P2pParameters(
+                    p2pParameters.findValuesAsText("sessionTrustRoot"),
+                    tlsCerts,
+                    p2pParameters.get("sessionPki").asText(),
+                    p2pParameters.get("tlsPki").asText(),
+                    p2pParameters.get("tlsVersion").asText(),
+                    p2pParameters.get("protocolMode").asText(),
+                    p2pParameters.get("tlsType").asText()
+                )
+            )
         )
     }
 
@@ -329,8 +354,10 @@ internal class InteropRestResourceImpl @Activate constructor(
         val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(validHoldingIdentityShortHash)
         val vNodeShortHash = vNodeInfo.getVNodeShortHash()
 
+        val json = ObjectMapper().writeValueAsString(importInteropIdentityRestRequest.groupPolicy)
+
         val interopGroupId = try {
-            val groupIdField = getGroupIdFieldFromGroupPolicy(importInteropIdentityRestRequest.groupPolicy)
+            val groupIdField = getGroupIdFieldFromGroupPolicy(json)
             validateUUID(groupIdField) {
                 "Malformed group policy, groupId is not a valid UUID string."
             }
@@ -341,7 +368,7 @@ internal class InteropRestResourceImpl @Activate constructor(
 
         interopIdentityWriteService.publishGroupPolicy(
             interopGroupId,
-            importInteropIdentityRestRequest.groupPolicy
+            json
         )
 
         importInteropIdentityRestRequest.members.forEach { member ->
