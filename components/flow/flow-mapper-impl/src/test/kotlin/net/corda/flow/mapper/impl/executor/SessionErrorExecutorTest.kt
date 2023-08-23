@@ -6,9 +6,6 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
-import net.corda.data.p2p.app.AppMessage
-import net.corda.flow.utils.emptyKeyValuePairList
-import net.corda.libs.configuration.SmartConfig
 import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.records.Record
