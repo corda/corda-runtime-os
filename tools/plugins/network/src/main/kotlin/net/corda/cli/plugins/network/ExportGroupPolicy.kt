@@ -51,9 +51,9 @@ class ExportGroupPolicy : Runnable, RestCommand() {
         saveLocation.parentFile.mkdirs()
         objectMapper.writerWithDefaultPrettyPrinter()
             .writeValue(
-                groupPolicyFile,
+                saveLocation,
                 objectMapper.readTree(groupPolicyResponse)
             )
-        println("Group policy exported and saved to: ${groupPolicyFile.absolutePath}")
+        println("Group policy exported and saved to: ${saveLocation.absolutePath}")
     }
 }
