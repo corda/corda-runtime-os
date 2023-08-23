@@ -1,0 +1,32 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
+}
+
+description "Web3J service"
+
+dependencies {
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation 'org.web3j:core:4.9.8'
+
+
+    implementation "net.corda:corda-avro-schema"
+    implementation 'net.corda:corda-base'
+
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+}

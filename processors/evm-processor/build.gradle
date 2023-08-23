@@ -1,0 +1,52 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+
+}
+
+description 'EVM Processor'
+
+repositories {
+    mavenCentral()
+    jcenter()
+    maven { url "https://hyperledger.jfrog.io/artifactory/besu-maven/" }
+    maven { url "https://artifacts.consensys.net/public/maven/maven/" }
+    maven { url "https://splunk.jfrog.io/splunk/ext-releases-local" }
+    maven { url "https://dl.cloudsmith.io/public/consensys/quorum-mainnet-launcher/maven/" }
+}
+
+dependencies {
+
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly 'org.osgi:osgi.annotation'
+
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation 'org.web3j:core:4.9.8'
+
+    implementation "net.corda:corda-avro-schema"
+    implementation 'net.corda:corda-base'
+    implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-topic-schema"
+
+    implementation("com.squareup.okhttp3:okhttp:4.10.0")
+
+
+    implementation project(':libs:interop:evm-service')
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation project(':components:configuration:configuration-read-service')
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:configuration:configuration-datamodel')
+    implementation project(":libs:messaging:messaging")
+
+    testImplementation platform('org.junit:junit-bom:5.9.1')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation "org.web3j:web3j-unit:4.10.2"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+
+}
+
