@@ -87,6 +87,7 @@ dependencies {
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 
     integrationTestRuntimeOnly project(':libs:flows:external-event-responses-impl')
+    integrationTestRuntimeOnly project(':libs:membership:membership-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
 
