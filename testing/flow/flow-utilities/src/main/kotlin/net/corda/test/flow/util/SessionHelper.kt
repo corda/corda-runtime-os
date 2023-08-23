@@ -41,8 +41,8 @@ fun buildSessionEvent(
     sequenceNum: Int?,
     payload: Any? = null,
     timestamp: Instant = Instant.now(),
-    initiatingIdentity: HoldingIdentity = HoldingIdentity("alice", "group1"),
-    initiatedIdentity: HoldingIdentity = HoldingIdentity("bob", "group1"),
+    initiatingIdentity: HoldingIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group1"),
+    initiatedIdentity: HoldingIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group1"),
     contextSessionProps: KeyValuePairList? = null
 ): SessionEvent {
     return SessionEvent.newBuilder()
