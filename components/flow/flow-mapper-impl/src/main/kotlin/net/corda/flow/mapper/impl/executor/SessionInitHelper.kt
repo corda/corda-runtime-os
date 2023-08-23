@@ -10,6 +10,7 @@ import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
+import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas
 import java.time.Instant
 
@@ -32,6 +33,10 @@ class SessionInitHelper(private val recordFactory: RecordFactory) {
         flowConfig: SmartConfig,
         instant: Instant
     ): FlowMapperResult {
+        CordaMetrics.Metric.FlowMapperCreationCount.builder()
+            .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)
+            .build().increment()
+
         val (flowKey, outputRecord) =
             getSessionInitOutputs(
                 sessionEvent.messageDirection,

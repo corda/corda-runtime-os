@@ -33,9 +33,6 @@ class SessionInitExecutor(
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
-            CordaMetrics.Metric.FlowMapperCreationCount.builder()
-                .withTag(CordaMetrics.Tag.FlowEvent, sessionInit::class.java.name)
-                .build().increment()
             sessionInitHelper.processSessionInit(sessionEvent, sessionInit, flowConfig, instant)
         } else {
             //duplicate
