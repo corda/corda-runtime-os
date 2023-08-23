@@ -28,6 +28,7 @@ dependencies {
     implementation project(":components:virtual-node:cpk-read-service")
     implementation project(":components:virtual-node:sandbox-group-context-service")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
+    implementation project(":components:state-manager")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:utilities')
@@ -70,5 +71,6 @@ dependencies {
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:serialization:serialization-kryo")
     runtimeOnly project(":libs:web:web-impl")
-
+    runtimeOnly project(':libs:db:db-orm-impl')
+    runtimeOnly project(":libs:state-manager:state-manager-impl")
 }

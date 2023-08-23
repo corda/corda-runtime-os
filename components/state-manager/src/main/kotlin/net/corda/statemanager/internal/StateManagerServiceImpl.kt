@@ -3,7 +3,6 @@ package net.corda.statemanager.internal
 import java.util.function.Supplier
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.statemanager.StateManager
 import net.corda.libs.statemanager.StateManagerFactory
 import net.corda.lifecycle.DependentComponents
@@ -27,8 +26,6 @@ import org.osgi.service.component.annotations.Reference
 class StateManagerServiceImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private val configReadService: ConfigurationReadService,
-    @Reference(service = DbConnectionManager::class)
-    private val dbConnectionManager: DbConnectionManager,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = StateManagerFactory::class)
@@ -40,7 +37,6 @@ class StateManagerServiceImpl @Activate constructor(
 
     private val dependentComponents = DependentComponents.of(
         ::configReadService,
-        ::dbConnectionManager,
     )
     override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<StateManagerService>()
 

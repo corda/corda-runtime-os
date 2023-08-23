@@ -104,7 +104,6 @@ dependencies {
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
 
     runtimeOnly project(":libs:messaging:${busImplementation}")
-    runtimeOnly project(":libs:state-manager:state-manager-impl")
 
     runtimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
         exclude group: 'org.apache.felix'

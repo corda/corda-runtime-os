@@ -19,6 +19,7 @@ import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.processors.flow.FlowProcessor
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.statemanager.StateManagerService
 import net.corda.utilities.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -52,6 +53,8 @@ class FlowProcessorImpl @Activate constructor(
     private val groupPolicyProvider: GroupPolicyProvider,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
+    @Reference(service = StateManagerService::class)
+    private val stateManagerService: StateManagerService,
 ) : FlowProcessor {
 
     private companion object {
@@ -68,7 +71,8 @@ class FlowProcessorImpl @Activate constructor(
         ::groupParametersReaderService,
         ::cpkReadService,
         ::groupPolicyProvider,
-        ::membershipQueryClient
+        ::membershipQueryClient,
+        ::stateManagerService
     )
 
     private val lifecycleCoordinator =
