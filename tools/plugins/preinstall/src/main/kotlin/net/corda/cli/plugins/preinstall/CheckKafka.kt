@@ -1,7 +1,7 @@
 package net.corda.cli.plugins.preinstall
 
-import net.corda.cli.plugins.preinstall.PreInstallPlugin.PluginContext
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.Kafka
+import net.corda.cli.plugins.preinstall.PreInstallPlugin.PluginContext
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.ReportEntry
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.common.KafkaException
@@ -197,6 +197,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
         checkKafka(kafkaProperties, "rest", yaml.kafka.sasl, yaml.workers?.rest?.kafka?.sasl, replicas)
         checkKafka(kafkaProperties, "p2pGateway", yaml.kafka.sasl, yaml.workers?.p2pGateway?.kafka?.sasl, replicas)
         checkKafka(kafkaProperties, "p2pLinkManager", yaml.kafka.sasl, yaml.workers?.p2pLinkManager?.kafka?.sasl, replicas)
+        checkKafka(kafkaProperties, "uniqueness", yaml.kafka.sasl, yaml.workers?.uniqueness?.kafka?.sasl, replicas)
 
         return if (report.testsPassed()) {
             logger.info(report.toString())

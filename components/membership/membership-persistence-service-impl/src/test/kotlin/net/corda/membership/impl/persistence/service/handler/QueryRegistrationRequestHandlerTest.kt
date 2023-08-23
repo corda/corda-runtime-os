@@ -44,7 +44,6 @@ class QueryRegistrationRequestHandlerTest {
     private val memberSignatureKey = byteArrayOf(1)
     private val memberSignatureContent = byteArrayOf(2)
     private val memberSignatureSpec = "SignatureSpec"
-    private val registrationContext = mock<KeyValuePairList>()
     private val serialisedRegistrationContext = "serialisedRegistrationContext".toByteArray()
     private val registrationSignatureKey = "registrationSignatureKey".toByteArray()
     private val registrationSignatureContent = "registrationSignatureContent".toByteArray()
@@ -67,7 +66,6 @@ class QueryRegistrationRequestHandlerTest {
     }
     private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
         on { deserialize(serialisedMemberContext) } doReturn memberContext
-        on { deserialize(serialisedRegistrationContext) } doReturn registrationContext
     }
     private val serializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
@@ -140,24 +138,24 @@ class QueryRegistrationRequestHandlerTest {
         assertThat(result.registrationRequest?.registrationId)
             .isNotNull
             .isEqualTo(registrationId)
-        assertThat(result.registrationRequest.memberProvidedContext).isEqualTo(memberContext)
-        assertThat(result.registrationRequest.memberSignature).isEqualTo(
+        assertThat(result.registrationRequest.memberProvidedContext.data.array()).isEqualTo(serialisedMemberContext)
+        assertThat(result.registrationRequest.memberProvidedContext.signature).isEqualTo(
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(memberSignatureKey),
                 ByteBuffer.wrap(memberSignatureContent)
             )
         )
-        assertThat(result.registrationRequest.memberSignatureSpec).isEqualTo(
+        assertThat(result.registrationRequest.memberProvidedContext.signatureSpec).isEqualTo(
             CryptoSignatureSpec(memberSignatureSpec, null, null)
         )
-        assertThat(result.registrationRequest.registrationContext).isEqualTo(registrationContext)
-        assertThat(result.registrationRequest.registrationContextSignature).isEqualTo(
+        assertThat(result.registrationRequest.registrationContext.data.array()).isEqualTo(serialisedRegistrationContext)
+        assertThat(result.registrationRequest.registrationContext.signature).isEqualTo(
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(registrationSignatureKey),
                 ByteBuffer.wrap(registrationSignatureContent)
             )
         )
-        assertThat(result.registrationRequest.registrationContextSignatureSpec).isEqualTo(
+        assertThat(result.registrationRequest.registrationContext.signatureSpec).isEqualTo(
             CryptoSignatureSpec(registrationContextSignatureSpec, null, null)
         )
     }

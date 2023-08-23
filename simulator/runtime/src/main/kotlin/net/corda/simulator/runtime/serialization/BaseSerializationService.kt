@@ -8,8 +8,6 @@ import net.corda.internal.serialization.SerializationContextImpl
 import net.corda.internal.serialization.SerializationServiceImpl
 import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerRegistry
 import net.corda.internal.serialization.amqp.DescriptorBasedSerializerRegistry
-import net.corda.internal.serialization.amqp.DeserializationInput
-import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.amqpMagic
@@ -63,10 +61,12 @@ class BaseSerializationService(
                 schemeMetadata,
                 context.sandboxGroup as SandboxGroup
             )
-            val output = SerializationOutput(factory)
-            val input = DeserializationInput(factory)
 
-            return SerializationServiceImpl(output, input, context)
+            return SerializationServiceImpl(
+                outputFactory = factory,
+                inputFactory = factory,
+                context
+            )
         }
 
         private class SimSandboxGroup(

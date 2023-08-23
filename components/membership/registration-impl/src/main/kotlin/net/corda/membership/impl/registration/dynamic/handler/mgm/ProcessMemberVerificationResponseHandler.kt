@@ -1,6 +1,8 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
@@ -22,6 +24,7 @@ import net.corda.membership.lib.approval.RegistrationRule
 import net.corda.membership.lib.approval.RegistrationRulesEngine
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
+import net.corda.membership.lib.deserializeContext
 import net.corda.membership.lib.toMap
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
@@ -56,6 +59,14 @@ internal class ProcessMemberVerificationResponseHandler(
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
+
+    private val deserializer: CordaAvroDeserializer<KeyValuePairList> =
+        cordaAvroSerializationFactory.createAvroDeserializer(
+            {
+                logger.error("Failed to deserialize key value pair list.")
+            },
+            KeyValuePairList::class.java
+        )
 
     override val commandType = ProcessMemberVerificationResponse::class.java
 
@@ -152,13 +163,12 @@ internal class ProcessMemberVerificationResponseHandler(
             .queryRegistrationRequest(mgm, registrationId)
             .getOrThrow()
         val proposedMemberInfo = registrationRequest
-            ?.memberProvidedContext
-            ?.toMap()
+            ?.memberProvidedContext?.data?.array()?.deserializeContext(deserializer)
             ?: throw CordaRuntimeException(
                 "Could not read the proposed MemberInfo for registration request " +
                         "(ID=$registrationId) submitted by ${member.x500Name}."
             )
-        val registrationContext = registrationRequest.registrationContext.toMap()
+        val registrationContext = registrationRequest.registrationContext.data.array().deserializeContext(deserializer)
 
         val activeMemberInfo = groupReader
             .lookup(member.x500Name)
