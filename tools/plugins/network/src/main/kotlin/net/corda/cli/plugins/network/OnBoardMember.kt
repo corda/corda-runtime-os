@@ -14,8 +14,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
-import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
-import net.corda.cli.plugins.network.utils.PrintUtils.Companion.verifyAndPrintError
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
