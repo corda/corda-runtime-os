@@ -13,6 +13,6 @@ class ExportInteropIdentityRest {
 
     class Response(
         val members: List<MemberData>,
-        val groupPolicy: String
+        val groupPolicy: GroupPolicy
     )
 }
