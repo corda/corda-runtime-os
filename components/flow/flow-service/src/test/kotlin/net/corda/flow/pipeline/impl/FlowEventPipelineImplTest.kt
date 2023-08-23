@@ -61,10 +61,6 @@ class FlowEventPipelineImplTest {
     private val defaultinputContext = buildFlowEventContext<Any>(checkpoint, payload)
     private val outputContext = buildFlowEventContext<Any>(checkpoint, payload)
 
-    private val wakeUpFlowEventHandler = mock<FlowEventHandler<Any>>().apply {
-        whenever(preProcess(defaultinputContext)).thenReturn(outputContext)
-    }
-
     private val startFlowEventHandler = mock<FlowEventHandler<Any>>().apply {
         whenever(preProcess(defaultinputContext)).thenReturn(outputContext)
     }
@@ -89,7 +85,6 @@ class FlowEventPipelineImplTest {
     private fun buildPipeline(inputContext: FlowEventContext<Any> = defaultinputContext): FlowEventPipelineImpl {
         return FlowEventPipelineImpl(
             mapOf(
-                Wakeup::class.java to wakeUpFlowEventHandler,
                 StartFlow::class.java to startFlowEventHandler,
                 ExternalEventResponse::class.java to externalEventResponseEventHandler),
             mockFlowExecutionPipelineStage,
@@ -101,10 +96,9 @@ class FlowEventPipelineImplTest {
 
     @Test
     fun `eventPreProcessing with no retry calls the event handler`() {
-        val context = buildFlowEventContext<Any>(checkpoint, ExternalEventResponse("foo"))
-        val pipeline = buildPipeline(context)
+        val pipeline = buildPipeline()
         assertEquals(outputContext, pipeline.eventPreProcessing().context)
-        verify(externalEventResponseEventHandler).preProcess(context)
+        verify(externalEventResponseEventHandler).preProcess(defaultinputContext)
     }
 
     @Test

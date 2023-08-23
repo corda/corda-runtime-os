@@ -35,7 +35,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         val DATA_MESSAGE_6 = byteArrayOf(6)
 
         @JvmStatic
-        fun wakeupAndSessionAck(): Stream<Arguments> {
+        fun sessionAck(): Stream<Arguments> {
             return Stream.of(
                 Arguments.of(
                     SessionAck::class.simpleName,
@@ -141,7 +141,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     }
 
     @ParameterizedTest(name = "Receiving a {0} event does not resume the flow and resends any unacknowledged events")
-    @MethodSource("wakeupAndSessionAck")
+    @MethodSource("sessionAck")
     fun `Receiving a wakeup or session ack event does not resume the flow and resends any unacknowledged events`(
         @Suppress("UNUSED_PARAMETER") name: String,
         parameter: (StepSetup) -> Unit

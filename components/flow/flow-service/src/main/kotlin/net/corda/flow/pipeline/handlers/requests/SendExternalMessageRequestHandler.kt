@@ -81,7 +81,7 @@ class SendExternalMessageRequestHandler @Activate constructor(
         val records = if (externalMessage != null) {
             listOf(externalMessage)
         } else {
-            listOf()
+            emptyList()
         }
 
         return context.copy(outputRecords = context.outputRecords + records)
