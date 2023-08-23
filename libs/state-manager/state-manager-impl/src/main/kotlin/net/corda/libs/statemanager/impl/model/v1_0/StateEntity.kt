@@ -1,5 +1,6 @@
-package net.corda.libs.statemanager.model.v1_0
+package net.corda.libs.statemanager.impl.model.v1_0
 
+import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
@@ -16,14 +17,17 @@ internal class StateEntity(
 
     @Lob
     @Column(name = "state")
-    val state: ByteArray,
+    val state: ByteArray?,
 
     @Version
     @Column(name = "version")
     var version: Int? = null,
 
     @Column(name = "metadata", columnDefinition = "jsonb")
-    var metadata: String? = null
+    var metadata: String? = null,
+
+    @Column(name = "modified_time", insertable = false, updatable = true)
+    var modifiedTime: Instant? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

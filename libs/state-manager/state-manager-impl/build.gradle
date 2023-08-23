@@ -8,6 +8,7 @@ dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiServiceComponentVersion"
 
     implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-db-schema"
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-config-schema"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
@@ -17,4 +18,7 @@ dependencies {
     api project(":libs:state-manager:state-manager-api")
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:utilities')
+    implementation project(':libs:db:db-core')
+    implementation project(':libs:db:db-orm')
+    implementation project(':libs:serialization:serialization-avro')
 }
