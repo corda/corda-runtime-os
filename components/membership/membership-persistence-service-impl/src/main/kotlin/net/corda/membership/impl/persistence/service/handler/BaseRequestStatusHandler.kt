@@ -3,9 +3,12 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.impl.persistence.service.handler.RegistrationStatusHelper.toStatus
+import net.corda.membership.lib.deserializeContext
+import net.corda.membership.lib.retrieveSignatureSpec
 import java.nio.ByteBuffer
 
 internal abstract class BaseRequestStatusHandler<REQUEST, RESPONSE>(persistenceHandlerServices: PersistenceHandlerServices) :
@@ -23,10 +26,9 @@ internal abstract class BaseRequestStatusHandler<REQUEST, RESPONSE>(persistenceH
     }
 
     fun RegistrationRequestEntity.toDetails(): RegistrationRequestDetails {
-        val memberContext = keyValuePairListDeserializer.deserialize(this.memberContext)
-        val registrationProtocolVersion = memberContext?.items?.firstOrNull {
-            it.key == "registrationProtocolVersion"
-        }?.value?.toIntOrNull() ?: DEFAULT_REGISTRATION_PROTOCOL_VERSION
+        val registrationProtocolVersion = this.memberContext
+            .deserializeContext(keyValuePairListDeserializer)["registrationProtocolVersion"]?.toIntOrNull()
+            ?: DEFAULT_REGISTRATION_PROTOCOL_VERSION
         return RegistrationRequestDetails.newBuilder()
             .setRegistrationSent(this.created)
             .setRegistrationLastModified(this.lastModified)
@@ -34,22 +36,26 @@ internal abstract class BaseRequestStatusHandler<REQUEST, RESPONSE>(persistenceH
             .setRegistrationId(this.registrationId)
             .setHoldingIdentityId(this.holdingIdentityShortHash)
             .setRegistrationProtocolVersion(registrationProtocolVersion)
-            .setMemberProvidedContext(memberContext)
-            .setMemberSignature(
-                CryptoSignatureWithKey(
-                    ByteBuffer.wrap(this.memberContextSignatureKey),
-                    ByteBuffer.wrap(this.memberContextSignatureContent)
+            .setMemberProvidedContext(
+                SignedData(
+                    ByteBuffer.wrap(this.memberContext),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(this.memberContextSignatureKey),
+                        ByteBuffer.wrap(this.memberContextSignatureContent)
+                    ),
+                    retrieveSignatureSpec(this.memberContextSignatureSpec),
                 )
             )
-            .setMemberSignatureSpec(retrieveSignatureSpec(this.memberContextSignatureSpec))
-            .setRegistrationContext(keyValuePairListDeserializer.deserialize(registrationContext))
-            .setRegistrationContextSignature(
-                CryptoSignatureWithKey(
-                    ByteBuffer.wrap(registrationContextSignatureKey),
-                    ByteBuffer.wrap(registrationContextSignatureContent)
+            .setRegistrationContext(
+                SignedData(
+                    ByteBuffer.wrap(this.registrationContext),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(registrationContextSignatureKey),
+                        ByteBuffer.wrap(registrationContextSignatureContent)
+                    ),
+                    retrieveSignatureSpec(registrationContextSignatureSpec),
                 )
             )
-            .setRegistrationContextSignatureSpec(retrieveSignatureSpec(registrationContextSignatureSpec))
             .setReason(this.reason)
             .setSerial(this.serial)
             .build()

@@ -63,6 +63,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.locally.hosted.identities.IdentityInfo
 import net.corda.membership.p2p.MembershipP2PReadService
@@ -390,7 +391,7 @@ class SynchronisationIntegrationTest {
             sessionInitKey: PublicKey,
             isMgm: Boolean = false
         ): MemberInfo =
-            memberInfoFactory.create(
+            memberInfoFactory.createMemberInfo(
                 sortedMapOf(
                     MemberInfoExtension.PARTY_NAME to holdingIdentity.x500Name,
                     String.format(MemberInfoExtension.PARTY_SESSION_KEYS, 0) to keyEncodingService.encodeAsString(sessionInitKey),
@@ -414,12 +415,14 @@ class SynchronisationIntegrationTest {
     fun `sync requests are processed by mgm`() {
         groupPolicyProvider.putGroupPolicy(mgm.toCorda(), MgmTestGroupPolicy())
 
+        membershipQueryClient.loadMembers(listOf(requesterInfo, participantInfo))
+
         // Create sync request to be published
         membershipGroupReaderProvider.loadMembers(
             mgm.toCorda(),
             listOf(mgmInfo, requesterInfo, participantInfo)
         )
-        val requesterHash = merkleTreeGenerator.generateTree(listOf(requesterInfo)).root
+        val requesterHash = merkleTreeGenerator.generateTreeUsingMembers(listOf(requesterInfo)).root
         val byteBuffer = ByteBuffer.wrap("123".toByteArray())
         val secureHash = SecureHash("algorithm", byteBuffer)
 
@@ -483,7 +486,7 @@ class SynchronisationIntegrationTest {
             it.assertThat(membershipPackage.distributionType).isEqualTo(DistributionType.SYNC)
             it.assertThat(membershipPackage.memberships.memberships).hasSize(2)
                 .allSatisfy {
-                    val member = memberInfoFactory.create(
+                    val member = memberInfoFactory.createMemberInfo(
                         keyValueDeserializer.deserialize(it.memberContext.data.array())!!.toSortedMap(),
                         keyValueDeserializer.deserialize(it.mgmContext.data.array())!!.toSortedMap()
                     )
@@ -501,26 +504,35 @@ class SynchronisationIntegrationTest {
 
         // Create membership package to be published
         val members: List<MemberInfo> = mutableListOf(participantInfo)
+        val selfSignedMembers = mutableListOf<SelfSignedMemberInfo>()
         val signedMembers = members.map {
-            val memberInfo = keyValueSerializer.serialize(it.memberProvidedContext.toAvro())
+            val memberContext = keyValueSerializer.serialize(it.memberProvidedContext.toAvro())
+            val mgmContext = keyValueSerializer.serialize(it.mgmProvidedContext.toAvro())
             val memberSignatureSpec = SignatureSpecs.ECDSA_SHA256
             val memberSignature = cryptoOpsClient.sign(
                 participant.toCorda().shortHash.value,
                 participantSessionKey,
                 memberSignatureSpec,
-                memberInfo!!
+                memberContext!!
             ).let { withKey ->
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(withKey.by)),
                     ByteBuffer.wrap(withKey.bytes)
                 )
             }
+            val selfSignedMemberInfo = memberInfoFactory.createSelfSignedMemberInfo(
+                memberContext,
+                mgmContext!!,
+                memberSignature,
+                CryptoSignatureSpec(memberSignatureSpec.signatureName, null, null)
+            )
+            selfSignedMembers.add(selfSignedMemberInfo)
             val mgmSignatureSpec = SignatureSpecs.ECDSA_SHA256
             val mgmSignature = cryptoOpsClient.sign(
                 mgm.toCorda().shortHash.value,
                 mgmSessionKey,
                 mgmSignatureSpec,
-                merkleTreeGenerator.generateTree(listOf(it)).root.bytes
+                merkleTreeGenerator.generateTreeUsingSignedMembers(listOf(selfSignedMemberInfo)).root.bytes
             ).let { withKey ->
                 CryptoSignatureWithKey(
                     ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(withKey.by)),
@@ -530,7 +542,7 @@ class SynchronisationIntegrationTest {
             SignedMemberInfo.newBuilder()
                 .setMemberContext(
                     SignedData(
-                        ByteBuffer.wrap(memberInfo),
+                        ByteBuffer.wrap(memberContext),
                         memberSignature,
                         CryptoSignatureSpec(memberSignatureSpec.signatureName, null, null)
                     )
@@ -544,7 +556,7 @@ class SynchronisationIntegrationTest {
                 )
                 .build()
         }
-        val hash = merkleTreeGenerator.generateTree(members).root
+        val hash = merkleTreeGenerator.generateTreeUsingSignedMembers(selfSignedMembers).root
         val membership = SignedMemberships.newBuilder()
             .setMemberships(signedMembers)
             .setHashCheck(hash.toAvro())
@@ -643,10 +655,7 @@ class SynchronisationIntegrationTest {
                 .isInstanceOf(PersistentMemberInfo::class.java)
             with(result) {
                 it.assertThat(viewOwningMember).isEqualTo(requester)
-                val memberPublished = memberInfoFactory.create(
-                    memberContext.toSortedMap(),
-                    mgmContext.toSortedMap()
-                )
+                val memberPublished = memberInfoFactory.createMemberInfo(this)
                 it.assertThat(memberPublished.groupId).isEqualTo(groupId)
                 it.assertThat(memberPublished.name.toString()).isEqualTo(participant.x500Name)
                 it.assertThat(memberPublished.ledgerKeys.size).isEqualTo(0)

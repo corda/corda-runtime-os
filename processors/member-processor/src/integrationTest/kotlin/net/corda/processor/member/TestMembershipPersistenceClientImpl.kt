@@ -2,8 +2,6 @@ package net.corda.processor.member
 
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
@@ -18,7 +16,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
 import net.corda.membership.lib.InternalGroupParameters
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -32,7 +30,6 @@ import net.corda.membership.network.writer.staticnetwork.StaticNetworkUtils.mgmS
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -60,7 +57,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
-        memberInfos: Collection<SignedMemberInfo>,
+        memberInfos: Collection<SelfSignedMemberInfo>,
     ) : MembershipPersistenceOperation<Unit> = Operation(MembershipPersistenceResult.success())
 
     override fun persistGroupPolicy(
@@ -77,10 +74,7 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         groupParameters: InternalGroupParameters,
     ) : MembershipPersistenceOperation<InternalGroupParameters> = Operation(MembershipPersistenceResult.Success(groupParameters))
 
-    override fun addNotaryToGroupParameters(
-        viewOwningIdentity: HoldingIdentity,
-        notary: MemberInfo,
-    ) = throw NotImplementedError("Not implemented for test service")
+    override fun addNotaryToGroupParameters(notary: PersistentMemberInfo) = throw NotImplementedError("Not implemented for test service")
 
     override fun persistRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
@@ -91,7 +85,8 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         approvedMember: HoldingIdentity,
         registrationRequestId: String,
-    ) : MembershipPersistenceOperation<MemberInfo> = Operation(MembershipPersistenceResult.Failure<MemberInfo>("Unsupported!"))
+    ) : MembershipPersistenceOperation<PersistentMemberInfo> =
+        Operation(MembershipPersistenceResult.Failure("Unsupported!"))
 
     override fun setRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,
@@ -177,13 +172,16 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
             }
         }
 
-    override fun queryMemberInfo(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Collection<MemberInfo>> =
-        MembershipQueryResult.Success(emptyList())
+    override fun queryMemberInfo(
+        viewOwningIdentity: HoldingIdentity,
+        statusFilter: List<String>,
+    ): MembershipQueryResult<Collection<SelfSignedMemberInfo>> = MembershipQueryResult.Success(emptyList())
 
     override fun queryMemberInfo(
         viewOwningIdentity: HoldingIdentity,
-        queryFilter: Collection<HoldingIdentity>,
-    ): MembershipQueryResult<Collection<MemberInfo>> = MembershipQueryResult.Success(emptyList())
+        holdingIdentityFilter: Collection<HoldingIdentity>,
+        statusFilter: List<String>,
+    ): MembershipQueryResult<Collection<SelfSignedMemberInfo>> = MembershipQueryResult.Success(emptyList())
 
     override fun queryRegistrationRequest(
         viewOwningIdentity: HoldingIdentity,
@@ -196,12 +194,6 @@ internal class TestMembershipPersistenceClientImpl @Activate constructor(
         statuses: List<RegistrationStatus>,
         limit: Int?,
     ): MembershipQueryResult<List<RegistrationRequestDetails>> = MembershipQueryResult.Success(emptyList())
-
-    override fun queryMembersSignatures(
-        viewOwningIdentity: HoldingIdentity,
-        holdingsIdentities: Collection<HoldingIdentity>,
-    ): MembershipQueryResult<Map<HoldingIdentity, Pair<CryptoSignatureWithKey, CryptoSignatureSpec>>> =
-        MembershipQueryResult.Success(emptyMap())
 
     override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Pair<LayeredPropertyMap, Long>> =
         MembershipQueryResult.Failure("Unsupported")
