@@ -99,12 +99,13 @@ class SimpleSwapFlow : ClientStartableFlow {
                 signedTransaction,
                 listOf(session1)
             )
+
             val userResult = finalizationResult.transaction.id.toString().also {
                 log.info("Success! Response: $it")
             }
 
             val payment = Payment(flowArgs.interopGroupId, BigDecimal(100))
-            val myInteropInfo : InterOpIdentityInfo? = interopIdentityLookUp.lookup(flowArgs.interopGroupId)
+            val myInteropInfo: InterOpIdentityInfo? = interopIdentityLookUp.lookup(flowArgs.interopGroupId)
             require(myInteropInfo != null) { "Cant find InteropInfo for ${flowArgs.interopGroupId}." }
             val myAlias = MemberX500Name.parse(myInteropInfo.x500Name)
 

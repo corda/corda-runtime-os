@@ -144,7 +144,7 @@ internal class InteropRestResourceImpl @Activate constructor(
         val validHoldingIdentityShortHash = validateShortHash(holdingIdentityShortHash)
         val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(validHoldingIdentityShortHash)
 
-        if(interopIdentityRegistryService
+        if (interopIdentityRegistryService
                 .getVirtualNodeRegistryView(validHoldingIdentityShortHash)
                 .getIdentitiesByApplicationName()
                 .keys.contains(createInteropIdentityRestRequest.applicationName)) {

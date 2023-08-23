@@ -11,7 +11,7 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: ShortHas
     private val interopIdentities = HashSet<InteropIdentity>()
 
     private val byGroupId = HashMap<String, HashSet<InteropIdentity>>()
-    private val byVirtualNode = HashMap<ShortHash, HashSet<InteropIdentity>>()
+    private val byVirtualNodeShortHash = HashMap<ShortHash, HashSet<InteropIdentity>>()
     private val byShortHash = HashMap<ShortHash, InteropIdentity>()
     private val myIdentities = HashMap<String, InteropIdentity>()
     private val byApplicationName = HashMap<String, InteropIdentity>()
@@ -24,7 +24,7 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: ShortHas
     }
 
     private fun getOrCreateByVirtualNodeEntry(shortHash: ShortHash): HashSet<InteropIdentity> {
-        return byVirtualNode.computeIfAbsent(shortHash) {
+        return byVirtualNodeShortHash.computeIfAbsent(shortHash) {
             HashSet()
         }
     }
@@ -76,10 +76,10 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: ShortHas
             }
         }
 
-        byVirtualNode[identity.owningVirtualNodeShortHash]?.let {
+        byVirtualNodeShortHash[identity.owningVirtualNodeShortHash]?.let {
             it.remove(identity)
             if (it.size == 0) {
-                byVirtualNode.remove(identity.owningVirtualNodeShortHash)
+                byVirtualNodeShortHash.remove(identity.owningVirtualNodeShortHash)
             }
         }
 
@@ -94,7 +94,7 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: ShortHas
         byApplicationName.remove(identity.applicationName)
 
         byFacadeId.forEach {
-            if (it.value.contains(identity)){
+            if (it.value.contains(identity)) {
                 it.value.remove(identity)
             }
         }
@@ -106,7 +106,7 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: ShortHas
         Collections.unmodifiableMap(byGroupId)
 
     override fun getIdentitiesByVirtualNode(): Map<ShortHash, Set<InteropIdentity>> =
-        Collections.unmodifiableMap(byVirtualNode)
+        Collections.unmodifiableMap(byVirtualNodeShortHash)
 
     override fun getIdentitiesByShortHash(): Map<ShortHash, InteropIdentity> =
         Collections.unmodifiableMap(byShortHash)
