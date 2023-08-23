@@ -145,7 +145,6 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
         } else {
             it.baseImageTag = (cordaCliIncluded) ? "latest-local-${cliVersion}" : "unstable-${cliVersion}"
         }
-        it.baseImageTag = (cordaCliIncluded) ? "latest-local-${cliVersion}" : "unstable-${cliVersion}"
     }
 
     if (project.hasProperty('useDockerDaemon')) {
