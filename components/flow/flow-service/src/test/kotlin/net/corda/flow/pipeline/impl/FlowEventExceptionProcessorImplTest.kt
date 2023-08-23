@@ -109,7 +109,7 @@ class FlowEventExceptionProcessorImplTest {
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
         whenever(flowCheckpoint.doesExist).thenReturn(true)
         whenever(flowCheckpoint.flowKey).thenReturn(key)
-        whenever(flowRecordFactory.createFlowEventRecord(flowId, Wakeup())).thenReturn(flowEventRecord)
+        whenever(flowRecordFactory.createFlowEventRecord(flowId, ExternalEventResponse())).thenReturn(flowEventRecord)
 
         val result = target.process(error, context)
 
@@ -135,7 +135,7 @@ class FlowEventExceptionProcessorImplTest {
         whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
         whenever(flowMessageFactory.createFlowRetryingStatusMessage(flowCheckpoint)).thenReturn(flowStatusUpdate)
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
-        whenever(flowRecordFactory.createFlowEventRecord(flowId, Wakeup())).thenReturn(flowEventRecord)
+        whenever(flowRecordFactory.createFlowEventRecord(flowId, ExternalEventResponse())).thenReturn(flowEventRecord)
         whenever(flowCheckpoint.doesExist).thenReturn(false)
 
         val result = target.process(error, context)
@@ -265,7 +265,7 @@ class FlowEventExceptionProcessorImplTest {
         whenever(flowCheckpoint.flowId).thenReturn(flowId)
         whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
         whenever(flowMessageFactory.createFlowRetryingStatusMessage(flowCheckpoint)).thenThrow(IllegalStateException())
-        whenever(flowRecordFactory.createFlowEventRecord(flowId, Wakeup())).thenReturn(flowEventRecord)
+        whenever(flowRecordFactory.createFlowEventRecord(flowId, ExternalEventResponse())).thenReturn(flowEventRecord)
 
         val result = target.process(error, context)
 

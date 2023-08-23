@@ -103,9 +103,15 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
              * the new scheduler mechanism. It may also be possible to remove all sources of transient exceptions if
              * the state storage solution is changed, which would allow this feature to be removed entirely.
              */
+            val payload = context.inputEventPayload ?: return@withEscalation process(
+                FlowFatalException(
+                    "Could not process a retry as the input event has no payload.",
+                    exception
+                ), context
+            )
             val records = createStatusRecord(context.checkpoint.flowId) {
                 flowMessageFactory.createFlowRetryingStatusMessage(context.checkpoint)
-            } + flowRecordFactory.createFlowEventRecord(context.checkpoint.flowId, Wakeup())
+            } + flowRecordFactory.createFlowEventRecord(context.checkpoint.flowId, payload)
 
             // Set up records before the rollback, just in case a transient exception happens after a flow is initialised
             // but before the first checkpoint has been recorded.

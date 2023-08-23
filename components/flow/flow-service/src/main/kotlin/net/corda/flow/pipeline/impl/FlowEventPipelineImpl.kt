@@ -41,39 +41,14 @@ internal class FlowEventPipelineImpl(
     override fun eventPreProcessing(): FlowEventPipelineImpl {
         log.trace { "Preprocessing of ${context.inputEventPayload::class.qualifiedName}" }
 
-        /**
-         * If the checkpoint is in a retry step and we receive a Wakeup then we
-         * should re-write the event the pipeline should process the event to be retried, in place of the default
-         * wakeup behavior
-         */
-        val updatedContext = if (context.inputEventPayload is Wakeup) {
-            if (!context.checkpoint.inRetryState) {
-                // No Wakeup events should be in the system if the flow is not in retrying state, so this is now a fatal
-                // error.
-                log.warn("Flow received a Wakeup event when not in retrying state.")
-                throw FlowFatalException("Flow received a Wakeup event when not in retrying state.")
-            }
-            log.debug(
-                "Flow is in retry state, using retry event " +
-                        "${context.checkpoint.retryEvent.payload::class.qualifiedName} for the pipeline processing."
-            )
-            context.copy(
-                inputEvent = context.checkpoint.retryEvent,
-                inputEventPayload = context.checkpoint.retryEvent.payload,
-                isRetryEvent = true
-            )
-        } else {
-            context
-        }
+        val handler = getFlowEventHandler(context.inputEvent)
 
-        val handler = getFlowEventHandler(updatedContext.inputEvent)
-
-        context = handler.preProcess(updatedContext)
+        context = handler.preProcess(context)
 
         // For now, we do this here as we need to be sure the flow start context exists, as for a
         // start flow event it won't exist until we have run the preProcess() for the start flow
         // event handler
-        context.flowMetrics.flowEventReceived(updatedContext.inputEventPayload::class.java.name)
+        context.flowMetrics.flowEventReceived(context.inputEventPayload::class.java.name)
 
         val checkpoint = context.checkpoint
 

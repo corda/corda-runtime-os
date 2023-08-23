@@ -95,26 +95,6 @@ class FlowEventPipelineImplTest {
     }
 
     @Test
-    fun `eventPreProcessing with no retry calls the event handler`() {
-        val pipeline = buildPipeline()
-        assertEquals(outputContext, pipeline.eventPreProcessing().context)
-        verify(externalEventResponseEventHandler).preProcess(defaultinputContext)
-    }
-
-    @Test
-    fun `eventPreProcessing wakeup with retry uses retry event handler`() {
-        val retryHandlerOutputContext = buildFlowEventContext<Any>(checkpoint, retryEvent)
-        whenever(checkpoint.inRetryState).thenReturn(true)
-        whenever(checkpoint.retryEvent).thenReturn(retryEvent)
-        whenever(startFlowEventHandler.preProcess(any())).thenReturn(retryHandlerOutputContext)
-        val context = buildFlowEventContext<Any>(checkpoint, Wakeup())
-        val pipeline = buildPipeline(context)
-
-        assertEquals(retryHandlerOutputContext, pipeline.eventPreProcessing().context)
-        verify(startFlowEventHandler).preProcess(argThat { this.inputEvent == retryEvent && this.inputEventPayload == retryEvent.payload })
-    }
-
-    @Test
     fun `pipeline exits if flow operational status is inactive`() {
         val mockCheckpoint = mock<FlowCheckpoint> {
             whenever(it.doesExist).thenReturn(true)

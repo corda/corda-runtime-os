@@ -18,7 +18,7 @@ interface FlowRecordFactory {
      *
      * @param flowId The id of the flow generating or receiving the event.
      * @param payload The instance of the specific flow event to be carried by the record. Valid types are [StartFlow],
-     * [SessionEvent].
+     * [SessionEvent] and [ExternalEventResponse].
      * @return a new instance of a [FlowEvent] record.
      */
     fun createFlowEventRecord(flowId: String, payload: Any): Record<String, FlowEvent>
