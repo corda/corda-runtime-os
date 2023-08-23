@@ -81,8 +81,8 @@ class WrappedUtxoWireTransaction(
         deserialize(UtxoComponentGroup.REFERENCES)
     }
 
-    fun getOutputStateAndRefs(): List<StateAndRef<*>> {
-        return List(
+    val outputStateAndRefs: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        List(
             wireTransaction
                 .getComponentGroupList(UtxoComponentGroup.OUTPUTS.ordinal).size
         ) { index ->

@@ -104,7 +104,7 @@ class UtxoLedgerTransactionImpl(
     }
 
     override fun getOutputStateAndRefs(): List<StateAndRef<*>> {
-        return wrappedWireTransaction.getOutputStateAndRefs()
+        return wrappedWireTransaction.outputStateAndRefs
     }
 
     override fun <T : ContractState> getOutputStateAndRefs(type: Class<T>): List<StateAndRef<T>> {

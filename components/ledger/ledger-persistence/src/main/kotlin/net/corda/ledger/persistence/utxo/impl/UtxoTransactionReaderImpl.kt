@@ -112,7 +112,7 @@ class UtxoTransactionReaderImpl(
             val wrappedTransaction = WrappedUtxoWireTransaction(transaction.wireTransaction, serializer)
 
             inputsByTransactionId.value.map { stateRef ->
-                wrappedTransaction.getOutputStateAndRefs()[stateRef.index].cast(ContractState::class.java)
+                wrappedTransaction.outputStateAndRefs[stateRef.index].cast(ContractState::class.java)
             }
         }
     }

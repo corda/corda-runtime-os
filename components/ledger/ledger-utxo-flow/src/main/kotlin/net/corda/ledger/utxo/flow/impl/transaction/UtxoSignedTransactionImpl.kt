@@ -64,7 +64,7 @@ data class UtxoSignedTransactionImpl(
     }
 
     override fun getOutputStateAndRefs(): List<StateAndRef<*>> {
-        return wrappedWireTransaction.getOutputStateAndRefs()
+        return wrappedWireTransaction.outputStateAndRefs
     }
 
     override fun getNotaryName(): MemberX500Name {
