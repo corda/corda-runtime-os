@@ -62,10 +62,9 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: ShortHas
         byShortHash[identity.shortHash] = identity
         byApplicationName[identity.applicationName] = identity
 
-        identity.facadeIds.forEach{
+        identity.facadeIds.forEach {
             getOrCreateByFacadeIdEntry(it).add(identity)
         }
-
     }
 
     fun removeInteropIdentity(identity: InteropIdentity) {
@@ -94,12 +93,11 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: ShortHas
 
         byApplicationName.remove(identity.applicationName)
 
-        byFacadeId.forEach{
+        byFacadeId.forEach {
             if (it.value.contains(identity)){
                 it.value.remove(identity)
             }
         }
-
     }
 
     override fun getIdentities(): Set<InteropIdentity> = interopIdentities

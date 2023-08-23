@@ -98,7 +98,7 @@ internal class InteropRestResourceImpl @Activate constructor(
             )
     }
 
-    private fun requireValidUUID(
+    private fun validateUUID(
         uuidString: String,
         lazyMessage: () -> String = { "'$uuidString' is not a valid UUID" }
     ): UUID {
@@ -180,7 +180,7 @@ internal class InteropRestResourceImpl @Activate constructor(
                 )
             }
         } else {
-            requireValidUUID(groupIdField) {
+            validateUUID(groupIdField) {
                 "Malformed group policy. Group ID must be a valid uuid or 'CREATE_ID', got: $groupIdField"
             }
         }
@@ -331,7 +331,7 @@ internal class InteropRestResourceImpl @Activate constructor(
 
         val interopGroupId = try {
             val groupIdField = getGroupIdFieldFromGroupPolicy(importInteropIdentityRestRequest.groupPolicy)
-            requireValidUUID(groupIdField) {
+            validateUUID(groupIdField) {
                 "Malformed group policy, groupId is not a valid UUID string."
             }
             groupIdField

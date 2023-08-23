@@ -71,7 +71,7 @@ class InteropGroupPolicyValidatorImpl @Activate constructor(
             groupPolicyParser.parseInteropGroupPolicy(groupPolicy)
         } catch (e: BadGroupPolicyException) {
             throw InteropInvalidGroupPolicyException("Could not parse the group policy: ${e.message}", e)
-        } ?: return
+        }
 
         val groupPolicyTlsType = parsedGroupPolicy.p2pParameters.tlsType
         val clusterTlsType = TlsType.getClusterType(configurationGetService::getSmartConfig)

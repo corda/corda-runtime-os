@@ -125,7 +125,7 @@ class GroupPolicyParserImpl @Activate constructor(
         )
     }
 
-    override fun parseInteropGroupPolicy(groupPolicy: String): InteropGroupPolicy? {
+    override fun parseInteropGroupPolicy(groupPolicy: String): InteropGroupPolicy {
         val node = when {
             groupPolicy.isBlank() -> {
                 logger.error(EMPTY_GROUP_POLICY)

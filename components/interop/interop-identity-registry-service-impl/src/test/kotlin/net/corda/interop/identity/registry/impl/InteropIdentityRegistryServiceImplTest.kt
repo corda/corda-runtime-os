@@ -78,8 +78,7 @@ class InteropIdentityRegistryServiceImplTest {
             groupId = UUID.randomUUID().toString(),
             x500Name = "C=GB, L=London, O=Bob",
             owningVirtualNodeShortHash = shortHash2,
-            facadeIds = listOf(
-                FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
             endpointProtocol = "https://bob.corda5.r3.com:10000"

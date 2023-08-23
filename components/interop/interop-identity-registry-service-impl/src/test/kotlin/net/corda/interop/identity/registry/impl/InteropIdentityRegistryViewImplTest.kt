@@ -22,8 +22,7 @@ class InteropIdentityRegistryViewImplTest {
             x500Name = "C=GB, L=London, O=Alice",
             groupId = INTEROP_GROUP_ID,
             owningVirtualNodeShortHash = ShortHash.parse("101010101010"),
-            facadeIds = listOf(
-                FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
             endpointProtocol = "https://alice.corda5.r3.com:10000"
@@ -191,13 +190,19 @@ class InteropIdentityRegistryViewImplTest {
         testView.putInteropIdentity(testInteropIdentity2)
 
         val facadeToIds = testView.getIdentitiesByFacadeId()
-        val facadeMap1 = facadeToIds[facadeId1.toString()] ?: throw NullPointerException("No Facade data found for given FacadeId")
+
+        val facadeMap1 = checkNotNull(facadeToIds[facadeId1.toString()]) {
+            "No Facade data found for given FacadeId"
+        }
 
         assertThat(facadeMap1).hasSize(2)
         assertThat(facadeMap1).contains(testInteropIdentity)
         assertThat(facadeMap1).contains(testInteropIdentity2)
 
-        val facadeMap2 = facadeToIds[facadeId2.toString()] ?: throw NullPointerException("No Facade data found for given FacadeId")
+        val facadeMap2 = checkNotNull(facadeToIds[facadeId2.toString()]) {
+            "No Facade data found for given FacadeId"
+        }
+
         assertThat(facadeMap2).hasSize(1)
         assertThat(facadeMap2).doesNotContain(testInteropIdentity)
         assertThat(facadeMap2).contains(testInteropIdentity2)

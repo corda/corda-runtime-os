@@ -100,7 +100,7 @@ interface GroupPolicyParser {
      */
     fun parseInteropGroupPolicy(
         groupPolicy: String
-    ): InteropGroupPolicy?
+    ): InteropGroupPolicy
 
     /**
      * Constructs MGM [MemberInfo] from details specified in [GroupPolicy].

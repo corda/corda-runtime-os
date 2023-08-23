@@ -34,7 +34,7 @@ import net.corda.membership.lib.impl.grouppolicy.getOptionalStringMap
 import net.corda.membership.lib.impl.grouppolicy.validatePemCert
 import net.corda.v5.base.types.MemberX500Name
 
-class InteropGroupPolicyImpl(rootNode: JsonNode) : InteropGroupPolicy {
+class InteropGroupPolicyImpl(rootNode: JsonNode): InteropGroupPolicy {
 
     override val fileFormatVersion = rootNode.getMandatoryInt(FILE_FORMAT_VERSION)
 
@@ -58,14 +58,14 @@ class InteropGroupPolicyImpl(rootNode: JsonNode) : InteropGroupPolicy {
 
     override val cipherSuite: GroupPolicy.CipherSuite = CipherSuiteImpl(emptyMap())
 
-    internal inner class ProtocolParametersImpl : GroupPolicy.ProtocolParameters {
+    internal inner class ProtocolParametersImpl: GroupPolicy.ProtocolParameters {
         override val sessionKeyPolicy = SessionKeyPolicy.COMBINED
-        override val staticNetworkMembers: List<Map<String, Any>>? = emptyList()
-        override val staticNetworkGroupParameters: Map<String, String>?
+        override val staticNetworkMembers: List<Map<String, Any>> = emptyList()
+        override val staticNetworkGroupParameters: Map<String, String>
             get() = emptyMap()
     }
 
-    internal inner class P2PParametersImpl(rootNode: JsonNode) : GroupPolicy.P2PParameters {
+    internal inner class P2PParametersImpl(rootNode: JsonNode): GroupPolicy.P2PParameters {
         private val p2pParameters = rootNode.getMandatoryJsonNode(P2P_PARAMETERS)
 
         override val sessionPki = p2pParameters.getMandatoryEnum(SESSION_PKI) {
@@ -151,9 +151,9 @@ class InteropGroupPolicyImpl(rootNode: JsonNode) : InteropGroupPolicy {
 
     internal inner class MGMInfoImpl(
         map: Map<String, String>
-    ) : GroupPolicy.MGMInfo, Map<String, String> by map
+    ): GroupPolicy.MGMInfo, Map<String, String> by map
 
     internal inner class CipherSuiteImpl(
         map: Map<String, String>
-    ) : GroupPolicy.CipherSuite, Map<String, String> by map
+    ): GroupPolicy.CipherSuite, Map<String, String> by map
 }

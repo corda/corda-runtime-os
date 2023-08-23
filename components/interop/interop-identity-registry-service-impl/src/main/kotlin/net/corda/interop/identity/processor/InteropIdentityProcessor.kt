@@ -58,7 +58,7 @@ class InteropIdentityProcessor(
         }
     }
 
-    private fun updateCacheEntry(key: RecordKey, oldEntry: InteropIdentity, newEntry: InteropIdentity) {
+    private fun updateRegistryEntry(key: RecordKey, oldEntry: InteropIdentity, newEntry: InteropIdentity) {
         val cacheView = registryService.getVirtualNodeRegistryView(key.holdingIdentityShortHash)
         val interopIdentities = cacheView.getIdentities()
 
@@ -76,7 +76,7 @@ class InteropIdentityProcessor(
         registryService.putInteropIdentity(key.holdingIdentityShortHash, newEntry)
     }
 
-    private fun insertCacheEntry(key: RecordKey, newEntry: InteropIdentity) {
+    private fun insertRegistryEntry(key: RecordKey, newEntry: InteropIdentity) {
         val cacheView = registryService.getVirtualNodeRegistryView(key.holdingIdentityShortHash)
         val interopIdentities = cacheView.getIdentities()
 
@@ -92,7 +92,7 @@ class InteropIdentityProcessor(
         }
     }
 
-    private fun removeCacheEntry(key: RecordKey, oldEntry: InteropIdentity) {
+    private fun removeRegistryEntry(key: RecordKey, oldEntry: InteropIdentity) {
         val cacheView = registryService.getVirtualNodeRegistryView(key.holdingIdentityShortHash)
         val interopIdentities = cacheView.getIdentities()
 
@@ -121,15 +121,15 @@ class InteropIdentityProcessor(
         val newEntry = newValue?.let { InteropIdentity.of(it) }
 
         if ((newEntry != null) && (oldEntry != null)) {
-            updateCacheEntry(key, oldEntry, newEntry)
+            updateRegistryEntry(key, oldEntry, newEntry)
         }
 
         if (newEntry != null && oldEntry == null) {
-            insertCacheEntry(key, newEntry)
+            insertRegistryEntry(key, newEntry)
         }
 
         if (newEntry == null && oldEntry != null) {
-            removeCacheEntry(key, oldEntry)
+            removeRegistryEntry(key, oldEntry)
         }
 
         if (newEntry == null && oldEntry == null) {

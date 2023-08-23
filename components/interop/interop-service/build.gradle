@@ -58,5 +58,4 @@ dependencies {
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
     integrationTestRuntimeOnly project(':components:membership:membership-group-read-impl')
     integrationTestRuntimeOnly project(':components:interop:interop-identity-registry-service-impl')
-
 }

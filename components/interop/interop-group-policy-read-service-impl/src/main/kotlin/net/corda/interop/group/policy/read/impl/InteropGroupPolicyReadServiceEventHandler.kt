@@ -106,7 +106,7 @@ class InteropGroupPolicyReadServiceEventHandler(
             oldValue: String?,
             currentData: Map<String, String>,
         ) {
-            log.info("onNext currentData=${currentData.size} newRecord=${newRecord}" )
+            log.info("onNext currentData=${currentData.size} newRecord=${newRecord}")
             val key = newRecord.key
             val newEntry = newRecord.value
             if (newEntry == null) {
@@ -121,7 +121,7 @@ class InteropGroupPolicyReadServiceEventHandler(
         }
 
         override fun onSnapshot(currentData: Map<String, String>) {
-            log.info("onSnapshot=${currentData.size}" )
+            log.info("onSnapshot=${currentData.size}")
             currentData.entries.forEach {
                 addEntry(it.key, it.value)
             }
