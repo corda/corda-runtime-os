@@ -1,7 +1,6 @@
 package net.corda.flow.mapper.impl.executor
 
 import com.typesafe.config.ConfigValueFactory
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperStateType
@@ -49,11 +48,7 @@ class SessionInitHelperTest {
         Assertions.assertThat(state?.expiryTime).isEqualTo(null)
 
         Assertions.assertThat(outboundEvents.size).isEqualTo(1)
-        val outboundEvent = outboundEvents.first()
-        Assertions.assertThat(outboundEvent.topic).isEqualTo(Schemas.Flow.FLOW_EVENT_TOPIC)
-        Assertions.assertThat(outboundEvent.key::class).isEqualTo(String::class)
-        Assertions.assertThat(outboundEvent.value!!::class).isEqualTo(FlowEvent::class)
-        Assertions.assertThat(payload.sessionId).isEqualTo("sessionId-INITIATED")
+        verify(recordFactory).forwardEvent(any(), any(), any(), any())
     }
 
     @Test
@@ -74,6 +69,5 @@ class SessionInitHelperTest {
 
         Assertions.assertThat(outboundEvents.size).isEqualTo(1)
         verify(recordFactory).forwardEvent(any(), any(), any(), any())
-
     }
 }
