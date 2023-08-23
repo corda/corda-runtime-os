@@ -72,14 +72,13 @@ class ResultSetImplTest {
         assertThat(resultSet.hasNext()).isTrue
     }
 
-    /**
-     * Within the system, this scenario shouldn't be possible but a >= check has been added for safety.
-     */
     @Test
-    fun `hasNext returns true when the number of rows returned from next is greater than the limit`() {
-        whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults.copy(numberOfRowsFromQuery = 12))
+    fun `hasNext returns false when the number of rows returned is over the limit but can't be divided with it without remainder`() {
+        whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(
+            resultExecutorResults.copy(numberOfRowsFromQuery = 18) // Let's say we filtered out 10 and have 8 records
+        )
         resultSet.next()
-        assertThat(resultSet.hasNext()).isTrue
+        assertThat(resultSet.hasNext()).isFalse
     }
 
     @Test

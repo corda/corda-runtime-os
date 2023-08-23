@@ -43,7 +43,9 @@ data class ResultSetImpl<R> internal constructor(
         // 2. yield true if we can't know for sure if there's a next page
         // Example:
         // `limit` = 5, `numberOfRowsFromQuery` = 5, `hasNext = 5 % 5 == 0` => `hasNext =  0 == 0` == true
-        hasNext = numberOfRowsFromQuery != 0 && numberOfRowsFromQuery % limit == 0
+        hasNext = numberOfRowsFromQuery != 0  // If there are no rows left there's no more pages to fetch
+                && limit != 0 // If the limit is 0 it means we fetch everything in one go so there are no pages left
+                && numberOfRowsFromQuery % limit == 0
         offset += numberOfRowsFromQuery
         results = serializedResults.map { serializationService.deserialize(it.array(), resultClass) }
         return results
