@@ -86,14 +86,10 @@ class SessionEventHandler @Activate constructor(
     }
 
     private fun getSessionInitIfPresent(sessionEvent: SessionEvent?): SessionInit? {
-        if (sessionEvent == null) return null
-        val payload = sessionEvent.payload
-        return if (payload is SessionInit) {
-            payload
-        } else if (payload is SessionData && payload.sessionInit != null) {
-            payload.sessionInit
-        } else {
-            null
+        return when (val payload = sessionEvent?.payload) {
+            is SessionInit -> payload
+            is SessionData -> payload.sessionInit
+            else -> null
         }
     }
 
