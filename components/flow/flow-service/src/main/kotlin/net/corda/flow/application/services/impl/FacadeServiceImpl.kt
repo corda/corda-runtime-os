@@ -39,12 +39,13 @@ class FacadeServiceImpl @Activate constructor(
 
     //TODO CORE-16382 Change input of facadeId from String to FacadeId Object.
     @Suspendable
-    override fun <T : Any?> getProxy(facadeId: String?, expectedType: Class<T>?, interOpIdentity: InterOpIdentityInfo): T {
+    override fun <T : Any?> getProxy(facadeId: String?, expectedType: Class<T>?, interOpIdentity: InterOpIdentityInfo?): T {
         logger.info("Creating Proxy for: facadeId=$facadeId," +
-                " expectedType=$expectedType, interOpIdentity=${interOpIdentity.applicationName}, " +
-                "interopGroup=${interOpIdentity.groupId}") //TODO lower level to debug
-        require(facadeId != null)
-        require(expectedType != null)
+                " expectedType=$expectedType, interOpIdentity=${interOpIdentity?.applicationName}, " +
+                "interopGroup=${interOpIdentity?.groupId}") //TODO lower level to debug
+        requireNotNull(facadeId) { "Required value for facadeId was null." }
+        requireNotNull(expectedType) { "Required value for expectedType was null." }
+        requireNotNull(interOpIdentity) { "Required value for interOpIdentity was null." }
         val facade = facadeLookup(facadeId)
         val x500Name = MemberX500Name.parse(interOpIdentity.x500Name)
         val groupId = interOpIdentity.groupId

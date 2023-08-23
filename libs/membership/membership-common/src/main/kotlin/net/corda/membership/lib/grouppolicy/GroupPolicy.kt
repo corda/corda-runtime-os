@@ -38,19 +38,16 @@ interface GroupPolicy {
     /**
      * Fully qualified name of the registration protocol implementation required for the group.
      */
-
     val registrationProtocol: String
 
     /**
      * Fully qualified name of the synchronisation protocol implementation required for the group.
      */
-
     val synchronisationProtocol: String
 
     /**
      * Parameters required for the registration and synchronisation protocols.
      */
-
     val protocolParameters: ProtocolParameters
 
     /**
@@ -81,14 +78,12 @@ interface GroupPolicy {
          * [SessionKeyPolicy.COMBINED] means the same key is used for session initiation and ledger signing.
          * [SessionKeyPolicy.DISTINCT] means separate keys are used for sessions and ledger signing.
          */
-
         val sessionKeyPolicy: SessionKeyPolicy
 
         /**
          * Static network member configurations. Only present for static networks.
          * Extensible map of properties which represent a template to build a static network member.
          */
-
         val staticNetworkMembers: List<Map<String, Any>>?
 
         /**
@@ -106,26 +101,22 @@ interface GroupPolicy {
          * A collection of trust root certificates for session initiation as PEM strigns.
          * This is optional. If `sessionPki` mode is [SessionPkiMode.NO_PKI] then this will return null.
          */
-
         val sessionTrustRoots: Collection<String>?
 
         /**
          * A collection of TLS trust root certificates as PEM strings.
          * Parsing validates for at least one certificate.
          */
-
         val tlsTrustRoots: Collection<String>
 
         /**
          * The session PKI mode.
          */
-
         val sessionPki: SessionPkiMode
 
         /**
          * The TLS PKI mode.
          */
-
         val tlsPki: TlsPkiMode
 
         /**
@@ -136,13 +127,11 @@ interface GroupPolicy {
         /**
          * The P2P protocol mode.
          */
-
         val protocolMode: ProtocolMode
 
         /**
          * The P2P TLS type.
          */
-
         val tlsType: TlsType
 
         /**
