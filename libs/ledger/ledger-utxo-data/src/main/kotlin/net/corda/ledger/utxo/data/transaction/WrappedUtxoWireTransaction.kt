@@ -22,7 +22,7 @@ class WrappedUtxoWireTransaction(
 ) {
 
     init{
-        log.warn("WrappedUtxoWireTransaction init", Exception());
+        log.warn("WrappedUtxoWireTransaction init", Exception("WrappedUtxoWireTransaction init"));
     }
     companion object {
         const val notaryNameIndex: Int = 0
