@@ -14,7 +14,9 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedData
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
@@ -31,6 +33,8 @@ import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.lib.GroupParametersNotaryUpdater
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.retrieveSignatureSpec
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -62,6 +66,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import net.corda.data.identity.HoldingIdentity as AvroHoldingIdentity
 
 class MemberInfoReconcilerTest {
@@ -146,6 +151,7 @@ class MemberInfoReconcilerTest {
     private val publisherFactory = mock<PublisherFactory> {
         on { createPublisher(any(), eq(messagingConfig)) } doReturn publisher
     }
+    private val memberInfoFactory = mock<MemberInfoFactory>()
     private val memberInfoReconciler = MemberInfoReconciler(
         coordinatorFactory,
         dbConnectionManager,
@@ -156,6 +162,7 @@ class MemberInfoReconcilerTest {
         publisherFactory,
         subscriptionFactory,
         configurationReadService,
+        memberInfoFactory,
     )
 
     @Nested
@@ -316,11 +323,13 @@ class MemberInfoReconcilerTest {
             val key = "Key"
             val serialNumber = 26
 
-            val memberInfo = PersistentMemberInfo(
-                null,
-                null,
-                KeyValuePairList(listOf(KeyValuePair(MemberInfoExtension.SERIAL, serialNumber.toString())))
-            )
+            val mgmContextBytes = ByteBuffer.wrap(byteArrayOf(1))
+            whenever(deserializer.deserialize(mgmContextBytes.array()))
+                .doReturn(KeyValuePairList(listOf(KeyValuePair(MemberInfoExtension.SERIAL, serialNumber.toString()))))
+            val memberInfo = mock<PersistentMemberInfo> {
+                on { signedMemberContext } doReturn mock()
+                on { serializedMgmContext } doReturn mgmContextBytes
+            }
             processor.firstValue.onNext(Record("topic", key, memberInfo), null, emptyMap())
 
             val records = memberInfoReconciler.reconcilerReadWriter.getAllVersionedRecords()
@@ -340,23 +349,29 @@ class MemberInfoReconcilerTest {
 
             val key = "Key"
             val serialNumber = 26
-            val memberInfo = PersistentMemberInfo(
-                null,
-                null,
-                KeyValuePairList(listOf(KeyValuePair(MemberInfoExtension.SERIAL, serialNumber.toString())))
-            )
+
             val key1 = "Key1"
             val serialNumber1 = 32
-            val memberInfo1 = PersistentMemberInfo(
-                null,
-                null,
-                KeyValuePairList(listOf(KeyValuePair(MemberInfoExtension.SERIAL, serialNumber1.toString())))
-            )
+
+            val mgmContextBytes = ByteBuffer.wrap(byteArrayOf(1))
+            val mgmContextBytes1 = ByteBuffer.wrap(byteArrayOf(2))
+            whenever(deserializer.deserialize(mgmContextBytes.array()))
+                .doReturn(KeyValuePairList(listOf(KeyValuePair(MemberInfoExtension.SERIAL, serialNumber.toString()))))
+            whenever(deserializer.deserialize(mgmContextBytes1.array()))
+                .doReturn(KeyValuePairList(listOf(KeyValuePair(MemberInfoExtension.SERIAL, serialNumber1.toString()))))
+            val memberInfo = mock<PersistentMemberInfo> {
+                on { signedMemberContext } doReturn mock()
+                on { serializedMgmContext } doReturn mgmContextBytes
+            }
+            val memberInfo1 =  mock<PersistentMemberInfo> {
+                on { signedMemberContext } doReturn mock()
+                on { serializedMgmContext } doReturn mgmContextBytes1
+            }
             processor.firstValue.onSnapshot(mapOf(key to memberInfo, key1 to memberInfo1))
 
             val records = memberInfoReconciler.reconcilerReadWriter.getAllVersionedRecords()
 
-            assertThat(records?.toList()).hasSize(2)
+            assertThat(records.toList()).hasSize(2)
                 .anySatisfy {
                     assertThat(it.isDeleted).isFalse
                     assertThat(it.key).isEqualTo(key)
@@ -371,19 +386,68 @@ class MemberInfoReconcilerTest {
         }
 
         @Test
+        fun `getAllVersionedRecords handles old version of persistent info`() {
+            handler.firstValue.processEvent(configChangedEvent, coordinator)
+            val key = "Key"
+            val serialNumber = 26
+
+            val memberInfo = mock<PersistentMemberInfo> {
+                on { mgmContext } doReturn KeyValuePairList(listOf(KeyValuePair(MemberInfoExtension.SERIAL, serialNumber.toString())))
+                on { signedMemberContext } doReturn null
+                on { serializedMgmContext } doReturn null
+            }
+            processor.firstValue.onNext(Record("topic", key, memberInfo), null, emptyMap())
+
+            val records = memberInfoReconciler.reconcilerReadWriter.getAllVersionedRecords()
+
+            assertThat(records).hasSize(1)
+                .anySatisfy {
+                    assertThat(it.isDeleted).isFalse
+                    assertThat(it.key).isEqualTo(key)
+                    assertThat(it.version).isEqualTo(serialNumber)
+                    assertThat(it.value).isEqualTo(memberInfo)
+                }
+        }
+
+        @Test
+        fun `name parsing when exception is thrown handles old version of persistent info`() {
+            handler.firstValue.processEvent(configChangedEvent, coordinator)
+
+            val key = "Key"
+            val memberInfo = mock<PersistentMemberInfo> {
+                on { viewOwningMember } doReturn AvroHoldingIdentity("O=Alice, L=London, C=GB", "GROUP_ID")
+                on { memberContext } doReturn KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, "Alice")))
+                on { mgmContext } doReturn KeyValuePairList(listOf(KeyValuePair(MemberInfoExtension.SERIAL, "ABCD")))
+                on { signedMemberContext } doReturn null
+                on { serializedMgmContext } doReturn null
+            }
+            processor.firstValue.onNext(Record("topic", key, memberInfo), null, emptyMap())
+
+            assertThat(memberInfoReconciler.reconcilerReadWriter.getAllVersionedRecords().toList()).isEmpty()
+        }
+
+        @Test
         fun `getAllVersionedRecords handles NumberFormatException`() {
             handler.firstValue.processEvent(configChangedEvent, coordinator)
 
             val key = "Key"
-            val memberContext = KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, "Alice")))
-            val memberInfo = PersistentMemberInfo(
-                AvroHoldingIdentity("O=Alice, L=London, C=GB", "GROUP_ID"),
-                memberContext,
-                KeyValuePairList(listOf(KeyValuePair(MemberInfoExtension.SERIAL, "ABCD")))
-            )
+            val memberContextBytes = ByteBuffer.wrap(byteArrayOf(0))
+            val signedData = mock<SignedData> {
+                on { data } doReturn memberContextBytes
+            }
+            val mgmContextBytes = ByteBuffer.wrap(byteArrayOf(1))
+            whenever(deserializer.deserialize(memberContextBytes.array()))
+                .doReturn(KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, "Alice"))))
+            whenever(deserializer.deserialize(mgmContextBytes.array()))
+                .doReturn(KeyValuePairList(listOf(KeyValuePair(MemberInfoExtension.SERIAL, "ABCD"))))
+            val memberInfo = mock<PersistentMemberInfo> {
+                on { viewOwningMember } doReturn AvroHoldingIdentity("O=Alice, L=London, C=GB", "GROUP_ID")
+                on { signedMemberContext } doReturn signedData
+                on { serializedMgmContext } doReturn mgmContextBytes
+            }
             processor.firstValue.onNext(Record("topic", key, memberInfo), null, emptyMap())
 
-            assertThat(memberInfoReconciler.reconcilerReadWriter.getAllVersionedRecords()?.toList()).isEmpty()
+            assertThat(memberInfoReconciler.reconcilerReadWriter.getAllVersionedRecords().toList()).isEmpty()
         }
 
         @Test
@@ -391,15 +455,47 @@ class MemberInfoReconcilerTest {
             handler.firstValue.processEvent(configChangedEvent, coordinator)
 
             val key = "Key"
-            val memberContext = KeyValuePairList(emptyList())
-            val memberInfo = PersistentMemberInfo(
-                AvroHoldingIdentity("O=Alice, L=London, C=GB", "GROUP_ID"),
-                memberContext,
-                KeyValuePairList(emptyList())
-            )
+            val memberContextBytes = ByteBuffer.wrap(byteArrayOf(0))
+            val signedData = mock<SignedData> {
+                on { data } doReturn memberContextBytes
+            }
+            val mgmContextBytes = ByteBuffer.wrap(byteArrayOf(1))
+            whenever(deserializer.deserialize(memberContextBytes.array()))
+                .doReturn(KeyValuePairList(emptyList()))
+            whenever(deserializer.deserialize(mgmContextBytes.array()))
+                .doReturn(KeyValuePairList(emptyList()))
+            val memberInfo = mock<PersistentMemberInfo> {
+                on { viewOwningMember } doReturn AvroHoldingIdentity("O=Alice, L=London, C=GB", "GROUP_ID")
+                on { signedMemberContext } doReturn signedData
+                on { serializedMgmContext } doReturn mgmContextBytes
+            }
             processor.firstValue.onNext(Record("topic", key, memberInfo), null, emptyMap())
 
-            assertThat(memberInfoReconciler.reconcilerReadWriter.getAllVersionedRecords()?.toList()).isEmpty()
+            assertThat(memberInfoReconciler.reconcilerReadWriter.getAllVersionedRecords().toList()).isEmpty()
+        }
+
+        @Test
+        fun `getAllVersionedRecords handles ContextDeserializationException`() {
+            handler.firstValue.processEvent(configChangedEvent, coordinator)
+
+            val key = "Key"
+            val memberContextBytes = ByteBuffer.wrap(byteArrayOf(0))
+            val signedData = mock<SignedData> {
+                on { data } doReturn memberContextBytes
+            }
+            val mgmContextBytes = ByteBuffer.wrap(byteArrayOf(1))
+            whenever(deserializer.deserialize(memberContextBytes.array()))
+                .doReturn(KeyValuePairList(emptyList()))
+            whenever(deserializer.deserialize(mgmContextBytes.array()))
+                .doReturn(null)
+            val memberInfo = mock<PersistentMemberInfo> {
+                on { viewOwningMember } doReturn AvroHoldingIdentity("O=Alice, L=London, C=GB", "GROUP_ID")
+                on { signedMemberContext } doReturn signedData
+                on { serializedMgmContext } doReturn mgmContextBytes
+            }
+            processor.firstValue.onNext(Record("topic", key, memberInfo), null, emptyMap())
+
+            assertThat(memberInfoReconciler.reconcilerReadWriter.getAllVersionedRecords().toList()).isEmpty()
         }
     }
 
@@ -408,12 +504,20 @@ class MemberInfoReconcilerTest {
         @Test
         fun `put will publish the record`() {
             val key = "KEY"
-            val memberContext = KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, "Alice")))
-            val memberInfo = PersistentMemberInfo(
-                AvroHoldingIdentity("O=Alice, L=London, C=GB", "GROUP_ID"),
-                memberContext,
-                KeyValuePairList(listOf(KeyValuePair(MemberInfoExtension.SERIAL, "ABCD")))
-            )
+            val memberContextBytes = ByteBuffer.wrap(byteArrayOf(0))
+            val signedData = mock<SignedData> {
+                on { data } doReturn memberContextBytes
+            }
+            val mgmContextBytes = ByteBuffer.wrap(byteArrayOf(1))
+            whenever(deserializer.deserialize(memberContextBytes.array()))
+                .doReturn(KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, "Alice"))))
+            whenever(deserializer.deserialize(mgmContextBytes.array()))
+                .doReturn(KeyValuePairList(listOf(KeyValuePair(MemberInfoExtension.SERIAL, "ABCD"))))
+            val memberInfo = mock<PersistentMemberInfo> {
+                on { viewOwningMember } doReturn AvroHoldingIdentity("O=Alice, L=London, C=GB", "GROUP_ID")
+                on { signedMemberContext } doReturn signedData
+                on { serializedMgmContext } doReturn mgmContextBytes
+            }
             memberInfoReconciler.reconcilerReadWriter.put(key, memberInfo)
 
             verify(publisher).publish(
@@ -464,9 +568,15 @@ class MemberInfoReconcilerTest {
             val firstSerial = 106L
             val firstMemberContext = byteArrayOf(1, 2)
             val firstMgmContext = byteArrayOf(3, 4)
+            val signatureKey = byteArrayOf(1)
+            val signatureContent = byteArrayOf(2)
+            val signatureSpec = "test"
             val firstMockMemberInfoEntity = mock<MemberInfoEntity> {
                 on { memberX500Name } doReturn firstX500Name
                 on { memberContext } doReturn firstMemberContext
+                on { memberSignatureKey } doReturn signatureKey
+                on { memberSignatureContent } doReturn signatureContent
+                on { memberSignatureSpec } doReturn signatureSpec
                 on { mgmContext } doReturn firstMgmContext
                 on { serialNumber } doReturn firstSerial
                 on { isDeleted } doReturn true
@@ -478,6 +588,9 @@ class MemberInfoReconcilerTest {
             val secondMockMemberInfoEntity = mock<MemberInfoEntity> {
                 on { memberX500Name } doReturn secondX500Name
                 on { memberContext } doReturn secondMemberConetxt
+                on { memberSignatureKey } doReturn signatureKey
+                on { memberSignatureContent } doReturn signatureContent
+                on { memberSignatureSpec } doReturn signatureSpec
                 on { mgmContext } doReturn secondMgmContext
                 on { serialNumber } doReturn secondSerial
                 on { isDeleted } doReturn false
@@ -490,25 +603,46 @@ class MemberInfoReconcilerTest {
             }
             whenever(entityManager.criteriaBuilder).doReturn(criteriaBuilder)
             whenever(entityManager.createQuery(queryBuilder)).doReturn(reply)
-            val firstDeserializedMemberContext = mock<KeyValuePairList>()
-            val firstDeserializedMgmContext = mock<KeyValuePairList>()
-            val secondDeserializedMemberContext = mock<KeyValuePairList>()
-            val secondDeserializedMgmContext = mock<KeyValuePairList>()
-            whenever(deserializer.deserialize(firstMemberContext)).doReturn(firstDeserializedMemberContext)
-            whenever(deserializer.deserialize(firstMgmContext)).doReturn(firstDeserializedMgmContext)
-            whenever(deserializer.deserialize(secondMemberConetxt)).doReturn(secondDeserializedMemberContext)
-            whenever(deserializer.deserialize(secondMgmContext)).doReturn(secondDeserializedMgmContext)
-
+            val memberSignature = CryptoSignatureWithKey(ByteBuffer.wrap(signatureKey), ByteBuffer.wrap(signatureContent))
+            val memberSignatureSpec = retrieveSignatureSpec(signatureSpec)
+            whenever(
+                memberInfoFactory.createPersistentMemberInfo(
+                    viewOwningMember.toAvro(), firstMemberContext, firstMgmContext, signatureKey, signatureContent, signatureSpec
+                )
+            ).doReturn(
+                PersistentMemberInfo(
+                    viewOwningMember.toAvro(),
+                    null,
+                    null,
+                    SignedData(ByteBuffer.wrap(firstMemberContext), memberSignature, memberSignatureSpec),
+                    ByteBuffer.wrap(firstMgmContext),
+                )
+            )
+            whenever(
+                memberInfoFactory.createPersistentMemberInfo(
+                    viewOwningMember.toAvro(), secondMemberConetxt, secondMgmContext, signatureKey, signatureContent, signatureSpec
+                )
+            ).doReturn(
+                PersistentMemberInfo(
+                    viewOwningMember.toAvro(),
+                    null,
+                    null,
+                    SignedData(ByteBuffer.wrap(secondMemberConetxt), memberSignature, memberSignatureSpec),
+                    ByteBuffer.wrap(secondMgmContext),
+                )
+            )
 
             memberInfoReconciler.updateInterval(10)
 
-            val records = MemberInfoReconciler.getAllMemberInfo(virtualNodeReconcilationContext, deserializer)
+            val records = MemberInfoReconciler.getAllMemberInfo(virtualNodeReconcilationContext, memberInfoFactory)
 
             assertThat(records).hasSize(2)
                 .anySatisfy {
                     assertThat(it.value.viewOwningMember).isEqualTo(viewOwningMember.toAvro())
-                    assertThat(it.value.memberContext).isEqualTo(firstDeserializedMemberContext)
-                    assertThat(it.value.mgmContext).isEqualTo(firstDeserializedMgmContext)
+                    assertThat(it.value.signedMemberContext.data.array()).isEqualTo(firstMemberContext)
+                    assertThat(it.value.serializedMgmContext.array()).isEqualTo(firstMgmContext)
+                    assertThat(it.value.signedMemberContext.signature).isEqualTo(memberSignature)
+                    assertThat(it.value.signedMemberContext.signatureSpec).isEqualTo(memberSignatureSpec)
                     assertThat(it.version).isEqualTo(firstSerial)
                     assertThat(it.key)
                         .isEqualTo("${viewOwningMember.shortHash}-${HoldingIdentity(MemberX500Name.parse(firstX500Name), group).shortHash}")
@@ -516,8 +650,10 @@ class MemberInfoReconcilerTest {
                  }
                 .anySatisfy {
                     assertThat(it.value.viewOwningMember).isEqualTo(viewOwningMember.toAvro())
-                    assertThat(it.value.memberContext).isEqualTo(secondDeserializedMemberContext)
-                    assertThat(it.value.mgmContext).isEqualTo(secondDeserializedMgmContext)
+                    assertThat(it.value.signedMemberContext.data.array()).isEqualTo(secondMemberConetxt)
+                    assertThat(it.value.serializedMgmContext.array()).isEqualTo(secondMgmContext)
+                    assertThat(it.value.signedMemberContext.signature).isEqualTo(memberSignature)
+                    assertThat(it.value.signedMemberContext.signatureSpec).isEqualTo(memberSignatureSpec)
                     assertThat(it.key)
                         .isEqualTo(
                             "${viewOwningMember.shortHash}-${HoldingIdentity(MemberX500Name.parse(secondX500Name), group).shortHash}"
@@ -543,7 +679,7 @@ class MemberInfoReconcilerTest {
             whenever(entityManager.criteriaBuilder).doReturn(criteriaBuilder)
             whenever(entityManager.createQuery(queryBuilder)).doReturn(mock())
 
-            MemberInfoReconciler.getAllMemberInfo(virtualNodeReconcilationContext, deserializer)
+            MemberInfoReconciler.getAllMemberInfo(virtualNodeReconcilationContext, memberInfoFactory)
 
             verify(entityManager).createQuery(queryBuilder)
         }

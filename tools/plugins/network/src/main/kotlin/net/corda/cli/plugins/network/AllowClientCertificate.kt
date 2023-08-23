@@ -2,7 +2,7 @@ package net.corda.cli.plugins.network
 
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
-import net.corda.cli.plugins.network.utils.PrintUtils.Companion.verifyAndPrintError
+import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.membership.rest.v1.MGMRestResource
 import picocli.CommandLine.Command
 import picocli.CommandLine.Parameters

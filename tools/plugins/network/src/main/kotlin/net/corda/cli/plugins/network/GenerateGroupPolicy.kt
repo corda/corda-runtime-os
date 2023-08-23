@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.cli.plugins.network.output.ConsoleOutput
-import net.corda.cli.plugins.network.utils.PrintUtils.Companion.printJsonOutput
-import net.corda.cli.plugins.network.utils.PrintUtils.Companion.verifyAndPrintError
+import net.corda.cli.plugins.network.utils.PrintUtils.printJsonOutput
+import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import org.yaml.snakeyaml.Yaml
 import picocli.CommandLine
 import java.nio.file.Path

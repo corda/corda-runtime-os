@@ -10,7 +10,7 @@ internal class RegistrationContextCustomFieldsVerifier {
         const val MAX_CUSTOM_FIELDS = 100
     }
 
-    fun verify(context: Map<String, String>): Result {
+    fun verify(context: Map<String, String?>): Result {
         val customFields = context.filter { it.key.startsWith("$CUSTOM_KEY_PREFIX.") }
         if (customFields.size > MAX_CUSTOM_FIELDS ) {
             return Result.Failure(
@@ -25,8 +25,8 @@ internal class RegistrationContextCustomFieldsVerifier {
                 errorMessages += "The key: ${it.key} has too many characters (${it.key.length}). Maximum of $MAX_KEY_LENGTH characters " +
                    "allowed.\n"
             }
-            if (it.value.length > MAX_VALUE_LENGTH) {
-                errorMessages += "The key: ${it.key} has a value which has too many characters (${it.value.length}). Maximum of" +
+            if ((it.value?.length ?: 0) > MAX_VALUE_LENGTH) {
+                errorMessages += "The key: ${it.key} has a value which has too many characters (${it.value?.length}). Maximum of" +
                    " $MAX_VALUE_LENGTH characters allowed.\n"
             }
         }

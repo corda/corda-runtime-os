@@ -11,6 +11,7 @@ import java.security.PublicKey
  * @param keyMaterialSpec The spec for the wrapped key.
  * @param keyScheme The scheme for the key used for signing operation.
  * @param signatureSpec The signature spec to use for signing, such as SHA256withECDSA, etc.
+ * @param category The category of the key, if specified.
  */
 data class SigningWrappedSpec(
     /**
@@ -20,6 +21,7 @@ data class SigningWrappedSpec(
     val publicKey: PublicKey,
     val keyScheme: KeyScheme,
     val signatureSpec: SignatureSpec,
+    val category: String? = null
 ) {
 
     /**

@@ -4,6 +4,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
+import net.corda.membership.lib.ContextDeserializationException
 
 /**
  * The member ops client to perform group operations.
@@ -49,6 +50,7 @@ interface MemberResourceClient : Lifecycle {
      *
      * @throws RegistrationProgressNotFoundException if there was no registration request for given request id. Could
      * happen when the registration request had NOT_SUBMITTED status or if [startRegistration] wasn't called at all.
+     * @throws ContextDeserializationException if the request context could not be deserialized
      *
      * @return [RegistrationRequestStatusDto] to indicate the last known status of the registration request based on
      * local member data.
