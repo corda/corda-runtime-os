@@ -20,7 +20,7 @@ class UtxoLedgerTransactionImpl(
     private val wrappedWireTransaction: WrappedUtxoWireTransaction,
     private val inputStateAndRefs: List<StateAndRef<*>>,
     private val referenceStateAndRefs: List<StateAndRef<*>>,
-    private val groupParameters: GroupParameters
+    private val groupParameters: GroupParameters?
 ) : UtxoLedgerTransactionInternal {
 
     init {
@@ -117,7 +117,13 @@ class UtxoLedgerTransactionImpl(
         return outputContractStates.filterIsInstance(type)
     }
 
+    /*
+    * The null check in the method is to prevent 5.0 from hitting this method since this field doesn't exist in 5.0
+    */
     override fun getGroupParameters(): GroupParameters {
+        requireNotNull(groupParameters) {
+            "Group parameters can't be accessed for the transaction = ${this.id}"
+        }
         return groupParameters
     }
 

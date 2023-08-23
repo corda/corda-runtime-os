@@ -10,5 +10,5 @@ data class UtxoLedgerTransactionContainer(
     val wireTransaction: WireTransaction,
     val inputStateAndRefs: List<StateAndRef<*>>,
     val referenceStateAndRefs: List<StateAndRef<*>>,
-    val groupParameters: SignedGroupParameters
+    val groupParameters: SignedGroupParameters?
 )
