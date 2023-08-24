@@ -2,27 +2,21 @@
 
 package net.corda.tracing
 
-import io.javalin.core.JavalinConfig
+import brave.http.HttpTracing
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
-import net.corda.tracing.impl.BraveTracingService
-import net.corda.tracing.impl.PerSecond
-import net.corda.tracing.impl.SampleRate
-import net.corda.tracing.impl.TracingState
-import net.corda.tracing.impl.Unlimited
+import net.corda.tracing.impl.*
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import org.eclipse.jetty.servlet.FilterHolder
-import java.util.EnumSet
 import java.util.concurrent.ExecutorService
-import javax.servlet.DispatcherType
 
 private fun parseUnsignedIntWithErrorHandling(string: String) = try {
     Integer.parseUnsignedInt(string)
 } catch (e: NumberFormatException) {
     throw CordaRuntimeException("Invalid --trace-samples-per-second, failed to parse \"$string\" as unsigned int", e)
 }
+
 private fun readSampleRateString(samplesPerSecond: String?): SampleRate = when {
     samplesPerSecond.isNullOrEmpty() -> PerSecond(1)
     samplesPerSecond.lowercase() == "unlimited" -> Unlimited
@@ -72,7 +66,7 @@ fun addTraceContextToRecord(it: CordaProducerRecord<*, *>): CordaProducerRecord<
 }
 
 fun traceSend(
-    headers: List<Pair<String,String>>,
+    headers: List<Pair<String, String>>,
     operationName: String
 ): TraceContext {
     return TracingState.currentTraceService.nextSpan(operationName, headers)
@@ -138,15 +132,6 @@ fun shutdownTracing() {
     TracingState.currentTraceService.close()
 }
 
-/**
- * Configure Javalin to read trace IDs from requests or generate new ones if missing.
- */
-fun configureJavalinForTracing(config: JavalinConfig) {
-    config.configureServletContextHandler { sch ->
-        sch.addFilter(
-            FilterHolder(TracingState.currentTraceService.getTracedServletFilter()),
-            "/*",
-            EnumSet.of(DispatcherType.INCLUDE, DispatcherType.REQUEST)
-        )
-    }
+fun getTracing(): HttpTracing {
+    return TracingState.currentTraceService.getTracing()
 }
