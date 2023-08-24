@@ -251,6 +251,10 @@ allprojects {
         inputs.property('postresUser', postgresUser)
         inputs.property('postgresPassword', postgresPassword)
 
+        inputs.property('mssqlPort', mssqlPort)
+        inputs.property('mssqlUser', mssqlUser)
+        inputs.property('mssqlPassword', mssqlPassword)
+
         description = "Runs integration tests."
         group = "verification"
 
@@ -264,6 +268,11 @@ allprojects {
         systemProperty 'postgresPassword', postgresPassword
         systemProperty 'org.slf4j.simpleLogger.showDateTime', true
         systemProperty 'org.slf4j.simpleLogger.dateTimeFormat', 'yyyy-MM-dd HH:mm:ss:SSS Z'
+        systemProperty 'mssqlHost', mssqlHost
+        systemProperty 'mssqlDb', mssqlDb
+        systemProperty 'mssqlPort', mssqlPort
+        systemProperty 'mssqlUser',mssqlUser
+        systemProperty 'mssqlPassword',mssqlPassword
 
         shouldRunAfter tasks.named('test', Test)
     }
