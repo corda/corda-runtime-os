@@ -7,9 +7,10 @@ import javax.persistence.Id
 import javax.persistence.Lob
 import javax.persistence.Table
 import javax.persistence.Version
+import net.corda.db.schema.DbSchema
 
 @Entity
-@Table(name = "state")
+@Table(name = DbSchema.STATE_MANAGER_TABLE)
 internal class StateEntity(
     @Id
     @Column(name = "key", length = 255)

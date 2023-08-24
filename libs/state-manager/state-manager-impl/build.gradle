@@ -5,7 +5,7 @@ plugins {
 description 'State Manager Implementation'
 
 dependencies {
-    compileOnly "org.osgi:org.osgi.service.component.annotations:$osgiServiceComponentVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
 
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-db-schema"
@@ -21,4 +21,14 @@ dependencies {
     implementation project(':libs:db:db-core')
     implementation project(':libs:db:db-orm')
     implementation project(':libs:serialization:serialization-avro')
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    integrationTestImplementation project(':libs:db:db-admin')
+    integrationTestImplementation project(':libs:db:db-admin-impl')
+    integrationTestImplementation project(':libs:db:db-orm-impl')
+    integrationTestImplementation project(':testing:db-testkit')
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }

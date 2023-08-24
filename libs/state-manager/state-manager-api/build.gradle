@@ -6,11 +6,11 @@ description 'State Manager API'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
-    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     api project(":libs:configuration:configuration-core")
 
-    implementation "net.corda:corda-base:$cordaApiVersion"
+    implementation "net.corda:corda-base"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 }

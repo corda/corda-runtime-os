@@ -17,15 +17,14 @@ import net.corda.orm.utils.transaction
 class StateManagerImpl(
     private val stateManagerRepository: StateManagerRepository,
     private val entityManagerFactory: EntityManagerFactory,
-    private val serializerFactory: CordaAvroSerializationFactory
+    private val serializerFactory: CordaAvroSerializationFactory,
+    private val serializers: MutableMap<Class<*>, CordaAvroSerializer<*>> = ConcurrentHashMap(),
+    private val deserializers: MutableMap<Class<*>, CordaAvroDeserializer<*>> = ConcurrentHashMap(),
 ) : StateManager {
 
-    private val objectMapper = object : ThreadLocal<ObjectMapper>() {
+    private val objectMapper: ThreadLocal<ObjectMapper> = object : ThreadLocal<ObjectMapper>() {
         override fun initialValue() = ObjectMapper()
     }
-
-    private val serializers: MutableMap<Class<*>, CordaAvroSerializer<*>> = ConcurrentHashMap()
-    private val deserializers: MutableMap<Class<*>, CordaAvroDeserializer<*>> = ConcurrentHashMap()
 
     override fun <S : Any> get(clazz: Class<S>, keys: Set<String>): Map<String, State<S>> {
         val deserializer = getOrCreateDeserializer(clazz)
