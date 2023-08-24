@@ -17,7 +17,7 @@ import net.corda.data.chunking.Chunk
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
-import net.corda.db.testkit.DbUtils
+import net.corda.db.testkit.PostgresDbUtils
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
@@ -29,7 +29,7 @@ import org.junit.jupiter.api.TestInstance
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RecreateBinaryTest {
-    private val emConfig = DbUtils.getEntityManagerConfiguration("chunking_db_for_test")
+    private val emConfig = PostgresDbUtils.getEntityManagerConfiguration("chunking_db_for_test")
     private val entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
         "test_unit",
         ChunkingEntities.classes.toList(),

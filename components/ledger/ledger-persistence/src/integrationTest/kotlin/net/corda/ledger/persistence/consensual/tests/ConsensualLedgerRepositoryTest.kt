@@ -275,6 +275,7 @@ class ConsensualLedgerRepositoryTest {
 
     @Test
     fun `can persist links between signed transaction and existing CPKs`() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val account = "Account"
         // truncating to millis as on windows builds the micros are lost after fetching the data from Postgres
         val createdTs = Instant.now().truncatedTo(ChronoUnit.MILLIS)

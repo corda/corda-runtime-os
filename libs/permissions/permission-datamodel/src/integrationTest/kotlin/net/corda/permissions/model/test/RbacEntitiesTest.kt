@@ -4,7 +4,7 @@ import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
-import net.corda.db.testkit.DbUtils
+import net.corda.db.testkit.PostgresDbUtils
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.utils.transaction
@@ -40,7 +40,7 @@ class RbacEntitiesTest {
 
         lateinit var emf: EntityManagerFactory
 
-        private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("rbac")
+        private val dbConfig: EntityManagerConfiguration = PostgresDbUtils.getEntityManagerConfiguration("rbac")
 
         @Suppress("unused")
         @JvmStatic

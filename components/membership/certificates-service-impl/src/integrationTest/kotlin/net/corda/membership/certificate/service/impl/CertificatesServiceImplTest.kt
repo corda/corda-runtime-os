@@ -6,7 +6,7 @@ import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.DbSchema
-import net.corda.db.testkit.DbUtils
+import net.corda.db.testkit.PostgresDbUtils
 import net.corda.membership.certificate.service.CertificatesService
 import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.certificates.datamodel.Certificate
@@ -31,7 +31,7 @@ import javax.persistence.EntityManagerFactory
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class CertificatesServiceImplTest {
-    private val emConfig = DbUtils.getEntityManagerConfiguration("db_for_test")
+    private val emConfig = PostgresDbUtils.getEntityManagerConfiguration("db_for_test")
     private val entityManagerFactory: EntityManagerFactory
     private val certificatesService: CertificatesService
 
@@ -76,7 +76,7 @@ internal class CertificatesServiceImplTest {
                 EntityManagerFactoryFactoryImpl().create(
                     "test_vnode_unit",
                     CertificateEntities.vnodeClasses.toList(),
-                    DbUtils.getEntityManagerConfiguration("db_for_test")
+                    PostgresDbUtils.getEntityManagerConfiguration("db_for_test")
                 )
             }
         }

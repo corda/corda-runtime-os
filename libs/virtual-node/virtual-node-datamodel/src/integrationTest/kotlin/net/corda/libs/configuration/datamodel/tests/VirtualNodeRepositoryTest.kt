@@ -8,7 +8,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
-import net.corda.db.testkit.DbUtils
+import net.corda.db.testkit.PostgresDbUtils
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
@@ -40,7 +40,7 @@ import org.junit.jupiter.api.assertThrows
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class VirtualNodeRepositoryTest {
-    private val dbConfig = DbUtils.getEntityManagerConfiguration(this::class.java.simpleName)
+    private val dbConfig = PostgresDbUtils.getEntityManagerConfiguration(this::class.java.simpleName)
     private val entityManagerFactory: EntityManagerFactory
 
     private companion object {

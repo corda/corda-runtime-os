@@ -7,7 +7,7 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.db.persistence.testkit.components.VirtualNodeService
-import net.corda.db.testkit.DbUtils
+import net.corda.db.testkit.PostgresDbUtils
 import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl

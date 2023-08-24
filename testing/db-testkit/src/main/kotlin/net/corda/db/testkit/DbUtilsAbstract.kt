@@ -62,7 +62,6 @@ abstract class DbUtilsAbstract {
         rewriteBatchedInserts: Boolean = false
     ): CloseableDataSource {
         val factory = getFactory()
-
         val user = dbUser ?: admin_user
         val password = dbPassword ?: admin_password
         if (!schemaName.isNullOrBlank()) {
@@ -70,15 +69,18 @@ abstract class DbUtilsAbstract {
                 logger.info("Creating schema: $schemaName".emphasise())
                 factory.create(jdbcURL, user, password, maximumPoolSize = 1).connection.createSchema(schemaName)
             }
-            jdbcURL = if (rewriteBatchedInserts) {
+            val jdbcURLCopy = if (rewriteBatchedInserts) {
                 "$jdbcURL?currentSchema=$schemaName&reWriteBatchedInserts=true"
             } else {
                 "$jdbcURL?currentSchema=$schemaName"
             }
+            logger.info("Using Postgres URL $jdbcURL".emphasise())
+            return factory.create(jdbcURLCopy,user,password)
         }
         logger.info("Using Postgres URL $jdbcURL".emphasise())
         return factory.create(jdbcURL, user, password)
     }
+
 
     abstract fun createConfig(
         inMemoryDbName: String,
@@ -86,13 +88,12 @@ abstract class DbUtilsAbstract {
         dbPassword: String? = null,
         schemaName: String? = null
     ): Config
+}
 
-
-    fun Connection.createSchema(schemaName: String?) {
-        requireNotNull(schemaName)
-        this.use { conn ->
-            conn.prepareStatement("CREATE SCHEMA IF NOT EXISTS $schemaName;").execute()
-            conn.commit()
-        }
+private fun Connection.createSchema(schemaName: String?) {
+    requireNotNull(schemaName)
+    this.use { conn ->
+        conn.prepareStatement("CREATE SCHEMA IF NOT EXISTS $schemaName;").execute()
+        conn.commit()
     }
 }

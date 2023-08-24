@@ -5,7 +5,7 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.testkit.DatabaseInstaller
-import net.corda.db.testkit.DbUtils
+import net.corda.db.testkit.PostgresDbUtils
 import net.corda.db.testkit.TestDbInfo
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
@@ -70,7 +70,7 @@ class JPABackingStoreImplBenchmark {
     private val numOpsPerIter = System.getProperty("bsBenchNumOpsPerIteration").toInt()
 
     private val clusterDbConfig =
-        DbUtils.getEntityManagerConfiguration(inMemoryDbName = "clusterdb", showSql = false)
+        PostgresDbUtils.getEntityManagerConfiguration(inMemoryDbName = "clusterdb", showSql = false)
 
     private var currentTestExecTimeMs = 0L
     private val resultsMap = TreeMap<String, Int>()
@@ -341,7 +341,7 @@ class JPABackingStoreImplBenchmark {
 
         // Now have a valid file with header, write new row with the results of this run
         file.appendText("${Instant.now()}," +
-                "${if (DbUtils.isInMemory) "HSQLDB" else "Postgres"}," +
+                "${if (PostgresDbUtils.isInMemory) "HSQLDB" else "Postgres"}," +
                 "$numIterations,$numOpsPerIter,${resultsMap.values.joinToString(",")}\n")
 
         log.info("Results written to ${file.canonicalPath}")

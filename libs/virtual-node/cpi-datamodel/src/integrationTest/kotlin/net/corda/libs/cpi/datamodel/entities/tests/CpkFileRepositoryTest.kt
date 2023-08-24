@@ -4,7 +4,7 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
-import net.corda.db.testkit.DbUtils
+import net.corda.db.testkit.PostgresDbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.entities.internal.CpkFileEntity
 import net.corda.libs.cpi.datamodel.repository.impl.CpkFileRepositoryImpl
@@ -22,7 +22,7 @@ import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CpkFileRepositoryTest {
 
-    private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("cpk_file_db")
+    private val dbConfig: EntityManagerConfiguration = PostgresDbUtils.getEntityManagerConfiguration("cpk_file_db")
     private val emf = EntityManagerFactoryFactoryImpl().create(
         "test_unit",
         CpiEntities.classes.toList(),

@@ -5,7 +5,7 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.testkit.DatabaseInstaller
-import net.corda.db.testkit.DbUtils
+import net.corda.db.testkit.PostgresDbUtils
 import net.corda.db.testkit.TestDbInfo
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
@@ -89,7 +89,7 @@ class JPABackingStoreImplIntegrationTests {
     private val groupId = UUID.randomUUID().toString()
     private val notaryVNodeIdentity = createTestHoldingIdentity("C=GB, L=London, O=NotaryRep1", groupId)
     private val notaryVNodeIdentityDbName = VirtualNodeDbType.UNIQUENESS.getSchemaName(notaryVNodeIdentity.shortHash)
-    private val dbConfig = DbUtils.getEntityManagerConfiguration(notaryVNodeIdentityDbName)
+    private val dbConfig = PostgresDbUtils.getEntityManagerConfiguration(notaryVNodeIdentityDbName)
     private val databaseInstaller = DatabaseInstaller(
         EntityManagerFactoryFactoryImpl(),
         LiquibaseSchemaMigratorImpl(),

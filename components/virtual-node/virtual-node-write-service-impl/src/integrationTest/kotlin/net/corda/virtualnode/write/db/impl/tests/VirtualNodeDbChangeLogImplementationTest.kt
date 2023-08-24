@@ -2,7 +2,7 @@ package net.corda.virtualnode.write.db.impl.tests
 
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
-import net.corda.db.testkit.DbUtils
+import net.corda.db.testkit.PostgresDbUtils
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import org.assertj.core.api.Assertions.assertThat
@@ -42,7 +42,7 @@ class VirtualNodeDbChangeLogImplementationTest  {
 """
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private val dbConfig = DbUtils.getEntityManagerConfiguration("test")
+        private val dbConfig = PostgresDbUtils.getEntityManagerConfiguration("test")
         private val fakeId = UUID.randomUUID()
     }
 

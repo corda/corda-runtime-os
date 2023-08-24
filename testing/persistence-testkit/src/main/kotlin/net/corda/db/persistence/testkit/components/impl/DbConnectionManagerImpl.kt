@@ -5,7 +5,7 @@ import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.db.persistence.testkit.components.DataSourceAdmin
 import net.corda.db.schema.CordaDb
-import net.corda.db.testkit.DbUtils
+import net.corda.db.testkit.PostgresDbUtils
 import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
@@ -61,7 +61,7 @@ class DbConnectionManagerImpl @Activate constructor(
 
     override fun getOrCreateDataSource(id: UUID, name: String): CloseableDataSource {
         return dataSources.computeIfAbsent(id) { dbId ->
-            val configuration = DbUtils.getEntityManagerConfiguration(
+            val configuration = PostgresDbUtils.getEntityManagerConfiguration(
                 "testkit-db-manager-db-$schemaName",
                 schemaName = "$schemaName$name".replace("-", ""),
                 createSchema = true

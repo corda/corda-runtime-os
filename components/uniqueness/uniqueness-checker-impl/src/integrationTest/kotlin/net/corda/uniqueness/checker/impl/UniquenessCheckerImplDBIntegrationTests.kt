@@ -9,7 +9,7 @@ import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
 import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
-import net.corda.db.testkit.DbUtils
+import net.corda.db.testkit.PostgresDbUtils
 import net.corda.db.testkit.TestDbInfo
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -59,7 +59,7 @@ import kotlin.test.assertEquals
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class UniquenessCheckerImplDBIntegrationTests {
 
-    private val clusterDbConfig = DbUtils.getEntityManagerConfiguration("clusterdb")
+    private val clusterDbConfig = PostgresDbUtils.getEntityManagerConfiguration("clusterdb")
 
     private val baseTime: Instant = Instant.EPOCH
 

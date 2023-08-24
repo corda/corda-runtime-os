@@ -4,7 +4,7 @@ import net.corda.crypto.core.parseSecureHash
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
-import net.corda.db.testkit.DbUtils
+import net.corda.db.testkit.PostgresDbUtils
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
@@ -34,7 +34,7 @@ import javax.persistence.EntityManagerFactory
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class VirtualNodeEntityRepositoryTest {
-    private val emConfig = DbUtils.getEntityManagerConfiguration("chunking_db_for_test")
+    private val emConfig = PostgresDbUtils.getEntityManagerConfiguration("chunking_db_for_test")
     private val entityManagerFactory: EntityManagerFactory
     private val repository: VirtualNodeEntityRepository
     private val cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository()
