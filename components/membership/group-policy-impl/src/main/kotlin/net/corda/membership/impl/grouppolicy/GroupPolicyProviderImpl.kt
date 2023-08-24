@@ -94,6 +94,9 @@ class GroupPolicyProviderImpl @Activate constructor(
     private var messagingConfig: SmartConfig? = null
 
     override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = impl.getGroupPolicy(holdingIdentity)
+
+    override fun getP2PParameters(holdingIdentity: HoldingIdentity): GroupPolicy.P2PParameters? = impl.getGroupPolicy(holdingIdentity)?.p2pParameters
+
     override fun registerListener(name: String, callback: (HoldingIdentity, GroupPolicy) -> Unit) {
         val listener = Listener(name, callback)
         messagingConfig?.also {

@@ -44,6 +44,10 @@ class TestGroupPolicyProviderImpl @Activate constructor(
         policies[holdingIdentity] = groupPolicy
     }
 
+    override fun getP2PParameters(holdingIdentity: HoldingIdentity): GroupPolicy.P2PParameters? {
+       return policies[holdingIdentity]?.p2pParameters
+    }
+
     override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = policies[holdingIdentity]
 
     override fun registerListener(name: String, callback: (HoldingIdentity, GroupPolicy) -> Unit) {

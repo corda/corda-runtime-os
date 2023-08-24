@@ -42,22 +42,24 @@ import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.AuthenticationResult
+import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
 import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.InvalidPeerCertificate
+import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
+import net.corda.p2p.crypto.protocol.api.NoCommonModeError
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.delivery.InMemorySessionReplayer
+import net.corda.p2p.linkmanager.grouppolicy.protocolModes
 import net.corda.p2p.linkmanager.hosting.HostingMapListener
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.sessions.SessionManager.SessionState.NewSessionsNeeded
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import net.corda.p2p.linkmanager.utilities.mockMemberInfo
-import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
-import net.corda.schema.Schemas.P2P.P2P_OUT_MARKERS
-import net.corda.schema.Schemas.P2P.SESSION_OUT_PARTITIONS
+import net.corda.schema.Schemas.P2P.*
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.MockTimeFacilitiesProvider
 import net.corda.utilities.days
@@ -96,13 +98,8 @@ import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.time.Duration
 import java.time.Instant
-import java.util.Collections
+import java.util.*
 import java.util.concurrent.CompletableFuture
-import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
-import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
-import net.corda.p2p.crypto.protocol.api.NoCommonModeError
-import net.corda.p2p.linkmanager.grouppolicy.protocolModes
-import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 class SessionManagerTest {
@@ -1097,7 +1094,7 @@ class SessionManagerTest {
         )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         whenever(protocolResponder.validateEncryptedExtensions(
             CertificateCheckMode.NoCertificate,
-            groupPolicy.protocolModes,
+            groupPolicy.p2pParameters.protocolModes,
             PEER_MEMBER_INFO.name
         )).thenThrow(InvalidPeerCertificate("Invalid peer certificate"))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
@@ -1128,7 +1125,7 @@ class SessionManagerTest {
         )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
         whenever(protocolResponder.validateEncryptedExtensions(
             CertificateCheckMode.NoCertificate,
-            groupPolicy.protocolModes,
+            groupPolicy.p2pParameters.protocolModes,
             PEER_MEMBER_INFO.name
         )).thenThrow(NoCommonModeError(setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), setOf(ProtocolMode.AUTHENTICATION_ONLY)))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))

@@ -9,6 +9,9 @@ import net.corda.virtualnode.HoldingIdentity
  */
 interface GroupPolicyProvider : Lifecycle {
 
+
+    fun getP2PParameters(holdingIdentity: HoldingIdentity): GroupPolicy.P2PParameters?
+
     /**
      * Retrieves the [GroupPolicy] object for a given member based on the member's holding identity.
      **
@@ -17,6 +20,7 @@ interface GroupPolicyProvider : Lifecycle {
      *  identity. Returns null if no group policy was found or if error occurs when retrieving group policy.
      */
     fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy?
+
 
     /**
      * Registers a listener callback in order to be notified for creation of a new group policy or update of an existing one.

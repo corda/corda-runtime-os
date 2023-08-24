@@ -120,6 +120,10 @@ fun mockGroups(holdingIdentities: Collection<HoldingIdentity>): GroupPolicyProvi
             }
         }
 
+        override fun getP2PParameters(holdingIdentity: HoldingIdentity): GroupPolicy.P2PParameters? {
+            return getGroupPolicy(holdingIdentity)?.p2pParameters
+        }
+
         override fun registerListener(name: String, callback: (HoldingIdentity, GroupPolicy) -> Unit) {
         }
 

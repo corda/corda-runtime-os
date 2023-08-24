@@ -5,6 +5,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.virtualnode.HoldingIdentity
 
 internal class GroupPolicyProviderStub : GroupPolicyProvider {
+    override fun getP2PParameters(holdingIdentity: HoldingIdentity): GroupPolicy.P2PParameters? = throw UnsupportedOperationException()
     override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = throw UnsupportedOperationException()
 
     override fun registerListener(

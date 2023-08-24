@@ -183,7 +183,7 @@ class MessageConverter {
                 message,
                 source,
                 destMemberInfo,
-                groupPolicy.networkType,
+                groupPolicy.p2pParameters.networkType,
                 )
         }
 
@@ -232,8 +232,8 @@ class MessageConverter {
                         "which is not in the network map. The message was discarded.")
                 return null
             }
-            val groupPolicy = groupPolicyProvider.getGroupPolicy(source)
-            if (groupPolicy == null) {
+            val p2pParams = groupPolicyProvider.getP2PParameters(source)
+            if (p2pParams == null) {
                 logger.warn(
                     "Could not find the group info in the " +
                         "GroupPolicyProvider for our identity = $source. The message was discarded."
@@ -245,7 +245,7 @@ class MessageConverter {
                 result,
                 source,
                 destMemberInfo,
-                groupPolicy.networkType,
+                p2pParams.networkType,
             )
         }
 

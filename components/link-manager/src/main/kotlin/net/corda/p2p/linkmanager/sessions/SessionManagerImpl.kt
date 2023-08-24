@@ -9,6 +9,7 @@ import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.SessionPartitions
 import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage
@@ -26,11 +27,9 @@ import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.membership.lib.grouppolicy.GroupPolicy
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.CORDA_4
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.STANDARD
-import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.STANDARD_EV3
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.*
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -38,8 +37,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
 import net.corda.metrics.CordaMetrics.Metric.InboundSessionCount
 import net.corda.metrics.CordaMetrics.Metric.OutboundSessionCount
-import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
@@ -47,6 +44,8 @@ import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.InvalidPeerCertificate
+import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
+import net.corda.p2p.crypto.protocol.api.NoCommonModeError
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
@@ -74,9 +73,7 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.ourIdNotInMembe
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.peerHashNotInMembersMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.peerNotInTheMembersMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.validationFailedWarning
-import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
-import net.corda.schema.Schemas.P2P.P2P_OUT_MARKERS
-import net.corda.schema.Schemas.P2P.SESSION_OUT_PARTITIONS
+import net.corda.schema.Schemas.P2P.*
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.time.Clock
@@ -86,8 +83,7 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.util.Base64
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -95,8 +91,6 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
-import net.corda.p2p.crypto.protocol.api.NoCommonModeError
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
@@ -432,8 +426,8 @@ internal class SessionManagerImpl(
         multiplicity: Int
     ): List<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>> {
 
-        val groupPolicy = groupPolicyProvider.getGroupPolicy(counterparties.ourId)
-        if (groupPolicy == null) {
+        val p2pParams = groupPolicyProvider.getP2PParameters(counterparties.ourId)
+        if (p2pParams == null) {
             logger.warn(
                 "Could not find the group information in the GroupPolicyProvider for ${counterparties.ourId}." +
                     " The sessionInit message was not sent."
@@ -452,12 +446,12 @@ internal class SessionManagerImpl(
 
         val sessionManagerConfig = config.get()
         val messagesAndProtocol = mutableListOf<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>>()
-        val pkiMode = pkiMode(groupPolicy, sessionManagerConfig) ?: return emptyList()
+        val pkiMode = pkiMode(p2pParams, sessionManagerConfig) ?: return emptyList()
         (1..multiplicity).map {
             val sessionId = UUID.randomUUID().toString()
             val session = protocolFactory.createInitiator(
                 sessionId,
-                groupPolicy.protocolModes,
+                p2pParams.protocolModes,
                 sessionManagerConfig.maxMessageSize,
                 ourIdentityInfo.preferredSessionKeyAndCertificates.sessionPublicKey,
                 ourIdentityInfo.holdingIdentity.groupId,
@@ -469,15 +463,16 @@ internal class SessionManagerImpl(
     }
 
     private fun pkiMode(
-        groupPolicy: GroupPolicy,
+        p2pParams: GroupPolicy.P2PParameters,
         sessionManagerConfig: SessionManagerConfig
     ): CertificateCheckMode? {
-        return when (groupPolicy.p2pParameters.sessionPki) {
+        return when (p2pParams.sessionPki) {
             STANDARD -> {
-                val trustedCertificates = groupPolicy.p2pParameters.sessionTrustRoots?.toList()
+                val trustedCertificates = p2pParams.sessionTrustRoots?.toList()
 
                 if (trustedCertificates == null) {
-                    logger.error("Expected session trust stores to be in group policy for group ${groupPolicy.groupId}.")
+                    //Add GROUPID back to logger Error
+                    logger.error("Expected session trust stores to be in group policy for group.")
                     return null
                 }
                 CertificateCheckMode.CheckCertificate(
@@ -487,7 +482,7 @@ internal class SessionManagerImpl(
                 )
             }
             STANDARD_EV3, CORDA_4 -> {
-                logger.error("PkiMode ${groupPolicy.p2pParameters.sessionPki} is unsupported by the link manager.")
+                logger.error("PkiMode ${p2pParams.sessionPki} is unsupported by the link manager.")
                 return null
             }
             NO_PKI -> CertificateCheckMode.NoCertificate
@@ -549,8 +544,8 @@ internal class SessionManagerImpl(
             return null
         }
 
-        val groupPolicy = groupPolicyProvider.getGroupPolicy(sessionCounterparties.ourId)
-        if (groupPolicy == null) {
+        val p2pParams = groupPolicyProvider.getP2PParameters(sessionCounterparties.ourId)
+        if (p2pParams == null) {
             logger.warn(
                 "Could not find the group information in the GroupPolicyProvider for ${sessionCounterparties.ourId}." +
                     " The sessionInit message was not sent."
@@ -564,7 +559,7 @@ internal class SessionManagerImpl(
             linkOutMessages.add(
                 Pair(
                     message.first.sessionId,
-                    createLinkOutMessage(message.second, sessionCounterparties.ourId, responderMemberInfo, groupPolicy.networkType)
+                    createLinkOutMessage(message.second, sessionCounterparties.ourId, responderMemberInfo, p2pParams.networkType)
                 )
             )
         }
@@ -649,8 +644,8 @@ internal class SessionManagerImpl(
             sessionInfo
         )
 
-        val groupPolicy = groupPolicyProvider.getGroupPolicy(ourIdentityInfo.holdingIdentity)
-        if (groupPolicy == null) {
+        val p2pParams = groupPolicyProvider.getP2PParameters(ourIdentityInfo.holdingIdentity)
+        if (p2pParams == null) {
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity)
             return null
         }
@@ -659,7 +654,7 @@ internal class SessionManagerImpl(
             message.header.sessionId,
         )
 
-        return createLinkOutMessage(payload, sessionInfo.ourId, responderMemberInfo, groupPolicy.networkType)
+        return createLinkOutMessage(payload, sessionInfo.ourId, responderMemberInfo, p2pParams.networkType)
     }
 
     private fun processResponderHandshake(message: ResponderHandshakeMessage): LinkOutMessage? {
@@ -762,8 +757,8 @@ internal class SessionManagerImpl(
         }
 
         val (hostedIdentityInSameGroup, peerMemberInfo) = locallyHostedIdentityWithPeerMemberInfo
-        val groupPolicy = groupPolicyProvider.getGroupPolicy(hostedIdentityInSameGroup)
-        if (groupPolicy == null) {
+        val p2pParams = groupPolicyProvider.getP2PParameters(hostedIdentityInSameGroup)
+        if (p2pParams == null) {
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup)
             return null
         }
@@ -776,7 +771,7 @@ internal class SessionManagerImpl(
         val responderHello = session.generateResponderHello()
 
         logger.info("Remote identity ${peerMemberInfo.holdingIdentity} initiated new session ${message.header.sessionId}.")
-        return createLinkOutMessage(responderHello, hostedIdentityInSameGroup, peerMemberInfo, groupPolicy.networkType)
+        return createLinkOutMessage(responderHello, hostedIdentityInSameGroup, peerMemberInfo, p2pParams.networkType)
     }
 
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {
@@ -827,16 +822,16 @@ internal class SessionManagerImpl(
             return null
         }
 
-        val groupPolicy = groupPolicyProvider.getGroupPolicy(ourIdentityInfo.holdingIdentity)
-        if (groupPolicy == null) {
+        val p2pParams = groupPolicyProvider.getP2PParameters(ourIdentityInfo.holdingIdentity)
+        if (p2pParams == null) {
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity)
             return null
         }
 
         val sessionManagerConfig = config.get()
-        val pkiMode = pkiMode(groupPolicy, sessionManagerConfig) ?: return null
+        val pkiMode = pkiMode(p2pParams, sessionManagerConfig) ?: return null
         try {
-            session.validateEncryptedExtensions(pkiMode, groupPolicy.protocolModes, peer.holdingIdentity.x500Name)
+            session.validateEncryptedExtensions(pkiMode, p2pParams.protocolModes, peer.holdingIdentity.x500Name)
         } catch (exception: InvalidPeerCertificate) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             return null
@@ -881,7 +876,7 @@ internal class SessionManagerImpl(
          * We delay removing the session from pendingInboundSessions until we receive the first data message as before this point
          * the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case where the [ResponderHandshakeMessage] was lost.
          * */
-        return createLinkOutMessage(response, ourIdentityInfo.holdingIdentity, peer, groupPolicy.networkType)
+        return createLinkOutMessage(response, ourIdentityInfo.holdingIdentity, peer, p2pParams.networkType)
     }
 
     private fun AuthenticationProtocolResponder.validatePeerHandshakeMessageHandleError(
