@@ -49,20 +49,27 @@ class CloseSessionsRequestHandlerTest {
             )
         ).thenReturn(listOf(sessionState1, sessionState2))
 
-        whenever(testContext.flowRecordFactory.createFlowEventRecord(any(), any())).thenReturn(record)
+        whenever(
+            testContext.flowRecordFactory.createFlowEventRecord(
+                any(),
+                any())
+        ).thenReturn(record)
 
-        whenever(testContext.flowSessionManager.getInitiatingAndInitiatedSessions(
+        whenever(
+            testContext.flowSessionManager.getInitiatingAndInitiatedSessions(
             eq(sessions)
             )
         ).thenReturn(Pair(listOf(sessionId1), listOf(sessionId2)))
 
-        whenever(testContext.flowSessionManager.getRequireCloseTrueAndFalse(
+        whenever(
+            testContext.flowSessionManager.getRequireCloseTrueAndFalse(
             any(),
             any()
             )
         ).thenReturn(Pair(listOf(sessionId1), listOf(sessionId2)))
 
-        whenever(testContext.flowSessionManager.updateStatus(
+        whenever(
+            testContext.flowSessionManager.updateStatus(
             eq(testContext.flowCheckpoint),
             eq(sessions),
             any()
