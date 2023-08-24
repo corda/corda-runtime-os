@@ -15,7 +15,7 @@ import java.util.UUID
 /** Rest operations for interop management. */
 @HttpRestResource(
     name = "Interop API",
-    description = "The Interop API consists of a number of endpoints to manage interop functionality.",
+    description = "The interop API is used to administrate interop identities and interop groups.",
     path = "interop"
 )
 interface InteropRestResource : RestResource {
@@ -24,12 +24,12 @@ interface InteropRestResource : RestResource {
      */
     @HttpGET(
         path = "{holdingIdentityShortHash}/groups",
-        title = "Lists all interop groups for a given holding identity.",
-        description = "This method returns a list of interop group ids.",
-        responseDescription = "Map of interop group ids to group policy"
+        title = "Get interop groups.",
+        description = "Returns the set of interop groups within which the specified holding identity is participating.",
+        responseDescription = "Map of interop group UUIDs to group policy information."
     )
     fun getInterOpGroups(
-        @RestPathParameter(description = "ID of the holding identity which groups are to be returned.")
+        @RestPathParameter(description = "Short hash the holding identity to query.")
         holdingIdentityShortHash: String
     ): Map<UUID, String>
 
@@ -39,12 +39,13 @@ interface InteropRestResource : RestResource {
     @HttpPUT(
         path = "{holdingIdentityShortHash}/interopidentity",
         title = "Create interop identity.",
-        description = "This method creates interop identity from holding identity id, group id and x500name.",
+        description = "Creates an interop identity for the specified holding identity within the specified group " +
+                      "with the specified application name.",
         responseDescription = "Response entity with the status of the request."
     )
     fun createInterOpIdentity(
         createInteropIdentityRestRequest: CreateInteropIdentityRest.Request,
-        @RestPathParameter(description = "ID of the holding identity.")
+        @RestPathParameter(description = "Short hash of holding identity to create interop identity for.")
         holdingIdentityShortHash: String
     ): CreateInteropIdentityRest.Response
 
@@ -53,12 +54,12 @@ interface InteropRestResource : RestResource {
      */
     @HttpGET(
         path = "{holdingIdentityShortHash}/interopidentities",
-        title = "Lists all interop identities belonging to a given holding identity",
-        description = "This method returns a list of interop identities belonging to the given holding identity.",
-        responseDescription = "List of interop identities"
+        title = "Get interop identities.",
+        description = "Returns a list of interop identities visible to the specified holding identity.",
+        responseDescription = "List of interop identities."
     )
     fun getInterOpIdentities(
-        @RestPathParameter(description = "ID of the holding identity which identities are to be returned.")
+        @RestPathParameter(description = "Short hash of holding identity to get interop identities for.")
         holdingIdentityShortHash: String
     ): List<InteropIdentityResponse>
 
@@ -67,14 +68,14 @@ interface InteropRestResource : RestResource {
      */
     @HttpGET(
         path = "{holdingIdentityShortHash}/export/identity/{interopIdentityShortHash}",
-        title = "Returns groupId, group policy and InterOpIdentityInfo belonging to a given interop identity",
-        description = "This method returns Json String containing GroupID, Group Policy and my InterOpIdentityInfo.",
-        responseDescription = "Interop identity"
+        title = "Export interop identity.",
+        description = "Export an interop identity for import elsewhere.",
+        responseDescription = "Interop identity in a format suitable for import."
     )
     fun exportInterOpIdentity(
-        @RestPathParameter(description = "ID of the holding identity which interop identity is to be returned.")
+        @RestPathParameter(description = "Short hash of the holding identity to export interop identity from.")
         holdingIdentityShortHash: String,
-        @RestPathParameter(description = "ShortHash of the interop identity")
+        @RestPathParameter(description = "Short hash of the interop identity to export.")
         interopIdentityShortHash: String
     ): ExportInteropIdentityRest.Response
 
@@ -83,13 +84,13 @@ interface InteropRestResource : RestResource {
      */
     @HttpPUT(
         path = "{holdingIdentityShortHash}/import/identity",
-        title = "Imports the interop identity details into the system of another interop identity",
-        description = "This method imports the interop identity.",
+        title = "Import interop identity.",
+        description = "Import an interop identity which was previously exported from elsewhere.",
         responseDescription = "Response entity with the status of the request."
     )
     fun importInterOpIdentity(
         importInteropIdentityRestRequest: ImportInteropIdentityRest.Request,
-        @RestPathParameter(description = "ID of the holding identity which interop identity is to be returned.")
+        @RestPathParameter(description = "Short hash of the holding identity of the virtual node into which the interop identity will be imported.")
         holdingIdentityShortHash: String
     ): ResponseEntity<String>
 }

@@ -34,7 +34,7 @@
     "description" : "The Hello Rest API is used to test interactions via the Rest API. It verifies that a call to Rest can be made, and that the identity of the user making the call can be recognized. RBAC permissions are checked and the call is successfully processed by the HTTP-Rest worker."
   }, {
     "name" : "Interop API",
-    "description" : "The Interop API consists of a number of endpoints to manage interop functionality."
+    "description" : "The interop API is used to administrate interop identities and interop groups."
   }, {
     "name" : "Key Management API",
     "description" : "The Keys Management API consists of endpoints used to manage public and private key pairs. The API allows you to list scheme codes which are supported by the associated HSM integration, retrieve information about key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's public key in PEM format."
@@ -1233,34 +1233,34 @@
     "/interop/{holdingidentityshorthash}/export/identity/{interopidentityshorthash}" : {
       "get" : {
         "tags" : [ "Interop API" ],
-        "description" : "This method returns Json String containing GroupID, Group Policy and my InterOpIdentityInfo.",
+        "description" : "Export an interop identity for import elsewhere.",
         "operationId" : "get_interop__holdingidentityshorthash__export_identity__interopidentityshorthash_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "ID of the holding identity which interop identity is to be returned.",
+          "description" : "Short hash of the holding identity to export interop identity from.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "ID of the holding identity which interop identity is to be returned.",
+            "description" : "Short hash of the holding identity to export interop identity from.",
             "nullable" : false,
             "example" : "string"
           }
         }, {
           "name" : "interopidentityshorthash",
           "in" : "path",
-          "description" : "ShortHash of the interop identity",
+          "description" : "Short hash of the interop identity to export.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "ShortHash of the interop identity",
+            "description" : "Short hash of the interop identity to export.",
             "nullable" : false,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "Interop identity",
+            "description" : "Interop identity in a format suitable for import.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1281,23 +1281,23 @@
     "/interop/{holdingidentityshorthash}/groups" : {
       "get" : {
         "tags" : [ "Interop API" ],
-        "description" : "This method returns a list of interop group ids.",
+        "description" : "Returns the set of interop groups within which the specified holding identity is participating.",
         "operationId" : "get_interop__holdingidentityshorthash__groups",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "ID of the holding identity which groups are to be returned.",
+          "description" : "Short hash the holding identity to query.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "ID of the holding identity which groups are to be returned.",
+            "description" : "Short hash the holding identity to query.",
             "nullable" : false,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "Map of interop group ids to group policy",
+            "description" : "Map of interop group UUIDs to group policy information.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1324,16 +1324,16 @@
     "/interop/{holdingidentityshorthash}/import/identity" : {
       "put" : {
         "tags" : [ "Interop API" ],
-        "description" : "This method imports the interop identity.",
+        "description" : "Import an interop identity which was previously exported from elsewhere.",
         "operationId" : "put_interop__holdingidentityshorthash__import_identity",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "ID of the holding identity which interop identity is to be returned.",
+          "description" : "Short hash of the holding identity of the virtual node into which the interop identity will be imported.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "ID of the holding identity which interop identity is to be returned.",
+            "description" : "Short hash of the holding identity of the virtual node into which the interop identity will be imported.",
             "nullable" : false,
             "example" : "string"
           }
@@ -1374,23 +1374,23 @@
     "/interop/{holdingidentityshorthash}/interopidentities" : {
       "get" : {
         "tags" : [ "Interop API" ],
-        "description" : "This method returns a list of interop identities belonging to the given holding identity.",
+        "description" : "Returns a list of interop identities visible to the specified holding identity.",
         "operationId" : "get_interop__holdingidentityshorthash__interopidentities",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "ID of the holding identity which identities are to be returned.",
+          "description" : "Short hash of holding identity to get interop identities for.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "ID of the holding identity which identities are to be returned.",
+            "description" : "Short hash of holding identity to get interop identities for.",
             "nullable" : false,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "List of interop identities",
+            "description" : "List of interop identities.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1416,16 +1416,16 @@
     "/interop/{holdingidentityshorthash}/interopidentity" : {
       "put" : {
         "tags" : [ "Interop API" ],
-        "description" : "This method creates interop identity from holding identity id, group id and x500name.",
+        "description" : "Creates an interop identity for the specified holding identity within the specified group with the specified application name.",
         "operationId" : "put_interop__holdingidentityshorthash__interopidentity",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "ID of the holding identity.",
+          "description" : "Short hash of holding identity to create interop identity for.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "ID of the holding identity.",
+            "description" : "Short hash of holding identity to create interop identity for.",
             "nullable" : false,
             "example" : "string"
           }
@@ -4360,7 +4360,6 @@
             "example" : "string"
           },
           "status" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "IN_PROGRESS",
             "enum" : [ "ACCEPTED", "IN_PROGRESS", "SUCCEEDED", "FAILED", "ABORTED" ]
@@ -4640,7 +4639,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4884,7 +4882,6 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
-        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -5113,7 +5110,8 @@
           "groupId" : {
             "type" : "string",
             "format" : "uuid",
-            "nullable" : false
+            "nullable" : false,
+            "example" : "No example available for this type"
           },
           "owningVirtualNodeShortHash" : {
             "type" : "string",
@@ -5327,7 +5325,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -5371,7 +5368,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -5408,7 +5404,6 @@
             "example" : "string"
           },
           "status" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "REVOKED",
             "enum" : [ "AVAILABLE", "REVOKED", "CONSUMED", "AUTO_INVALIDATED" ]
@@ -5644,7 +5639,6 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "SENT_TO_MGM",
             "enum" : [ "NEW", "SENT_TO_MGM", "RECEIVED_BY_MGM", "STARTED_PROCESSING_BY_MGM", "PENDING_MEMBER_VERIFICATION", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "INVALID", "FAILED", "APPROVED" ]
@@ -5741,7 +5735,6 @@
             "example" : "string"
           },
           "inactiveResponseType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "IGNORE",
             "enum" : [ "ERROR", "IGNORE" ]
@@ -6046,19 +6039,16 @@
             "$ref" : "#/components/schemas/RouteConfiguration"
           },
           "flowOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowP2pOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowStartOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
@@ -6087,7 +6077,6 @@
             "example" : "string"
           },
           "vaultDbOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
