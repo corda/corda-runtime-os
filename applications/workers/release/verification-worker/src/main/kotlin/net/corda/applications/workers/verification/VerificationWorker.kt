@@ -1,4 +1,4 @@
-package net.corda.applications.workers.flow
+package net.corda.applications.workers.verification
 
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
@@ -14,7 +14,7 @@ import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.processors.flow.FlowProcessor
+import net.corda.processors.verification.VerificationProcessor
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
 import org.osgi.service.component.annotations.Activate
@@ -23,12 +23,12 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import picocli.CommandLine.Mixin
 
-/** The worker for handling flows. */
+/** The worker for handling verification of ledger transactions. */
 @Suppress("Unused", "LongParameterList")
 @Component(service = [Application::class])
-class FlowWorker @Activate constructor(
-    @Reference(service = FlowProcessor::class)
-    private val flowProcessor: FlowProcessor,
+class VerificationWorker @Activate constructor(
+    @Reference(service = VerificationProcessor::class)
+    private val verificationProcessor: VerificationProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = WorkerMonitor::class)
@@ -47,12 +47,12 @@ class FlowWorker @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    /** Parses the arguments, then initialises and starts the [flowProcessor]. */
+    /** Parses the arguments, then initialises and starts the [verificationProcessor]. */
     override fun startup(args: Array<String>) {
-        logger.info("Flow worker starting.")
+        logger.info("Verification worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
 
-        applicationBanner.show("Flow Worker", platformInfoProvider)
+        applicationBanner.show("Verification Worker", platformInfoProvider)
 
         if (System.getProperty("co.paralleluniverse.fibers.verifyInstrumentation") == true.toString()) {
             logger.info("Quasar's instrumentation verification is enabled")
@@ -60,30 +60,30 @@ class FlowWorker @Activate constructor(
 
         JavaSerialisationFilter.install()
 
-        val params = getParams(args, FlowWorkerParams())
-        if (printHelpOrVersion(params.defaultParams, FlowWorker::class.java, shutDownService)) return
+        val params = getParams(args, VerificationWorkerParams())
+        if (printHelpOrVersion(params.defaultParams, VerificationWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
-        configureTracing("Flow Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
+        configureTracing("Verification Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
 
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator())
 
-        flowProcessor.start(config)
+        verificationProcessor.start(config)
     }
 
     override fun shutdown() {
-        logger.info("Flow worker stopping.")
-        flowProcessor.stop()
+        logger.info("Verification worker stopping.")
+        verificationProcessor.stop()
         workerMonitor.stop()
         shutdownTracing()
     }
 }
 
-/** Additional parameters for the flow worker are added here. */
-private class FlowWorkerParams {
+/** Additional parameters for the verification worker are added here. */
+private class VerificationWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
 }

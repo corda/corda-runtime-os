@@ -31,6 +31,7 @@ class ClusterBootstrapTest {
 //        "crypto-worker" to System.getProperty("cryptoWorkerHealthHttp"),
         "db-worker" to System.getProperty("dbWorkerHealthHttp"),
         "flow-worker" to System.getProperty("flowWorkerHealthHttp"),
+        "verification-worker" to System.getProperty("verificationWorkerHealthHttp"),
         "rest-worker" to System.getProperty("restWorkerHealthHttp"),
     )
     private val client = HttpClient.newBuilder().build()

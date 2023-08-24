@@ -1,3 +1,3 @@
-@Library('corda-shared-build-pipeline-steps@5.1') _
+@Library('corda-shared-build-pipeline-steps@CORE-15756/segregated-workers') _
 
 cordaCompatibilityCheckPipeline(javaVersion: '17')
