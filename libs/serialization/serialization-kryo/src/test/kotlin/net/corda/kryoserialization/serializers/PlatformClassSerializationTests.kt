@@ -37,7 +37,9 @@ class PlatformClassSerializationTests {
     private val flowContext = mock<FlowContext>()
     private val signatureSpec = mock<CustomSignatureSpec>()
     private val digitalSignature = mock<DigitalSignatureWithKeyId>()
-    private val digitalsignatureMetadata = DigitalSignatureMetadata(Instant.now(), signatureSpec, mapOf("key" to "Value"))
+    private val digitalsignatureMetadata =
+        DigitalSignatureMetadata(Instant.now(), signatureSpec, mapOf("key" to "Value"))
+
     @Test
     fun `FlowInfo serialization test`() {
         val output = Output(100)
@@ -92,13 +94,21 @@ class PlatformClassSerializationTests {
         kryo.register(FlowSession::class.java)
         val counterParty = MemberX500Name("Alice", "Alice Corp", "LDN", "GB")
 
-        val flowSession: FlowSession = FlowSessionImpl(counterParty, "SessionId1", mockFlowFiberService, serializationService, flowContext, FlowSessionImpl.Direction.INITIATING_SIDE)
+        val flowSession: FlowSession = FlowSessionImpl(
+            counterParty,
+            "SessionId1",
+            mockFlowFiberService,
+            serializationService,
+            flowContext,
+            FlowSessionImpl.Direction.INITIATING_SIDE
+        )
 
         kryo.writeClassAndObject(output, flowSession)
         val tested = kryo.readClassAndObject(Input(output.buffer)) as FlowSession
 
         Assertions.assertThat(tested.contextProperties).isEqualTo(flowSession.contextProperties)
     }
+
     @Test
     fun `DigitalSignatureAndMetadata serialization test`() {
         val output = Output(10000)
@@ -118,6 +128,7 @@ class PlatformClassSerializationTests {
         Assertions.assertThat(tested.signature).isEqualTo(signatureAndMeta.signature)
         Assertions.assertThat(tested.metadata).isEqualTo(signatureAndMeta.metadata)
     }
+
     @Test
     fun `InitiatedBy serialization test`() {
         val output = Output(10000)
@@ -129,7 +140,7 @@ class PlatformClassSerializationTests {
         )
         kryo.register(InitiatedBy::class.java)
 
-        val initiatedBy = InitiatedBy(protocol="testingSerialization", version = intArrayOf(1234))
+        val initiatedBy = InitiatedBy(protocol = "testingSerialization", version = intArrayOf(1234))
 
         kryo.writeClassAndObject(output, initiatedBy)
         val tested = kryo.readClassAndObject(Input(output.buffer)) as InitiatedBy
@@ -138,6 +149,7 @@ class PlatformClassSerializationTests {
         Assertions.assertThat(tested.protocol).isEqualTo(initiatedBy.protocol)
         Assertions.assertThat(tested.version).isEqualTo(initiatedBy.version)
     }
+
     @Test
     fun `InitiatingFlow serialization test`() {
         val output = Output(10000)
@@ -149,7 +161,7 @@ class PlatformClassSerializationTests {
         )
         kryo.register(InitiatingFlow::class.java)
 
-        val initiatingFlow = InitiatingFlow(protocol="testingSerialization", version = intArrayOf(1234))
+        val initiatingFlow = InitiatingFlow(protocol = "testingSerialization", version = intArrayOf(1234))
 
         kryo.writeClassAndObject(output, initiatingFlow)
         val tested = kryo.readClassAndObject(Input(output.buffer)) as InitiatingFlow
@@ -158,6 +170,7 @@ class PlatformClassSerializationTests {
         Assertions.assertThat(tested.protocol).isEqualTo(initiatingFlow.protocol)
         Assertions.assertThat(tested.version).isEqualTo(initiatingFlow.version)
     }
+
     @Test
     fun `SecureHash serialization test`() {
         val output = Output(10000)
@@ -178,6 +191,7 @@ class PlatformClassSerializationTests {
         Assertions.assertThat(tested.algorithm).isEqualTo(hash.algorithm)
         Assertions.assertThat(tested.bytes).isEqualTo(hash.bytes)
     }
+
     @Test
     fun `SignatureSpec serialization test`() {
         val output = Output(10000)
@@ -197,6 +211,7 @@ class PlatformClassSerializationTests {
         Assertions.assertThat(tested).isEqualTo(sigSpec)
         Assertions.assertThat(tested.signatureName).isEqualTo(sigSpec.signatureName)
     }
+
     @Test
     fun `DigestAlgorithmName serialization test`() {
         val output = Output(10000)
@@ -216,6 +231,7 @@ class PlatformClassSerializationTests {
         Assertions.assertThat(tested).isEqualTo(digestAlgorithmName)
         Assertions.assertThat(tested.name).isEqualTo(digestAlgorithmName.name)
     }
+
     @Test
     fun `CordaRuntimeException serialization test`() {
         val output = Output(10000)
