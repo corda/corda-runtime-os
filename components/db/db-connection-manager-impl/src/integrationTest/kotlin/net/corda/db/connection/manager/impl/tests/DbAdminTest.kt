@@ -191,7 +191,7 @@ class DbAdminTest {
         val random = Random.nextLong(Long.MAX_VALUE)
         val adminUser = "test_admin_$random"
         val adminPassword = "test_admin_password_$random"
-        createAdminUser(PostgresDbUtils.db_name, adminUser, adminPassword)
+        createAdminUser(PostgresDbUtils.dbName, adminUser, adminPassword)
 
         testDmlUserCanUseTableCreatedByDdlUser(adminUser, adminPassword)
     }
@@ -259,7 +259,7 @@ class DbAdminTest {
         val random = Random.nextLong(Long.MAX_VALUE)
         val adminUser = "test_admin_$random"
         val adminPassword = "test_admin_password_$random"
-        createAdminUser(PostgresDbUtils.db_name, adminUser, adminPassword)
+        createAdminUser(PostgresDbUtils.dbName, adminUser, adminPassword)
 
         recreatedDdlUserCanCreateTable(adminUser, adminPassword)
     }

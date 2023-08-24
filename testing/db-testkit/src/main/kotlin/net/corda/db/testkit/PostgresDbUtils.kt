@@ -11,17 +11,17 @@ import org.slf4j.LoggerFactory
 
 
 object PostgresDbUtils : DbUtilsAbstract() {
-    override val host_property: String = "postgresHost"
-    override val port_property: String = "postgresPort"
+    override val hostProperty: String = "postgresHost"
+    override val portProperty: String = "postgresPort"
 
-    override val isInMemory: Boolean = System.getProperty(port_property).isNullOrBlank()
-    override val host: String = getPropertyNonBlank(host_property, "localhost")
+    override val isInMemory: Boolean = System.getProperty(portProperty).isNullOrBlank()
+    override val host: String = getPropertyNonBlank(hostProperty, "localhost")
 
-    override val db_name: String = getPropertyNonBlank("postgresDb","postgres")
-    override val admin_user: String = if(isInMemory) "sa" else getPropertyNonBlank("postgresUser","postgres")
-    override val admin_password: String = if (isInMemory) "" else getPropertyNonBlank("postgresPassword","password")
+    override val dbName: String = getPropertyNonBlank("postgresDb","postgres")
+    override val adminUser: String = if(isInMemory) "sa" else getPropertyNonBlank("postgresUser","postgres")
+    override val adminPassword: String = if (isInMemory) "" else getPropertyNonBlank("postgresPassword","password")
 
-    override var jdbcURL: String = "jdbc:postgresql://${host}:${System.getProperty(port_property)}/${db_name}"
+    override var jdbcURL: String = "jdbc:postgresql://${host}:${System.getProperty(portProperty)}/${dbName}"
 
     override val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
@@ -34,9 +34,9 @@ object PostgresDbUtils : DbUtilsAbstract() {
         dbPassword: String?,
         schemaName: String?
     ): Config {
-        val port = System.getProperty(port_property)
-        val user = dbUser ?: admin_user
-        val password = dbPassword ?: admin_password
+        val port = System.getProperty(portProperty)
+        val user = dbUser ?: adminUser
+        val password = dbPassword ?: adminPassword
         if(!port.isNullOrBlank()){
             if(!schemaName.isNullOrBlank()){
                 jdbcURL = "$jdbcURL?currentSchema=$schemaName"

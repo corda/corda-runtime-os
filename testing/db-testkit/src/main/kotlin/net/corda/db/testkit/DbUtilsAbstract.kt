@@ -14,11 +14,11 @@ import java.sql.Connection
 
 abstract class DbUtilsAbstract {
 
-    abstract val host_property : String
-    abstract val port_property : String
-    abstract val db_name: String
-    abstract val admin_user: String
-    abstract val admin_password: String
+    abstract val hostProperty : String
+    abstract val portProperty : String
+    abstract val dbName: String
+    abstract val adminUser: String
+    abstract val adminPassword: String
 
     abstract val isInMemory : Boolean
 
@@ -30,6 +30,7 @@ abstract class DbUtilsAbstract {
 
     abstract fun getFactory(): BaseDataSourceFactory
 
+    @Suppress("LongParameterList")
     fun getEntityManagerConfiguration(
         inMemoryDbName : String,
         dbUser: String? = null,
@@ -39,7 +40,7 @@ abstract class DbUtilsAbstract {
         showSql: Boolean = true,
         rewriteBatchedInserts: Boolean = false
     ):EntityManagerConfiguration {
-        val port = System.getProperty(port_property)
+        val port = System.getProperty(portProperty)
         return if (!port.isNullOrBlank()) {
             val ds =
                 createDataSource(dbUser, dbPassword, schemaName, createSchema, rewriteBatchedInserts)
@@ -62,8 +63,8 @@ abstract class DbUtilsAbstract {
         rewriteBatchedInserts: Boolean = false
     ): CloseableDataSource {
         val factory = getFactory()
-        val user = dbUser ?: admin_user
-        val password = dbPassword ?: admin_password
+        val user = dbUser ?: adminUser
+        val password = dbPassword ?: adminPassword
         if (!schemaName.isNullOrBlank()) {
             if (createSchema) {
                 logger.info("Creating schema: $schemaName".emphasise())

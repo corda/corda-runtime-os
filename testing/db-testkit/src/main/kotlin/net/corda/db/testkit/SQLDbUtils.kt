@@ -10,16 +10,16 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 object SQLDbUtils : DbUtilsAbstract() {
-    override val host_property: String = "sqlHost"
-    override val port_property: String = "sqlPort"
+    override val hostProperty: String = "sqlHost"
+    override val portProperty: String = "sqlPort"
 
-    override val isInMemory: Boolean = System.getProperty(port_property).isNullOrBlank()
-    override val host: String = getPropertyNonBlank(host_property, "localhost")
+    override val isInMemory: Boolean = System.getProperty(portProperty).isNullOrBlank()
+    override val host: String = getPropertyNonBlank(hostProperty, "localhost")
 
-    override val db_name: String = getPropertyNonBlank("sqlDb", "sql")
-    override val admin_user: String = if(isInMemory) "sa" else getPropertyNonBlank("sqlUser", "sql")
-    override val admin_password: String = if (isInMemory) "" else getPropertyNonBlank("sqlPassword", "password")
-    override var jdbcURL: String = "jdbc:sqlserver://$host:${System.getProperty(port_property)};encrypt=true;trustServerCertificate=true;"
+    override val dbName: String = getPropertyNonBlank("sqlDb", "sql")
+    override val adminUser: String = if(isInMemory) "sa" else getPropertyNonBlank("sqlUser", "sql")
+    override val adminPassword: String = if (isInMemory) "" else getPropertyNonBlank("sqlPassword", "password")
+    override var jdbcURL: String = "jdbc:sqlserver://$host:${System.getProperty(portProperty)};encrypt=true;trustServerCertificate=true;"
 
     override val logger: Logger = LoggerFactory.getLogger(this::class.java)
     override fun getFactory(): BaseDataSourceFactory = SQLDataSourceFactory()
@@ -30,9 +30,9 @@ object SQLDbUtils : DbUtilsAbstract() {
         dbPassword: String?,
         schemaName: String?
     ): Config {
-        val port = System.getProperty(PostgresDbUtils.port_property)
-        val user = dbUser ?: PostgresDbUtils.admin_user
-        val password = dbPassword ?: PostgresDbUtils.admin_password
+        val port = System.getProperty(portProperty)
+        val user = dbUser ?: adminUser
+        val password = dbPassword ?: adminPassword
         if(!port.isNullOrBlank()){
             if(!schemaName.isNullOrBlank()){
                 PostgresDbUtils.jdbcURL = "${PostgresDbUtils.jdbcURL}?currentSchema=$schemaName"
