@@ -6,7 +6,7 @@ class TokenCacheImpl: TokenCache {
     private val cachedTokens = mutableMapOf<String, CachedToken>()
 
     override fun add(tokens: Collection<CachedToken>) {
-        cachedTokens.putAll(tokens.map { it.stateRef to it })
+        tokens.associateByTo(cachedTokens) { it.stateRef }
     }
 
     override fun removeAll(stateRefs: Set<String>) {
