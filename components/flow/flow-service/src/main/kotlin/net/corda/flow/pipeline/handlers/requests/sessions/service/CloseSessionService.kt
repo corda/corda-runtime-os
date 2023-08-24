@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline.handlers.requests.sessions.service
 
 import net.corda.data.flow.state.session.SessionStateType
-import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
 import org.osgi.service.component.annotations.Activate
@@ -17,9 +16,8 @@ class CloseSessionService @Activate constructor(
 
     fun getSessionsToCloseForWaitingFor(
         checkpoint: FlowCheckpoint,
-        request: FlowIORequest.CloseSessions
+        sessions: List<String>
     ): List<String> {
-        val sessions = getSessionsToClose(request)
 
         //filter out initiated
         val initiatingAndInitiated = flowSessionManager.getInitiatingAndInitiatedSessions(sessions)
@@ -34,8 +32,7 @@ class CloseSessionService @Activate constructor(
         return requireCloseSessions.first
     }
 
-    fun getSessionsForPostProcess(request: FlowIORequest.CloseSessions, checkpoint: FlowCheckpoint) {
-        val sessionsToClose = getSessionsToClose(request)
+    fun getSessionsForPostProcess(sessionsToClose: List<String>, checkpoint: FlowCheckpoint) {
 
         val initiatingAndInitiated = flowSessionManager.getInitiatingAndInitiatedSessions(sessionsToClose)
         val initiatingSessions = initiatingAndInitiated.first
@@ -73,9 +70,5 @@ class CloseSessionService @Activate constructor(
         val statesInErrorOrClosed = flowSessionManager.getSessionsWithStatuses(checkpoint, sessions, statusToFilterOut)
         val sessionsInErrorOrClosed = statesInErrorOrClosed.map { it.sessionId }
         return sessions - sessionsInErrorOrClosed
-    }
-
-    private fun getSessionsToClose(request: FlowIORequest.CloseSessions): List<String> {
-        return request.sessions.toMutableList()
     }
 }

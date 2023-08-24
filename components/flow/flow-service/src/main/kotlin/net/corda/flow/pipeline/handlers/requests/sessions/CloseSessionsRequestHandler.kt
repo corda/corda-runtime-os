@@ -10,11 +10,7 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
-import net.corda.flow.pipeline.handlers.requests.helper.getSessionsForPostProcess
-import net.corda.flow.pipeline.handlers.requests.helper.getSessionsToClose
-import net.corda.flow.pipeline.handlers.requests.helper.getSessionsToCloseForWaitingFor
 import net.corda.flow.pipeline.handlers.requests.sessions.service.CloseSessionService
-import net.corda.flow.pipeline.handlers.requests.sessions.service.InitiateFlowRequestService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import org.osgi.service.component.annotations.Activate
@@ -34,9 +30,13 @@ class CloseSessionsRequestHandler @Activate constructor(
 
     override val type = FlowIORequest.CloseSessions::class.java
 
+    fun getSessionsToClose(request: FlowIORequest.CloseSessions): List<String> {
+        return request.sessions.toMutableList()
+    }
+
     override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.CloseSessions): WaitingFor {
         val sessionsToClose = try {
-            closeSessionService.getSessionsToCloseForWaitingFor(context.checkpoint, request)
+            closeSessionService.getSessionsToCloseForWaitingFor(context.checkpoint, getSessionsToClose(request))
         } catch (e: IllegalArgumentException) {
             // TODO Wakeup flow with an error
             throw FlowFatalException(
@@ -56,8 +56,8 @@ class CloseSessionsRequestHandler @Activate constructor(
 
         val hasNoSessionsOrAllClosed = try {
 
-            closeSessionService.getSessionsForPostProcess(request)
-            sessionsToClose.isEmpty() || flowSessionManager.doAllSessionsHaveStatus(checkpoint, getSessionsToClose(), SessionStateType.CLOSED)
+            closeSessionService.getSessionsForPostProcess(request, checkpoint)
+            closeSessionService.getSessionsToClose(request).isEmpty() || flowSessionManager.doAllSessionsHaveStatus(checkpoint, closeSessionService.getSessionsToClose(request), SessionStateType.CLOSED)
         } catch (e: FlowSessionStateException) {
             // TODO CORE-4850 Wakeup with error when session does not exist
             throw FlowFatalException(e.message, e)
@@ -70,6 +70,4 @@ class CloseSessionsRequestHandler @Activate constructor(
             context
         }
     }
-
-
 }
