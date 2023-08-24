@@ -1,6 +1,7 @@
 package net.corda.web.rpc
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.messaging.api.processor.HttpRPCProcessor
 import net.corda.messaging.api.subscription.HttpRPCSubscription
 import net.corda.web.server.HTTPMethod
 import net.corda.web.server.WebServer
@@ -36,7 +37,7 @@ class HttpRPCSubscriptionImpl @Activate constructor(
      * @param handler The handler function to process the request payload.
      * @param clazz The class of the request payload.
      */
-    override fun <REQ : Any, RESP : Any> registerEndpoint(endpoint: String, handler: (REQ) -> RESP, clazz: Class<REQ>) {
+    override fun <REQ : Any, RESP : Any> registerEndpoint(endpoint: String, handler: HttpRPCProcessor<REQ, RESP>, clazz: Class<REQ>) {
         val server = javalinServer
 
         val avroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({
@@ -52,7 +53,7 @@ class HttpRPCSubscriptionImpl @Activate constructor(
             val payload = avroDeserializer.deserialize(context.bodyAsBytes())
 
             if (payload != null) {
-                val serializedResponse = avroSerializer.serialize(handler(payload))
+                val serializedResponse = avroSerializer.serialize(handler.handle(payload, context))
                 if (serializedResponse != null) {
                     context.result(serializedResponse)
                     return@registerHandler context

@@ -2,6 +2,7 @@ package net.corda.web.server
 
 import io.javalin.http.Context
 import java.io.InputStream
+import net.corda.messaging.api.WebContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
 
 class JavalinContext(private val ctx: Context) : WebContext {
@@ -18,7 +19,7 @@ class JavalinContext(private val ctx: Context) : WebContext {
             is String -> ctx.result(result)
             is ByteArray -> ctx.result(result)
             is InputStream -> ctx.result(result)
-            else -> throw CordaRuntimeException("result of web handler must be String, ByteArray, or InputStream")
+            else -> throw CordaRuntimeException("result of web handle must be String, ByteArray, or InputStream")
         }
     }
 

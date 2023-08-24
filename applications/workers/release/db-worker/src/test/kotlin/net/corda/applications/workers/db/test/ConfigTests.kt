@@ -27,8 +27,8 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.osgi.framework.Bundle
 import java.io.InputStream
+import net.corda.messaging.api.WebContext
 import net.corda.web.server.HTTPMethod
-import net.corda.web.server.WebContext
 import net.corda.web.server.WebServer
 
 /**

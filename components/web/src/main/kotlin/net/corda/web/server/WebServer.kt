@@ -1,5 +1,7 @@
 package net.corda.web.server
 
+import net.corda.messaging.api.WebContext
+
 interface WebServer{
 
     val port: Int?

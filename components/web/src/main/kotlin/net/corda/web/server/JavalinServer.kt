@@ -4,6 +4,7 @@ import io.javalin.Javalin
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.WebContext
 import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.utilities.executeWithStdErrSuppressed
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -38,10 +39,7 @@ class JavalinServer @Activate constructor(
 
         try {
             log.debug("Starting Worker Web Server on port: $port")
-            server = Javalin
-                .create()
-
-            startServer(port)
+            server = Javalin.create().apply { startServer(port) }
         } catch (ex: Exception) {
             throw CordaRuntimeException("Webserver already active on that port")
         }

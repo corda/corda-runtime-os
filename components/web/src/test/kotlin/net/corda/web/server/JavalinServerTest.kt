@@ -50,7 +50,7 @@
 //    }
 
 //    @Test
-//    fun `registering a null or invalid handler should throw exception`() {
+//    fun `registering a null or invalid handle should throw exception`() {
 //        val exception = assertThrows<CordaRuntimeException> {
 //            javalinServer.registerHandler(HTTPMethod.GET, "/endpoint", ())
 //        }

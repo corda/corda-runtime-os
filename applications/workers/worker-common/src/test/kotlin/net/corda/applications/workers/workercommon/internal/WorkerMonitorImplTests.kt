@@ -9,16 +9,23 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.net.HttpURLConnection
 import java.net.URL
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.web.server.JavalinServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.mockito.Mockito.mock
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 
 /** Tests of [WorkerMonitorImpl]. */
 class WorkerMonitorImplTests {
 
-    private val webServer = JavalinServer(mock(LifecycleCoordinatorFactory::class.java))
+    private val lifecycleCoordinator = org.mockito.kotlin.mock<LifecycleCoordinator>()
+    private val lifecycleCoordinatorFactory = org.mockito.kotlin.mock<LifecycleCoordinatorFactory> {
+        on { createCoordinator(any(), any()) }.doReturn(lifecycleCoordinator)
+    }
+
+    private val webServer = JavalinServer(lifecycleCoordinatorFactory)
     private val port = 7000
 
     @BeforeEach

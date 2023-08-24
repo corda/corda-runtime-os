@@ -1,4 +1,4 @@
-package net.corda.web.server
+package net.corda.messaging.api
 
 interface WebContext {
     fun status(status: Int)

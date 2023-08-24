@@ -7,20 +7,28 @@ import java.net.http.HttpResponse
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.messaging.api.WebContext
+import net.corda.messaging.api.processor.HttpRPCProcessor
 import net.corda.web.server.JavalinServer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 
 class HttpRPCSubscriptionImplTest {
 
-    private val webServer = JavalinServer(mock(LifecycleCoordinatorFactory::class.java))
+
+    private val lifecycleCoordinator = org.mockito.kotlin.mock<LifecycleCoordinator>()
+    private val lifecycleCoordinatorFactory = org.mockito.kotlin.mock<LifecycleCoordinatorFactory> {
+        on { createCoordinator(any(), any()) }.doReturn(lifecycleCoordinator)
+    }
+
+    private val webServer = JavalinServer(lifecycleCoordinatorFactory)
     private val TEST_ENDPOINT = "/test"
     private val TEST_PORT = 7777
     private val INPUT = "Request String"
@@ -56,8 +64,16 @@ class HttpRPCSubscriptionImplTest {
 
     @Test
     fun `registerEndpoint should register endpoint and handle request`() {
-        val sampleHandler: (String) -> String = { input ->
-            "input: '$input', has been handled"
+        val sampleHandler = object : HttpRPCProcessor<String, String> {
+            override fun handle(request: String, context: WebContext): String {
+                return "input: '$request', has been handled"
+            }
+
+            override val reqClazz: Class<String>
+                get() = String::class.java
+            override val respClazz: Class<String>
+                get() = String::class.java
+
         }
 
         rpcSubscription.registerEndpoint(TEST_ENDPOINT, sampleHandler, String::class.java)
