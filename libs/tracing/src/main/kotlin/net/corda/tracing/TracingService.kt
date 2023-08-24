@@ -1,9 +1,9 @@
 package net.corda.tracing
 
+import brave.http.HttpTracing
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import java.util.concurrent.ExecutorService
-import javax.servlet.Filter
 
 interface TracingService : AutoCloseable {
 
@@ -17,13 +17,14 @@ interface TracingService : AutoCloseable {
 
     fun nextSpan(
         operationName: String,
-        headers: List<Pair<String, String>>): TraceContext
+        headers: List<Pair<String, String>>
+    ): TraceContext
 
     fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing
 
     fun wrapWithTracingExecutor(executor: ExecutorService): ExecutorService
 
-    fun getTracedServletFilter(): Filter
+    fun getTracing(): HttpTracing
 
     fun traceBatch(operationName: String): BatchRecordTracer
 }

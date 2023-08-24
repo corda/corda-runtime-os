@@ -17,7 +17,6 @@ import brave.sampler.Matchers.and
 import brave.sampler.RateLimitingSampler
 import brave.sampler.Sampler
 import brave.sampler.SamplerFunction
-import brave.servlet.TracingFilter
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.tracing.BatchPublishTracing
@@ -30,11 +29,12 @@ import zipkin2.reporter.AsyncReporter
 import zipkin2.reporter.Reporter
 import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.urlconnection.URLConnectionSender
-import java.util.Stack
+import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.logging.Level
 import java.util.logging.Logger
-import javax.servlet.Filter
+
+//import javax.servlet.Filter
 
 internal sealed interface SampleRate
 internal object Unlimited : SampleRate
@@ -93,6 +93,7 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         tracingBuilder.addSpanHandler(spanHandler)
         tracingBuilder.build().also(resourcesToClose::push)
     }
+
 
     private fun sampler(samplesPerSecond: SampleRate): Sampler = when (samplesPerSecond) {
         is PerSecond -> {
@@ -187,8 +188,8 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         return tracing.currentTraceContext().executorService(executor)
     }
 
-    override fun getTracedServletFilter(): Filter {
-        return TracingFilter.create(httpTracing)
+    override fun getTracing(): HttpTracing {
+        return httpTracing
     }
 
     override fun close() {
