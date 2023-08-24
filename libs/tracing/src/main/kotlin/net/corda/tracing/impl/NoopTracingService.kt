@@ -96,7 +96,7 @@ class NoopTracingService : TracingService {
     }
 
     override fun getTracing(): HttpTracing {
-        return TODO("Provide the return value")
+        TODO("Not yet implemented")
     }
 
     override fun traceBatch(operationName: String): BatchRecordTracer {
