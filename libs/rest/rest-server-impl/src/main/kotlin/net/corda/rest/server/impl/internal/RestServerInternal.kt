@@ -97,11 +97,9 @@ internal class RestServerInternal(
             it.enableDevLogging()
         }
         it.server {
-            configurationsProvider.getSSLKeyStorePath()
-                ?.let { createSecureServer() }
+            configurationsProvider.getSSLKeyStorePath()?.let { createSecureServer() }
                 ?: INSECURE_SERVER_DEV_MODE_WARNING.let { msg ->
-                    if (configurationsProvider.isDevModeEnabled())
-                        log.warn(msg)
+                    if (configurationsProvider.isDevModeEnabled()) log.warn(msg)
                     else {
                         log.error(msg)
                         throw UnsupportedOperationException(msg)
@@ -118,12 +116,14 @@ internal class RestServerInternal(
         // In order for multipart content to be stored onto disk, we need to override some properties
         // which are set by default by Javalin such that entire content is read into memory
         MultipartUtil.preUploadFunction = { req ->
-            req.setAttribute("org.eclipse.jetty.multipartConfig",
-                MultipartConfigElement(
+            req.setAttribute(
+                "org.eclipse.jetty.multipartConfig", MultipartConfigElement(
                     multiPartDir.toString(),
                     configurationsProvider.maxContentLength().toLong(),
                     configurationsProvider.maxContentLength().toLong(),
-                    1024))
+                    1024
+                )
+            )
         }
     }
 
@@ -143,11 +143,16 @@ internal class RestServerInternal(
     private fun addExceptionHandlers(app: Javalin) {
 
         app.exception(HttpResponseException::class.java) { e, ctx ->
-            if (ctx.header(Header.ACCEPT)?.contains(ContentType.JSON) == true || ctx.res.contentType == ContentType.JSON) {
-                ctx.status(e.status).result("""{
+            if (ctx.header(Header.ACCEPT)
+                    ?.contains(ContentType.JSON) == true || ctx.res.contentType == ContentType.JSON
+            ) {
+                ctx.status(e.status).result(
+                    """{
                 |    "title": "${e.message?.let { JsonEscapeUtil.escape(it) }}",
                 |    "status": ${e.status},
-                |    "details": {${e.details.map { """"${it.key}":"${JsonEscapeUtil.escape(it.value)}"""" }.joinToString(",")}}
+                |    "details": {${
+                        e.details.map { """"${it.key}":"${JsonEscapeUtil.escape(it.value)}"""" }.joinToString(",")
+                    }}
                 |}""".trimMargin()
                 ).contentType(ContentType.APPLICATION_JSON)
             } else {
@@ -170,10 +175,7 @@ internal class RestServerInternal(
 
     private fun getSwaggerUiBundle(): Bundle? {
         val rendererBundle = FrameworkUtil.getBundle(SwaggerUIRenderer::class.java) ?: return null
-        return rendererBundle
-            .bundleContext
-            .bundles
-            .find { bundle -> bundle.symbolicName == OptionalDependency.SWAGGERUI.symbolicName }
+        return rendererBundle.bundleContext.bundles.find { bundle -> bundle.symbolicName == OptionalDependency.SWAGGERUI.symbolicName }
     }
 
     @SuppressWarnings("ComplexMethod", "ThrowsCount")
@@ -193,10 +195,10 @@ internal class RestServerInternal(
                     // This is necessary due to "before" matching logic cannot tell path "testEntity/:id" from
                     // "testEntity/getprotocolversion" and mistakenly finds "before" handler where there should be none.
                     // Javalin provides no way for modifying "before" handler finding logic.
-                    if (resourceProvider.httpNoAuthRequiredGetRoutes.none { routeInfo -> routeInfo.fullPath == it.path() } &&
-                            it.method() == "GET") {
+                    if (resourceProvider.httpNoAuthRequiredGetRoutes.none { routeInfo -> routeInfo.fullPath == it.path() } && it.method() == "GET") {
                         val clientHttpRequestContext = ClientHttpRequestContext(it)
-                        val authorizingSubject = authenticate(clientHttpRequestContext, restAuthProvider, credentialResolver)
+                        val authorizingSubject =
+                            authenticate(clientHttpRequestContext, restAuthProvider, credentialResolver)
                         authorize(authorizingSubject, clientHttpRequestContext.getResourceAccessString())
                     } else {
                         log.debug { "Call to ${it.path()} for method ${it.method()} identified as an exempt from authorization check." }
@@ -245,13 +247,13 @@ internal class RestServerInternal(
                     with(configurationsProvider.maxContentLength()) {
                         if (it.contentLength() > this) throw BadRequestResponse(
                             CONTENT_LENGTH_EXCEEDS_LIMIT.format(
-                                it.contentLength(),
-                                this
+                                it.contentLength(), this
                             )
                         )
                     }
                     val clientHttpRequestContext = ClientHttpRequestContext(it)
-                    val authorizingSubject = authenticate(clientHttpRequestContext, restAuthProvider, credentialResolver)
+                    val authorizingSubject =
+                        authenticate(clientHttpRequestContext, restAuthProvider, credentialResolver)
                     authorize(authorizingSubject, clientHttpRequestContext.getResourceAccessString())
                 }
             }
@@ -263,8 +265,9 @@ internal class RestServerInternal(
         try {
             log.trace { "Add OpenApi route." }
             openApiInfoProviders.forEach { openApiInfoProvider ->
-                get(openApiInfoProvider.pathForOpenApiJson)
-                    { ctx -> ctx.result(openApiInfoProvider.openApiString).contentType(contentTypeApplicationJson) }
+                get(openApiInfoProvider.pathForOpenApiJson) { ctx ->
+                    ctx.result(openApiInfoProvider.openApiString).contentType(contentTypeApplicationJson)
+                }
                 get(openApiInfoProvider.pathForOpenApiUI, openApiInfoProvider.swaggerUIRenderer)
             }
             log.trace { "Add OpenApi route completed." }
@@ -294,8 +297,7 @@ internal class RestServerInternal(
                     // The logging implementation is found correctly in practice.
                     executeWithStdErrSuppressed {
                         server.start(
-                            configurationsProvider.getHostAndPort().host,
-                            configurationsProvider.getHostAndPort().port
+                            configurationsProvider.getHostAndPort().host, configurationsProvider.getHostAndPort().port
                         )
                     }
                 }
@@ -423,8 +425,7 @@ internal class RestServerInternal(
             log.info("Add WS handler for \"${routeInfo.fullPath}\".")
 
             ws(
-                routeInfo.fullPath,
-                routeInfo.setupWsCall(
+                routeInfo.fullPath, routeInfo.setupWsCall(
                     restAuthProvider,
                     credentialResolver,
                     webSocketCloserService,
