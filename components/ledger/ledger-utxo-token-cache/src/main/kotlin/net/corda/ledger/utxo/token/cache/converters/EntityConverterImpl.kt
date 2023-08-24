@@ -10,12 +10,12 @@ import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.BalanceQuery
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
-import net.corda.ledger.utxo.token.cache.entities.CachedTokenImpl
+import net.corda.ledger.utxo.token.cache.entities.internal.CachedTokenImpl
 import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
 import net.corda.ledger.utxo.token.cache.entities.ClaimRelease
 import net.corda.ledger.utxo.token.cache.entities.LedgerChange
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
-import net.corda.ledger.utxo.token.cache.entities.PoolCacheStateImpl
+import net.corda.ledger.utxo.token.cache.entities.internal.PoolCacheStateImpl
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import java.math.BigDecimal
 import java.math.BigInteger

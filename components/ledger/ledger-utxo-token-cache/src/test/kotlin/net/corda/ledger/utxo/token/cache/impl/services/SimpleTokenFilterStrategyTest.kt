@@ -2,7 +2,7 @@ package net.corda.ledger.utxo.token.cache.impl.services
 
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
-import net.corda.ledger.utxo.token.cache.entities.TokenCacheImpl
+import net.corda.ledger.utxo.token.cache.entities.internal.TokenCacheImpl
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import net.corda.ledger.utxo.token.cache.services.SimpleTokenFilterStrategy
 import org.assertj.core.api.Assertions.assertThat

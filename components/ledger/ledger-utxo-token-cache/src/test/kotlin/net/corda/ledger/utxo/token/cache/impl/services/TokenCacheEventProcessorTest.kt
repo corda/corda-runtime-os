@@ -7,7 +7,7 @@ import net.corda.ledger.utxo.token.cache.converters.EntityConverter
 import net.corda.ledger.utxo.token.cache.converters.EventConverter
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
-import net.corda.ledger.utxo.token.cache.entities.TokenPoolCacheImpl
+import net.corda.ledger.utxo.token.cache.entities.internal.TokenPoolCacheImpl
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
 import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY

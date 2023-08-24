@@ -3,7 +3,7 @@ package net.corda.ledger.utxo.token.cache.impl.entities
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.ledger.utxo.token.cache.converters.EntityConverter
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
-import net.corda.ledger.utxo.token.cache.entities.TokenCacheImpl
+import net.corda.ledger.utxo.token.cache.entities.internal.TokenCacheImpl
 import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

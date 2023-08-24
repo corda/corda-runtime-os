@@ -1,4 +1,7 @@
-package net.corda.ledger.utxo.token.cache.entities
+package net.corda.ledger.utxo.token.cache.entities.internal
+
+import net.corda.ledger.utxo.token.cache.entities.CachedToken
+import net.corda.ledger.utxo.token.cache.entities.TokenCache
 
 class TokenCacheImpl: TokenCache {
 
