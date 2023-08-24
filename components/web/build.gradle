@@ -28,6 +28,8 @@ dependencies {
         }
     }
 
+    testRuntimeOnly 'org.osgi:osgi.core'
+
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
