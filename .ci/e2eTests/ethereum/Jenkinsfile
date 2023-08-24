@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@mbrkic-r3/CORE-16243/persistence-worker') _
+@Library('corda-shared-build-pipeline-steps@CORE-15756/segregated-workers') _
 // TODO revert to 5.1 after branch above is merged to it
 // @Library('corda-shared-build-pipeline-steps@5.1') _
 
