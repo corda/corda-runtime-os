@@ -31,7 +31,7 @@ class CordaAvroSerializerImplTest {
 
     @Test
     fun testNullValue() {
-        assertThat(cordaAvroSerializer.serialize("") == null)
+        assertThat(cordaAvroSerializer.serialize(null) == null)
     }
 
     @Test

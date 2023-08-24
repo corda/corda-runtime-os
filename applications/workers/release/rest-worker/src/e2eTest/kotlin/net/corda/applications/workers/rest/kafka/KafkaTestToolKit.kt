@@ -30,15 +30,15 @@ import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES_COMMON
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
-import org.osgi.service.component.annotations.Reference
+import org.osgi.test.common.annotation.InjectService
 
 class KafkaTestToolKit(
     private val toolkit: TestToolkit,
-    @Reference(service = CordaAvroSerializationFactory::class)
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) {
     private companion object {
         const val KAFKA_PROPERTY_PREFIX = "CORDA_KAFKA_"
+        @InjectService(timeout=5000)
+        lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
     }
 
     private val registry by lazy {

@@ -32,17 +32,18 @@ class CordaAvroSerializerImpl<T : Any>(
      * @param data
      * @return Serialized data or null
      */
-    override fun serialize(data: T): ByteArray? {
+    override fun serialize(data: T?): ByteArray? {
         try {
             return when (data) {
                 is String -> stringSerializer.serialize(null, data)
                 is ByteArray -> data
+                null -> null
                 else -> {
                     schemaRegistry.serialize(data).array()
                 }
             }
         } catch (ex: Throwable) {
-            val message = "Failed to serialize instance of class type ${data::class.java.name} containing $data"
+            val message = "Failed to serialize instance of class type ${data!!::class.java.name} containing $data"
 
             onError?.invoke(message.toByteArray())
             log.error(message, ex)
