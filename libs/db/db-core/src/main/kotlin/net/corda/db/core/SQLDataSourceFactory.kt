@@ -1,7 +1,6 @@
 package net.corda.db.core
-
-class PostgresDataSourceFactory(
+class SQLDataSourceFactory(
     factory: DataSourceFactory = HikariDataSourceFactory()
 ) : BaseDataSourceFactory(factory) {
-    override val driverClass = "org.postgresql.Driver"
+    override val driverClass = "com.microsoft.sqlserver.jdbc.SQLServerDriver"
 }
