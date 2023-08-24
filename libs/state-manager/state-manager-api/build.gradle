@@ -6,7 +6,6 @@ description 'State Manager API'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
-    compileOnly "org.osgi:org.osgi.service.component.annotations"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     api project(":libs:configuration:configuration-core")

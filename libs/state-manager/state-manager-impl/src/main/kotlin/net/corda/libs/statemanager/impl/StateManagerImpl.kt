@@ -8,8 +8,8 @@ import javax.persistence.EntityManagerFactory
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
-import net.corda.libs.statemanager.State
-import net.corda.libs.statemanager.StateManager
+import net.corda.libs.statemanager.api.State
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.impl.dto.StateDto
 import net.corda.libs.statemanager.impl.repository.StateManagerRepository
 import net.corda.orm.utils.transaction

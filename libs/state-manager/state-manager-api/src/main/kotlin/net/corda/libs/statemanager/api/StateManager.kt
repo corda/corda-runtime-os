@@ -1,4 +1,4 @@
-package net.corda.libs.statemanager
+package net.corda.libs.statemanager.api
 
 /**
  * The [StateManager] provides functions to manage states to the underlying storage mechanism.

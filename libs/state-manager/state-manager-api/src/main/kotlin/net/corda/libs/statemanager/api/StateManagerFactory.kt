@@ -1,4 +1,4 @@
-package net.corda.libs.statemanager
+package net.corda.libs.statemanager.api
 
 import net.corda.libs.configuration.SmartConfig
 

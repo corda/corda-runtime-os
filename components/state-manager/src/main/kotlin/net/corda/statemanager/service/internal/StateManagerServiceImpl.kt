@@ -1,10 +1,10 @@
-package net.corda.statemanager.internal
+package net.corda.statemanager.service.internal
 
 import java.util.function.Supplier
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.libs.statemanager.StateManager
-import net.corda.libs.statemanager.StateManagerFactory
+import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -17,7 +17,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.statemanager.StateManagerService
+import net.corda.statemanager.service.StateManagerService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

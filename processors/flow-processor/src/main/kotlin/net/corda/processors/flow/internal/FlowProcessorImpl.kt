@@ -19,7 +19,7 @@ import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.processors.flow.FlowProcessor
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
-import net.corda.statemanager.StateManagerService
+import net.corda.statemanager.service.StateManagerService
 import net.corda.utilities.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate

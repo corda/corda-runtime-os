@@ -1,7 +1,7 @@
-package net.corda.statemanager
+package net.corda.statemanager.service
 
 import java.util.function.Supplier
-import net.corda.libs.statemanager.StateManager
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
 

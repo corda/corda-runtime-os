@@ -4,8 +4,8 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.db.core.PostgresDataSourceFactory
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.statemanager.StateManager
-import net.corda.libs.statemanager.StateManagerFactory
+import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.libs.statemanager.impl.StateManagerImpl
 import net.corda.libs.statemanager.impl.model.v1_0.StateManagerEntities
 import net.corda.libs.statemanager.impl.repository.impl.StateManagerRepositoryImpl
