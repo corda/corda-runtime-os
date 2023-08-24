@@ -24,7 +24,7 @@ import java.time.Instant
 import java.util.UUID
 
 
-data class SwapFlowArgs(val newOwner: String, val stateId: UUID, val interopGroupId: String)
+data class SwapFlowArgs(val newOwner: String, val stateId: UUID, val applicationName: String)
 
 @InitiatingFlow(protocol = "interop-sample-swap-protocol")
 class SwapFlow : ClientStartableFlow {
@@ -76,7 +76,7 @@ class SwapFlow : ClientStartableFlow {
 
             val session = flowMessaging.initiateFlow(newOwnerInfo.name)
             val reservation : UUID = session.sendAndReceive(UUID::class.java,
-                Payment(flowArgs.interopGroupId, BigDecimal(100)))
+                Payment(flowArgs.applicationName, BigDecimal(100)))
 
             val outputState =
                 inputState.withNewOwner(newOwnerInfo.name, listOf(ownerInfo.ledgerKeys[0], newOwnerInfo.ledgerKeys[0]))

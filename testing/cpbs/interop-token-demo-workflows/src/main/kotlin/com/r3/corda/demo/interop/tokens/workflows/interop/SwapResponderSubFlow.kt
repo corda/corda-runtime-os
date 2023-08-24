@@ -23,9 +23,9 @@ class SwapResponderSubFlow(private val message: Payment):
     @Suspendable
     override fun call(): UUID {
 
-        val interopGroupId = message.interopGroupId
-        val myInteropInfo : InterOpIdentityInfo? = interopIdentityLookUp.lookup(interopGroupId)
-        require(myInteropInfo != null) { "Cant find InteropInfo for ${interopGroupId}." }
+        val applicationName = message.applicationName
+        val myInteropInfo : InterOpIdentityInfo? = interopIdentityLookUp.lookup(applicationName)
+        require(myInteropInfo != null) { "Cant get InteropIdentityInfo for ${applicationName}." }
         val facadeId = "org.corda.interop/platform/tokens/v1.0"
         log.info("Interop call: facadeId=$facadeId, interopIdentity=${myInteropInfo.applicationName}," +
                 " interopGroupId=${myInteropInfo.groupId}")

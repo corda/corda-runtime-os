@@ -10,7 +10,6 @@ import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.interop.FacadeService
-import net.corda.v5.application.interop.InterOpIdentityInfo
 import net.corda.v5.application.interop.InteropIdentityLookUp
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
@@ -104,15 +103,16 @@ class SimpleSwapFlow : ClientStartableFlow {
                 log.info("Success! Response: $it")
             }
 
-            val payment = Payment(flowArgs.interopGroupId, BigDecimal(100))
-            val myInteropInfo: InterOpIdentityInfo? = interopIdentityLookUp.lookup(flowArgs.interopGroupId)
-            require(myInteropInfo != null) { "Cant find InteropInfo for ${flowArgs.interopGroupId}." }
-            val myAlias = MemberX500Name.parse(myInteropInfo.x500Name)
+            val payment = Payment(flowArgs.applicationName, BigDecimal(100))
+            val myInteropIdentityInfo = checkNotNull(interopIdentityLookUp.lookup(flowArgs.applicationName)) {
+                "Cant find InteropInfo for ${flowArgs.applicationName}."
+            }
+            val myInteropIdentityName = MemberX500Name.parse(myInteropIdentityInfo.x500Name)
 
             val facadeId = "org.corda.interop/platform/tokens/v3.0"
-            log.info("Interop call: $facadeId, $myAlias")
+            log.info("Interop call: $facadeId, $myInteropIdentityName")
             val tokens: TokensFacade =
-                facadeService.getProxy(facadeId, TokensFacade::class.java, myInteropInfo)
+                facadeService.getProxy(facadeId, TokensFacade::class.java, myInteropIdentityInfo)
 
             val response= tokens.reserveTokensV3("USD", payment.toReserve, 1000L)
             log.info("Interop call returned: $response")
