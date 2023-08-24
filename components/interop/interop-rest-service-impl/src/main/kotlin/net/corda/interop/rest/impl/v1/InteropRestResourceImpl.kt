@@ -84,7 +84,6 @@ internal class InteropRestResourceImpl @Activate constructor(
     override val targetInterface: Class<InteropRestResource> = InteropRestResource::class.java
     override val protocolVersion = 1
 
-    //TODO Add correct group policy as part of the import task CORE-10450
     override fun getInterOpGroups(holdingIdentityShortHash: String): Map<UUID, String> {
         val validHoldingIdentityShortHash = validateShortHash(holdingIdentityShortHash)
         val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(validHoldingIdentityShortHash)
