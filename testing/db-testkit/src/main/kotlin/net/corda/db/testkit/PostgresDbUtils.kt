@@ -39,7 +39,11 @@ object PostgresDbUtils : DbUtilsAbstract() {
         val password = dbPassword ?: adminPassword
         if(!port.isNullOrBlank()){
             if(!schemaName.isNullOrBlank()){
-                jdbcURL = "$jdbcURL?currentSchema=$schemaName"
+                val jdbcURLCopy = "$jdbcURL?currentSchema=$schemaName"
+                return ConfigFactory.empty()
+                    .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcURLCopy))
+                    .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(user))
+                    .withValue(DatabaseConfig.DB_PASS, ConfigValueFactory.fromAnyRef(password))
             }
             return ConfigFactory.empty()
                 .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcURL))
