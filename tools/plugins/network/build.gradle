@@ -37,6 +37,7 @@ dependencies {
     testImplementation "org.pf4j:pf4j:${pf4jVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
     testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
+    testImplementation project(path: ':testing:e2e-test-utilities')
 }
 
 cliPlugin {
