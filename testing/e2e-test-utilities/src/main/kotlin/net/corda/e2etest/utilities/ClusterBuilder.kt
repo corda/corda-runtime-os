@@ -166,6 +166,7 @@ class ClusterBuilder {
     /** List all CPIs in the system */
     fun cpiList() = client!!.get("/api/$REST_API_VERSION_PATH/cpi")
 
+    @Suppress("LongParameterList")
     private fun vNodeBody(
         cpiHash: String,
         x500Name: String,
@@ -282,6 +283,7 @@ class ClusterBuilder {
     }
 
     /** Create a virtual node */
+    @Suppress("LongParameterList")
     fun vNodeCreate(
         cpiHash: String,
         x500Name: String,
