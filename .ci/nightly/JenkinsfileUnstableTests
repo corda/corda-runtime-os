@@ -1,5 +1,5 @@
 //catch all job for flaky tests
-@Library('corda-shared-build-pipeline-steps@CORE-15756/segregated-workers') _
+@Library('corda-shared-build-pipeline-steps@bm/CORE-16228') _
 
 cordaPipelineKubernetesAgent(
     runIntegrationTests: true,
