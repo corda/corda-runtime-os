@@ -5,7 +5,6 @@ import com.typesafe.config.ConfigValueFactory
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 import net.corda.applications.workers.rest.http.TestToolkit
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.chunking.impl.ChunkBuilderServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
@@ -30,15 +29,12 @@ import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES_COMMON
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
-import org.osgi.test.common.annotation.InjectService
 
 class KafkaTestToolKit(
     private val toolkit: TestToolkit,
 ) {
     private companion object {
         const val KAFKA_PROPERTY_PREFIX = "CORDA_KAFKA_"
-        @InjectService(timeout=5000)
-        lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
     }
 
     private val registry by lazy {
@@ -66,10 +62,10 @@ class KafkaTestToolKit(
     }
 
     private val consumerBuilder by lazy {
-        CordaKafkaConsumerBuilderImpl(messagingChunkFactory, cordaAvroSerializationFactory)
+        CordaKafkaConsumerBuilderImpl(messagingChunkFactory, serializationFactory)
     }
     private val producerBuilder by lazy {
-        KafkaCordaProducerBuilderImpl(messagingChunkFactory, cordaAvroSerializationFactory)
+        KafkaCordaProducerBuilderImpl(messagingChunkFactory, serializationFactory)
     }
     private val coordinatorFactory by lazy {
         LifecycleCoordinatorFactoryImpl(
