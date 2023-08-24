@@ -16,7 +16,7 @@ import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResol
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityVersion
-import net.corda.ledger.utxo.flow.impl.groupparameters.GroupParametersLookupInternal
+import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal

@@ -1,6 +1,7 @@
-package net.corda.ledger.utxo.flow.impl.groupparameters
+package net.corda.flow.application.services
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.flow.application.services.impl.GroupParametersLookupImpl
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM

@@ -1,7 +1,7 @@
-package net.corda.ledger.utxo.flow.impl.groupparameters
+package net.corda.flow.application
 
 import net.corda.membership.lib.SignedGroupParameters
-import net.corda.v5.ledger.utxo.GroupParametersLookup
+import net.corda.v5.membership.GroupParametersLookup
 import java.security.PublicKey
 
 interface GroupParametersLookupInternal: GroupParametersLookup {

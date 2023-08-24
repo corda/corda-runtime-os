@@ -12,7 +12,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
 import net.corda.ledger.utxo.data.transaction.utxoComponentGroupStructure
 import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
-import net.corda.ledger.utxo.flow.impl.groupparameters.GroupParametersLookupInternal
+import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl

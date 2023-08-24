@@ -2,7 +2,7 @@ package net.corda.ledger.utxo.test
 
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.ledger.utxo.flow.impl.groupparameters.GroupParametersLookupInternal
+import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.v5.crypto.SignatureSpec
 import org.mockito.Mockito

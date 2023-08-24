@@ -118,7 +118,7 @@ class UtxoLedgerTransactionImpl(
     }
 
     /*
-    * The null check in the method is to prevent 5.0 from hitting this method since this field doesn't exist in 5.0
+    * The null check in the method is to make 5.0 in-flight transactions caught in upgrades failing more gracefully.
     */
     override fun getGroupParameters(): GroupParameters {
         requireNotNull(groupParameters) {

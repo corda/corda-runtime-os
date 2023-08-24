@@ -21,6 +21,7 @@ dependencies {
     implementation 'net.corda:corda-ledger-common'
 
     implementation project(':components:ledger:ledger-common-flow-api')
+//    implementation project(':components:membership:group-policy')
 
     implementation project(':libs:layered-property-map')
     implementation project(':libs:ledger:ledger-common-data')
@@ -42,6 +43,8 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     integrationTestImplementation project(':testing:ledger:ledger-common-base-integration-test')
+    integrationTestImplementation project(':testing:group-policy-test-common')
+
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')

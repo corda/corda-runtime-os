@@ -1,6 +1,7 @@
-package net.corda.ledger.utxo.flow.impl.groupparameters
+package net.corda.flow.application.services.impl
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
@@ -9,7 +10,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandbox.type.SandboxConstants
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
-import net.corda.v5.ledger.utxo.GroupParametersLookup
+import net.corda.v5.membership.GroupParametersLookup
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate

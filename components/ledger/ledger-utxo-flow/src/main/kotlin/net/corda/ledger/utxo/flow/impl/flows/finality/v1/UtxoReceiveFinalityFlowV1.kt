@@ -10,7 +10,7 @@ import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityVersion
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.flows.finality.v1.FinalityNotarizationFailureType.Companion.toFinalityNotarizationFailureType
-import net.corda.ledger.utxo.flow.impl.groupparameters.GroupParametersLookupInternal
+import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
