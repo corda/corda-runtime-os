@@ -38,9 +38,9 @@ class WrappedUtxoWireTransaction(
         ) {
             "The length of the outputs and output infos component groups needs to be the same."
         }
-        log.info("CORE-16346 WrappedUtxoWireTransaction.init (${this.hashCode()})")
+        log.info("CORE-16346 WUWT.init (${this.hashCode()})")
         @Suppress("SENSELESS_COMPARISON")
-        log.info("CORE-16346 WrappedUtxoWireTransaction.init (${this.hashCode()}) isNull?: ${serializationService == null}")
+        log.info("CORE-16346 WUWT.init (${this.hashCode()}) isNull?: ${serializationService == null}")
     }
 
     val id: SecureHash get() = wireTransaction.id
@@ -89,9 +89,9 @@ class WrappedUtxoWireTransaction(
             wireTransaction
                 .getComponentGroupList(UtxoComponentGroup.OUTPUTS.ordinal).size
         ) { index ->
-            log.info("CORE-16346 WrappedUtxoWireTransaction.outputStateAndRefs (${this.hashCode()})")
+            log.info("CORE-16346 WUWT.oSAR (${this.hashCode()})")
             @Suppress("SENSELESS_COMPARISON")
-            log.info("CORE-16346 WrappedUtxoWireTransaction.outputStateAndRefs (${this.hashCode()}) isNull?: ${serializationService == null}")
+            log.info("CORE-16346 WUWT.oSAR (${this.hashCode()}) isNull?: ${serializationService == null}")
             UtxoTransactionOutputDto(
                 id.toString(), index,
                 wireTransaction
