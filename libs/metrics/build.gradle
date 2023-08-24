@@ -10,6 +10,7 @@ dependencies {
 
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
