@@ -1,9 +1,11 @@
-package net.corda.ledger.utxo.token.cache.services
+package net.corda.ledger.utxo.token.cache.services.internal
 
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.ledger.utxo.token.cache.factories.TokenCacheEventProcessorFactory
+import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
+import net.corda.ledger.utxo.token.cache.services.TokenCacheSubscriptionHandler
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -24,7 +26,7 @@ class TokenCacheSubscriptionHandlerImpl(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val subscriptionFactory: SubscriptionFactory,
     private val tokenCacheEventProcessorFactory: TokenCacheEventProcessorFactory,
-    private val serviceConfiguration:ServiceConfiguration,
+    private val serviceConfiguration: ServiceConfiguration,
     private val toMessagingConfig: (Map<String, SmartConfig>) -> SmartConfig,
     private val toTokenConfig: (Map<String, SmartConfig>) -> SmartConfig,
 ) : TokenCacheSubscriptionHandler {

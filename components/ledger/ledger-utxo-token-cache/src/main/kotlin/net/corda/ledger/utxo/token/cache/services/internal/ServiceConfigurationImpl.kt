@@ -1,5 +1,6 @@
-package net.corda.ledger.utxo.token.cache.services
+package net.corda.ledger.utxo.token.cache.services.internal
 
+import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.LedgerConfig.UTXO_TOKEN_CACHED_TOKEN_PAGE_SIZE
 

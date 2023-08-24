@@ -12,7 +12,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.ledger.utxo.token.cache.repositories.UtxoTokenRepository
-import net.corda.ledger.utxo.token.cache.services.AvailableTokenServiceImpl
+import net.corda.ledger.utxo.token.cache.services.internal.AvailableTokenServiceImpl
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet

@@ -14,11 +14,11 @@ import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenLedgerChangeEventHandler
 import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderTokens
 import net.corda.ledger.utxo.token.cache.repositories.impl.UtxoTokenRepositoryImpl
-import net.corda.ledger.utxo.token.cache.services.AvailableTokenServiceImpl
-import net.corda.ledger.utxo.token.cache.services.ServiceConfigurationImpl
+import net.corda.ledger.utxo.token.cache.services.internal.ServiceConfigurationImpl
 import net.corda.ledger.utxo.token.cache.services.SimpleTokenFilterStrategy
 import net.corda.ledger.utxo.token.cache.services.TokenCacheComponent
-import net.corda.ledger.utxo.token.cache.services.TokenCacheSubscriptionHandlerImpl
+import net.corda.ledger.utxo.token.cache.services.internal.TokenCacheSubscriptionHandlerImpl
+import net.corda.ledger.utxo.token.cache.services.internal.AvailableTokenServiceImpl
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory

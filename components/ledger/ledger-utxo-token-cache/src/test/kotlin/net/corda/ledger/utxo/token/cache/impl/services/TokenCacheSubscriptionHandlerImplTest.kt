@@ -16,7 +16,7 @@ import net.corda.ledger.utxo.token.cache.factories.TokenCacheEventProcessorFacto
 import net.corda.ledger.utxo.token.cache.impl.MINIMUM_SMART_CONFIG
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.ledger.utxo.token.cache.services.TokenCacheSubscriptionHandler
-import net.corda.ledger.utxo.token.cache.services.TokenCacheSubscriptionHandlerImpl
+import net.corda.ledger.utxo.token.cache.services.internal.TokenCacheSubscriptionHandlerImpl
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
