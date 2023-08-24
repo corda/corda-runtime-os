@@ -123,7 +123,6 @@ publishing {
     publications {
         maven(MavenPublication) {
             artifactId 'corda-combined-worker'
-
             groupId project.group
             pom {
                 name = 'corda-combined-worker'

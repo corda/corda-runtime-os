@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@connelm/ES-1230/publish-kafka-combined-worker') _
+@Library('corda-shared-build-pipeline-steps@5.1') _
 
 cordaPipelineKubernetesAgent(
     dailyBuildCron: 'H H/6 * * *',
