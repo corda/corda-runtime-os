@@ -75,6 +75,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.crypto.AEADBadTagException
 import javax.persistence.QueryTimeoutException
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /* SoftCryptoService tests that do not require wrapping keys */
@@ -118,9 +119,10 @@ class SoftCryptoServiceGeneralTests {
     fun `Should throw IllegalStateException when wrapping key alias exists and failIfExists is true`() {
         val alias = "stuff"
         cryptoRepositoryWrapping.keys[alias] = sampleWrappingKeyInfo
-        assertThrows<IllegalStateException> {
+        val exception = assertThrows<IllegalStateException> {
             service.createWrappingKey(alias, true, emptyMap())
         }
+        assertThat(exception.message).contains("There is an existing key with the alias")
         assertThat(cryptoRepositoryWrapping.keys[alias]).isEqualTo(sampleWrappingKeyInfo)
     }
 
@@ -135,7 +137,7 @@ class SoftCryptoServiceGeneralTests {
     @Suppress("MaxLineLength")
     fun `Should throw IllegalArgumentException when generating key pair and signature scheme is not supported`() {
         cryptoRepositoryWrapping.keys["stuff3"] = sampleWrappingKeyInfo
-        assertThrows<IllegalArgumentException> {
+        val exception = assertThrows<IllegalArgumentException> {
             service.generateKeyPair(
                 KeyGenerationSpec(
                     keyScheme = UNSUPPORTED_SIGNATURE_SCHEME,
@@ -145,11 +147,12 @@ class SoftCryptoServiceGeneralTests {
                 defaultContext
             )
         }
+        assertThat(exception.message).contains("Unsupported key scheme")
     }
 
     @Test
     fun `Should throw IllegalArgumentException when signing empty data array`() {
-        assertThrows<IllegalArgumentException> {
+        val exception = assertThrows<IllegalArgumentException> {
             service.sign(
                 SigningWrappedSpec(
                     publicKey = mock(),
@@ -159,17 +162,19 @@ class SoftCryptoServiceGeneralTests {
                         encodingVersion = PRIVATE_KEY_ENCODING_VERSION
                     ),
                     keyScheme = service.supportedSchemes.keys.first { it.codeName == ECDSA_SECP256R1_CODE_NAME },
-                    signatureSpec = SignatureSpecs.ECDSA_SHA256
+                    signatureSpec = SignatureSpecs.ECDSA_SHA256,
+                    category = CryptoConsts.Categories.LEDGER
                 ),
                 ByteArray(0),
                 defaultContext
             )
         }
+        assertThat(exception.message).contains("Signing of an empty array is not permitted")
     }
 
     @Test
     fun `Should throw IllegalArgumentException when signing using unsupported scheme`() {
-        assertThrows<IllegalArgumentException> {
+        val exception = assertThrows<IllegalArgumentException> {
             service.sign(
                 SigningWrappedSpec(
                     publicKey = mock(),
@@ -179,17 +184,19 @@ class SoftCryptoServiceGeneralTests {
                         encodingVersion = PRIVATE_KEY_ENCODING_VERSION
                     ),
                     keyScheme = UNSUPPORTED_SIGNATURE_SCHEME,
-                    signatureSpec = SignatureSpecs.ECDSA_SHA256
+                    signatureSpec = SignatureSpecs.ECDSA_SHA256,
+                    category = CryptoConsts.Categories.LEDGER
                 ),
                 ByteArray(0),
                 defaultContext
             )
         }
+        assertThat(exception.message).contains("Signing of an empty array is not permitted")
     }
 
     @Test
     fun `Should throw IllegalArgumentException when signing using scheme which does not support signing`() {
-        assertThrows<IllegalArgumentException> {
+        val exception = assertThrows<IllegalArgumentException> {
             service.sign(
                 SigningWrappedSpec(
                     publicKey = mock(),
@@ -199,19 +206,22 @@ class SoftCryptoServiceGeneralTests {
                         encodingVersion = PRIVATE_KEY_ENCODING_VERSION
                     ),
                     keyScheme = service.supportedSchemes.keys.first { it.codeName == X25519_CODE_NAME },
-                    signatureSpec = SignatureSpecs.EDDSA_ED25519
+                    signatureSpec = SignatureSpecs.EDDSA_ED25519,
+                    category = CryptoConsts.Categories.LEDGER
                 ),
                 ByteArray(0),
                 defaultContext
             )
         }
+        assertThat(exception.message).contains("Signing of an empty array is not permitted")
     }
 
     @Test
     fun `Should throw IllegalArgumentException when deriving key and spec is not SharedSecretWrappedSpec`() {
-        assertThrows<IllegalArgumentException> {
+        val exception = assertThrows<IllegalArgumentException> {
             service.deriveSharedSecret(mock(), defaultContext)
         }
+        assertThat(exception.message).contains("The service supports only class net.corda.crypto.cipher.suite.SharedSecretWrappedSpec")
     }
 
     @Test
@@ -219,7 +229,7 @@ class SoftCryptoServiceGeneralTests {
         val keyScheme = service.supportedSchemes.keys.first { it.codeName == EDDSA_ED25519_CODE_NAME }
         val myKeyPair = generateKeyPair(schemeMetadata, EDDSA_ED25519_CODE_NAME)
         val otherKeyPair = generateKeyPair(schemeMetadata, EDDSA_ED25519_CODE_NAME)
-        assertThrows<IllegalArgumentException> {
+        val exception = assertThrows<IllegalArgumentException> {
             service.deriveSharedSecret(
                 SharedSecretWrappedSpec(
                     publicKey = myKeyPair.public,
@@ -234,6 +244,7 @@ class SoftCryptoServiceGeneralTests {
                 defaultContext
             )
         }
+        assertThat(exception.message).contains("must support the Diffie–Hellman key agreement")
     }
 
     @Test
@@ -241,7 +252,7 @@ class SoftCryptoServiceGeneralTests {
         val keyScheme = service.supportedSchemes.keys.first { it.codeName == ECDSA_SECP256R1_CODE_NAME }
         val myKeyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256R1_CODE_NAME)
         val otherKeyPair = generateKeyPair(schemeMetadata, ECDSA_SECP256K1_CODE_NAME)
-        assertThrows<IllegalArgumentException> {
+        val exception = assertThrows<IllegalArgumentException> {
             service.deriveSharedSecret(
                 SharedSecretWrappedSpec(
                     publicKey = myKeyPair.public,
@@ -256,6 +267,7 @@ class SoftCryptoServiceGeneralTests {
                 defaultContext
             )
         }
+        assertThat(exception.message).contains("The keys must use the same key scheme, ")
     }
 
     @Test
@@ -283,9 +295,10 @@ class SoftCryptoServiceGeneralTests {
         val cryptoServiceExploding = makeSoftCryptoService(wrappingRepository = mock() {
             on { findKey(any()) } doThrow QueryTimeoutException()
         })
-        assertThrows<CryptoException> {
+        val exception = assertThrows<CryptoException> {
             cryptoServiceExploding.createWrappingKey("foo", true, emptyMap())
         }
+        assertThat(exception.message).contains("Calling createWrappingKey findKey failed in a potentially recoverable way")
     }
 
     @Test
@@ -293,9 +306,10 @@ class SoftCryptoServiceGeneralTests {
         val cryptoServiceExploding = makeSoftCryptoService(wrappingRepository = mock() {
             on { findKey(any()) } doThrow IllegalStateException()
         })
-        assertThrows<IllegalStateException> {
+        val exception = assertThrows<IllegalStateException> {
             cryptoServiceExploding.createWrappingKey("foo", true, emptyMap())
         }
+        assertNull(exception.message)
     }
 
 
@@ -395,6 +409,7 @@ class SoftCryptoServiceGeneralTests {
             )
         }
         Assertions.assertSame(exception, thrown)
+        assertThat(thrown.message).isEmpty()
         Mockito.verify(repo, times(1)).findKey(any<PublicKey>())
     }
 
@@ -407,7 +422,7 @@ class SoftCryptoServiceGeneralTests {
         val publicKey = mock<PublicKey> {
             on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
         }
-        Assertions.assertThrows(IllegalArgumentException::class.java) {
+        val exception = assertThrows<IllegalArgumentException> {
             cryptoService.sign(
                 tenantId = tenantId,
                 publicKey = publicKey,
@@ -416,6 +431,8 @@ class SoftCryptoServiceGeneralTests {
                 context = emptyMap()
             )
         }
+        assertThat(exception.message).contains("The public key")
+        assertThat(exception.message).contains("was not found")
     }
 
     private fun mockDigestService() = mock<PlatformDigestService> {
@@ -447,6 +464,7 @@ class SoftCryptoServiceGeneralTests {
             )
         }
         Assertions.assertSame(exception, thrown)
+        assertThat(thrown.message).isEmpty()
         verify(repo, times(1)).findKey(any<PublicKey>())
     }
 
@@ -456,7 +474,7 @@ class SoftCryptoServiceGeneralTests {
             on { findKey(any<PublicKey>()) } doReturn null
         }
         val cryptoService = makeSoftCryptoService(signingRepository = repo)
-        Assertions.assertThrows(IllegalArgumentException::class.java) {
+        val exception = assertThrows<IllegalArgumentException> {
             cryptoService.deriveSharedSecret(
                 tenantId = UUID.randomUUID().toString(),
                 publicKey = mock {
@@ -468,6 +486,8 @@ class SoftCryptoServiceGeneralTests {
                 context = emptyMap()
             )
         }
+        assertThat(exception.message).contains("The public key")
+        assertThat(exception.message).contains("was not found")
     }
 
     @Test
@@ -500,7 +520,7 @@ class SoftCryptoServiceGeneralTests {
             on { lookup(eq(tenantId), any()) } doReturn mockAssoicationInfo
         }
         val cryptoService = makeSoftCryptoService(signingRepository = repo, tenantInfoService = tenantInfoService)
-        Assertions.assertThrows(KeyAlreadyExistsException::class.java) {
+        val exception = assertThrows<KeyAlreadyExistsException> {
             cryptoService.generateKeyPair(
                 tenantId = tenantId,
                 category = CryptoConsts.Categories.LEDGER,
@@ -510,7 +530,9 @@ class SoftCryptoServiceGeneralTests {
                 context = emptyMap()
             )
         }
-        Assertions.assertThrows(KeyAlreadyExistsException::class.java) {
+        assertThat(exception.message).contains("The key with alias")
+        assertThat(exception.message).contains("already exists for tenant")
+        val exception2 = assertThrows<KeyAlreadyExistsException> {
             cryptoService.generateKeyPair(
                 tenantId = tenantId,
                 category = CryptoConsts.Categories.LEDGER,
@@ -520,6 +542,8 @@ class SoftCryptoServiceGeneralTests {
                 context = emptyMap()
             )
         }
+        assertThat(exception2.message).contains("The key with alias")
+        assertThat(exception2.message).contains("already exists for tenant")
     }
 
     @Test
@@ -533,7 +557,7 @@ class SoftCryptoServiceGeneralTests {
             on { masterKeyAlias } doReturn "alias1"
         }
         val tenantInfoService = mock<TenantInfoService> {
-            on { lookup(eq(tenantId), any()) } doReturn mockAssoicationInfo 
+            on { lookup(eq(tenantId), any()) } doReturn mockAssoicationInfo
         }
         val cryptoService = makeSoftCryptoService(signingRepository = repo,
             tenantInfoService = tenantInfoService)
@@ -546,6 +570,7 @@ class SoftCryptoServiceGeneralTests {
                 context = emptyMap()
             )
         }
+        assertThat(thrown.message).isEmpty()
         Assertions.assertSame(exception, thrown)
         thrown = Assertions.assertThrows(exception::class.java) {
             cryptoService.generateKeyPair(
@@ -557,10 +582,11 @@ class SoftCryptoServiceGeneralTests {
                 context = emptyMap()
             )
         }
+        assertThat(thrown.message).isEmpty()
         Assertions.assertSame(exception, thrown)
         verify(repo, times(2)).findKey(ArgumentMatchers.anyString())
     }
-    
+
     @Test
     @Suppress("ComplexMethod", "MaxLineLength")
     fun `Should save generated key with alias`() {
@@ -690,7 +716,7 @@ class SoftCryptoServiceGeneralTests {
         }
         assertThat(fullIdsCap.allValues.single()).isEqualTo(setOf(hashB))
     }
-    
+
     @ParameterizedTest
     @CsvSource("0,false", "1,false", "2,false", "0,true", "1,true", "2,true")
     fun `lookup returns requested keys from cache and db`(
@@ -818,17 +844,19 @@ class SoftCryptoServiceGeneralTests {
         val hsmAssociationInfo = mock<HSMAssociationInfo> {
             on { masterKeyAlias } doReturn "root1"
         }
-        val tenantInfoService = mock<TenantInfoService> { 
+        val tenantInfoService = mock<TenantInfoService> {
             on { lookup(any(), any()) } doReturn hsmAssociationInfo
         }
         whenever(repo.findKey(alias)).doReturn(key)
 
         val service = makeSoftCryptoService(signingRepository = repo, tenantInfoService = tenantInfoService)
-        assertThrows<KeyAlreadyExistsException> {
+        val exception = assertThrows<KeyAlreadyExistsException> {
             service.generateKeyPair(tenantId, category, alias, scheme = scheme, context = context)
         }
+        assertThat(exception.message).contains("The key with alias")
+        assertThat(exception.message).contains("already exists for tenant")
     }
-    
+
     @Test
     fun `can rewrap a managed wrapping key`() {
         cryptoRepositoryWrapping.keys["root"] = sampleWrappingKeyInfo
@@ -845,23 +873,24 @@ class SoftCryptoServiceGeneralTests {
         myCryptoService.createWrappingKey("alpha", false, emptyMap())
         val wrappedWithRoot1 = checkNotNull(cryptoRepositoryWrapping.keys.get("alpha")).keyMaterial
         val clearKey1 = rootWrappingKey.unwrapWrappingKey(wrappedWithRoot1)
-        
+
         // try rotating to parent key root2
         myCryptoService.rewrapWrappingKey(CryptoTenants.CRYPTO, "alpha", "root2")
         val wrappedWithRoot2 = checkNotNull(cryptoRepositoryWrapping.keys.get("alpha")).keyMaterial
         val clearKey2 = rootWrappingKey2.unwrapWrappingKey(wrappedWithRoot2)
-        assertThrows<AEADBadTagException> {
+        val exception = assertThrows<AEADBadTagException> {
             rootWrappingKey.unwrapWrappingKey(wrappedWithRoot2)
         }
+        assertThat(exception.message).contains("Tag mismatch")
         assertThat(clearKey2).isEqualTo(clearKey1)
         assertThat(wrappedWithRoot1).isNotEqualTo(wrappedWithRoot2)
-        
+
         // now let's rotate back to parent key root, and the clear material should be the same
         myCryptoService.rewrapWrappingKey(CryptoTenants.CRYPTO, "alpha", "root")
         val wrappedWithRoot1Again = checkNotNull(cryptoRepositoryWrapping.keys.get("alpha")).keyMaterial
         val clearKey3 = rootWrappingKey.unwrapWrappingKey(wrappedWithRoot1Again)
         assertThat(clearKey3).isEqualTo(clearKey1)
-        
+
         // AES may have a different initialisation vector so wrappedWithRoot1Again will usually not equal
         // wrappedWithRoot1
     }

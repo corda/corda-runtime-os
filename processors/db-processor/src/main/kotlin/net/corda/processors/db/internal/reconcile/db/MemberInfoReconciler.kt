@@ -1,10 +1,10 @@
 package net.corda.processors.db.internal.reconcile.db
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Stream
 import javax.persistence.EntityManager
-import net.corda.avro.serialization.CordaAvroDeserializer
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePairList
@@ -22,8 +22,11 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.datamodel.MemberInfoEntity
+import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.deserializeContext
 import net.corda.membership.lib.toSortedMap
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
@@ -60,6 +63,7 @@ class MemberInfoReconciler(
     private val publisherFactory: PublisherFactory,
     private val subscriptionFactory: SubscriptionFactory,
     private val configurationReadService: ConfigurationReadService,
+    private val memberInfoFactory: MemberInfoFactory,
 ): ReconcilerWrapper {
     companion object {
         private const val FOLLOW_CHANGES_RESOURCE_NAME = "MemberInfoReconcilierReadWriter.followStatusChangesByName"
@@ -85,14 +89,17 @@ class MemberInfoReconciler(
         @VisibleForTesting
         internal fun getAllMemberInfo(
             reconciliationContext: ReconciliationContext,
-            keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList>
+            memberInfoFactory: MemberInfoFactory
         ): Stream<VersionedRecord<String, PersistentMemberInfo>> {
             val context = reconciliationContext as? VirtualNodeReconciliationContext ?: return Stream.empty()
             return getAllMemberInfo(context.getOrCreateEntityManager()).map { entity ->
-                val memberInfo = PersistentMemberInfo(
+                val memberInfo = memberInfoFactory.createPersistentMemberInfo(
                     context.virtualNodeInfo.holdingIdentity.toAvro(),
-                    keyValuePairListDeserializer.deserialize(entity.memberContext),
-                    keyValuePairListDeserializer.deserialize(entity.mgmContext)
+                    entity.memberContext,
+                    entity.mgmContext,
+                    entity.memberSignatureKey,
+                    entity.memberSignatureContent,
+                    entity.memberSignatureSpec,
                 )
                 val holdingIdentity = HoldingIdentity(
                     MemberX500Name.parse(entity.memberX500Name), context.virtualNodeInfo.holdingIdentity.groupId
@@ -136,17 +143,30 @@ class MemberInfoReconciler(
         private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::handleEvent)
         private val recordsMap = ConcurrentHashMap<String, PersistentMemberInfo>()
 
-        override fun getAllVersionedRecords(): Stream<VersionedRecord<String, PersistentMemberInfo>>? {
+        override fun getAllVersionedRecords(): Stream<VersionedRecord<String, PersistentMemberInfo>> {
             return recordsMap.entries.stream().mapNotNull {
                 val version = try {
-                    it.value.mgmContext.items.singleOrNull { keyValuePair -> keyValuePair.key == SERIAL }?.value?.toInt()
+                    // we can have old schema version (5.0) of persistent information in case of platform upgrade
+                    if (it.value.mgmContext == null ) {
+                        it.value.serializedMgmContext.array().deserializeContext(keyValuePairListDeserializer)
+                            .getOrDefault(SERIAL, null)?.toInt()
+                    } else {
+                        it.value.mgmContext.items.singleOrNull { keyValuePair -> keyValuePair.key == SERIAL }?.value?.toInt()
+                    }
+                } catch (e: ContextDeserializationException) {
+                    val name = parseName(it.value)
+                    logger.warn("Could not deserialize mgm provided context in " +
+                            "record for $name in ${it.value.viewOwningMember}'s list.")
+                    return@mapNotNull null
                 } catch (e: NumberFormatException) {
-                    logger.warn("Record for ${it.value.memberContext.toSortedMap()[PARTY_NAME]} in ${it.value.viewOwningMember}'s member " +
+                    val name = parseName(it.value)
+                    logger.warn("Record for $name in ${it.value.viewOwningMember}'s member " +
                             "list doesn't contain a valid serial number.")
                     return@mapNotNull null
                 }
                 if (version == null) {
-                    logger.warn("Record for ${it.value.memberContext.toSortedMap()[PARTY_NAME]} in ${it.value.viewOwningMember}'s member " +
+                    val name = parseName(it.value)
+                    logger.warn("Record for $name in ${it.value.viewOwningMember}'s member " +
                         "list doesn't contain a serial number.")
                     return@mapNotNull null
                 }
@@ -160,7 +180,8 @@ class MemberInfoReconciler(
         }
 
         override fun put(recordKey: String, recordValue: PersistentMemberInfo) {
-            logger.info("Reconciling record for: ${recordValue.memberContext.toSortedMap()[PARTY_NAME]} in " +
+            val name = parseName(recordValue)
+            logger.info("Reconciling record for: $name in " +
                     "${recordValue.viewOwningMember}'s member list.")
             coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.publish(
                 listOf(Record(topic = MEMBER_LIST_TOPIC, key = recordKey, value = recordValue))
@@ -171,6 +192,22 @@ class MemberInfoReconciler(
             coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.publish(
                 listOf(Record(topic = MEMBER_LIST_TOPIC, key = recordKey, value = null))
             )
+        }
+
+        private fun parseName(memberInfo: PersistentMemberInfo): String? {
+            return try {
+                // we can have old schema version (5.0) of persistent information in case of platform upgrade
+                if (memberInfo.memberContext == null) {
+                    memberInfo.signedMemberContext.data.array().deserializeContext(keyValuePairListDeserializer)
+                        .getOrDefault(PARTY_NAME, null)
+                } else {
+                    memberInfo.memberContext.toSortedMap()[PARTY_NAME]
+                }
+            } catch (e: ContextDeserializationException) {
+                logger.warn("Could not retrieve name from member provided context. " +
+                        "Deserialization of the context failed.")
+                null
+            }
         }
 
         private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -287,7 +324,7 @@ class MemberInfoReconciler(
                 PersistentMemberInfo::class.java,
                 dependencies,
                 ::reconciliationContextFactory
-            ) { em -> getAllMemberInfo(em, keyValuePairListDeserializer) }.also {
+            ) { em -> getAllMemberInfo(em, memberInfoFactory) }.also {
                 it.start()
             }
         }

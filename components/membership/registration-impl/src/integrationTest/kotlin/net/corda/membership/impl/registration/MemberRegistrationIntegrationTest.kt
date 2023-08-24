@@ -388,7 +388,7 @@ class MemberRegistrationIntegrationTest {
             ECDSA_SECP256R1_CODE_NAME
         )
         return listOf(
-            memberInfoFactory.create(
+            memberInfoFactory.createMemberInfo(
                 sortedMapOf(
                     PARTY_NAME to mgmName.toString(),
                     GROUP_ID to groupId,

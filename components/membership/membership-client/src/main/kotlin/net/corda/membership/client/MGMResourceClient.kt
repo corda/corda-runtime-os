@@ -6,6 +6,7 @@ import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.Lifecycle
+import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
@@ -168,7 +169,9 @@ interface MGMResourceClient : Lifecycle {
      *
      * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
-     * @throws [IllegalArgumentException] If request is not found, or if request is not pending review.
+     * @throws [IllegalArgumentException] If request is not found, if request is not pending review, or if member name
+     * is missing from the context.
+     * @throws [ContextDeserializationException] If request cannot be deserialized.
      */
     @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class, IllegalArgumentException::class)
     fun reviewRegistrationRequest(

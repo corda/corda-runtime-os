@@ -3,7 +3,6 @@ package net.corda.membership.impl.persistence.service.handler
 import javax.persistence.EntityManager
 import javax.persistence.LockModeType
 import javax.persistence.PessimisticLockException
-import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -14,6 +13,7 @@ import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.utilities.serialization.wrapWithNullErrorHandling
@@ -21,8 +21,8 @@ import net.corda.utilities.time.Clock
 
 internal class SuspensionActivationEntityOperations(
     private val clock: Clock,
-    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList>,
-    private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList>
+    private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList>,
+    private val memberInfoFactory: MemberInfoFactory,
 ) {
     @Suppress("ThrowsCount")
     fun findMember(
@@ -101,8 +101,13 @@ internal class SuspensionActivationEntityOperations(
             ),
         )
 
-        val memberContext = keyValuePairListDeserializer.deserialize(currentMemberInfo.memberContext)
-            ?: throw MembershipPersistenceException("Failed to deserialize the member provided context.")
-        return PersistentMemberInfo(mgmHoldingIdentity, memberContext, mgmContext)
+        return memberInfoFactory.createPersistentMemberInfo(
+            mgmHoldingIdentity,
+            currentMemberInfo.memberContext,
+            serializedMgmContext,
+            currentMemberInfo.memberSignatureKey,
+            currentMemberInfo.memberSignatureContent,
+            currentMemberInfo.memberSignatureSpec,
+        )
     }
 }

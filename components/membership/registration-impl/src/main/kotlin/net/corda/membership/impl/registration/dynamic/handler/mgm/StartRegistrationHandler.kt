@@ -1,6 +1,10 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.data.membership.PersistentMemberInfo
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
@@ -8,12 +12,12 @@ import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
-import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.verifiers.RegistrationContextCustomFieldsVerifier
+import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
@@ -30,7 +34,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.SelfSignedMemberInfo
+import net.corda.membership.lib.deserializeContext
 import net.corda.membership.lib.registration.RegistrationRequestHelpers.getPreAuthToken
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -51,9 +56,11 @@ import net.corda.virtualnode.toCorda
 import org.apache.avro.specific.SpecificRecordBase
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.SortedMap
 
 @Suppress("LongParameterList")
 internal class StartRegistrationHandler(
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val clock: Clock,
     private val memberInfoFactory: MemberInfoFactory,
     private val memberTypeChecker: MemberTypeChecker,
@@ -65,6 +72,23 @@ internal class StartRegistrationHandler(
 
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
+    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> =
+        cordaAvroSerializationFactory.createAvroDeserializer(
+            {
+                logger.error("Failed to deserialize key value pair list.")
+            },
+            KeyValuePairList::class.java
+        )
+
+    private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
+        cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize key value pair list.") }
+
+    private fun serialize(context: KeyValuePairList): ByteArray {
+        return keyValuePairListSerializer.serialize(context) ?: throw CordaRuntimeException(
+            "Failed to serialize key value pair list."
+        )
     }
 
     override val commandType = StartRegistration::class.java
@@ -94,11 +118,10 @@ internal class StartRegistrationHandler(
                 pendingMemberInfo.name == pendingMemberHoldingId.x500Name
             ) { "MemberX500Name in registration request does not match member sending request over P2P." }
 
-            val persistentMemberInfo = PersistentMemberInfo.newBuilder()
-                .setMemberContext(pendingMemberInfo.memberProvidedContext.toAvro())
-                .setViewOwningMember(mgmMemberInfo.holdingIdentity.toAvro())
-                .setMgmContext(pendingMemberInfo.mgmProvidedContext.toAvro())
-                .build()
+            val persistentMemberInfo = memberInfoFactory.createPersistentMemberInfo(
+                mgmMemberInfo.holdingIdentity.toAvro(),
+                pendingMemberInfo,
+            )
             val pendingMemberRecord = Record(
                 topic = Schemas.Membership.MEMBER_LIST_TOPIC,
                 key = "${mgmMemberInfo.holdingIdentity.shortHash}-${pendingMemberInfo.holdingIdentity.shortHash}" +
@@ -107,12 +130,7 @@ internal class StartRegistrationHandler(
             )
             // Persist pending member info so that we can notify the member of declined registration if failure occurs
             // after this point
-            val signedMemberInfo = SignedMemberInfo(
-                pendingMemberInfo,
-                registrationRequest.memberSignature,
-                registrationRequest.memberSignatureSpec
-            )
-            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(signedMemberInfo))
+            membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(pendingMemberInfo))
                 .execute().also {
                     require(it as? MembershipPersistenceResult.Failure == null) {
                         "Failed to persist pending member info. Reason: " +
@@ -226,10 +244,8 @@ internal class StartRegistrationHandler(
         }
     }
 
-    private fun buildPendingMemberInfo(registrationRequest: RegistrationRequestDetails): MemberInfo {
-        val memberContext = registrationRequest.memberProvidedContext
-            ?.items?.associate { it.key to it.value }
-            ?: emptyMap()
+    private fun buildPendingMemberInfo(registrationRequest: RegistrationRequestDetails): SelfSignedMemberInfo {
+        val memberContext = registrationRequest.memberProvidedContext.data.array().deserializeContext(keyValuePairListDeserializer)
         validateRegistrationRequest(memberContext.isNotEmpty()) {
             "Empty member context in the registration request."
         }
@@ -240,16 +256,22 @@ internal class StartRegistrationHandler(
         }
 
         val now = clock.instant().toString()
-        return memberInfoFactory.create(
-            memberContext.toSortedMap(),
-            sortedMapOf(
-                CREATION_TIME to now,
-                MODIFIED_TIME to now,
-                STATUS to MEMBER_STATUS_PENDING,
-                SERIAL to (registrationRequest.serial!! + 1).toString(),
-            )
+        val mgmContext = sortedMapOf(
+            CREATION_TIME to now,
+            MODIFIED_TIME to now,
+            STATUS to MEMBER_STATUS_PENDING,
+            SERIAL to (registrationRequest.serial!! + 1).toString(),
+        ).toKeyValuePairList()
+        return memberInfoFactory.createSelfSignedMemberInfo(
+            registrationRequest.memberProvidedContext.data.array(),
+            serialize(mgmContext),
+            registrationRequest.memberProvidedContext.signature,
+            registrationRequest.memberProvidedContext.signatureSpec,
         )
     }
+
+    private fun SortedMap<String, String>.toKeyValuePairList() =
+        KeyValuePairList(entries.map { KeyValuePair(it.key, it.value) }.toList())
 
     private fun getMGMMemberInfo(mgm: HoldingIdentity): MemberInfo {
         return memberTypeChecker.getMgmMemberInfo(mgm).apply {
@@ -307,7 +329,7 @@ internal class StartRegistrationHandler(
         registrationRequest: RegistrationRequestDetails
     ) {
         try {
-            registrationRequest.getPreAuthToken()?.let {
+            registrationRequest.getPreAuthToken(keyValuePairListDeserializer)?.let {
                 val result = membershipQueryClient.queryPreAuthTokens(
                     mgmHoldingIdentity = mgmHoldingId,
                     ownerX500Name = pendingMemberInfo.name,
@@ -333,15 +355,22 @@ internal class StartRegistrationHandler(
                 )
             }
         } catch (e: IllegalArgumentException) {
-            with("Registration failed due to invalid format for the provided pre-auth token.") {
-                logger.info(this, e)
-                throw InvalidRegistrationRequestException(this)
-            }
+            e.mapToInvalidRegistrationRequestException(
+                "Registration failed due to invalid format for the provided pre-auth token."
+            )
         } catch (e: MembershipQueryResult.QueryException) {
-            with("Registration failed due to failure to query configured pre-auth tokens.") {
-                logger.info(this, e)
-                throw InvalidRegistrationRequestException(this)
-            }
+            e.mapToInvalidRegistrationRequestException(
+                "Registration failed due to failure to query configured pre-auth tokens."
+            )
+        } catch (e: ContextDeserializationException) {
+            e.mapToInvalidRegistrationRequestException(
+                "Registration failed due to failure when deserializing registration context."
+            )
         }
+    }
+
+    private fun Exception.mapToInvalidRegistrationRequestException(message: String) {
+        logger.info(message, this)
+        throw InvalidRegistrationRequestException(message)
     }
 }
