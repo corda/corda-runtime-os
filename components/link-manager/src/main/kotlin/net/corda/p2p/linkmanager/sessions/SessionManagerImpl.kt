@@ -402,7 +402,7 @@ internal class SessionManagerImpl(
                 outboundSessionPool.removeSessions(sessionCounterparties)
                 return
             }
-            if (!outboundSessionPool.replaceSession(sessionId, sessionInitMessage.single().first)) {
+            if (!outboundSessionPool.replaceSession(sessionCounterparties, sessionId, sessionInitMessage.single().first)) {
                 // If the session was not replaced do not send a initiatorHello
                 return
             }

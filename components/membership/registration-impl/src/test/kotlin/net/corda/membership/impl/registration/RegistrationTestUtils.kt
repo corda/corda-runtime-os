@@ -14,8 +14,9 @@ const val TEST_CPI_NAME = "cpi-name"
 const val TEST_CPI_VERSION = "1.1"
 const val TEST_PLATFORM_VERSION = 5000
 const val TEST_SOFTWARE_VERSION = "5.0.0.0-SNAPSHOT"
+const val CPI_HASH = "ALG:A1B2C3D4"
 
-val testCpiSignerSummaryHash = parseSecureHash("ALG:A1B2C3D4")
+val testCpiSignerSummaryHash = parseSecureHash(CPI_HASH)
 
 fun buildTestVirtualNodeInfo(member: HoldingIdentity) = VirtualNodeInfo(
     holdingIdentity = member,

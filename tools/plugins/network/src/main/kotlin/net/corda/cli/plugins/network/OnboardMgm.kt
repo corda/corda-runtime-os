@@ -4,6 +4,7 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
+import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.membership.rest.v1.MGMRestResource
 import picocli.CommandLine.Command
@@ -16,7 +17,6 @@ import java.util.UUID
     name = "onboard-mgm",
     description = [
         "Onboard MGM member.",
-        "This sub command should only be used in for internal development",
     ]
 )
 class OnboardMgm : Runnable, BaseOnboard() {
@@ -171,26 +171,28 @@ class OnboardMgm : Runnable, BaseOnboard() {
     }
 
     override fun run() {
-        println("This sub command should only be used in for internal development")
-        println("On-boarding MGM member $name")
+        verifyAndPrintError {
+            println("On-boarding MGM member $name")
 
-        configureGateway()
+            configureGateway()
 
-        createTlsKeyIdNeeded()
+            createTlsKeyIdNeeded()
 
-        register()
+            register()
 
-        setupNetwork()
+            setupNetwork()
 
-        println("MGM Member $name was onboarded")
+            println("MGM Member $name was onboarded")
 
-        saveGroupPolicy()
+            saveGroupPolicy()
 
-        if (mtls) {
-            println(
-                "To onboard members to this group on other clusters, please add those members' " +
-                        "client certificates subjects to this MGM's allow list. You can do that using the allowClientCertificate command."
-            )
+            if (mtls) {
+                println(
+                    "To onboard members to this group on other clusters, please add those members' " +
+                            "client certificates subjects to this MGM's allow list. " +
+                            "You can do that using the allowClientCertificate command."
+                )
+            }
         }
     }
 }

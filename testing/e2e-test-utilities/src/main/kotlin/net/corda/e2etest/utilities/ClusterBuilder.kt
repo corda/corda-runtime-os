@@ -17,7 +17,7 @@ import java.time.Instant
 @Suppress("TooManyFunctions")
 class ClusterBuilder {
     
-    private companion object {
+    internal companion object {
         val REST_API_VERSION_PATH = RestApiVersion.C5_1.versionPath
     }
     

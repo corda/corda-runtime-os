@@ -15,7 +15,9 @@ import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
+import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
+import net.corda.rest.exception.InternalServerException
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -40,6 +42,7 @@ class MemberRegistrationRestResourceTest {
         val holdingIdShortHash = ShortHash.of(HOLDING_IDENTITY_ID)
         val clock = TestClock(Instant.ofEpochSecond(100))
         const val SERIAL = 1L
+        const val REQUEST_ID = "id"
     }
 
     private var coordinatorIsRunning = false
@@ -132,7 +135,7 @@ class MemberRegistrationRestResourceTest {
     @Test
     fun `checkSpecificRegistrationProgress fails when service is not running`() {
         val ex = assertFailsWith<ServiceUnavailableException> {
-            memberRegistrationRestResource.checkSpecificRegistrationProgress(HOLDING_IDENTITY_ID, "id")
+            memberRegistrationRestResource.checkSpecificRegistrationProgress(HOLDING_IDENTITY_ID, REQUEST_ID)
         }
         assertThat(ex).hasMessage("MemberRegistrationRestResourceImpl is not running. Operation cannot be fulfilled.")
     }
@@ -189,9 +192,22 @@ class MemberRegistrationRestResourceTest {
     }
 
     @Test
+    fun `checkRegistrationProgress throws 500 when deserialization fails`() {
+        whenever(memberResourceClient.checkRegistrationProgress(holdingIdShortHash)).doThrow(
+            ContextDeserializationException
+        )
+        memberRegistrationRestResource.start()
+        memberRegistrationRestResource.activate("")
+
+        assertThrows<InternalServerException> {
+            memberRegistrationRestResource.checkRegistrationProgress(HOLDING_IDENTITY_ID)
+        }
+    }
+
+    @Test
     fun `checkSpecificRegistrationProgress returns the correct data`() {
         val data = RegistrationRequestStatusDto(
-            registrationId = "id",
+            registrationId = REQUEST_ID,
             registrationSent = Instant.ofEpochSecond(20L),
             registrationUpdated = Instant.ofEpochSecond(200L),
             registrationStatus = RegistrationStatusDto.APPROVED,
@@ -199,11 +215,11 @@ class MemberRegistrationRestResourceTest {
             serial = SERIAL,
         )
 
-        whenever(memberResourceClient.checkSpecificRegistrationProgress(holdingIdShortHash, "id")).doReturn(data)
+        whenever(memberResourceClient.checkSpecificRegistrationProgress(holdingIdShortHash, REQUEST_ID)).doReturn(data)
         memberRegistrationRestResource.start()
         memberRegistrationRestResource.activate("")
 
-        val status = memberRegistrationRestResource.checkSpecificRegistrationProgress(HOLDING_IDENTITY_ID, "id")
+        val status = memberRegistrationRestResource.checkSpecificRegistrationProgress(HOLDING_IDENTITY_ID, REQUEST_ID)
 
         assertThat(status)
             .isEqualTo(data.fromDto())
@@ -211,37 +227,37 @@ class MemberRegistrationRestResourceTest {
 
     @Test
     fun `checkSpecificRegistrationProgress throw 404 when the member can not be found`() {
-        whenever(memberResourceClient.checkSpecificRegistrationProgress(holdingIdShortHash, "id"))
+        whenever(memberResourceClient.checkSpecificRegistrationProgress(holdingIdShortHash, REQUEST_ID))
             .doThrow(CouldNotFindMemberException(holdingIdShortHash))
         memberRegistrationRestResource.start()
         memberRegistrationRestResource.activate("")
 
         assertThrows<ResourceNotFoundException> {
-            memberRegistrationRestResource.checkSpecificRegistrationProgress(HOLDING_IDENTITY_ID, "id")
+            memberRegistrationRestResource.checkSpecificRegistrationProgress(HOLDING_IDENTITY_ID, REQUEST_ID)
         }
     }
 
     @Test
     fun `checkSpecificRegistrationProgress throw 404 when the request can not be found`() {
-        whenever(memberResourceClient.checkSpecificRegistrationProgress(holdingIdShortHash, "id"))
+        whenever(memberResourceClient.checkSpecificRegistrationProgress(holdingIdShortHash, REQUEST_ID))
             .doThrow(RegistrationProgressNotFoundException(""))
         memberRegistrationRestResource.start()
         memberRegistrationRestResource.activate("")
 
         assertThrows<ResourceNotFoundException> {
-            memberRegistrationRestResource.checkSpecificRegistrationProgress(HOLDING_IDENTITY_ID, "id")
+            memberRegistrationRestResource.checkSpecificRegistrationProgress(HOLDING_IDENTITY_ID, REQUEST_ID)
         }
     }
 
     @Test
     fun `checkSpecificRegistrationProgress throw 503 when the db is not ready`() {
-        whenever(memberResourceClient.checkSpecificRegistrationProgress(holdingIdShortHash, "id"))
+        whenever(memberResourceClient.checkSpecificRegistrationProgress(holdingIdShortHash, REQUEST_ID))
             .doThrow(ServiceNotReadyException(Exception("")))
         memberRegistrationRestResource.start()
         memberRegistrationRestResource.activate("")
 
         assertThrows<ServiceUnavailableException> {
-            memberRegistrationRestResource.checkSpecificRegistrationProgress(HOLDING_IDENTITY_ID, "id")
+            memberRegistrationRestResource.checkSpecificRegistrationProgress(HOLDING_IDENTITY_ID, REQUEST_ID)
         }
     }
 
@@ -251,7 +267,20 @@ class MemberRegistrationRestResourceTest {
         memberRegistrationRestResource.activate("")
 
         assertFailsWith<BadRequestException> {
-            memberRegistrationRestResource.checkSpecificRegistrationProgress(INVALID_HOLDING_IDENTITY_ID, "id")
+            memberRegistrationRestResource.checkSpecificRegistrationProgress(INVALID_HOLDING_IDENTITY_ID, REQUEST_ID)
+        }
+    }
+
+    @Test
+    fun `checkSpecificRegistrationProgress throws 500 when deserialization fails`() {
+        whenever(memberResourceClient.checkSpecificRegistrationProgress(holdingIdShortHash, REQUEST_ID)).doThrow(
+            ContextDeserializationException
+        )
+        memberRegistrationRestResource.start()
+        memberRegistrationRestResource.activate("")
+
+        assertThrows<InternalServerException> {
+            memberRegistrationRestResource.checkSpecificRegistrationProgress(HOLDING_IDENTITY_ID, REQUEST_ID)
         }
     }
 }

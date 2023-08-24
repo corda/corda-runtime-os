@@ -311,7 +311,7 @@ fun ClusterInfo.lookup(
         interval(1.seconds)
         command {
             val additionalQuery = statuses.joinToString(prefix = "?", separator = "&") { "statuses=$it" }
-            get("/api/v1/members/$holdingId$additionalQuery")
+            get("/api/${ClusterBuilder.REST_API_VERSION_PATH}/members/$holdingId$additionalQuery")
         }
         condition { it.code == ResponseCode.OK.statusCode }
     }
@@ -327,7 +327,7 @@ fun ClusterInfo.lookupGroupParameters(
         timeout(15.seconds)
         interval(1.seconds)
         command {
-            get("/api/v1/members/$holdingId/group-parameters")
+            get("/api/${ClusterBuilder.REST_API_VERSION_PATH}/members/$holdingId/group-parameters")
         }
         condition { it.code == ResponseCode.OK.statusCode }
     }

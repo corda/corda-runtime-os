@@ -1,10 +1,11 @@
 package net.corda.cli.plugins.network
 
-import com.fasterxml.jackson.core.util.DefaultIndenter
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import net.corda.cli.plugins.network.output.ConsoleOutput
+import net.corda.cli.plugins.network.utils.PrintUtils.printJsonOutput
+import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import org.yaml.snakeyaml.Yaml
 import picocli.CommandLine
 import java.nio.file.Path
@@ -15,7 +16,7 @@ import java.util.UUID
  * providing static membership information for mocking a membership group.
  */
 @CommandLine.Command(name = "groupPolicy", description = ["Generates GroupPolicy.json file."])
-class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPolicyOutput()) : Runnable {
+class GenerateGroupPolicy(private val output: ConsoleOutput = ConsoleOutput()) : Runnable {
 
     @CommandLine.Option(
         names = ["--endpoint"],
@@ -49,15 +50,9 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
     }
 
     override fun run() {
-        val objectMapper = jacksonObjectMapper()
-        val groupPolicy = generateGroupPolicyContent()
-
-        // add pretty printer and override indentation to make the nested values look better and the file more presentable
-        val pp = DefaultPrettyPrinter()
-        pp.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE)
-
-        val jsonString = objectMapper.writer(pp).writeValueAsString(groupPolicy)
-        output.generateOutput(jsonString)
+        verifyAndPrintError {
+            printJsonOutput(generateGroupPolicyContent(), output)
+        }
     }
 
     /**
@@ -179,13 +174,13 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
                         "name" to x500,
                         "memberStatus" to (member["status"] ?: MEMBER_STATUS_ACTIVE),
                         "endpointUrl-1" to (
-                            member["endpoint"] ?: content["endpoint"]
+                                member["endpoint"] ?: content["endpoint"]
                                 ?: throw IllegalArgumentException("No endpoint specified.")
-                            ),
+                                ),
                         "endpointProtocol-1" to (
-                            member["endpointProtocol"] ?: content["endpointProtocol"]
+                                member["endpointProtocol"] ?: content["endpointProtocol"]
                                 ?: throw IllegalArgumentException("No endpoint protocol specified.")
-                            )
+                                )
                     )
                 )
             }
@@ -251,10 +246,12 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
                         throw IllegalArgumentException("Could not read static network information from $this.")
                     }
                 }
+
                 endsWith(".yaml") || endsWith(".yml") -> {
                     Yaml().load(file.readText())
                         ?: throw IllegalArgumentException("Could not read static network information from $this.")
                 }
+
                 else -> throw IllegalArgumentException("Input file format not supported.")
             }.also { parsed ->
                 val hasMemberNames = parsed["memberNames"] != null
@@ -267,21 +264,6 @@ class GenerateGroupPolicy(private val output: GroupPolicyOutput = ConsoleGroupPo
                     require(parsed["endpointProtocol"] != null) { "Endpoint protocol must be specified." }
                 }
             }
-        }
-    }
-}
-
-interface GroupPolicyOutput {
-    fun generateOutput(content: String)
-}
-
-class ConsoleGroupPolicyOutput : GroupPolicyOutput {
-    /**
-     * Receives the content of the file and prints it to the console output. It makes the testing easier.
-     */
-    override fun generateOutput(content: String) {
-        content.lines().forEach {
-            println(it)
         }
     }
 }
