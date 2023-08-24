@@ -9,7 +9,6 @@ import net.corda.v5.application.interop.InteropIdentityLookUp
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 
 @InitiatingFlow(protocol = "invoke_facade_method")
@@ -38,20 +37,22 @@ class FacadeInvocationFlow : ClientStartableFlow {
 
         val facadeId = getArgument(args, "facadeId")
         val methodName = getArgument(args, "methodName")
-        val alias = MemberX500Name.parse(getArgument(args,"alias"))
+        val applicationName = getArgument(args,"applicationName")
         val payload = getArgument(args, "payload")
-        val hostNetwork = getArgument(args, "hostNetwork")
 
-        val aliasMember = interopIdentityLookUp.lookup(hostNetwork) ?: throw NullPointerException("$hostNetwork no in LookUp")
-        log.info("AliasMemberInfo for $alias  : $aliasMember")
-
-        if(!aliasMember.facadeIds.contains(FacadeId.of(facadeId))) {
-            throw IllegalArgumentException("facade with facadeId : $facadeId is not supported by alias : $alias")
+        val interopIdentityInfo = checkNotNull(interopIdentityLookUp.lookup(applicationName)) {
+            "No interop identity with application name '$applicationName' was found."
         }
 
-        log.info("Calling facade method '$methodName@$facadeId' with payload '$payload' to $alias")
+        log.info("InteropIdentityInfo for $applicationName: $interopIdentityInfo")
 
-        val client : SampleTokensFacade = facadeService.getProxy(facadeId, SampleTokensFacade::class.java, aliasMember)
+        if (!interopIdentityInfo.facadeIds.contains(FacadeId.of(facadeId))) {
+            throw IllegalArgumentException("facade with facadeId : $facadeId is not supported by alias : $applicationName")
+        }
+
+        log.info("Calling facade method $methodName.$facadeId@$applicationName with payload '$payload'")
+
+        val client: SampleTokensFacade = facadeService.getProxy(facadeId, SampleTokensFacade::class.java, interopIdentityInfo)
         val response = client.getHello(payload)
 
         log.info("Facade responded with '$response'")
