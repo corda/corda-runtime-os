@@ -1,6 +1,8 @@
 package net.corda.rest.server.impl.internal
 
+import brave.servlet.TracingFilter
 import io.javalin.Javalin
+import io.javalin.core.JavalinConfig
 import io.javalin.core.util.Header
 import io.javalin.http.BadRequestResponse
 import io.javalin.http.ContentType
@@ -16,28 +18,24 @@ import net.corda.rest.server.impl.apigen.processing.RouteInfo
 import net.corda.rest.server.impl.apigen.processing.RouteProvider
 import net.corda.rest.server.impl.apigen.processing.openapi.OpenApiInfoProvider
 import net.corda.rest.server.impl.context.ClientHttpRequestContext
-import net.corda.rest.server.impl.security.RestAuthenticationProvider
-import net.corda.rest.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.rest.server.impl.context.ContextUtils.authenticate
 import net.corda.rest.server.impl.context.ContextUtils.authorize
 import net.corda.rest.server.impl.context.ContextUtils.contentTypeApplicationJson
 import net.corda.rest.server.impl.context.ContextUtils.invokeHttpMethod
+import net.corda.rest.server.impl.security.RestAuthenticationProvider
+import net.corda.rest.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.rest.server.impl.websocket.WebSocketCloserService
 import net.corda.rest.server.impl.websocket.mapToWsStatusCode
-import net.corda.tracing.configureJavalinForTracing
-import net.corda.utilities.classload.executeWithThreadContextClassLoader
-import net.corda.utilities.classload.OsgiClassLoader
-import net.corda.utilities.executeWithStdErrSuppressed
+import net.corda.tracing.getTracing
 import net.corda.utilities.VisibleForTesting
+import net.corda.utilities.classload.OsgiClassLoader
+import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.utilities.debug
+import net.corda.utilities.executeWithStdErrSuppressed
 import net.corda.utilities.trace
 import org.eclipse.jetty.http2.HTTP2Cipher
-import org.eclipse.jetty.server.HttpConfiguration
-import org.eclipse.jetty.server.HttpConnectionFactory
-import org.eclipse.jetty.server.SecureRequestCustomizer
-import org.eclipse.jetty.server.Server
-import org.eclipse.jetty.server.ServerConnector
-import org.eclipse.jetty.server.SslConnectionFactory
+import org.eclipse.jetty.server.*
+import org.eclipse.jetty.servlet.FilterHolder
 import org.eclipse.jetty.util.ssl.SslContextFactory
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
 import org.osgi.framework.Bundle
@@ -45,8 +43,9 @@ import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
+import java.util.*
+import javax.servlet.DispatcherType
 import javax.servlet.MultipartConfigElement
-import java.util.LinkedList
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown", "LongParameterList")
 internal class RestServerInternal(
@@ -125,6 +124,19 @@ internal class RestServerInternal(
                     configurationsProvider.maxContentLength().toLong(),
                     configurationsProvider.maxContentLength().toLong(),
                     1024))
+        }
+    }
+
+    /**
+     * Configure Javalin to read trace IDs from requests or generate new ones if missing.
+     */
+    private fun configureJavalinForTracing(config: JavalinConfig) {
+        config.configureServletContextHandler { sch ->
+            sch.addFilter(
+                FilterHolder(TracingFilter.create(getTracing())),
+                "/*",
+                EnumSet.of(DispatcherType.INCLUDE, DispatcherType.REQUEST)
+            )
         }
     }
 
