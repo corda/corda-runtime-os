@@ -20,6 +20,7 @@ import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheStateImpl
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.entities.TokenCacheImpl
+import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 
 class EntityConverterImpl : EntityConverter {
     override fun toCachedToken(avroToken: Token): CachedToken {
@@ -41,7 +42,7 @@ class EntityConverterImpl : EntityConverter {
             amountToBigDecimal(tokenClaimQuery.targetAmount),
             tokenClaimQuery.tagRegex,
             tokenClaimQuery.ownerHash,
-            avroPoolKey
+            toTokenPoolKey(avroPoolKey)
         )
     }
 
@@ -51,7 +52,7 @@ class EntityConverterImpl : EntityConverter {
             tokenClaimRelease.requestContext.requestId,
             tokenClaimRelease.requestContext.flowId,
             tokenClaimRelease.usedTokenStateRefs.toSet(),
-            avroPoolKey
+            toTokenPoolKey(avroPoolKey)
         )
     }
 
@@ -61,13 +62,13 @@ class EntityConverterImpl : EntityConverter {
             tokenBalanceQuery.requestContext.flowId,
             tokenBalanceQuery.tagRegex,
             tokenBalanceQuery.ownerHash,
-            avroPoolKey
+            toTokenPoolKey(avroPoolKey)
         )
     }
 
     override fun toLedgerChange(avroPoolKey: TokenPoolCacheKey, tokenLedgerChange: TokenLedgerChange): LedgerChange {
         return LedgerChange(
-            avroPoolKey,
+            toTokenPoolKey(avroPoolKey),
             // HACK: Added for testing will be removed by CORE-5722 (ledger integration)
             null,
             null,
@@ -77,7 +78,7 @@ class EntityConverterImpl : EntityConverter {
     }
 
     override fun amountToBigDecimal(avroTokenAmount: TokenAmount): BigDecimal {
-        val unscaledValueBytes =  ByteArray(avroTokenAmount.unscaledValue.remaining())
+        val unscaledValueBytes = ByteArray(avroTokenAmount.unscaledValue.remaining())
             .apply { avroTokenAmount.unscaledValue.get(this) }
 
         avroTokenAmount.unscaledValue.position(0)
@@ -86,4 +87,22 @@ class EntityConverterImpl : EntityConverter {
             avroTokenAmount.scale
         )
     }
+
+    override fun toTokenPoolKey(tokenPoolCacheKey: TokenPoolCacheKey) =
+        TokenPoolKey(
+            tokenPoolCacheKey.shortHolderId,
+            tokenPoolCacheKey.tokenType,
+            tokenPoolCacheKey.issuerHash,
+            tokenPoolCacheKey.notaryX500Name,
+            tokenPoolCacheKey.symbol
+        )
+
+    override fun toTokenPoolCacheKey(tokenPoolKey: TokenPoolKey): TokenPoolCacheKey =
+        TokenPoolCacheKey(
+            tokenPoolKey.shortHolderId,
+            tokenPoolKey.tokenType,
+            tokenPoolKey.issuerHash,
+            tokenPoolKey.notaryX500Name,
+            tokenPoolKey.symbol
+        )
 }

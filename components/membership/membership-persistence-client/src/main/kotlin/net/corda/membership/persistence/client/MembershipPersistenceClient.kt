@@ -8,8 +8,8 @@ import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.InternalGroupParameters
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.approval.ApprovalRuleParams
-import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
@@ -36,7 +36,7 @@ interface MembershipPersistenceClient : Lifecycle {
      */
     fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
-        memberInfos: Collection<SignedMemberInfo>
+        memberInfos: Collection<SelfSignedMemberInfo>
     ): MembershipPersistenceOperation<Unit>
 
     /**
@@ -110,8 +110,7 @@ interface MembershipPersistenceClient : Lifecycle {
      * payload will include a [InternalGroupParameters] of the newly persisted group parameters.
      */
     fun addNotaryToGroupParameters(
-        viewOwningIdentity: HoldingIdentity,
-        notary: MemberInfo
+        notary: PersistentMemberInfo,
     ): MembershipPersistenceOperation<InternalGroupParameters>
 
     /**
@@ -142,7 +141,7 @@ interface MembershipPersistenceClient : Lifecycle {
         viewOwningIdentity: HoldingIdentity,
         approvedMember: HoldingIdentity,
         registrationRequestId: String,
-    ): MembershipPersistenceOperation<MemberInfo>
+    ): MembershipPersistenceOperation<PersistentMemberInfo>
 
     /**
      * Set the status of an existing registration request.
@@ -318,4 +317,17 @@ interface MembershipPersistenceClient : Lifecycle {
     fun updateStaticNetworkInfo(
         info: StaticNetworkInfo
     ): MembershipPersistenceOperation<StaticNetworkInfo>
+
+    /**
+     * Persists changes to the group parameters as submitted by the MGM. The persisted group parameters are
+     * constructed with [newGroupParameters], along with notary information and updated epoch and
+     * modified time parameters populated by the platform.
+     *
+     * @param viewOwningIdentity The holding identity of the owner of the view of data.
+     * @param newGroupParameters Updated version of the group parameters.
+     */
+    fun updateGroupParameters(
+        viewOwningIdentity: HoldingIdentity,
+        newGroupParameters: Map<String, String>
+    ): MembershipPersistenceOperation<InternalGroupParameters>
 }

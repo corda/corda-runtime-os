@@ -79,11 +79,12 @@ class TruancyResponderFlow : ResponderFlow {
 @Entity
 @Table(name = "truancy_entity")
 data class TruancyEntity(
-    @Id
-    @Column(name = "id")
-    val id: UUID = UUID.randomUUID(),
-    @Column(name = "student_name")
-    val name: String
+    @get:Id
+    @get:Column(name = "id")
+    var id: UUID = UUID.randomUUID(),
+
+    @get:Column(name = "student_name")
+    var name: String
 )
 
 private fun PublicKey.fullIdHash(digestService: DigestService): SecureHash =

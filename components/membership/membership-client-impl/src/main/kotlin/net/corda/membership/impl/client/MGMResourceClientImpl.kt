@@ -1,10 +1,15 @@
 package net.corda.membership.impl.client
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.core.ShortHash
+import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedData
+import net.corda.data.membership.actions.request.DistributeGroupParameters
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -35,12 +40,16 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARIES_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.approval.ApprovalRuleParams
+import net.corda.membership.lib.deserializeContext
 import net.corda.membership.lib.toPersistentGroupParameters
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -96,6 +105,8 @@ class MGMResourceClientImpl @Activate constructor(
     val memberInfoFactory: MemberInfoFactory,
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) : MGMResourceClient {
 
     private companion object {
@@ -110,6 +121,15 @@ class MGMResourceClientImpl @Activate constructor(
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val clock = UTCClock()
         val TIMEOUT = 10.seconds
+    }
+
+    private val deserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
+        cordaAvroSerializationFactory.createAvroDeserializer(
+            {
+                logger.error("Failed to deserialize key value pair list.")
+            },
+            KeyValuePairList::class.java
+        )
     }
 
     private interface InnerMGMResourceClient : AutoCloseable {
@@ -176,6 +196,11 @@ class MGMResourceClientImpl @Activate constructor(
         fun activateMember(
             holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
         )
+
+        fun updateGroupParameters(
+            holdingIdentityShortHash: ShortHash,
+            newGroupParameters: Map<String, String>
+        ): InternalGroupParameters
     }
 
     private var impl: InnerMGMResourceClient = InactiveImpl
@@ -263,6 +288,10 @@ class MGMResourceClientImpl @Activate constructor(
     override fun activateMember(
         holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
     ) = impl.activateMember(holdingIdentityShortHash, memberX500Name, serialNumber, reason)
+
+    override fun updateGroupParameters(
+        holdingIdentityShortHash: ShortHash, newGroupParameters: Map<String, String>
+    ) = impl.updateGroupParameters(holdingIdentityShortHash, newGroupParameters)
 
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -377,6 +406,10 @@ class MGMResourceClientImpl @Activate constructor(
 
         override fun activateMember(
             holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name, serialNumber: Long?, reason: String?
+        ) = throw IllegalStateException(ERROR_MSG)
+
+        override fun updateGroupParameters(
+            holdingIdentityShortHash: ShortHash, newGroupParameters: Map<String, String>
         ) = throw IllegalStateException(ERROR_MSG)
 
         override fun mutualTlsAllowClientCertificate(
@@ -559,7 +592,7 @@ class MGMResourceClientImpl @Activate constructor(
             require(requestStatus.registrationStatus == RegistrationStatus.PENDING_MANUAL_APPROVAL) {
                 "Registration request must be in ${RegistrationStatus.PENDING_MANUAL_APPROVAL} status to perform this action."
             }
-            val memberName = requestStatus.memberProvidedContext.items.first { it.key == PARTY_NAME }.value
+            val memberName = findMemberName(requestStatus.memberProvidedContext)
             if (approve) {
                 publishRegistrationCommand(ApproveRegistration(), memberName, mgm.groupId)
             } else {
@@ -582,7 +615,7 @@ class MGMResourceClientImpl @Activate constructor(
 
             publishRegistrationCommand(
                 DeclineRegistration(FORCE_DECLINE_MESSAGE),
-                requestStatus.memberProvidedContext.items.first { it.key == PARTY_NAME }.value,
+                findMemberName(requestStatus.memberProvidedContext),
                 mgm.groupId
             )
         }
@@ -611,6 +644,56 @@ class MGMResourceClientImpl @Activate constructor(
             )
         }
 
+        override fun updateGroupParameters(
+            holdingIdentityShortHash: ShortHash, newGroupParameters: Map<String, String>
+        ): InternalGroupParameters {
+            val mgm = mgmHoldingIdentity(holdingIdentityShortHash)
+
+            membershipGroupReaderProvider.getGroupReader(mgm).groupParameters.let { current ->
+                val changeableParameters = current?.toMap()?.filterNot {
+                    it.key in setOf(EPOCH_KEY, MODIFIED_TIME_KEY) || it.key.startsWith(NOTARIES_KEY)
+                }
+                if (newGroupParameters == changeableParameters) {
+                    logger.info("Nothing to persist - submitted group parameters are identical to the existing group " +
+                            "parameters.")
+                    return current
+                }
+            }
+
+            val updatedParameters = membershipPersistenceClient.updateGroupParameters(
+                mgm, newGroupParameters
+            ).getOrThrow()
+
+            createDistributionRequest(mgm, updatedParameters.epoch)
+
+            return updatedParameters
+        }
+
+        private fun findMemberName(memberContext: SignedData): String {
+            return memberContext.data.array().deserializeContext(deserializer)[PARTY_NAME]
+                ?: throw IllegalArgumentException("Member name must be defined.")
+        }
+
+        private fun createDistributionRequest(mgm: HoldingIdentity, epoch: Int) {
+            val distributionRequest = MembershipActionsRequest(
+                DistributeGroupParameters(
+                    mgm.toAvro(),
+                    epoch,
+                )
+            )
+            coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)?.apply {
+                publish(
+                    listOf(
+                        Record(
+                            topic = MEMBERSHIP_ACTIONS_TOPIC,
+                            key = "${mgm.x500Name}-${mgm.groupId}",
+                            value = distributionRequest
+                        )
+                    )
+                ).forEach { it.join() }
+            }
+        }
+
         private fun validateSuspensionActivationRequest(
             holdingIdentityShortHash: ShortHash, memberX500Name: MemberX500Name
         ): Pair<HoldingIdentity, String> {
@@ -635,7 +718,7 @@ class MGMResourceClientImpl @Activate constructor(
             mgmHoldingIdentity: HoldingIdentity,
             mgmShortHash: String,
         ) {
-            val serialNumber = memberInfoFactory.create(memberInfo).serial
+            val serialNumber = memberInfoFactory.createMemberInfo(memberInfo).serial
             val publisher = coordinator.getManagedResource<Publisher>(PUBLISHER_RESOURCE_NAME)
             val recordForGroupParameters = groupParameters?.let {
                 listOf(Record(

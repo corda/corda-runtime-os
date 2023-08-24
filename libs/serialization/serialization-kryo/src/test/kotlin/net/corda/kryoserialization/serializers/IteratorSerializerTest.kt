@@ -13,7 +13,7 @@ import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 
-internal class IteratorSerializerTest {
+class IteratorSerializerTest {
     @Test
     fun `Iterator serializer returns correct iterator`() {
         val list = mutableListOf(1, 2)

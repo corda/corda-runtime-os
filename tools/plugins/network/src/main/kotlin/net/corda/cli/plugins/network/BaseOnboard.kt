@@ -1,27 +1,50 @@
+@file:Suppress("DEPRECATION")
+
 package net.corda.cli.plugins.network
 
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.cli.plugins.common.RestClientUtils.createRestClient
+import net.corda.cli.plugins.common.RestCommand
+import net.corda.rest.HttpFileUpload
+import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
+import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
+import net.corda.membership.rest.v1.types.request.HostedIdentitySetupRequest
+import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
+import net.corda.membership.rest.v1.KeysRestResource
+import net.corda.membership.rest.v1.HsmRestResource
+import net.corda.membership.rest.v1.CertificatesRestResource
+import net.corda.membership.rest.v1.MemberRegistrationRestResource
+import net.corda.membership.rest.v1.NetworkRestResource
+import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
+import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
+import com.fasterxml.jackson.databind.node.ObjectNode
+import net.corda.virtualnode.OperationalStatus
+import org.bouncycastle.openssl.PEMParser
+import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import com.fasterxml.jackson.databind.ObjectMapper
-import kong.unirest.HttpResponse
-import kong.unirest.Unirest
-import net.corda.cli.plugins.network.Helpers.restPasswordFromClusterName
-import net.corda.cli.plugins.network.Helpers.urlFromClusterName
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.toFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
+import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
+import net.corda.membership.rest.v1.types.request.HostedIdentitySessionKeyAndCertificate
+import net.corda.membership.rest.v1.types.response.RegistrationStatus
+import com.fasterxml.jackson.databind.JsonNode
+import net.corda.rest.JsonObject
 import org.bouncycastle.asn1.x500.X500Name
+import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
+import net.corda.rest.client.exceptions.MissingRequestedResourceException
+import net.corda.rest.client.exceptions.RequestErrorException
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
 import org.bouncycastle.crypto.util.PrivateKeyFactory
-import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder
 import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder
 import org.bouncycastle.operator.bc.BcRSAContentSignerBuilder
-import org.bouncycastle.pkcs.PKCS10CertificationRequest
-import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
+import picocli.CommandLine.Option
 import java.io.File
 import java.io.InputStream
 import java.math.BigInteger
@@ -29,8 +52,9 @@ import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import java.util.Date
+import java.net.URI
 
-abstract class BaseOnboard : Runnable {
+abstract class BaseOnboard : Runnable, RestCommand() {
     private companion object {
         const val P2P_TLS_KEY_ALIAS = "p2p-tls-key"
         const val P2P_TLS_CERTIFICATE_ALIAS = "p2p-tls-cert"
@@ -81,11 +105,11 @@ abstract class BaseOnboard : Runnable {
     }
 
     @Parameters(
-        description = ["The name of the k8s namespace (leave empty for combined worker on local host)"],
-        paramLabel = "NAME",
-        arity = "0..1",
+        description = ["The X500 name of the virtual node."],
+        arity = "1",
+        index = "0"
     )
-    var cordaClusterName: String? = null
+    lateinit var name: String
 
     @Option(
         names = ["--ca"],
@@ -100,137 +124,130 @@ abstract class BaseOnboard : Runnable {
     var mtls: Boolean = false
 
     @Option(
-        names = ["--rest-worker-deployment-name"],
-        description = ["The REST worker deployment name (default to corda-rest-worker)"]
-    )
-    var restWorkerDeploymentName: String = "corda-rest-worker"
-
-    @Option(
         names = ["--tls-certificate-subject"],
         description = [
             "The TLS certificate subject. Leave empty to use random certificate subject." +
-                "Will only be used on the first onboard to the cluster."
+                    "Will only be used on the first onboard to the cluster."
         ]
     )
     var tlsCertificateSubject: String? = null
+
+    @Option(
+        names = ["--p2p-gateway-url"],
+        description = ["P2P Gateway URL. Multiple URLs may be provided. Defaults to https://localhost:8080."]
+    )
+    var p2pGatewayUrls: List<String> = listOf("https://localhost:8080")
 
     protected val json by lazy {
         ObjectMapper()
     }
 
-    private val restPassword by lazy {
-        restPasswordFromClusterName(cordaClusterName)
-    }
-
-    private val url by lazy {
-        urlFromClusterName(cordaClusterName, restWorkerDeploymentName)
-    }
-
-    protected fun setupClient() {
-        Unirest.config()
-            .verifySsl(false)
-            .setDefaultBasicAuth("admin", restPassword)
-            .defaultBaseUrl(url)
-    }
-
     internal class OnboardException(message: String) : Exception(message)
 
-    internal fun <T> HttpResponse<T>.bodyOrThrow(): T {
-        if (!this.isSuccess) {
-            throw OnboardException("Error: ${this.body}")
-        }
-        return this.body
-    }
     protected fun uploadCpi(cpi: InputStream, name: String): String {
-        val id = cpi.use { jarInputStream ->
-
-            Unirest.post("/cpi")
-                .field("upload", jarInputStream, "$name.cpi")
-                .asJson()
-                .bodyOrThrow()
-                .`object`.get("id")
-        }
-        val end = System.currentTimeMillis() + 5 * 60 * 1000
-        while (System.currentTimeMillis() < end) {
-            val response = Unirest.get("/cpi/status/$id").asJson()
-            val status = try {
-                response.bodyOrThrow().`object`.get("status")
-            } catch (e: OnboardException) {
-                "Not ready yet"
-            }
-            if (status == "OK") {
-                return response.body.`object`.get("cpiFileChecksum").toString()
+        return createRestClient(CpiUploadRestResource::class).use { client ->
+            cpi.use { jarInputStream ->
+                val uploadId = client.start().proxy.cpi(
+                    HttpFileUpload(
+                        content = jarInputStream,
+                        fileName = "$name.cpi"
+                    )
+                ).id
+                checkCpiStatus(uploadId)
             }
         }
+    }
 
-        throw OnboardException("CPI request $id had failed!")
+    private fun checkCpiStatus(id: String): String {
+        return createRestClient(CpiUploadRestResource::class).use { client ->
+            checkInvariant(
+                maxAttempts = MAX_ATTEMPTS,
+                waitInterval = WAIT_INTERVAL,
+                errorMessage = "CPI request $id is not ready yet!"
+            ) {
+                try {
+                    val status = client.start().proxy.status(id)
+                    if (status.status == "OK") {
+                        status.cpiFileChecksum
+                    } else {
+                        null
+                    }
+                } catch (e: RequestErrorException) {
+                    // This exception can be thrown while the CPI upload is being processed, so we catch it and re-try.
+                    null
+                }
+            }
+        }
     }
 
     protected abstract val cpiFileChecksum: String
 
-    abstract var x500Name: String
-
     protected abstract val registrationContext: Map<String, Any?>
 
     private fun waitForVirtualNode(shortHashId: String) {
-        repeat(10) {
-            try {
-                if (
-                    Unirest.get("/virtualnode/$shortHashId")
-                        .asJson()
-                        .bodyOrThrow()
-                        .`object`
-                        .get("flowP2pOperationalStatus") == "ACTIVE"
-                ) {
-                    return@waitForVirtualNode
+        createRestClient(VirtualNodeRestResource::class).use { client ->
+            checkInvariant(
+                maxAttempts = MAX_ATTEMPTS,
+                waitInterval = WAIT_INTERVAL,
+                errorMessage = "Virtual Node $shortHashId is not active yet!"
+            ) {
+                try {
+                    val response = client.start().proxy.getVirtualNode(shortHashId)
+                    response.flowP2pOperationalStatus == OperationalStatus.ACTIVE
+                } catch (e: MissingRequestedResourceException) {
+                    // This exception can be thrown while the Virtual Node is being processed, so we catch it and re-try.
+                    null
                 }
-            } catch (e: Exception) {
-                // Do nothing...
             }
-            Thread.sleep(300)
         }
-        throw OnboardException("Virtual node $shortHashId can not be created")
     }
 
-    protected val holdingId by lazy {
-        val body = mapOf(
-            "request" to mapOf(
-                "cpiFileChecksum" to cpiFileChecksum,
-                "x500Name" to x500Name
-            )
-        ).let {
-            json.writeValueAsString(it)
+    protected val holdingId: String by lazy {
+        val request = CreateVirtualNodeRequest(
+            x500Name = name,
+            cpiFileChecksum = cpiFileChecksum,
+            vaultDdlConnection = null,
+            vaultDmlConnection = null,
+            cryptoDdlConnection = null,
+            cryptoDmlConnection = null,
+            uniquenessDdlConnection = null,
+            uniquenessDmlConnection = null
+        )
+
+        val response = createRestClient(VirtualNodeRestResource::class).use { client ->
+            client.start().proxy.createVirtualNode(request)
         }
-        Unirest.post("/virtualnode")
-            .body(body)
-            .asJson()
-            .bodyOrThrow()
-            .let {
-                it.`object`.let { reply ->
-                    reply.get("requestId")
-                        .toString()
-                }
-            }.also { shortHashId ->
-                waitForVirtualNode(shortHashId)
-                println("Onboarded member holding identity is: $shortHashId")
-            }
+
+        val shortHashId = response.responseBody.requestId
+
+        waitForVirtualNode(shortHashId)
+        println("Onboarded member holding identity is: $shortHashId")
+
+        shortHashId
     }
 
     protected fun assignSoftHsmAndGenerateKey(category: String): String {
-        repeat(10) {
-            if (
-                Unirest.post("/hsm/soft/$holdingId/$category").asJson().isSuccess
+        createRestClient(HsmRestResource::class).use { client ->
+            checkInvariant(
+                maxAttempts = MAX_ATTEMPTS,
+                waitInterval = WAIT_INTERVAL,
+                errorMessage = "Assign Soft HSM operation for $category: failed after the maximum number of attempts ($MAX_ATTEMPTS)."
             ) {
-                return@repeat
+                try {
+                    client.start().proxy.assignSoftHsm(holdingId, category)
+                } catch (e: MissingRequestedResourceException) {
+                    //This exception can be thrown while the assigning Hsm Key is being processed, so we catch it and re-try.
+                    null
+                }
             }
-            println("Could not assign HSM key, will retry in a while")
-            Thread.sleep(300)
         }
 
-        val response = Unirest
-            .post("/keys/$holdingId/alias/$holdingId-$category/category/$category/scheme/CORDA.ECDSA.SECP256R1")
-            .asJson()
-        return response.bodyOrThrow().`object`.get("id").toString()
+        val response = createRestClient(KeysRestResource::class).use { keyClient ->
+            keyClient.start().proxy.generateKeyPair(
+                holdingId, "$holdingId-$category", category, "CORDA.ECDSA.SECP256R1"
+            )
+        }
+        return response.id
     }
 
     protected val sessionKeyId by lazy {
@@ -239,20 +256,20 @@ abstract class BaseOnboard : Runnable {
     protected val ecdhKeyId by lazy {
         assignSoftHsmAndGenerateKey("PRE_AUTH")
     }
-    private val p2pHost by lazy {
-        if (cordaClusterName == null) {
-            "localhost"
-        } else {
-            "corda-p2p-gateway-worker.$cordaClusterName"
-        }
-    }
     protected val certificateSubject by lazy {
-        tlsCertificateSubject ?: "O=P2P Certificate, OU=$p2pHost, L=London, C=GB"
+        tlsCertificateSubject ?: "O=P2P Certificate, OU=${p2pHosts}, L=London, C=GB"
     }
 
-    protected val p2pUrl by lazy {
-        "https://$p2pHost:8080"
+    private val p2pHosts = extractHostsFromUrls(p2pGatewayUrls)
+
+    private fun extractHostsFromUrls(urls: List<String>): List<String> {
+        return urls.map { extractHostFromUrl(it) }.distinct()
     }
+
+    private fun extractHostFromUrl(url: String): String {
+        return URI.create(url).host ?: throw IllegalArgumentException("Invalid URL: $url")
+    }
+
     protected val ca by lazy {
         caHome.parentFile.mkdirs()
         CertificateAuthorityFactory
@@ -263,99 +280,138 @@ abstract class BaseOnboard : Runnable {
     }
 
     protected fun createTlsKeyIdNeeded() {
-        val keys = Unirest.get("/keys/p2p?category=TLS")
-            .asJson()
-        if (!keys.bodyOrThrow().`object`.isEmpty) {
-            return
+        val hasKeys = createRestClient(KeysRestResource::class).use { client ->
+            client.start().proxy.listKeys(
+                tenantId = "p2p",
+                skip = 0,
+                take = 20,
+                orderBy = "NONE",
+                category = "TLS",
+                schemeCodeName = null,
+                alias = P2P_TLS_KEY_ALIAS,
+                masterKeyAlias = null,
+                createdAfter = null,
+                createdBefore = null,
+                ids = null,
+            ).isNotEmpty()
         }
-        val generateKeyPairResponse = Unirest.post("/keys/p2p/alias/$P2P_TLS_KEY_ALIAS/category/TLS/scheme/CORDA.ECDSA.SECP256R1").asJson()
-        val tlsKeyId = generateKeyPairResponse
-            .bodyOrThrow()
-            .`object`.get("id").toString()
 
-        val generateCsrResponse = Unirest.post("/certificates/p2p/$tlsKeyId/")
-            .body(
-                mapOf(
-                    "x500Name" to certificateSubject,
-                    "subjectAlternativeNames" to listOf(p2pHost)
-                )
-            ).asString()
-        val csr = generateCsrResponse.bodyOrThrow().reader().use { reader ->
+        if (hasKeys) return
+
+        val tlsKeyId = createRestClient(KeysRestResource::class).use { client ->
+            client.start().proxy.generateKeyPair(
+                tenantId = "p2p",
+                alias = P2P_TLS_KEY_ALIAS,
+                hsmCategory = "TLS",
+                scheme = "CORDA.ECDSA.SECP256R1"
+            ).id
+        }
+
+        val csr = createRestClient(CertificatesRestResource::class).use { client ->
+            client.start().proxy.generateCsr(
+                tenantId = "p2p",
+                keyId = tlsKeyId,
+                x500Name = certificateSubject,
+                subjectAlternativeNames = p2pHosts,
+                contextMap = null
+            )
+        }
+
+        val csrCertRequest = csr.reader().use { reader ->
             PEMParser(reader).use { parser ->
                 parser.readObject()
             }
-        } as? PKCS10CertificationRequest ?: throw OnboardException("CSR is not a valid CSR: ${generateCsrResponse.body}")
-        ca.signCsr(csr).toPem().byteInputStream().use { certificate ->
-            Unirest.put("/certificates/cluster/p2p-tls")
-                .field("certificate", certificate, "certificate.pem")
-                .field("alias", P2P_TLS_CERTIFICATE_ALIAS)
-                .asJson()
-                .bodyOrThrow()
+        } as? PKCS10CertificationRequest ?: throw OnboardException("CSR is not a valid CSR: $csr")
+
+        createRestClient(CertificatesRestResource::class).use { client ->
+            val certificate = ca.signCsr(csrCertRequest).toPem().byteInputStream()
+            client.start().proxy.importCertificateChain(
+                usage = "p2p-tls",
+                alias = P2P_TLS_CERTIFICATE_ALIAS,
+                certificates = listOf(
+                    HttpFileUpload(
+                        certificate,
+                        "certificate.pem",
+                    )
+                )
+            )
         }
     }
 
     protected fun setupNetwork() {
-        Unirest.put("/network/setup/$holdingId")
-            .body(
-                mapOf(
-                    "request" to mapOf(
-                        "p2pTlsCertificateChainAlias" to P2P_TLS_CERTIFICATE_ALIAS,
-                        "useClusterLevelTlsCertificateAndKey" to true,
-                        "sessionKeysAndCertificates" to
-                            listOf(
-                                mapOf(
-                                    "sessionKeyId" to sessionKeyId,
-                                    "preferred" to true,
-                                ),
-                            ),
-                    )
+        val request = HostedIdentitySetupRequest(
+            p2pTlsCertificateChainAlias = P2P_TLS_CERTIFICATE_ALIAS,
+            useClusterLevelTlsCertificateAndKey = true,
+            sessionKeysAndCertificates = listOf(
+                HostedIdentitySessionKeyAndCertificate(
+                    sessionKeyId = sessionKeyId,
+                    preferred = true
                 )
-            ).asJson()
-            .bodyOrThrow()
+            )
+        )
+
+        createRestClient(NetworkRestResource::class).use { client ->
+            client.start().proxy.setupHostedIdentities(holdingId, request)
+        }
     }
 
     protected fun register(waitForFinalStatus: Boolean = true) {
-        val response = Unirest.post("/membership/$holdingId")
-            .body(
-                mapOf(
-                    "memberRegistrationRequest" to mapOf(
-                        "context" to registrationContext
-                    )
-                )
-            ).asJson()
-
-        val body = response.bodyOrThrow().`object`
-        val submissionStatus = body.get("registrationStatus")
-        if (submissionStatus != "SUBMITTED") {
-            throw OnboardException("Could not submit MGM registration: ${response.body}")
+        val registrationContext: Map<String, String> = registrationContext.mapValues { (_, value) ->
+            value.toString()
         }
-        val id = body.get("registrationId").toString()
-        println("Registration ID of $x500Name is $id")
+
+        val request = MemberRegistrationRequest(
+            context = registrationContext
+        )
+
+        val response = createRestClient(MemberRegistrationRestResource::class).use { client ->
+            client.start().proxy.startRegistration(holdingId, request)
+        }
+
+        val registrationId = response.registrationId
+        val submissionStatus = response.registrationStatus
+
+        if (submissionStatus != "SUBMITTED") {
+            throw OnboardException("Could not submit MGM registration: ${response.memberInfoSubmitted}")
+        }
+
+        println("Registration ID of $name is $registrationId")
+
         if (waitForFinalStatus) {
-            waitForFinalStatus(id)
+            waitForFinalStatus(registrationId)
         }
     }
 
-    private fun waitForFinalStatus(id: String) {
-        val end = System.currentTimeMillis() + 5 * 60 * 1000
-        while (System.currentTimeMillis() < end) {
-            Thread.sleep(400)
-            val status = Unirest.get("/membership/$holdingId/$id").asJson()
-            val registrationStatus = status.bodyOrThrow().`object`.get("registrationStatus")
-            when (registrationStatus) {
-                "APPROVED" -> {
-                    return
-                }
-                "DECLINED", "INVALID", "FAILED" -> {
-                    throw OnboardException("Status of registration is $registrationStatus.")
-                }
-                else -> {
-                    println("Status of $x500Name registration is $registrationStatus")
+    private fun waitForFinalStatus(registrationId: String) {
+        createRestClient(MemberRegistrationRestResource::class).use { client ->
+            checkInvariant(
+                maxAttempts = MAX_ATTEMPTS,
+                waitInterval = WAIT_INTERVAL,
+                errorMessage = "Check Registration Progress failed after maximum number of attempts ($MAX_ATTEMPTS)."
+            ) {
+                try {
+                    val status = client.start().proxy.checkSpecificRegistrationProgress(holdingId, registrationId)
+
+                    when (val registrationStatus = status.registrationStatus) {
+                        RegistrationStatus.APPROVED -> true // Return true to indicate the invariant is satisfied
+                        RegistrationStatus.DECLINED,
+                        RegistrationStatus.INVALID,
+                        RegistrationStatus.FAILED -> throw OnboardException("Status of registration is $registrationStatus.")
+
+                        else -> {
+                            println("Status of registration is $registrationStatus")
+                            null
+                        }
+                    }
+                } catch (e: Exception) {
+                    println("Error checking registration progress: ${e.message}")
+                    null // Return null to indicate the invariant is not yet satisfied
                 }
             }
         }
-        throw OnboardException("Registration had failed!")
     }
+
+    data class ConcreteJsonObject(override val escapedJson: String) : JsonObject
 
     protected fun configureGateway() {
         val tlsType = if (mtls) {
@@ -363,35 +419,42 @@ abstract class BaseOnboard : Runnable {
         } else {
             "ONE_WAY"
         }
-        val currentConfig = Unirest.get("/config/corda.p2p.gateway/")
-            .asJson()
-            .bodyOrThrow()
-        val rawConfig = json.readTree(currentConfig.`object`.get("configWithDefaults") as String)
-        val currentMode = rawConfig.get("sslConfig").get("revocationCheck").get("mode").asText()
-        val currentTlsType = rawConfig.get("sslConfig").get("tlsType").asText()
-        if ((currentMode != "OFF") || (currentTlsType != tlsType)) {
-            val newConfig = mapOf(
-                "sslConfig" to mapOf(
-                    "revocationCheck" to mapOf(
-                        "mode" to "OFF"
-                    ),
-                    "tlsType" to tlsType,
-                )
-            )
-            Unirest.put("/config")
-                .body(
-                    mapOf(
-                        "section" to "corda.p2p.gateway",
-                        "version" to currentConfig.`object`.get("version"),
-                        "config" to json.writeValueAsString(newConfig),
-                        "schemaVersion" to mapOf(
-                            "major" to 1,
-                            "minor" to 0
-                        )
-                    )
-                ).asJson()
-                .bodyOrThrow()
+        val currentConfig = createRestClient(ConfigRestResource::class).use { client ->
+            client.start().proxy.get("corda.p2p.gateway")
         }
+        val rawConfig = currentConfig.configWithDefaults
+        val rawConfigJson = json.readTree(rawConfig)
+        val sslConfig = rawConfigJson["sslConfig"]
+        val currentMode = sslConfig["revocationCheck"]?.get("mode")?.asText()
+        val currentTlsType = sslConfig["tlsType"]?.asText()
+        if ((currentMode != "OFF") || (currentTlsType != tlsType)) {
+            val newConfig = createNewConfigNode(tlsType)
+            val schemaVersion = ConfigSchemaVersion(major = 1, minor = 0)
+            createRestClient(ConfigRestResource::class).use { client ->
+                client.start().proxy.updateConfig(
+                    UpdateConfigParameters(
+                        section = "corda.p2p.gateway",
+                        version = currentConfig.version,
+                        config = ConcreteJsonObject(json.writeValueAsString(newConfig)),
+                        schemaVersion = schemaVersion
+                    )
+                )
+            }
+        }
+    }
+
+    private fun createNewConfigNode(tlsType: String): JsonNode {
+        val newConfig = json.createObjectNode()
+        newConfig.set<ObjectNode>(
+            "sslConfig",
+            json.createObjectNode()
+                .put("tlsType", tlsType)
+                .set<ObjectNode>(
+                    "revocationCheck",
+                    json.createObjectNode().put("mode", "OFF")
+                )
+        )
+        return newConfig
     }
 
     private val keyStoreFile by lazy {
@@ -403,7 +466,7 @@ abstract class BaseOnboard : Runnable {
         options.keyAlias = SIGNING_KEY_ALIAS
         options.keyStorePass = SIGNING_KEY_STORE_PASSWORD
         options.keyStoreFileName = keyStoreFile.absolutePath
-        if(!keyStoreFile.canRead()) {
+        if (!keyStoreFile.canRead()) {
             createKeyStoreFile(keyStoreFile)
         }
 
@@ -419,21 +482,35 @@ abstract class BaseOnboard : Runnable {
             ?.toPem()
             ?.byteInputStream()
             ?.use { certificate ->
-                Unirest.put("/certificates/cluster/code-signer")
-                    .field("certificate", certificate, "certificate.pem")
-                    .field("alias", GRADLE_PLUGIN_DEFAULT_KEY_ALIAS)
-                    .asJson()
-                    .bodyOrThrow()
+                createRestClient(CertificatesRestResource::class).use { client ->
+                    client.start().proxy.importCertificateChain(
+                        usage = "code-signer",
+                        alias = GRADLE_PLUGIN_DEFAULT_KEY_ALIAS,
+                        certificates = listOf(
+                            HttpFileUpload(
+                                certificate,
+                                "certificate.pem"
+                            )
+                        )
+                    )
+                }
             }
         keyStore.getCertificate(SIGNING_KEY_ALIAS)
             ?.toPem()
             ?.byteInputStream()
             ?.use { certificate ->
-                Unirest.put("/certificates/cluster/code-signer")
-                    .field("certificate", certificate, "certificate.pem")
-                    .field("alias", "signingkey1-2022")
-                    .asJson()
-                    .bodyOrThrow()
+                createRestClient(CertificatesRestResource::class).use { client ->
+                    client.start().proxy.importCertificateChain(
+                        usage = "code-signer",
+                        alias = "signingkey1-2022",
+                        certificates = listOf(
+                            HttpFileUpload(
+                                certificate,
+                                "certificate.pem"
+                            )
+                        )
+                    )
+                }
             }
     }
 }

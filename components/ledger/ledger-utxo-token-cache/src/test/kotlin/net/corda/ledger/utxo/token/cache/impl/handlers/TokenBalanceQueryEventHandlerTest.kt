@@ -2,19 +2,20 @@ package net.corda.ledger.utxo.token.cache.impl.handlers
 
 import java.math.BigDecimal
 import net.corda.data.flow.event.FlowEvent
-import net.corda.ledger.utxo.impl.token.selection.impl.TokenBalanceImpl
 import net.corda.ledger.utxo.token.cache.entities.BalanceQuery
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
+import net.corda.ledger.utxo.token.cache.entities.TokenBalance
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.handlers.TokenBalanceQueryEventHandler
-import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
-import net.corda.ledger.utxo.token.cache.services.SimpleTokenFilterStrategy
+import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY_DTO
+import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentMatchers.isNull
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
@@ -25,6 +26,7 @@ import org.mockito.kotlin.whenever
 class TokenBalanceQueryEventHandlerTest {
 
     private val recordFactory: RecordFactory = mock()
+    private val availableTokenService: AvailableTokenService = mock()
     private val tokenCache: TokenCache = mock()
     private val poolCacheState: PoolCacheState = mock()
 
@@ -47,13 +49,16 @@ class TokenBalanceQueryEventHandlerTest {
     @BeforeEach
     fun setup() {
         whenever(tokenCache.iterator()).doAnswer { cachedTokens.iterator() }
+        whenever(poolCacheState.claimedTokens()).doAnswer { emptyList() }
     }
 
     @Test
     fun `empty cache should return a balance equal to zero`() {
-        val target = TokenBalanceQueryEventHandler(SimpleTokenFilterStrategy(), recordFactory)
+        val target = TokenBalanceQueryEventHandler(recordFactory, availableTokenService)
         val balanceQuery = createBalanceQuery()
         whenever(recordFactory.getBalanceResponse(any(), any(), any(), any())).thenReturn(balanceQueryResult)
+        whenever(availableTokenService.queryBalance(any(), isNull(), isNull(), any()))
+            .thenReturn(TokenBalance(BigDecimal(0), BigDecimal(0)))
 
         val result = target.handle(tokenCache, poolCacheState, balanceQuery)
 
@@ -61,16 +66,18 @@ class TokenBalanceQueryEventHandlerTest {
         verify(recordFactory).getBalanceResponse(
             flowId,
             balanceId,
-            POOL_CACHE_KEY,
-            TokenBalanceImpl(BigDecimal(0.0), BigDecimal(0.0))
+            POOL_CACHE_KEY_DTO,
+            TokenBalance(BigDecimal(0.0), BigDecimal(0.0))
         )
     }
 
     @Test
     fun `the correct balance is calculated - balance availableBalance totalBalance are the same`() {
-        val target = TokenBalanceQueryEventHandler(SimpleTokenFilterStrategy(), recordFactory)
+        val target = TokenBalanceQueryEventHandler(recordFactory, availableTokenService)
         val balanceQuery = createBalanceQuery()
         whenever(recordFactory.getBalanceResponse(any(), any(), any(), any())).thenReturn(balanceQueryResult)
+        whenever(availableTokenService.queryBalance(any(), isNull(), isNull(), any()))
+            .thenReturn(TokenBalance(BigDecimal(99), BigDecimal(99)))
         cachedTokens += token99
 
         val result = target.handle(tokenCache, poolCacheState, balanceQuery)
@@ -79,16 +86,18 @@ class TokenBalanceQueryEventHandlerTest {
         verify(recordFactory).getBalanceResponse(
             flowId,
             balanceId,
-            POOL_CACHE_KEY,
-            TokenBalanceImpl(BigDecimal(99), BigDecimal(99))
+            POOL_CACHE_KEY_DTO,
+            TokenBalance(BigDecimal(99), BigDecimal(99))
         )
     }
 
     @Test
     fun `the correct balance is calculated - availableBalance and totalBalance are different`() {
-        val target = TokenBalanceQueryEventHandler(SimpleTokenFilterStrategy(), recordFactory)
+        val target = TokenBalanceQueryEventHandler(recordFactory, availableTokenService)
         val balanceQuery = createBalanceQuery()
         whenever(recordFactory.getBalanceResponse(any(), any(), any(), any())).thenReturn(balanceQueryResult)
+        whenever(availableTokenService.queryBalance(any(), isNull(), isNull(), any()))
+            .thenReturn(TokenBalance(BigDecimal(99), BigDecimal(199)))
         cachedTokens += token99
         cachedTokens += token100
 
@@ -102,13 +111,13 @@ class TokenBalanceQueryEventHandlerTest {
         verify(recordFactory).getBalanceResponse(
             flowId,
             balanceId,
-            POOL_CACHE_KEY,
-            TokenBalanceImpl(BigDecimal(99), BigDecimal(199))
+            POOL_CACHE_KEY_DTO,
+            TokenBalance(BigDecimal(99), BigDecimal(199))
         )
     }
 
     private fun createBalanceQuery(): BalanceQuery {
-        return BalanceQuery(balanceId, flowId, null, null, POOL_CACHE_KEY)
+        return BalanceQuery(balanceId, flowId, null, null, POOL_CACHE_KEY_DTO)
     }
 }
 

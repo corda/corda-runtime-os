@@ -21,7 +21,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
 
@@ -62,7 +61,8 @@ class ConsensualLedgerServiceImpl @Activate constructor(
         Creating the executing the SubFlow must be independent otherwise the security manager causes issues with Quasar.
         */
         val consensualFinalityFlow = try {
-            AccessController.doPrivileged(PrivilegedExceptionAction {
+            @Suppress("deprecation", "removal")
+            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
                 ConsensualFinalityFlow(signedTransaction as ConsensualSignedTransactionInternal, sessions)
             })
         } catch (e: PrivilegedActionException) {
@@ -77,7 +77,8 @@ class ConsensualLedgerServiceImpl @Activate constructor(
         validator: ConsensualTransactionValidator
     ): ConsensualSignedTransaction {
         val consensualReceiveFinalityFlow = try {
-            AccessController.doPrivileged(PrivilegedExceptionAction {
+            @Suppress("deprecation", "removal")
+            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
                 ConsensualReceiveFinalityFlow(session, validator)
             })
         } catch (e: PrivilegedActionException) {

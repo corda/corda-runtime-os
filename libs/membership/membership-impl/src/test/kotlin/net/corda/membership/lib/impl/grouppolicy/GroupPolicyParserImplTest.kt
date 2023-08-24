@@ -1,9 +1,13 @@
 package net.corda.membership.lib.impl.grouppolicy
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
+import net.corda.data.KeyValuePairList
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MPV_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.ledgerKeyHashes
@@ -69,7 +73,13 @@ class GroupPolicyParserImplTest {
             PublicKeyHashConverter()
         )
     )
-    private val memberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
+    private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>>()
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on {
+            createAvroSerializer<KeyValuePairList>(any())
+        } doReturn keyValuePairListSerializer
+    }
+    private val memberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory, cordaAvroSerializationFactory)
     private val groupPolicyParser = GroupPolicyParserImpl(memberInfoFactory)
     private val persistedProperties = buildPersistedProperties(layeredPropertyMapFactory)
 
@@ -136,6 +146,15 @@ class GroupPolicyParserImplTest {
                         "endpointUrl-2" to "https://charlie-dr.corda5.r3.com:10001",
                         "endpointProtocol-2" to 1,
                     ),
+                )
+            softly.assertThat(result.protocolParameters.staticNetworkGroupParameters)
+                .isNotNull
+                .containsExactlyInAnyOrderEntriesOf(
+                    mapOf(
+                        MPV_KEY to "50000",
+                        "ext.key1" to "value1",
+                        "ext.key2" to "value2"
+                    )
                 )
             softly.assertThat(result.p2pParameters.sessionTrustRoots).hasSize(3)
             softly.assertThat(result.p2pParameters.tlsTrustRoots).hasSize(4)

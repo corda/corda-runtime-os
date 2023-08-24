@@ -1,4 +1,5 @@
 package net.corda.cli.plugins.network
+
 import net.corda.cli.api.CordaCliPlugin
 import org.pf4j.Extension
 import org.pf4j.Plugin
@@ -24,15 +25,16 @@ class NetworkPluginWrapper : Plugin() {
     @CommandLine.Command(
         name = "network",
         subcommands = [
-            MemberList::class,
             GenerateGroupPolicy::class,
-            OnBoard::class
+            Dynamic::class,
+            GetRegistrations::class,
+            Lookup::class
         ],
         hidden = true,
         mixinStandardHelpOptions = true,
         description = ["Plugin for interacting with a network."]
     )
-    class NetworkPlugin: CordaCliPlugin
+    class NetworkPlugin : CordaCliPlugin
 
     @Extension
     @CommandLine.Command(
@@ -45,4 +47,3 @@ class NetworkPluginWrapper : Plugin() {
     )
     class MgmPlugin : CordaCliPlugin
 }
-

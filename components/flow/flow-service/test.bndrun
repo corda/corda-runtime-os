@@ -1,7 +1,7 @@
 -tester: biz.aQute.tester.junit-platform
 -runfw: org.apache.felix.framework
 -resolve.effective: resolve,active
--runee: JavaSE-11
+-runee: JavaSE-17
 -runtrace: true
 
 # Enable debugging.
@@ -10,7 +10,6 @@
 -runvm: \
     -Djava.util.logging.config.file=${.}/logging.properties,\
     -Djava.io.tmpdir=${task.temporaryDir},\
-    --illegal-access=deny,\
     --add-opens, 'java.base/java.lang=ALL-UNNAMED'
 
 -runsystempackages: \

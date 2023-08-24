@@ -18,7 +18,7 @@ import javax.persistence.Version
 class User(
     @Id
     @Column(name = "id", nullable = false, updatable = false)
-    val id: String,
+    var id: String,
 
     @Column(name = "update_ts", nullable = false)
     var updateTimestamp: Instant,

@@ -1,6 +1,7 @@
 package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.core.ShortHash
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -9,10 +10,12 @@ import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
+import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.rest.v1.MGMAdminRestResource
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
@@ -20,19 +23,16 @@ import net.corda.virtualnode.read.rest.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.slf4j.LoggerFactory
 
 @Component(service = [PluggableRestResource::class])
 class MGMAdminRestResourceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = MGMResourceClient::class)
-    private val mgmResourceClient: MGMResourceClient
+    private val mgmResourceClient: MGMResourceClient,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : MGMAdminRestResource, PluggableRestResource<MGMAdminRestResource>, Lifecycle {
-
-    private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
 
     private interface InnerMGMAdminRestResource {
         fun forceDeclineRegistrationRequest(holdingIdentityShortHash: String, requestId: String)
@@ -40,7 +40,7 @@ class MGMAdminRestResourceImpl @Activate constructor(
 
     override val targetInterface: Class<MGMAdminRestResource> = MGMAdminRestResource::class.java
 
-    override val protocolVersion = 1
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     private var impl: InnerMGMAdminRestResource = InactiveImpl
 
@@ -110,6 +110,8 @@ class MGMAdminRestResourceImpl @Activate constructor(
                 throw ServiceUnavailableException("Could not perform operation for $holdingIdentityShortHash: Repartition Event!")
             } catch (e: IllegalArgumentException) {
                 throw BadRequestException("${e.message}")
+            } catch (e: ContextDeserializationException) {
+                throw InternalServerException("${e.message}")
             }
         }
     }

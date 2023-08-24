@@ -20,7 +20,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
-import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
 
@@ -48,14 +47,6 @@ internal class AddNotaryToGroupParametersHandler(
 
     private val notaryUpdater = GroupParametersNotaryUpdater(keyEncodingService, clock)
 
-    private fun serializeProperties(context: KeyValuePairList): ByteArray {
-        return wrapWithNullErrorHandling(onErrorOrNull = {
-            MembershipPersistenceException("Failed to serialize key value pair list.", it)
-        }) {
-            keyValuePairListSerializer.serialize(context)
-        }
-    }
-
     private fun getLatestMemberList(entityManager: EntityManager, notary: MemberInfo): Collection<MemberInfo> {
         val criteriaBuilder = entityManager.criteriaBuilder
         val memberQueryBuilder = criteriaBuilder.createQuery(MemberInfoEntity::class.java)
@@ -65,7 +56,7 @@ internal class AddNotaryToGroupParametersHandler(
                 criteriaBuilder.notEqual(root.get<String>("memberX500Name"), notary.name.toString())
             )
         return entityManager.createQuery(memberQuery).setLockMode(LockModeType.PESSIMISTIC_WRITE).resultList.map {
-            memberInfoFactory.create(
+            memberInfoFactory.createMemberInfo(
                 deserializer.deserializeKeyValuePairList(it.memberContext).toSortedMap(),
                 deserializer.deserializeKeyValuePairList(it.mgmContext).toSortedMap(),
             )
@@ -115,7 +106,7 @@ internal class AddNotaryToGroupParametersHandler(
         }
 
             val parametersMap = deserializer.deserializeKeyValuePairList(previous.singleResult.parameters).toMap()
-            val notaryInfo = memberInfoFactory.create(notaryMemberInfo)
+            val notaryInfo = memberInfoFactory.createMemberInfo(notaryMemberInfo)
             val notary = notaryInfo.notaryDetails
                 ?: throw MembershipPersistenceException(
                     "Cannot add notary to group parameters - notary details not found."
@@ -155,7 +146,7 @@ internal class AddNotaryToGroupParametersHandler(
         // distributed.
         return GroupParametersEntity(
             epoch = epoch!!,
-            parameters = serializeProperties(groupParameters!!),
+            parameters = keyValuePairListSerializer.serializeKeyValuePairList(groupParameters!!),
             signaturePublicKey = null,
             signatureContent = null,
             signatureSpec = null

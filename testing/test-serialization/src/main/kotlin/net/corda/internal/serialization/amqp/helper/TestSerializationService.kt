@@ -5,8 +5,6 @@ import net.corda.crypto.impl.serialization.PublicKeySerializer
 import net.corda.internal.serialization.SerializationServiceImpl
 import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerRegistry
 import net.corda.internal.serialization.amqp.DescriptorBasedSerializerRegistry
-import net.corda.internal.serialization.amqp.DeserializationInput
-import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.currentSandboxGroup
@@ -36,11 +34,13 @@ class TestSerializationService {
             cipherSchemeMetadata: CipherSchemeMetadata
         ) : SerializationService {
             val factory = getTestDefaultFactoryNoEvolution(registerMoreSerializers, cipherSchemeMetadata)
-            val output = SerializationOutput(factory)
-            val input = DeserializationInput(factory)
             val context = testSerializationContext
 
-            return SerializationServiceImpl(output, input, context)
+            return SerializationServiceImpl(
+                outputFactory = factory,
+                inputFactory = factory,
+                context
+            )
         }
     }
 }

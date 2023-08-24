@@ -50,6 +50,7 @@ import net.corda.data.membership.preauth.PreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.ApprovalRulesEntity
 import net.corda.membership.datamodel.ApprovalRulesEntityPrimaryKey
@@ -66,11 +67,14 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.test.util.TestRandom
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -125,6 +129,16 @@ class MembershipPersistenceRPCProcessorTest {
     private val registrationContext = "registration-context".toByteArray()
     private val registrationSignatureKey = "registration-signatureKey".toByteArray()
     private val registrationSignatureContent = "registration-signatureContent".toByteArray()
+    private val vaultDmlConnectionId = UUID(30, 0)
+
+    private val virtualNodeInfo = VirtualNodeInfo(
+        ourHoldingIdentity,
+        CpiIdentifier("TEST_CPI", "1.0", TestRandom.secureHash()),
+        timestamp = clock.instant(),
+        vaultDmlConnectionId = vaultDmlConnectionId,
+        cryptoDmlConnectionId = UUID(0, 0),
+        uniquenessDmlConnectionId = UUID(0, 0)
+    )
 
     private val registrationRequest = RegistrationRequestEntity(
         ourRegistrationId,
@@ -252,9 +266,8 @@ class MembershipPersistenceRPCProcessorTest {
     private val dbConnectionManager: DbConnectionManager = mock {
         on {
             getOrCreateEntityManagerFactory(
-                any(),
-                any(),
-                any(),
+                eq(vaultDmlConnectionId),
+                any()
             )
         } doReturn entityManagerFactory
         on {
@@ -273,6 +286,9 @@ class MembershipPersistenceRPCProcessorTest {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
     }
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
+        on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
+    }
     private val keyEncodingService: KeyEncodingService = mock()
     private val platformInfoProvider: PlatformInfoProvider = mock()
 
@@ -288,6 +304,7 @@ class MembershipPersistenceRPCProcessorTest {
                 jpaEntitiesRegistry,
                 memberInfoFactory,
                 cordaAvroSerializationFactory,
+                virtualNodeInfoReadService,
                 keyEncodingService,
                 platformInfoProvider,
                 mock(),
@@ -426,7 +443,7 @@ class MembershipPersistenceRPCProcessorTest {
     fun `persist member info returns success`() {
         val rq = MembershipPersistenceRequest(
             rqContext,
-            PersistMemberInfo(emptyList())
+            PersistMemberInfo(emptyList(), emptyList())
         )
 
         processor.onNext(rq, responseFuture)
@@ -449,13 +466,25 @@ class MembershipPersistenceRPCProcessorTest {
      */
     @Test
     fun `query member info returns success`() {
-        val memberInfoQuery = mock<TypedQuery<MemberInfoEntity>>()
-        whenever(entityManager.createQuery(any(), eq(MemberInfoEntity::class.java))).thenReturn(memberInfoQuery)
-        whenever(memberInfoQuery.resultList).thenReturn(emptyList())
+        val actualQuery = mock<TypedQuery<MemberInfoEntity>>()
+        val isDeletedPath = mock<Path<Boolean>>()
+        val equalsDeleted = mock<Predicate>()
+        val root = mock<Root<MemberInfoEntity>> {
+            on { get<Boolean>("isDeleted") } doReturn isDeletedPath
+        }
+        val query = mock<CriteriaQuery<MemberInfoEntity>> {
+            on { from(eq(MemberInfoEntity::class.java)) } doReturn root
+            on { select(root) } doReturn mock
+            on { where(any()) } doReturn mock
+        }
+        whenever(criteriaBuilder.createQuery(MemberInfoEntity::class.java)).thenReturn(query)
+        whenever(criteriaBuilder.equal(isDeletedPath, false)).thenReturn(equalsDeleted)
+        whenever(entityManager.createQuery(query)).thenReturn(actualQuery)
+        whenever(actualQuery.resultList).thenReturn(emptyList())
 
         val rq = MembershipPersistenceRequest(
             rqContext,
-            QueryMemberInfo(emptyList())
+            QueryMemberInfo(emptyList(), emptyList())
         )
 
         processor.onNext(rq, responseFuture)
@@ -771,7 +800,8 @@ class MembershipPersistenceRPCProcessorTest {
             on { memberProvidedContext } doReturn mock()
             on { mgmProvidedContext } doReturn mock()
         }
-        whenever(memberInfoFactory.create(any())).thenReturn(memberInfo)
+        whenever(memberInfoFactory.createMemberInfo(any())).thenReturn(memberInfo)
+        whenever(memberInfoFactory.createPersistentMemberInfo(any(), any(), any(), any(), any(), any())).thenReturn(mock())
         whenever(keyValuePairListDeserializer.deserialize(any())).thenReturn(KeyValuePairList(listOf(mock())))
         val rq = MembershipPersistenceRequest(
             rqContext,
@@ -801,7 +831,8 @@ class MembershipPersistenceRPCProcessorTest {
             on { memberProvidedContext } doReturn mock()
             on { mgmProvidedContext } doReturn mock()
         }
-        whenever(memberInfoFactory.create(any())).thenReturn(memberInfo)
+        whenever(memberInfoFactory.createMemberInfo(any())).thenReturn(memberInfo)
+        whenever(memberInfoFactory.createPersistentMemberInfo(any(), any(), any(), any(), any(), any())).thenReturn(mock())
         whenever(keyValuePairListDeserializer.deserialize(any())).thenReturn(KeyValuePairList(listOf(mock())))
         val rq = MembershipPersistenceRequest(
             rqContext,

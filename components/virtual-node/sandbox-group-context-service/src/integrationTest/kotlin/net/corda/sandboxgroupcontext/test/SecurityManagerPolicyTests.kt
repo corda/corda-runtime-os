@@ -23,7 +23,6 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
-import java.security.AccessControlException
 import java.util.concurrent.TimeUnit.SECONDS
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
@@ -42,6 +41,7 @@ class SecurityManagerPolicyTests {
         private const val EXPECTED_ERROR_MSG = "access denied (\"java.lang.reflect.ReflectPermission\" \"suppressAccessChecks\")"
     }
 
+    @Suppress("JUnitMalformedDeclaration")
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
 
@@ -82,7 +82,8 @@ class SecurityManagerPolicyTests {
         applyPolicyFile("security_01.policy")
         val sandboxGroupContext = virtualNode.loadSandbox(CPB1, SandboxGroupType.FLOW)
 
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             virtualNode.runFlow<Map<String, String>>(CPK1_ENVIRONMENT_FLOW, sandboxGroupContext)
         }
     }
@@ -92,7 +93,8 @@ class SecurityManagerPolicyTests {
         applyPolicyFile("security_02.policy")
         val sandboxGroupContext = virtualNode.loadSandbox(CPB1, SandboxGroupType.FLOW)
 
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             virtualNode.runFlow<String>(CPK1_REFLECTION_FLOW, sandboxGroupContext)
         }
     }
@@ -102,7 +104,8 @@ class SecurityManagerPolicyTests {
         applyPolicyFile("security_03.policy")
         val sandboxGroupContext = virtualNode.loadSandbox(CPB1, SandboxGroupType.FLOW)
 
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             virtualNode.runFlow<Int>(CPK1_HTTP_FLOW, sandboxGroupContext)
         }
     }
@@ -123,7 +126,8 @@ class SecurityManagerPolicyTests {
         applyPolicyFile("security_02.policy")
         val sandboxGroupContext = virtualNode.loadSandbox(CPB1, SandboxGroupType.FLOW)
 
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             virtualNode.runFlow<String>(CPK1_REFLECTION_FLOW, sandboxGroupContext)
         }
 

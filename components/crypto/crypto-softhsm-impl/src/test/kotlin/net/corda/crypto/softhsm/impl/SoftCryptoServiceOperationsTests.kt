@@ -1,15 +1,5 @@
 package net.corda.crypto.softhsm.impl
 
-import java.security.InvalidParameterException
-import java.security.KeyPairGenerator
-import java.security.Provider
-import java.security.PublicKey
-import java.util.*
-import java.util.concurrent.ConcurrentHashMap
-import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import net.corda.base.internal.OpaqueBytes
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
@@ -27,8 +17,10 @@ import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.softhsm.SigningRepository
 import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
+import net.corda.crypto.softhsm.impl.infra.makeShortHashCache
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
@@ -47,7 +39,19 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.kotlin.mock
+import java.security.InvalidParameterException
+import java.security.KeyPairGenerator
+import java.security.Provider
+import java.security.PublicKey
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 private val schemeMetadata = CipherSchemeMetadataImpl()
 
@@ -86,6 +90,8 @@ class SoftCryptoServiceOperationsTests {
             )
         )
         private val wrappingKeyCache = makeWrappingKeyCache()
+        private val shortHashCache = makeShortHashCache()
+        private val signingRepository: SigningRepository = mock()
         private val cryptoService = SoftCryptoService(
             wrappingRepositoryFactory = {
                 when (it) {
@@ -102,7 +108,10 @@ class SoftCryptoServiceOperationsTests {
                 KeyPairGenerator.getInstance(algorithm, provider)
             },
             wrappingKeyCache = wrappingKeyCache,
-            privateKeyCache = null
+            shortHashCache = shortHashCache,
+            signingRepositoryFactory = { signingRepository },
+            privateKeyCache = null,
+            tenantInfoService = mock()
         )
         private val category = CryptoConsts.Categories.LEDGER
         private val defaultContext = mapOf(CRYPTO_TENANT_ID to tenantId, CRYPTO_CATEGORY to category)
@@ -167,8 +176,8 @@ class SoftCryptoServiceOperationsTests {
         scheme: KeyScheme,
         spec: SignatureSpec,
     ) {
-        fun verifySign(key: GeneratedWrappedKey, spec: SignatureSpec) {
-            assertThrows<IllegalStateException> {
+        fun verifySign(key: GeneratedWrappedKey, spec: SignatureSpec): IllegalStateException {
+            return assertThrows<IllegalStateException> {
                 cryptoService.sign(
                     SigningWrappedSpec(
                         publicKey = key.publicKey,
@@ -178,15 +187,49 @@ class SoftCryptoServiceOperationsTests {
                             encodingVersion = key.encodingVersion
                         ),
                         keyScheme = scheme,
-                        signatureSpec = spec
+                        signatureSpec = spec,
+                        category = CryptoConsts.Categories.LEDGER
                     ),
                     UUID.randomUUID().toString().toByteArray(),
                     defaultContext
                 )
             }
         }
-        verifySign(softAliasedKeys.getValue(scheme), spec)
-        verifySign(softFreshKeys.getValue(scheme), spec)
+        val exception1 = verifySign(softAliasedKeys.getValue(scheme), spec)
+        assertThat(exception1.message).contains("Wrapping key with alias")
+        val exception2 = verifySign(softFreshKeys.getValue(scheme), spec)
+        assertThat(exception2.message).contains("Wrapping key with alias")
+    }
+
+    @Test
+    fun `Should throw IllegalArgumentException when signing with invalid key category`() {
+        val exception = assertThrows<IllegalArgumentException> {
+            signCategoryTest("fake")
+        }
+        assertThat(exception.message).contains("is not recognised")
+    }
+
+    @Test
+    fun `Should throw IllegalArgumentException when signing with valid non matching key category`() {
+        val exception = assertThrows<IllegalArgumentException> {
+            signCategoryTest(CryptoConsts.Categories.TLS)
+        }
+        assertThat(exception.message).contains("does not match the key's category")
+    }
+
+    @Test
+    fun `Should succeed when signing with valid matching key category`() {
+        signCategoryTest(CryptoConsts.Categories.LEDGER)
+    }
+
+    private fun signCategoryTest(category: String) {
+        val scheme = schemeMetadata.schemes.first { it.codeName == RSA_CODE_NAME }
+        val key = softAliasedKeys.getValue(scheme)
+        cryptoService.sign(
+            makeSigningWrappedSpec(scheme, key, CryptoConsts.Categories.LEDGER),
+            ByteArray(2),
+            defaultContext + mapOf("category" to category)
+        )
     }
 
 
@@ -230,13 +273,15 @@ class SoftCryptoServiceOperationsTests {
     private fun makeSigningWrappedSpec(
         scheme: KeyScheme,
         key: GeneratedWrappedKey,
+        category: String? = CryptoConsts.Categories.LEDGER
     ): SigningWrappedSpec {
         val signatureSpec = schemeMetadata.supportedSignatureSpec(scheme).first()
         return SigningWrappedSpec(
             publicKey = key.publicKey,
             keyMaterialSpec = KeyMaterialSpec(key.keyMaterial, knownWrappingKeyAlias, key.encodingVersion),
             keyScheme = scheme,
-            signatureSpec = signatureSpec
+            signatureSpec = signatureSpec,
+            category = category
         )
     }
 
@@ -309,24 +354,16 @@ class SoftCryptoServiceOperationsTests {
         assertEquals("GOST3410", softFreshKeys.getValue(scheme).publicKey.algorithm)
     }
 
-    @Test
-    fun `should throw IllegalArgumentException when generating key pair with unsupported key scheme`() {
-        assertThrows<IllegalArgumentException> {
+    @ParameterizedTest
+    @CsvSource("false", "true")
+    fun `should throw IllegalArgumentException when generating key pair with unsupported key scheme`(aliased: Boolean) {
+        val exception = assertThrows<IllegalArgumentException> {
             cryptoService.generateKeyPair(
-                KeyGenerationSpec(UNSUPPORTED_KEY_SCHEME, UUID.randomUUID().toString(), knownWrappingKeyAlias),
+                KeyGenerationSpec(UNSUPPORTED_KEY_SCHEME, if (aliased) UUID.randomUUID().toString() else null, knownWrappingKeyAlias),
                 defaultContext
             )
         }
-        assertThrows<IllegalArgumentException> {
-            cryptoService.generateKeyPair(
-                KeyGenerationSpec(
-                    keyScheme = UNSUPPORTED_KEY_SCHEME,
-                    alias = null,
-                    wrappingKeyAlias = knownWrappingKeyAlias
-                ),
-                defaultContext
-            )
-        }
+        assertThat(exception.message).contains("Unsupported key")
     }
 
     @ParameterizedTest
@@ -339,22 +376,24 @@ class SoftCryptoServiceOperationsTests {
         cryptoService.createWrappingKey(anotherWrappingKey, true, defaultContext)
         val testData = UUID.randomUUID().toString().toByteArray()
         val key = softAliasedKeys.getValue(scheme)
-        assertThrows<Throwable> {
+        val exception = assertThrows<Throwable> {
             cryptoService.sign(
                 SigningWrappedSpec(
                     publicKey = key.publicKey,
                     keyMaterialSpec = KeyMaterialSpec(
                         keyMaterial = key.keyMaterial,
                         wrappingKeyAlias = anotherWrappingKey,
-                        encodingVersion = key.encodingVersion
+                        encodingVersion = key.encodingVersion,
                     ),
                     keyScheme = scheme,
-                    signatureSpec = spec
+                    signatureSpec = spec,
+                    category = CryptoConsts.Categories.LEDGER
                 ),
                 testData,
                 defaultContext
             )
         }
+        assertThat(exception.message).contains("Tag mismatch!")
     }
 
     @ParameterizedTest
@@ -367,7 +406,7 @@ class SoftCryptoServiceOperationsTests {
         cryptoService.createWrappingKey(anotherWrappingKey, true, defaultContext)
         val testData = UUID.randomUUID().toString().toByteArray()
         val key = softFreshKeys.getValue(scheme)
-        assertThrows<Throwable> {
+        val exception = assertThrows<Throwable> {
             cryptoService.sign(
                 SigningWrappedSpec(
                     publicKey = key.publicKey,
@@ -377,12 +416,14 @@ class SoftCryptoServiceOperationsTests {
                         encodingVersion = key.encodingVersion
                     ),
                     keyScheme = scheme,
-                    signatureSpec = spec
+                    signatureSpec = spec,
+                    category = CryptoConsts.Categories.LEDGER
                 ),
                 testData,
                 defaultContext
             )
         }
+        assertThat(exception.message).contains("Tag mismatch!")
     }
 
 
@@ -449,9 +490,10 @@ class SoftCryptoServiceOperationsTests {
                 1, "enoch"
             )
         )
-        assertThrows<IllegalArgumentException> {
+        val exception = assertThrows<IllegalArgumentException> {
             cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias), emptyMap())
         }
+        assertThat(exception.message).contains("Unknown wrapping key encoding")
     }
 
 
@@ -467,18 +509,20 @@ class SoftCryptoServiceOperationsTests {
                 "Enoch"
             )
         )
-        assertThrows<IllegalStateException> {
+        val exception =  assertThrows<IllegalStateException> {
             cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias), emptyMap())
         }
+        assertThat(exception.message).contains("Unknown parent key")
     }
 
 
     @Test
     fun `generateKeyPair should throw IllegalStateException when wrapping key is not found`() {
         val alias = UUID.randomUUID().toString()
-        assertThrows<IllegalStateException> {
+        val exception = assertThrows<IllegalStateException> {
             cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias), emptyMap())
         }
+        assertThat(exception.message).contains("Wrapping key with alias")
     }
 
     @Test
@@ -494,12 +538,14 @@ class SoftCryptoServiceOperationsTests {
 
     @Test
     fun `Should fail unwrap if master key alias is empty`() {
-        assertThrows<java.lang.IllegalArgumentException> {
+        val exception = assertThrows<java.lang.IllegalArgumentException> {
             cryptoService.createWrappingKey("", true, mapOf())
         }
-        assertThrows<java.lang.IllegalStateException> {
+        assertThat(exception.message).contains("Alias must not be empty")
+        val exception2 = assertThrows<java.lang.IllegalStateException> {
             cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", ""), emptyMap())
         }
+        assertThat(exception2.message).contains("Wrapping key with alias  not found")
     }
     /*
     @ParameterizedTest

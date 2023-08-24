@@ -7,8 +7,11 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.db.connection.manager.DbConnectionManager
@@ -30,7 +33,6 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.notary.MemberNotaryKey
-import net.corda.membership.lib.toWire
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.time.TestClock
@@ -38,6 +40,9 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -50,8 +55,10 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.SortedMap
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
@@ -85,6 +92,15 @@ class AddNotaryToGroupParametersHandlerTest {
     private val serializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
+    }
+    private val identity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group").toCorda()
+    private val vaultDmlConnectionId = UUID(1, 2)
+    private val nodeInfo = mock<VirtualNodeInfo> {
+        on { holdingIdentity } doReturn identity
+        on { vaultDmlConnectionId } doReturn vaultDmlConnectionId
+    }
+    private val nodeInfoReadService = mock<VirtualNodeInfoReadService> {
+        on { getByHoldingIdentityShortHash(any()) } doReturn nodeInfo
     }
     private val entitySet = mock<JpaEntitiesSet>()
     private val registry = mock<JpaEntitiesRegistry> {
@@ -153,12 +169,11 @@ class AddNotaryToGroupParametersHandlerTest {
     private val entityManagerFactory = mock<EntityManagerFactory> {
         on { createEntityManager() } doReturn entityManager
     }
-    private val connectionManager = mock<DbConnectionManager> {
+    private val dbConnectionManager = mock<DbConnectionManager> {
         on {
             getOrCreateEntityManagerFactory(
-                any(),
-                any(),
-                eq(entitySet),
+                vaultDmlConnectionId,
+                entitySet
             )
         } doReturn entityManagerFactory
     }
@@ -192,15 +207,24 @@ class AddNotaryToGroupParametersHandlerTest {
         on { serial } doReturn 2L
     }
     private val memberInfoFactory = mock<MemberInfoFactory> {
-        on { create(any()) } doReturn notaryInRequest
+        on { createMemberInfo(any()) } doReturn notaryInRequest
     }
     private val requestContext = mock<MembershipRequestContext> {
         on { holdingIdentity } doReturn knownIdentity
     }
     private val persistentNotary = PersistentMemberInfo(
         knownIdentity,
-        notaryInRequest.memberProvidedContext.toWire(),
-        notaryInRequest.mgmProvidedContext.toWire()
+        null,
+        null,
+        SignedData(
+            ByteBuffer.wrap(byteArrayOf(1)),
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap(byteArrayOf(2)),
+                ByteBuffer.wrap(byteArrayOf(2)),
+            ),
+            CryptoSignatureSpec("", null, null),
+        ),
+        ByteBuffer.wrap(byteArrayOf(3)),
     )
     private val request = mock<AddNotaryToGroupParameters> {
         on { notary } doReturn persistentNotary
@@ -211,8 +235,9 @@ class AddNotaryToGroupParametersHandlerTest {
     private lateinit var otherNotary: MemberInfo
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
         on { cordaAvroSerializationFactory } doReturn serializationFactory
+        on { virtualNodeInfoReadService } doReturn nodeInfoReadService
         on { jpaEntitiesRegistry } doReturn registry
-        on { dbConnectionManager } doReturn connectionManager
+        on { dbConnectionManager } doReturn dbConnectionManager
         on { clock } doReturn clock
         on { keyEncodingService } doReturn keyEncodingService
         on { memberInfoFactory } doReturn memberInfoFactory
@@ -241,7 +266,7 @@ class AddNotaryToGroupParametersHandlerTest {
             on { name } doReturn MemberX500Name.parse(knownIdentity.x500Name)
             on { serial } doReturn 1L
         }
-        whenever(memberInfoFactory.create(any(), any<SortedMap<String, String?>>())).doReturn(otherNotary)
+        whenever(memberInfoFactory.createMemberInfo(any(), any<SortedMap<String, String?>>())).doReturn(otherNotary)
         whenever(membersQuery.resultList).doReturn(listOf(otherNotaryEntity))
         whenever(keyValuePairListDeserializer.deserialize(any())).doReturn(
             KeyValuePairList(listOf(

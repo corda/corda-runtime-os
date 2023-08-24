@@ -1,6 +1,7 @@
 package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.core.ShortHash
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
@@ -16,8 +17,10 @@ import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
+import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
+import net.corda.rest.exception.InternalServerException
 import net.corda.virtualnode.read.rest.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -29,6 +32,8 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = MemberResourceClient::class)
     private val memberResourceClient: MemberResourceClient,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : MemberRegistrationRestResource, PluggableRestResource<MemberRegistrationRestResource>, Lifecycle {
     private interface InnerMemberRegistrationRestResource {
         fun startRegistration(
@@ -43,7 +48,7 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
         ): RestRegistrationRequestStatus
     }
 
-    override val protocolVersion = 1
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     private var impl: InnerMemberRegistrationRestResource = InactiveImpl
 
@@ -146,6 +151,8 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                 ).map { it.fromDto() }
             } catch (e: CouldNotFindMemberException) {
                 throw ResourceNotFoundException(e.message!!)
+            } catch (e: ContextDeserializationException) {
+                throw InternalServerException(e.message!!)
             } catch (e: ServiceNotReadyException) {
                 throw ServiceUnavailableException(e.message!!)
             } catch (e: CordaRPCAPIPartitionException) {
@@ -166,6 +173,8 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                 throw ResourceNotFoundException(e.message!!)
             } catch (e: CouldNotFindMemberException) {
                 throw ResourceNotFoundException(e.message!!)
+            } catch (e: ContextDeserializationException) {
+                throw InternalServerException(e.message!!)
             } catch (e: ServiceNotReadyException) {
                 throw ServiceUnavailableException(e.message!!)
             } catch (e: CordaRPCAPIPartitionException) {

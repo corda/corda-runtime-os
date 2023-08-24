@@ -1,6 +1,7 @@
 package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.core.ShortHash
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InternalServerException
@@ -31,6 +32,8 @@ class NetworkRestResourceImpl @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CertificatesClient::class)
     private val certificatesClient: CertificatesClient,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : NetworkRestResource, PluggableRestResource<NetworkRestResource>, Lifecycle {
 
     private companion object {
@@ -85,7 +88,7 @@ class NetworkRestResourceImpl @Activate constructor(
 
     override val targetInterface = NetworkRestResource::class.java
 
-    override val protocolVersion = 1
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<NetworkRestResource>(
         protocolVersion.toString()

@@ -21,15 +21,15 @@ import javax.persistence.Table
 class MemberInfoEntity(
     @Id
     @Column(name = "group_id", nullable = false, updatable = false)
-    val groupId: String,
+    var groupId: String,
 
     @Id
     @Column(name = "member_name", nullable = false, updatable = false)
-    val memberX500Name: String,
+    var memberX500Name: String,
 
     @Id
     @Column(name = "is_pending", nullable = false, updatable = false)
-    val isPending: Boolean,
+    var isPending: Boolean,
 
     @Column(nullable = false)
     var status: String,
@@ -38,24 +38,27 @@ class MemberInfoEntity(
     var modifiedTime: Instant,
 
     @Column(name = "member_context", nullable = false)
-    val memberContext: ByteArray,
+    var memberContext: ByteArray,
 
     @Column(name = "member_signature_key", nullable = false, columnDefinition = "BLOB")
-    val memberSignatureKey: ByteArray,
+    var memberSignatureKey: ByteArray,
 
     @Column(name = "member_signature_content", nullable = false, columnDefinition = "BLOB")
-    val memberSignatureContent: ByteArray,
+    var memberSignatureContent: ByteArray,
 
     // TODO Are we going to be storing `ParameterizedSignatureSpec` here?
     //  If so need to consider saving extra signature spec parameters as recorded in https://r3-cev.atlassian.net/browse/CORE-11685
     @Column(name = "member_signature_spec", nullable = false)
-    val memberSignatureSpec: String,
+    var memberSignatureSpec: String,
 
     @Column(name = "mgm_context", nullable = false)
     var mgmContext: ByteArray,
 
     @Column(name = "serial_number", nullable = false)
-    val serialNumber: Long,
+    var serialNumber: Long,
+
+    @Column(name = "is_deleted", nullable = false, updatable = true)
+    var isDeleted: Boolean = false,
 ) {
     override fun equals(other: Any?): Boolean {
         if (other === this) return true
@@ -77,7 +80,7 @@ class MemberInfoEntity(
 
 @Embeddable
 data class MemberInfoEntityPrimaryKey(
-    val groupId: String,
-    val memberX500Name: String,
-    val isPending: Boolean,
+    var groupId: String,
+    var memberX500Name: String,
+    var isPending: Boolean,
 ) : Serializable

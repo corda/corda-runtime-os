@@ -17,7 +17,7 @@ import javax.persistence.Version
 class Group(
     @Id
     @Column(name = "id", nullable = false)
-    val id: String,
+    var id: String,
 
     @Column(name = "update_ts", nullable = false)
     var updateTimestamp: Instant,

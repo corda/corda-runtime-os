@@ -28,6 +28,7 @@ import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC1
 import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC1_TEMPLATE
 import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC2_TEMPLATE
 import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC3_DLQ
+import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC3_OUTPUT
 import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC3_TEMPLATE
 import net.corda.messaging.integration.getDemoRecords
 import net.corda.messaging.integration.getDummyRecords
@@ -212,7 +213,7 @@ class DurableSubscriptionIntegrationTest {
             null
         )
         val dlqDurableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$DURABLE_TOPIC3-group-dlq", DURABLE_TOPIC3_DLQ),
+            SubscriptionConfig("$DURABLE_TOPIC3_DLQ-group", DURABLE_TOPIC3_DLQ),
             TestDLQDurableProcessor(dlqLatch),
             TEST_CONFIG,
             null
@@ -321,12 +322,12 @@ class DurableSubscriptionIntegrationTest {
         val dlqLatch = CountDownLatch(1)
         val durableSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$DURABLE_TOPIC3-group", DURABLE_TOPIC3),
-            TestBadSerializationDurableProcessor(latch, "$DURABLE_TOPIC3-output", badRecord = 5),
+            TestBadSerializationDurableProcessor(latch, DURABLE_TOPIC3_OUTPUT, badRecord = 5),
             TEST_CONFIG,
             null
         )
         val dlqDurableSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$DURABLE_TOPIC3-group-dlq", DURABLE_TOPIC3_DLQ),
+            SubscriptionConfig("$DURABLE_TOPIC3_DLQ-group", DURABLE_TOPIC3_DLQ),
             TestDLQDurableProcessor(dlqLatch),
             TEST_CONFIG,
             null

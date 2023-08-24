@@ -1,6 +1,6 @@
-import static org.gradle.api.JavaVersion.VERSION_11
+import static org.gradle.api.JavaVersion.VERSION_17
 import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
-import static org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+import static org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
 import static org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_8
 import org.jetbrains.dokka.gradle.DokkaTask
 
@@ -32,11 +32,12 @@ plugins {
 }
 
 tasks.named("wrapper") {
-    gradleVersion = '8.1.1'
+    gradleVersion = '8.2.1'
     distributionType = Wrapper.DistributionType.BIN
 }
 
-def javaVersion = VERSION_11
+def javaVersion = VERSION_17
+def javaVersionNumber = javaVersion.majorVersion.toInteger()
 
 snyk {
     api = project.findProperty("snykApiToken") ?: System.getenv('SNYK_TOKEN')
@@ -51,25 +52,32 @@ allprojects {
     pluginManager.withPlugin('java') {
         java {
             toolchain {
-                languageVersion = of(javaVersion.majorVersion.toInteger())
+                languageVersion = of(javaVersionNumber)
             }
 
             withSourcesJar()
         }
 
         tasks.withType(JavaCompile).configureEach {
+            options.release = javaVersionNumber
             options.encoding = 'UTF-8'
             options.compilerArgs += [ '-XDenableSunApiLintControl', '-parameters' ]
         }
 
         tasks.withType(Test).configureEach {
             useJUnitPlatform(){
-                excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
+                if (project.hasProperty('runMultiClusterTests')) {
+                    includeTags 'MultiCluster'
+                } else if (project.hasProperty('runUnstableTests')) {
+                    includeTags 'Unstable'
+                } else {
+                    excludeTags 'MultiCluster', 'Unstable'
+                }
             }
 
             doFirst {
                 systemProperty 'java.io.tmpdir', buildDir.absolutePath
-                jvmArgs '--illegal-access=deny'
+                jvmArgs '--add-opens', 'java.base/java.lang=ALL-UNNAMED'
             }
         }
     }
@@ -92,7 +100,7 @@ allprojects {
             allWarningsAsErrors = true
             languageVersion = KOTLIN_1_8
             apiVersion = KOTLIN_1_8
-            jvmTarget = JVM_11
+            jvmTarget = JVM_17
             javaParameters = true   // Useful for reflection.
             freeCompilerArgs.addAll([
                 "-Xjvm-default=all"
@@ -109,7 +117,7 @@ allprojects {
     pluginManager.withPlugin('biz.aQute.bnd.builder') {
         tasks.withType(aQute.bnd.gradle.TestOSGi).configureEach {
             javaLauncher = javaToolchains.launcherFor {
-                languageVersion = of(javaVersion.getMajorVersion().toInteger())
+                languageVersion = of(javaVersionNumber)
             }
         }
     }
@@ -143,7 +151,7 @@ allprojects {
         mavenLocal()
 
         maven {
-            url = "$artifactoryContextUrl/corda-dependencies"
+            url = "${publicArtifactURL}/corda-dependencies"
             content {
                 // For Quasar release.
                 includeGroup 'co.paralleluniverse'
@@ -197,18 +205,6 @@ allprojects {
             }
         } else {
             mavenCentral()
-
-            exclusiveContent {
-                forRepository {
-                    maven {
-                        url 'https://repository.mulesoft.org/nexus/content/repositories/public'
-                    }
-                }
-                filter {
-                    includeGroup 'org.mule.distributions'
-                    includeGroup 'antlr'
-                }
-            }
         }
     }
 
@@ -275,8 +271,9 @@ allprojects {
     dependencies {
         // Test utilities
         testImplementation "org.assertj:assertj-core:$assertjVersion"
-        testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+        testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
 }
 
@@ -452,7 +449,6 @@ subprojects {
             cacheChangingModulesFor 0, 'seconds'
 
             dependencySubstitution {
-                substitute module("antlr:antlr") using module("antlr:antlr.osgi:$antlrVersion")
                 substitute module("org.dom4j:dom4j") using module("org.apache.servicemix.bundles:org.apache.servicemix.bundles.dom4j:$dom4jOsgiVersion")
             }
         }

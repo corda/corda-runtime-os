@@ -39,44 +39,57 @@ import net.corda.v5.crypto.SecureHash
 internal class CpiMetadataEntity(
     @Id
     @Column(name = "name", nullable = false)
-    val name: String,
+    var name: String,
+
     @Id
     @Column(name = "version", nullable = false)
-    val version: String,
+    var version: String,
+
     @Id
     @Column(name = "signer_summary_hash", nullable = false)
-    val signerSummaryHash: String,
+    var signerSummaryHash: String,
+
     @Column(name = "file_name", nullable = false)
     var fileName: String,
+
     @Column(name = "file_checksum", nullable = false)
     var fileChecksum: String,
+
     @Column(name = "group_policy", nullable = false)
     var groupPolicy: String,
+
     @Column(name = "group_id", nullable = false)
     var groupId: String,
+
     @Column(name = "file_upload_request_id", nullable = false)
     var fileUploadRequestId: String,
+
     @OneToMany(
+        targetEntity = CpiCpkEntity::class,
         fetch = FetchType.EAGER,
         cascade = [CascadeType.PERSIST, CascadeType.MERGE],
         orphanRemoval = true
     )
     @JoinColumns(
-        JoinColumn(name = "cpi_name", referencedColumnName = "name", insertable = false, updatable = false),
-        JoinColumn(name = "cpi_version", referencedColumnName = "version", insertable = false, updatable = false),
+        JoinColumn(name = "cpi_name", referencedColumnName = "name", insertable = false, updatable = false, nullable = false),
+        JoinColumn(name = "cpi_version", referencedColumnName = "version", insertable = false, updatable = false, nullable = false),
         JoinColumn(
             name = "cpi_signer_summary_hash",
             referencedColumnName = "signer_summary_hash",
             insertable = false,
-            updatable = false
+            updatable = false,
+            nullable = false
         ),
     )
-    val cpks: Set<CpiCpkEntity>,
+    var cpks: Set<CpiCpkEntity>,
+
     // Initial population of this TS is managed on the DB itself
     @Column(name = "insert_ts", insertable = false, updatable = true)
     var insertTimestamp: Instant? = null,
+
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false,
+
     @Version
     @Column(name = "entity_version", nullable = false)
     var entityVersion: Int = 0,
@@ -182,9 +195,9 @@ internal class CpiMetadataEntity(
 /** The composite primary key for a CpiEntity. */
 @Embeddable
 internal class CpiMetadataEntityKey(
-    private val name: String,
-    private val version: String,
-    private val signerSummaryHash: String,
+    private var name: String,
+    private var version: String,
+    private var signerSummaryHash: String,
 ) : Serializable {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

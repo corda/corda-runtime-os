@@ -1,7 +1,7 @@
 package net.corda.applications.workers.smoketest.flow
 
-import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
-import net.corda.applications.workers.smoketest.TEST_CPI_NAME
+import net.corda.applications.workers.smoketest.utils.TEST_CPB_LOCATION
+import net.corda.applications.workers.smoketest.utils.TEST_CPI_NAME
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.awaitRestFlowResult
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage

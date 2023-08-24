@@ -12,6 +12,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.certificate.publisher.MembersClientCertificatePublisher
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -29,6 +30,8 @@ class MembersClientCertificatePublisherImpl @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
+    @Reference(service = MemberInfoFactory::class)
+    private val memberInfoFactory: MemberInfoFactory,
 ) : MembersClientCertificatePublisher {
     private companion object {
         const val FOLLOW_CHANGES_RESOURCE_NAME = "MembersClientCertificatePublisherImpl.followStatusChangesByName"
@@ -116,7 +119,7 @@ class MembersClientCertificatePublisherImpl @Activate constructor(
                     groupName = SUBSCRIPTION_GROUP_NAME,
                     Schemas.Membership.MEMBER_LIST_TOPIC,
                 ),
-                processor = MemberInfoProcessor(),
+                processor = MemberInfoProcessor(memberInfoFactory),
                 messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG),
                 partitionAssignmentListener = null,
             ).also {

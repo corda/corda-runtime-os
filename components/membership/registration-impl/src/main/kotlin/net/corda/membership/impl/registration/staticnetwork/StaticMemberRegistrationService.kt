@@ -33,9 +33,11 @@ import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplate
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
 import net.corda.membership.impl.registration.staticnetwork.StaticNetworkGroupParametersUtils.addNotary
 import net.corda.membership.impl.registration.staticnetwork.StaticNetworkGroupParametersUtils.signGroupParameters
+import net.corda.membership.impl.registration.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
@@ -56,6 +58,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isNotary
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
+import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.InvalidGroupParametersUpdateException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
@@ -78,7 +81,6 @@ import net.corda.schema.Schemas.Membership.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
 import net.corda.utilities.concurrent.SecManagerForkJoinPool
-import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -124,8 +126,6 @@ class StaticMemberRegistrationService(
         private const val KEY_SCHEME = "corda.key.scheme"
         private val DUMMY_CERTIFICATE =
             this::class.java.getResource("/static_network_dummy_certificate.pem")!!.readText()
-        private val DUMMY_PUBLIC_SESSION_KEY =
-            this::class.java.getResource("/static_network_dummy_session_key.pem")!!.readText()
 
         private const val MAX_PERSISTENCE_RETRIES = 10
     }
@@ -198,6 +198,14 @@ class StaticMemberRegistrationService(
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize key value pair list.") }
 
+    private fun serialize(context: KeyValuePairList): ByteArray {
+        return keyValuePairListSerializer.serialize(context) ?: throw CordaRuntimeException(
+            "Failed to serialize key value pair list."
+        )
+    }
+
+    private val customFieldsVerifier = RegistrationContextCustomFieldsVerifier()
+
     override val isRunning: Boolean
         get() = coordinator.isRunning
 
@@ -233,6 +241,12 @@ class StaticMemberRegistrationService(
                 ex,
             )
         }
+        val customFieldsValid = customFieldsVerifier.verify(context)
+        if (customFieldsValid is RegistrationContextCustomFieldsVerifier.Result.Failure) {
+            val errorMessage = "Registration failed for ID '$registrationId'. ${customFieldsValid.reason}"
+            logger.warn(errorMessage)
+            throw InvalidMembershipRegistrationException(errorMessage)
+        }
         val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(member)
         if (membershipGroupReader.lookup(member.x500Name)?.isActive == true) {
             throw InvalidMembershipRegistrationException(
@@ -254,6 +268,7 @@ class StaticMemberRegistrationService(
         }
         try {
             val roles = MemberRole.extractRolesFromContext(context)
+            val customFields = context.filter { it.key.startsWith(CUSTOM_KEY_PREFIX) }
             logger.debug("Roles are: {}", roles)
             val keyScheme = context[KEY_SCHEME] ?: throw IllegalArgumentException("Key scheme must be specified.")
             val groupPolicy = groupPolicyProvider.getGroupPolicy(member)
@@ -268,9 +283,10 @@ class StaticMemberRegistrationService(
                 keyScheme,
                 roles,
                 staticMemberList,
+                customFields,
                 membershipGroupReader,
             )
-            (records + createHostedIdentity(member, groupPolicy)).publish()
+            (records + createHostedIdentity(memberInfo, groupPolicy)).publish()
 
             persistGroupParameters(memberInfo, staticMemberList, membershipGroupReader)
 
@@ -337,16 +353,8 @@ class StaticMemberRegistrationService(
     }
 
     private fun persistRegistrationRequest(registrationId: UUID, memberInfo: MemberInfo) {
-        val memberContext = wrapWithNullErrorHandling({
-            IllegalArgumentException("Failed to serialize the member context for this request.", it)
-        }) {
-            keyValuePairListSerializer.serialize(memberInfo.memberProvidedContext.toAvro())
-        }
-        val registrationContext = wrapWithNullErrorHandling({
-            IllegalArgumentException("Failed to serialize the registration context for this request.", it)
-        }) {
-            keyValuePairListSerializer.serialize(KeyValuePairList(emptyList()))
-        }
+        val memberContext = serialize(memberInfo.memberProvidedContext.toAvro())
+        val registrationContext = serialize(KeyValuePairList(emptyList()))
         persistenceClient.persistRegistrationRequest(
             viewOwningIdentity = memberInfo.holdingIdentity,
             registrationRequest = RegistrationRequest(
@@ -421,6 +429,7 @@ class StaticMemberRegistrationService(
         keyScheme: String,
         roles: Collection<MemberRole>,
         staticMemberList: List<StaticMember>,
+        customFields: Map<String, String>,
         membershipGroupReader: MembershipGroupReader,
     ): Pair<MemberInfo, List<Record<String, PersistentMemberInfo>>> {
         validateStaticMemberList(staticMemberList)
@@ -489,9 +498,9 @@ class StaticMemberRegistrationService(
             PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
             MEMBER_CPI_NAME to cpi.name,
             MEMBER_CPI_VERSION to cpi.version,
-        ) + optionalContext
+        ) + optionalContext + customFields
 
-        val memberInfo = memberInfoFactory.create(
+        val memberInfo = memberInfoFactory.createMemberInfo(
             memberContext.toSortedMap(),
             sortedMapOf(
                 STATUS to staticMemberInfo.status,
@@ -505,10 +514,14 @@ class StaticMemberRegistrationService(
             Record(
                 MEMBER_LIST_TOPIC,
                 "${owningMemberHoldingIdentity.shortHash}-$memberId",
-                PersistentMemberInfo(
+                memberInfoFactory.createMgmOrStaticPersistentMemberInfo(
                     owningMemberHoldingIdentity.toAvro(),
-                    memberInfo.memberProvidedContext.toAvro(),
-                    memberInfo.mgmProvidedContext.toAvro()
+                    memberInfo,
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(byteArrayOf()),
+                        ByteBuffer.wrap(byteArrayOf()),
+                    ),
+                    CryptoSignatureSpec("", null, null),
                 )
             )
         }
@@ -518,11 +531,12 @@ class StaticMemberRegistrationService(
      * Creates the locally hosted identity required for the P2P layer.
      */
     private fun createHostedIdentity(
-        registeringMember: HoldingIdentity,
+        registeringMember: MemberInfo,
         groupPolicy: GroupPolicy
     ): Record<String, HostedIdentityEntry> {
-        val memberName = registeringMember.x500Name
-        val memberId = registeringMember.shortHash
+        val holdingId = registeringMember.holdingIdentity
+        val memberName = holdingId.x500Name
+        val memberId = holdingId.shortHash
         val groupId = groupPolicy.groupId
 
         /**
@@ -534,7 +548,7 @@ class StaticMemberRegistrationService(
             memberId.value,
             listOf(DUMMY_CERTIFICATE),
             HostedIdentitySessionKeyAndCert(
-                DUMMY_PUBLIC_SESSION_KEY,
+                keyEncodingService.encodeAsString(registeringMember.sessionInitiationKeys.first()),
                 null
             ),
             emptyList()
@@ -542,7 +556,7 @@ class StaticMemberRegistrationService(
 
         return Record(
             P2P_HOSTED_IDENTITIES_TOPIC,
-            registeringMember.shortHash.value,
+            holdingId.shortHash.value,
             hostedIdentity
         )
     }

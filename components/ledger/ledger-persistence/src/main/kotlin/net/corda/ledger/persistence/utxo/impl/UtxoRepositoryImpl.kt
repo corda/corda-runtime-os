@@ -7,10 +7,11 @@ import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
-import net.corda.ledger.persistence.common.ComponentLeafDto
 import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
+import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.utilities.debug
@@ -103,68 +104,78 @@ class UtxoRepositoryImpl @Activate constructor(
     }
 
     override fun findUnconsumedVisibleStatesByType(
-        entityManager: EntityManager,
-        groupIndices: List<Int>
-    ):  List<ComponentLeafDto> {
+        entityManager: EntityManager
+    ): List<UtxoTransactionOutputDto> {
         return entityManager.createNativeQuery(
             """
-                SELECT tc.transaction_id, tc.group_idx, tc.leaf_idx, tc.data
-                FROM {h-schema}utxo_transaction_component AS tc
-                JOIN {h-schema}utxo_visible_transaction_state AS rts
-                    ON rts.transaction_id = tc.transaction_id
-                    AND rts.leaf_idx = tc.leaf_idx
+                SELECT tc_output.transaction_id, 
+			    tc_output.leaf_idx, 
+			    tc_output_info.data as output_info_data,
+                tc_output.data AS output_data 
+                FROM {h-schema}utxo_visible_transaction_state AS rts
+                JOIN {h-schema}utxo_transaction_component AS tc_output_info
+                    ON tc_output_info.transaction_id = rts.transaction_id
+                    AND tc_output_info.leaf_idx = rts.leaf_idx
+                    AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
+                JOIN {h-schema}utxo_transaction_component AS tc_output
+                	ON tc_output.transaction_id = tc_output_info.transaction_id
+                    AND tc_output.leaf_idx = tc_output_info.leaf_idx
+                    AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
                 JOIN {h-schema}utxo_transaction_status AS ts
-                    ON ts.transaction_id = tc.transaction_id
-                WHERE tc.group_idx IN (:groupIndices)
+                    ON ts.transaction_id = tc_output.transaction_id
                 AND rts.consumed IS NULL
                 AND ts.status = :verified
-                ORDER BY tc.group_idx, tc.leaf_idx""",
+                ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx
+            """,
             Tuple::class.java
         )
-            .setParameter("groupIndices", groupIndices)
             .setParameter("verified", TransactionStatus.VERIFIED.value)
             .resultListAsTuples()
             .map { t ->
-                ComponentLeafDto(
+                UtxoTransactionOutputDto(
                     t[0] as String, // transactionId
-                    (t[1] as Number).toInt(), // groupIndex
-                    (t[2] as Number).toInt(), // leafIndex
-                    t[3] as ByteArray // data
+                    t[1] as Int, // leaf ID
+                    t[2] as ByteArray, // outputs info data
+                    t[3] as ByteArray // outputs data
                 )
             }
     }
 
     override fun resolveStateRefs(
         entityManager: EntityManager,
-        stateRefs: List<StateRef>,
-        groupIndices: List<Int>
-    ): List<ComponentLeafDto> {
+        stateRefs: List<StateRef>
+    ): List<UtxoTransactionOutputDto> {
         return entityManager.createNativeQuery(
             """
-                SELECT tc.transaction_id, tc.group_idx, tc.leaf_idx, tc.data
-                FROM {h-schema}utxo_transaction_component AS tc
+                SELECT tc_output.transaction_id, 
+				tc_output.leaf_idx, 
+				tc_output_info.data as output_info_data,
+                tc_output.data AS output_data 
+                FROM {h-schema}utxo_transaction_component AS tc_output_info  
+                JOIN {h-schema}utxo_transaction_component AS tc_output
+                	ON tc_output.transaction_id = tc_output_info.transaction_id
+                    AND tc_output.leaf_idx = tc_output_info.leaf_idx
+                    AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
                 JOIN {h-schema}utxo_transaction_status AS ts
-                    ON ts.transaction_id = tc.transaction_id
-                WHERE tc.group_idx IN (:groupIndices)
-                AND tc.transaction_id in (:transactionIds)
-                AND (tc.transaction_id||':'|| tc.leaf_idx) in (:stateRefs)
+                    ON ts.transaction_id = tc_output.transaction_id
+                AND tc_output.transaction_id in (:transactionIds)
+                AND (tc_output.transaction_id||':'|| tc_output.leaf_idx) in (:stateRefs)
                 AND ts.status = :verified
-                ORDER BY tc.group_idx, tc.leaf_idx""",
+                AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
+                ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx
+            """,
             Tuple::class.java
         )
-            .setParameter("groupIndices", groupIndices)
-            .setParameter(
-                "transactionIds",
-                stateRefs.map { it.transactionId.toString() })
+            .setParameter("transactionIds", stateRefs.map { it.transactionId.toString() })
             .setParameter("stateRefs", stateRefs.map { it.toString() })
             .setParameter("verified", TransactionStatus.VERIFIED.value)
             .resultListAsTuples()
             .map { t ->
-                ComponentLeafDto(
+                UtxoTransactionOutputDto(
                     t[0] as String, // transactionId
-                    (t[1] as Number).toInt(), // groupIndex
-                    (t[2] as Number).toInt(), // leafIndex
-                    t[3] as ByteArray // data
+                    t[1] as Int, // leaf ID
+                    t[2] as ByteArray, // outputs info data
+                    t[3] as ByteArray // outputs data
                 )
             }
     }
@@ -292,7 +303,6 @@ class UtxoRepositoryImpl @Activate constructor(
         type: String,
         tokenType: String?,
         tokenIssuerHash: String?,
-        tokenNotaryX500Name: String?,
         tokenSymbol: String?,
         tokenTag: String?,
         tokenOwnerHash: String?,
@@ -302,10 +312,10 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}utxo_transaction_output(
-                transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
+                transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash,
                 token_symbol, token_tag, token_owner_hash, token_amount, created)
             VALUES(
-                :transactionId, :groupIndex, :leafIndex, :type, :tokenType, :tokenIssuerHash, :tokenNotaryX500Name,
+                :transactionId, :groupIndex, :leafIndex, :type, :tokenType, :tokenIssuerHash,
                 :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, :createdAt)
             ON CONFLICT DO NOTHING"""
         )
@@ -315,7 +325,6 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("type", type)
             .setParameter("tokenType", tokenType)
             .setParameter("tokenIssuerHash", tokenIssuerHash)
-            .setParameter("tokenNotaryX500Name", tokenNotaryX500Name)
             .setParameter("tokenSymbol", tokenSymbol)
             .setParameter("tokenTag", tokenTag)
             .setParameter("tokenOwnerHash", tokenOwnerHash)

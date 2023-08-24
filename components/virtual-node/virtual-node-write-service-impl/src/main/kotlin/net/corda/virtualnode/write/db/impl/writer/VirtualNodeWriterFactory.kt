@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
@@ -17,7 +18,11 @@ import net.corda.libs.external.messaging.serialization.ExternalMessagingRouteCon
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepositoryImpl
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
+import net.corda.membership.client.MemberResourceClient
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -28,6 +33,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_ASYNC_REQUEST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
+import net.corda.schema.configuration.VirtualNodeDatasourceConfig
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationHandler
@@ -49,12 +55,17 @@ internal class VirtualNodeWriterFactory(
     private val virtualNodeDbAdmin: VirtualNodesDbAdmin,
     private val schemaMigrator: LiquibaseSchemaMigrator,
     private val groupPolicyParser: GroupPolicyParser,
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    private val memberResourceClient: MemberResourceClient,
+    private val membershipQueryClient: MembershipQueryClient,
+    private val memberInfoFactory: MemberInfoFactory,
     private val cpiCpkRepositoryFactory: CpiCpkRepositoryFactory,
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository(),
 ) {
 
-    private companion object {
-        const val ASYNC_OPERATION_GROUP = "virtual.node.async.operation.group"
+    companion object {
+        private const val ASYNC_OPERATION_GROUP = "virtual.node.async.operation.group"
     }
 
     /**
@@ -64,10 +75,15 @@ internal class VirtualNodeWriterFactory(
      *
      * @throws `CordaMessageAPIException` If the publisher cannot be set up.
      */
-    fun create(messagingConfig: SmartConfig, externalMsgConfig: SmartConfig): VirtualNodeWriter {
+    fun create(
+        messagingConfig: SmartConfig,
+        externalMsgConfig: SmartConfig,
+        vnodeDatasourceConfig: SmartConfig
+    ): VirtualNodeWriter {
         val publisher = createPublisher(messagingConfig)
         val rpcSubscription = createRPCSubscription(messagingConfig, publisher)
-        val asyncOperationSubscription = createAsyncOperationSubscription(messagingConfig, externalMsgConfig, publisher)
+        val asyncOperationSubscription =
+            createAsyncOperationSubscription(messagingConfig, externalMsgConfig, vnodeDatasourceConfig, publisher)
         return VirtualNodeWriter(rpcSubscription, asyncOperationSubscription, publisher)
     }
 
@@ -77,6 +93,7 @@ internal class VirtualNodeWriterFactory(
     private fun createAsyncOperationSubscription(
         messagingConfig: SmartConfig,
         externalMsgConfig: SmartConfig,
+        vnodeDatasourceConfig: SmartConfig,
         publisher: Publisher,
     ): Subscription<String, VirtualNodeAsynchronousRequest> {
         val subscriptionConfig = SubscriptionConfig(ASYNC_OPERATION_GROUP, VIRTUAL_NODE_ASYNC_REQUEST_TOPIC)
@@ -101,8 +118,19 @@ internal class VirtualNodeWriterFactory(
             publisher
         )
 
-        val virtualNodeDbFactory = VirtualNodeDbFactoryImpl(dbConnectionManager, virtualNodeDbAdmin, schemaMigrator)
-        val recordFactory = RecordFactoryImpl(UTCClock())
+        val virtualNodesDdlPoolConfig = vnodeDatasourceConfig.getConfig(VirtualNodeDatasourceConfig.VNODE_DDL_POOL_CONFIG)
+        val virtualNodesDmlPoolConfig = vnodeDatasourceConfig.getConfig(VirtualNodeDatasourceConfig.VNODE_DML_POOL_CONFIG)
+
+        val virtualNodeDbFactory =
+            VirtualNodeDbFactoryImpl(
+                dbConnectionManager,
+                virtualNodeDbAdmin,
+                schemaMigrator,
+                virtualNodesDdlPoolConfig,
+                virtualNodesDmlPoolConfig
+            )
+
+        val recordFactory = RecordFactoryImpl(UTCClock(), memberInfoFactory)
 
         val handlerMap = mutableMapOf<Class<*>, VirtualNodeAsyncOperationHandler<*>>(
             VirtualNodeUpgradeRequest::class.java to VirtualNodeUpgradeOperationHandler(
@@ -110,7 +138,11 @@ internal class VirtualNodeWriterFactory(
                 oldVirtualNodeEntityRepository,
                 publisher,
                 migrationUtility,
-                externalMessagingRouteConfigGenerator = externalMessagingRouteConfigGenerator
+                membershipGroupReaderProvider,
+                memberResourceClient,
+                membershipQueryClient,
+                externalMessagingRouteConfigGenerator,
+                cordaAvroSerializationFactory,
             ),
 
             VirtualNodeCreateRequest::class.java to CreateVirtualNodeOperationHandler(

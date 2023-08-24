@@ -15,14 +15,18 @@ import javax.persistence.Table
 data class ChunkEntity(
     @Id
     @Column(name = "request_id", nullable = false)
-    val requestId: String,
+    var requestId: String,
+
     @Column(name = "checksum", nullable = true)
     var checksum: String?,
+
     @Id
     @Column(name = "part_nr", nullable = false)
     var partNumber: Int,
+
     @Column(name = "data_offset", nullable = false)
     var offset: Long,
+
     @Column(name = "data", nullable = true)
     var data: ByteArray?
 ) {

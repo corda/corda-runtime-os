@@ -18,7 +18,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.net.Socket
-import java.security.KeyStore
 import java.security.cert.CertificateException
 import java.security.cert.PKIXBuilderParameters
 import java.security.cert.X509Certificate
@@ -49,9 +48,11 @@ class DynamicX509ExtendedTrustManagerTest {
     private val mockTrustManagerFactory = mock<TrustManagerFactory> {
         on { trustManagers } doReturn arrayOf(mockX509ExtendedTrustManager, secondMockX509ExtendedTrustManager)
     }
-    private val mockTrustStore = mock<KeyStore>()
+    private val mockTrustStore = mock<TrustStoresMap.TrustedCertificates> {
+        on { trustStore } doReturn mock()
+    }
     private val trustStoresMap = mock<TrustStoresMap> {
-        on { getTrustStores() } doReturn listOf(mockTrustStore)
+        on { getTrustStores() } doReturn setOf(mockTrustStore)
     }
     private val dynamicX509ExtendedTrustManager = DynamicX509ExtendedTrustManager(
         trustStoresMap,

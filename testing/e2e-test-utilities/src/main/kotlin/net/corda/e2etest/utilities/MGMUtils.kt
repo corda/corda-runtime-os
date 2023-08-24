@@ -12,6 +12,7 @@ import java.io.File
 import java.net.URLEncoder.encode
 import java.nio.charset.Charset.defaultCharset
 import java.time.Duration
+import net.corda.rest.annotations.RestApiVersion
 
 /**
  * Calls the necessary endpoints to create a vnode, and onboard the MGM to that vnode.
@@ -64,10 +65,10 @@ fun ClusterInfo.onboardMgm(
 fun ClusterInfo.exportGroupPolicy(
     mgmHoldingId: String
 ) = cluster {
-    assertWithRetry {
+    assertWithRetryIgnoringExceptions {
         interval(2.seconds)
         timeout(30.seconds)
-        command { get("/api/v1/mgm/$mgmHoldingId/info") }
+        command { get("/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/info") }
         condition { it.code == ResponseCode.OK.statusCode }
     }.body
 }
@@ -79,7 +80,7 @@ fun ClusterInfo.createApprovalRule(
     mgmHoldingId: String,
     regex: String,
     label: String
-) = createApprovalRuleCommon("/api/v1/mgm/$mgmHoldingId/approval/rules", regex, label)
+) = createApprovalRuleCommon("/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/approval/rules", regex, label)
 
 /**
  * Attempt to create a pre-auth approval rule.
@@ -88,7 +89,7 @@ fun ClusterInfo.createPreAuthApprovalRule(
     mgmHoldingId: String,
     regex: String,
     label: String
-) = createApprovalRuleCommon("/api/v1/mgm/$mgmHoldingId/approval/rules/preauth", regex, label)
+) = createApprovalRuleCommon("/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/approval/rules/preauth", regex, label)
 
 /**
  * Attempt to create an approval rule at a given resource URL.
@@ -116,7 +117,7 @@ private fun ClusterInfo.createApprovalRuleCommon(
 fun ClusterInfo.deleteApprovalRule(
     mgmHoldingId: String,
     ruleId: String
-) = delete("/api/v1/mgm/$mgmHoldingId/approval/rules/$ruleId")
+) = delete("/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/approval/rules/$ruleId")
 
 /**
  * Attempt to delete a pre-auth approval rule.
@@ -124,7 +125,7 @@ fun ClusterInfo.deleteApprovalRule(
 fun ClusterInfo.deletePreAuthApprovalRule(
     mgmHoldingId: String,
     ruleId: String
-) = delete("/api/v1/mgm/$mgmHoldingId/approval/rules/preauth/$ruleId")
+) = delete("/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/approval/rules/preauth/$ruleId")
 
 /**
  * Attempt to delete a resource at a given URL with retries.
@@ -155,9 +156,14 @@ fun ClusterInfo.createPreAuthToken(
         ttl?.let { put("ttl", it.toString()) }
     }
 
-    assertWithRetry {
+    assertWithRetryIgnoringExceptions {
         interval(1.seconds)
-        command { post("/api/v1/mgm/$mgmHoldingId/preauthtoken", ObjectMapper().writeValueAsString(payload)) }
+        command {
+            post(
+                "/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/preauthtoken",
+                ObjectMapper().writeValueAsString(payload)
+            )
+        }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()["id"].textValue()
 }
@@ -173,7 +179,12 @@ fun ClusterInfo.revokePreAuthToken(
     cluster {
         assertWithRetry {
             interval(1.seconds)
-            command { put("/api/v1/mgm/$mgmHoldingId/preauthtoken/revoke/$tokenId", "{\"remarks\": \"$remark\"}") }
+            command {
+                put(
+                "/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/preauthtoken/revoke/$tokenId",
+                "{\"remarks\": \"$remark\"}"
+                )
+            }
             condition { it.code == ResponseCode.OK.statusCode }
         }
     }
@@ -195,9 +206,9 @@ fun ClusterInfo.getPreAuthTokens(
         ownerX500name?.let { add("ownerx500name=${encode(it, defaultCharset())}") }
     }
     val query = queries.joinToString(prefix = "?", separator = "&")
-    assertWithRetry {
+    assertWithRetryIgnoringExceptions {
         interval(1.seconds)
-        command { get("/api/v1/mgm/$mgmHoldingId/preauthtoken$query") }
+        command { get("/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/preauthtoken$query") }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()
 }
@@ -215,10 +226,10 @@ fun ClusterInfo.waitForPendingRegistrationReviews(
         val query = memberX500Name?.let {
             "?requestsubjectx500name=${encode(memberX500Name.toString(), defaultCharset())}"
         } ?: ""
-        assertWithRetry {
+        assertWithRetryIgnoringExceptions {
             timeout(2.minutes)
             interval(3.seconds)
-            command { get("/api/v1/mgm/$mgmHoldingId/registrations$query") }
+            command { get("/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/registrations$query") }
             condition {
                 val json = it.toJson().firstOrNull()
                 it.code == ResponseCode.OK.statusCode
@@ -239,7 +250,7 @@ fun ClusterInfo.approveRegistration(
     cluster {
         assertWithRetry {
             interval(1.seconds)
-            command { post("/api/v1/mgm/$mgmHoldingId/approve/$registrationId", "") }
+            command { post("/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/approve/$registrationId", "") }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
         }
     }
@@ -256,7 +267,7 @@ fun ClusterInfo.declineRegistration(
         assertWithRetry {
             interval(1.seconds)
             command { post(
-                "/api/v1/mgm/$mgmHoldingId/decline/$registrationId",
+                "/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/decline/$registrationId",
                 "{\"reason\": \"Declined by automated test with runId $testRunUniqueId.\"}")
             }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
@@ -310,6 +321,30 @@ private fun ClusterInfo.createMgmRegistrationContext(
 fun ClusterInfo.suspendMember(
     mgmHoldingId: String,
     x500Name: String,
+    serialNumber: Int,
+) = cluster {
+    assertWithRetry {
+        timeout(15.seconds)
+        interval(1.seconds)
+        command {
+            post(
+                "/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/suspend",
+                "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
+            )
+        }
+        condition { it.code == ResponseCode.NO_CONTENT.statusCode || it.code == ResponseCode.CONFLICT.statusCode }
+    }
+}
+
+/**
+ * Suspend a member identified by [x500Name].
+ * Suspension is performed by the MGM identified by [mgmHoldingId].
+ *
+ * Used to test RestApiVersion.C5_0, this version allows the serial number to be Null.
+ */
+fun ClusterInfo.deprecatedSuspendMember(
+    mgmHoldingId: String,
+    x500Name: String,
     serialNumber: Int? = null,
 ) = cluster {
     assertWithRetry {
@@ -317,7 +352,7 @@ fun ClusterInfo.suspendMember(
         interval(1.seconds)
         command {
             post(
-                "/api/v1/mgm/$mgmHoldingId/suspend",
+                "/api/${RestApiVersion.C5_0.versionPath}/mgm/$mgmHoldingId/suspend",
                 "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
             )
         }
@@ -332,6 +367,30 @@ fun ClusterInfo.suspendMember(
 fun ClusterInfo.activateMember(
     mgmHoldingId: String,
     x500Name: String,
+    serialNumber: Int,
+) = cluster {
+    assertWithRetry {
+        timeout(15.seconds)
+        interval(1.seconds)
+        command {
+            post(
+                "/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/activate",
+                "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
+            )
+        }
+        condition { it.code == ResponseCode.NO_CONTENT.statusCode || it.code == ResponseCode.CONFLICT.statusCode }
+    }
+}
+
+/**
+ * Activate a member identified by [x500Name].
+ * Activation is performed by the MGM identified by [mgmHoldingId].
+ *
+ * Used to test RestApiVersion.C5_0, this version allows the serial number to be Null.
+ */
+fun ClusterInfo.deprecatedActivateMember(
+    mgmHoldingId: String,
+    x500Name: String,
     serialNumber: Int? = null,
 ) = cluster {
     assertWithRetry {
@@ -339,10 +398,33 @@ fun ClusterInfo.activateMember(
         interval(1.seconds)
         command {
             post(
-                "/api/v1/mgm/$mgmHoldingId/activate",
+                "/api/${RestApiVersion.C5_0.versionPath}/mgm/$mgmHoldingId/activate",
                 "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
             )
         }
         condition { it.code == ResponseCode.NO_CONTENT.statusCode || it.code == ResponseCode.CONFLICT.statusCode }
     }
+}
+
+/**
+ * Update the group parameters as the MGM identified by [mgmHoldingId], and return the newly updated group parameters.
+ */
+fun ClusterInfo.updateGroupParameters(
+    mgmHoldingId: String,
+    update: Map<String, String>
+) = cluster {
+    val payload = mapOf(
+        "parameters" to update
+    )
+    assertWithRetryIgnoringExceptions {
+        timeout(15.seconds)
+        interval(1.seconds)
+        command {
+            post(
+                "/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/group-parameters",
+                ObjectMapper().writeValueAsString(payload)
+            )
+        }
+        condition { it.code == ResponseCode.OK.statusCode }
+    }.toJson()
 }

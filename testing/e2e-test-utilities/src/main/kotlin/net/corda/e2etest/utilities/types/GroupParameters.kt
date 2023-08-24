@@ -46,4 +46,9 @@ data class GroupParameters(val context: Map<String, String>) {
  * Creates [GroupParameters] from a [SimpleResponse].
  * Only works if the [SimpleResponse] is the response of a group parameters lookup.
  */
-fun SimpleResponse.jsonToGroupParameters(): GroupParameters = GroupParameters(toJson().parseContextMap())
+fun SimpleResponse.jsonToGroupParameters(): GroupParameters =
+    GroupParameters(
+        toJson()
+            .get("parameters")
+            .parseContextMap()
+    )

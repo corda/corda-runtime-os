@@ -1,10 +1,12 @@
 package net.corda.cli.plugins.network
 
-import kong.unirest.Unirest
-import kong.unirest.json.JSONArray
-import kong.unirest.json.JSONObject
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.cli.plugins.packaging.CreateCpiV2
+import net.corda.cli.plugins.common.RestClientUtils.createRestClient
+import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
+import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.crypto.test.certificates.generation.toPem
+import net.corda.membership.rest.v1.MGMRestResource
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.ByteArrayOutputStream
@@ -12,40 +14,32 @@ import java.io.File
 import java.util.UUID
 
 @Command(
-    name = "mgm",
+    name = "onboard-mgm",
     description = [
         "Onboard MGM member.",
-        "This sub command should only be used in for internal development",
     ]
 )
 class OnboardMgm : Runnable, BaseOnboard() {
     @Option(
-        names = ["--cpb-name"],
-        description = ["The name of the CPB. Default to random UUID"]
+        names = ["--cpi-hash"],
+        description = ["The CPI hash of a previously uploaded CPI. " +
+                "If not specified, an auto-generated MGM CPI will be used."]
     )
-    var cpbName: String = UUID.randomUUID().toString()
-
-    @Option(
-        names = ["--x500-name"],
-        description = ["The X500 name of the MGM. Default to a random name"]
-    )
-    override var x500Name: String = "O=Mgm, L=London, C=GB, OU=${UUID.randomUUID()}"
+    var cpiHash: String? = null
 
     @Option(
         names = ["--save-group-policy-as", "-s"],
         description = ["Location to save the group policy file (default to ~/.corda/gp/groupPolicy.json)"]
     )
-    var groupPolicyFile: File = File(File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json")
+    var groupPolicyFile: File =
+        File(File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json")
 
-    @Option(
-        names = ["--cpi-file"],
-        description = [
-            "Location of the MGM CPI file.",
-            "To create the CPI use the package create-cpi command.",
-            "Leave empty to auto generate CPI file (not recommended)."
-        ]
+    private val groupIdFile: File = File(
+        File(File(File(System.getProperty("user.home")), ".corda"), "groupId"),
+        "groupId.txt"
     )
-    var cpiFile: File? = null
+
+    private val cpiName: String = "MGM-${UUID.randomUUID()}"
 
     private val groupPolicy by lazy {
         mapOf(
@@ -62,20 +56,32 @@ class OnboardMgm : Runnable, BaseOnboard() {
     }
 
     private fun saveGroupPolicy() {
-        repeat(10) {
-            try {
-                val response = Unirest.get("/mgm/$holdingId/info").asString()
-                groupPolicyFile.parentFile.mkdirs()
-                json.writerWithDefaultPrettyPrinter()
-                    .writeValue(
-                        groupPolicyFile,
-                        json.readTree(response.bodyOrThrow())
-                    )
-                println("Group policy file created at $groupPolicyFile")
-                return@saveGroupPolicy
-            } catch (e: Exception) {
-                Thread.sleep(300)
+        var groupPolicyResponse = ""
+        createRestClient(MGMRestResource::class).use { client ->
+            checkInvariant(
+                maxAttempts = MAX_ATTEMPTS,
+                waitInterval = WAIT_INTERVAL,
+                errorMessage = "Failed to save group policy after $MAX_ATTEMPTS attempts."
+            ) {
+                try {
+                    val resource = client.start().proxy
+                    groupPolicyResponse = resource.generateGroupPolicy(holdingId)
+                } catch (e: Exception) {
+                    null
+                }
             }
+            groupPolicyFile.parentFile.mkdirs()
+            json.writerWithDefaultPrettyPrinter()
+                .writeValue(
+                    groupPolicyFile,
+                    json.readTree(groupPolicyResponse)
+                )
+            println("Group policy file created at $groupPolicyFile")
+            // extract the groupId from the response
+            val groupId = json.readTree(groupPolicyResponse).get("groupId").asText()
+
+            // write the groupId to the file
+            groupIdFile.writeText(groupId)
         }
     }
 
@@ -89,30 +95,32 @@ class OnboardMgm : Runnable, BaseOnboard() {
         } else {
             "OneWay"
         }
+
+        val endpoints = mutableMapOf<String, String>()
+
+        p2pGatewayUrls.mapIndexed { index, url ->
+            endpoints["corda.endpoints.$index.connectionURL"] = url
+            endpoints["corda.endpoints.$index.protocolVersion"] = "1"
+        }
+
         mapOf(
             "corda.session.keys.0.id" to sessionKeyId,
             "corda.ecdh.key.id" to ecdhKeyId,
             "corda.group.protocol.registration"
-                to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
+                    to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
             "corda.group.protocol.synchronisation"
-                to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
+                    to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
             "corda.group.protocol.p2p.mode" to "Authenticated_Encryption",
             "corda.group.key.session.policy" to "Distinct",
             "corda.group.tls.type" to tlsType,
             "corda.group.pki.session" to "NoPKI",
             "corda.group.pki.tls" to "Standard",
             "corda.group.tls.version" to "1.3",
-            "corda.endpoints.0.connectionURL" to p2pUrl,
-            "corda.endpoints.0.protocolVersion" to "1",
             "corda.group.trustroot.tls.0" to tlsTrustRoot,
-        )
+        ) + endpoints
     }
 
     private val cpi by lazy {
-        val parametersCpiFile = cpiFile
-        if(parametersCpiFile != null) {
-            return@lazy parametersCpiFile
-        }
         val mgmGroupPolicyFile = File.createTempFile("mgm.groupPolicy.", ".json").also {
             it.deleteOnExit()
             it.writeBytes(groupPolicy)
@@ -121,12 +129,10 @@ class OnboardMgm : Runnable, BaseOnboard() {
             it.deleteOnExit()
             it.delete()
         }
-        println("Using the cpi file is recommended." +
-                " It is advised to create CPI using the package create-cpi command.")
         cpiFile.parentFile.mkdirs()
         val creator = CreateCpiV2()
         creator.groupPolicyFileName = mgmGroupPolicyFile.absolutePath
-        creator.cpiName = cpbName
+        creator.cpiName = cpiName
         creator.cpiVersion = "1.0"
         creator.cpiUpgrade = false
         creator.outputFileName = cpiFile.absolutePath
@@ -136,45 +142,57 @@ class OnboardMgm : Runnable, BaseOnboard() {
         cpiFile
     }
 
-    override val cpiFileChecksum by lazy {
-        val existingHash = Unirest.get("/cpi")
-            .asJson()
-            .bodyOrThrow()
-            .let {
-                val cpis = it.`object`.get("cpis") as JSONArray
-                cpis
-                    .filterIsInstance<JSONObject>()
-                    .firstOrNull { cpi ->
-                        cpi.get("groupPolicy").toString().contains("CREATE_ID")
-                    }?.get("cpiFileChecksum")
+    override val cpiFileChecksum: String by lazy {
+        if (cpiHash != null) {
+            val existingHash = getExistingCpiHash(cpiHash)
+            if (existingHash != null) {
+                return@lazy existingHash
+            } else {
+                throw IllegalArgumentException("Invalid CPI hash provided. CPI hash does not exist on the Corda cluster.")
             }
-        if (existingHash is String) return@lazy existingHash
+        } else {
+            val existingHash = getExistingCpiHash()
+            if (existingHash != null) {
+                return@lazy existingHash
+            }
 
-        uploadCpi(cpi.inputStream(), cpbName)
+            uploadCpi(cpi.inputStream(), cpiName)
+        }
     }
+
+    private fun getExistingCpiHash(hash: String? = null): String? {
+        return createRestClient(CpiUploadRestResource::class).use { client ->
+            val response = client.start().proxy.getAllCpis()
+            response.cpis
+                .filter { it.cpiFileChecksum == hash || (hash == null && it.groupPolicy?.contains("CREATE_ID") ?: false) }
+                .map { it.cpiFileChecksum }
+                .firstOrNull()
+        }
+    }
+
     override fun run() {
-        println("This sub command should only be used in for internal development")
-        println("On-boarding MGM member $x500Name")
+        verifyAndPrintError {
+            println("On-boarding MGM member $name")
 
-        setupClient()
+            configureGateway()
 
-        configureGateway()
+            createTlsKeyIdNeeded()
 
-        createTlsKeyIdNeeded()
+            register()
 
-        register()
+            setupNetwork()
 
-        setupNetwork()
+            println("MGM Member $name was onboarded")
 
-        println("MGM Member $x500Name was onboarded")
+            saveGroupPolicy()
 
-        saveGroupPolicy()
-
-        if (mtls) {
-            println(
-                "To onboard members to this group on other clusters, please add those members' " +
-                    "client certificates subjects to this MGM's allow list. You can do that using the allowClientCertificate command."
-            )
+            if (mtls) {
+                println(
+                    "To onboard members to this group on other clusters, please add those members' " +
+                            "client certificates subjects to this MGM's allow list. " +
+                            "You can do that using the allowClientCertificate command."
+                )
+            }
         }
     }
 }

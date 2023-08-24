@@ -1,29 +1,41 @@
 package net.corda.applications.workers.smoketest.virtualnode
 
-import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
-import net.corda.applications.workers.smoketest.TEST_CPI_NAME
-import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_NAME
-import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V1
-import net.corda.applications.workers.smoketest.VNODE_UPGRADE_TEST_CPI_V2
+import java.util.UUID
+import net.corda.applications.workers.smoketest.utils.ERROR_CPI_NOT_UPLOADED
+import net.corda.applications.workers.smoketest.utils.TEST_CPB_LOCATION
+import net.corda.applications.workers.smoketest.utils.TEST_CPI_NAME
+import net.corda.applications.workers.smoketest.utils.VNODE_UPGRADE_TEST_CPI_NAME
+import net.corda.applications.workers.smoketest.utils.VNODE_UPGRADE_TEST_CPI_V1
+import net.corda.applications.workers.smoketest.utils.VNODE_UPGRADE_TEST_CPI_V2
+import net.corda.applications.workers.smoketest.utils.eventuallyCreateVirtualNode
+import net.corda.applications.workers.smoketest.utils.eventuallyUploadCpi
+import net.corda.applications.workers.smoketest.utils.retryInterval
+import net.corda.applications.workers.smoketest.utils.retryTimeout
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT_ALIAS
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT_USAGE
 import net.corda.e2etest.utilities.ClusterBuilder
+import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.assertWithRetry
-import net.corda.e2etest.utilities.awaitVirtualNodeOperationStatusCheck
+import net.corda.e2etest.utilities.assertWithRetryIgnoringExceptions
 import net.corda.e2etest.utilities.cluster
+import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.getHoldingIdShortHash
+import net.corda.e2etest.utilities.toJson
 import net.corda.e2etest.utilities.truncateLongHash
-import net.corda.rest.ResponseCode.CONFLICT
-import net.corda.test.util.eventually
-import net.corda.utilities.seconds
+import net.corda.rest.ResponseCode
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.TestMethodOrder
-import java.util.UUID
+
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class SkipInitialization
 
 /**
  * Any 'unordered' tests are run *last*
@@ -33,39 +45,37 @@ import java.util.UUID
 class VirtualNodeRestTest {
     companion object {
         // Some simple test failure messages
-        private const val ERROR_CPI_NOT_UPLOADED =
-            "CPI has not been uploaded during this run - this test needs to be run on a clean cluster."
-        private const val ERROR_IS_CLUSTER_RUNNING = "Initial upload failed - is the cluster running?"
-        private const val ERROR_HOLDING_ID =
-            "Holding id could not be created - this test needs to be run on a clean cluster."
-
         private val testRunUniqueId = UUID.randomUUID()
         private val groupId = UUID.randomUUID().toString()
+
         private val aliceX500 = "CN=Alice-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
         private val bobX500 = "CN=Bob-$testRunUniqueId, OU=Application, O=R3, L=London, C=GB"
+
+        private val staticMemberList = listOf(aliceX500, bobX500)
+
         private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
-        private val staticMemberList = listOf(
-            aliceX500,
-            bobX500
-        )
 
         private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
         private val upgradeTestingCpiName = "${VNODE_UPGRADE_TEST_CPI_NAME}_$testRunUniqueId"
-
-        private val retryTimeout = 120.seconds
-        private val retryInterval = 1.seconds
     }
 
-    /**
-     * As long as no-one assigns an order lower than this, this test runs first, and all others, after, which is fine.
-     *
-     * This *first* test, uploads codesign certificate into the system.
-     */
+    @BeforeEach
+    internal fun beforeEach(testInfo: TestInfo) {
+        val hasSkipAnnotation = testInfo.testMethod
+            .filter { it.isAnnotationPresent(SkipInitialization::class.java) }
+            .isPresent
+
+        if (!hasSkipAnnotation) {
+            DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
+        }
+    }
+
     @Test
     @Order(5)
+    @SkipInitialization
     fun `can import codesigner certificate`() {
         cluster {
-            assertWithRetry {
+            assertWithRetryIgnoringExceptions {
                 // Certificate upload can be slow in the combined worker, especially after it has just started up.
                 timeout(retryTimeout)
                 interval(retryInterval)
@@ -82,7 +92,12 @@ class VirtualNodeRestTest {
     @Order(10)
     fun `can upload CPI`() {
         cluster {
-            val cpiHash = eventuallyUploadCpi(TEST_CPB_LOCATION, cpiName)
+            val cpiHash = eventuallyUploadCpi(
+                cpbLocation = TEST_CPB_LOCATION,
+                cpiName = cpiName,
+                groupId = groupId,
+                staticMemberList = staticMemberList
+            )
 
             val actualChecksum = getCpiChecksum(cpiName)
 
@@ -94,49 +109,11 @@ class VirtualNodeRestTest {
         }
     }
 
-    private fun ClusterBuilder.eventuallyUploadCpi(
-        cpbLocation: String,
-        cpiName: String,
-        cpiVersion: String = "1.0.0.0-SNAPSHOT"
-    ): String {
-        val requestId = cpiUpload(cpbLocation, groupId, staticMemberList, cpiName, cpiVersion)
-            .let { it.toJson()["id"].textValue() }
-        assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
-
-        // BUG:  returning "OK" feels 'weakly' typed
-        val json = assertWithRetry {
-            // CPI upload can be slow in the combined worker, especially after it has just started up.
-            timeout(retryTimeout)
-            interval(retryInterval)
-            command { cpiStatus(requestId) }
-            condition {
-                it.code == 200 && it.toJson()["status"].textValue() == "OK"
-            }
-            immediateFailCondition {
-                it.code == CONFLICT.statusCode
-                        && null != it.toJson()["details"]
-                        && it.toJson()["details"]["code"].textValue().equals(CONFLICT.toString())
-                        && null != it.toJson()["title"]
-                        && it.toJson()["title"].textValue().contains("already uploaded")
-            }
-        }.toJson()
-
-        val cpiHash = json["cpiFileChecksum"].textValue()
-        assertThat(cpiHash).isNotNull.isNotEmpty
-
-        // Capture the cpiHash from the cpi status upload
-        // We probably want more tests like this that enforce "expectations" on the API.
-        assertThat(cpiHash!!.length)
-            .withFailMessage("Short code length of wrong size - likely this test needs fixing")
-            .isEqualTo(12)
-        return cpiHash
-    }
-
     @Test
     @Order(33)
     fun `list cpis`() {
         cluster {
-            val json = assertWithRetry {
+            val json = assertWithRetryIgnoringExceptions {
                 timeout(retryTimeout)
                 interval(retryInterval)
                 command { cpiList() }
@@ -152,30 +129,15 @@ class VirtualNodeRestTest {
     fun `can create virtual node with holding id and CPI`() {
         cluster {
             val cpiFileChecksum = getCpiChecksum(cpiName)
-
             eventuallyCreateVirtualNode(cpiFileChecksum, aliceX500)
         }
-    }
-
-    private fun ClusterBuilder.eventuallyCreateVirtualNode(cpiFileChecksum: String, x500Name: String): String {
-        val vNodeJson = assertWithRetry {
-            timeout(retryTimeout)
-            interval(retryInterval)
-            command { vNodeCreate(cpiFileChecksum, x500Name) }
-            condition { it.code == 202 }
-            failMessage(ERROR_HOLDING_ID)
-        }.toJson()
-        val requestId = vNodeJson["requestId"].textValue()
-        assertThat(requestId).isNotNull.isNotEmpty
-
-        return awaitVirtualNodeOperationStatusCheck(requestId)
     }
 
     @Test
     @Order(60)
     fun `list virtual nodes`() {
         cluster {
-            assertWithRetry {
+            assertWithRetryIgnoringExceptions {
                 timeout(retryTimeout)
                 interval(retryInterval)
                 command { vNodeList() }
@@ -193,7 +155,7 @@ class VirtualNodeRestTest {
     @Order(61)
     fun `get a virtual node`() {
         cluster {
-            assertWithRetry {
+            assertWithRetryIgnoringExceptions {
                 timeout(retryTimeout)
                 interval(retryInterval)
                 command { getVNode(aliceHoldingId) }
@@ -209,18 +171,21 @@ class VirtualNodeRestTest {
     @Order(110)
     fun `can upload multiple versions of a CPI with the same name`() {
         cluster {
-            eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V1, upgradeTestingCpiName, "v1")
-            eventuallyUploadCpi(VNODE_UPGRADE_TEST_CPI_V2, upgradeTestingCpiName, "v2")
+            eventuallyUploadCpi(
+                VNODE_UPGRADE_TEST_CPI_V1, upgradeTestingCpiName, "v1", groupId, staticMemberList)
+            eventuallyUploadCpi(
+                VNODE_UPGRADE_TEST_CPI_V2, upgradeTestingCpiName, "v2", groupId, staticMemberList)
         }
     }
 
     private fun ClusterBuilder.getCpiChecksum(cpiName: String): String {
-        val cpiFileChecksum = eventually(retryTimeout, retryInterval) {
-            val cpis = cpiList().toJson()["cpis"]
-            val cpiJson = cpis.toList().find { it["id"]["cpiName"].textValue() == cpiName }
-            assertNotNull(cpiJson, "Cpi with name $cpiName not yet found in cpi list.")
-            truncateLongHash(cpiJson!!["cpiFileChecksum"].textValue())
-        }
-        return cpiFileChecksum
+        val cpis = assertWithRetryIgnoringExceptions {
+            command { cpiList() }
+            condition { it.code == ResponseCode.OK.statusCode }
+        }.body.toJson()["cpis"]
+
+        val cpiJson = cpis.toList().find { it["id"]["cpiName"].textValue() == cpiName }
+        assertNotNull(cpiJson, "Cpi with name $cpiName not yet found in cpi list.")
+        return truncateLongHash(cpiJson!!["cpiFileChecksum"].textValue())
     }
 }

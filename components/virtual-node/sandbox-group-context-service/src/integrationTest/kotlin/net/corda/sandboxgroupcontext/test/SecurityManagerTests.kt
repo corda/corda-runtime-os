@@ -26,7 +26,6 @@ import java.lang.reflect.ReflectPermission
 import java.net.SocketPermission
 import java.net.URLPermission
 import java.nio.file.Path
-import java.security.AccessControlException
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
@@ -47,6 +46,7 @@ class SecurityManagerTests {
         private const val EXPECTED_ERROR_MSG = "access denied (\"java.lang.reflect.ReflectPermission\" \"suppressAccessChecks\")"
     }
 
+    @Suppress("JUnitMalformedDeclaration")
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
 
@@ -91,7 +91,8 @@ class SecurityManagerTests {
         ))
 
         val sandboxGroupContext = virtualNode.loadSandbox(CPB1, SandboxGroupType.FLOW)
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             virtualNode.runFlow<Map<String, String>>(CPK1_ENVIRONMENT_FLOW, sandboxGroupContext)
         }
     }
@@ -113,7 +114,8 @@ class SecurityManagerTests {
 
         val sandboxGroupContext = virtualNode.loadSandbox(CPB1, SandboxGroupType.FLOW)
 
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             virtualNode.runFlow<String>(CPK1_REFLECTION_FLOW, sandboxGroupContext)
         }
     }
@@ -130,7 +132,8 @@ class SecurityManagerTests {
             virtualNode.runFlow<String>(CPK1_REFLECTION_FLOW, sandboxGroupContext1)
         ).isEqualTo("test")
 
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             virtualNode.runFlow<String>(CPK2_REFLECTION_FLOW, sandboxGroupContext1)
         }
     }
@@ -253,7 +256,8 @@ class SecurityManagerTests {
             SocketPermission("*:1-", "accept,listen,connect,resolve")
         ))
 
-        assertThrows<AccessControlException> {
+        @Suppress("deprecation", "removal")
+        assertThrows<java.security.AccessControlException> {
             virtualNode.runFlow<Int>(CPK1_HTTP_FLOW, sandboxGroupContext)
         }
     }

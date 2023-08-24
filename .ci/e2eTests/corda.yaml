@@ -113,3 +113,13 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "rest"
+  uniqueness:
+    kafka:
+      sasl:
+        username:
+          value: "uniqueness"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-credentials"
+              key: "uniqueness"

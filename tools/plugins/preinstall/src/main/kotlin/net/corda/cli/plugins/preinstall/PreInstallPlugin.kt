@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import io.fabric8.kubernetes.api.model.Secret
+import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.KubernetesClientException
 import net.corda.cli.api.CordaCliPlugin
@@ -40,7 +41,7 @@ class PreInstallPlugin : Plugin() {
     // Common class for plugins to inherit methods from
     open class PluginContext {
         var report = Report()
-        private var client = KubernetesClientBuilder().build()
+        private var client: KubernetesClient = KubernetesClientBuilder().build()
         var logger = PreInstallPlugin.logger
 
         class SecretException: Exception {
@@ -251,7 +252,9 @@ class PreInstallPlugin : Plugin() {
         @JsonProperty("p2pLinkManager")
         val p2pLinkManager: KafkaWorker?,
         @JsonProperty("p2pGateway")
-        val p2pGateway: KafkaWorker?
+        val p2pGateway: KafkaWorker?,
+        @JsonProperty("uniqueness")
+        val uniqueness: KafkaWorker?
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -366,7 +369,9 @@ class PreInstallPlugin : Plugin() {
         @JsonProperty("p2pLinkManager")
         val p2pLinkManager: Resources?,
         @JsonProperty("p2pGateway")
-        val p2pGateway: Resources?
+        val p2pGateway: Resources?,
+        @JsonProperty("uniqueness")
+        val uniqueness: Resources?
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)

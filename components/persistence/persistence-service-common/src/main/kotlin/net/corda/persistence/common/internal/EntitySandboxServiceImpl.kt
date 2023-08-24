@@ -179,11 +179,31 @@ class EntitySandboxServiceImpl @Activate constructor(
             .toSet()
             .mapNotNull { getObserverFromClassName(it, ctx) }
             .groupBy { it.stateType }
-        ctx.putObjectByKey(SANDBOX_TOKEN_STATE_OBSERVERS, tokenStateObserverMap)
+
+        ctx.putObjectByKey(SANDBOX_TOKEN_STATE_OBSERVERS, requireSingleObserverToState(tokenStateObserverMap))
+
         logger.debug {
             "Registered token observers: ${tokenStateObserverMap.mapValues { (_, observers) ->
                 observers.map { it::class.java.name }}
             }"
+        }
+    }
+
+    private fun requireSingleObserverToState(
+        tokenStateObserverMap: Map<Class<ContractState>, List<UtxoLedgerTokenStateObserver<ContractState>>>
+    ): Map<Class<ContractState>, UtxoLedgerTokenStateObserver<ContractState>?> {
+
+        return tokenStateObserverMap.entries.associate { contractStateTypeToObservers  ->
+            val numberOfObservers = contractStateTypeToObservers.value.size
+
+            if (numberOfObservers > 1) {
+                val observerTypes = contractStateTypeToObservers.value.map { observer -> observer.stateType.name }
+                throw IllegalStateException(
+                    "More than one observer found for the contract state. " +
+                            "Contract state: ${contractStateTypeToObservers.key}, observers: $observerTypes"
+                )
+            }
+            contractStateTypeToObservers.key to contractStateTypeToObservers.value.singleOrNull()
         }
     }
 

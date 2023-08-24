@@ -1,7 +1,7 @@
 -tester: biz.aQute.tester.junit-platform
 -runfw: org.apache.felix.framework
 -resolve.effective: resolve,active
--runee: JavaSE-11
+-runee: JavaSE-17
 -runtrace: true
 
 -runvm: \
@@ -9,8 +9,7 @@
     -DpostgresPort=${project.postgresPort},\
     -DpostgresDb=${project.postgresDb},\
     -DpostgresUser=${project.postgresUser},\
-    -DpostgresPassword=${project.postgresPassword},\
-    --illegal-access=deny
+    -DpostgresPassword=${project.postgresPassword}
 
 -runsystempackages: \
     sun.security.x509

@@ -71,7 +71,7 @@ abstract class AuthenticationProtocol(private val certificateValidatorFactory: (
     protected var agreedMaxMessageSize: Int? = null
 
     protected val secureRandom = SecureRandom()
-    protected val provider = BouncyCastleProvider()
+    protected val provider = BouncyCastleProvider.PROVIDER_NAME
     protected val ephemeralKeyFactory = KeyFactory.getInstance(ELLIPTIC_CURVE_ALGO, provider)
     protected val keyPairGenerator = KeyPairGenerator.getInstance(ELLIPTIC_CURVE_ALGO, provider).apply {
         this.initialize(ELLIPTIC_CURVE_KEY_SIZE_BITS, secureRandom)

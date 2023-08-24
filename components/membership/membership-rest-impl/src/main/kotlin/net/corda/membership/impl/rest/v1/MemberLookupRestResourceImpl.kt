@@ -2,6 +2,7 @@ package net.corda.membership.impl.rest.v1
 
 import net.corda.crypto.core.ShortHash
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
@@ -13,13 +14,13 @@ import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.types.response.RestMemberInfo
 import net.corda.membership.rest.v1.types.response.RestMemberInfoList
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
-import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.rest.v1.types.RestGroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rest.extensions.getByHoldingIdentityShortHashOrThrow
@@ -27,8 +28,6 @@ import net.corda.virtualnode.read.rest.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 @Component(service = [PluggableRestResource::class])
 class MemberLookupRestResourceImpl @Activate constructor(
@@ -37,11 +36,10 @@ class MemberLookupRestResourceImpl @Activate constructor(
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : MemberLookupRestResource, PluggableRestResource<MemberLookupRestResource>, Lifecycle {
-    companion object {
-        private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
 
     private interface InnerMemberLookupRestResource {
         @Suppress("LongParameterList")
@@ -56,12 +54,10 @@ class MemberLookupRestResourceImpl @Activate constructor(
             statuses: Set<String>,
         ): RestMemberInfoList
 
-        fun viewGroupParameters(holdingIdentityShortHash: ShortHash): Map<String, String>
+        fun viewGroupParameters(holdingIdentityShortHash: ShortHash): RestGroupParameters
     }
 
-    override val protocolVersion = 1
-
-    private val className = this::class.java.simpleName
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     private var impl: InnerMemberLookupRestResource = InactiveImpl
 
@@ -113,7 +109,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
         statuses.toSet(),
     )
 
-    override fun viewGroupParameters(holdingIdentityShortHash: String): Map<String, String> =
+    override fun viewGroupParameters(holdingIdentityShortHash: String): RestGroupParameters =
         impl.viewGroupParameters(ShortHash.parseOrThrow(holdingIdentityShortHash))
 
     fun activate(reason: String) {
@@ -140,7 +136,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
             "${MemberLookupRestResourceImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
         )
 
-        override fun viewGroupParameters(holdingIdentityShortHash: ShortHash): Map<String, String> =
+        override fun viewGroupParameters(holdingIdentityShortHash: ShortHash): RestGroupParameters =
             throw ServiceUnavailableException(
                 "${MemberLookupRestResourceImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
@@ -176,28 +172,27 @@ class MemberLookupRestResourceImpl @Activate constructor(
             }
 
             return RestMemberInfoList(
-                filteredMembers.map {
+                filteredMembers.map { memberInfo ->
                     RestMemberInfo(
-                        it.memberProvidedContext.entries.associate { it.key to it.value },
-                        it.mgmProvidedContext.entries.associate { it.key to it.value }
+                        memberInfo.memberProvidedContext.entries.associate { it.key to it.value },
+                        memberInfo.mgmProvidedContext.entries.associate { it.key to it.value }
                     )
                 }
             )
         }
 
-        override fun viewGroupParameters(holdingIdentityShortHash: ShortHash): Map<String, String> {
+        override fun viewGroupParameters(holdingIdentityShortHash: ShortHash): RestGroupParameters {
             val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
                 holdingIdentityShortHash
             ) { "Could not find holding identity '$holdingIdentityShortHash' associated with member." }.holdingIdentity
 
-            return membershipGroupReaderProvider
+            val parameters = membershipGroupReaderProvider
                 .getGroupReader(holdingIdentity)
                 .groupParameters
                 ?.toMap() ?: throw ResourceNotFoundException("Could not find group parameters for holding identity " +
                     "'$holdingIdentityShortHash'.")
+            return RestGroupParameters(parameters)
         }
-
-        private fun InternalGroupParameters.toMap() = entries.associate { it.key to it.value }
 
         private fun Set<String>.getStatusFilter(isMgm: Boolean): Set<String> {
             val filter = this.mapTo(mutableSetOf()) {

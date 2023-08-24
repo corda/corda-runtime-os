@@ -71,7 +71,9 @@ internal class MigrationUtilityImpl(
         logger.info("Preparing to run ${changeLogs.size} migrations for CPK '$cpkFileChecksum'.")
         val allChangeLogsForCpk = VirtualNodeDbChangeLog(changeLogs)
         try {
-            liquibaseSchemaMigrator.updateDb(dataSource.connection, allChangeLogsForCpk, tag = cpkFileChecksum.toString())
+            dataSource.connection.use { connection ->
+                liquibaseSchemaMigrator.updateDb(connection, allChangeLogsForCpk, tag = cpkFileChecksum.toString())
+            }
         } catch (e: Exception) {
             val msg =
                 "CPI migrations failed for virtual node '$virtualNodeShortHash`. Failure occurred running CPI migrations on " +

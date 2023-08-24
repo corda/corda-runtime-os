@@ -48,10 +48,9 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.impl.registration.KeyDetails
 import net.corda.membership.impl.registration.MemberRole
 import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
-import net.corda.membership.impl.registration.dynamic.verifiers.OrderVerifier
-import net.corda.membership.impl.registration.dynamic.verifiers.P2pEndpointVerifier
-import net.corda.membership.impl.registration.dynamic.verifiers.RegistrationContextCustomFieldsVerifier
-import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
+import net.corda.membership.impl.registration.verifiers.OrderVerifier
+import net.corda.membership.impl.registration.verifiers.P2pEndpointVerifier
+import net.corda.membership.impl.registration.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -284,8 +283,9 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
             val customFieldsValid = registrationContextCustomFieldsVerifier.verify(context)
             if (customFieldsValid is RegistrationContextCustomFieldsVerifier.Result.Failure) {
-                logger.info(customFieldsValid.reason)
-                throw InvalidMembershipRegistrationException("Registration failed. ${customFieldsValid.reason}")
+                val errorMessage = "Registration failed for ID '$registrationId'. ${customFieldsValid.reason}"
+                logger.warn(errorMessage)
+                throw InvalidMembershipRegistrationException(errorMessage)
             }
             return try {
                 val memberId = member.shortHash
@@ -317,6 +317,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val serialInfo = context[SERIAL]?.toLong()
                     ?: previousInfo?.serial
                     ?: 0
+
+                verifyReRegistrationIsEnabled(serialInfo, previousInfo?.serial, mgm.platformVersion,)
 
                 val message = MembershipRegistrationRequest(
                     registrationId.toString(),
@@ -448,11 +450,10 @@ class DynamicMemberRegistrationService @Activate constructor(
 
             previousRegistrationContext?.let { previous ->
                 ((newRegistrationContext.entries - previous.entries) + (previous.entries - newRegistrationContext.entries)).filter {
-                    it.key.startsWith(ENDPOINTS) ||
-                            it.key.startsWith(SESSION_KEYS) ||
-                            it.key.startsWith(LEDGER_KEYS) ||
-                            it.key.startsWith(ROLES_PREFIX) ||
-                            it.key.startsWith("corda.notary")
+                    it.key.startsWith(SESSION_KEYS) ||
+                    it.key.startsWith(LEDGER_KEYS) ||
+                    it.key.startsWith(ROLES_PREFIX) ||
+                    it.key.startsWith("corda.notary")
                 }.apply {
                     require(isEmpty()) {
                         throw InvalidMembershipRegistrationException(
@@ -463,6 +464,23 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
 
             return newRegistrationContext
+        }
+
+        /**
+         * Verify MGM is not on 5.0 platform, since re-registration is not supported by that version.
+         * If submitted serial or member's current serial suggests re-registration attempt,
+         * we will mark their request as INVALID.
+         */
+        @Suppress("ComplexCondition")
+        private fun verifyReRegistrationIsEnabled(
+            submittedSerial: Long,
+            currentSerial: Long?,
+            mgmPlatformVersion: Int,
+        ) {
+            if ((submittedSerial > 0 || (currentSerial != null && currentSerial > 0)) && mgmPlatformVersion < 50100) {
+                throw InvalidMembershipRegistrationException("MGM is on a lower version where re-registration " +
+                        "is not supported.")
+            }
         }
 
         private fun getTlsSubject(member: HoldingIdentity): Map<String, String> {
@@ -488,17 +506,26 @@ class DynamicMemberRegistrationService @Activate constructor(
             context.keys.filter { sessionKeyIdRegex.matches(it) }.apply {
                 require(isNotEmpty()) { "No session key ID was provided." }
                 require(orderVerifier.isOrdered(this, 3)) { "Provided session key IDs are incorrectly numbered." }
+                this.forEach {
+                    validateKey(it, context[it]!!)
+                }
             }
             p2pEndpointVerifier.verifyContext(context)
             val isNotary = context.entries.any { it.key.startsWith(ROLES_PREFIX) && it.value == NOTARY_ROLE }
             context.keys.filter { ledgerIdRegex.matches(it) }.apply {
                 if (!isNotary) require(isNotEmpty()) { "No ledger key ID was provided." }
                 require(orderVerifier.isOrdered(this, 3)) { "Provided ledger key IDs are incorrectly numbered." }
+                this.forEach {
+                    validateKey(it, context[it]!!)
+                }
             }
             if (isNotary) {
                 context.keys.filter { notaryIdRegex.matches(it) }.apply {
                     require(isNotEmpty()) { "No notary key ID was provided." }
                     require(orderVerifier.isOrdered(this, 3)) { "Provided notary key IDs are incorrectly numbered." }
+                    this.forEach {
+                        validateKey(it, context[it]!!)
+                    }
                 }
                 context.keys.filter { notaryProtocolVersionsRegex.matches(it) }.apply {
                     require(
@@ -508,6 +535,14 @@ class DynamicMemberRegistrationService @Activate constructor(
                         )
                     ) { "Provided notary protocol versions are incorrectly numbered." }
                 }
+            }
+        }
+
+        private fun validateKey(contextKey: String, keyId: String) {
+            try {
+                ShortHash.parse(keyId)
+            } catch (e: ShortHashException) {
+                throw IllegalArgumentException("Invalid value for key ID $contextKey. ${e.message}", e)
             }
         }
 

@@ -14,7 +14,7 @@ import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
-internal class SingletonSerializeAsTokenSerializerTest {
+class SingletonSerializeAsTokenSerializerTest {
 
     class Tester(val someInt: Int) : SingletonSerializeAsToken
 

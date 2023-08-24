@@ -22,7 +22,7 @@ class HSMCategoryAssociationEntity(
      */
     @Id
     @Column(name = "id", nullable = false, updatable = false, length = 36)
-    val id: String,
+    var id: String,
 
     /**
      * Tenant which the association belongs to, added as the means to keep uniqueness for tenant/category/deprecation

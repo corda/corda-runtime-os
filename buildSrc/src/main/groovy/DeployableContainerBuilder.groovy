@@ -130,7 +130,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
     @Input
     final Property<String> baseImageTag =
-            getObjects().property(String).convention('11.0.16.1-11.58.23')
+            getObjects().property(String).convention('17.0.4.1-17.36.17')
 
     @Input
     final Property<String> subDir =
@@ -234,7 +234,7 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         if (useDaemon.get()) {
             logger.info("Daemon available")
             def imageName = "${baseImageTag.get().empty ? baseImageName.get() : "${baseImageName.get()}:${baseImageTag.get()}"}"
-            if (imageName.endsWith("-local")) {
+            if (imageName.endsWith("latest-local-${cordaProductVersion}")) {
                 logger.info("Resolving base image ${baseImageName.get()}:${baseImageTag.get()} from local Docker daemon")
                 builder = Jib.from(DockerDaemonImage.named(imageName))
             } else if (imageName.contains("software.r3.com")) {

@@ -7,7 +7,6 @@ import org.bouncycastle.jce.ECNamedCurveTable
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
-import java.security.Security
 import java.time.Duration
 
 @Command(
@@ -98,13 +97,6 @@ class Ca {
                 )
             }
             Algorithm.EC -> {
-                val disabled = Security.getProperty("jdk.disabled.namedCurves")
-                    .split(",").map {
-                        it.trim()
-                    }.contains(curveName)
-                if (disabled) {
-                    throw FakeCaException("Curve name: $curveName disabled")
-                }
                 val spec = ECNamedCurveTable.getParameterSpec(curveName) ?: throw FakeCaException("Unknown curve name: $curveName")
                 if (!ValidCurvedNames().contains(curveName)) {
                     throw FakeCaException("Invalid curve name: $curveName")

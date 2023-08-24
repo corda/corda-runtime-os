@@ -15,6 +15,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 import java.nio.ByteBuffer
+import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY_DTO
 
 class EntityConverterImplTest {
 
@@ -47,7 +48,7 @@ class EntityConverterImplTest {
         assertThat(result.externalEventRequestId).isEqualTo("r1")
         assertThat(result.flowId).isEqualTo("f1")
         assertThat(result.targetAmount).isEqualTo(bigDecimal)
-        assertThat(result.poolKey).isEqualTo(POOL_CACHE_KEY)
+        assertThat(result.poolKey).isEqualTo(POOL_CACHE_KEY_DTO)
     }
 
     @Test
@@ -68,7 +69,7 @@ class EntityConverterImplTest {
         assertThat(result.externalEventRequestId).isEqualTo("r1")
         assertThat(result.flowId).isEqualTo("f1")
         assertThat(result.usedTokens).containsOnly("s1", "s2")
-        assertThat(result.poolKey).isEqualTo(POOL_CACHE_KEY)
+        assertThat(result.poolKey).isEqualTo(POOL_CACHE_KEY_DTO)
     }
 
     @Test
@@ -92,7 +93,7 @@ class EntityConverterImplTest {
         val result = EntityConverterImpl()
             .toLedgerChange(POOL_CACHE_KEY, ledgerChange)
 
-        assertThat(result.poolKey).isEqualTo(POOL_CACHE_KEY)
+        assertThat(result.poolKey).isEqualTo(POOL_CACHE_KEY_DTO)
         assertThat(result.producedTokens.map { it.stateRef }).containsOnly("s1","s2")
         assertThat(result.consumedTokens.map { it.stateRef }).containsOnly("s3","s4")
     }

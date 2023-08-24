@@ -1,13 +1,17 @@
 package net.corda.membership.impl.rest.v1
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.ShortHash
+import net.corda.data.KeyValuePairList
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
 import net.corda.data.membership.common.ApprovalRuleType.PREAUTH
 import net.corda.data.membership.common.ApprovalRuleType.STANDARD
 import net.corda.data.membership.common.RegistrationRequestDetails
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.rest.PluggableRestResource
 import net.corda.rest.exception.BadRequestException
 import net.corda.rest.exception.InvalidInputDataException
@@ -28,53 +32,79 @@ import net.corda.membership.rest.v1.types.response.ApprovalRuleInfo
 import net.corda.membership.rest.v1.types.response.PreAuthToken
 import net.corda.membership.rest.v1.types.response.PreAuthTokenStatus
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
+import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.rest.v1.types.response.MemberInfoSubmitted
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.membership.rest.v1.types.response.RegistrationStatus
 import net.corda.membership.lib.approval.ApprovalRuleParams
+import net.corda.membership.lib.deserializeContext
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
+import net.corda.membership.lib.verifiers.GroupParametersUpdateVerifier
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
-import net.corda.membership.lib.toMap
+import net.corda.membership.rest.v1.types.RestGroupParameters
 import net.corda.membership.rest.v1.types.request.SuspensionActivationParameters
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
+import net.corda.rest.exception.InternalServerException
 import net.corda.rest.exception.InvalidStateChangeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.read.rest.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.util.regex.PatternSyntaxException
 import javax.persistence.PessimisticLockException
 import net.corda.data.membership.preauth.PreAuthToken as AvroPreAuthToken
 import net.corda.data.membership.preauth.PreAuthTokenStatus as AvroPreAuthTokenStatus
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 @Component(service = [PluggableRestResource::class])
 class MGMRestResourceImpl internal constructor(
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val mgmResourceClient: MGMResourceClient,
     private val configurationGetService: ConfigurationGetService,
     private val clock: Clock = UTCClock(),
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : MGMRestResource, PluggableRestResource<MGMRestResource>, Lifecycle {
 
     @Activate
     constructor(
+        @Reference(service = CordaAvroSerializationFactory::class)
+        cordaAvroSerializationFactory: CordaAvroSerializationFactory,
         @Reference(service = LifecycleCoordinatorFactory::class)
         coordinatorFactory: LifecycleCoordinatorFactory,
         @Reference(service = MGMResourceClient::class)
         mgmResourceClient: MGMResourceClient,
         @Reference(service = ConfigurationGetService::class)
         configurationGetService: ConfigurationGetService,
+        @Reference(service = PlatformInfoProvider::class)
+        platformInfoProvider: PlatformInfoProvider
     ) : this(
+        cordaAvroSerializationFactory,
         coordinatorFactory,
         mgmResourceClient,
         configurationGetService,
-        UTCClock()
+        UTCClock(),
+        platformInfoProvider
     )
+
+    private companion object {
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
+    private val deserializer: CordaAvroDeserializer<KeyValuePairList> =
+        cordaAvroSerializationFactory.createAvroDeserializer(
+            {
+                logger.error("Failed to deserialize key value pair list.")
+            },
+            KeyValuePairList::class.java
+        )
 
     private interface InnerMGMRestResource {
         fun generateGroupPolicy(
@@ -154,9 +184,11 @@ class MGMRestResourceImpl internal constructor(
         fun suspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters)
 
         fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters)
+
+        fun updateGroupParameters(holdingIdentityShortHash: String, newGroupParameters: RestGroupParameters): RestGroupParameters
     }
 
-    override val protocolVersion = 1
+    override val protocolVersion get() = platformInfoProvider.localWorkerPlatformVersion
 
     private var impl: InnerMGMRestResource = InactiveImpl
 
@@ -243,11 +275,22 @@ class MGMRestResourceImpl internal constructor(
         holdingIdentityShortHash: String, requestId: String, reason: ManualDeclinationReason
     ) = impl.declineRegistrationRequest(holdingIdentityShortHash, requestId, reason)
 
-    override fun suspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters) =
+    @Deprecated("Deprecated in favour of suspendMember")
+    override fun deprecatedSuspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters) =
         impl.suspendMember(holdingIdentityShortHash, suspensionParams)
 
-    override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) =
+    override fun suspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters) =
+        impl.suspendMember(holdingIdentityShortHash, suspensionParams.throwBadRequestIfNoSerialNumber())
+
+    @Deprecated("Deprecated in favour of activateMember")
+    override fun deprecatedActivateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) =
         impl.activateMember(holdingIdentityShortHash, activationParams)
+
+    override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) =
+        impl.activateMember(holdingIdentityShortHash, activationParams.throwBadRequestIfNoSerialNumber())
+
+    override fun updateGroupParameters(holdingIdentityShortHash: String, newGroupParameters: RestGroupParameters) =
+        impl.updateGroupParameters(holdingIdentityShortHash, newGroupParameters)
 
     fun activate(reason: String) {
         impl = ActiveImpl()
@@ -257,6 +300,13 @@ class MGMRestResourceImpl internal constructor(
     fun deactivate(reason: String) {
         coordinator.updateStatus(LifecycleStatus.DOWN, reason)
         impl = InactiveImpl
+    }
+
+    private fun SuspensionActivationParameters.throwBadRequestIfNoSerialNumber(): SuspensionActivationParameters {
+        if (this.serialNumber == null) {
+            throw BadRequestException("The serial number must be provided in the request.")
+        }
+        return this
     }
 
     private object InactiveImpl : InnerMGMRestResource {
@@ -350,6 +400,11 @@ class MGMRestResourceImpl internal constructor(
             holdingIdentityShortHash: String,
             activationParams: SuspensionActivationParameters
         ): Unit = throwNotRunningException()
+
+        override fun updateGroupParameters(
+            holdingIdentityShortHash: String,
+            newGroupParameters: RestGroupParameters,
+        ): RestGroupParameters = throwNotRunningException()
 
         private fun <T> throwNotRunningException(): T {
             throw ServiceUnavailableException(NOT_RUNNING_ERROR)
@@ -507,16 +562,20 @@ class MGMRestResourceImpl internal constructor(
             requestSubjectX500Name: String?,
             viewHistoric: Boolean,
         ): Collection<RestRegistrationRequestStatus> {
-            val requestSubject = requestSubjectX500Name?.let {
-                parseX500Name("requestSubjectX500Name", it)
+            return try {
+                val requestSubject = requestSubjectX500Name?.let {
+                    parseX500Name("requestSubjectX500Name", it)
+                }
+                handleCommonErrors(holdingIdentityShortHash) {
+                    mgmResourceClient.viewRegistrationRequests(
+                        it,
+                        requestSubject,
+                        viewHistoric,
+                    )
+                }.map { it.toRest() }
+            } catch (e: ContextDeserializationException) {
+                throw InternalServerException("${e.message}")
             }
-            return handleCommonErrors(holdingIdentityShortHash) {
-                mgmResourceClient.viewRegistrationRequests(
-                    it,
-                    requestSubject,
-                    viewHistoric,
-                )
-            }.map { it.toRest() }
         }
 
         override fun approveRegistrationRequest(
@@ -532,6 +591,8 @@ class MGMRestResourceImpl internal constructor(
                 }
             } catch (e: IllegalArgumentException) {
                 throw BadRequestException("${e.message}")
+            } catch (e: ContextDeserializationException) {
+                throw InternalServerException("${e.message}")
             }
         }
 
@@ -552,10 +613,7 @@ class MGMRestResourceImpl internal constructor(
             }
         }
 
-        override fun suspendMember(
-            holdingIdentityShortHash: String,
-            suspensionParams: SuspensionActivationParameters
-        ) {
+        override fun suspendMember(holdingIdentityShortHash: String, suspensionParams: SuspensionActivationParameters) {
             val memberName = parseX500Name("suspensionParams.x500Name", suspensionParams.x500Name)
             try {
                 handleCommonErrors(holdingIdentityShortHash) {
@@ -576,11 +634,7 @@ class MGMRestResourceImpl internal constructor(
                 throw InvalidStateChangeException("${e.message}")
             }
         }
-
-        override fun activateMember(
-            holdingIdentityShortHash: String,
-            activationParams: SuspensionActivationParameters
-        ) {
+        override fun activateMember(holdingIdentityShortHash: String, activationParams: SuspensionActivationParameters) {
             val memberName = parseX500Name("activationParams.x500Name", activationParams.x500Name)
             try {
                 handleCommonErrors(holdingIdentityShortHash) {
@@ -602,13 +656,37 @@ class MGMRestResourceImpl internal constructor(
             }
         }
 
+        override fun updateGroupParameters(
+            holdingIdentityShortHash: String,
+            newGroupParameters: RestGroupParameters,
+        ): RestGroupParameters {
+            return try {
+                handleCommonErrors(holdingIdentityShortHash) {
+                    val newParametersMap = newGroupParameters.parameters
+                    validateGroupParametersUpdate(newParametersMap)
+                    RestGroupParameters(mgmResourceClient.updateGroupParameters(it, newParametersMap).toMap())
+                }
+            } catch (e: PessimisticLockException) {
+                throw InvalidStateChangeException("${e.message}")
+            }
+        }
+
+        private fun validateGroupParametersUpdate(parameters: Map<String, String>) {
+            val verifierResult = GroupParametersUpdateVerifier().verify(parameters)
+            if (verifierResult is GroupParametersUpdateVerifier.Result.Failure) {
+                with(verifierResult.reason) {
+                    throw BadRequestException(this)
+                }
+            }
+        }
+
         private fun RegistrationRequestDetails.toRest() =
             RestRegistrationRequestStatus(
                 registrationId,
                 registrationSent,
                 registrationLastModified,
                 registrationStatus.fromAvro(),
-                MemberInfoSubmitted(memberProvidedContext.toMap()),
+                MemberInfoSubmitted(memberProvidedContext.data.array().deserializeContext(deserializer)),
                 reason,
                 serial,
             )
