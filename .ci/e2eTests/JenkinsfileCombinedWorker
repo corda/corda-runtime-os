@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@CORE-15756/segregated-workers') _
+@Library('corda-shared-build-pipeline-steps@5.1') _
 
 import groovy.transform.Field
 import com.r3.build.utils.PipelineUtils

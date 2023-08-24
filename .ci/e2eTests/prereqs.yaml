@@ -7,7 +7,6 @@ kafka:
           - "crypto"
           - "db"
           - "flow"
-          - "verification"
           - "membership"
           - "p2pGateway"
           - "p2pLinkManager"

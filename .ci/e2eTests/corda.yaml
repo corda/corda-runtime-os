@@ -73,16 +73,6 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "flow"
-  verification:
-    kafka:
-      sasl:
-        username:
-          value: "verification"
-        password:
-          valueFrom:
-            secretKeyRef:
-              name: "kafka-credentials"
-              key: "verification"
   membership:
     kafka:
       sasl:
