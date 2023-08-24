@@ -39,7 +39,8 @@ class JavalinServer @Activate constructor(
 
         try {
             log.debug("Starting Worker Web Server on port: $port")
-            server = Javalin.create().apply { startServer(port) }
+            server = Javalin.create()
+            startServer(port)
         } catch (ex: Exception) {
             throw CordaRuntimeException("Webserver already active on that port")
         }

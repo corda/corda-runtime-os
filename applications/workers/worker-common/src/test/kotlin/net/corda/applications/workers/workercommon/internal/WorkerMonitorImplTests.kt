@@ -26,7 +26,7 @@ class WorkerMonitorImplTests {
     }
 
     private val webServer = JavalinServer(lifecycleCoordinatorFactory)
-    private val port = 7000
+    private val port = 8989
 
     @BeforeEach
     fun setupServer() {
