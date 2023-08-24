@@ -3,7 +3,6 @@ package net.corda.messagebus.kafka.serialization
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import org.apache.kafka.common.serialization.Serializer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.slf4j.LoggerFactory
 
@@ -18,7 +17,7 @@ import org.slf4j.LoggerFactory
 class CordaAvroSerializerImpl<T : Any>(
     private val schemaRegistry: AvroSchemaRegistry,
     private val onError: ((ByteArray) -> Unit)?
-) : CordaAvroSerializer<T>, Serializer<T> {
+) : CordaAvroSerializer<T> {
 
     companion object {
         private val stringSerializer = StringSerializer()
@@ -48,14 +47,6 @@ class CordaAvroSerializerImpl<T : Any>(
             onError?.invoke(message.toByteArray())
             log.error(message, ex)
             throw CordaRuntimeException(message, ex)
-        }
-    }
-
-
-    override fun serialize(topic: String?, data: T?): ByteArray? {
-        return when (data) {
-            null -> null
-            else -> serialize(data)
         }
     }
 }

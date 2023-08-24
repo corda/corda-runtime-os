@@ -1,6 +1,8 @@
 package net.corda.messagebus.kafka.consumer.builder
 
 import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ConsumerConfig
@@ -9,10 +11,8 @@ import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.kafka.config.MessageBusConfigResolver
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
-import net.corda.messagebus.kafka.serialization.CordaAvroDeserializerImpl
 import net.corda.messagebus.kafka.utils.KafkaRetryUtils.executeKafkaActionWithRetry
 import net.corda.messaging.api.chunking.MessagingChunkFactory
-import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
@@ -30,10 +30,10 @@ import org.slf4j.LoggerFactory
  */
 @Component(service = [CordaConsumerBuilder::class])
 class CordaKafkaConsumerBuilderImpl @Activate constructor(
-    @Reference(service = AvroSchemaRegistry::class)
-    private val avroSchemaRegistry: AvroSchemaRegistry,
     @Reference(service = MessagingChunkFactory::class)
     private val messagingChunkFactory: MessagingChunkFactory,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
 ) : CordaConsumerBuilder {
 
     companion object {
@@ -53,8 +53,8 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
 
         return executeKafkaActionWithRetry(
             action = {
-                val keyDeserializer = CordaAvroDeserializerImpl(avroSchemaRegistry, onSerializationError, kClazz)
-                val valueDeserializer = CordaAvroDeserializerImpl(avroSchemaRegistry, onSerializationError, vClazz)
+                val keyDeserializer = cordaAvroSerializationFactory.createAvroDeserializer(onSerializationError, kClazz)
+                val valueDeserializer = cordaAvroSerializationFactory.createAvroDeserializer(onSerializationError, vClazz)
                 val consumerChunkDeserializerService =
                     messagingChunkFactory.createConsumerChunkDeserializerService(keyDeserializer, valueDeserializer, onSerializationError)
                 val consumer = createKafkaConsumer(kafkaProperties, keyDeserializer, valueDeserializer)
@@ -76,8 +76,8 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
 
     private fun <K : Any, V : Any> createKafkaConsumer(
         kafkaProperties: Properties,
-        keyDeserializer: CordaAvroDeserializerImpl<K>,
-        valueDeserializer: CordaAvroDeserializerImpl<V>,
+        keyDeserializer: CordaAvroDeserializer<K>,
+        valueDeserializer: CordaAvroDeserializer<V>,
     ): KafkaConsumer<Any, Any> {
         val contextClassLoader = Thread.currentThread().contextClassLoader
         val currentBundle = FrameworkUtil.getBundle(KafkaConsumer::class.java)
@@ -88,8 +88,8 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
             }
             KafkaConsumer(
                 kafkaProperties,
-                keyDeserializer,
-                valueDeserializer
+                { _, d -> keyDeserializer.deserialize(d) },
+                { _, d -> valueDeserializer.deserialize(d) }
             )
         } finally {
             Thread.currentThread().contextClassLoader = contextClassLoader

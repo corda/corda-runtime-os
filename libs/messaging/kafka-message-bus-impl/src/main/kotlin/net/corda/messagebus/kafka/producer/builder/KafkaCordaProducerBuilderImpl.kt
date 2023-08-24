@@ -1,6 +1,7 @@
 package net.corda.messagebus.kafka.producer.builder
 
 import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
@@ -8,12 +9,10 @@ import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messagebus.kafka.config.MessageBusConfigResolver
 import net.corda.messagebus.kafka.producer.CordaKafkaProducerImpl
-import net.corda.messagebus.kafka.serialization.CordaAvroSerializerImpl
 import net.corda.messagebus.kafka.utils.KafkaRetryUtils.executeKafkaActionWithRetry
 import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.schema.configuration.MessagingConfig
-import net.corda.schema.registry.AvroSchemaRegistry
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
@@ -34,10 +33,10 @@ import org.slf4j.LoggerFactory
  */
 @Component(service = [CordaProducerBuilder::class])
 class KafkaCordaProducerBuilderImpl @Activate constructor(
-    @Reference(service = AvroSchemaRegistry::class)
-    private val avroSchemaRegistry: AvroSchemaRegistry,
     @Reference(service = MessagingChunkFactory::class)
     private val messagingChunkFactory: MessagingChunkFactory,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
 ) : CordaProducerBuilder {
 
     companion object {
@@ -83,10 +82,12 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
             if (currentBundle != null) {
                 Thread.currentThread().contextClassLoader = currentBundle.adapt(BundleWiring::class.java).classLoader
             }
+            val keySerializer = cordaAvroSerializationFactory.createAvroSerializer<Any>(onSerializationError)
+            val valueSerializer = cordaAvroSerializationFactory.createAvroSerializer<Any>(onSerializationError)
             KafkaProducer(
                 kafkaProperties,
-                CordaAvroSerializerImpl(avroSchemaRegistry, onSerializationError),
-                CordaAvroSerializerImpl(avroSchemaRegistry, onSerializationError)
+                { _, d -> keySerializer.serialize(d) },
+                { _, d -> valueSerializer.serialize(d) }
             )
         } finally {
             Thread.currentThread().contextClassLoader = contextClassLoader

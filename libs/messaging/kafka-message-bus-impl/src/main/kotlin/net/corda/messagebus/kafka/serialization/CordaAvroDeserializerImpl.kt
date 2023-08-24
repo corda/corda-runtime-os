@@ -7,7 +7,6 @@ import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.slf4j.LoggerFactory
 
@@ -23,7 +22,7 @@ class CordaAvroDeserializerImpl<T: Any>(
     private val schemaRegistry: AvroSchemaRegistry,
     private val onError: Consumer<ByteArray>,
     private val expectedClass: Class<T>
-) : CordaAvroDeserializer<T>, Deserializer<Any> {
+) : CordaAvroDeserializer<T> {
 
     private companion object {
         val stringDeserializer = StringDeserializer()
@@ -33,7 +32,6 @@ class CordaAvroDeserializerImpl<T: Any>(
 
     private fun deserialize(data: ByteArray, allowChunks: Boolean = false): Any? {
         val isChunkType  = allowChunks && isChunkType(data)
-        @Suppress("unchecked_cast")
         return when {
             expectedClass == String::class.java && !isChunkType -> {
                 stringDeserializer.deserialize(null, data)
@@ -83,12 +81,5 @@ class CordaAvroDeserializerImpl<T: Any>(
     override fun deserialize(data: ByteArray): T? {
         @Suppress("unchecked_cast")
         return deserialize(data, false) as? T
-    }
-
-    override fun deserialize(topic: String?, data: ByteArray?): Any? {
-        return when(data) {
-            null -> null
-            else -> deserialize(data, true)
-        }
     }
 }
