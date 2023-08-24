@@ -38,6 +38,12 @@ class WrappedUtxoWireTransaction(
         ) {
             "The length of the outputs and output infos component groups needs to be the same."
         }
+        @Suppress("SENSELESS_COMPARISON")
+        if (serializationService == null) {
+            log.info("CORE-16346 WrappedUtxoWireTransaction.init (${this.hashCode()}) isNull?: NULL")
+        } else {
+            log.info("CORE-16346 WrappedUtxoWireTransaction.init (${this.hashCode()}) isNull?: Not NULL")
+        }
     }
 
     val id: SecureHash get() = wireTransaction.id
@@ -88,9 +94,9 @@ class WrappedUtxoWireTransaction(
         ) { index ->
             @Suppress("SENSELESS_COMPARISON")
             if (serializationService == null) {
-                log.info("CORE-16346 WrappedUtxoWireTransaction.outputStateAndRefs isNull?: NULL")
+                log.info("CORE-16346 WrappedUtxoWireTransaction.init (${this.hashCode()}) isNull?: NULL")
             } else {
-                log.info("CORE-16346 WrappedUtxoWireTransaction.outputStateAndRefs isNull?: Not NULL")
+                log.info("CORE-16346 WrappedUtxoWireTransaction.init (${this.hashCode()}) isNull?: Not NULL")
             }
             log.info("CORE-16346 WrappedUtxoWireTransaction.outputStateAndRefs serialization service: ${serializationService.javaClass}")
             UtxoTransactionOutputDto(
