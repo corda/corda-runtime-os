@@ -22,7 +22,7 @@ class WrappedUtxoWireTransaction(
 ) {
 
     init{
-        log.warn("WrappedUtxoWireTransaction init", Exception("WrappedUtxoWireTransaction init"));
+        log.warn("WrappedUtxoWireTransaction init (${this.hashCode()})", Exception("WrappedUtxoWireTransaction init"));
     }
     companion object {
         const val notaryNameIndex: Int = 0
@@ -39,11 +39,7 @@ class WrappedUtxoWireTransaction(
             "The length of the outputs and output infos component groups needs to be the same."
         }
         @Suppress("SENSELESS_COMPARISON")
-        if (serializationService == null) {
-            log.info("CORE-16346 WrappedUtxoWireTransaction.init (${this.hashCode()}) isNull?: NULL")
-        } else {
-            log.info("CORE-16346 WrappedUtxoWireTransaction.init (${this.hashCode()}) isNull?: Not NULL")
-        }
+        log.info("CORE-16346 WrappedUtxoWireTransaction.init (${this.hashCode()}) isNull?: ${serializationService == null}")
     }
 
     val id: SecureHash get() = wireTransaction.id
@@ -93,12 +89,7 @@ class WrappedUtxoWireTransaction(
                 .getComponentGroupList(UtxoComponentGroup.OUTPUTS.ordinal).size
         ) { index ->
             @Suppress("SENSELESS_COMPARISON")
-            if (serializationService == null) {
-                log.info("CORE-16346 WrappedUtxoWireTransaction.init (${this.hashCode()}) isNull?: NULL")
-            } else {
-                log.info("CORE-16346 WrappedUtxoWireTransaction.init (${this.hashCode()}) isNull?: Not NULL")
-            }
-            log.info("CORE-16346 WrappedUtxoWireTransaction.outputStateAndRefs serialization service: ${serializationService.javaClass}")
+            log.info("CORE-16346 WrappedUtxoWireTransaction.init (${this.hashCode()}) isNull?: ${serializationService == null}")
             UtxoTransactionOutputDto(
                 id.toString(), index,
                 wireTransaction
