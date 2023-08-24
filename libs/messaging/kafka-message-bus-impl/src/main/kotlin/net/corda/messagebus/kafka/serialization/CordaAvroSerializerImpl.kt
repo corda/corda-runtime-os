@@ -43,7 +43,7 @@ class CordaAvroSerializerImpl<T : Any>(
                 }
             }
         } catch (ex: Throwable) {
-            val message = "Failed to serialize instance of class type ${data!!::class.java.name} containing $data"
+            val message = "Failed to serialize instance of class type ${data?.javaClass?.name}"
 
             onError?.invoke(message.toByteArray())
             log.error(message, ex)
