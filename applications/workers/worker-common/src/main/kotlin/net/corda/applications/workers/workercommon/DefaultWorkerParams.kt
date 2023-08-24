@@ -39,7 +39,7 @@ class DefaultWorkerParams(healthPortOverride: Int = WORKER_MONITOR_PORT) {
 
     @Option(
         names = ["-p", "--worker-monitor-port"],
-        description = ["The port the worker monitor should listen on. Defaults to $WORKER_MONITOR_PORT."]
+        description = ["The port the worker monitor should start on. Defaults to $WORKER_MONITOR_PORT."]
     )
     var workerMonitorPort = healthPortOverride
 

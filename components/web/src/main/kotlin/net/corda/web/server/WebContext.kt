@@ -1,4 +1,4 @@
-package net.corda.applications.workers.workercommon.web
+package net.corda.web.server
 
 interface WebContext {
     fun status(status: Int)

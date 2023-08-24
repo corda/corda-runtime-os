@@ -6,8 +6,6 @@ import net.corda.application.banner.StartupBanner
 import net.corda.applications.workers.db.DBWorker
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.WorkerMonitor
-import net.corda.applications.workers.workercommon.web.WorkerWebServer
-import net.corda.applications.workers.workercommon.web.WebContext
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
@@ -29,6 +27,9 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.osgi.framework.Bundle
 import java.io.InputStream
+import net.corda.web.server.HTTPMethod
+import net.corda.web.server.WebContext
+import net.corda.web.server.WebServer
 
 /**
  * Tests handling of command-line arguments for the [DBWorker].
@@ -54,7 +55,7 @@ class ConfigTests {
             mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
-            DummyWorkerWebServer(),
+            DummyWebServer(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
             applicationBanner,
@@ -98,7 +99,7 @@ class ConfigTests {
             mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
-            DummyWorkerWebServer(),
+            DummyWebServer(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
             applicationBanner,
@@ -132,7 +133,7 @@ class ConfigTests {
             mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
-            DummyWorkerWebServer(),
+            DummyWebServer(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
             applicationBanner,
@@ -164,7 +165,7 @@ class ConfigTests {
             mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
-            DummyWorkerWebServer(),
+            DummyWebServer(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
             applicationBanner,
@@ -190,7 +191,7 @@ class ConfigTests {
             mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
-            DummyWorkerWebServer(),
+            DummyWebServer(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
             applicationBanner,
@@ -228,18 +229,13 @@ class ConfigTests {
         override fun registerEndpoints(workerType: String) = Unit
     }
 
-    private class DummyWorkerWebServer : WorkerWebServer {
+    private class DummyWebServer : WebServer {
         override fun stop() = throw NotImplementedError()
-        override fun get(endpoint: String, handle: (WebContext) -> WebContext) {
+        override fun registerHandler(methodType: HTTPMethod, endpoint: String, handle: (WebContext) -> WebContext) {
             TODO("Not yet implemented")
         }
-
-        override fun post(endpoint: String, handle: (WebContext) -> WebContext) {
-            TODO("Not yet implemented")
-        }
-
         override val port = 7000
-        override fun listen(port: Int) = Unit
+        override fun start(port: Int) = Unit
     }
 
     private class DummyValidatorFactory : ConfigurationValidatorFactory {

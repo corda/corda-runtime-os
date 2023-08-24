@@ -1,4 +1,4 @@
-package net.corda.applications.workers.workercommon.web
+package net.corda.web.server
 
 import io.javalin.http.Context
 import java.io.InputStream

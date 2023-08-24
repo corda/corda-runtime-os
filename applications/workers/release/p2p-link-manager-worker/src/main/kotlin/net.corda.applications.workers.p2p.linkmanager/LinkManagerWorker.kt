@@ -6,7 +6,6 @@ import net.corda.applications.workers.workercommon.WorkerHelpers
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupWebserver
 import net.corda.applications.workers.workercommon.WorkerMonitor
-import net.corda.applications.workers.workercommon.web.WorkerWebServer
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
@@ -15,6 +14,7 @@ import net.corda.osgi.api.Shutdown
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
+import net.corda.web.server.WebServer
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -30,8 +30,8 @@ class LinkManagerWorker @Activate constructor(
     private val linkManagerProcessor: LinkManagerProcessor,
     @Reference(service = WorkerMonitor::class)
     private val workerMonitor: WorkerMonitor,
-    @Reference(service = WorkerWebServer::class)
-    private val webServer: WorkerWebServer,
+    @Reference(service = WebServer::class)
+    private val webServer: WebServer,
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = PlatformInfoProvider::class)

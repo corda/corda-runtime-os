@@ -1,29 +1,31 @@
-package net.corda.applications.workers.workercommon.internal
+package net.corda.web.rpc
 
 import java.net.URL
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import net.corda.applications.workers.workercommon.web.JavalinServer
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.web.server.JavalinServer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 
-class RPCSubscriptionImplTest {
+class HttpRPCSubscriptionImplTest {
 
-    private val webServer = JavalinServer()
+    private val webServer = JavalinServer(mock(LifecycleCoordinatorFactory::class.java))
     private val TEST_ENDPOINT = "/test"
     private val TEST_PORT = 7777
     private val INPUT = "Request String"
 
-    private lateinit var rpcSubscription: RPCSubscriptionImpl
+    private lateinit var rpcSubscription: HttpRPCSubscriptionImpl
 
     private val serializer: CordaAvroSerializer<String> = object : CordaAvroSerializer<String> {
         override fun serialize(data: String): ByteArray? {
@@ -43,8 +45,8 @@ class RPCSubscriptionImplTest {
 
     @BeforeEach
     fun setup() {
-        webServer.listen(TEST_PORT)
-        rpcSubscription = RPCSubscriptionImpl(cordaAvroSerializationFactory, webServer)
+        webServer.start(TEST_PORT)
+        rpcSubscription = HttpRPCSubscriptionImpl(cordaAvroSerializationFactory, webServer)
     }
 
     @AfterEach

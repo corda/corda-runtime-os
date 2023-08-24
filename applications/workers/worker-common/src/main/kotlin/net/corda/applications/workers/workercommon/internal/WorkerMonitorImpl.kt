@@ -21,8 +21,8 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
-import net.corda.applications.workers.workercommon.web.JavalinServer
-import net.corda.applications.workers.workercommon.web.WorkerWebServer
+import net.corda.web.server.HTTPMethod
+import net.corda.web.server.WebServer
 
 /**
  * An implementation of [WorkerMonitor].
@@ -34,8 +34,8 @@ import net.corda.applications.workers.workercommon.web.WorkerWebServer
 internal class WorkerMonitorImpl @Activate constructor(
     @Reference(service = LifecycleRegistry::class)
     private val lifecycleRegistry: LifecycleRegistry,
-    @Reference(service = JavalinServer::class)
-    private val webServer: WorkerWebServer
+    @Reference(service = WebServer::class)
+    private val webServer: WebServer
 ) : WorkerMonitor {
     private val logger = LoggerFactory.getLogger(this::class.java)
 
@@ -60,7 +60,7 @@ internal class WorkerMonitorImpl @Activate constructor(
 
     override fun registerEndpoints(workerType: String) {
         setupMetrics(workerType)
-        webServer.get(HTTP_HEALTH_ROUTE) { context ->
+        webServer.registerHandler(HTTPMethod.GET, HTTP_HEALTH_ROUTE) { context ->
             val unhealthyComponents = componentWithStatus(setOf(LifecycleStatus.ERROR))
             val status = if (unhealthyComponents.isEmpty()) {
                 clearLastLogMessageForRoute(HTTP_HEALTH_ROUTE)
@@ -76,7 +76,7 @@ internal class WorkerMonitorImpl @Activate constructor(
             context.header(Header.CACHE_CONTROL, NO_CACHE)
             context
         }
-        webServer.get(HTTP_STATUS_ROUTE) { context ->
+        webServer.registerHandler(HTTPMethod.GET, HTTP_STATUS_ROUTE) { context ->
             val notReadyComponents = componentWithStatus(setOf(LifecycleStatus.DOWN, LifecycleStatus.ERROR))
             val status = if (notReadyComponents.isEmpty()) {
                 clearLastLogMessageForRoute(HTTP_STATUS_ROUTE)
@@ -93,7 +93,7 @@ internal class WorkerMonitorImpl @Activate constructor(
             context.header(Header.CACHE_CONTROL, NO_CACHE)
             context
         }
-        webServer.get(HTTP_METRICS_ROUTE) { context ->
+        webServer.registerHandler(HTTPMethod.GET, HTTP_METRICS_ROUTE) { context ->
             context.result(prometheusRegistry.scrape())
             context.header(Header.CACHE_CONTROL, NO_CACHE)
             context

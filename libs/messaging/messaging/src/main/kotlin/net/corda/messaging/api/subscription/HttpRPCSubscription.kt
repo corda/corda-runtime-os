@@ -1,5 +1,5 @@
-package net.corda.applications.workers.workercommon
+package net.corda.messaging.api.subscription
 
-interface RPCSubscription {
+interface HttpRPCSubscription {
     fun <REQ: Any, RESP: Any> registerEndpoint(endpoint: String, handler: (REQ) -> RESP, clazz: Class<REQ>)
 }

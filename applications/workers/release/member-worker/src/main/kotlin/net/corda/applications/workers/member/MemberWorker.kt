@@ -9,7 +9,6 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.print
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupWebserver
 import net.corda.applications.workers.workercommon.WorkerMonitor
-import net.corda.applications.workers.workercommon.web.WorkerWebServer
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
@@ -18,6 +17,7 @@ import net.corda.osgi.api.Shutdown
 import net.corda.processors.member.MemberProcessor
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
+import net.corda.web.server.WebServer
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -34,8 +34,8 @@ class MemberWorker @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = WorkerMonitor::class)
     private val workerMonitor: WorkerMonitor,
-    @Reference(service = WorkerWebServer::class)
-    private val webServer: WorkerWebServer,
+    @Reference(service = WebServer::class)
+    private val webServer: WebServer,
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = PlatformInfoProvider::class)
@@ -61,8 +61,6 @@ class MemberWorker @Activate constructor(
         setupWebserver(webServer, params.defaultParams)
         if (printHelpOrVersion(params.defaultParams, MemberWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
-
-        //rpc setup
 
         configureTracing("Member Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
 

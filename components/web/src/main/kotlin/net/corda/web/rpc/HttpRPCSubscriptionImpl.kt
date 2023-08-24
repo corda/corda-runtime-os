@@ -1,9 +1,9 @@
-package net.corda.applications.workers.workercommon.internal
+package net.corda.web.rpc
 
-import net.corda.applications.workers.workercommon.RPCSubscription
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.applications.workers.workercommon.web.JavalinServer
-import net.corda.applications.workers.workercommon.web.WorkerWebServer
+import net.corda.messaging.api.subscription.HttpRPCSubscription
+import net.corda.web.server.HTTPMethod
+import net.corda.web.server.WebServer
 import org.eclipse.jetty.http.HttpStatus
 import org.slf4j.LoggerFactory
 import org.osgi.service.component.annotations.Activate
@@ -12,18 +12,18 @@ import org.osgi.service.component.annotations.Reference
 
 
 /**
- * An implementation of the RPCSubscription interface.
+ * An implementation of the HttpRPCSubscription interface.
  *
  * @param cordaAvroSerializationFactory The CordaAvroSerializationFactory service used for Avro serialization and deserialization.
  * @param javalinServer The JavalinServer service used for server operations. This must be previously initialized and started
  */
-@Component(service = [RPCSubscription::class])
-class RPCSubscriptionImpl @Activate constructor(
+@Component(service = [HttpRPCSubscription::class])
+class HttpRPCSubscriptionImpl @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    @Reference(service = JavalinServer::class)
-    private val javalinServer: WorkerWebServer
-) : RPCSubscription {
+    @Reference(service = WebServer::class)
+    private val javalinServer: WebServer
+) : HttpRPCSubscription {
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -47,7 +47,7 @@ class RPCSubscriptionImpl @Activate constructor(
             log.error("Failed to serialize payload for response")
         }
 
-        server.post(endpoint) { context ->
+        server.registerHandler(HTTPMethod.POST, endpoint) { context ->
 
             val payload = avroDeserializer.deserialize(context.bodyAsBytes())
 
@@ -55,18 +55,18 @@ class RPCSubscriptionImpl @Activate constructor(
                 val serializedResponse = avroSerializer.serialize(handler(payload))
                 if (serializedResponse != null) {
                     context.result(serializedResponse)
-                    return@post context
+                    return@registerHandler context
                 } else {
                     log.error("Response Payload was Null")
                     context.result("Response Payload was Null")
                     context.status(HttpStatus.UNPROCESSABLE_ENTITY_422)
-                    return@post context
+                    return@registerHandler context
                 }
             } else {
                 log.error("Request Payload was Null")
                 context.result("Request Payload was Null")
                 context.status(HttpStatus.UNPROCESSABLE_ENTITY_422)
-                return@post context
+                return@registerHandler context
             }
         }
     }

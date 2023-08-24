@@ -172,7 +172,7 @@ fun E2eCluster.createVirtualNode(
                     requestId = response.responseBody.requestId
 
                 } catch (e: RequestErrorException) {
-                    // It's possible that we get a 400 bad request if there is some lag between the CPI getting created
+                    // It's possible that we registerHandler a 400 bad request if there is some lag between the CPI getting created
                     // and the CPI making it to the cache used to lookup CPIs in the REST worker.
                     // Therefore, we treat this error as transient. Adding this hack is a short term fix until these
                     // e2e tests are moved to the e2e test suite.
@@ -291,7 +291,7 @@ fun E2eCluster.register(
                     val registrationStatus = proxy.checkSpecificRegistrationProgress(member.holdingId, registrationId)
                     assertThat(registrationStatus.registrationStatus)
                         .withFailMessage {
-                            "${member.name} failed to get to approved registration state. " +
+                            "${member.name} failed to registerHandler to approved registration state. " +
                                 "Last state was ${registrationStatus.registrationStatus}. " +
                                 "Registration ID was $registrationId"
                         }

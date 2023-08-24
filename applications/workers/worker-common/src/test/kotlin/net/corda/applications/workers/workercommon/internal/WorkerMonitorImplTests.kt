@@ -9,18 +9,21 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.net.HttpURLConnection
 import java.net.URL
-import net.corda.applications.workers.workercommon.web.JavalinServer
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.web.server.JavalinServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.mockito.Mockito.mock
 
 /** Tests of [WorkerMonitorImpl]. */
 class WorkerMonitorImplTests {
 
-    private val webServer = JavalinServer()
+    private val webServer = JavalinServer(mock(LifecycleCoordinatorFactory::class.java))
+    private val port = 7000
 
     @BeforeEach
     fun setupServer() {
-        webServer.listen(7000)
+        webServer.start(port)
     }
 
     @AfterEach
@@ -30,7 +33,7 @@ class WorkerMonitorImplTests {
     @Test
     fun `worker is considered healthy and ready if there are no components in the lifecycle registry`() {
         startHealthMonitor(emptyMap())
-        val (healthyCode, readyCode) = getHealthAndReadinessCodes(webServer.port)
+        val (healthyCode, readyCode) = getHealthAndReadinessCodes(port)
 
         assertEquals(HTTP_OK_CODE, healthyCode)
         assertEquals(HTTP_OK_CODE, readyCode)
@@ -43,7 +46,7 @@ class WorkerMonitorImplTests {
             createComponentStatus(LifecycleStatus.DOWN)
         )
         startHealthMonitor(componentStatuses)
-        val (healthyCode, _) = getHealthAndReadinessCodes(webServer.port)
+        val (healthyCode, _) = getHealthAndReadinessCodes(port)
 
         assertEquals(HTTP_OK_CODE, healthyCode)
     }
@@ -56,7 +59,7 @@ class WorkerMonitorImplTests {
             createComponentStatus(LifecycleStatus.ERROR)
         )
         startHealthMonitor(componentStatuses)
-        val (healthyCode, _) = getHealthAndReadinessCodes(webServer.port)
+        val (healthyCode, _) = getHealthAndReadinessCodes(port)
 
         assertEquals(HTTP_SERVICE_UNAVAILABLE_CODE, healthyCode)
     }
@@ -67,7 +70,7 @@ class WorkerMonitorImplTests {
             createComponentStatus(LifecycleStatus.UP)
         )
         startHealthMonitor(componentStatuses)
-        val (_, readyCode) = getHealthAndReadinessCodes(webServer.port)
+        val (_, readyCode) = getHealthAndReadinessCodes(port)
 
         assertEquals(HTTP_OK_CODE, readyCode)
     }
@@ -79,7 +82,7 @@ class WorkerMonitorImplTests {
             createComponentStatus(LifecycleStatus.DOWN)
         )
         startHealthMonitor(componentStatuses)
-        val (_, readyCode) = getHealthAndReadinessCodes(webServer.port)
+        val (_, readyCode) = getHealthAndReadinessCodes(port)
 
         assertEquals(HTTP_SERVICE_UNAVAILABLE_CODE, readyCode)
     }
@@ -91,7 +94,7 @@ class WorkerMonitorImplTests {
             createComponentStatus(LifecycleStatus.ERROR)
         )
         startHealthMonitor(componentStatuses)
-        val (_, readyCode) = getHealthAndReadinessCodes(webServer.port)
+        val (_, readyCode) = getHealthAndReadinessCodes(port)
 
         assertEquals(HTTP_SERVICE_UNAVAILABLE_CODE, readyCode)
     }

@@ -23,6 +23,7 @@ dependencies {
     implementation project(':libs:platform-info')
     implementation project(':osgi-framework-api')
     implementation project(':libs:serialization:serialization-avro')
+    implementation project(':components:web')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'
