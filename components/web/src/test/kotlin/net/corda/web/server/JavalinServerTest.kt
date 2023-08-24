@@ -1,61 +1,75 @@
-//package net.corda.web.server
-//
-//
-//import io.javalin.Javalin
-//import net.corda.v5.base.exceptions.CordaRuntimeException
-//import org.junit.jupiter.api.AfterEach
-//import org.junit.jupiter.api.BeforeEach
-//import org.junit.jupiter.api.Test
-//import org.junit.jupiter.api.assertThrows
-//import org.mockito.Mockito
-//import org.mockito.kotlin.verify
-//
-//class JavalinServerTest {
-//
-//    private lateinit var javalinServer: JavalinServer
-//    private lateinit var javalinMock: Javalin
-//
-//    @BeforeEach
-//    fun setUp() {
-//        javalinMock = Mockito.mock(Javalin::class.java)
-//        javalinServer = Mockito.spy(JavalinServer())
-//
-//        val serverField = JavalinServer::class.java.getDeclaredField("server")
-//        serverField.isAccessible = true
-//        serverField.set(javalinServer, javalinMock)
-//    }
-//
-//    @AfterEach
-//    fun down() {
-//
-//    }
-//
-//    @Test
-//    fun `starting the server should call start on Javalin`() {
-//        javalinServer.start(8080)
-//        verify(javalinMock).start(8080)
-//    }
-//
-//    @Test
-//    fun `stopping the server should call stop on Javalin`() {
-//        javalinServer.stop()
-//        verify(javalinMock).stop()
-//    }
-//
-//    @Test
-//    fun `starting an already started server should throw exception`() {
-//        assertThrows<CordaRuntimeException> {
-//            javalinServer.start(8080)
-//        }
-//    }
+package net.corda.web.server
 
-//    @Test
-//    fun `registering a null or invalid handle should throw exception`() {
-//        val exception = assertThrows<CordaRuntimeException> {
-//            javalinServer.registerHandler(HTTPMethod.GET, "/endpoint", ())
-//        }
-//        assert(exception.message!!.contains("The Javalin webserver has not been initialized"))
-//    }
+import io.javalin.Javalin
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.v5.base.exceptions.CordaRuntimeException
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 
-    // ... you can continue adding more tests based on different scenarios
-//}
+class JavalinServerTest {
+
+    private val lifecycleCoordinator = org.mockito.kotlin.mock<LifecycleCoordinator>()
+    private val lifecycleCoordinatorFactory = org.mockito.kotlin.mock<LifecycleCoordinatorFactory> {
+        on { createCoordinator(any(), any()) }.doReturn(lifecycleCoordinator)
+    }
+
+    private lateinit var javalinServer: JavalinServer
+    private val javalinMock: Javalin = mock()
+    private val javalinFactory = mock<JavalinFactory> {
+        on { create() }.doReturn(javalinMock)
+    }
+
+    private val port = 8888
+
+    @BeforeEach
+    fun setup() {
+        javalinServer = JavalinServer(lifecycleCoordinatorFactory, javalinFactory)
+    }
+
+    @Test
+    fun `starting the server should call start on Javalin`() {
+        javalinServer.start(port)
+        verify(javalinMock).start(port)
+    }
+
+    @Test
+    fun `stopping the server should call stop on Javalin`() {
+        javalinServer.start(port)
+        javalinServer.stop()
+        verify(javalinMock).stop()
+    }
+
+    @Test
+    fun `starting an already started server should throw exception`() {
+        javalinServer.start(port)
+        assertThrows<CordaRuntimeException> {
+            javalinServer.start(port)
+        }
+    }
+
+    @Test
+    fun `registering an endpoint with improper endpoint string throws`() {
+        javalinServer.start(port)
+        assertThrows<CordaRuntimeException> {
+            javalinServer.registerHandler(HTTPMethod.GET, "") { c -> c }
+        }
+        assertThrows<CordaRuntimeException> {
+            javalinServer.registerHandler(HTTPMethod.GET, "noslash") { c -> c }
+        }
+        assertThrows<CordaRuntimeException> {
+            javalinServer.registerHandler(HTTPMethod.GET, "not a url") { c -> c }
+        }
+        assertDoesNotThrow {
+            javalinServer.registerHandler(HTTPMethod.GET, "/url") { c -> c }
+        }
+    }
+
+
+}

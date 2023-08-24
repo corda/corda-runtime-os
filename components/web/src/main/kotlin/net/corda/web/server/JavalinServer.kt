@@ -1,6 +1,8 @@
 package net.corda.web.server
 
 import io.javalin.Javalin
+import java.net.MalformedURLException
+import java.net.URL
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
@@ -16,10 +18,13 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 
+
 @Component(service = [WebServer::class])
 class JavalinServer @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = JavalinFactory::class)
+    private val javalinFactory: JavalinFactory
 ): WebServer {
 
     private companion object {
@@ -39,7 +44,7 @@ class JavalinServer @Activate constructor(
 
         try {
             log.debug("Starting Worker Web Server on port: $port")
-            server = Javalin.create()
+            server = javalinFactory.create()
             startServer(port)
         } catch (ex: Exception) {
             throw CordaRuntimeException("Webserver already active on that port")
@@ -73,6 +78,7 @@ class JavalinServer @Activate constructor(
     }
 
     override fun registerHandler(methodType: HTTPMethod, endpoint: String, handle: (WebContext) -> WebContext) {
+        validateEndpoint(endpoint)
         throwIfNull()
         when (methodType) {
             HTTPMethod.GET -> server?.get(endpoint) { handle(JavalinContext(it)) }
@@ -85,6 +91,22 @@ class JavalinServer @Activate constructor(
     private fun throwIfNull() {
         if (server == null) {
             throw CordaRuntimeException("The Javalin webserver has not been initialized")
+        }
+    }
+
+    private fun validateEndpoint(endpoint: String){
+        if(endpoint.isBlank() || endpoint.isEmpty()) throw CordaRuntimeException("Endpoint must not be null or empty")
+        if(!endpoint.startsWith("/")) throw CordaRuntimeException("Endpoint $endpoint must start with '/'")
+        if(!isValidEndpoint(endpoint)) throw CordaRuntimeException("Endpoint $endpoint is not validly formed")
+    }
+
+    fun isValidEndpoint(endpoint: String): Boolean {
+        return try {
+            // it will check only for scheme and not null input
+            URL("http://test$endpoint")
+            true
+        } catch (e: MalformedURLException) {
+            false
         }
     }
 }

@@ -11,6 +11,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.web.server.JavalinFactory
 import net.corda.web.server.JavalinServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -25,7 +26,7 @@ class WorkerMonitorImplTests {
         on { createCoordinator(any(), any()) }.doReturn(lifecycleCoordinator)
     }
 
-    private val webServer = JavalinServer(lifecycleCoordinatorFactory)
+    private val webServer = JavalinServer(lifecycleCoordinatorFactory, JavalinFactory())
     private val port = 8989
 
     @BeforeEach

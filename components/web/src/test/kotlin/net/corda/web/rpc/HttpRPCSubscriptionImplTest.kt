@@ -9,8 +9,8 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.messaging.api.WebContext
 import net.corda.messaging.api.processor.HttpRPCProcessor
+import net.corda.web.server.JavalinFactory
 import net.corda.web.server.JavalinServer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.AfterEach
@@ -28,7 +28,7 @@ class HttpRPCSubscriptionImplTest {
         on { createCoordinator(any(), any()) }.doReturn(lifecycleCoordinator)
     }
 
-    private val webServer = JavalinServer(lifecycleCoordinatorFactory)
+    private val webServer = JavalinServer(lifecycleCoordinatorFactory, JavalinFactory())
     private val TEST_ENDPOINT = "/test"
     private val TEST_PORT = 7777
     private val INPUT = "Request String"
@@ -65,7 +65,7 @@ class HttpRPCSubscriptionImplTest {
     @Test
     fun `registerEndpoint should register endpoint and handle request`() {
         val sampleHandler = object : HttpRPCProcessor<String, String> {
-            override fun handle(request: String, context: WebContext): String {
+            override fun handle(request: String): String {
                 return "input: '$request', has been handled"
             }
 

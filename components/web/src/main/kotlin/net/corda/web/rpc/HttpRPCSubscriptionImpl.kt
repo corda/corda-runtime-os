@@ -53,7 +53,7 @@ class HttpRPCSubscriptionImpl @Activate constructor(
             val payload = avroDeserializer.deserialize(context.bodyAsBytes())
 
             if (payload != null) {
-                val serializedResponse = avroSerializer.serialize(handler.handle(payload, context))
+                val serializedResponse = avroSerializer.serialize(handler.handle(payload))
                 if (serializedResponse != null) {
                     context.result(serializedResponse)
                     return@registerHandler context
