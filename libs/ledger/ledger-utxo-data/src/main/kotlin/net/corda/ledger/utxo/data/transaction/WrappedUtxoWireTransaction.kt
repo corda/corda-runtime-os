@@ -86,6 +86,12 @@ class WrappedUtxoWireTransaction(
             wireTransaction
                 .getComponentGroupList(UtxoComponentGroup.OUTPUTS.ordinal).size
         ) { index ->
+            @Suppress("SENSELESS_COMPARISON")
+            if (serializationService == null) {
+                log.info("CORE-16346 WrappedUtxoWireTransaction.outputStateAndRefs isNull?: NULL")
+            } else {
+                log.info("CORE-16346 WrappedUtxoWireTransaction.outputStateAndRefs isNull?: Not NULL")
+            }
             log.info("CORE-16346 WrappedUtxoWireTransaction.outputStateAndRefs serialization service: ${serializationService.javaClass}")
             UtxoTransactionOutputDto(
                 id.toString(), index,
