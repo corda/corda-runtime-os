@@ -23,6 +23,9 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-application"
 
+    implementation("io.zipkin.brave:brave-context-slf4j:$braveVersion")
+    implementation("io.zipkin.brave:brave-instrumentation-servlet:$braveVersion")
+
     implementation project(":libs:rest:rest-server")
     implementation "net.corda:corda-crypto"
     implementation "io.javalin:javalin-osgi:$javalinVersion"
