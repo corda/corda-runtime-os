@@ -123,6 +123,7 @@ publishing {
     publications {
         maven(MavenPublication) {
             artifactId 'corda-combined-worker'
+
             groupId project.group
             pom {
                 name = 'corda-combined-worker'
@@ -148,6 +149,15 @@ publishing {
                         email = 'dev@corda.net'
                     }
                 }
+            }
+        }
+
+        if (project.hasProperty('busImpl')) {
+            kafkaCombinedWorker(MavenPublication) {
+                artifactId 'corda-combined-worker-kafka'
+                artifact appJar
+                groupId project.group
+                version project.version
             }
         }
     }
