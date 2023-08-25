@@ -56,8 +56,8 @@ class CloseSessionsRequestHandler @Activate constructor(
 
         val hasNoSessionsOrAllClosed = try {
 
-            closeSessionService.getSessionsForPostProcess(request, checkpoint)
-            closeSessionService.getSessionsToClose(request).isEmpty() || flowSessionManager.doAllSessionsHaveStatus(checkpoint, closeSessionService.getSessionsToClose(request), SessionStateType.CLOSED)
+            closeSessionService.getSessionsForPostProcess(getSessionsToClose(request), checkpoint)
+            getSessionsToClose(request).isEmpty() || flowSessionManager.doAllSessionsHaveStatus(checkpoint, getSessionsToClose(request), SessionStateType.CLOSED)
         } catch (e: FlowSessionStateException) {
             // TODO CORE-4850 Wakeup with error when session does not exist
             throw FlowFatalException(e.message, e)
