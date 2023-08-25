@@ -35,14 +35,11 @@ class StateManagerImpl(
             .associateBy { it.key }
     }
 
-    override fun <S : Any> put(clazz: Class<S>, states: Set<State<S>>): Map<String, State<S>> {
-        val deserializer = getOrCreateDeserializer(clazz)
+    override fun <S : Any> put(clazz: Class<S>, states: Set<State<S>>) {
         val dtos = states.map { it.toDto(getOrCreateSerializer(clazz)) }
-        return entityManagerFactory.transaction { em ->
+        entityManagerFactory.transaction { em ->
             stateManagerRepository.put(em, dtos)
         }
-            .map { it.toState(deserializer) }
-            .associateBy { it.key }
     }
 
     @Suppress("UNCHECKED_CAST")

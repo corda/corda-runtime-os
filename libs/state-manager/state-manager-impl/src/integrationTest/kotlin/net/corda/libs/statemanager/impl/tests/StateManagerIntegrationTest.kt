@@ -1,6 +1,7 @@
 package net.corda.libs.statemanager.impl.tests
 
 import java.time.Instant
+import java.util.UUID
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
@@ -11,7 +12,9 @@ import net.corda.libs.statemanager.impl.repository.impl.StateManagerRepositoryIm
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 
@@ -47,12 +50,11 @@ class StateManagerIntegrationTest {
 
     @Test
     fun `can persist state using state manager`() {
-
-        val jsonb = """
-            {"metadatakey": "metadatavalue"} 
-            """.trimIndent()
-        val stateDtoA = StateDto(
-            "a_key",
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+        val key = UUID.randomUUID().toString()
+        val jsonb = """{"metadatakey_$key": "metadatavalue_$key"}"""
+        val stateDto = StateDto(
+            key,
             "a".toByteArray(),
             1,
             jsonb,
@@ -60,7 +62,34 @@ class StateManagerIntegrationTest {
         )
 
         emf.createEntityManager().transaction { em ->
-            stateManagerRepository.put(em, listOf(stateDtoA))
+            stateManagerRepository.put(em, listOf(stateDto))
         }
+    }
+
+    @Test
+    fun `can persist and load the same state using state manager`() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+        val key = UUID.randomUUID().toString()
+        val jsonb = """{"metadatakey_$key": "metadatavalue_$key"}"""
+        val modifiedTime = Instant.now()
+        val stateDto = StateDto(
+            key,
+            "a".toByteArray(),
+            1,
+            jsonb,
+            modifiedTime,
+        )
+
+        emf.createEntityManager().transaction { em ->
+            stateManagerRepository.put(em, listOf(stateDto))
+        }
+
+        val retrievedState = emf.createEntityManager().transaction { em ->
+            stateManagerRepository.get(em, listOf(key))
+        }
+
+        assertThat(retrievedState).hasSize(1)
+        assertThat(retrievedState[0].key).isEqualTo(key)
+        assertThat(retrievedState[0].metadata).isEqualTo(jsonb)
     }
 }

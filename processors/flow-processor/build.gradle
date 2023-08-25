@@ -73,4 +73,5 @@ dependencies {
     runtimeOnly project(":libs:web:web-impl")
     runtimeOnly project(':libs:db:db-orm-impl')
     runtimeOnly project(":libs:state-manager:state-manager-impl")
+    runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
 }

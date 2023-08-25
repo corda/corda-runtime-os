@@ -25,7 +25,6 @@ interface StateManagerRepository {
      *
      * @param entityManager used to interact with the state manager persistence context.
      * @param states collection of states to be persisted.
-     * @return updated states successfully merged into the persistence context.
      */
-    fun put(entityManager: EntityManager, states: Collection<StateDto>): List<StateDto>
+    fun put(entityManager: EntityManager, states: Collection<StateDto>)
 }

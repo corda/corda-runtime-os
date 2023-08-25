@@ -4,7 +4,6 @@ import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
-import javax.persistence.Lob
 import javax.persistence.Table
 import javax.persistence.Version
 import net.corda.db.schema.DbSchema
@@ -16,8 +15,7 @@ internal class StateEntity(
     @Column(name = "key", length = 255)
     val key: String,
 
-    @Lob
-    @Column(name = "state")
+    @Column(name = "state", columnDefinition = "BLOB")
     val state: ByteArray?,
 
     @Version
