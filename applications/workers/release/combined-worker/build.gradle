@@ -157,7 +157,6 @@ publishing {
             maven(MavenPublication) {
                 artifactId 'corda-combined-worker'
                 groupId project.group
-
             }
         } else {
             kafkaCombinedWorker(MavenPublication) {
