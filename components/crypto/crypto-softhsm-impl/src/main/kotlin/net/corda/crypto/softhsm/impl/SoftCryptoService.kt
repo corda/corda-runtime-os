@@ -17,6 +17,7 @@ import net.corda.crypto.cipher.suite.getParamsSafely
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.DigitalSignatureWithKey
@@ -310,13 +311,20 @@ open class SoftCryptoService(
         logger.debug { "sign(tenant=$tenantId, publicKey=${record.data.id})" }
         val scheme = schemeMetadata.findKeyScheme(record.data.schemeCodeName)
         val spec =
-            SigningWrappedSpec(getKeySpec(record, publicKey, tenantId), record.publicKey, scheme, signatureSpec)
+            SigningWrappedSpec(getKeySpec(record, publicKey, tenantId), record.publicKey, scheme, signatureSpec, record.data.category)
         val signedBytes = sign(spec, data, context + mapOf(CRYPTO_TENANT_ID to tenantId))
         return DigitalSignatureWithKey(record.publicKey, signedBytes)
     }
 
     override fun sign(spec: SigningWrappedSpec, data: ByteArray, context: Map<String, String>): ByteArray {
         val startTime = System.nanoTime()
+        val category = context["category"]
+        require(category.isNullOrEmpty() || CryptoConsts.Categories.all.contains(category)) {
+            "Category value $category is not recognised"
+        }
+        require(category.isNullOrEmpty() || spec.category.equals(category)) {
+            "Provided category $category does not match the key's category ${spec.category}"
+        }
         require(data.isNotEmpty()) {
             "Signing of an empty array is not permitted."
         }

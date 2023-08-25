@@ -25,6 +25,7 @@ import net.corda.processors.flow.FlowProcessor
 import net.corda.processors.member.MemberProcessor
 import net.corda.processors.p2p.gateway.GatewayProcessor
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
+import net.corda.processors.persistence.PersistenceProcessor
 import net.corda.processors.rest.RestProcessor
 import net.corda.processors.token.cache.TokenCacheProcessor
 import net.corda.processors.uniqueness.UniquenessProcessor
@@ -55,6 +56,8 @@ class CombinedWorker @Activate constructor(
     private val cryptoProcessor: CryptoProcessor,
     @Reference(service = DBProcessor::class)
     private val dbProcessor: DBProcessor,
+    @Reference(service = PersistenceProcessor::class)
+    private val persistenceProcessor: PersistenceProcessor,
     @Reference(service = UniquenessProcessor::class)
     private val uniquenessProcessor: UniquenessProcessor,
     @Reference(service = TokenCacheProcessor::class)
@@ -168,6 +171,7 @@ class CombinedWorker @Activate constructor(
 
         cryptoProcessor.start(config)
         dbProcessor.start(config)
+        persistenceProcessor.start(config)
         uniquenessProcessor.start(config)
         tokenCacheProcessor.start(config)
         flowProcessor.start(config)
@@ -184,6 +188,7 @@ class CombinedWorker @Activate constructor(
         cryptoProcessor.stop()
         uniquenessProcessor.stop()
         tokenCacheProcessor.stop()
+        persistenceProcessor.stop()
         dbProcessor.stop()
         flowProcessor.stop()
         verificationProcessor.stop()

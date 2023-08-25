@@ -140,7 +140,11 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
         baseImageTag = cliBaseTag
     } else {
         String cliVersion = pluginHostVersion.replaceAll(/(.*\d)\D*$/, '$1') // drop suffix i.e beta-+
-        it.baseImageTag = (cordaCliIncluded) ? "latest-local-${cliVersion}" : "unstable-${cliVersion}"
+        if (['RC', 'GA'].contains(System.getenv('RELEASE_TYPE'))) {
+            it.baseImageTag = cliVersion
+        } else {
+            it.baseImageTag = (cordaCliIncluded) ? "latest-local-${cliVersion}" : "unstable-${cliVersion}"
+        }
     }
 
     if (project.hasProperty('useDockerDaemon')) {

@@ -1,3 +1,5 @@
-@Library('corda-shared-build-pipeline-steps@bm/CORE-16228') _
+@Library('corda-shared-build-pipeline-steps@CORE-15756/segregated-workers') _
+// TODO revert to 5.1 after branch above is merged to it
+// @Library('corda-shared-build-pipeline-steps@5.1') _
 
 cordaCompatibilityCheckPipeline(javaVersion: '17')
