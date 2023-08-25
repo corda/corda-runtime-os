@@ -1,14 +1,17 @@
 package net.corda.ledger.utxo.token.cache.impl.handlers
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.messaging.api.records.Record
+import net.corda.ledger.utxo.token.cache.entities.AvailTokenQueryResult
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.handlers.TokenClaimQueryEventHandler
+import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
+import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
+import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -19,9 +22,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.math.BigDecimal
-import net.corda.ledger.utxo.token.cache.entities.AvailTokenQueryResult
-import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY_DTO
-import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 
 class TokenClaimQueryEventHandlerTest {
 
@@ -62,13 +62,13 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService)
         val claimQuery = createClaimQuery(100)
         whenever(recordFactory.getFailedClaimResponse(any(), any(), any())).thenReturn(claimQueryResult)
-        whenever(availableTokenService.findAvailTokens(any(),any(), any()))
+        whenever(availableTokenService.findAvailTokens(any(), any(), any()))
             .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
 
         val result = target.handle(tokenCache, poolCacheState, claimQuery)
 
         assertThat(result).isSameAs(claimQueryResult)
-        verify(recordFactory).getFailedClaimResponse(flowId, claimId, POOL_CACHE_KEY_DTO)
+        verify(recordFactory).getFailedClaimResponse(flowId, claimId, POOL_KEY)
     }
 
     @Test
@@ -112,7 +112,7 @@ class TokenClaimQueryEventHandlerTest {
         val result = target.handle(tokenCache, poolCacheState, claimQuery)
 
         assertThat(result).isSameAs(claimQueryResult)
-        verify(recordFactory).getFailedClaimResponse(flowId, claimId, POOL_CACHE_KEY_DTO)
+        verify(recordFactory).getFailedClaimResponse(flowId, claimId, POOL_KEY)
     }
 
     @Test
@@ -120,14 +120,14 @@ class TokenClaimQueryEventHandlerTest {
         val target = TokenClaimQueryEventHandler(filterStrategy, recordFactory, availableTokenService)
         val claimQuery = createClaimQuery(100)
         whenever(recordFactory.getSuccessfulClaimResponse(any(), any(), any(), any())).thenReturn(claimQueryResult)
-        whenever(availableTokenService.findAvailTokens(any(),any(),any()))
+        whenever(availableTokenService.findAvailTokens(any(), any(), any()))
             .thenReturn(AvailTokenQueryResult(claimQuery.poolKey, emptySet()))
         cachedTokens += token100
 
         val result = target.handle(tokenCache, poolCacheState, claimQuery)
 
         assertThat(result).isSameAs(claimQueryResult)
-        verify(recordFactory).getSuccessfulClaimResponse(flowId, claimId, POOL_CACHE_KEY_DTO, listOf(token100))
+        verify(recordFactory).getSuccessfulClaimResponse(flowId, claimId, POOL_KEY, listOf(token100))
     }
 
     @Test
@@ -144,12 +144,7 @@ class TokenClaimQueryEventHandlerTest {
         val result = target.handle(tokenCache, poolCacheState, claimQuery)
 
         assertThat(result).isSameAs(claimQueryResult)
-        verify(recordFactory).getSuccessfulClaimResponse(
-            flowId,
-            claimId,
-            POOL_CACHE_KEY_DTO,
-            listOf(token99, token100)
-        )
+        verify(recordFactory).getSuccessfulClaimResponse(flowId, claimId, POOL_KEY, listOf(token99, token100))
     }
 
     @Test
@@ -168,7 +163,7 @@ class TokenClaimQueryEventHandlerTest {
         val result = target.handle(tokenCache, poolCacheState, claimQuery)
 
         assertThat(result).isSameAs(claimQueryResult)
-        verify(recordFactory).getFailedClaimResponse(flowId, claimId, POOL_CACHE_KEY_DTO)
+        verify(recordFactory).getFailedClaimResponse(flowId, claimId, POOL_KEY)
     }
 
     @Test
@@ -188,13 +183,13 @@ class TokenClaimQueryEventHandlerTest {
         assertThat(result).isSameAs(claimQueryResult)
         verify(recordFactory).getSuccessfulClaimResponse(
             flowId, claimId,
-            POOL_CACHE_KEY_DTO,
+            POOL_KEY,
             listOf(token99, token101)
         )
     }
 
     private fun createClaimQuery(targetAmount: Int): ClaimQuery {
-        return ClaimQuery(claimId, flowId, BigDecimal(targetAmount), "", "", POOL_CACHE_KEY_DTO)
+        return ClaimQuery(claimId, flowId, BigDecimal(targetAmount), "", "", POOL_KEY)
     }
 }
 
