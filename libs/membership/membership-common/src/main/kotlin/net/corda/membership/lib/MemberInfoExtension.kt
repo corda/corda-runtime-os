@@ -155,6 +155,16 @@ class MemberInfoExtension {
         const val INTEROP_SERVICE_NAME = "corda.interop.service.name"
 
         /**
+         * Interop identity corresponding real holding identity name
+         */
+        const val INTEROP_MAPPING_X500_NAME = "corda.interop.mapping.x500name"
+
+        /**
+         * Interop identity corresponding real holding identity group ID
+         */
+        const val INTEROP_MAPPING_GROUP = "corda.interop.mapping.group"
+
+        /**
          * Interop alias identity mapping
          */
         const val INTEROP_ALIAS_MAPPING = "corda.interop.alias.identity"

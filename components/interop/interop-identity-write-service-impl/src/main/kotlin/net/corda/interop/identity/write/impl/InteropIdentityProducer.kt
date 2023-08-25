@@ -1,6 +1,9 @@
 package net.corda.interop.identity.write.impl
 
-import net.corda.data.interop.InteropIdentity
+import net.corda.crypto.core.ShortHash
+import net.corda.data.interop.PersistentInteropIdentity
+import net.corda.interop.core.InteropIdentity
+import net.corda.interop.core.Utils.Companion.computeShortHash
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.INTEROP_IDENTITY_TOPIC
@@ -15,16 +18,32 @@ class InteropIdentityProducer(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    fun publishInteropIdentity(shortHash: String, identity: InteropIdentity) {
+    fun publishInteropIdentity(holdingIdentityShortHash: ShortHash, identity: InteropIdentity) {
         if (publisher.get() == null) {
             logger.error("Interop identity publisher is null, not publishing.")
             return
         }
 
-        // Key is a combination of holding identity short hash and interop group ID.
-        val key = "$shortHash:${identity.groupId}"
+        // Topic key is a combination of the holding and interop identity short hashes
+        val interopIdentityShortHash = computeShortHash(identity.x500Name, identity.groupId)
+        val key = "$holdingIdentityShortHash:$interopIdentityShortHash"
 
-        val futures = publisher.get()!!.publish(listOf(Record(INTEROP_IDENTITY_TOPIC, key, identity)))
+        val listOfFacades = mutableListOf<String>()
+            for (facade in identity.facadeIds) {
+                listOfFacades.add(facade.toString())
+            }
+
+        val recordValue = PersistentInteropIdentity(
+            identity.groupId,
+            identity.x500Name,
+            identity.owningVirtualNodeShortHash.value,
+            listOfFacades,
+            identity.applicationName,
+            identity.endpointUrl,
+            identity.endpointProtocol
+        )
+
+        val futures = publisher.get()!!.publish(listOf(Record(INTEROP_IDENTITY_TOPIC, key, recordValue)))
 
         futures.forEach { it.get() }
 

@@ -45,6 +45,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.stream.Stream
+import net.corda.interop.identity.registry.InteropIdentityRegistryService
 
 class FlowGlobalPostProcessorImplTest {
 
@@ -109,6 +110,7 @@ class FlowGlobalPostProcessorImplTest {
     private val externalEventManager = mock<ExternalEventManager>()
     private val flowRecordFactory = mock<FlowRecordFactory>()
     private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider>()
+    private val interopIdentityRegistryService = mock<InteropIdentityRegistryService>()
     private val membershipGroupReader = mock<MembershipGroupReader>()
     private val flowMessageFactory = mock<FlowMessageFactory>()
     private val checkpoint = mock<FlowCheckpoint>()
@@ -118,7 +120,8 @@ class FlowGlobalPostProcessorImplTest {
         sessionManager,
         flowMessageFactory,
         flowRecordFactory,
-        membershipGroupReaderProvider
+        membershipGroupReaderProvider,
+        interopIdentityRegistryService
     )
 
     @Suppress("Unused")

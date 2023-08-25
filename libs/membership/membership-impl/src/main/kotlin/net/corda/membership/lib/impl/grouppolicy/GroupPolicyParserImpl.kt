@@ -15,6 +15,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.lib.grouppolicy.InteropGroupPolicy
 import net.corda.membership.lib.grouppolicy.MemberGroupPolicy
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -55,6 +56,12 @@ class GroupPolicyParserImpl @Activate constructor(
     private val memberVersions = mapOf(
         1 to { root: JsonNode ->
             net.corda.membership.lib.impl.grouppolicy.v1.MemberGroupPolicyImpl(root)
+        }
+    )
+
+    private val interopMemberVersions = mapOf(
+        1 to { root: JsonNode ->
+            net.corda.membership.lib.impl.grouppolicy.v1.InteropGroupPolicyImpl(root)
         }
     )
 
@@ -114,6 +121,27 @@ class GroupPolicyParserImpl @Activate constructor(
         }
         val version = node.getFileFormatVersion()
         return memberVersions[version]?.invoke(node) ?: throw BadGroupPolicyException(
+            "No supported version of the group policy file available for version $version"
+        )
+    }
+
+    override fun parseInteropGroupPolicy(groupPolicy: String): InteropGroupPolicy {
+        val node = when {
+            groupPolicy.isBlank() -> {
+                logger.error(EMPTY_GROUP_POLICY)
+                throw BadGroupPolicyException(EMPTY_GROUP_POLICY)
+            }
+            else -> {
+                try {
+                    objectMapper.readTree(groupPolicy)
+                } catch (e: Exception) {
+                    logger.error("$FAILED_PARSING Caused by: ${e.message}")
+                    throw BadGroupPolicyException(FAILED_PARSING, e)
+                }
+            }
+        }
+        val version = node.getFileFormatVersion()
+        return interopMemberVersions[version]?.invoke(node) ?: throw BadGroupPolicyException(
             "No supported version of the group policy file available for version $version"
         )
     }

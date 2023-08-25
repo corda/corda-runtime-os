@@ -4,6 +4,6 @@ import net.corda.v5.base.annotations.CordaSerializable
 import java.math.BigDecimal
 @CordaSerializable
 data class Payment(
-    val interopGroupId : String,
+    val applicationName : String,
     val toReserve : BigDecimal
 )

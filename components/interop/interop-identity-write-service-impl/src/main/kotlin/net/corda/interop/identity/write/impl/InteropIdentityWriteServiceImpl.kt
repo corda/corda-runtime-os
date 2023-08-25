@@ -1,8 +1,11 @@
 package net.corda.interop.identity.write.impl
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.databind.node.TextNode
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.interop.InteropIdentity
 import net.corda.interop.identity.write.InteropIdentityWriteService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -24,6 +27,11 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
+import net.corda.crypto.core.ShortHash
+import net.corda.interop.core.InteropIdentity
+import net.corda.interop.identity.registry.InteropIdentityRegistryService
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import java.util.UUID
 
 
 @Suppress("ForbiddenComment")
@@ -34,11 +42,16 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = PublisherFactory::class)
-    private val publisherFactory: PublisherFactory
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = InteropIdentityRegistryService::class)
+    private val interopIdentityRegistryService: InteropIdentityRegistryService,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
 ) : InteropIdentityWriteService, LifecycleEventHandler {
     companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val CLIENT_ID = "INTEROP_IDENTITY_WRITER"
+        const val CREATE_ID = "CREATE_ID"
     }
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<InteropIdentityWriteService>()
@@ -48,24 +61,86 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
     private var configSubscription: AutoCloseable? = null
 
     private val publisher: AtomicReference<Publisher?> = AtomicReference()
+
     private val interopIdentityProducer = InteropIdentityProducer(publisher)
     private val hostedIdentityProducer = HostedIdentityProducer(publisher)
+    private val membershipInfoProducer = MembershipInfoProducer(publisher)
+    private val interopGroupPolicyProducer = InteropGroupPolicyProducer(publisher)
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
 
-    override fun addInteropIdentity(
-        holdingIdentityShortHash: String,
-        interopGroupId: String,
-        newIdentityName: String
-    ) {
-        val interopIdentity = InteropIdentity().apply {
-            x500Name = newIdentityName
-            groupId = interopGroupId
+    override fun addInteropIdentity(vNodeShortHash: ShortHash, identity: InteropIdentity) {
+        writeMemberInfoTopic(vNodeShortHash, identity)
+        writeInteropIdentityTopic(vNodeShortHash, identity)
+
+        if (vNodeShortHash == identity.owningVirtualNodeShortHash) {
+            writeHostedIdentitiesTopic(identity)
+        }
+    }
+
+    override fun publishGroupPolicy(groupId: String, groupPolicy: String): String {
+        val json = ObjectMapper().readTree(groupPolicy) as ObjectNode
+
+        require(json.hasNonNull("groupId")) {
+            "Invalid group policy, 'groupId' field is missing or null"
         }
 
-        interopIdentityProducer.publishInteropIdentity(holdingIdentityShortHash, interopIdentity)
-        hostedIdentityProducer.publishHostedInteropIdentity(interopIdentity)
+        require(json.get("groupId").isTextual) {
+            "Invalid group policy, 'groupId' field is not a text node."
+        }
+
+        val finalGroupId = when(val inputGroupId = json.get("groupId").asText()) {
+            "CREATE_ID" -> UUID.randomUUID()
+            else -> try {
+                UUID.fromString(inputGroupId)
+            } catch (e: Exception) {
+                throw IllegalArgumentException("Invalid group policy, 'groupId' field is not a valid UUID.")
+            }
+        }
+
+        json.set<TextNode>("groupId", JsonNodeFactory.instance.textNode(finalGroupId.toString()))
+        val finalGroupPolicy = json.toString()
+
+        interopGroupPolicyProducer.publishInteropGroupPolicy(finalGroupId.toString(), finalGroupPolicy)
+        
+        return finalGroupId.toString()
+    }
+
+    private fun writeMemberInfoTopic(vNodeShortHash: ShortHash, identity: InteropIdentity) {
+        val cacheView = interopIdentityRegistryService.getVirtualNodeRegistryView(vNodeShortHash)
+        val ownedInteropIdentities = cacheView.getOwnedIdentities()
+
+        // If the new interop identity will become the owned one use that. Otherwise, retrieve an existing one from the cache.
+        val ownedInteropIdentity = if (identity.owningVirtualNodeShortHash == vNodeShortHash) {
+            identity
+        } else if (ownedInteropIdentities[identity.groupId] != null) {
+            ownedInteropIdentities[identity.groupId]!!
+        } else {
+            throw IllegalStateException(
+                "The interop group ${identity.groupId} does not contain an interop identity for holding identity $vNodeShortHash.")
+        }
+
+        // This may be null when the owning virtual node is hosted on a different cluster
+        val realHoldingIdentity =
+            virtualNodeInfoReadService.getByHoldingIdentityShortHash(identity.owningVirtualNodeShortHash)?.holdingIdentity
+
+        // If the interop identity is owned by the virtual node, we need to ensure the real holding identity is known
+        if (identity.owningVirtualNodeShortHash == vNodeShortHash) {
+            checkNotNull(realHoldingIdentity) {
+                "Could not find real holding identity of virtual node '$vNodeShortHash'."
+            }
+        }
+
+        membershipInfoProducer.publishMemberInfo(realHoldingIdentity, ownedInteropIdentity, listOf(identity))
+    }
+
+    private fun writeInteropIdentityTopic(vNodeShortHash: ShortHash, identity: InteropIdentity) {
+        interopIdentityProducer.publishInteropIdentity(vNodeShortHash, identity)
+    }
+
+    private fun writeHostedIdentitiesTopic(identity: InteropIdentity) {
+        hostedIdentityProducer.publishHostedInteropIdentity(identity)
     }
 
     override fun start() {

@@ -7,19 +7,20 @@ import net.corda.flow.application.services.impl.interop.facade.FacadeResponseImp
 import net.corda.flow.application.services.impl.interop.proxies.JacksonJsonMarshallerAdaptor
 import net.corda.flow.application.services.impl.interop.proxies.getClientProxy
 import net.corda.sandbox.type.UsedByFlow
+import net.corda.v5.application.interop.FacadeService
+import net.corda.v5.application.interop.InterOpIdentityInfo
 import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
-import net.corda.v5.application.interop.FacadeService
+import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.messaging.FlowMessaging
+import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.messaging.FlowMessaging
-import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
@@ -36,17 +37,20 @@ class FacadeServiceImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    //TODO CORE-16382 Change input of facadeId from String to FacadeId Object.
     @Suspendable
-    override fun <T : Any?> getProxy(facadeId: String?, expectedType: Class<T>?, alias: MemberX500Name?, interopGroup: String?): T {
-        logger.info("Creating Proxy for: facadeId=$facadeId, expectedType=$expectedType, alias=$alias, " +
-                "interopGroup=$interopGroup") //TODO lower level to debug
-        require(facadeId != null)
-        require(alias != null)
-        require(interopGroup != null)
-        require(expectedType != null)
+    override fun <T : Any?> getProxy(facadeId: String?, expectedType: Class<T>?, interOpIdentity: InterOpIdentityInfo?): T {
+        logger.info("Creating Proxy for: facadeId=$facadeId," +
+                " expectedType=$expectedType, interOpIdentity=${interOpIdentity?.applicationName}, " +
+                "interopGroup=${interOpIdentity?.groupId}") //TODO lower level to debug
+        requireNotNull(facadeId) { "Required value for facadeId was null." }
+        requireNotNull(expectedType) { "Required value for expectedType was null." }
+        requireNotNull(interOpIdentity) { "Required value for interOpIdentity was null." }
         val facade = facadeLookup(facadeId)
+        val x500Name = MemberX500Name.parse(interOpIdentity.x500Name)
+        val groupId = interOpIdentity.groupId
         val marshaller = JacksonJsonMarshallerAdaptor(jsonMarshallingService)
-        val transportLayer = MessagingDispatcher(flowMessaging, jsonMarshallingService, alias, interopGroup)
+        val transportLayer = MessagingDispatcher(flowMessaging, jsonMarshallingService, x500Name , groupId)
         return facade.getClientProxy(marshaller, expectedType, transportLayer)
     }
 

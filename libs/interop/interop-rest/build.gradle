@@ -12,10 +12,16 @@ dependencies {
 
     api project(':libs:rest:rest')
 
+    implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:external-messaging")
     implementation project(":libs:rest:rest")
+    implementation project(":libs:utilities")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-avro-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+
+    testImplementation  project(':libs:rest:json-serialization')
 }

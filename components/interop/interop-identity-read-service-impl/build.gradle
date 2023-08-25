@@ -26,8 +26,8 @@ dependencies {
     implementation project(":components:interop:interop-identity-read-service")
     runtimeOnly project(":components:interop:interop-identity-read-service-impl")
 
-    implementation project(":components:interop:interop-identity-cache-service")
-    runtimeOnly project(":components:interop:interop-identity-cache-service-impl")
+    implementation project(":components:interop:interop-identity-registry-service")
+    runtimeOnly project(":components:interop:interop-identity-registry-service-impl")
 
     implementation project(":libs:configuration:configuration-core")
 

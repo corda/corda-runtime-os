@@ -59,24 +59,18 @@ allprojects {
         }
 
         tasks.withType(JavaCompile).configureEach {
-            options.release = javaVersionNumber
             options.encoding = 'UTF-8'
             options.compilerArgs += [ '-XDenableSunApiLintControl', '-parameters' ]
         }
 
         tasks.withType(Test).configureEach {
             useJUnitPlatform(){
-                if (project.hasProperty('runMultiClusterTests')) {
-                    includeTags 'MultiCluster'
-                } else if (project.hasProperty('runUnstableTests')) {
-                    includeTags 'runUnstableTests'
-                } else {
-                    excludeTags 'MultiCluster', 'Unstable'
-                }
+                excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
             }
 
             doFirst {
                 systemProperty 'java.io.tmpdir', buildDir.absolutePath
+                jvmArgs '--illegal-access=deny'
             }
         }
     }
@@ -90,7 +84,7 @@ allprojects {
             includeConfigs = ["runtimeClasspath"]
             skipProjects = [rootProject.name]
             destination = file("${buildDir}/reports/SBOM")
-            outputName = "${project.name}-corda-runtime-os-sbom"
+            outputName = "${project.name}-corda-runtime-os-sbom"   
         }
     }
 
@@ -150,10 +144,17 @@ allprojects {
         mavenLocal()
 
         maven {
-            url = "${publicArtifactURL}/corda-dependencies-dev"
+            url = "$artifactoryContextUrl/corda-dependencies-dev"
             content {
                 // For Quasar SNAPSHOT.
                 includeGroup 'co.paralleluniverse'
+            }
+            authentication {
+                basic(BasicAuthentication)
+            }
+            credentials {
+                username = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+                password = findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
             }
         }
         //needed for C5 binaries

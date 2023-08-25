@@ -1,16 +1,15 @@
 package com.r3.corda.testing.interop
 
+import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.interop.FacadeService
 import net.corda.v5.application.interop.InteropIdentityLookUp
+import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
-import java.lang.IllegalArgumentException
 
 @InitiatingFlow(protocol = "invoke_facade_method")
 class FacadeInvocationFlow : ClientStartableFlow {
@@ -36,23 +35,24 @@ class FacadeInvocationFlow : ClientStartableFlow {
         log.info("FacadeInvocationFlow.call() starting")
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
-        val interopGroupId = getArgument(args, "interopGroupId")
         val facadeId = getArgument(args, "facadeId")
         val methodName = getArgument(args, "methodName")
-        val alias = MemberX500Name.parse(getArgument(args,"alias"))
+        val applicationName = getArgument(args,"applicationName")
         val payload = getArgument(args, "payload")
-        val hostNetwork = getArgument(args, "hostNetwork")
 
-        val aliasMember = interopIdentityLookUp.lookup(hostNetwork) ?: throw NullPointerException("$hostNetwork no in LookUp")
-        log.info("AliasMemberInfo for $alias  : $aliasMember")
-
-        if(!aliasMember.facadeIds.contains(facadeId)) {
-            throw IllegalArgumentException("facade with facadeId : $facadeId is not supported by alias : $alias")
+        val interopIdentityInfo = checkNotNull(interopIdentityLookUp.lookup(applicationName)) {
+            "No interop identity with application name '$applicationName' was found."
         }
 
-        log.info("Calling facade method '$methodName@$facadeId' with payload '$payload' to $alias")
+        log.info("InteropIdentityInfo for $applicationName: $interopIdentityInfo")
 
-        val client : SampleTokensFacade = facadeService.getProxy(facadeId, SampleTokensFacade::class.java, alias, interopGroupId)
+        if (!interopIdentityInfo.facadeIds.contains(FacadeId.of(facadeId))) {
+            throw IllegalArgumentException("facade with facadeId : $facadeId is not supported by alias : $applicationName")
+        }
+
+        log.info("Calling facade method $methodName.$facadeId@$applicationName with payload '$payload'")
+
+        val client: SampleTokensFacade = facadeService.getProxy(facadeId, SampleTokensFacade::class.java, interopIdentityInfo)
         val response = client.getHello(payload)
 
         log.info("Facade responded with '$response'")

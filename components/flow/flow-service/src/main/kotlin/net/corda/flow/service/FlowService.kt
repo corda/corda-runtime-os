@@ -38,7 +38,7 @@ class FlowService @Activate constructor(
     @Reference(service = FlowWakeUpScheduler::class)
     private val flowWakeUpScheduler: FlowWakeUpScheduler,
     @Reference(service = ExternalMessagingRoutingService::class)
-    private val externalMessagingRoutingService: ExternalMessagingRoutingService,
+    private val externalMessagingRoutingService: ExternalMessagingRoutingService
     ) : Lifecycle {
 
     companion object {
@@ -61,7 +61,7 @@ class FlowService @Activate constructor(
                             LifecycleCoordinatorName.forComponent<SandboxGroupContextComponent>(),
                             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                             LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
-                            LifecycleCoordinatorName.forComponent<FlowExecutor>(),
+                            LifecycleCoordinatorName.forComponent<FlowExecutor>()
                         )
                     )
                 flowExecutor.start()

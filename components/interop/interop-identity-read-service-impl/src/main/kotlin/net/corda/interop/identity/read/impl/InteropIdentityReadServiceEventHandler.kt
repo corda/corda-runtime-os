@@ -41,7 +41,6 @@ class InteropIdentityReadServiceEventHandler(
     }
 
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
-        configurationReadService.start()
         registration?.close()
         registration = coordinator.followStatusChangesByName(setOf(
             LifecycleCoordinatorName.forComponent<ConfigurationReadService>()

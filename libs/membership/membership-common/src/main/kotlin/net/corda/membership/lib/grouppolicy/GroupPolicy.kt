@@ -12,6 +12,7 @@ import kotlin.jvm.Throws
 
 interface MGMGroupPolicy : GroupPolicy
 interface MemberGroupPolicy : GroupPolicy
+interface InteropGroupPolicy : GroupPolicy
 
 /**
  * Object representation of the group policy file which is packaged within a CPI and provides
@@ -36,26 +37,17 @@ interface GroupPolicy {
 
     /**
      * Fully qualified name of the registration protocol implementation required for the group.
-     *
-     * @throws [BadGroupPolicyException] if the data is unavailable or cannot be parsed.
      */
-    @get:Throws(BadGroupPolicyException::class)
     val registrationProtocol: String
 
     /**
      * Fully qualified name of the synchronisation protocol implementation required for the group.
-     *
-     * @throws [BadGroupPolicyException] if the data is unavailable or cannot be parsed.
      */
-    @get:Throws(BadGroupPolicyException::class)
     val synchronisationProtocol: String
 
     /**
      * Parameters required for the registration and synchronisation protocols.
-     *
-     * @throws [BadGroupPolicyException] if the data is unavailable or cannot be parsed.
      */
-    @get:Throws(BadGroupPolicyException::class)
     val protocolParameters: ProtocolParameters
 
     /**
@@ -88,10 +80,7 @@ interface GroupPolicy {
          * The policy for session key handling.
          * [SessionKeyPolicy.COMBINED] means the same key is used for session initiation and ledger signing.
          * [SessionKeyPolicy.DISTINCT] means separate keys are used for sessions and ledger signing.
-         *
-         * @throws [BadGroupPolicyException] if the data is unavailable or cannot be parsed.
          */
-        @get:Throws(BadGroupPolicyException::class)
         val sessionKeyPolicy: SessionKeyPolicy
 
         /**

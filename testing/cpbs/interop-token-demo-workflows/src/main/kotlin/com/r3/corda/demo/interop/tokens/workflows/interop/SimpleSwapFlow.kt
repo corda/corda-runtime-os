@@ -18,7 +18,6 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.interop.InterOpIdentityInfo
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
@@ -99,19 +98,21 @@ class SimpleSwapFlow : ClientStartableFlow {
                 signedTransaction,
                 listOf(session1)
             )
+
             val userResult = finalizationResult.transaction.id.toString().also {
                 log.info("Success! Response: $it")
             }
 
-            val payment = Payment(flowArgs.interopGroupId, BigDecimal(100))
-            val myInteropInfo : InterOpIdentityInfo? = interopIdentityLookUp.lookup(flowArgs.interopGroupId)
-            require(myInteropInfo != null) { "Cant find InteropInfo for ${flowArgs.interopGroupId}." }
-            val myAlias = MemberX500Name.parse(myInteropInfo.x500Name)
+            val payment = Payment(flowArgs.applicationName, BigDecimal(100))
+            val myInteropIdentityInfo = checkNotNull(interopIdentityLookUp.lookup(flowArgs.applicationName)) {
+                "Cant find InteropInfo for ${flowArgs.applicationName}."
+            }
+            val myInteropIdentityName = MemberX500Name.parse(myInteropIdentityInfo.x500Name)
 
             val facadeId = "org.corda.interop/platform/tokens/v3.0"
-            log.info("Interop call: $facadeId, $myAlias")
+            log.info("Interop call: $facadeId, $myInteropIdentityName")
             val tokens: TokensFacade =
-                facadeService.getProxy(facadeId, TokensFacade::class.java, myAlias, payment.interopGroupId)
+                facadeService.getProxy(facadeId, TokensFacade::class.java, myInteropIdentityInfo)
 
             val response= tokens.reserveTokensV3("USD", payment.toReserve, 1000L)
             log.info("Interop call returned: $response")

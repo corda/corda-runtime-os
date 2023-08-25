@@ -24,7 +24,6 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
-//import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -32,6 +31,7 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Executors
+import net.corda.interop.identity.registry.InteropIdentityRegistryService
 
 @Suppress("LongParameterList")
 @Component(service = [InteropService::class], immediate = true)
@@ -49,7 +49,9 @@ class InteropService @Activate constructor(
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = InteropFacadeToFlowMapperService::class)
-    private val facadeToFlowMapperService: InteropFacadeToFlowMapperService
+    private val facadeToFlowMapperService: InteropFacadeToFlowMapperService,
+    @Reference(service = InteropIdentityRegistryService::class)
+    private val interopIdentityRegistryService: InteropIdentityRegistryService
 ) : Lifecycle {
 
     companion object {
@@ -131,7 +133,11 @@ class InteropService @Activate constructor(
             subscriptionFactory.createStateAndEventSubscription(
                 SubscriptionConfig(CONSUMER_GROUP, FLOW_INTEROP_EVENT_TOPIC),
                 InteropProcessor(
-                    cordaAvroSerializationFactory, membershipGroupReaderProvider, facadeToFlowMapperService, flowConfig
+                    cordaAvroSerializationFactory,
+                    membershipGroupReaderProvider,
+                    facadeToFlowMapperService,
+                    interopIdentityRegistryService,
+                    flowConfig
                 ),
                 messagingConfig,
                 InteropListener(newScheduledTaskState)

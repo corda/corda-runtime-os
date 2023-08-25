@@ -3,6 +3,7 @@ package com.r3.corda.demo.interop.tokens.workflows.interop
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.interop.FacadeService
+import net.corda.v5.application.interop.InteropIdentityLookUp
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
@@ -17,13 +18,18 @@ class ReserveTokensSubFlowV2(private val alias: MemberX500Name, private val inte
     @CordaInject
     lateinit var facadeService: FacadeService
 
+    @CordaInject
+    lateinit var interopIdentityLookUp: InteropIdentityLookUp
+
     @Suspendable
     override fun call(): TokenReservation {
         log.info("${this::class.java.simpleName}.call() starting")
         log.info("Calling facade method '$facadeId' to $alias")
 
+        val identityInfo = interopIdentityLookUp.lookup(alias.organization)
+
         val client: TokensFacade =
-            facadeService.getProxy(facadeId, TokensFacade::class.java, alias, interopGroupId)
+            facadeService.getProxy(facadeId, TokensFacade::class.java, identityInfo)
 
         val response: TokenReservation = client.reserveTokensV2(denomination, amount, timeToLiveMs)
 

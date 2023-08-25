@@ -1,15 +1,16 @@
 package net.corda.interop.identity.write.impl
 
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.data.interop.InteropIdentity
+import java.util.concurrent.ExecutionException
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
+import net.corda.interop.core.Utils.Companion.computeShortHash
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
-import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
+import net.corda.data.identity.HoldingIdentity
+import net.corda.interop.core.InteropIdentity
 
 
 /**
@@ -30,24 +31,29 @@ class HostedIdentityProducer(private val publisher: AtomicReference<Publisher?>)
 
         val record = createHostedIdentityRecord(identity)
 
-        publisher.get()!!.publish(listOf(record))
+        val futures = publisher.get()!!.publish(listOf(record))
+
+        try {
+            futures.single().get()
+        } catch (e: ExecutionException) {
+            logger.error("Failed to publish interop identity to hosted identities topic.", e)
+        }
+
         logger.info("Interop hosted identity published with key : ${record.key} and value : ${record.value}")
     }
 
-    private fun createHostedIdentityRecord(identity: InteropIdentity): Record<String, HostedIdentityEntry> {
-
-        val interopHoldingIdentity = HoldingIdentity(MemberX500Name.parse(identity.x500Name), identity.groupId)
-        val shortHash = interopHoldingIdentity.shortHash.value
+    private fun createHostedIdentityRecord(interopIdentity: InteropIdentity): Record<String, HostedIdentityEntry> {
+        val interopIdentityShortHash = computeShortHash(interopIdentity.x500Name, interopIdentity.groupId)
 
         val hostedIdentity = HostedIdentityEntry(
-            net.corda.data.identity.HoldingIdentity(identity.x500Name, identity.groupId),
-            shortHash,
+            HoldingIdentity(interopIdentity.x500Name, interopIdentity.groupId),
+            interopIdentityShortHash.toString(),
             //TODO CORE-15168
             listOf(DUMMY_CERTIFICATE),
             HostedIdentitySessionKeyAndCert(DUMMY_PUBLIC_SESSION_KEY, null),
             emptyList()
         )
 
-        return Record(P2P_HOSTED_IDENTITIES_TOPIC, shortHash, hostedIdentity)
+        return Record(P2P_HOSTED_IDENTITIES_TOPIC, interopIdentityShortHash.toString(), hostedIdentity)
     }
 }

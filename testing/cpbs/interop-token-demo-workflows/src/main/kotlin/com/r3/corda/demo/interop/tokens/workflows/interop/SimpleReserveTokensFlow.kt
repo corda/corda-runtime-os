@@ -5,12 +5,15 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.interop.FacadeService
+import net.corda.v5.application.interop.InteropIdentityLookUp
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.util.*
+
+lateinit var interopIdentityLookUp: InteropIdentityLookUp
 
 @InitiatingFlow(protocol = "SimpleReserveTokensFlow-protocol")
 class SimpleReserveTokensFlow : ClientStartableFlow {
@@ -35,15 +38,16 @@ class SimpleReserveTokensFlow : ClientStartableFlow {
 
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
-        val interopGroupId = getArgument(args, "interopGroupId")
         val facadeId = getArgument(args, "facadeId")
         val alias = MemberX500Name.parse(getArgument(args, "alias"))
         val uuid = getArgument(args, "payload")
 
+        val identityInfo = interopIdentityLookUp.lookup(alias.organization)
+
         log.info("Calling facade method '$facadeId' with payload '$uuid' to $alias")
 
         val tokens: TokensFacade =
-            facadeService.getProxy(facadeId, TokensFacade::class.java, alias, interopGroupId)
+            facadeService.getProxy(facadeId, TokensFacade::class.java, identityInfo)
 
         val responseObject: UUID = tokens.reserveTokensV1("USD", BigDecimal(100))
         val response = responseObject.toString()

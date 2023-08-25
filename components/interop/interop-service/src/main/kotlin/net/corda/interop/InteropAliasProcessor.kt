@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
+//TODO remove as part of CORE-16388
 class InteropAliasProcessor(
     private val publisher: Publisher,
     private val aliases: MutableList<Pair<HoldingIdentity, HoldingIdentity>> = mutableListOf()
@@ -147,7 +148,11 @@ class InteropAliasProcessor(
         }
     }
 
+    @Suppress("UNREACHABLE_CODE", "UNUSED_PARAMETER")
     private fun addEntry(entry: HostedIdentityEntry) {
+        // Don't create old style aliases!
+        return
+
         val info = entry.holdingIdentity.toCorda()
         if (commonNameOrUnitStartsWith(info.x500Name, listOf("D", "E", "F"))) {
             logger.info("Skipped adding alias for=${info.x500Name}")
