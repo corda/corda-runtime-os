@@ -34,7 +34,8 @@ class GetInteropIdentity : ClientStartableFlow {
         try {
             val flowArgs = requestBody.getRequestBodyAs(jsonMarshallingService, GetInteropIdentityArgs::class.java)
             val interopIdentity =
-                checkNotNull(interopIdentityLookUp.lookup(flowArgs.applicationName)) { "Could not find Interop Identity for given name ${flowArgs.applicationName}" }
+                checkNotNull(interopIdentityLookUp.lookup(flowArgs.applicationName))
+                { "Could not find Interop Identity for given name ${flowArgs.applicationName}" }
 
             return interopIdentity.x500Name + "/" + interopIdentity.groupId
 
