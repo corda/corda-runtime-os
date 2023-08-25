@@ -15,6 +15,7 @@ import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.schema.configuration.DatabaseConfig
 import net.corda.schema.configuration.VirtualNodeDatasourceConfig
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbFactoryImpl
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
@@ -145,7 +146,10 @@ class VirtualNodeDbFactoryImplTest {
         // VNode DML min pool size needs to be 0, because VNodes connections can pile up and exhaust the DB
         verify(vaultDmlConfig).withValue(DatabaseConfig.DB_POOL_MIN_SIZE, ConfigValueFactory.fromAnyRef(0))
 
-        val uniquenessDmlConfig = dbs[VirtualNodeDbType.UNIQUENESS]?.dbConnections?.get(DbPrivilege.DML)?.config!!
-        verify(uniquenessDmlConfig, never()).withValue(eq(DatabaseConfig.JDBC_DRIVER), any())
+        val uniquenessDmlConfig = dbs[VirtualNodeDbType.UNIQUENESS]?.dbConnections?.get(DbPrivilege.DML)?.config
+        assertNull(uniquenessDmlConfig)
+
+        val uniquenessDdlConfig = dbs[VirtualNodeDbType.UNIQUENESS]?.dbConnections?.get(DbPrivilege.DDL)?.config
+        assertNull(uniquenessDdlConfig)
     }
 }
