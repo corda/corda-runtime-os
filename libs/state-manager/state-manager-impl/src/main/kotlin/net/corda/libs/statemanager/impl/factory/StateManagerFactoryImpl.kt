@@ -11,6 +11,7 @@ import net.corda.libs.statemanager.impl.model.v1_0.StateManagerEntities
 import net.corda.libs.statemanager.impl.repository.impl.StateManagerRepositoryImpl
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
+import net.corda.schema.configuration.StateManagerConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -25,9 +26,9 @@ class StateManagerFactoryImpl @Activate constructor(
 
     override fun create(config: SmartConfig): StateManager {
         val dataSource = PostgresDataSourceFactory().create(
-            jdbcUrl = config.getString("database.jdbc.url"),
-            username = config.getString("database.user"),
-            password = config.getString("database.pass"),
+            jdbcUrl = config.getString(StateManagerConfig.JDBC_URL),
+            username = config.getString(StateManagerConfig.DB_USER),
+            password = config.getString(StateManagerConfig.DB_PASS),
         )
         val entityManagerFactory = entityManagerFactoryFactory.create(
             CordaDb.StateManager.persistenceUnitName,
