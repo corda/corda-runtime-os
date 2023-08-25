@@ -1,9 +1,12 @@
 package net.corda.web.rpc
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.messaging.api.WebContext
 import net.corda.messaging.api.processor.HttpRPCProcessor
 import net.corda.messaging.api.subscription.HttpRPCSubscription
+import net.corda.web.server.Endpoint
 import net.corda.web.server.HTTPMethod
+import net.corda.web.server.WebHandler
 import net.corda.web.server.WebServer
 import org.eclipse.jetty.http.HttpStatus
 import org.slf4j.LoggerFactory
@@ -34,41 +37,46 @@ class HttpRPCSubscriptionImpl @Activate constructor(
      * Registers an endpoint with the provided handler function and request payload class.
      *
      * @param endpoint The endpoint URL path.
-     * @param handler The handler function to process the request payload.
-     * @param clazz The class of the request payload.
+     * @param processor The handler function to process the request payload.
      */
-    override fun <REQ : Any, RESP : Any> registerEndpoint(endpoint: String, handler: HttpRPCProcessor<REQ, RESP>, clazz: Class<REQ>) {
+    override fun <REQ : Any, RESP : Any> registerEndpoint(
+        endpoint: String,
+        processor: HttpRPCProcessor<REQ, RESP>
+    ) {
         val server = javalinServer
 
         val avroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({
             log.error("Failed to deserialize payload for request")
-        }, clazz)
+        }, processor.reqClazz)
 
         val avroSerializer = cordaAvroSerializationFactory.createAvroSerializer<RESP> {
             log.error("Failed to serialize payload for response")
         }
 
-        server.registerHandler(HTTPMethod.POST, endpoint) { context ->
+        val webHandler = object : WebHandler {
+            override fun handle(context: WebContext): WebContext {
+                val payload = avroDeserializer.deserialize(context.bodyAsBytes())
 
-            val payload = avroDeserializer.deserialize(context.bodyAsBytes())
-
-            if (payload != null) {
-                val serializedResponse = avroSerializer.serialize(handler.handle(payload))
-                if (serializedResponse != null) {
-                    context.result(serializedResponse)
-                    return@registerHandler context
+                if (payload != null) {
+                    val serializedResponse = avroSerializer.serialize(processor.process(payload))
+                    return if (serializedResponse != null) {
+                        context.result(serializedResponse)
+                        context
+                    } else {
+                        log.error("Response Payload was Null")
+                        context.result("Response Payload was Null")
+                        context.status(HttpStatus.UNPROCESSABLE_ENTITY_422)
+                        context
+                    }
                 } else {
-                    log.error("Response Payload was Null")
-                    context.result("Response Payload was Null")
+                    log.error("Request Payload was Null")
+                    context.result("Request Payload was Null")
                     context.status(HttpStatus.UNPROCESSABLE_ENTITY_422)
-                    return@registerHandler context
+                    return context
                 }
-            } else {
-                log.error("Request Payload was Null")
-                context.result("Request Payload was Null")
-                context.status(HttpStatus.UNPROCESSABLE_ENTITY_422)
-                return@registerHandler context
             }
         }
+
+        server.registerEndpoint(Endpoint(HTTPMethod.POST, endpoint, webHandler))
     }
 }

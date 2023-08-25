@@ -3,6 +3,7 @@ package net.corda.web.server
 import io.javalin.Javalin
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.messaging.api.WebContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -28,6 +29,11 @@ class JavalinServerTest {
     }
 
     private val port = 8888
+    private val webHandler = object : WebHandler {
+        override fun handle(context: WebContext): WebContext {
+            return context
+        }
+    }
 
     @BeforeEach
     fun setup() {
@@ -58,17 +64,18 @@ class JavalinServerTest {
     @Test
     fun `registering an endpoint with improper endpoint string throws`() {
         javalinServer.start(port)
+
         assertThrows<CordaRuntimeException> {
-            javalinServer.registerHandler(HTTPMethod.GET, "") { c -> c }
+            javalinServer.registerEndpoint(Endpoint(HTTPMethod.GET, "", webHandler))
         }
         assertThrows<CordaRuntimeException> {
-            javalinServer.registerHandler(HTTPMethod.GET, "noslash") { c -> c }
+            javalinServer.registerEndpoint(Endpoint(HTTPMethod.GET, "noslash", webHandler))
         }
         assertThrows<CordaRuntimeException> {
-            javalinServer.registerHandler(HTTPMethod.GET, "not a url") { c -> c }
+            javalinServer.registerEndpoint(Endpoint(HTTPMethod.GET, "not a url", webHandler))
         }
         assertDoesNotThrow {
-            javalinServer.registerHandler(HTTPMethod.GET, "/url") { c -> c }
+            javalinServer.registerEndpoint(Endpoint(HTTPMethod.GET, "/url", webHandler))
         }
     }
 
@@ -76,11 +83,10 @@ class JavalinServerTest {
     fun `registering an endpoint should call the correct method on javalin` (){
         javalinServer.start(port)
 
-        javalinServer.registerHandler(HTTPMethod.GET, "/url") { c -> c }
+        javalinServer.registerEndpoint(Endpoint(HTTPMethod.GET, "/url", webHandler))
         verify(javalinMock).get(eq("/url"), any())
 
-        javalinServer.registerHandler(HTTPMethod.POST, "/url") { c -> c }
+        javalinServer.registerEndpoint(Endpoint(HTTPMethod.POST, "/url", webHandler))
         verify(javalinMock).post(eq("/url"), any())
     }
-
 }

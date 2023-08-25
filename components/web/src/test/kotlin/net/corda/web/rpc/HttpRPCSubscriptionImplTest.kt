@@ -65,7 +65,7 @@ class HttpRPCSubscriptionImplTest {
     @Test
     fun `registerEndpoint should register endpoint and handle request`() {
         val sampleHandler = object : HttpRPCProcessor<String, String> {
-            override fun handle(request: String): String {
+            override fun process(request: String): String {
                 return "input: '$request', has been handled"
             }
 
@@ -76,7 +76,7 @@ class HttpRPCSubscriptionImplTest {
 
         }
 
-        rpcSubscription.registerEndpoint(TEST_ENDPOINT, sampleHandler, String::class.java)
+        rpcSubscription.registerEndpoint(TEST_ENDPOINT, sampleHandler)
 
         val url = URL("http://localhost:$TEST_PORT$TEST_ENDPOINT")
         val client = HttpClient.newBuilder().build()

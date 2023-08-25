@@ -27,8 +27,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.osgi.framework.Bundle
 import java.io.InputStream
-import net.corda.messaging.api.WebContext
-import net.corda.web.server.HTTPMethod
+import net.corda.web.server.Endpoint
 import net.corda.web.server.WebServer
 
 /**
@@ -231,9 +230,8 @@ class ConfigTests {
 
     private class DummyWebServer : WebServer {
         override fun stop() = throw NotImplementedError()
-        override fun registerHandler(methodType: HTTPMethod, endpoint: String, handle: (WebContext) -> WebContext) {
-            TODO("Not yet implemented")
-        }
+        override fun registerEndpoint(endpoint: Endpoint) = Unit
+        override fun removeEndpoint(endpoint: Endpoint)  = Unit
         override val port = 7000
         override fun start(port: Int) = Unit
     }

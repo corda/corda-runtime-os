@@ -1,7 +1,5 @@
 package net.corda.web.server
 
-import net.corda.messaging.api.WebContext
-
 interface WebServer{
 
     val port: Int?
@@ -10,6 +8,8 @@ interface WebServer{
 
     fun stop()
 
-    fun registerHandler(methodType: HTTPMethod, endpoint: String, handle: (WebContext) -> WebContext)
+    fun registerEndpoint(endpoint: Endpoint)
+
+    fun removeEndpoint(endpoint: Endpoint)
 
 }

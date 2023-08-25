@@ -1,13 +1,9 @@
 package net.corda.web.server
 
 import io.javalin.Javalin
-import java.lang.StringBuilder
-import java.net.MalformedURLException
-import java.net.URL
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.WebContext
 import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.utilities.executeWithStdErrSuppressed
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -34,7 +30,7 @@ class JavalinServer @Activate constructor(
 
     private var server: Javalin? = null
     private val coordinator = coordinatorFactory.createCoordinator<WebServer> { _, _ -> }
-
+    private val endpoints: MutableList<Endpoint> = mutableListOf()
 
     override fun start(port: Int) {
         if(server != null) {
@@ -47,6 +43,13 @@ class JavalinServer @Activate constructor(
             log.debug("Starting Worker Web Server on port: $port")
             server = javalinFactory.create()
             startServer(port)
+
+            if(endpoints.isNotEmpty()) {
+                endpoints.forEach {
+                    registerEndpointInternal(it)
+                }
+            }
+
         } catch (ex: Exception) {
             throw CordaRuntimeException("Webserver already active on that port")
         }
@@ -78,12 +81,21 @@ class JavalinServer @Activate constructor(
         coordinator.stop()
     }
 
-    override fun registerHandler(methodType: HTTPMethod, endpoint: String, handle: (WebContext) -> WebContext) {
-        validateEndpoint(endpoint)
+    override fun registerEndpoint(endpoint: Endpoint) {
+        registerEndpointInternal(endpoint)
+        endpoints.add(endpoint)
+    }
+
+    override fun removeEndpoint(endpoint: Endpoint) {
+        endpoints.remove(endpoint)
+    }
+
+    private fun registerEndpointInternal(endpoint: Endpoint){
+        endpoint.validate()
         throwIfNull()
-        when (methodType) {
-            HTTPMethod.GET -> server?.get(endpoint) { handle(JavalinContext(it)) }
-            HTTPMethod.POST -> server?.post(endpoint) { handle(JavalinContext(it)) }
+        when (endpoint.methodType) {
+            HTTPMethod.GET -> server?.get(endpoint.endpoint) { endpoint.webHandler.handle(JavalinContext(it)) }
+            HTTPMethod.POST -> server?.post(endpoint.endpoint) { endpoint.webHandler.handle(JavalinContext(it)) }
         }
     }
 
@@ -92,29 +104,6 @@ class JavalinServer @Activate constructor(
     private fun throwIfNull() {
         if (server == null) {
             throw CordaRuntimeException("The Javalin webserver has not been initialized")
-        }
-    }
-
-    private fun validateEndpoint(endpoint: String){
-
-        val error = StringBuilder()
-
-        if(endpoint.isBlank() || endpoint.isEmpty()) error.appendLine("Endpoint must not be null or empty")
-        if(!endpoint.startsWith("/")) error.appendLine("Endpoint $endpoint must start with '/'")
-        if(!isValidEndpoint(endpoint)) error.appendLine("Endpoint $endpoint is not validly formed")
-
-        if(error.isNotEmpty()) {
-            throw CordaRuntimeException(error.toString())
-        }
-    }
-
-    fun isValidEndpoint(endpoint: String): Boolean {
-        return try {
-            // it will check only for scheme and not null input
-            URL("http://test$endpoint")
-            true
-        } catch (e: MalformedURLException) {
-            false
         }
     }
 }
