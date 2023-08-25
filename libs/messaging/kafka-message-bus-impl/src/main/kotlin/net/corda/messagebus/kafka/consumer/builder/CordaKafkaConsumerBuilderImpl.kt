@@ -10,6 +10,7 @@ import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.kafka.config.MessageBusConfigResolver
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
+import net.corda.messagebus.kafka.serialization.CordaKafkaSerializationFactory
 import net.corda.messagebus.kafka.utils.KafkaRetryUtils.executeKafkaActionWithRetry
 import net.corda.messaging.api.chunking.MessagingChunkFactory
 import org.apache.kafka.clients.consumer.KafkaConsumer
@@ -33,7 +34,9 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
     @Reference(service = MessagingChunkFactory::class)
     private val messagingChunkFactory: MessagingChunkFactory,
     @Reference(service = CordaAvroSerializationFactory::class)
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    @Reference(service = CordaKafkaSerializationFactory::class)
+    private val cordaKafkaSerializationFactory: CordaKafkaSerializationFactory
 ) : CordaConsumerBuilder {
 
     companion object {
@@ -59,9 +62,9 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
                     cordaAvroSerializationFactory.createAvroDeserializer(onSerializationError, vClazz)
 
                 val kafkaAdaptorKeyDeserializer =
-                    cordaAvroSerializationFactory.createAvroBasedKafkaDeserializer(onSerializationError, kClazz)
+                    cordaKafkaSerializationFactory.createAvroBasedKafkaDeserializer(onSerializationError, kClazz)
                 val kafkaAdaptorValueDeserializer =
-                    cordaAvroSerializationFactory.createAvroBasedKafkaDeserializer(onSerializationError, vClazz)
+                    cordaKafkaSerializationFactory.createAvroBasedKafkaDeserializer(onSerializationError, vClazz)
 
                 val consumerChunkDeserializerService =
                     messagingChunkFactory.createConsumerChunkDeserializerService(

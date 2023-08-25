@@ -1,5 +1,6 @@
 package net.corda.messagebus.db.producer.builder
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.producer.CordaProducer
@@ -10,7 +11,6 @@ import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.EntityManagerFactoryHolder
 import net.corda.messagebus.db.producer.CordaAtomicDBProducerImpl
 import net.corda.messagebus.db.producer.CordaTransactionalDBProducerImpl
-import net.corda.messagebus.db.serialization.CordaDBAvroSerializerImpl
 import net.corda.messagebus.db.serialization.MessageHeaderSerializerImpl
 import net.corda.messagebus.db.util.WriteOffsets
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -29,6 +29,8 @@ class DBCordaProducerBuilderImpl @Activate constructor(
     private val avroSchemaRegistry: AvroSchemaRegistry,
     @Reference(service = EntityManagerFactoryHolder::class)
     private val entityManagerFactoryHolder: EntityManagerFactoryHolder,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
 ) : CordaProducerBuilder {
 
     private var writeOffsets: WriteOffsets? = null
@@ -62,7 +64,7 @@ class DBCordaProducerBuilderImpl @Activate constructor(
 
         return if (isTransactional) {
             CordaTransactionalDBProducerImpl(
-                CordaDBAvroSerializerImpl(avroSchemaRegistry, onSerializationError),
+                cordaAvroSerializationFactory.createAvroSerializer(onSerializationError),
                 DBAccess(emf),
                 getWriteOffsets(resolvedConfig),
                 MessageHeaderSerializerImpl(),
@@ -70,7 +72,7 @@ class DBCordaProducerBuilderImpl @Activate constructor(
             )
         } else {
             CordaAtomicDBProducerImpl(
-                CordaDBAvroSerializerImpl(avroSchemaRegistry, onSerializationError),
+                cordaAvroSerializationFactory.createAvroSerializer(onSerializationError),
                 DBAccess(emf),
                 getWriteOffsets(resolvedConfig),
                 MessageHeaderSerializerImpl(),

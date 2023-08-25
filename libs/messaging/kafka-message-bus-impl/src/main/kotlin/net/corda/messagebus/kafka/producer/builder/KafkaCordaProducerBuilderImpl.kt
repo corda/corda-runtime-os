@@ -1,7 +1,6 @@
 package net.corda.messagebus.kafka.producer.builder
 
 import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
@@ -9,6 +8,7 @@ import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messagebus.kafka.config.MessageBusConfigResolver
 import net.corda.messagebus.kafka.producer.CordaKafkaProducerImpl
+import net.corda.messagebus.kafka.serialization.CordaKafkaSerializationFactory
 import net.corda.messagebus.kafka.utils.KafkaRetryUtils.executeKafkaActionWithRetry
 import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -35,8 +35,8 @@ import org.slf4j.LoggerFactory
 class KafkaCordaProducerBuilderImpl @Activate constructor(
     @Reference(service = MessagingChunkFactory::class)
     private val messagingChunkFactory: MessagingChunkFactory,
-    @Reference(service = CordaAvroSerializationFactory::class)
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
+    @Reference(service = CordaKafkaSerializationFactory::class)
+    private val cordaKafkaSerializationFactory: CordaKafkaSerializationFactory
 ) : CordaProducerBuilder {
 
     companion object {
@@ -84,8 +84,8 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
             }
             KafkaProducer(
                 kafkaProperties,
-                cordaAvroSerializationFactory.createAvroBasedKafkaSerializer(onSerializationError),
-                cordaAvroSerializationFactory.createAvroBasedKafkaSerializer(onSerializationError)
+                cordaKafkaSerializationFactory.createAvroBasedKafkaSerializer(onSerializationError),
+                cordaKafkaSerializationFactory.createAvroBasedKafkaSerializer(onSerializationError)
             )
         } finally {
             Thread.currentThread().contextClassLoader = contextClassLoader

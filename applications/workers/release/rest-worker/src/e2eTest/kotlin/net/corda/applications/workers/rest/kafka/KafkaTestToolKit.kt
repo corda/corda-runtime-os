@@ -15,6 +15,7 @@ import net.corda.lifecycle.impl.registry.LifecycleRegistryImpl
 import net.corda.messagebus.kafka.consumer.builder.CordaKafkaConsumerBuilderImpl
 import net.corda.messagebus.kafka.producer.builder.KafkaCordaProducerBuilderImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
+import net.corda.messagebus.kafka.serialization.CordaKafkaSerializationFactoryImpl
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -41,8 +42,11 @@ class KafkaTestToolKit(
         AvroSchemaRegistryImpl()
     }
 
-    private val serializationFactory by lazy {
+    private val avroSerializationFactory by lazy {
         CordaAvroSerializationFactoryImpl(registry)
+    }
+    private val kafkaSerializationFactory by lazy {
+        CordaKafkaSerializationFactoryImpl(registry)
     }
 
     private val cipherSchemeMetadataImpl by lazy {
@@ -58,14 +62,14 @@ class KafkaTestToolKit(
     }
 
     private val messagingChunkFactory by lazy {
-        MessagingChunkFactoryImpl(chunkBuilderService, serializationFactory, platformDigestService)
+        MessagingChunkFactoryImpl(chunkBuilderService, avroSerializationFactory, platformDigestService)
     }
 
     private val consumerBuilder by lazy {
-        CordaKafkaConsumerBuilderImpl(messagingChunkFactory, serializationFactory)
+        CordaKafkaConsumerBuilderImpl(messagingChunkFactory, avroSerializationFactory, kafkaSerializationFactory)
     }
     private val producerBuilder by lazy {
-        KafkaCordaProducerBuilderImpl(messagingChunkFactory, serializationFactory)
+        KafkaCordaProducerBuilderImpl(messagingChunkFactory, kafkaSerializationFactory)
     }
     private val coordinatorFactory by lazy {
         LifecycleCoordinatorFactoryImpl(
@@ -102,7 +106,7 @@ class KafkaTestToolKit(
 
     private val subscriptionFactory: SubscriptionFactory by lazy {
         CordaSubscriptionFactory(
-            serializationFactory,
+            avroSerializationFactory,
             coordinatorFactory,
             producerBuilder,
             consumerBuilder,
@@ -113,7 +117,7 @@ class KafkaTestToolKit(
 
     private val publisherFactory: PublisherFactory by lazy {
         CordaPublisherFactory(
-            serializationFactory,
+            avroSerializationFactory,
             producerBuilder,
             consumerBuilder,
             coordinatorFactory

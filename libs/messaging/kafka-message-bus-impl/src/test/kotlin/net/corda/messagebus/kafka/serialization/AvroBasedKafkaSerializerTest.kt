@@ -1,7 +1,7 @@
 package net.corda.messaging.kafka.subscription.net.corda.messagebus.kafka.serialization
 
-import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializerImpl
+import net.corda.messagebus.kafka.serialization.CordaKafkaSerializationFactoryImpl
 import java.nio.ByteBuffer
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -18,7 +18,7 @@ import org.mockito.kotlin.whenever
 class AvroBasedKafkaSerializerTest {
     private val topic = "topic"
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
-    private val serializer = CordaAvroSerializationFactoryImpl(avroSchemaRegistry).createAvroBasedKafkaSerializer(null)
+    private val serializer = CordaKafkaSerializationFactoryImpl(avroSchemaRegistry).createAvroBasedKafkaSerializer(null)
 
     data class SerializeTester(val contents: String = "test contents")
 

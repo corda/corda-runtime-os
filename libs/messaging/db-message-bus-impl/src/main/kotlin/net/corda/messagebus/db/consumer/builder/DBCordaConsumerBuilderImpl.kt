@@ -1,5 +1,6 @@
 package net.corda.messagebus.db.consumer.builder
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -10,7 +11,6 @@ import net.corda.messagebus.db.consumer.ConsumerGroupFactory
 import net.corda.messagebus.db.consumer.DBCordaConsumerImpl
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.EntityManagerFactoryHolder
-import net.corda.messagebus.db.serialization.CordaDBAvroDeserializerImpl
 import net.corda.messagebus.db.serialization.MessageHeaderSerializerImpl
 import net.corda.schema.registry.AvroSchemaRegistry
 import org.osgi.service.component.annotations.Activate
@@ -27,6 +27,8 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
     private val avroSchemaRegistry: AvroSchemaRegistry,
     @Reference(service = EntityManagerFactoryHolder::class)
     private val entityManagerFactoryHolder: EntityManagerFactoryHolder,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
 ) : CordaConsumerBuilder {
 
     private val consumerGroupFactory = ConsumerGroupFactory(entityManagerFactoryHolder)
@@ -56,8 +58,8 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
             resolvedConfig,
             DBAccess(emf),
             consumerGroup,
-            CordaDBAvroDeserializerImpl(avroSchemaRegistry, onSerializationError, kClazz),
-            CordaDBAvroDeserializerImpl(avroSchemaRegistry, onSerializationError, vClazz),
+            cordaAvroSerializationFactory.createAvroDeserializer(onSerializationError, kClazz),
+            cordaAvroSerializationFactory.createAvroDeserializer(onSerializationError, vClazz),
             listener,
             MessageHeaderSerializerImpl()
         )
