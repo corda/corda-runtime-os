@@ -30,11 +30,14 @@ class CloseSessionsRequestHandler @Activate constructor(
 
     override val type = FlowIORequest.CloseSessions::class.java
 
-    fun getSessionsToClose(request: FlowIORequest.CloseSessions): List<String> {
+    private fun getSessionsToClose(request: FlowIORequest.CloseSessions): List<String> {
         return request.sessions.toMutableList()
     }
 
-    override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.CloseSessions): WaitingFor {
+    override fun getUpdatedWaitingFor(
+        context: FlowEventContext<Any>,
+        request: FlowIORequest.CloseSessions
+    ): WaitingFor {
         val sessionsToClose = try {
             closeSessionService.getSessionsToCloseForWaitingFor(context.checkpoint, getSessionsToClose(request))
         } catch (e: IllegalArgumentException) {
@@ -51,13 +54,20 @@ class CloseSessionsRequestHandler @Activate constructor(
         }
     }
 
-    override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.CloseSessions): FlowEventContext<Any> {
+    override fun postProcess(
+        context: FlowEventContext<Any>,
+        request: FlowIORequest.CloseSessions
+    ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
 
         val hasNoSessionsOrAllClosed = try {
 
             closeSessionService.getSessionsForPostProcess(getSessionsToClose(request), checkpoint)
-            getSessionsToClose(request).isEmpty() || flowSessionManager.doAllSessionsHaveStatus(checkpoint, getSessionsToClose(request), SessionStateType.CLOSED)
+            getSessionsToClose(request).isEmpty() || flowSessionManager.doAllSessionsHaveStatus(
+                checkpoint,
+                getSessionsToClose(request),
+                SessionStateType.CLOSED
+            )
         } catch (e: FlowSessionStateException) {
             // TODO CORE-4850 Wakeup with error when session does not exist
             throw FlowFatalException(e.message, e)

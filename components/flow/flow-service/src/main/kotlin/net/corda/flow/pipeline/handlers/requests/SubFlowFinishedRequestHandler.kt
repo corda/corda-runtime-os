@@ -12,11 +12,9 @@ import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.sessions.service.CloseSessionService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
-import net.corda.flow.state.FlowCheckpoint
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Instant
 
 @Component(service = [FlowRequestHandler::class])
 class SubFlowFinishedRequestHandler @Activate constructor(
@@ -30,7 +28,7 @@ class SubFlowFinishedRequestHandler @Activate constructor(
 
     override val type = FlowIORequest.SubFlowFinished::class.java
 
-    fun getSessionsToClose(request: FlowIORequest.SubFlowFinished): List<String> {
+    private fun getSessionsToClose(request: FlowIORequest.SubFlowFinished): List<String> {
         return request.sessionIds.toMutableList()
     }
 
@@ -56,14 +54,13 @@ class SubFlowFinishedRequestHandler @Activate constructor(
         request: FlowIORequest.SubFlowFinished
     ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
+
         val hasNoSessionsOrAllClosed = try {
-            val sessionsToClose = getSessionsToClose(checkpoint, request)
 
-            checkpoint.putSessionStates(flowSessionManager.sendCloseMessages(checkpoint, sessionsToClose, Instant.now()))
-
-            sessionsToClose.isEmpty() || flowSessionManager.doAllSessionsHaveStatus(
+            closeSessionService.getSessionsForPostProcess(getSessionsToClose(request), checkpoint)
+            getSessionsToClose(request).isEmpty() || flowSessionManager.doAllSessionsHaveStatus(
                 checkpoint,
-                sessionsToClose,
+                getSessionsToClose(request),
                 SessionStateType.CLOSED
             )
         } catch (e: FlowSessionStateException) {
@@ -79,10 +76,4 @@ class SubFlowFinishedRequestHandler @Activate constructor(
         }
     }
 
-    private fun getSessionsToClose(checkpoint: FlowCheckpoint, request: FlowIORequest.SubFlowFinished): List<String> {
-        val erroredSessions =
-            flowSessionManager.getSessionsWithStatus(checkpoint, request.sessionIds, SessionStateType.ERROR)
-
-        return request.sessionIds - erroredSessions.map { it.sessionId }
-    }
 }
