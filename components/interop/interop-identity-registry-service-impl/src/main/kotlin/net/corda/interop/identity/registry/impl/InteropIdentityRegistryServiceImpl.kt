@@ -46,10 +46,22 @@ class InteropIdentityRegistryServiceImpl @Activate constructor(
         }
     }
 
+    /**
+     * Put the interop identity to maintain the registry.
+     *
+     * @param holdingIdentityShortHash Short hash of the holding identity.
+     * @param identity an interop identity.
+     */
     fun putInteropIdentity(holdingIdentityShortHash: ShortHash, identity: InteropIdentity) {
         getOrCreateView(holdingIdentityShortHash).putInteropIdentity(identity)
     }
 
+    /**
+     * Removes the interop identity to maintain the registry.
+     *
+     * @param holdingIdentityShortHash Short hash of the holding identity.
+     * @param identity an interop identity.
+     */
     fun removeInteropIdentity(holdingIdentityShortHash: ShortHash, identity: InteropIdentity) {
         getOrCreateView(holdingIdentityShortHash).removeInteropIdentity(identity)
     }

@@ -10,7 +10,10 @@ import net.corda.messaging.api.records.Record
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 
-
+/**
+ * Interop Identity processor to keep the interop identity registry updated
+ * [PersistentInteropIdentity] from Kafka compacted queues.
+ */
 class InteropIdentityProcessor(
     private val registryService: InteropIdentityRegistryServiceImpl
 ) : CompactedProcessor<String, PersistentInteropIdentity> {
