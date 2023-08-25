@@ -77,6 +77,15 @@ workers:
             secretKeyRef:
               key: "kafka-sasl-password"
 
+  persistence:
+    kafka:
+      sasl:
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-sasl"
+              key: "kafka-sasl-password"
+
   uniqueness:
     kafka:
       sasl:

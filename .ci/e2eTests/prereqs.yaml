@@ -10,5 +10,6 @@ kafka:
           - "membership"
           - "p2pGateway"
           - "p2pLinkManager"
+          - "persistence"
           - "rest"
           - "uniqueness"
