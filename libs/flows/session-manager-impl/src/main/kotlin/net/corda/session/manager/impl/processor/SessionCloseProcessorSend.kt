@@ -33,19 +33,6 @@ class SessionCloseProcessorSend(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    /**
-     * If I am  the initiated party
-     *  - if requireClose == true
-     *      - send Close
-     *      - set status CLOSED
-     *      - if status is already CLOSED - do nothing
-     *
-     *  - if requireClose == false
-     *      - set status CLOSED
-     *      - if status is already CLOSED - do nothing
-     *
-     */
-
     override fun execute(): SessionState {
         val sessionId = sessionEvent.sessionId
         val currentStatus = sessionState?.status
@@ -120,7 +107,7 @@ class SessionCloseProcessorSend(
     ) : SessionState {
         val requireClose = sessionState.requireClose
         var status = sessionState.status
-        return if (isInitiatedIdentity(sessionEvent) && status !== SessionStateType.CLOSED) {
+        return if (isInitiatedIdentity(sessionEvent) && status !in listOf(SessionStateType.ERROR, SessionStateType.CLOSED)) {
             if (requireClose) {
                 sessionState.apply {
                     logger.trace {
@@ -129,6 +116,7 @@ class SessionCloseProcessorSend(
                     }
                     status = SessionStateType.CLOSED
                     sendEventsState.lastProcessedSequenceNum = nextSeqNum
+                    sessionEvent.sequenceNum = nextSeqNum
                     sendEventsState.undeliveredMessages =
                         sessionState.sendEventsState.undeliveredMessages.plus(sessionEvent)
                 }
@@ -137,9 +125,16 @@ class SessionCloseProcessorSend(
                 sessionState
             }
         } else {
-            val errorMessage =
-                "Tried to send SessionClose when requireClose is set to false. Key: $key sessionId: $sessionId, session status is " +
+            val errorMessage: String = if (status in listOf(SessionStateType.ERROR, SessionStateType.CLOSED)) {
+                "Tried to send SessionClose when status is not correct for sending a close. Key: $key sessionId: $sessionId, session status is " +
                         "$status. Current SessionState: $sessionState."
+            } else if (!isInitiatedIdentity(sessionEvent)) {
+                "Tried to send SessionClose as initiating party which is not allowed in the protocol. Key: $key sessionId: $sessionId, session status is " +
+                        "$status. Current SessionState: $sessionState."
+            } else {
+                "Tried to send SessionClose. Key: $key sessionId: $sessionId, session status is " +
+                        "$status. Current SessionState: $sessionState."
+            }
             logAndGenerateErrorResult(errorMessage, sessionState, "SessionClose-InvalidStatus")
         }
     }
