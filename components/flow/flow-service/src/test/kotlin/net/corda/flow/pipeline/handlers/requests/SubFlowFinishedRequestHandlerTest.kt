@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests
 
-import java.util.stream.Stream
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.checkpoint.FlowStackItem
@@ -28,6 +27,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.stream.Stream
 
 @Suppress("MaxLineLength")
 class SubFlowFinishedRequestHandlerTest {
@@ -54,7 +54,7 @@ class SubFlowFinishedRequestHandlerTest {
     private val record = Record("", "", FlowEvent())
     private val testContext = RequestHandlerTestContext(Any())
     private val flowSessionManager = testContext.flowSessionManager
-    private val handler = SubFlowFinishedRequestHandler(flowSessionManager, testContext.flowRecordFactory)
+    private val handler = SubFlowFinishedRequestHandler(flowSessionManager, testContext.flowRecordFactory, testContext.closeSessionService)
 
     private fun createFlowStackItem(isInitiatingFlow: Boolean, sessions: List<FlowStackItemSession> = SESSIONS) =
         FlowStackItem.newBuilder()
