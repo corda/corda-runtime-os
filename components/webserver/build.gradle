@@ -1,0 +1,36 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Contains web components'
+
+dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:osgi.core'
+
+    implementation project(':libs:serialization:serialization-avro')
+    implementation project(':libs:messaging:messaging')
+    implementation project(':libs:utilities')
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:web")
+
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-base"
+
+    implementation "io.javalin:javalin-osgi:$javalinVersion"
+    constraints {
+        implementation("org.eclipse.jetty:jetty-server:$jettyVersion") {
+            because 'Javalin uses an older version of Jetty which is exposed to CVE-2023-26048 and CVE-2023-26049. ' +
+                    'This might be resolved in the future versions of Javalin.'
+        }
+    }
+
+    testRuntimeOnly 'org.osgi:osgi.core'
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

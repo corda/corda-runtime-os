@@ -4,6 +4,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
+import net.corda.messaging.api.processor.HttpRPCProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -149,5 +150,10 @@ interface SubscriptionFactory {
         rpcConfig: RPCConfig<REQUEST, RESPONSE>,
         messagingConfig: SmartConfig,
         responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>
+    ): RPCSubscription<REQUEST, RESPONSE>
+
+    fun <REQUEST : Any, RESPONSE : Any> createHttpRPCSubscription(
+        endpoint: String,
+        processor: HttpRPCProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE>
 }

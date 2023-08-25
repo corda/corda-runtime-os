@@ -27,8 +27,8 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.osgi.framework.Bundle
 import java.io.InputStream
-import net.corda.web.server.Endpoint
-import net.corda.web.server.WebServer
+import net.corda.web.api.Endpoint
+import net.corda.web.api.WebServer
 
 /**
  * Tests handling of command-line arguments for the [DBWorker].

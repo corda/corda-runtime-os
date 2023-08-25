@@ -24,7 +24,7 @@ dependencies {
     implementation project(':libs:platform-info')
     implementation project(':osgi-framework-api')
     implementation project(':libs:serialization:serialization-avro')
-    implementation project(':components:web')
+    implementation project(':libs:web')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'
@@ -53,6 +53,7 @@ dependencies {
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":components:webserver")
 
     testRuntimeOnly 'org.osgi:osgi.core'
 

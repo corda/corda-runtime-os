@@ -39,6 +39,10 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.UUID
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.messaging.api.processor.HttpRPCProcessor
+import net.corda.messaging.subscription.HttpRPCSubscriptionImpl
+import net.corda.web.api.WebServer
 
 /**
  * Kafka implementation of the Subscription Factory.
@@ -59,6 +63,8 @@ class CordaSubscriptionFactory @Activate constructor(
     private val stateAndEventBuilder: StateAndEventBuilder,
     @Reference(service = MessagingChunkFactory::class)
     private val messagingChunkFactory: MessagingChunkFactory,
+    @Reference(service = WebServer::class)
+    private val webServer: WebServer
 ) : SubscriptionFactory {
 
     override fun <K : Any, V : Any> createPubSubSubscription(
@@ -179,6 +185,14 @@ class CordaSubscriptionFactory @Activate constructor(
             lifecycleCoordinatorFactory
         )
     }
+
+    override fun <REQUEST : Any, RESPONSE : Any> createHttpRPCSubscription(
+        endpoint: String,
+        processor: HttpRPCProcessor<REQUEST, RESPONSE>
+    ): RPCSubscription<REQUEST, RESPONSE> {
+        return HttpRPCSubscriptionImpl(LifecycleCoordinatorName("", ""), "", processor, cordaAvroSerializationFactory, webServer)
+    }
+
 
     private fun getConfig(
         subscriptionType: SubscriptionType,

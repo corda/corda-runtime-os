@@ -1,0 +1,19 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Corda Web Libraries'
+
+dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':libs:utilities')
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation "net.corda:corda-base"
+
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:osgi.annotation"
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

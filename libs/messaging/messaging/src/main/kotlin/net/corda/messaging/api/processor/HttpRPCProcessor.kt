@@ -1,7 +1,7 @@
 package net.corda.messaging.api.processor
 
 
-interface HttpRPCProcessor<REQ : Any, RESP : Any> {
+interface HttpRPCProcessor<REQ, RESP> {
     fun process(request: REQ) : RESP
 
     val reqClazz: Class<REQ>

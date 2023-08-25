@@ -21,11 +21,11 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
-import net.corda.messaging.api.WebContext
-import net.corda.web.server.Endpoint
-import net.corda.web.server.HTTPMethod
-import net.corda.web.server.WebHandler
-import net.corda.web.server.WebServer
+import net.corda.web.api.Endpoint
+import net.corda.web.api.HTTPMethod
+import net.corda.web.api.WebContext
+import net.corda.web.api.WebHandler
+import net.corda.web.api.WebServer
 
 /**
  * An implementation of [WorkerMonitor].

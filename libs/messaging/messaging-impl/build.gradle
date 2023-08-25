@@ -20,6 +20,8 @@ dependencies {
     implementation project(":libs:tracing")
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:utilities')
+    implementation project(':libs:web')
+    implementation project(':libs:rest:rest')
     implementation project(":libs:serialization:serialization-avro")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")

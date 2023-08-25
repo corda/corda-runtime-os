@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.InputStream
 import java.lang.management.ManagementFactory
-import net.corda.web.server.WebServer
+import net.corda.web.api.WebServer
 import kotlin.math.absoluteValue
 import kotlin.random.Random
 

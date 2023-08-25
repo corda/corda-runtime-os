@@ -30,6 +30,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.UUID
+import net.corda.messaging.api.processor.HttpRPCProcessor
 
 /**
  * In memory implementation of the Subscription Factory.
@@ -132,5 +133,12 @@ class InMemSubscriptionFactory @Activate constructor(
             lifecycleCoordinatorFactory,
             UUID.randomUUID().toString()
         )
+    }
+
+    override fun <REQUEST : Any, RESPONSE : Any> createHttpRPCSubscription(
+        endpoint: String,
+        processor: HttpRPCProcessor<REQUEST, RESPONSE>
+    ): RPCSubscription<REQUEST, RESPONSE>{
+        TODO()
     }
 }

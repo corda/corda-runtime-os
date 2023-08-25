@@ -19,7 +19,7 @@ import net.corda.processors.flow.FlowProcessor
 import net.corda.processors.verification.VerificationProcessor
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
-import net.corda.web.server.WebServer
+import net.corda.web.api.WebServer
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

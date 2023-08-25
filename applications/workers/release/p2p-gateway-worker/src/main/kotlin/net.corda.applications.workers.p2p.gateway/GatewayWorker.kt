@@ -14,7 +14,7 @@ import net.corda.osgi.api.Shutdown
 import net.corda.processors.p2p.gateway.GatewayProcessor
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
-import net.corda.web.server.WebServer
+import net.corda.web.api.WebServer
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
