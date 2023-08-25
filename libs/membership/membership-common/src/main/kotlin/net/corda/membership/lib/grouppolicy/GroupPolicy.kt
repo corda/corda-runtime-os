@@ -61,7 +61,10 @@ interface GroupPolicy {
     /**
      * The MGM information packaged in the CPI.
      * Could be null if running a static network.
+     *
+     * @throws [BadGroupPolicyException] if the data is unavailable or cannot be parsed.
      */
+    @get:Throws(BadGroupPolicyException::class)
     val mgmInfo: MGMInfo?
 
     /**
@@ -83,7 +86,10 @@ interface GroupPolicy {
         /**
          * Static network member configurations. Only present for static networks.
          * Extensible map of properties which represent a template to build a static network member.
+         *
+         * @throws [BadGroupPolicyException] if the data is unavailable or cannot be parsed.
          */
+        @get:Throws(BadGroupPolicyException::class)
         val staticNetworkMembers: List<Map<String, Any>>?
 
         /**
