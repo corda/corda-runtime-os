@@ -109,5 +109,43 @@ class VirtualNodeDbFactoryImplTest {
         verify(vaultDmlConfig).withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(10))
         // VNode DML min pool size needs to be 0, because VNodes connections can pile up and exhaust the DB
         verify(vaultDmlConfig).withValue(DatabaseConfig.DB_POOL_MIN_SIZE, ConfigValueFactory.fromAnyRef(0))
+
+        val uniquenessDmlConfig = dbs[VirtualNodeDbType.UNIQUENESS]?.dbConnections?.get(DbPrivilege.DML)?.config!!
+        verify(uniquenessDmlConfig, never()).withValue(eq(DatabaseConfig.JDBC_DRIVER), any())
+
+    }
+
+    @Test
+    fun `createVNodeDbs creates expected VNode datasource configuration with no uniqueness db`() {
+        val request = mock<VirtualNodeCreateRequest> {
+            on { vaultDdlConnection } doReturn ""
+            on { vaultDmlConnection } doReturn ""
+            on { cryptoDdlConnection } doReturn ""
+            on { cryptoDmlConnection } doReturn ""
+            on { uniquenessDdlConnection } doReturn "none"
+            on { uniquenessDmlConnection } doReturn "none"
+        }
+
+        val dbs = impl.createVNodeDbs(
+            ShortHash.of("1234123412341234"),
+            request,
+        )
+
+
+        val vaultDdlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DDL)?.config!!
+        verify(vaultDdlConfig, never()).withValue(eq(DatabaseConfig.JDBC_DRIVER), any())
+        verify(vaultDdlConfig).withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(JDBC_URL))
+        verify(vaultDdlConfig).withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(1))
+        verify(vaultDdlConfig, never()).withValue(eq(DatabaseConfig.DB_POOL_MIN_SIZE), any())
+
+        val vaultDmlConfig = dbs[VirtualNodeDbType.VAULT]?.dbConnections?.get(DbPrivilege.DML)?.config!!
+        verify(vaultDmlConfig, never()).withValue(eq(DatabaseConfig.JDBC_DRIVER), any())
+        verify(vaultDmlConfig).withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(JDBC_URL))
+        verify(vaultDmlConfig).withValue(DatabaseConfig.DB_POOL_MAX_SIZE, ConfigValueFactory.fromAnyRef(10))
+        // VNode DML min pool size needs to be 0, because VNodes connections can pile up and exhaust the DB
+        verify(vaultDmlConfig).withValue(DatabaseConfig.DB_POOL_MIN_SIZE, ConfigValueFactory.fromAnyRef(0))
+
+        val uniquenessDmlConfig = dbs[VirtualNodeDbType.UNIQUENESS]?.dbConnections?.get(DbPrivilege.DML)?.config!!
+        verify(uniquenessDmlConfig, never()).withValue(eq(DatabaseConfig.JDBC_DRIVER), any())
     }
 }
