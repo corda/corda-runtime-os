@@ -100,38 +100,58 @@ interface GroupPolicy {
         /**
          * A collection of trust root certificates for session initiation as PEM strigns.
          * This is optional. If `sessionPki` mode is [SessionPkiMode.NO_PKI] then this will return null.
+         *
+         * @throws [BadGroupPolicyException] if the data is unavailable or cannot be parsed.
          */
+        @get:Throws(BadGroupPolicyException::class)
         val sessionTrustRoots: Collection<String>?
 
         /**
          * A collection of TLS trust root certificates as PEM strings.
          * Parsing validates for at least one certificate.
+         *
+         * @throws [BadGroupPolicyException] if the data is unavailable or cannot be parsed.
          */
+        @get:Throws(BadGroupPolicyException::class)
         val tlsTrustRoots: Collection<String>
 
         /**
          * The session PKI mode.
+         *
+         * @throws [BadGroupPolicyException] if the data is unavailable or cannot be parsed.
          */
+        @get:Throws(BadGroupPolicyException::class)
         val sessionPki: SessionPkiMode
 
         /**
          * The TLS PKI mode.
+         *
+         * @throws [BadGroupPolicyException] if the data is unavailable or cannot be parsed.
          */
+        @get:Throws(BadGroupPolicyException::class)
         val tlsPki: TlsPkiMode
 
         /**
          * The TLS version to be used.
+         *
+         * @throws [BadGroupPolicyException] if the data is unavailable or cannot be parsed.
          */
         val tlsVersion: TlsVersion
 
         /**
          * The P2P protocol mode.
+         *
+         * @throws [BadGroupPolicyException] if the data is unavailable or cannot be parsed.
          */
+        @get:Throws(BadGroupPolicyException::class)
         val protocolMode: ProtocolMode
 
         /**
          * The P2P TLS type.
+         *
+         * @throws [BadGroupPolicyException] if the data is unavailable or cannot be parsed.
          */
+        @get:Throws(BadGroupPolicyException::class)
         val tlsType: TlsType
 
         /**
