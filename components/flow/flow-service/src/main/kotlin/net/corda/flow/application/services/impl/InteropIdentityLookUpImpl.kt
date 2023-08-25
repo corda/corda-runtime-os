@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory
 class InteropIdentityLookUpImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService,
-    ) : InteropIdentityLookUp, UsedByFlow, SingletonSerializeAsToken {
+) : InteropIdentityLookUp, UsedByFlow, SingletonSerializeAsToken {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
@@ -35,7 +35,7 @@ class InteropIdentityLookUpImpl @Activate constructor(
 
     @Suspendable
     override fun lookup(facadeId: FacadeId): List<InterOpIdentityInfo> {
-        val identityInfo = getInteropRegistry().getIdentitiesByFacadeId()[facadeId.toString()]  ?: return emptyList()
+        val identityInfo = getInteropRegistry().getIdentitiesByFacadeId()[facadeId.toString()] ?: return emptyList()
         return identityInfo.map { InteropIdentityInfoImpl(it.applicationName, it.facadeIds, it.x500Name, it.groupId) }
     }
 
