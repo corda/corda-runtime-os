@@ -126,13 +126,16 @@ class SessionCloseProcessorSend(
             }
         } else {
             val errorMessage: String = if (status in listOf(SessionStateType.ERROR, SessionStateType.CLOSED)) {
-                "Tried to send SessionClose when status is not correct for sending a close. Key: $key sessionId: $sessionId, session status is " +
+                "Tried to send SessionClose when status is not correct for sending a close. " +
+                        "Key: $key sessionId: $sessionId, session status is " +
                         "$status. Current SessionState: $sessionState."
             } else if (!isInitiatedIdentity(sessionEvent)) {
-                "Tried to send SessionClose as initiating party which is not allowed in the protocol. Key: $key sessionId: $sessionId, session status is " +
+                "Tried to send SessionClose as initiating party which is not allowed in the protocol. " +
+                        "Key: $key sessionId: $sessionId, session status is " +
                         "$status. Current SessionState: $sessionState."
             } else {
-                "Tried to send SessionClose. Key: $key sessionId: $sessionId, session status is " +
+                "Tried to send SessionClose. " +
+                        "Key: $key sessionId: $sessionId, session status is " +
                         "$status. Current SessionState: $sessionState."
             }
             logAndGenerateErrorResult(errorMessage, sessionState, "SessionClose-InvalidStatus")
