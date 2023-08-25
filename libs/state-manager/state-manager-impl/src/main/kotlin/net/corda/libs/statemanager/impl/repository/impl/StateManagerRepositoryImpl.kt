@@ -3,7 +3,7 @@ package net.corda.libs.statemanager.impl.repository.impl
 import javax.persistence.EntityManager
 import net.corda.db.schema.DbSchema
 import net.corda.libs.statemanager.impl.dto.StateDto
-import net.corda.libs.statemanager.impl.model.v1_0.StateEntity
+import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateManagerRepository
 import org.slf4j.LoggerFactory
 

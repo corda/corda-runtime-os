@@ -7,7 +7,7 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.statemanager.impl.dto.StateDto
-import net.corda.libs.statemanager.impl.model.v1_0.StateManagerEntities
+import net.corda.libs.statemanager.impl.model.v1.StateManagerEntities
 import net.corda.libs.statemanager.impl.repository.impl.StateManagerRepositoryImpl
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl

@@ -1,4 +1,4 @@
-package net.corda.libs.statemanager.impl.model.v1_0
+package net.corda.libs.statemanager.impl.model.v1
 
 import java.time.Instant
 import javax.persistence.Column
