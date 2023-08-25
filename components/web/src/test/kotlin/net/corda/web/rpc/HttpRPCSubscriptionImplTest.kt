@@ -83,7 +83,7 @@ class HttpRPCSubscriptionImplTest {
         val request = HttpRequest.newBuilder()
             .uri(url.toURI())
             .POST(HttpRequest.BodyPublishers.ofByteArray(INPUT.toByteArray()))
-            .build();
+            .build()
 
         val resp = client.send(request, HttpResponse.BodyHandlers.ofByteArray())
         val code = resp.statusCode()

@@ -1,6 +1,7 @@
 package net.corda.web.server
 
 import io.javalin.Javalin
+import java.lang.StringBuilder
 import java.net.MalformedURLException
 import java.net.URL
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -95,9 +96,16 @@ class JavalinServer @Activate constructor(
     }
 
     private fun validateEndpoint(endpoint: String){
-        if(endpoint.isBlank() || endpoint.isEmpty()) throw CordaRuntimeException("Endpoint must not be null or empty")
-        if(!endpoint.startsWith("/")) throw CordaRuntimeException("Endpoint $endpoint must start with '/'")
-        if(!isValidEndpoint(endpoint)) throw CordaRuntimeException("Endpoint $endpoint is not validly formed")
+
+        val error = StringBuilder()
+
+        if(endpoint.isBlank() || endpoint.isEmpty()) error.appendLine("Endpoint must not be null or empty")
+        if(!endpoint.startsWith("/")) error.appendLine("Endpoint $endpoint must start with '/'")
+        if(!isValidEndpoint(endpoint)) error.appendLine("Endpoint $endpoint is not validly formed")
+
+        if(error.isNotEmpty()) {
+            throw CordaRuntimeException(error.toString())
+        }
     }
 
     fun isValidEndpoint(endpoint: String): Boolean {

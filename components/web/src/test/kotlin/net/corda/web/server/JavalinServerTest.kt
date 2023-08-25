@@ -10,6 +10,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 
@@ -71,5 +72,15 @@ class JavalinServerTest {
         }
     }
 
+    @Test
+    fun `registering an endpoint should call the correct method on javalin` (){
+        javalinServer.start(port)
+
+        javalinServer.registerHandler(HTTPMethod.GET, "/url") { c -> c }
+        verify(javalinMock).get(eq("/url"), any())
+
+        javalinServer.registerHandler(HTTPMethod.POST, "/url") { c -> c }
+        verify(javalinMock).post(eq("/url"), any())
+    }
 
 }
