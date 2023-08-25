@@ -1,10 +1,6 @@
 package net.corda.flow.pipeline.handlers.requests.helper
 
-import net.corda.data.flow.state.session.SessionStateType
-import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.state.FlowCheckpoint
 import net.corda.session.manager.Constants
-import java.time.Instant
 
 /**
  * check if an event is sent by Initiating identity
