@@ -25,7 +25,7 @@ class SwapResponderSubFlow(private val message: Payment):
 
         val applicationName = message.applicationName
         val myInteropInfo : InterOpIdentityInfo? = interopIdentityLookUp.lookup(applicationName)
-        require(myInteropInfo != null) { "Cant get InteropIdentityInfo for ${applicationName}." }
+        require(myInteropInfo != null) { "Can't get InteropIdentityInfo for ${applicationName}." }
         val facadeId = "org.corda.interop/platform/tokens/v1.0"
         log.info("Interop call: facadeId=$facadeId, interopIdentity=${myInteropInfo.applicationName}," +
                 " interopGroupId=${myInteropInfo.groupId}")

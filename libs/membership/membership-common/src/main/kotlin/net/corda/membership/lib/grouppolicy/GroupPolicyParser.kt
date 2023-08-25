@@ -92,7 +92,7 @@ interface GroupPolicyParser {
     ): MemberGroupPolicy?
 
     /**
-     * Parses a interop GroupPolicy from [String] to [GroupPolicy].
+     * Parses an interop GroupPolicy from [String] to [GroupPolicy].
      *
      * @param groupPolicy Group policy file as a Json String
      *

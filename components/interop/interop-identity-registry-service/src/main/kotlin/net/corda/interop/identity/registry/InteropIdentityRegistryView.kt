@@ -44,8 +44,8 @@ interface InteropIdentityRegistryView {
     fun getIdentitiesByApplicationName(): Map<String, InteropIdentity>
 
     /**
-     * Get identities within the view as a map with the FacadeId as Key and a set of InterOpIdentities that implement
-     * those facades as the value.
+     * Get identities within the view as a map with the FacadeId as the key and a set of InterOpIdentities that
+     * implement those facades as the value.
      *
      * @return Map of facade IDs to sets of [InteropIdentity] objects.
      */
