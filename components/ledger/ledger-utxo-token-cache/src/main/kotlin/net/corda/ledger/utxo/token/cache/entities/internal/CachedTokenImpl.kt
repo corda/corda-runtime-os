@@ -1,8 +1,9 @@
-package net.corda.ledger.utxo.token.cache.entities
+package net.corda.ledger.utxo.token.cache.entities.internal
 
 import net.corda.data.ledger.utxo.token.selection.data.Token
 import net.corda.ledger.utxo.token.cache.converters.EntityConverter
 import java.math.BigDecimal
+import net.corda.ledger.utxo.token.cache.entities.CachedToken
 
 class CachedTokenImpl(
     private val token: Token,
