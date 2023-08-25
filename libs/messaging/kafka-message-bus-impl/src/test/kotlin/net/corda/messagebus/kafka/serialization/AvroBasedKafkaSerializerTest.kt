@@ -1,5 +1,7 @@
-package net.corda.messagebus.kafka.serialization
+package net.corda.messaging.kafka.subscription.net.corda.messagebus.kafka.serialization
 
+import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
+import net.corda.messagebus.kafka.serialization.CordaAvroSerializerImpl
 import java.nio.ByteBuffer
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -12,10 +14,11 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
-class CordaAvroSerializerImplTest {
 
+class AvroBasedKafkaSerializerTest {
+    private val topic = "topic"
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
-    private val cordaAvroSerializer = CordaAvroSerializerImpl<Any>(avroSchemaRegistry, null)
+    private val serializer = CordaAvroSerializationFactoryImpl(avroSchemaRegistry).createAvroBasedKafkaSerializer(null)
 
     data class SerializeTester(val contents: String = "test contents")
 
@@ -26,30 +29,34 @@ class CordaAvroSerializerImplTest {
 
     @Test
     fun testNotNullValue() {
-        assertThat(cordaAvroSerializer.serialize(Any()) != null)
+        assertThat(serializer(topic, Any()) != null)
     }
 
+    @Test
+    fun testNullValue() {
+        assertThat(serializer(topic, null) == null)
+    }
 
     @Test
     fun testStringValue() {
-        assertThat(cordaAvroSerializer.serialize("string") != null)
+        assertThat(serializer(topic, "string") != null)
     }
 
     @Test
     fun testByteArrayValue() {
-        assertThat(cordaAvroSerializer.serialize("bytearray".toByteArray()) != null)
+        assertThat(serializer(topic, "bytearray".toByteArray()) != null)
     }
 
     @Test
     fun testCustomClassValue() {
-        assertThat(cordaAvroSerializer.serialize(SerializeTester()) != null)
+        assertThat(serializer(topic, SerializeTester()) != null)
     }
 
     @Test
     fun testExceptionPropagation() {
         val data = SerializeTester()
         whenever(avroSchemaRegistry.serialize(data)).thenThrow(IllegalStateException())
-        assertThrows<CordaRuntimeException> { cordaAvroSerializer.serialize(data) }
+        assertThrows<CordaRuntimeException> { serializer(topic, data) }
     }
 
     @Test
@@ -62,5 +69,4 @@ class CordaAvroSerializerImplTest {
         assertThrows<CordaRuntimeException> { onErrorSerializer.serialize(data) }
         assertTrue(hasRan)
     }
-
 }

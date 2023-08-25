@@ -27,10 +27,31 @@ class CordaAvroSerializationFactoryImpl @Activate constructor(
             expectedClass
         )
     }
+    override fun <T : Any> createAvroBasedKafkaDeserializer(
+        onError: ((ByteArray) -> Unit),
+        expectedClass: Class<T>
+    ): (Any?, ByteArray?) -> T? {
+        val avroDeserializer = CordaAvroDeserializerImpl(avroSchemaRegistry, onError, expectedClass)
+        return { _, d -> when (d) {
+            null -> null
+            else -> avroDeserializer.deserialize(d) } }
+    }
 
     override fun <T : Any> createAvroSerializer(
         onError: ((ByteArray) -> Unit)?
     ): CordaAvroSerializer<T> {
         return CordaAvroSerializerImpl(avroSchemaRegistry, onError)
+    }
+
+    override fun createAvroBasedKafkaSerializer(
+        onError: ((ByteArray) -> Unit)?
+    ): (Any?, Any?) -> ByteArray? {
+        val avroSerializer = CordaAvroSerializerImpl<Any>(avroSchemaRegistry, onError)
+        return { _, d: Any? ->
+            when (d) {
+                null -> null
+                else -> avroSerializer.serialize(d)
+            }
+        }
     }
 }

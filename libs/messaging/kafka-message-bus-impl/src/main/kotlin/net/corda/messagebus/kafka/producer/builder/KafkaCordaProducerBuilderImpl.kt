@@ -82,12 +82,10 @@ class KafkaCordaProducerBuilderImpl @Activate constructor(
             if (currentBundle != null) {
                 Thread.currentThread().contextClassLoader = currentBundle.adapt(BundleWiring::class.java).classLoader
             }
-            val keySerializer = cordaAvroSerializationFactory.createAvroSerializer<Any>(onSerializationError)
-            val valueSerializer = cordaAvroSerializationFactory.createAvroSerializer<Any>(onSerializationError)
             KafkaProducer(
                 kafkaProperties,
-                { _, d -> keySerializer.serialize(d) },
-                { _, d -> valueSerializer.serialize(d) }
+                cordaAvroSerializationFactory.createAvroBasedKafkaSerializer(onSerializationError),
+                cordaAvroSerializationFactory.createAvroBasedKafkaSerializer(onSerializationError)
             )
         } finally {
             Thread.currentThread().contextClassLoader = contextClassLoader

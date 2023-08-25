@@ -14,17 +14,16 @@ class CordaDBAvroSerializerImpl<T : Any>(
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun serialize(data: T?): ByteArray? {
+    override fun serialize(data: T): ByteArray? {
 
         try {
             return when (data) {
                 is String -> data.encodeToByteArray()
                 is ByteArray -> data
-                null -> null
                 else -> schemaRegistry.serialize(data).array()
             }
         } catch (ex: Throwable) {
-            val message = "Failed to serialize instance of class type ${data?.javaClass?.name}"
+            val message = "Failed to serialize instance of class type ${data::class.java.name} containing $data"
 
             onError?.invoke(message.toByteArray())
             log.error(message, ex)
