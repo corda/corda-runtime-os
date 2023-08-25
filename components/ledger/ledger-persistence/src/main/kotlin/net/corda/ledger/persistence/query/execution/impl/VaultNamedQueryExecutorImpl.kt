@@ -57,7 +57,7 @@ class VaultNamedQueryExecutorImpl(
 
         // Fetch and filter the results and try to fill up the page size then map the results
         // mapNotNull has no effect as of now, but we keep it for safety purposes
-        val (fetchedRecords, newOffset) = filterResultsAndFillPageSize(
+        val (fetchedRecords, numberOfRowsFromQuery) = filterResultsAndFillPageSize(
             request,
             vaultNamedQuery,
             deserializedParams
@@ -77,7 +77,7 @@ class VaultNamedQueryExecutorImpl(
         return EntityResponse.newBuilder()
             .setResults(collectedResults.map { ByteBuffer.wrap(serializationService.serialize(it).bytes) })
             .setMetadata(KeyValuePairList(listOf(
-                KeyValuePair("numberOfRowsFromQuery", (newOffset - request.offset).toString())
+                KeyValuePair("numberOfRowsFromQuery", numberOfRowsFromQuery.toString())
             ))).build()
     }
 
@@ -104,11 +104,11 @@ class VaultNamedQueryExecutorImpl(
         request: FindWithNamedQuery,
         vaultNamedQuery: VaultNamedQuery,
         deserializedParams: Map<String, Any>
-    ): Pair<List<StateAndRef<ContractState>>, Int> {
+    ): FilterResult {
         val filteredResults = mutableListOf<StateAndRef<ContractState>>()
 
-        var internalOffset = request.offset
         var currentRetry = 0
+        var numberOfRowsFromQuery = 0
 
         while (filteredResults.size < request.limit && currentRetry < RESULT_SET_FILL_RETRY_LIMIT) {
             ++currentRetry
@@ -119,31 +119,40 @@ class VaultNamedQueryExecutorImpl(
             val contractStateResults = fetchStateAndRefs(
                 request,
                 vaultNamedQuery.query.query,
-                offset = internalOffset
+                offset = request.offset + numberOfRowsFromQuery
             )
 
             // If we have no filter, there's no need to continue the loop
             if (vaultNamedQuery.filter == null) {
-                return Pair(contractStateResults, contractStateResults.size)
+                return FilterResult(
+                    results = contractStateResults,
+                    numberOfRowsFromQuery = contractStateResults.size
+                )
             }
 
             // If we can't fetch more states we just return the result set as-is
             if (contractStateResults.isEmpty()) {
-                return Pair(emptyList(), internalOffset)
+                break
             }
 
-            // Increase the internal offset, so we don't fetch the same results multiple times
-            internalOffset += contractStateResults.size
+            contractStateResults.forEach { contractStateResult ->
+                ++numberOfRowsFromQuery
+                if (vaultNamedQuery.filter.filter(contractStateResult, deserializedParams)) {
+                    filteredResults.add(contractStateResult)
+                }
 
-            // Apply filters (if there's any) and add the filtered results to the final result set
-            filteredResults.addAll(contractStateResults.filter {
-                vaultNamedQuery.filter.filter(it, deserializedParams)
-            })
+                if (filteredResults.size >= request.limit) {
+                    return FilterResult(
+                        results = filteredResults,
+                        numberOfRowsFromQuery = numberOfRowsFromQuery
+                    )
+                }
+            }
         }
 
-        return Pair(
-            filteredResults.take(request.limit), // Make sure we don't return more than the limit even if the list has overflown
-            internalOffset - (filteredResults.size - request.limit) // subtract the extra size we removed from the results from the offset
+        return FilterResult(
+            results = filteredResults,
+            numberOfRowsFromQuery = numberOfRowsFromQuery
         )
     }
 
@@ -212,4 +221,9 @@ class VaultNamedQueryExecutorImpl(
             throw NullParameterException(msg)
         }
     }
+
+    data class FilterResult(
+        val results: List<StateAndRef<ContractState>>,
+        val numberOfRowsFromQuery: Int
+    )
 }

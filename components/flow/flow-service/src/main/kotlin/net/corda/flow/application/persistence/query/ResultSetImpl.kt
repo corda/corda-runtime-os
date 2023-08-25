@@ -18,7 +18,7 @@ data class ResultSetImpl<R> internal constructor(
     init {
         // Ideally this will never happen, but we keep this check in here for safety
         require(offset >= 0) {
-            "Offset cannot be negative or zero"
+            "Offset cannot be negative"
         }
         require(limit > 0) {
             "Limit cannot be negative or zero"
@@ -43,18 +43,8 @@ data class ResultSetImpl<R> internal constructor(
         }
         val (serializedResults, numberOfRowsFromQuery) = resultSetExecutor.execute(serializedParameters, offset)
 
-        // Here have the number of rows we fetched from the database (before filtering)
-        // then we check if the remainder is 0 when diving the number of rows fetched with the limit
-        // This will:
-        // 1. yield false only if we don't have a next page to fetch
-        // Examples:
-        // `limit` = 5, `numberOfRowsFromQuery` = 9, `hasNext = 9 % 5 == 0` => `hasNext = 4 == 0` == false
-        // `limit` = 5, `numberOfRowsFromQuery` = 4, `hasNext = 4 % 5 == 0` => `hasNext = 4 == 0` == false
-        // 2. yield true if we can't know for sure if there's a next page
-        // Example:
-        // `limit` = 5, `numberOfRowsFromQuery` = 5, `hasNext = 5 % 5 == 0` => `hasNext =  0 == 0` == true
         hasNext = numberOfRowsFromQuery != 0  // If there are no rows left there are no more pages to fetch
-                && numberOfRowsFromQuery % limit == 0
+                && serializedResults.size == limit // If the current page is full, it means we might have more records, so we go and check
         offset += numberOfRowsFromQuery
         results = serializedResults.map { serializationService.deserialize(it.array(), resultClass) }
         return results
