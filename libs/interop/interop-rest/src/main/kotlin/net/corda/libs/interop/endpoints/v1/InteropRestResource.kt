@@ -90,7 +90,10 @@ interface InteropRestResource : RestResource {
     )
     fun importInterOpIdentity(
         importInteropIdentityRestRequest: ImportInteropIdentityRest.Request,
-        @RestPathParameter(description = "Short hash of the holding identity of the virtual node into which the interop identity will be imported.")
+        @RestPathParameter(
+            description = "Short hash of the holding identity of the virtual node into which the interop " +
+            "identity will be imported."
+        )
         holdingIdentityShortHash: String
     ): ResponseEntity<String>
 }
