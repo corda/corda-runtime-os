@@ -438,7 +438,7 @@ class FlowServiceTestContext @Activate constructor(
         testRuns.forEachIndexed { iteration, testRun ->
             log.info("Start test run for input/output set $iteration")
             flowFiberFactory.fiber.reset()
-            flowFiberFactory.fiber.ioToCompleteWith = testRun.ioRequest
+            flowFiberFactory.fiber.setIoRequests(testRun.ioRequests)
             val response = flowEventProcessor.onNext(lastPublishedState, testRun.event)
             testRun.flowContinuation = flowFiberFactory.fiber.flowContinuation
             testRun.response = response
@@ -534,20 +534,25 @@ class FlowServiceTestContext @Activate constructor(
 
         return object : FlowIoRequestSetup {
 
-            override fun suspendsWith(flowIoRequest: FlowIORequest<*>) {
-                testRun.ioRequest = FlowIORequest.FlowSuspended(
-                    ByteBuffer.wrap(byteArrayOf()),
-                    flowIoRequest,
-                    FlowFiberImpl(UUID.randomUUID(), ClientStartedFlow(FakeFlow(), FakeClientRequestBody()), currentScheduler)
+            override fun suspendsWith(flowIoRequest: FlowIORequest<*>) : FlowIoRequestSetup {
+                testRun.ioRequests.add(
+                    FlowIORequest.FlowSuspended(
+                        ByteBuffer.wrap(byteArrayOf()),
+                        flowIoRequest,
+                        FlowFiberImpl(UUID.randomUUID(), ClientStartedFlow(FakeFlow(), FakeClientRequestBody()), currentScheduler)
+                    )
                 )
+                return this
             }
 
-            override fun completedSuccessfullyWith(result: String?) {
-                testRun.ioRequest = FlowIORequest.FlowFinished(result)
+            override fun completedSuccessfullyWith(result: String?) : FlowIoRequestSetup {
+                testRun.ioRequests.add(FlowIORequest.FlowFinished(result))
+                return this
             }
 
-            override fun completedWithError(exception: Exception) {
-                testRun.ioRequest = FlowIORequest.FlowFailed(exception)
+            override fun completedWithError(exception: Exception) : FlowIoRequestSetup {
+                testRun.ioRequests.add(FlowIORequest.FlowFailed(exception))
+                return this
             }
         }
     }
