@@ -1,9 +1,9 @@
 package net.corda.web.server
 
 import io.javalin.http.Context
-import java.io.InputStream
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.web.api.WebContext
+import java.io.InputStream
 
 class JavalinContext(private val ctx: Context) : WebContext {
     override fun status(status: Int) {
@@ -29,6 +29,10 @@ class JavalinContext(private val ctx: Context) : WebContext {
 
     override fun header(header: String) {
         ctx.header(header)
+    }
+
+    override fun headers(): Map<String, String> {
+        return ctx.headerMap()
     }
 
 }

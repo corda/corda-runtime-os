@@ -12,4 +12,6 @@ interface WebContext {
     fun header(header: String, value: String)
 
     fun header(header: String)
+
+    fun headers(): Map<String, String>
 }

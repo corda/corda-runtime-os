@@ -21,6 +21,7 @@ dependencies {
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:uniqueness:backing-store")
     implementation project(":components:uniqueness:backing-store-impl")
+    implementation project(':components:webserver')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-datamodel')
     implementation project(':libs:flows:external-event-responses')
@@ -29,6 +30,7 @@ dependencies {
     implementation project(':libs:tracing')
     implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")
+    implementation project(":libs:web")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
