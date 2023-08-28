@@ -15,7 +15,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
-@Disabled
 class StartFlowTest : FlowServiceTestBase() {
 
     @Test
@@ -31,14 +30,7 @@ class StartFlowTest : FlowServiceTestBase() {
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, BOB_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitialCheckpoint)
-        }
-
-        then {
-            expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
-                flowStatus(FlowStates.RUNNING)
-                flowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
-            }
+                .completedSuccessfullyWith("hello")
         }
 
         then {
@@ -83,10 +75,9 @@ class StartFlowTest : FlowServiceTestBase() {
 
     /**
      * When a flow event fails with a transient exception then the flow will be put into a retry
-     * state. In this state the failed event will be retried when the flow receives a wakeup, if the retry
-     * is successful then the retry state is cleared and the flow continues as expected, if the retry limit is reached
-     * then the flow is failed to the DLQ
-
+     * state. In this case the flow engine will publish the problematic event back to itself to be processed at some
+     * later time. This could then fail again, triggering the same loop.
+     *
      * Scenario 1 - Fails multiple times but completes before the retry limit
      * Scenario 2 - Fails multiple times and hits the retry limit failing the flow to the DLQ
      */
@@ -106,16 +97,7 @@ class StartFlowTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                noFlowEvents()
                 checkpointHasRetry(1)
-                flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
-            }
-        }
-
-        then {
-            expectOutputForFlow(FLOW_ID1) {
-                noFlowEvents()
-                checkpointHasRetry(2)
                 flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
@@ -126,12 +108,16 @@ class StartFlowTest : FlowServiceTestBase() {
             virtualNode(CPI1, BOB_HOLDING_IDENTITY)
         }
 
+        `when` {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, BOB_HOLDING_IDENTITY, CPI1, "flow start data")
+                .completedSuccessfullyWith("hello")
+        }
+
         then {
             expectOutputForFlow(FLOW_ID1) {
                 checkpointDoesNotHaveRetry()
-                wakeUpEvent()
-                flowStatus(FlowStates.RUNNING)
-                flowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
+                flowStatus(FlowStates.COMPLETED, result = "hello")
+                flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }
@@ -151,12 +137,15 @@ class StartFlowTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                noFlowEvents()
                 checkpointHasRetry(1)
                 flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
 
+        `when` {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, BOB_HOLDING_IDENTITY, CPI1, "flow start data")
+        }
+        
         then {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
