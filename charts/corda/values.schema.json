@@ -1292,7 +1292,7 @@
                 "crypto",
                 "db",
                 "flow",
-                "flow-mapper",
+                "flowMapper",
                 "membership",
                 "rest",
                 "p2pLinkManager",
@@ -1555,7 +1555,7 @@
                         }
                     ]
                 },
-                "flow-mapper": {
+                "flowMapper": {
                     "allOf": [
                         {
                             "$ref": "#/$defs/worker"
@@ -2319,7 +2319,7 @@
                     },
                     "verifyInstrumentation": false
                 },
-                "flow-mapper": {
+                "flowMapper": {
                     "image": {
                         "registry": "corda-os-docker.software.r3.com",
                         "repository": "corda-os-flow-mapper-worker",

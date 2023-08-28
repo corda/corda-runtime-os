@@ -73,16 +73,16 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "flow"
-  flow-mapper:
+  flowMapper:
     kafka:
       sasl:
         username:
-          value: "flow-mapper"
+          value: "flowMapper"
         password:
           valueFrom:
             secretKeyRef:
               name: "kafka-credentials"
-              key: "flow-mapper"
+              key: "flowMapper"
   membership:
     kafka:
       sasl:

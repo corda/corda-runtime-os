@@ -673,7 +673,7 @@ workers:
               key: ""
 
   # flow mapper worker configuration
-  flow-mapper:
+  flowMapper:
     # flow-mapper worker image configuration
     image:
       # -- flow mapper worker image registry, defaults to image.registry
