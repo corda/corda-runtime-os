@@ -57,7 +57,7 @@ class SubFlowFinishedRequestHandler @Activate constructor(
 
         val hasNoSessionsOrAllClosed = try {
 
-            closeSessionService.getSessionsForPostProcess(getSessionsToClose(request), checkpoint)
+            closeSessionService.handleCloseForSessions(getSessionsToClose(request), checkpoint)
             getSessionsToClose(request).isEmpty() || flowSessionManager.doAllSessionsHaveStatus(
                 checkpoint,
                 getSessionsToClose(request),
