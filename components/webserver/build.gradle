@@ -12,10 +12,11 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'
 
-    implementation project(':libs:serialization:serialization-avro')
-    implementation project(':libs:messaging:messaging')
-    implementation project(':libs:utilities')
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(':libs:messaging:messaging')
+    implementation project(':libs:serialization:serialization-avro')
+    implementation project(':libs:tracing')
+    implementation project(':libs:utilities')
     implementation project(":libs:web")
 
     implementation "net.corda:corda-avro-schema"
