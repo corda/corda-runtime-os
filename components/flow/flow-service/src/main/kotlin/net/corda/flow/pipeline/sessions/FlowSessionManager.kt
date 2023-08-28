@@ -20,7 +20,7 @@ import java.time.Instant
 /**
  * [FlowSessionManager] encapsulates the logic of [SessionManager] with a specific focus on its usage within the flow event pipeline.
  */
-@Suppress("TooManyFunctions")//TODO CORE-15757
+@Suppress("TooManyFunctions")
 interface FlowSessionManager {
 
     /**

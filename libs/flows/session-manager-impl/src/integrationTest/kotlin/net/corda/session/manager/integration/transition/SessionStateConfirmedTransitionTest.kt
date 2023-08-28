@@ -1,6 +1,5 @@
 package net.corda.session.manager.integration.transition
 
-import java.time.Instant
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
@@ -11,12 +10,11 @@ import net.corda.session.manager.integration.SessionMessageType
 import net.corda.session.manager.integration.helper.generateMessage
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-@Disabled //TODO CORE-15757
+import java.time.Instant
 class SessionStateConfirmedTransitionTest {
 
     private val messagingChunkFactory : MessagingChunkFactory = mock<MessagingChunkFactory>().apply {

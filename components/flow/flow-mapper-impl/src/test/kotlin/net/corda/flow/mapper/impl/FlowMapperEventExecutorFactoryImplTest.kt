@@ -14,6 +14,7 @@ import net.corda.flow.mapper.impl.executor.ExecuteCleanupEventExecutor
 import net.corda.flow.mapper.impl.executor.ScheduleCleanupEventExecutor
 import net.corda.flow.mapper.impl.executor.SessionErrorExecutor
 import net.corda.flow.mapper.impl.executor.SessionEventExecutor
+import net.corda.flow.mapper.impl.executor.SessionInitProcessor
 import net.corda.flow.mapper.impl.executor.StartFlowExecutor
 import net.corda.libs.configuration.SmartConfigImpl
 import org.assertj.core.api.Assertions.assertThat
@@ -29,7 +30,8 @@ class FlowMapperEventExecutorFactoryImplTest {
     @BeforeEach
     fun setup() {
         val recordFactory: RecordFactory = mock()
-        executorFactoryImpl = FlowMapperEventExecutorFactoryImpl(recordFactory)
+        val sessionInitProcessor: SessionInitProcessor = mock()
+        executorFactoryImpl = FlowMapperEventExecutorFactoryImpl(recordFactory, sessionInitProcessor)
     }
 
     @Test

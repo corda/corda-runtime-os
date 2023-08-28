@@ -38,7 +38,6 @@ class SubFlowFinishedRequestHandler @Activate constructor(
         return if (sessionsToClose.isEmpty()) {
             WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
         } else {
-            //TODO CORE-15757 / CORE-16184
             WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
         }
     }
@@ -51,7 +50,6 @@ class SubFlowFinishedRequestHandler @Activate constructor(
         val hasNoSessionsOrAllClosed = try {
             val sessionsToClose = getSessionsToClose(checkpoint, request)
 
-            //TODO CORE-15757 / CORE-16184
             checkpoint.putSessionStates(flowSessionManager.sendCloseMessages(checkpoint, sessionsToClose, Instant.now()))
             val sessionStates = sessionsToClose.mapNotNull { sessionToClose ->
                 val sessionState = checkpoint.sessions.find {

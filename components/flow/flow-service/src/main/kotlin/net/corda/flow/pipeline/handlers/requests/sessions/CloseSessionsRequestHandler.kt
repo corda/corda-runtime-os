@@ -44,27 +44,6 @@ class CloseSessionsRequestHandler @Activate constructor(
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.CloseSessions): FlowEventContext<Any> {
-        /*val checkpoint = context.checkpoint
-
-        val hasNoSessionsOrAllClosed = try {
-            val sessionsToClose = getSessionsToClose(checkpoint, request)
-
-            checkpoint.putSessionStates(flowSessionManager.sendCloseMessages(checkpoint, sessionsToClose, Instant.now()))
-
-            sessionsToClose.isEmpty() || flowSessionManager.doAllSessionsHaveStatus(checkpoint, sessionsToClose, SessionStateType.CLOSED)
-        } catch (e: FlowSessionStateException) {
-            // TODO CORE-4850 Wakeup with error when session does not exist
-            throw FlowFatalException(e.message, e)
-        }
-
-        return if (hasNoSessionsOrAllClosed) {
-            val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
-            context.copy(outputRecords = context.outputRecords + listOf(record))
-        } else {
-            context
-        }*/
-
-        //TODO CORE-15757 / CORE-16184
         val checkpoint = context.checkpoint
         val sessionsToClose = getSessionsToClose(checkpoint, request)
         context.checkpoint.sessions.onEach {
