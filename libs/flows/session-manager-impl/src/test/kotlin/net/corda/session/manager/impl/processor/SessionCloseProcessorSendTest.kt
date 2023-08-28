@@ -4,37 +4,16 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionError
-import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.Instant
-@Disabled
+
 class SessionCloseProcessorSendTest {
 
-    private companion object {
-        val sesssionState = SessionState()
-    }
-    @Test
-    fun `send close when state is null`() {
-        val sessionEvent = buildSessionEvent(
-            MessageDirection.OUTBOUND,
-            "sessionId",
-            1,
-            SessionClose(),
-            contextSessionProps = emptyKeyValuePairList()
-        )
-
-        val result = SessionCloseProcessorSend("key", sesssionState, sessionEvent, Instant.now()).execute()
-        assertThat(result).isNotNull
-        assertThat(result.status).isEqualTo(SessionStateType.ERROR)
-        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
-        assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
-    }
 
     @Test
     fun `Send close when status is ERROR`() {

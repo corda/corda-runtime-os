@@ -1,6 +1,5 @@
 package net.corda.session.manager.impl.processor
 
-import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
@@ -11,6 +10,7 @@ import net.corda.session.manager.impl.processor.helper.generateErrorSessionState
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 /**
  * Handle send of a [SessionClose] event.
@@ -55,12 +55,6 @@ class SessionCloseProcessorSend(
                 getResultByCurrentState(sessionState, sessionId, nextSeqNum)
             }
         }
-    }
-
-    private fun handleNullSession(sessionId: String): SessionState {
-        val errorMessage = "Tried to send SessionClose with flow key $key and sessionId $sessionId  with null state"
-        logger.warn(errorMessage)
-        return generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionCLose-StateNull", instant)
     }
 
     private fun hasUnprocessedReceivedDataEvents(sessionState: SessionState): Boolean {

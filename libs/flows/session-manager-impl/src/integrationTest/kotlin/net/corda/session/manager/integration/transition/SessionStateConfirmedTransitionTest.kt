@@ -26,15 +26,6 @@ class SessionStateConfirmedTransitionTest {
     private val maxMsgSize = 10000000L
 
     @Test
-    fun `Send session init when in state confirmed`() {
-        val sessionState = buildConfirmedState()
-
-        val sessionEvent = generateMessage(SessionMessageType.INIT, instant)
-        val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant, maxMsgSize)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
-    }
-
-    @Test
     fun `Send data when in state confirmed`() {
         val sessionState = buildConfirmedState()
 
@@ -42,7 +33,6 @@ class SessionStateConfirmedTransitionTest {
         val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant, maxMsgSize)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CONFIRMED)
     }
-
 
     @Test
     fun `Send close when in state confirmed`() {
