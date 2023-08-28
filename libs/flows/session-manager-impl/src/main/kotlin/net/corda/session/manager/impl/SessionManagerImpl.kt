@@ -65,8 +65,7 @@ class SessionManagerImpl @Activate constructor(
         contextSessionProperties: KeyValuePairList,
         counterparty: HoldingIdentity,
         instant: Instant,
-    ): SessionState {
-        return SessionState.newBuilder()
+    ): SessionState = SessionState.newBuilder()
             .setSessionId(sessionId)
             .setSessionStartTime(instant)
             .setLastReceivedMessageTime(instant)
@@ -78,7 +77,6 @@ class SessionManagerImpl @Activate constructor(
             .setHasScheduledCleanup(false)
             .setRequireClose(contextSessionProperties.toMap()[Constants.FLOW_SESSION_REQUIRE_CLOSE].toBoolean())
             .build()
-    }
 
     override fun getNextReceivedEvent(sessionState: SessionState): SessionEvent? {
         val receivedEvents = sessionState.receivedEventsState ?: return null
@@ -117,8 +115,7 @@ class SessionManagerImpl @Activate constructor(
         instant: Instant,
         config: SmartConfig,
         identity: HoldingIdentity,
-    ): Pair<SessionState,
-            List<SessionEvent>> {
+    ): Pair<SessionState, List<SessionEvent>> {
         val sessionEvents = getMessagesToSend(sessionState)
         val messagesToReturn = handleSessionTimeouts(sessionState, config, instant, sessionEvents, identity)
         sessionState.sendEventsState.undeliveredMessages = emptyList()

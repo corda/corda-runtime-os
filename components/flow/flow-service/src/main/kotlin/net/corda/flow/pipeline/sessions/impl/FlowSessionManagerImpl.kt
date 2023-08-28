@@ -229,11 +229,9 @@ class FlowSessionManagerImpl @Activate constructor(
         checkpoint: FlowCheckpoint,
         sessionIds: List<String>,
         status: SessionStateType
-    ): List<SessionState> {
-        return sessionIds
+    ): List<SessionState> = sessionIds
             .map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
             .filter { sessionState -> sessionState.status == status }
-    }
 
     override fun getSessionsWithStatuses(
         checkpoint: FlowCheckpoint,

@@ -68,8 +68,9 @@ class CloseSessionsRequestHandler @Activate constructor(
         val checkpoint = context.checkpoint
         val sessionsToClose = getSessionsToClose(checkpoint, request)
         context.checkpoint.sessions.onEach {
-            if (sessionsToClose.contains(it.sessionId))
+            if (sessionsToClose.contains(it.sessionId)) {
                 it.status = SessionStateType.CLOSED
+            }
         }
 
         val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
