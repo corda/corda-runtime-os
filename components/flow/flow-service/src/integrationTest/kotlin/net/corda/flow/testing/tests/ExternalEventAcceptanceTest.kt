@@ -31,11 +31,11 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
-@Disabled
 class ExternalEventAcceptanceTest : FlowServiceTestBase() {
 
     private companion object {
         const val REQUEST_ID = "requestId"
+        const val SECOND_REQUEST_ID = "secondRequestId"
         const val TOPIC = "topic"
         const val KEY = "key"
         val FLOW_START_CONTEXT = mapOf("key" to "value")
@@ -133,7 +133,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             externalEventReceived(FLOW_ID1, REQUEST_ID, response)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
+                .completedSuccessfullyWith("hello")
         }
 
         then {
@@ -208,7 +208,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
                 )
 
             externalEventReceived(FLOW_ID1, REQUEST_ID, STRING_RESPONSE)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
+                .completedSuccessfullyWith("hello")
         }
 
         then {
@@ -244,6 +244,11 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
                 )
         }
 
+        `when` {
+            // Use this as a trigger for the pipeline - an external event not the one we are expecting.
+            externalEventReceived(FLOW_ID1, SECOND_REQUEST_ID, ANY_INPUT)
+        }
+
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
@@ -271,6 +276,11 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
                         EXTERNAL_EVENT_CONTEXT
                     )
                 )
+        }
+
+        `when` {
+            // Use this as a trigger for the pipeline - an external event not the one we are expecting.
+            externalEventReceived(FLOW_ID1, SECOND_REQUEST_ID, ANY_INPUT)
         }
 
         then {
@@ -385,6 +395,11 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         // Wait for the resend window to be passed
         Thread.sleep(10.seconds.toMillis())
 
+        `when` {
+            // Use this as a trigger for the pipeline - an external event not the one we are expecting.
+            externalEventReceived(FLOW_ID1, SECOND_REQUEST_ID, ANY_INPUT)
+        }
+
         then {
             expectOutputForFlow(FLOW_ID1) {
                 externalEvent(TOPIC, KEY, ANY_INPUT)
@@ -419,7 +434,6 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             externalEventReceived(FLOW_ID1, REQUEST_ID, ANY_RESPONSE)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         then {
