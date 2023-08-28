@@ -29,4 +29,5 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
+    runtimeOnly project(':components:webserver')
 }
