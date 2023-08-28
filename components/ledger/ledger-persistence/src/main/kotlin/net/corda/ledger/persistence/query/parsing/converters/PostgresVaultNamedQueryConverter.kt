@@ -1,6 +1,8 @@
 package net.corda.ledger.persistence.query.parsing.converters
 
+import net.corda.ledger.persistence.query.parsing.JsonArrayOrObjectAsText
 import net.corda.ledger.persistence.query.parsing.JsonCast
+import net.corda.ledger.persistence.query.parsing.JsonField
 import net.corda.ledger.persistence.query.parsing.JsonKeyExists
 import net.corda.ledger.persistence.query.parsing.Token
 import net.corda.orm.DatabaseTypeProvider
@@ -19,13 +21,14 @@ class PostgresVaultNamedQueryConverter @Activate constructor(
         LoggerFactory.getLogger(this::class.java).info("Activated for {}", databaseTypeProvider.databaseType)
     }
 
-    override fun preProcess(outputTokens: List<Token>) = outputTokens
-
-    override fun customConvert(token: Token): String? {
-        return when (token) {
-            is JsonKeyExists -> " \\?\\? "
-            is JsonCast -> "\\:\\:${token.value}"
-            else -> null
+    override fun writeCustom(output: StringBuilder, token: Token) {
+        when(token) {
+            is JsonField -> writeBinaryOperator(output, " -> ", token)
+            is JsonArrayOrObjectAsText -> writeBinaryOperator(output, " ->> ", token)
+            is JsonCast -> writeBinaryOperator(output, "\\:\\:", token)
+            is JsonKeyExists -> writeBinaryOperator(output, " \\?\\? ", token)
+            else ->
+                throw IllegalArgumentException("Invalid token in expression - $token")
         }
     }
 }

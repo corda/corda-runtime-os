@@ -157,7 +157,7 @@ class HsqldbVaultNamedQueryTest {
 
         val sqlText = vaultNamedQueryParser.parseWhereJson("WHERE (visible_state.custom_representation)->(a)->>(b) = :value")
         assertThat(sqlText)
-            .isEqualTo("WHERE JsonFieldAsText( JsonFieldAsObject( CAST(visible_state.custom_representation AS $JSON_SQL_TYPE), ('a')), ('b')) = :value")
+            .isEqualTo("WHERE JsonFieldAsText( JsonFieldAsObject( CAST(visible_state.custom_representation AS $JSON_SQL_TYPE), 'a'), 'b') = :value")
 
         val numberResult = executeQuery(sqlText, txId) { query ->
             query.setParameter("value", 999)
@@ -189,7 +189,7 @@ class HsqldbVaultNamedQueryTest {
 
         val sqlText = vaultNamedQueryParser.parseWhereJson("WHERE (visible_state.custom_representation)->(a)->>(:index::int) = :value")
         assertThat(sqlText)
-            .isEqualTo("WHERE JsonFieldAsText( JsonFieldAsObject( CAST(visible_state.custom_representation AS $JSON_SQL_TYPE), ('a')), ( CAST(:index AS int))) = :value")
+            .isEqualTo("WHERE JsonFieldAsText( JsonFieldAsObject( CAST(visible_state.custom_representation AS $JSON_SQL_TYPE), 'a'), ( CAST(:index AS int))) = :value")
 
         val numberResult = executeQuery(sqlText, txId) { query ->
             query.setParameter("index", 3)
@@ -223,7 +223,7 @@ class HsqldbVaultNamedQueryTest {
 
         val sqlText = vaultNamedQueryParser.parseWhereJson("WHERE (visible_state.custom_representation)->(:index::int)->>(c) = :value")
         assertThat(sqlText)
-            .isEqualTo("WHERE JsonFieldAsText( JsonFieldAsObject( CAST(visible_state.custom_representation AS $JSON_SQL_TYPE), ( CAST(:index AS int))), ('c')) = :value")
+            .isEqualTo("WHERE JsonFieldAsText( JsonFieldAsObject( CAST(visible_state.custom_representation AS $JSON_SQL_TYPE), ( CAST(:index AS int))), 'c') = :value")
 
         val numberResult = executeQuery(sqlText, txId) { query ->
             query.setParameter("index", 2)
@@ -257,7 +257,7 @@ class HsqldbVaultNamedQueryTest {
 
         val sqlText = vaultNamedQueryParser.parseWhereJson("WHERE (visible_state.custom_representation)->(a)?(d)")
         assertThat(sqlText)
-            .isEqualTo("WHERE HasJsonKey( JsonFieldAsObject( CAST(visible_state.custom_representation AS $JSON_SQL_TYPE), ('a')), ('d'))")
+            .isEqualTo("WHERE HasJsonKey( JsonFieldAsObject( CAST(visible_state.custom_representation AS $JSON_SQL_TYPE), 'a'), 'd')")
 
         val visibleState = executeQuery(sqlText, txId) {}.single()
         assertAll(
@@ -278,7 +278,7 @@ class HsqldbVaultNamedQueryTest {
 
         val sqlText = vaultNamedQueryParser.parseWhereJson("WHERE (visible_state.custom_representation)->(a)->>(b)::int = :value")
         assertThat(sqlText)
-            .isEqualTo("WHERE CAST( JsonFieldAsText( JsonFieldAsObject( CAST(visible_state.custom_representation AS $JSON_SQL_TYPE), ('a')), ('b')) AS int) = :value")
+            .isEqualTo("WHERE CAST( JsonFieldAsText( JsonFieldAsObject( CAST(visible_state.custom_representation AS $JSON_SQL_TYPE), 'a'), 'b') AS int) = :value")
 
         val visibleState = executeQuery(sqlText, txId) { query ->
             query.setParameter("value", 10)

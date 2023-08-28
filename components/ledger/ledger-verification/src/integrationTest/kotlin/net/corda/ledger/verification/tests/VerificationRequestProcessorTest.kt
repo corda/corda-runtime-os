@@ -108,11 +108,13 @@ class VerificationRequestProcessorTest {
     private lateinit var wireTransactionFactory: WireTransactionFactory
     private lateinit var jsonMarshallingService: JsonMarshallingService
     private lateinit var jsonValidator: JsonValidator
-    private lateinit var groupParametersFactory: GroupParametersFactory
     private lateinit var keyValueSerializer: CordaAvroSerializer<KeyValuePairList>
 
     @InjectService(timeout = TIMEOUT_MILLIS)
     lateinit var externalEventResponseFactory: ExternalEventResponseFactory
+
+    @InjectService(timeout = TIMEOUT_MILLIS)
+    lateinit var groupParametersFactory: GroupParametersFactory
 
     @InjectService(timeout = TIMEOUT_MILLIS)
     lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
@@ -136,7 +138,6 @@ class VerificationRequestProcessorTest {
             wireTransactionFactory = setup.fetchService(TIMEOUT_MILLIS)
             jsonMarshallingService = setup.fetchService(TIMEOUT_MILLIS)
             jsonValidator = setup.fetchService(TIMEOUT_MILLIS)
-            groupParametersFactory = setup.fetchService(TIMEOUT_MILLIS)
         }
         deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, TransactionVerificationResponse::class.java)
         keyValueSerializer = cordaAvroSerializationFactory.createAvroSerializer { }

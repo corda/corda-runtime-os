@@ -59,12 +59,12 @@ class PostgresVaultNamedQueryParserIntegrationTest {
                     "WHERE (field ->> property = 'some_value' AND field ->> property2 = 'another value') OR field ->> property3 = 'third property?'"
                 ),
                 Arguments.of(
-                    "WHERE field ->> property = 'some_value' AND (field ->> property2 = 'another value') OR field ->> property3 = 'third property')",
-                    "WHERE field ->> property = 'some_value' AND (field ->> property2 = 'another value') OR field ->> property3 = 'third property')"
+                    "WHERE field ->> property = 'some_value' AND (field ->> property2 = 'another value') OR field ->> property3 = 'third property'",
+                    "WHERE field ->> property = 'some_value' AND (field ->> property2 = 'another value') OR field ->> property3 = 'third property'"
                 ),
                 Arguments.of(
-                    "WHERE (field ->> property = 'some_value' AND (field ->> property2 = 'another value') OR field ->> property3 = 'third property'))",
-                    "WHERE (field ->> property = 'some_value' AND (field ->> property2 = 'another value') OR field ->> property3 = 'third property'))"
+                    "WHERE (field ->> property = 'some_value' AND (field ->> property2 = 'another value') OR field ->> property3 = 'third property')",
+                    "WHERE (field ->> property = 'some_value' AND (field ->> property2 = 'another value') OR field ->> property3 = 'third property')"
                 ),
                 Arguments.of("WHERE field ->> property IS NULL", "WHERE field ->> property IS NULL"),
                 Arguments.of("WHERE field ->> property IS NOT NULL", "WHERE field ->> property IS NOT NULL"),
@@ -95,7 +95,7 @@ class PostgresVaultNamedQueryParserIntegrationTest {
                         |AND custom -> 'Corda' ->> 'participants' IN :participants
                         |AND custom?:contractStateType
                         |AND created > :created""".trimMargin(),
-                    "WHERE custom -> 'TestUtxoState' ->> 'testField' = :testField AND custom -> 'Corda' ->> 'participants' IN :participants AND custom \\?\\? :contractStateType AND created > :created"
+                    "WHERE custom -> 'TestUtxoState' ->> 'testField' = :testField AND custom -> 'Corda' ->> 'participants' IN (:participants) AND custom \\?\\? :contractStateType AND created > :created"
                 )
             )
         }

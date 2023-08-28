@@ -18,6 +18,7 @@
 -runsystemcapabilities: \
     osgi.service;objectClass:List<String>='net.corda.configuration.read.ConfigurationReadService';effective=active,\
     osgi.service;objectClass:List<String>='net.corda.lifecycle.LifecycleCoordinatorFactory';effective:=active,\
+    osgi.service;objectClass:List<String>='net.corda.membership.lib.GroupParametersFactory';effective:=active,\
     osgi.service;objectClass:List<String>='net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory';effective=active,\
     osgi.service;objectClass:List<String>='net.corda.messaging.api.subscription.factory.SubscriptionFactory';effective:=active
 

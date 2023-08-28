@@ -61,12 +61,12 @@ class HsqldbVaultNamedQueryParserIntegrationTest {
                     "WHERE ( JsonFieldAsText( ${cast("field")}, 'property') = 'some_value' AND JsonFieldAsText( ${cast("field")}, 'property2') = 'another value') OR JsonFieldAsText( ${cast("field")}, 'property3') = 'third property?'"
                 ),
                 Arguments.of(
-                    "WHERE field ->> property = 'some_value' AND (field ->> property2 = 'another value') OR field ->> property3 = 'third property')",
-                    "WHERE JsonFieldAsText( ${cast("field")}, 'property') = 'some_value' AND ( JsonFieldAsText( ${cast("field")}, 'property2') = 'another value') OR JsonFieldAsText( ${cast("field")}, 'property3') = 'third property')"
+                    "WHERE field ->> property = 'some_value' AND (field ->> property2 = 'another value') OR field ->> property3 = 'third property'",
+                    "WHERE JsonFieldAsText( ${cast("field")}, 'property') = 'some_value' AND ( JsonFieldAsText( ${cast("field")}, 'property2') = 'another value') OR JsonFieldAsText( ${cast("field")}, 'property3') = 'third property'"
                 ),
                 Arguments.of(
-                    "WHERE (field ->> property = 'some_value' AND (field ->> property2 = 'another value') OR field ->> property3 = 'third property'))",
-                    "WHERE ( JsonFieldAsText( ${cast("field")}, 'property') = 'some_value' AND ( JsonFieldAsText( ${cast("field")}, 'property2') = 'another value') OR JsonFieldAsText( ${cast("field")}, 'property3') = 'third property'))"
+                    "WHERE (field ->> property = 'some_value' AND (field ->> property2 = 'another value') OR field ->> property3 = 'third property')",
+                    "WHERE ( JsonFieldAsText( ${cast("field")}, 'property') = 'some_value' AND ( JsonFieldAsText( ${cast("field")}, 'property2') = 'another value') OR JsonFieldAsText( ${cast("field")}, 'property3') = 'third property')"
                 ),
                 Arguments.of("WHERE field ->> property IS NULL", "WHERE JsonFieldAsText( ${cast("field")}, 'property') IS NULL"),
                 Arguments.of("WHERE field ->> property IS NOT NULL", "WHERE JsonFieldAsText( ${cast("field")}, 'property') IS NOT NULL"),
@@ -97,7 +97,7 @@ class HsqldbVaultNamedQueryParserIntegrationTest {
                         |AND custom -> 'Corda' ->> 'participants' IN :participants
                         |AND custom?:contractStateType
                         |AND created > :created""".trimMargin(),
-                    "WHERE JsonFieldAsText( JsonFieldAsObject( ${cast("custom")}, 'TestUtxoState'), 'testField') = :testField AND JsonFieldAsText( JsonFieldAsObject( ${cast("custom")}, 'Corda'), 'participants') IN :participants AND HasJsonKey( ${cast("custom")}, :contractStateType) AND created > :created"
+                    "WHERE JsonFieldAsText( JsonFieldAsObject( ${cast("custom")}, 'TestUtxoState'), 'testField') = :testField AND JsonFieldAsText( JsonFieldAsObject( ${cast("custom")}, 'Corda'), 'participants') IN (:participants) AND HasJsonKey( ${cast("custom")}, :contractStateType) AND created > :created"
                 )
             )
         }
@@ -122,7 +122,7 @@ class HsqldbVaultNamedQueryParserIntegrationTest {
     @Test
     fun `with json fields inside brackets`() {
         assertThat(vaultNamedQueryParser.parseWhereJson("WHERE :value = (a)->>(b)")).isEqualTo(
-            "WHERE :value = JsonFieldAsText( ${cast("a")}, ('b'))"
+            "WHERE :value = JsonFieldAsText( ${cast("a")}, 'b')"
         )
     }
 
@@ -136,7 +136,7 @@ class HsqldbVaultNamedQueryParserIntegrationTest {
     @Test
     fun `json array index as parameter`() {
         assertThat(vaultNamedQueryParser.parseWhereJson("WHERE (a)->(b)->>(:index) = :value")).isEqualTo(
-            "WHERE JsonFieldAsText( JsonFieldAsObject( ${cast("a")}, ('b')), (:index)) = :value"
+            "WHERE JsonFieldAsText( JsonFieldAsObject( ${cast("a")}, 'b'), :index) = :value"
         )
     }
 
