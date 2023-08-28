@@ -22,7 +22,7 @@ class SessionInitExecutor(
     private val flowConfig: SmartConfig,
     private val recordFactory: RecordFactory,
     private val instant: Instant,
-    private val sessionInitHelper: SessionInitHelper,
+    private val sessionInitProcessor: SessionInitProcessor,
 ) : FlowMapperEventExecutor {
 
     private companion object {
@@ -33,7 +33,7 @@ class SessionInitExecutor(
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
-            sessionInitHelper.processSessionInit(sessionEvent, sessionInit, flowConfig, instant)
+            sessionInitProcessor.processSessionInit(sessionEvent, sessionInit, flowConfig, instant)
         } else {
             //duplicate
             log.debug { "Duplicate SessionInit event received. Key: $eventKey, Event: $sessionEvent" }

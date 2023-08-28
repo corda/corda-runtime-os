@@ -10,15 +10,22 @@ import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import java.time.Instant
 
 /**
  * Helper class to process session events which contain a SessionInit field/payload
  */
-class SessionInitHelper(private val recordFactory: RecordFactory) {
+@Component(service = [SessionInitProcessor::class])
+class SessionInitProcessor @Activate constructor(
+    @Reference(service = RecordFactory::class)
+    private val recordFactory: RecordFactory
+) {
 
     /**
-     * Process a [sessionEvent] and [sessionInit] payload to producer a flow mapper state
+     * Process a [sessionEvent] and [sessionInit] payload to produce a flow mapper state
      * Should be called when mapper state is null.
      * @param sessionEvent SessionEvent whose payload is SessionData or SessionInit
      * @param sessionInit session init avro object obtained from the session event
@@ -57,28 +64,26 @@ class SessionInitHelper(private val recordFactory: RecordFactory) {
         sessionInit: SessionInit,
         flowConfig: SmartConfig,
         instant: Instant
-    ): SessionInitOutputs {
-        return if (messageDirection == MessageDirection.INBOUND) {
-            val flowId = generateFlowId()
-            sessionInit.flowId = flowId
-            SessionInitOutputs(
-                flowId,
-                recordFactory.forwardEvent(sessionEvent, instant, flowConfig, sessionEvent.messageDirection)
-            )
-        } else {
-            //reusing SessionInit object for inbound and outbound traffic rather than creating a new object identical to SessionInit
-            //with an extra field of flowId. set flowId to null to not expose it on outbound messages
-            val tmpFLowEventKey = sessionInit.flowId
-            sessionInit.flowId = null
+    ): SessionInitOutputs = if (messageDirection == MessageDirection.INBOUND) {
+        val flowId = generateFlowId()
+        sessionInit.flowId = flowId
+        SessionInitOutputs(
+            flowId,
+            recordFactory.forwardEvent(sessionEvent, instant, flowConfig, sessionEvent.messageDirection)
+        )
+    } else {
+        //reusing SessionInit object for inbound and outbound traffic rather than creating a new object identical to SessionInit
+        //with an extra field of flowId. set flowId to null to not expose it on outbound messages
+        val tmpFLowEventKey = sessionInit.flowId
+        sessionInit.flowId = null
 
-            SessionInitOutputs(
-                tmpFLowEventKey,
-                recordFactory.forwardEvent(sessionEvent, instant, flowConfig, sessionEvent.messageDirection)
-            )
-        }
+        SessionInitOutputs(
+            tmpFLowEventKey,
+            recordFactory.forwardEvent(sessionEvent, instant, flowConfig, sessionEvent.messageDirection)
+        )
     }
 
-    data class SessionInitOutputs(
+    private data class SessionInitOutputs(
         val flowId: String,
         val record: Record<*, *>
     )

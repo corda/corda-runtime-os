@@ -120,7 +120,7 @@ class SessionManagerImpl @Activate constructor(
     ): Pair<SessionState,
             List<SessionEvent>> {
         val sessionEvents = getMessagesToSend(sessionState)
-        val messagesToReturn= handleSessionTimeouts(sessionState, config, instant, sessionEvents, identity)
+        val messagesToReturn = handleSessionTimeouts(sessionState, config, instant, sessionEvents, identity)
         sessionState.sendEventsState.undeliveredMessages = emptyList()
         return Pair(sessionState, messagesToReturn)
     }
@@ -131,7 +131,8 @@ class SessionManagerImpl @Activate constructor(
     }
 
     /**
-     * Get any new messages to send from the sendEvents state within [sessionState].
+     * Get any new messages to send from the sendEvents state within [sessionState]
+     * and log some debug information.
      * @param sessionState to examine sendEventsState.undeliveredMessages
      * @return Messages to send
      */
@@ -139,14 +140,17 @@ class SessionManagerImpl @Activate constructor(
         sessionState: SessionState,
     ): List<SessionEvent> {
         val sessionEvents = sessionState.sendEventsState.undeliveredMessages
-        if (sessionEvents.isEmpty()) return emptyList()
-
-
-        logger.debug {
-            "Dispatching events for session [${sessionState.sessionId}]: " +
-                    sessionEvents.joinToString {
-                        "[Sequence: ${it.sequenceNum}, Class: ${it.payload::class.java.simpleName}, Resend timestamp: ${it.timestamp}]"
-                    }
+        if (sessionEvents.isNotEmpty()) {
+            logger.debug {
+                "Dispatching events for session [${sessionState.sessionId}]: " +
+                        sessionEvents.joinToString {
+                            "[Sequence: ${it.sequenceNum}, Class: ${it.payload::class.java.simpleName}, Resend timestamp: ${it.timestamp}]"
+                        }
+            }
+        } else {
+            logger.debug {
+                "No SessionEvents to dispatch for [${sessionState.sessionId}]"
+            }
         }
 
         return sessionEvents

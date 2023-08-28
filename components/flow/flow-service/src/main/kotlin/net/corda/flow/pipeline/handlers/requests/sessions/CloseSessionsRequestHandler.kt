@@ -64,7 +64,7 @@ class CloseSessionsRequestHandler @Activate constructor(
             context
         }*/
 
-        //TODO CORE-15757 / CORE-16184 - implement close properly
+        //TODO CORE-15757 / CORE-16184
         val checkpoint = context.checkpoint
         val sessionsToClose = getSessionsToClose(checkpoint, request)
         context.checkpoint.sessions.onEach {

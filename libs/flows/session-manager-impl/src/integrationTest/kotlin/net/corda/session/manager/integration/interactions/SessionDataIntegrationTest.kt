@@ -16,7 +16,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.Instant
-@Disabled //todo CORE-15757
+@Disabled //TODO CORE-15757
 class SessionDataIntegrationTest {
 
     private companion object {

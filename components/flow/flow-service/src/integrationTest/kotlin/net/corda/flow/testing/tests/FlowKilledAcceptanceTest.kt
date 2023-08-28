@@ -49,7 +49,7 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    @Disabled //todo CORE-15757
+    @Disabled //TODO CORE-15757
     fun `test init flow event killed due to inactive flow operational status`() {
         `when` {
             sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL)

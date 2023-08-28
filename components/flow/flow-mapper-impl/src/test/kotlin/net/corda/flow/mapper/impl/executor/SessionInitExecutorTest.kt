@@ -27,7 +27,7 @@ class SessionInitExecutorTest {
 
     private val sessionEventSerializer = mock<CordaAvroSerializer<SessionEvent>>()
     private val flowConfig = SmartConfigImpl.empty().withValue(SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
-    private val sessionInitHelper = mock<SessionInitHelper>()
+    private val sessionInitProcessor = mock<SessionInitProcessor>()
 
     private val record = Record("Topic", "Key", "Value")
     private val recordFactory = mock<RecordFactory>() {
@@ -53,9 +53,9 @@ class SessionInitExecutorTest {
             flowConfig,
             recordFactory,
             Instant.now(),
-            sessionInitHelper
+            sessionInitProcessor
         ).execute()
-        verify(sessionInitHelper, times(1)).processSessionInit(any(), any(), any(), any())
+        verify(sessionInitProcessor, times(1)).processSessionInit(any(), any(), any(), any())
 
     }
 
@@ -77,10 +77,10 @@ class SessionInitExecutorTest {
             flowConfig,
             recordFactory,
             Instant.now(),
-            sessionInitHelper
+            sessionInitProcessor
         ).execute()
 
-        verify(sessionInitHelper, times(1)).processSessionInit(any(), any(), any(), any())
+        verify(sessionInitProcessor, times(1)).processSessionInit(any(), any(), any(), any())
     }
 
     @Test
@@ -95,7 +95,7 @@ class SessionInitExecutorTest {
             flowConfig,
             recordFactory,
             Instant.now(),
-            sessionInitHelper
+            sessionInitProcessor
         ).execute()
 
         val state = result.flowMapperState
@@ -127,7 +127,7 @@ class SessionInitExecutorTest {
             flowConfig,
             recordFactory,
             Instant.now(),
-            sessionInitHelper
+            sessionInitProcessor
         ).execute()
 
         assertThat(result.outputEvents).isNotEmpty
@@ -159,7 +159,7 @@ class SessionInitExecutorTest {
             flowConfig,
             recordFactory,
             Instant.now(),
-            sessionInitHelper
+            sessionInitProcessor
         ).execute()
 
         assertThat(resultOutbound.outputEvents).isEmpty()

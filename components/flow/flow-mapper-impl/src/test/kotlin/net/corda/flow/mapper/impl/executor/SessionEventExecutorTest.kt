@@ -38,7 +38,7 @@ class SessionEventExecutorTest {
         on { forwardEvent(any(), any(), any(), any()) } doReturn record
         on { getSessionEventOutputTopic(any(), any()) } doReturn "Topic"
     }
-    private val sessionInitHelper = mock<SessionInitHelper>()
+    private val sessionInitProcessor = mock<SessionInitProcessor>()
 
     @Test
     fun `Session event executor test outbound data message and non null state`() {
@@ -61,7 +61,7 @@ class SessionEventExecutorTest {
             flowConfig,
             recordFactory,
             Instant.now(),
-            sessionInitHelper
+            sessionInitProcessor
             ).execute()
 
         val state = result.flowMapperState
@@ -88,7 +88,7 @@ class SessionEventExecutorTest {
             flowConfig,
             recordFactory,
             Instant.now(),
-            sessionInitHelper
+            sessionInitProcessor
             ).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
@@ -112,7 +112,7 @@ class SessionEventExecutorTest {
             flowConfig,
             recordFactory,
             Instant.now(),
-            sessionInitHelper
+            sessionInitProcessor
             ).execute()
 
         val state = result.flowMapperState
@@ -137,7 +137,7 @@ class SessionEventExecutorTest {
             flowConfig,
             recordFactory,
             Instant.now(),
-            sessionInitHelper
+            sessionInitProcessor
             ).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
@@ -158,7 +158,7 @@ class SessionEventExecutorTest {
             flowConfig,
             recordFactory,
             Instant.now(),
-            sessionInitHelper
+            sessionInitProcessor
             ).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
@@ -184,9 +184,9 @@ class SessionEventExecutorTest {
             flowConfig,
             recordFactory,
             Instant.now(),
-            sessionInitHelper
+            sessionInitProcessor
         ).execute()
-        verify(sessionInitHelper, times(1)).processSessionInit(any(), any(), any(), any())
+        verify(sessionInitProcessor, times(1)).processSessionInit(any(), any(), any(), any())
     }
 
 }

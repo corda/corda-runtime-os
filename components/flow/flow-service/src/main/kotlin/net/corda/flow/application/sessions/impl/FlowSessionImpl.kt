@@ -126,7 +126,7 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun close() {
-        //todo CORE-15757 / CORE-16184
+        //TODO CORE-15757 / CORE-16184
         fiber.suspend(FlowIORequest.CloseSessions(setOf(sourceSessionId)))
         log.trace { "Closing session: $sourceSessionId" }
     }

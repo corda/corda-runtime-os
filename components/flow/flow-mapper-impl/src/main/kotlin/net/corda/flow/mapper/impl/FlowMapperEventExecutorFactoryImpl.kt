@@ -16,7 +16,7 @@ import net.corda.flow.mapper.impl.executor.ScheduleCleanupEventExecutor
 import net.corda.flow.mapper.impl.executor.SessionErrorExecutor
 import net.corda.flow.mapper.impl.executor.SessionEventExecutor
 import net.corda.flow.mapper.impl.executor.SessionInitExecutor
-import net.corda.flow.mapper.impl.executor.SessionInitHelper
+import net.corda.flow.mapper.impl.executor.SessionInitProcessor
 import net.corda.flow.mapper.impl.executor.StartFlowExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
@@ -28,9 +28,11 @@ import java.time.Instant
 @Component(service = [FlowMapperEventExecutorFactory::class])
 class FlowMapperEventExecutorFactoryImpl @Activate constructor(
     @Reference(service = RecordFactory::class)
-    private val recordFactory: RecordFactory
+    private val recordFactory: RecordFactory,
+    @Reference(service = SessionInitProcessor::class)
+    private val sessionInitProcessor: SessionInitProcessor
 ) : FlowMapperEventExecutorFactory {
-    private val sessionInitHelper = SessionInitHelper(recordFactory)
+
     override fun create(
         eventKey: String,
         flowMapperEvent: FlowMapperEvent,
@@ -50,7 +52,7 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                             flowConfig,
                             recordFactory,
                             instant,
-                            sessionInitHelper
+                            sessionInitProcessor
                         )
                     }
 
@@ -73,7 +75,7 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                             flowConfig,
                             recordFactory,
                             instant,
-                            sessionInitHelper
+                            sessionInitProcessor
                         )
                     }
                 }

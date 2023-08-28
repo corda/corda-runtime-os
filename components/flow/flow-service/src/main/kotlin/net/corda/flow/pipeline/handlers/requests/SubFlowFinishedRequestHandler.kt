@@ -38,7 +38,7 @@ class SubFlowFinishedRequestHandler @Activate constructor(
         return if (sessionsToClose.isEmpty()) {
             WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
         } else {
-            //TODO - CORE-15757 / CORE-16184
+            //TODO CORE-15757 / CORE-16184
             WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
         }
     }
@@ -51,7 +51,7 @@ class SubFlowFinishedRequestHandler @Activate constructor(
         val hasNoSessionsOrAllClosed = try {
             val sessionsToClose = getSessionsToClose(checkpoint, request)
 
-            //TODO - CORE-15757 / CORE-16184 do this properly
+            //TODO CORE-15757 / CORE-16184
             checkpoint.putSessionStates(flowSessionManager.sendCloseMessages(checkpoint, sessionsToClose, Instant.now()))
             val sessionStates = sessionsToClose.mapNotNull { sessionToClose ->
                 checkpoint.sessions.find {
@@ -71,7 +71,7 @@ class SubFlowFinishedRequestHandler @Activate constructor(
             throw FlowFatalException(e.message, e)
         }
 
-        //TODO - CORE-15757 / CORE-16184
+        //TODO CORE-15757 / CORE-16184
         return if (hasNoSessionsOrAllClosed) {
             val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
             context.copy(outputRecords = context.outputRecords + listOf(record))

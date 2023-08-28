@@ -25,31 +25,25 @@ class SessionEventExecutor(
     private val flowConfig: SmartConfig,
     private val recordFactory: RecordFactory,
     private val instant: Instant,
-    private val sessionInitHelper: SessionInitHelper
+    private val sessionInitProcessor: SessionInitProcessor
 ) : FlowMapperEventExecutor {
 
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun execute(): FlowMapperResult {
-        val payload = sessionEvent.payload
-        val sessionInit = getInitPayload(payload)
-        return if (flowMapperState == null && sessionInit != null) {
-            sessionInitHelper.processSessionInit(sessionEvent, sessionInit, flowConfig, instant)
-        } else if (flowMapperState == null) {
-            handleNullState()
-        } else {
-            processOtherSessionEvents(flowMapperState)
-        }
+    override fun execute() = if (flowMapperState == null) {
+        getInitPayload(sessionEvent.payload)?.let { sessionInit->
+            sessionInitProcessor.processSessionInit(sessionEvent, sessionInit, flowConfig, instant)
+        } ?: handleNullState()
+    } else {
+        processOtherSessionEvents(flowMapperState)
     }
 
-    private fun getInitPayload(payload: Any): SessionInit? {
-        return when (payload) {
-            is SessionInit -> payload
-            is SessionData -> payload.sessionInit
-            else -> null
-        }
+    private fun getInitPayload(payload: Any) = when (payload) {
+        is SessionInit -> payload
+        is SessionData -> payload.sessionInit
+        else -> null
     }
 
     private fun handleNullState(): FlowMapperResult {
@@ -94,7 +88,7 @@ class SessionEventExecutor(
                 FlowMapperResult(null, listOf())
             }
             FlowMapperStateType.CLOSING -> {
-                //todo - CORE-15757/ CORE-16184
+                //TODO CORE-15757/ CORE-16184
                 if (messageDirection == MessageDirection.OUTBOUND) {
                     log.warn("Attempted to send a message but flow mapper state is in CLOSING. Session ID: ${sessionEvent.sessionId}")
                     FlowMapperResult(flowMapperState, listOf())

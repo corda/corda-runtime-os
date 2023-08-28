@@ -19,13 +19,13 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 
-class SessionInitHelperTest {
+class SessionInitProcessorTest {
 
     private val recordFactory = mock<RecordFactory>().apply {
         whenever(this.forwardEvent(any(), any(), any(), any())).thenReturn(Record(Schemas.P2P.P2P_OUT_TOPIC, "sessionId", ""))
     }
     private val flowConfig = SmartConfigImpl.empty().withValue(FlowConfig.SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
-    private val sessionInitHelper = SessionInitHelper(recordFactory)
+    private val sessionInitProcessor = SessionInitProcessor(recordFactory)
 
     @Test
     fun `Inbound session init creates new state and forwards to flow event`() {
@@ -37,7 +37,7 @@ class SessionInitHelperTest {
             sessionInit,
             contextSessionProps = emptyKeyValuePairList()
         )
-        val result = sessionInitHelper.processSessionInit(payload, sessionInit, flowConfig, Instant.now())
+        val result = sessionInitProcessor.processSessionInit(payload, sessionInit, flowConfig, Instant.now())
 
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
@@ -58,7 +58,7 @@ class SessionInitHelperTest {
         val sessionInit = SessionInit("", flowId, emptyKeyValuePairList(), emptyKeyValuePairList())
         val payload =
             buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, sessionInit, contextSessionProps = emptyKeyValuePairList())
-        val result = sessionInitHelper.processSessionInit(payload, sessionInit, flowConfig, Instant.now())
+        val result = sessionInitProcessor.processSessionInit(payload, sessionInit, flowConfig, Instant.now())
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
 

@@ -6,8 +6,8 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.flow.utils.isInitiatedParty
 import net.corda.messaging.api.chunking.ChunkSerializerService
-import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.utilities.debug
@@ -108,9 +108,5 @@ class SessionDataProcessorSend(
         val copy = SessionEvent.newBuilder(sessionEvent).build()
         (copy.payload as SessionData).payload = chunk
         return copy
-    }
-
-    private fun isInitiatedParty(sessionEvent: SessionEvent) : Boolean {
-        return sessionEvent.sessionId.contains(INITIATED_SESSION_ID_SUFFIX)
     }
 }

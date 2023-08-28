@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-@Disabled //todo CORE-15757
+@Disabled //TODO CORE-15757
 class SessionStateCreatedTransitionTest {
 
     private val messagingChunkFactory : MessagingChunkFactory = mock<MessagingChunkFactory>().apply {
