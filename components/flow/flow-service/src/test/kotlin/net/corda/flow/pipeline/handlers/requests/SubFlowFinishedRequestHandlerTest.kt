@@ -4,7 +4,6 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
-import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
@@ -46,11 +45,6 @@ class SubFlowFinishedRequestHandlerTest {
         }
     }
 
-    private val sessionState1 = SessionState().apply { this.sessionId = SESSION_ID_1 }
-    private val sessionState2 = SessionState().apply { this.sessionId = SESSION_ID_2 }
-    private val sessionState3 = SessionState().apply { this.sessionId = SESSION_ID_3 }
-    private val sessionStates = listOf(sessionState1, sessionState2, sessionState3)
-
     private val record = Record("", "", FlowEvent())
     private val testContext = RequestHandlerTestContext(Any())
     private val flowSessionManager = testContext.flowSessionManager
@@ -83,114 +77,29 @@ class SubFlowFinishedRequestHandlerTest {
     fun `Returns an updated WaitingFor of SessionConfirmation (Close) when the flow has sessions to close`(
         isInitiatingFlow: Boolean
     ) {
-        whenever(
-            testContext.flowSessionManager.getSessionsWithStatus(
-                testContext.flowCheckpoint,
-                SESSION_IDS,
-                SessionStateType.ERROR
-            )
-        ).thenReturn(emptyList())
+        whenever(testContext.closeSessionService.getSessionsToCloseForWaitingFor(testContext.flowCheckpoint, SESSION_IDS))
+            .thenReturn(SESSION_IDS)
 
         val result = handler.getUpdatedWaitingFor(
             testContext.flowEventContext,
             FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessions.map { it.sessionId })
         )
-
         assertEquals(SessionConfirmation(SESSION_IDS, SessionConfirmationType.CLOSE), result.value)
     }
 
-    @ParameterizedTest(name = "Returns an updated WaitingFor of SessionConfirmation (Close) that filters out errored sessions when the flow has sessions to close (isInitiatingFlow={0})")
-    @MethodSource("isInitiatingFlow")
-    fun `Returns an updated WaitingFor of SessionConfirmation (Close) that filters out errored sessions when the flow has sessions to close`(
-        isInitiatingFlow: Boolean
-    ) {
-        whenever(
-            testContext.flowSessionManager.getSessionsWithStatus(
-                testContext.flowCheckpoint,
-                SESSION_IDS,
-                SessionStateType.ERROR
-            )
-        ).thenReturn(listOf(sessionState1))
-
-        val result = handler.getUpdatedWaitingFor(
-            testContext.flowEventContext,
-            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessions.map { it.sessionId })
-        )
-
-        assertEquals(
-            SessionConfirmation(listOf(SESSION_ID_2, SESSION_ID_3), SessionConfirmationType.CLOSE),
-            result.value
-        )
-    }
-
-    @ParameterizedTest(name = "Returns an updated WaitingFor of Wakeup when the flow has only errored sessions (isInitiatingFlow={0})")
-    @MethodSource("isInitiatingFlow")
-    fun `Returns an updated WaitingFor of Wakeup when the flow has only errored sessions`(isInitiatingFlow: Boolean) {
-        whenever(
-            testContext.flowSessionManager.getSessionsWithStatus(
-                testContext.flowCheckpoint,
-                SESSION_IDS,
-                SessionStateType.ERROR
-            )
-        ).thenReturn(sessionStates)
-
-        val result = handler.getUpdatedWaitingFor(
-            testContext.flowEventContext,
-            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessions.map { it.sessionId })
-        )
-
-        assertEquals(net.corda.data.flow.state.waiting.Wakeup(), result.value)
-    }
-
-    @ParameterizedTest(name = "Returns an updated WaitingFor of Wakeup when the flow  has no sessions to close (isInitiatingFlow={0})")
+    @ParameterizedTest(name = "Returns an updated WaitingFor of Wakeup when the flow has no sessions to close (isInitiatingFlow={0})")
     @MethodSource("isInitiatingFlow")
     fun `Returns an updated WaitingFor of Wakeup when the flow  has no sessions to close`(isInitiatingFlow: Boolean) {
         val result = handler.getUpdatedWaitingFor(
             testContext.flowEventContext,
             FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow, emptyList()).sessions.map { it.sessionId })
         )
-
         assertEquals(net.corda.data.flow.state.waiting.Wakeup(), result.value)
-    }
-
-    @ParameterizedTest(name = "Returns an updated WaitingFor of SessionConfirmation (Close) containing the flow stack item's sessions when the flow has already closed sessions (isInitiatingFlow={0})")
-    @MethodSource("isInitiatingFlow")
-    fun `Returns an updated WaitingFor of SessionConfirmation (Close) containing the flow stack item's sessions when the flow has already closed sessions`(
-        isInitiatingFlow: Boolean
-    ) {
-        whenever(
-            testContext.flowSessionManager.getSessionsWithStatus(
-                testContext.flowCheckpoint,
-                SESSION_IDS,
-                SessionStateType.ERROR
-            )
-        ).thenReturn(emptyList())
-        whenever(flowSessionManager.sendCloseMessages(eq(testContext.flowCheckpoint), eq(SESSION_IDS), any()))
-            .thenReturn(sessionStates)
-        whenever(
-            flowSessionManager.doAllSessionsHaveStatus(
-                testContext.flowCheckpoint,
-                SESSION_IDS,
-                SessionStateType.CLOSED
-            )
-        ).thenReturn(true)
-
-        val result = handler.getUpdatedWaitingFor(
-            testContext.flowEventContext,
-            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessions.map { it.sessionId })
-        )
-
-        assertEquals(SessionConfirmation(SESSION_IDS, SessionConfirmationType.CLOSE), result.value)
     }
 
     @Test
     fun `Throws exception when updating WaitingFor when session does not exist within checkpoint`() {
-        whenever(
-            testContext.flowSessionManager.getSessionsWithStatus(
-                testContext.flowCheckpoint,
-                SESSION_IDS,
-                SessionStateType.ERROR
-            )
+        whenever(testContext.closeSessionService.getSessionsToCloseForWaitingFor(testContext.flowCheckpoint, SESSION_IDS)
         ).thenThrow(FlowSessionStateException("Session does not exist"))
 
         assertThrows<FlowFatalException> {
@@ -207,15 +116,7 @@ class SubFlowFinishedRequestHandlerTest {
         isInitiatingFlow: Boolean
     ) {
         val nonErroredSessions = listOf(SESSION_ID_2, SESSION_ID_3)
-        whenever(
-            testContext.flowSessionManager.getSessionsWithStatus(
-                testContext.flowCheckpoint,
-                SESSION_IDS,
-                SessionStateType.ERROR
-            )
-        ).thenReturn(listOf(sessionState1))
-        whenever(flowSessionManager.sendCloseMessages(eq(testContext.flowCheckpoint), eq(nonErroredSessions), any()))
-            .thenReturn(listOf(sessionState2, sessionState3))
+
         whenever(
             flowSessionManager.doAllSessionsHaveStatus(
                 testContext.flowCheckpoint,
@@ -228,14 +129,7 @@ class SubFlowFinishedRequestHandlerTest {
             testContext.flowEventContext,
             FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessions.map { it.sessionId })
         )
-
-        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
-        verify(testContext.flowCheckpoint).putSessionStates(listOf(sessionState2, sessionState3))
-        verify(testContext.flowSessionManager).sendCloseMessages(
-            eq(testContext.flowCheckpoint),
-            eq(nonErroredSessions),
-            any()
-        )
+        verify(testContext.closeSessionService).handleCloseForSessions(SESSION_IDS, testContext.flowCheckpoint)
         verify(testContext.flowRecordFactory, never()).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         assertThat(outputContext.outputRecords).hasSize(0)
     }
@@ -245,20 +139,6 @@ class SubFlowFinishedRequestHandlerTest {
     fun `Does not send session close messages and creates a Wakeup record when the flow has no sessions to close`(
         isInitiatingFlow: Boolean
     ) {
-        whenever(
-            testContext.flowSessionManager.getSessionsWithStatus(
-                testContext.flowCheckpoint,
-                emptyList(),
-                SessionStateType.ERROR
-            )
-        ).thenReturn(emptyList())
-        whenever(
-            flowSessionManager.sendCloseMessages(
-                eq(testContext.flowCheckpoint),
-                eq(emptyList()),
-                any()
-            )
-        ).thenReturn(emptyList())
         whenever(
             flowSessionManager.doAllSessionsHaveStatus(
                 testContext.flowCheckpoint,
@@ -271,11 +151,6 @@ class SubFlowFinishedRequestHandlerTest {
             testContext.flowEventContext,
             FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow, emptyList()).sessions.map { it.sessionId })
         )
-
-        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
-        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState2)
-        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState3)
-        verify(testContext.flowSessionManager).sendCloseMessages(eq(testContext.flowCheckpoint), eq(emptyList()), any())
         verify(testContext.flowRecordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         assertThat(outputContext.outputRecords).containsOnly(record)
     }
@@ -286,56 +161,9 @@ class SubFlowFinishedRequestHandlerTest {
         isInitiatingFlow: Boolean
     ) {
         whenever(
-            testContext.flowSessionManager.getSessionsWithStatus(
-                testContext.flowCheckpoint,
-                SESSION_IDS,
-                SessionStateType.ERROR
-            )
-        ).thenReturn(emptyList())
-        whenever(
             flowSessionManager.doAllSessionsHaveStatus(
                 testContext.flowCheckpoint,
                 SESSION_IDS,
-                SessionStateType.CLOSED
-            )
-        ).thenReturn(true)
-        whenever(flowSessionManager.sendCloseMessages(eq(testContext.flowCheckpoint), eq(SESSION_IDS), any()))
-            .thenReturn(sessionStates)
-
-        val outputContext = handler.postProcess(
-            testContext.flowEventContext,
-            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessions.map { it.sessionId })
-        )
-
-        verify(testContext.flowCheckpoint).putSessionStates(listOf(sessionState1, sessionState2, sessionState3))
-        verify(testContext.flowSessionManager).sendCloseMessages(eq(testContext.flowCheckpoint), eq(SESSION_IDS), any())
-        verify(testContext.flowRecordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
-        assertThat(outputContext.outputRecords).containsOnly(record)
-    }
-
-    @ParameterizedTest(name = "Does not send session close messages and creates a Wakeup record when the flow has only errored sessions (isInitiatingFlow={0})")
-    @MethodSource("isInitiatingFlow")
-    fun `Does not send session close messages and creates a Wakeup record when the flow has only errored sessions`(
-        isInitiatingFlow: Boolean
-    ) {
-        whenever(
-            testContext.flowSessionManager.getSessionsWithStatus(
-                testContext.flowCheckpoint,
-                SESSION_IDS,
-                SessionStateType.ERROR
-            )
-        ).thenReturn(sessionStates)
-        whenever(
-            flowSessionManager.sendCloseMessages(
-                eq(testContext.flowCheckpoint),
-                eq(emptyList()),
-                any()
-            )
-        ).thenReturn(emptyList())
-        whenever(
-            flowSessionManager.doAllSessionsHaveStatus(
-                testContext.flowCheckpoint,
-                emptyList(),
                 SessionStateType.CLOSED
             )
         ).thenReturn(true)
@@ -345,22 +173,14 @@ class SubFlowFinishedRequestHandlerTest {
             FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessions.map { it.sessionId })
         )
 
-        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
-        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState2)
-        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState3)
-        verify(testContext.flowSessionManager).sendCloseMessages(eq(testContext.flowCheckpoint), eq(emptyList()), any())
+        verify(testContext.closeSessionService).handleCloseForSessions(SESSION_IDS, testContext.flowCheckpoint)
         verify(testContext.flowRecordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         assertThat(outputContext.outputRecords).containsOnly(record)
     }
 
     @Test
     fun `Throws exception when session does not exist within checkpoint`() {
-        whenever(
-            testContext.flowSessionManager.getSessionsWithStatus(
-                testContext.flowCheckpoint,
-                SESSION_IDS,
-                SessionStateType.ERROR
-            )
+        whenever(testContext.closeSessionService.handleCloseForSessions(SESSION_IDS, testContext.flowCheckpoint)
         ).thenThrow(FlowSessionStateException("Session does not exist"))
 
         assertThrows<FlowFatalException> {
