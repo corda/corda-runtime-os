@@ -54,11 +54,11 @@ class SubFlowFinishedRequestHandler @Activate constructor(
             //TODO CORE-15757 / CORE-16184
             checkpoint.putSessionStates(flowSessionManager.sendCloseMessages(checkpoint, sessionsToClose, Instant.now()))
             val sessionStates = sessionsToClose.mapNotNull { sessionToClose ->
-                checkpoint.sessions.find {
+                val sessionState = checkpoint.sessions.find {
                     sessionToClose == it.sessionId
                 }
-            }.onEach {
-                it.status = SessionStateType.CLOSED
+                sessionState?.status = SessionStateType.CLOSED
+                sessionState
             }
             checkpoint.putSessionStates(sessionStates)
             sessionsToClose.isEmpty() || flowSessionManager.doAllSessionsHaveStatus(
@@ -71,7 +71,6 @@ class SubFlowFinishedRequestHandler @Activate constructor(
             throw FlowFatalException(e.message, e)
         }
 
-        //TODO CORE-15757 / CORE-16184
         return if (hasNoSessionsOrAllClosed) {
             val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
             context.copy(outputRecords = context.outputRecords + listOf(record))
