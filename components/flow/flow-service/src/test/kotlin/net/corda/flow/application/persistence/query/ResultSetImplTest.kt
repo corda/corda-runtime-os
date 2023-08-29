@@ -18,11 +18,14 @@ import java.nio.ByteBuffer
 class ResultSetImplTest {
 
     private companion object {
-        const val LIMIT = 10
+        const val LIMIT = 2
         const val OFFSET = 0
         val serializedParameters = mapOf<String, ByteBuffer>("1" to ByteBuffer.wrap(byteArrayOf(1, 2, 3, 4)))
         val resultExecutorResults = ResultSetExecutor.Results(
-            listOf(ByteBuffer.wrap(byteArrayOf(5, 6, 7, 8)), ByteBuffer.wrap(byteArrayOf(5, 6, 7, 8))),
+            listOf(
+                ByteBuffer.wrap(byteArrayOf(5, 6, 7, 8)),
+                ByteBuffer.wrap(byteArrayOf(5, 6, 7, 8))
+            ),
             LIMIT
         )
     }
@@ -68,17 +71,13 @@ class ResultSetImplTest {
     }
 
     @Test
-    fun `hasNext returns false when the number of rows returned is over the limit but can't be divided with it without remainder`() {
-        whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(
-            resultExecutorResults.copy(numberOfRowsFromQuery = 18) // Let's say we filtered out 10 and have 8 records
-        )
-        resultSet.next()
-        assertThat(resultSet.hasNext()).isFalse
-    }
-
-    @Test
     fun `hasNext returns false when the number of rows returned from next is less than the limit`() {
-        whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults.copy(numberOfRowsFromQuery = 2))
+        whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults.copy(
+            serializedResults = listOf(
+                ByteBuffer.wrap(byteArrayOf(5, 6, 7, 8))
+            ),
+            numberOfRowsFromQuery = 12) // Let's say we filtered out 11
+        )
         resultSet.next()
         assertThat(resultSet.hasNext()).isFalse
     }
@@ -119,7 +118,12 @@ class ResultSetImplTest {
 
     @Test
     fun `next throws exception when hasNext returns false`() {
-        whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults.copy(numberOfRowsFromQuery = 2))
+        whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults.copy(
+            serializedResults = listOf(
+                ByteBuffer.wrap(byteArrayOf(5, 6, 7, 8))
+            ),
+            numberOfRowsFromQuery = 1
+        ))
         resultSet.next()
         assertThatThrownBy { resultSet.next() }.isInstanceOf(NoSuchElementException::class.java)
     }
