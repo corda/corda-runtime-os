@@ -6,6 +6,7 @@ import net.corda.membership.rest.v1.MGMRestResource
 import net.corda.membership.rest.v1.types.request.ApprovalRuleRequestParams
 import picocli.CommandLine.Command
 import picocli.CommandLine.Parameters
+import picocli.CommandLine.Option
 
 @Command(
     name = "add-preauth-rule",
@@ -24,8 +25,9 @@ class AddPreAuthRule : Runnable, RestCommand() {
     )
     lateinit var ruleRegex: String
 
-    @Parameters(
-        index = "2",
+    @Option(
+        names = ["-l", "--rule-label"],
+        arity = "1",
         description = ["Optional. A label describing the rule to be added"]
     )
     var ruleLabel: String? = null
