@@ -96,10 +96,10 @@ class SessionDataIntegrationTest {
         alice.assertAllMessagesDelivered()
         bob.assertAllMessagesDelivered()
 
-        alice.assertLastSentSeqNum(6)
-        bob.assertLastReceivedSeqNum(6)
-        bob.assertLastSentSeqNum(6)
-        alice.assertLastReceivedSeqNum(6)
+        alice.assertLastSentSeqNum(7)
+        bob.assertLastReceivedSeqNum(7)
+        bob.assertLastSentSeqNum(7)
+        alice.assertLastReceivedSeqNum(7)
     }
 
     @Test
@@ -123,8 +123,8 @@ class SessionDataIntegrationTest {
 
         alice.assertLastSentSeqNum(3)
         bob.assertLastReceivedSeqNum(3)
-        bob.assertLastSentSeqNum(0)
-        alice.assertLastReceivedSeqNum(0)
+        bob.assertLastSentSeqNum(1)
+        alice.assertLastReceivedSeqNum(1)
     }
 
     @Test

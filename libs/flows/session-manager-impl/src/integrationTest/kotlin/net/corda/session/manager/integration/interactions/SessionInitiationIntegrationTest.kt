@@ -94,6 +94,7 @@ class SessionInitiationIntegrationTest {
         alice.processNewOutgoingMessage(SessionMessageType.INIT, sendMessages = true)
         alice.assertStatus(SessionStateType.CREATED)
 
+        bob.processNextReceivedMessage()
         bob.processNewOutgoingMessage(SessionMessageType.ERROR, sendMessages = true)
         bob.assertStatus(SessionStateType.ERROR)
 
