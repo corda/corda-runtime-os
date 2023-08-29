@@ -35,6 +35,7 @@ dependencies {
     runtimeOnly project(":libs:application:application-impl")
     runtimeOnly project(':libs:db:db-orm-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
+    runtimeOnly project(":libs:membership:membership-impl")
     runtimeOnly project(':libs:messaging:messaging-impl')
     runtimeOnly project(":libs:sandbox-internal")
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
