@@ -8,7 +8,6 @@ import net.corda.crypto.test.certificates.generation.KeysFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.e2etest.utilities.config.SingleClusterTestConfigManager
 import net.corda.rest.ResponseCode
-import net.corda.rest.annotations.RestApiVersion
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
@@ -60,7 +59,7 @@ fun ClusterInfo.generateCsr(
 
     assertWithRetryIgnoringExceptions {
         interval(1.seconds)
-        command { post("/api/${RestApiVersion.C5_1.versionPath}/certificate/$tenantId/$keyId", ObjectMapper().writeValueAsString(payload)) }
+        command { post("/api/v1/certificates/$tenantId/$keyId", ObjectMapper().writeValueAsString(payload)) }
         condition { it.code == ResponseCode.OK.statusCode }
     }.body
 }

@@ -1,5 +1,6 @@
 package net.corda.e2etest.utilities
 
+import net.corda.rest.annotations.RestApiVersion
 import java.net.URI
 
 /**
@@ -11,6 +12,8 @@ import java.net.URI
  */
 abstract class ClusterInfo {
     abstract val id: String
+    // maybe put api version here?
+    abstract val restApiVersion: RestApiVersion
 
     private companion object {
         private const val DEFAULT_REST_HOST = "localhost"
@@ -80,6 +83,7 @@ data class P2PEndpointInfo(
  */
 object ClusterAInfo : ClusterInfo() {
     override val id = "A"
+    override val restApiVersion = RestApiVersion.C5_1
 }
 
 /**
@@ -87,6 +91,7 @@ object ClusterAInfo : ClusterInfo() {
  */
 object ClusterBInfo : ClusterInfo() {
     override val id = "B"
+    override val restApiVersion = RestApiVersion.C5_1
 }
 
 /**
@@ -94,4 +99,13 @@ object ClusterBInfo : ClusterInfo() {
  */
 object ClusterCInfo : ClusterInfo() {
     override val id = "C"
+    override val restApiVersion = RestApiVersion.C5_1
+}
+
+/**
+ * Default cluster info for E2E test cluster on which 5.0 deployment will run
+ */
+object ClusterFive0Info : ClusterInfo() {
+    override val id = "FIVE0"
+    override val restApiVersion = RestApiVersion.C5_0
 }
