@@ -1,10 +1,7 @@
-package net.corda.ledger.utxo.token.cache.services
+package net.corda.ledger.utxo.token.cache.services.internal
 
 import net.corda.crypto.core.ShortHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
@@ -13,27 +10,31 @@ import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.repositories.UtxoTokenRepository
 import net.corda.ledger.utxo.token.cache.entities.TokenBalance
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
+import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
+import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.VirtualNodeInfo
 
-@Component(service = [AvailableTokenService::class])
-class AvailableTokenServiceImpl @Activate constructor(
-    @Reference
+class AvailableTokenServiceImpl(
     private val virtualNodeInfoService: VirtualNodeInfoReadService,
-    @Reference
     private val dbConnectionManager: DbConnectionManager,
-    @Reference
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
-    @Reference
-    private val utxoTokenRepository: UtxoTokenRepository
+    private val utxoTokenRepository: UtxoTokenRepository,
+    private val serviceConfiguration: ServiceConfiguration
 ) : AvailableTokenService, SingletonSerializeAsToken {
     override fun findAvailTokens(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?): AvailTokenQueryResult {
         val virtualNode = getVirtualNodeInfo(poolKey)
 
         val entityManagerFactory = getOrCreateEntityManagerFactory(virtualNode)
 
-        return utxoTokenRepository.findTokens(entityManagerFactory.createEntityManager(), poolKey, ownerHash, tagRegex)
+        return utxoTokenRepository.findTokens(
+            entityManagerFactory.createEntityManager(),
+            poolKey,
+            ownerHash,
+            tagRegex,
+            serviceConfiguration.cachedTokenPageSize
+        )
     }
 
     override fun queryBalance(

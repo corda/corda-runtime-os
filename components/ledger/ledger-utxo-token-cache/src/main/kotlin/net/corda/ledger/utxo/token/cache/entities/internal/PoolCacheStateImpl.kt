@@ -1,8 +1,10 @@
-package net.corda.ledger.utxo.token.cache.entities
+package net.corda.ledger.utxo.token.cache.entities.internal
 
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaim
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.ledger.utxo.token.cache.converters.EntityConverterImpl
+import net.corda.ledger.utxo.token.cache.entities.CachedToken
+import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 
 class PoolCacheStateImpl(private val cacheState: TokenPoolCacheState) : PoolCacheState {
 

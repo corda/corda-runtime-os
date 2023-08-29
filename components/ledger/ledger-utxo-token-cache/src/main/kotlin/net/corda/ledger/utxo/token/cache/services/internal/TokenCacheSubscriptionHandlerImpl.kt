@@ -1,9 +1,11 @@
-package net.corda.ledger.utxo.token.cache.services
+package net.corda.ledger.utxo.token.cache.services.internal
 
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.ledger.utxo.token.cache.factories.TokenCacheEventProcessorFactory
+import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
+import net.corda.ledger.utxo.token.cache.services.TokenCacheSubscriptionHandler
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -19,11 +21,14 @@ import net.corda.schema.Schemas
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
-class TokenCacheSubscriptionHandlerImpl constructor(
+@Suppress("LongParameterList")
+class TokenCacheSubscriptionHandlerImpl(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val subscriptionFactory: SubscriptionFactory,
     private val tokenCacheEventProcessorFactory: TokenCacheEventProcessorFactory,
-    private val toServiceConfig: (Map<String, SmartConfig>) -> SmartConfig
+    private val serviceConfiguration: ServiceConfiguration,
+    private val toMessagingConfig: (Map<String, SmartConfig>) -> SmartConfig,
+    private val toTokenConfig: (Map<String, SmartConfig>) -> SmartConfig,
 ) : TokenCacheSubscriptionHandler {
 
     companion object {
@@ -39,7 +44,8 @@ class TokenCacheSubscriptionHandlerImpl constructor(
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
-            val messagingConfig = toServiceConfig(config)
+            serviceConfiguration.init(toTokenConfig(config))
+            val messagingConfig = toMessagingConfig(config)
 
             // close the lifecycle registration first to prevent a down signal to the coordinator
             subscriptionRegistrationHandle?.close()
