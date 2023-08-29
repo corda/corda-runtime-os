@@ -62,6 +62,7 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
         flowCheckpoint,
         flowEvent,
         payload,
+        configs = emptyMap(),
         flowConfig,
         isRetryEvent,
         recordList,

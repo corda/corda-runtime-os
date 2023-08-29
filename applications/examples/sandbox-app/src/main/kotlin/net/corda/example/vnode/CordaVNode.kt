@@ -28,6 +28,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.FlowConfig.PROCESSING_FLOW_CLEANUP_TIME
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS
@@ -176,7 +177,7 @@ class CordaVNode @Activate constructor(
             val rpcStartFlow = createRPCStartFlow(clientId, vnodeInfo.toAvro())
             val flowId = generateRandomId()
             val record = Record(FLOW_EVENT_TOPIC, flowId, FlowEvent(flowId, rpcStartFlow))
-            flowEventProcessorFactory.create(smartConfig).apply {
+            flowEventProcessorFactory.create(mapOf(FLOW_CONFIG to smartConfig)).apply {
                 val result = onNext(null, record)
                 result.responseEvents.singleOrNull { evt ->
                     evt.topic == FLOW_EVENT_TOPIC

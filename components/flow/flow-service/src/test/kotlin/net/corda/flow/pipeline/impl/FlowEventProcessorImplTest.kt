@@ -33,6 +33,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
+import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -132,7 +133,7 @@ class FlowEventProcessorImplTest {
         flowEventPipelineFactory,
         flowEventExceptionProcessor,
         flowEventContextConverter,
-        MINIMUM_SMART_CONFIG,
+        mapOf(FLOW_CONFIG to MINIMUM_SMART_CONFIG),
         flowMDCService
     )
 

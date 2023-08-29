@@ -18,6 +18,7 @@ import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.impl.FlowCheckpointFactory
 import net.corda.flow.test.utils.buildFlowEventContext
+import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -85,7 +86,7 @@ class FlowEventPipelineFactoryImplTest {
             flowFiberCache,
             flowIORequestTypeConverter
         )
-        val result = factory.create(checkpoint, flowEvent, config, emptyMap(), flowEventContext.flowTraceContext, 0)
+        val result = factory.create(checkpoint, flowEvent, mapOf(FLOW_CONFIG to config), emptyMap(), flowEventContext.flowTraceContext, 0)
         assertEquals(expected.context, result.context)
     }
 }
