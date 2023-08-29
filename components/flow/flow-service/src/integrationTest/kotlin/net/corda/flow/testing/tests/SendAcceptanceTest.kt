@@ -44,7 +44,7 @@ class SendAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Calling 'send' on initiated sessions sends a session data event and schedules a wakeup event`() {
+    fun `Calling 'send' on initiated sessions sends a session data event`() {
         given {
             initiateTwoFlows(this)
                 .suspendsWith(FlowIORequest.Receive(setOf(SessionInfo(SESSION_ID_2, initiatedIdentityMemberName))))
