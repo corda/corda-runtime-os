@@ -156,12 +156,22 @@ class InteropServiceIntegrationTest {
         assertTrue(true)
     }
 
+    /**
+     * Note to maintainers.
+     * This test originally used the now defunct `createHostedAliasIdentity()` method of the interop alias processor
+     * to create publish derived interop group members. However, as part of the registration process implementation, the
+     * InteropAliasProcessor has been removed and this code no longer compiles.
+     */
     //@Test
     fun `verify interop processor sends messages to flow mapper event topic and p2p out topic`() {
         interopService.start()
         val publisher = publisherFactory.createPublisher(PublisherConfig("client1"), bootConfig)
         // Test config updates don't break Interop Service
         republishConfig(publisher)
+        // Need to publish at least 2 identities in order to trigger InteropAliasProcessor to create synthetic aliases
+        // This code has been disabled due to the removal of the InteropAliasProcessor.
+        //publisher.publish(listOf(createHostedAliasIdentity(sourceIdentity.toCorda())))
+        //publisher.publish(listOf(createHostedAliasIdentity(destinationIdentity.toCorda())))
         val session = "session1"
         //TODO revisit sleep in CORE-12134
         Thread.sleep(30000)
