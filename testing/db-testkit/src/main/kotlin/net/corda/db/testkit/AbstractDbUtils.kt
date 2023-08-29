@@ -12,7 +12,7 @@ import org.slf4j.Logger
 import java.sql.Connection
 
 
-abstract class DbUtilsAbstract {
+abstract class AbstractDbUtils {
 
     abstract val hostProperty : String
     abstract val portProperty : String

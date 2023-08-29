@@ -9,16 +9,16 @@ import net.corda.schema.configuration.DatabaseConfig
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-object SQLDbUtils : DbUtilsAbstract() {
+object SQLDbUtils : AbstractDbUtils() {
     override val hostProperty: String = "sqlHost"
-    override val portProperty: String = "sqlPort"
+    override val portProperty: String = "mssqlPort"
 
     override val isInMemory: Boolean = System.getProperty(portProperty).isNullOrBlank()
     override val host: String = getPropertyNonBlank(hostProperty, "localhost")
 
     override val dbName: String = getPropertyNonBlank("sqlDb", "sql")
-    override val adminUser: String = if(isInMemory) "sa" else getPropertyNonBlank("sqlUser", "sql")
-    override val adminPassword: String = if (isInMemory) "" else getPropertyNonBlank("sqlPassword", "password")
+    override val adminUser: String = if(isInMemory) "sa" else getPropertyNonBlank("mssqlUser", "sql")
+    override val adminPassword: String = if (isInMemory) "" else getPropertyNonBlank("mssqlPassword", "password")
     override var jdbcURL: String = "jdbc:sqlserver://$host:${System.getProperty(portProperty)};encrypt=true;trustServerCertificate=true;"
 
     override val logger: Logger = LoggerFactory.getLogger(this::class.java)

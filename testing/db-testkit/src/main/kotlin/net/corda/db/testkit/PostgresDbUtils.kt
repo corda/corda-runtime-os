@@ -10,7 +10,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 
-object PostgresDbUtils : DbUtilsAbstract() {
+object PostgresDbUtils : AbstractDbUtils() {
     override val hostProperty: String = "postgresHost"
     override val portProperty: String = "postgresPort"
 

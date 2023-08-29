@@ -251,9 +251,9 @@ allprojects {
         inputs.property('postresUser', postgresUser)
         inputs.property('postgresPassword', postgresPassword)
 
-        inputs.property('sqlPort',sqlPort)
-        inputs.property('sqlUser',sqlUser)
-        inputs.property('sqlPassword',sqlPassword)
+        inputs.property('mssqlPort',mssqlPort)
+        inputs.property('mssqlUser',mssqlUser)
+        inputs.property('mssqlPassword',mssqlPassword)
 
         description = "Runs integration tests."
         group = "verification"
