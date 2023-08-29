@@ -49,7 +49,6 @@ class SubFlowFinishedRequestHandlerTest {
     private val testContext = RequestHandlerTestContext(Any())
     private val flowSessionManager = testContext.flowSessionManager
     private val handler = SubFlowFinishedRequestHandler(
-        flowSessionManager,
         testContext.flowRecordFactory,
         testContext.closeSessionService
     )

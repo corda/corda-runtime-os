@@ -1,6 +1,7 @@
 package net.corda.flow.application.sessions.impl
 
 import net.corda.data.KeyValuePairList
+import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectException
 import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.sessions.FlowSessionInternal
@@ -12,7 +13,6 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.FlowContext
 import net.corda.flow.utils.KeyValueStore
 import net.corda.session.manager.Constants
-import net.corda.utilities.debug
 import net.corda.utilities.trace
 import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.messaging.FlowInfo
@@ -131,13 +131,11 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun close() {
-        if (requireClose) {
-            //todo CORE-15757 - do we need to suspend if close received already
+        val flowCheckpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
+        val sessionState = flowCheckpoint.getSessionState(sourceSessionId)
+        if(checkNotNull(sessionState!!.status) != SessionStateType.CLOSED) {
             fiber.suspend(FlowIORequest.CloseSessions(setOf(sourceSessionId)))
             log.trace { "Closing session: $sourceSessionId" }
-        } else {
-            //todo CORE-15757 - do we need to suspend to update to closed state or will we just do that when the flow finishes
-            log.debug { "Ignoring close session: $sourceSessionId" }
         }
     }
 
