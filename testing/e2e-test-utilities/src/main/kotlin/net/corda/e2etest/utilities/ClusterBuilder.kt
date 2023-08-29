@@ -93,21 +93,17 @@ class ClusterBuilder {
 
     fun importCertificate(resourceName: String, usage: String, alias: String) =
         if (REST_API_VERSION_PATH == RestApiVersion.C5_0.versionPath) {
-            println(REST_API_VERSION_PATH)
             // Used to test RestApiVersion.C5_0 CertificateRestResource, remove after LTS
             uploadCertificateResource("/api/${RestApiVersion.C5_0.versionPath}/certificates/cluster/$usage", resourceName, alias)
         } else {
-            println(REST_API_VERSION_PATH)
             uploadCertificateResource("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage", resourceName, alias)
         }
 
     fun importCertificate(file: File, usage: String, alias: String) =
         if (REST_API_VERSION_PATH == RestApiVersion.C5_0.versionPath) {
             // Used to test RestApiVersion.C5_0 CertificateRestResource, remove after LTS
-            println(REST_API_VERSION_PATH)
             uploadCertificateFile("/api/${RestApiVersion.C5_0.versionPath}/certificates/cluster/$usage", file, alias)
         } else {
-            println(REST_API_VERSION_PATH)
             uploadCertificateFile("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage", file, alias)
         }
 
