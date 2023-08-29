@@ -137,6 +137,11 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     @Suspendable
     private fun extractParts(requestPayload: NonValidatingNotarizationPayload): NonValidatingNotaryTransactionDetails {
         val filteredTx = requestPayload.transaction as UtxoFilteredTransaction
+
+        if (filteredTx.notaryKey != requestPayload.notaryKey) {
+            throw IllegalStateException("Unvalidated notary was used")
+        }
+
         // The notary component is not needed by us but we validate that it is present just in case
         requireNotNull(filteredTx.notaryName) {
             "Notary name component could not be found on the transaction"
