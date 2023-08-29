@@ -7,7 +7,7 @@ import java.time.Instant
 object RbacTestUtils {
 
     fun getAllRbacRoles(): List<RbacRole> {
-        return DEFAULT_CLUSTER.cluster ({
+        return DEFAULT_CLUSTER.cluster {
             val bodyAsString = assertWithRetryIgnoringExceptions {
                 command { getRbacRoles() }
                 condition { it.code == 200 }
@@ -16,7 +16,7 @@ object RbacTestUtils {
             ObjectMapper()
                 .registerModule(JavaTimeModule())
                 .readerForListOf(RbacRole::class.java).readValue(bodyAsString)
-        }, DEFAULT_CLUSTER.restApiVersion)
+        }
     }
 
     class RbacRole {

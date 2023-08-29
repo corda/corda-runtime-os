@@ -19,7 +19,7 @@ fun startRpcFlow(
     requestId: String = UUID.randomUUID().toString()
 ): String {
 
-    return DEFAULT_CLUSTER.cluster ({
+    return DEFAULT_CLUSTER.cluster {
         assertWithRetry {
             command {
                 flowStart(
@@ -33,7 +33,7 @@ fun startRpcFlow(
         }
 
         requestId
-    }, DEFAULT_CLUSTER.restApiVersion)
+    }
 }
 
 fun startRpcFlow(
@@ -145,7 +145,7 @@ private fun JsonNode.asFlowError(): FlowError {
 }
 
 fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
-    return DEFAULT_CLUSTER.cluster ({
+    return DEFAULT_CLUSTER.cluster {
         assertWithRetryIgnoringExceptions {
             command { multipleFlowStatus(holdingId) }
             timeout(Duration.ofSeconds(20))
@@ -159,7 +159,7 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
                 it.code == 200 && flowStatuses.size() == expectedFlowCount && allStatusComplete
             }
         }
-    }, DEFAULT_CLUSTER.restApiVersion)
+    }
 }
 
 fun getFlowClasses(

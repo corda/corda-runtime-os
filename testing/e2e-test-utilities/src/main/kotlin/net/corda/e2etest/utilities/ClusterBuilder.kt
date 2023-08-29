@@ -538,10 +538,8 @@ class ClusterBuilder {
 
 fun <T> cluster(
     initialize: ClusterBuilder.() -> T,
-    apiVersion: RestApiVersion,
-): T = DEFAULT_CLUSTER.cluster(initialize, apiVersion)
+): T = DEFAULT_CLUSTER.cluster(initialize)
 
 fun <T> ClusterInfo.cluster(
-    initialize: ClusterBuilder.() -> T,
-    apiVersion: RestApiVersion,
-): T = ClusterBuilder().apply { init(this@cluster, apiVersion.versionPath) }.let(initialize)
+    initialize: ClusterBuilder.() -> T
+): T = ClusterBuilder().apply { init(this@cluster, restApiVersion.versionPath) }.let(initialize)
