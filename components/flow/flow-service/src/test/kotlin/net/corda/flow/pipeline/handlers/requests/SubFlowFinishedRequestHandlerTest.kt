@@ -4,7 +4,6 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
-import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.flow.RequestHandlerTestContext
@@ -47,7 +46,6 @@ class SubFlowFinishedRequestHandlerTest {
 
     private val record = Record("", "", FlowEvent())
     private val testContext = RequestHandlerTestContext(Any())
-    private val flowSessionManager = testContext.flowSessionManager
     private val handler = SubFlowFinishedRequestHandler(
         testContext.flowRecordFactory,
         testContext.closeSessionService
@@ -114,16 +112,8 @@ class SubFlowFinishedRequestHandlerTest {
     fun `Sends session close messages to non-errored sessions and does not create a Wakeup record when the flow has sessions to close`(
         isInitiatingFlow: Boolean
     ) {
-        val nonErroredSessions = listOf(SESSION_ID_2, SESSION_ID_3)
-
-        whenever(
-            flowSessionManager.doAllSessionsHaveStatus(
-                testContext.flowCheckpoint,
-                nonErroredSessions,
-                SessionStateType.CLOSED
-            )
-        ).thenReturn(false)
-
+        whenever(testContext.closeSessionService.handleCloseForSessions(SESSION_IDS, testContext.flowCheckpoint))
+            .thenReturn(SESSION_IDS)
         val outputContext = handler.postProcess(
             testContext.flowEventContext,
             FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessions.map { it.sessionId })
@@ -138,14 +128,6 @@ class SubFlowFinishedRequestHandlerTest {
     fun `Does not send session close messages and creates a Wakeup record when the flow has no sessions to close`(
         isInitiatingFlow: Boolean
     ) {
-        whenever(
-            flowSessionManager.doAllSessionsHaveStatus(
-                testContext.flowCheckpoint,
-                emptyList(),
-                SessionStateType.CLOSED
-            )
-        ).thenReturn(true)
-
         val outputContext = handler.postProcess(
             testContext.flowEventContext,
             FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow, emptyList()).sessions.map { it.sessionId })
@@ -159,14 +141,6 @@ class SubFlowFinishedRequestHandlerTest {
     fun `Does not send session close messages and creates a Wakeup record when the flow has only closed sessions`(
         isInitiatingFlow: Boolean
     ) {
-        whenever(
-            flowSessionManager.doAllSessionsHaveStatus(
-                testContext.flowCheckpoint,
-                SESSION_IDS,
-                SessionStateType.CLOSED
-            )
-        ).thenReturn(true)
-
         val outputContext = handler.postProcess(
             testContext.flowEventContext,
             FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessions.map { it.sessionId })
