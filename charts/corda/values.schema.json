@@ -668,7 +668,8 @@
                     "default": {},
                     "title": "configuration for the preinstall check",
                     "required": [
-                        "enabled"
+                        "enabled",
+                        "serviceAccount"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -680,6 +681,33 @@
                                 true,
                                 false
                             ]
+                        },
+                        "serviceAccount": {
+                            "type": "object",
+                            "default": {},
+                            "title": "configuration for a service account for the preinstall check",
+                            "required": [
+                                "create",
+                                "name"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                                "create": {
+                                    "type": "boolean",
+                                    "default": true,
+                                    "title": "indicates whether the service account should be created",
+                                    "examples": [
+                                        true,
+                                        false
+                                    ]
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "default": "",
+                                    "title": "name of the service account, if not set and create is true, a name is generated from a template",
+                                    "examples": [""]
+                                }
+                            }
                         }
                     }
                 },

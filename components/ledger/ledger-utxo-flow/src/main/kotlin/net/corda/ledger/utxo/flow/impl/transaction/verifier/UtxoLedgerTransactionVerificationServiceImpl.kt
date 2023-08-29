@@ -1,15 +1,12 @@
 package net.corda.ledger.utxo.flow.impl.transaction.verifier
 
 import io.micrometer.core.instrument.Timer
-import net.corda.crypto.core.parseSecureHash
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.metrics.recordSuspendable
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
-import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersService
-import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.external.events.TransactionVerificationParameters
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
@@ -39,10 +36,6 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
     private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
-    @Reference(service = UtxoLedgerGroupParametersPersistenceService::class)
-    private val utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService,
-    @Reference(service = CurrentGroupParametersService::class)
-    private val currentGroupParametersService: CurrentGroupParametersService,
     @Reference(service = CurrentSandboxGroupContext::class)
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = SignedGroupParametersVerifier::class)
@@ -53,7 +46,8 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
     override fun verify(transaction: UtxoLedgerTransaction) {
         recordSuspendable(::transactionVerificationFlowTimer) @Suspendable {
 
-            val signedGroupParameters = fetchAndVerifySignedGroupParameters(transaction)
+            val signedGroupParameters = transaction.groupParameters as SignedGroupParameters
+            signedGroupParametersVerifier.verify(transaction, signedGroupParameters)
             verifyNotaryAllowed(transaction, signedGroupParameters)
 
             val verificationResult = externalEventExecutor.execute(
@@ -75,31 +69,14 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
         }
     }
 
-    @Suspendable
-    private fun fetchAndVerifySignedGroupParameters(transaction: UtxoLedgerTransaction): SignedGroupParameters {
-        val membershipGroupParametersHashString = transaction.getMembershipGroupParametersHash()
-
-        val currentGroupParameters = currentGroupParametersService.get()
-        val signedGroupParameters =
-            if (currentGroupParameters.hash.toString() == membershipGroupParametersHashString) {
-                currentGroupParameters
-            } else {
-                val membershipGroupParametersHash = parseSecureHash(membershipGroupParametersHashString)
-                utxoLedgerGroupParametersPersistenceService.find(membershipGroupParametersHash)
-            }
-        requireNotNull(signedGroupParameters) {
-            "Signed group parameters $membershipGroupParametersHashString related to the transaction ${transaction.id} cannot be accessed."
-        }
-        signedGroupParametersVerifier.verify(
-            transaction,
-            signedGroupParameters
-        )
-        return signedGroupParameters
-    }
-
     private fun UtxoLedgerTransaction.toContainer() =
         (this as UtxoLedgerTransactionInternal).run {
-            UtxoLedgerTransactionContainer(wireTransaction, inputStateAndRefs, referenceStateAndRefs)
+            UtxoLedgerTransactionContainer(
+                wireTransaction,
+                inputStateAndRefs,
+                referenceStateAndRefs,
+                this.groupParameters as SignedGroupParameters
+            )
         }
 
     private fun UtxoLedgerTransaction.getCpkMetadata() =
@@ -108,12 +85,6 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
         }
 
     private fun serialize(payload: Any) = ByteBuffer.wrap(serializationService.serialize(payload).bytes)
-
-    private fun UtxoLedgerTransaction.getMembershipGroupParametersHash(): String {
-        return requireNotNull((metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()) {
-            "Membership group parameters hash cannot be found in the transaction metadata."
-        }
-    }
 
     private fun transactionVerificationFlowTimer(): Timer {
         return CordaMetrics.Metric.Ledger.TransactionVerificationFlowTime
