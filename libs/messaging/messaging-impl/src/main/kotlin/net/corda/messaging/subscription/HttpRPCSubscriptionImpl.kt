@@ -28,8 +28,6 @@ internal class HttpRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
 
     override fun close() {
         webServer.removeEndpoint(endpoint)
-        webServer.stop()
-        webServer.port?.let { webServer.start(it) }
     }
 
     private companion object {

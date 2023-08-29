@@ -190,7 +190,7 @@ class CordaSubscriptionFactory @Activate constructor(
         endpoint: String,
         processor: HttpRPCProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE> {
-        return HttpRPCSubscriptionImpl(LifecycleCoordinatorName("", ""), "", processor, cordaAvroSerializationFactory, webServer)
+        return HttpRPCSubscriptionImpl(LifecycleCoordinatorName("", ""), endpoint, processor, cordaAvroSerializationFactory, webServer)
     }
 
 

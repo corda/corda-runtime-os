@@ -33,8 +33,6 @@ dependencies {
 
     implementation project(":osgi-framework-api")
 
-    runtimeOnly project(':components:webserver')
-
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"

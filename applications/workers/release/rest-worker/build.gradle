@@ -51,7 +51,6 @@ dependencies {
 
     runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
     runtimeOnly project(":libs:messaging:messaging-impl")
-    runtimeOnly project(':components:webserver')
 
     e2eTestImplementation project(':libs:configuration:configuration-endpoints')
     e2eTestImplementation project(':libs:chunking:chunking-core')

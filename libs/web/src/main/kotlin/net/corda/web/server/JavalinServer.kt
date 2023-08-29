@@ -91,6 +91,8 @@ class JavalinServer @Activate constructor(
 
     override fun removeEndpoint(endpoint: Endpoint) {
         endpoints.remove(endpoint)
+        stop()
+        port?.let { startServer(it) }
     }
 
     private fun registerEndpointInternal(endpoint: Endpoint){

@@ -1,10 +1,6 @@
-package net.corda.web.server
+package net.corda.web.api
 
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.web.api.Endpoint
-import net.corda.web.api.HTTPMethod
-import net.corda.web.api.WebContext
-import net.corda.web.api.WebHandler
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows

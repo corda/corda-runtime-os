@@ -39,7 +39,6 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
     runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
-    runtimeOnly project(':components:webserver')
 
     testImplementation 'org.osgi:osgi.core'
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
