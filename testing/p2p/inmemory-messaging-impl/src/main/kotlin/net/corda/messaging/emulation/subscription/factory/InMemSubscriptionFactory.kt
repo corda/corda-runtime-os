@@ -31,6 +31,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.UUID
 import net.corda.messaging.api.processor.HttpRPCProcessor
+import net.corda.messaging.api.subscription.config.HttpRPCConfig
 
 /**
  * In memory implementation of the Subscription Factory.
@@ -136,9 +137,9 @@ class InMemSubscriptionFactory @Activate constructor(
     }
 
     override fun <REQUEST : Any, RESPONSE : Any> createHttpRPCSubscription(
-        endpoint: String,
+        rpcConfig: HttpRPCConfig<REQUEST, RESPONSE>,
         processor: HttpRPCProcessor<REQUEST, RESPONSE>
-    ): RPCSubscription<REQUEST, RESPONSE>{
-        TODO()
+    ): RPCSubscription<REQUEST, RESPONSE> {
+        TODO("Not yet implemented")
     }
 }

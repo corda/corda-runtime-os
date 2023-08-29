@@ -39,8 +39,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.UUID
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.processor.HttpRPCProcessor
+import net.corda.messaging.api.subscription.config.HttpRPCConfig
 import net.corda.messaging.subscription.HttpRPCSubscriptionImpl
 import net.corda.web.api.WebServer
 
@@ -187,10 +187,11 @@ class CordaSubscriptionFactory @Activate constructor(
     }
 
     override fun <REQUEST : Any, RESPONSE : Any> createHttpRPCSubscription(
-        endpoint: String,
+        rpcConfig: HttpRPCConfig<REQUEST, RESPONSE>,
         processor: HttpRPCProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE> {
-        return HttpRPCSubscriptionImpl(LifecycleCoordinatorName("", ""), endpoint, processor, cordaAvroSerializationFactory, webServer)
+        return HttpRPCSubscriptionImpl(rpcConfig, processor,
+            lifecycleCoordinatorFactory, cordaAvroSerializationFactory, webServer)
     }
 
 

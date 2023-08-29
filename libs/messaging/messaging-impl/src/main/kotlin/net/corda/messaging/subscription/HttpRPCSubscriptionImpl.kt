@@ -1,9 +1,12 @@
 package net.corda.messaging.subscription
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.processor.HttpRPCProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
+import net.corda.messaging.api.subscription.config.HttpRPCConfig
 import net.corda.rest.ResponseCode
 import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
@@ -14,20 +17,32 @@ import org.slf4j.LoggerFactory
 
 
 internal class HttpRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
-    override val subscriptionName: LifecycleCoordinatorName,
-    private val rpcEndpoint: String,
+    private val rpcConfig: HttpRPCConfig<REQUEST, RESPONSE>,
     val processor: HttpRPCProcessor<REQUEST, RESPONSE>,
+    val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     val webServer: WebServer
 ) : RPCSubscription<REQUEST, RESPONSE> {
 
     private lateinit var endpoint: Endpoint
+    override val subscriptionName =
+        LifecycleCoordinatorName(
+            "${rpcConfig.groupName}-RPCSubscription-${rpcConfig.endpoint.removePrefix("/")}"
+        )
+
+
+    private val coordinator = lifecycleCoordinatorFactory.createCoordinator(subscriptionName) { _, _ -> }
+
     override fun start() {
-        registerEndpoint(rpcEndpoint, processor)
+        registerEndpoint(rpcConfig.endpoint, processor)
+        coordinator.start()
+        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     override fun close() {
         webServer.removeEndpoint(endpoint)
+        coordinator.updateStatus(LifecycleStatus.DOWN)
+        coordinator.close()
     }
 
     private companion object {

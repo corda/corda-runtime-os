@@ -12,6 +12,7 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.config.HttpRPCConfig
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
@@ -153,7 +154,7 @@ interface SubscriptionFactory {
     ): RPCSubscription<REQUEST, RESPONSE>
 
     fun <REQUEST : Any, RESPONSE : Any> createHttpRPCSubscription(
-        endpoint: String,
+        rpcConfig: HttpRPCConfig<REQUEST, RESPONSE>,
         processor: HttpRPCProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE>
 }
