@@ -153,8 +153,21 @@ interface SubscriptionFactory {
         responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE>
 
+    /**
+     * Create an http based instance of the [RPCSubscription]
+     * This subscription is used to pick up requests of type [REQUEST]
+     * The request is then processed and a response of type [RESPONSE] is posted back to the sender
+     *
+     * HTTP RPC requests are handled synchronously.
+     *
+     * On start, the subscription registers a processor to an endpoint which will run anytime a request is
+     * received by the underlying webserver
+     *
+     * @param rpcConfig Define an endpoint for the subscription to listen on eg '/rpc-endpoint'.
+     * @param processor processor in charge of handling incoming requests
+     */
     fun <REQUEST : Any, RESPONSE : Any> createHttpRPCSubscription(
-        rpcConfig: HttpRPCConfig<REQUEST, RESPONSE>,
+        rpcConfig: HttpRPCConfig,
         processor: HttpRPCProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE>
 }

@@ -187,11 +187,15 @@ class CordaSubscriptionFactory @Activate constructor(
     }
 
     override fun <REQUEST : Any, RESPONSE : Any> createHttpRPCSubscription(
-        rpcConfig: HttpRPCConfig<REQUEST, RESPONSE>,
+        rpcConfig: HttpRPCConfig,
         processor: HttpRPCProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE> {
+
+        val cordaAvroSerializer = cordaAvroSerializationFactory.createAvroSerializer<RESPONSE> { }
+        val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({ }, processor.reqClass)
+
         return HttpRPCSubscriptionImpl(rpcConfig, processor,
-            lifecycleCoordinatorFactory, cordaAvroSerializationFactory, webServer)
+            lifecycleCoordinatorFactory, webServer, cordaAvroSerializer, cordaAvroDeserializer)
     }
 
 

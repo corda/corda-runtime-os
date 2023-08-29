@@ -5,7 +5,6 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import net.corda.avro.serialization.CordaAvroDeserializer
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -19,10 +18,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
 
 class HttpRPCSubscriptionImplTest {
-
 
     private val lifecycleCoordinator = org.mockito.kotlin.mock<LifecycleCoordinator>()
     private val lifecycleCoordinatorFactory = org.mockito.kotlin.mock<LifecycleCoordinatorFactory> {
@@ -47,10 +44,6 @@ class HttpRPCSubscriptionImplTest {
         }
 
     }
-    private val cordaAvroSerializationFactory = org.mockito.kotlin.mock<CordaAvroSerializationFactory> {
-        on { createAvroSerializer<String>(any()) } doReturn serializer
-        on { createAvroDeserializer(any(), eq(String::class.java)) } doReturn deserializer
-    }
 
     @BeforeEach
     fun setup() {
@@ -59,19 +52,15 @@ class HttpRPCSubscriptionImplTest {
                 return "input: '$request', has been handled"
             }
 
-            override val reqClazz: Class<String> = String::class.java
-            override val respClazz: Class<String> = String::class.java
+            override val reqClass: Class<String> = String::class.java
+            override val respClass: Class<String> = String::class.java
         }
 
         webServer.start(TEST_PORT)
         rpcSubscription = HttpRPCSubscriptionImpl(
             HttpRPCConfig(
-                "subscription",
-                "client",
-                TEST_ENDPOINT,
-                String::class.java,
-                String::class.java
-            ), processor, lifecycleCoordinatorFactory, cordaAvroSerializationFactory, webServer
+                TEST_ENDPOINT
+            ), processor, lifecycleCoordinatorFactory, webServer, serializer, deserializer
         )
     }
 

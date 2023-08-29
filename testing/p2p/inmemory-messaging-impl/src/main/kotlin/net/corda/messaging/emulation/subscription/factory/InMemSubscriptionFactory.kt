@@ -137,9 +137,7 @@ class InMemSubscriptionFactory @Activate constructor(
     }
 
     override fun <REQUEST : Any, RESPONSE : Any> createHttpRPCSubscription(
-        rpcConfig: HttpRPCConfig<REQUEST, RESPONSE>,
+        rpcConfig: HttpRPCConfig,
         processor: HttpRPCProcessor<REQUEST, RESPONSE>
-    ): RPCSubscription<REQUEST, RESPONSE> {
-        TODO("Not yet implemented")
-    }
+    ): RPCSubscription<REQUEST, RESPONSE> = throw NotImplementedError()
 }

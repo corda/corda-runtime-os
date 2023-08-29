@@ -1,6 +1,8 @@
 package net.corda.messaging.subscription
 
-import net.corda.avro.serialization.CordaAvroSerializationFactory
+import java.util.UUID
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -16,18 +18,36 @@ import net.corda.web.api.WebServer
 import org.slf4j.LoggerFactory
 
 
+/**
+ * Implementation of a RPCSubscription
+ *
+ * This subscription will register and listen to an endpoint that will be registered to
+ * the webserver on subscription start
+ *
+ *
+ * @param REQUEST the request Type to be deserialized
+ * @param RESPONSE the response Type to be serialized
+ * @property rpcConfig the config object that contains endpoint for the subscription to listen on
+ * @property processor processes incoming requests. Produces an output of RESPONSE.
+ * @property lifecycleCoordinatorFactory
+ * @property webServer webserver component
+ * @property cordaAvroSerializer serializer for the RESPONSE type
+ * @property cordaAvroDeserializer deserializer for the REQUEST type
+ */
+@Suppress("LongParameterList")
 internal class HttpRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
-    private val rpcConfig: HttpRPCConfig<REQUEST, RESPONSE>,
+    private val rpcConfig: HttpRPCConfig,
     val processor: HttpRPCProcessor<REQUEST, RESPONSE>,
     val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    val webServer: WebServer
+    val webServer: WebServer,
+    val cordaAvroSerializer: CordaAvroSerializer<RESPONSE>,
+    val cordaAvroDeserializer: CordaAvroDeserializer<REQUEST>
 ) : RPCSubscription<REQUEST, RESPONSE> {
 
     private lateinit var endpoint: Endpoint
     override val subscriptionName =
         LifecycleCoordinatorName(
-            "${rpcConfig.groupName}-RPCSubscription-${rpcConfig.endpoint.removePrefix("/")}"
+            "RPCSubscription-${rpcConfig.endpoint.removePrefix("/")}-${UUID.randomUUID()}"
         )
 
 
@@ -55,20 +75,12 @@ internal class HttpRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     ) {
         val server = webServer
 
-        val avroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({
-            log.error("Failed to deserialize payload for request")
-        }, processor.reqClazz)
-
-        val avroSerializer = cordaAvroSerializationFactory.createAvroSerializer<RESPONSE> {
-            log.error("Failed to serialize payload for response")
-        }
-
         val webHandler = object : WebHandler {
             override fun handle(context: WebContext): WebContext {
-                val payload = avroDeserializer.deserialize(context.bodyAsBytes())
+                val payload = cordaAvroDeserializer.deserialize(context.bodyAsBytes())
 
                 if (payload != null) {
-                    val serializedResponse = avroSerializer.serialize(processor.process(payload))
+                    val serializedResponse = cordaAvroSerializer.serialize(processor.process(payload))
                     return if (serializedResponse != null) {
                         context.result(serializedResponse)
                         context
