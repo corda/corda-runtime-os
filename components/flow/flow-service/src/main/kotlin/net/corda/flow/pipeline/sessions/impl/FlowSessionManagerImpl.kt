@@ -203,9 +203,11 @@ class FlowSessionManagerImpl @Activate constructor(
         checkpoint: FlowCheckpoint,
         sessionIds: List<String>
     ): Pair<List<String>, List<String>> {
-        val statePair = sessionIds
-            .map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
-            .partition { sessionState -> sessionState.requireClose }
+        val statePair = getSessionsWithStatuses(
+            checkpoint,
+            sessionIds,
+            setOf(SessionStateType.CREATED, SessionStateType.CONFIRMED, SessionStateType.CLOSING)
+        ).partition { sessionState -> sessionState.requireClose }
         return Pair(statePair.first.map { it.sessionId }, statePair.second.map { it.sessionId })
     }
 

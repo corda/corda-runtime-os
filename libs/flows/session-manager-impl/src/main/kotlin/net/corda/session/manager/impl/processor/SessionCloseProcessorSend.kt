@@ -8,19 +8,17 @@ import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.session.manager.impl.processor.helper.isInitiatedIdentity
-import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
 /**
  * Handle send of a [SessionClose] event.
- * If the state is null, ERROR or CLOSED send an error response to the counterparty as this indicates a bug in client code or  a
+ * If the state is null or ERROR send an error response to the counterparty as this indicates a bug in client code or  a
  * session mismatch has occurred.
+ * If state is CLOSING or CLOSED, no update required.
  * If the client has not consumed all received events and it tries to send a close then trigger an error as this is a bug/session mismatch.
  * If the state is CONFIRMED then set the status to CLOSING
- * If the state is CLOSING and set the status to WAIT_FOR_FINAL_ACK. The session cannot be closed until all acks are received by the
- * counterparty.
  */
 class SessionCloseProcessorSend(
     private val key: Any,
@@ -40,7 +38,7 @@ class SessionCloseProcessorSend(
             sessionState == null -> {
                 handleNullSession(sessionId)
             }
-            currentStatus == SessionStateType.CLOSED -> {
+            currentStatus in setOf(SessionStateType.CLOSED, SessionStateType.CLOSING) -> {
                 sessionState
             }
             currentStatus == SessionStateType.ERROR -> {
@@ -48,10 +46,6 @@ class SessionCloseProcessorSend(
             }
             hasUnprocessedReceivedDataEvents(sessionState) -> {
                 handleUnprocessedReceivedDataEvents(sessionId, sessionState)
-            }
-            isClosingWithClosesToSend(currentStatus, sessionState) -> {
-                logger.debug { "Already have a close to send, $sessionId" }
-                sessionState
             }
             else -> {
                 val nextSeqNum = sessionState.sendEventsState.lastProcessedSequenceNum + 1
@@ -93,11 +87,6 @@ class SessionCloseProcessorSend(
                 generateErrorEvent(sessionState, sessionEvent, errorMessage, "SessionClose-InvalidStatus", instant)
             )
         }
-    }
-
-    private fun isClosingWithClosesToSend(currentStatus: SessionStateType?, sessionState: SessionState): Boolean {
-        return currentStatus == SessionStateType.CLOSING &&
-                sessionState.receivedEventsState.undeliveredMessages.none { it.payload is SessionClose }
     }
 
     private fun getResultByCurrentState(

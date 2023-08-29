@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline.handlers.requests
 
 import net.corda.data.flow.event.Wakeup
-import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.data.flow.state.waiting.WaitingFor
@@ -10,16 +9,12 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.sessions.service.CloseSessionService
-import net.corda.flow.pipeline.sessions.FlowSessionManager
-import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [FlowRequestHandler::class])
 class SubFlowFinishedRequestHandler @Activate constructor(
-    @Reference(service = FlowSessionManager::class)
-    private val flowSessionManager: FlowSessionManager,
     @Reference(service = FlowRecordFactory::class)
     private val flowRecordFactory: FlowRecordFactory,
     @Reference(service = CloseSessionService::class)
@@ -38,10 +33,11 @@ class SubFlowFinishedRequestHandler @Activate constructor(
     ): WaitingFor {
         val sessionsToClose = try {
             closeSessionService.getSessionsToCloseForWaitingFor(context.checkpoint, getSessionsToClose(request))
-        } catch (e: FlowSessionStateException) {
-            // TODO CORE-4850 Wakeup with error when session does not exist
-            throw FlowFatalException(e.message, e)
+        } catch (e: Exception) {
+            val msg = e.message ?: "An error occurred in the platform - A session in ${request.sessionIds} was missing from the checkpoint"
+            throw FlowFatalException(msg, e)
         }
+
         return if (sessionsToClose.isEmpty()) {
             WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
         } else {
@@ -55,25 +51,19 @@ class SubFlowFinishedRequestHandler @Activate constructor(
     ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
 
-        val hasNoSessionsOrAllClosed = try {
-
+        val sessionsNotTerminated = try {
             closeSessionService.handleCloseForSessions(getSessionsToClose(request), checkpoint)
-            getSessionsToClose(request).isEmpty() || flowSessionManager.doAllSessionsHaveStatus(
-                checkpoint,
-                getSessionsToClose(request),
-                SessionStateType.CLOSED
-            )
-        } catch (e: FlowSessionStateException) {
+        } catch (e: Exception) {
             // TODO CORE-4850 Wakeup with error when session does not exist
-            throw FlowFatalException(e.message, e)
+            val msg = e.message ?: "An error occurred in the platform - A session in ${request.sessionIds} was missing from the checkpoint"
+            throw FlowFatalException(msg, e)
         }
 
-        return if (hasNoSessionsOrAllClosed) {
+        return if (sessionsNotTerminated.isEmpty()) {
             val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
             context.copy(outputRecords = context.outputRecords + listOf(record))
         } else {
             context
         }
     }
-
 }
