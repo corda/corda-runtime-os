@@ -3,6 +3,9 @@ package net.corda.applications.workers.workercommon.internal
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.javalin.Javalin
 import io.javalin.core.util.Header
+import io.micrometer.cloudwatch2.CloudWatchConfig
+import io.micrometer.cloudwatch2.CloudWatchMeterRegistry
+import io.micrometer.core.instrument.Clock
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmHeapPressureMetrics
@@ -26,6 +29,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -45,11 +49,21 @@ internal class WorkerMonitorImpl @Activate constructor(
     private var server: Javalin? = null
     private val objectMapper = ObjectMapper()
     private val prometheusRegistry: PrometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+    private val cloudwatchConfig = object : CloudWatchConfig {
+        override fun get(key: String): String? {
+            return null
+        }
+
+        override fun namespace(): String {
+            return "foo"
+        }
+    }
+    private val cloudWatchRegistry = CloudWatchMeterRegistry(cloudwatchConfig, Clock.SYSTEM, CloudWatchAsyncClient.create())
     private val lastLogMessage = ConcurrentHashMap(mapOf(HTTP_HEALTH_ROUTE to "", HTTP_STATUS_ROUTE to ""))
 
     private fun setupMetrics(name: String) {
         logger.info("Creating Prometheus metric registry")
-        CordaMetrics.configure(name, prometheusRegistry)
+        CordaMetrics.configure(name, cloudWatchRegistry)
 
         ClassLoaderMetrics().bindTo(CordaMetrics.registry)
         JvmMemoryMetrics().bindTo(CordaMetrics.registry)
