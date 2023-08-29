@@ -72,7 +72,7 @@ class SandboxDependencyInjectorFactoryImpl : SandboxDependencyInjectorFactory {
                             try {
                                 references.forEach(bundleContext::ungetService)
                             } catch (e: IllegalStateException) {
-                                logger.debug("{} already unloaded", sandboxGroupContext)
+                                logger.info("{} already unloaded", sandboxGroupContext)
                             }
                         }
                     }

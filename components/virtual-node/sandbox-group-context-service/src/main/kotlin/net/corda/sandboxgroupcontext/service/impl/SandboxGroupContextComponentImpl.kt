@@ -22,7 +22,6 @@ import net.corda.sandboxgroupcontext.service.CacheControl
 import net.corda.sandboxgroupcontext.service.EvictionListener
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.utilities.debug
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.wiring.BundleRevision
@@ -105,7 +104,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.debug { "${javaClass.name} received: $event" }
+        logger.info ( "${javaClass.name} received: $event" )
         when (event) {
             is StartEvent -> onStart(coordinator)
             is StopEvent -> onStop()
@@ -143,7 +142,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     }
 
     private fun onStart(coordinator: LifecycleCoordinator) {
-        logger.debug { "${javaClass.name} starting" }
+        logger.info ( "${javaClass.name} starting" )
         initialiseSandboxContext(bundleContext.bundles)
         coordinator.createManagedResource(REGISTRATION) {
             coordinator.followStatusChangesByName(
@@ -156,7 +155,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     }
 
     private fun onStop() {
-        logger.debug { "${javaClass.name} stopping" }
+        logger.info ( "${javaClass.name} stopping" )
         sandboxGroupContextService.close()
     }
 

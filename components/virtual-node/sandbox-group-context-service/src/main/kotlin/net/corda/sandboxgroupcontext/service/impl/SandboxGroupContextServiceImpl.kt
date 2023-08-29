@@ -115,7 +115,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
             try {
                 action()
             } catch (e: Exception) {
-                logger.debug("Ignoring exception", e)
+                logger.info("Ignoring exception", e)
             }
         }
     }
@@ -192,7 +192,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 val initializerAutoCloseable =
                     initializer.initializeSandboxGroupContext(vnc.holdingIdentity, sandboxGroupContext)
 
-                logger.debug("Created {} sandbox {} for holding identity={}",
+                logger.info("Created {} sandbox {} for holding identity={}",
                     vnc.sandboxGroupType, sandboxGroup.id, vnc.holdingIdentity)
 
                 // Wrapped SandboxGroupContext, specifically to set closeable and forward on all other calls.
@@ -278,7 +278,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                             // Only accept those service types for which this sandbox also has a bundle wiring.
                             sandboxBundles.loadCommonService(serviceType)
                         } else {
-                            logger.debug("Holding ID {} denied GET permission for {}", vnc.holdingIdentity, serviceType)
+                            logger.info("Holding ID {} denied GET permission for {}", vnc.holdingIdentity, serviceType)
                             null
                         }
                     }.takeIf { serviceTypes ->
@@ -287,7 +287,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                         // corda.marker.only property.
                         serviceTypes.isNotEmpty() || markerOnlyFilter.match(serviceRef)
                     }?.also { injectableTypes ->
-                        logger.debug("Identified injectable service {}, holding ID={}", serviceRef, vnc.holdingIdentity)
+                        logger.info("Identified injectable service {}, holding ID={}", serviceRef, vnc.holdingIdentity)
                         injectableTypes += serviceMarkerType
 
                         // We filtered on services having a component name, so we
@@ -616,7 +616,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                     serviceFactory.serviceReference.copyPropertiesForSandbox(sandboxId)
                 )
                 if (logger.isDebugEnabled) {
-                    logger.debug("Registered sandbox service {}[{}] for bundle [{}][{}]",
+                    logger.info("Registered sandbox service {}[{}] for bundle [{}][{}]",
                         serviceObj::class.java.simpleName,
                         serviceClassNames.joinToString(),
                         targetContext.bundle.symbolicName,
@@ -688,7 +688,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                             null
                         }
                 } else if (nonInjectable.isByConstructor) {
-                    logger.debug("Discovered non-injectable sandbox service {}", serviceRef)
+                    logger.info("Discovered non-injectable sandbox service {}", serviceRef)
                     nonInjectables[serviceRef] = nonInjectable
                     modified = true
                     null
@@ -711,7 +711,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
             } catch (e: Exception) {
                 throw SandboxException("Service $serviceRef is unavailable", e)
             }?.let { serviceObj ->
-                logger.debug("Created non-injectable sandbox service: {}", serviceObj::class.java.name)
+                logger.info("Created non-injectable sandbox service: {}", serviceObj::class.java.name)
                 serviceRegistry[serviceRef] = serviceObj
                 NonInjectableService(serviceFactory, serviceObj)
             }

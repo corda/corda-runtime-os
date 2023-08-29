@@ -2,7 +2,6 @@ package net.corda.sandboxgroupcontext.service.impl
 
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.utilities.trace
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope.SINGLETON
@@ -22,20 +21,20 @@ class CurrentSandboxGroupContextImpl : CurrentSandboxGroupContext, SingletonSeri
     private val currentSandboxGroupContext = ThreadLocal<SandboxGroupContext?>()
 
     override fun set(sandboxGroupContext: SandboxGroupContext) {
-        log.trace {
+        log.info (
             "Setting current sandbox group context [$sandboxGroupContext] on thread [${Thread.currentThread().name}] for holding " +
                     "identity [${sandboxGroupContext.virtualNodeContext.holdingIdentity}]"
-        }
+        )
         currentSandboxGroupContext.set(sandboxGroupContext)
     }
 
     override fun get(): SandboxGroupContext {
         val current = currentSandboxGroupContext.get()
         return if (current != null) {
-            log.trace {
+            log.info (
                 "Retrieved current sandbox group context [$current] for thread [${Thread.currentThread().name}] with holding identity " +
                         "[${current.virtualNodeContext.holdingIdentity}]"
-            }
+            )
             current
         } else {
             log.error("No current sandbox group context set for thread [${Thread.currentThread().name}]")
@@ -48,10 +47,10 @@ class CurrentSandboxGroupContextImpl : CurrentSandboxGroupContext, SingletonSeri
         currentSandboxGroupContext.set(null)
 
         if (current != null) {
-            log.trace {
+            log.info (
                 "Removed current sandbox group context [$current] for thread [${Thread.currentThread().name}] with holding identity " +
                         "[${current.virtualNodeContext.holdingIdentity}]"
-            }
+            )
         } else {
             // An exception is created here, so that the warning provides a stacktrace that can be used to determine where the thread
             // local is being incorrectly set or removed.
