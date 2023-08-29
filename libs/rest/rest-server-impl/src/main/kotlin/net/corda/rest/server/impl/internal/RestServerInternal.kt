@@ -34,7 +34,12 @@ import net.corda.utilities.debug
 import net.corda.utilities.executeWithStdErrSuppressed
 import net.corda.utilities.trace
 import org.eclipse.jetty.http2.HTTP2Cipher
-import org.eclipse.jetty.server.*
+import org.eclipse.jetty.server.HttpConfiguration
+import org.eclipse.jetty.server.HttpConnectionFactory
+import org.eclipse.jetty.server.SecureRequestCustomizer
+import org.eclipse.jetty.server.Server
+import org.eclipse.jetty.server.ServerConnector
+import org.eclipse.jetty.server.SslConnectionFactory
 import org.eclipse.jetty.servlet.FilterHolder
 import org.eclipse.jetty.util.ssl.SslContextFactory
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
@@ -195,7 +200,8 @@ internal class RestServerInternal(
                     // This is necessary due to "before" matching logic cannot tell path "testEntity/:id" from
                     // "testEntity/getprotocolversion" and mistakenly finds "before" handler where there should be none.
                     // Javalin provides no way for modifying "before" handler finding logic.
-                    if (resourceProvider.httpNoAuthRequiredGetRoutes.none { routeInfo -> routeInfo.fullPath == it.path() } && it.method() == "GET") {
+                    if (resourceProvider.httpNoAuthRequiredGetRoutes.none { routeInfo -> routeInfo.fullPath == it.path() } &&
+                        it.method() == "GET") {
                         val clientHttpRequestContext = ClientHttpRequestContext(it)
                         val authorizingSubject =
                             authenticate(clientHttpRequestContext, restAuthProvider, credentialResolver)
