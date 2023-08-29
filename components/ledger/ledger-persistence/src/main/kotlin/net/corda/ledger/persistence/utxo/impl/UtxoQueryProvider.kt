@@ -1,12 +1,21 @@
 package net.corda.ledger.persistence.utxo.impl
 
-import net.corda.ledger.common.data.transaction.TransactionStatus
-
 interface UtxoQueryProvider {
-    companion object {
-        @JvmField
-        val UNVERIFIED = TransactionStatus.UNVERIFIED.value
-    }
+    val findTransactionPrivacySalt: String
+
+    val findTransactionComponentLeafs: String
+
+    val findUnconsumedVisibleStatesByType: String
+
+    val findTransactionSignatures: String
+
+    val findTransactionStatus: String
+
+    val markTransactionVisibleStatesConsumed: String
+
+    val findSignedGroupParameters: String
+
+    val resolveStateRefs: String
 
     val persistTransaction: String
 

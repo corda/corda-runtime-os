@@ -1,12 +1,11 @@
 package net.corda.ledger.persistence.consensual.impl
 
-import net.corda.ledger.common.data.transaction.TransactionStatus
-
 interface ConsensualQueryProvider {
-    companion object {
-        @JvmField
-        val UNVERIFIED = TransactionStatus.UNVERIFIED.value
-    }
+    val findTransaction: String
+
+    val findTransactionCpkChecksums: String
+
+    val findTransactionSignatures: String
 
     val persistTransaction: String
 
