@@ -176,7 +176,7 @@ class SendAcceptanceTest : FlowServiceTestBase() {
 
     @Test
     @Disabled
-    fun `Calling 'send' on a session that is confirmed sets a wakeup event and data message`() {
+    fun `Calling 'send' on a session that is confirmed sets a data message`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(
