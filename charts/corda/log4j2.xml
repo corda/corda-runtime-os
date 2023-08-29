@@ -21,12 +21,13 @@
         <Logger name="org.eclipse.jetty" level="warn" />
         <Logger name="org.hibernate" level="warn" />
         <Logger name="org.pf4j" level="warn" />
+        <Logger name="net.corda.sandboxgroupcontext" level="trace" />
 
         <!-- default to warn only for OSGi logging -->
-        <Logger name="net.corda.osgi.framework.OSGiFrameworkWrap" level="trace" />
+        <Logger name="net.corda.osgi.framework.OSGiFrameworkWrap" level="debug" />
 
-        <root level="debug">
-            <AppenderRef ref="${env:CONSOLE_LOG_FORMAT:-json}" level="debug"/>
+        <root level="${env:CONSOLE_LOG_LEVEL:-info}">
+            <AppenderRef ref="${env:CONSOLE_LOG_FORMAT:-json}" level="${env:CONSOLE_LOG_LEVEL:-info}"/>
         </root>
     </Loggers>
 </Configuration>
