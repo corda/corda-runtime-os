@@ -21,7 +21,6 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -108,15 +107,6 @@ class InteropService @Activate constructor(
             messagingConfig
         )
         publisher?.start()
-
-        coordinator.createManagedResource("InteropAliasProcessor.subscription") {
-            subscriptionFactory.createCompactedSubscription(
-                SubscriptionConfig(GROUP_NAME, Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC),
-                InteropAliasProcessor(publisher!!),
-                messagingConfig).also {
-                it.start()
-            }
-        }
 
         coordinator.createManagedResource(CLEANUP_TASK) {
             ScheduledTaskState(
