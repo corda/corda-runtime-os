@@ -28,7 +28,8 @@ class NetworkPluginWrapper : Plugin() {
             GenerateGroupPolicy::class,
             Dynamic::class,
             GetRegistrations::class,
-            Lookup::class
+            Lookup::class,
+            Operate:: class
         ],
         hidden = true,
         mixinStandardHelpOptions = true,
