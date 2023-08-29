@@ -167,6 +167,7 @@ class CheckLimits : Callable<Int>, PluginContext() {
         checkResources(yaml.workers?.rest?.resources, "rest")
         checkResources(yaml.workers?.p2pLinkManager?.resources, "P2P link manager")
         checkResources(yaml.workers?.p2pGateway?.resources, "P2P gateway")
+        checkResources(yaml.workers?.persistence?.resources, "persistence")
         checkResources(yaml.workers?.uniqueness?.resources, "uniqueness")
 
         return if (report.testsPassed()) {

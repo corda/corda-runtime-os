@@ -198,6 +198,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
         checkKafka(kafkaProperties, "rest", yaml.kafka.sasl, yaml.workers?.rest?.kafka?.sasl, replicas)
         checkKafka(kafkaProperties, "p2pGateway", yaml.kafka.sasl, yaml.workers?.p2pGateway?.kafka?.sasl, replicas)
         checkKafka(kafkaProperties, "p2pLinkManager", yaml.kafka.sasl, yaml.workers?.p2pLinkManager?.kafka?.sasl, replicas)
+        checkKafka(kafkaProperties, "persistence", yaml.kafka.sasl, yaml.workers?.persistence?.kafka?.sasl, replicas)
         checkKafka(kafkaProperties, "uniqueness", yaml.kafka.sasl, yaml.workers?.uniqueness?.kafka?.sasl, replicas)
 
         return if (report.testsPassed()) {
