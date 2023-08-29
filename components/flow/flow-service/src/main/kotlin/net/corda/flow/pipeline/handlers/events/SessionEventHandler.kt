@@ -71,10 +71,10 @@ class SessionEventHandler @Activate constructor(
         val nextSessionEvent = sessionManager.getNextReceivedEvent(updatedSessionState)
         if (!checkpoint.doesExist) {
             val sessionInit = getSessionInitIfPresent(nextSessionEvent)
-            if (nextSessionEvent != null && sessionInit != null) {
-                createInitiatedFlowCheckpoint(context, sessionInit.cpiId, nextSessionEvent, updatedSessionState)
-            } else {
+            if (nextSessionEvent == null || sessionInit == null) {
                 discardSessionEvent(context, sessionEvent)
+            } else {
+                createInitiatedFlowCheckpoint(context, sessionInit.cpiId, nextSessionEvent, updatedSessionState)
             }
         }
 
