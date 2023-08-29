@@ -16,7 +16,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.Instant
-@Disabled //TODO CORE-15757
+
+@Disabled
 class SessionCloseIntegrationTest {
 
     private companion object {
@@ -186,7 +187,7 @@ class SessionCloseIntegrationTest {
         bob.assertStatus(SessionStateType.ERROR)
 
         //close cannot be retrieved as status never went to closed
-        assertThat(alice.sessionState.receivedEventsState?.undeliveredMessages?.size).isEqualTo(1)
+        assertThat(alice.sessionState?.receivedEventsState?.undeliveredMessages?.size).isEqualTo(1)
         //close for bob was passed to client as error was received after that was processed
         bob.assertAllMessagesDelivered()
 

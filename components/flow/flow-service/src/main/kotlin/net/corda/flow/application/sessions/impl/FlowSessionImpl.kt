@@ -1,6 +1,5 @@
 package net.corda.flow.application.sessions.impl
 
-import net.corda.data.KeyValuePairList
 import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectException
 import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.sessions.FlowSessionInternal
@@ -56,14 +55,8 @@ class FlowSessionImpl(
     }
 
     private fun getFlowInfoFromSessionContext(): FlowInfo? {
-        val flowCheckpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
-        val sessionState = flowCheckpoint.getSessionState(sourceSessionId)
-        val sessionProperties = sessionState?.sessionProperties
-        return getFlowInfoFromSessionProps(sessionProperties)
-    }
-
-    private fun getFlowInfoFromSessionProps(sessionProperties: KeyValuePairList?): FlowInfo? {
-        if (sessionProperties == null) return null
+        val sessionState = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.getSessionState(sourceSessionId)
+        val sessionProperties = sessionState?.sessionProperties ?: return null
         val props = KeyValueStore(sessionProperties)
         val protocol = props[Constants.FLOW_PROTOCOL]
         val protocolVersion = props[Constants.FLOW_PROTOCOL_VERSION_USED]?.toInt()
@@ -109,24 +102,20 @@ class FlowSessionImpl(
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
         val request = FlowIORequest.Receive(setOf(getSessionInfo()))
         val received = fiber.suspend(request)
-
         setSessionConfirmed()
-
         return processReceivedPayload(received, receiveType)
     }
 
     @Suspendable
     override fun send(payload: Any) {
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
-        val request =
-            FlowIORequest.Send(mapOf(getSessionInfo() to serialize(payload)))
+        val request = FlowIORequest.Send(mapOf(getSessionInfo() to serialize(payload)))
         fiber.suspend(request)
         setSessionConfirmed()
     }
 
     @Suspendable
     override fun close() {
-        //TODO CORE-15757 / CORE-16184
         fiber.suspend(FlowIORequest.CloseSessions(setOf(sourceSessionId)))
         log.trace { "Closing session: $sourceSessionId" }
     }

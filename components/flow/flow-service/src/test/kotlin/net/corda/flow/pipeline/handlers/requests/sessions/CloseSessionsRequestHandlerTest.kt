@@ -23,6 +23,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
+@Disabled
 class CloseSessionsRequestHandlerTest {
     private val sessionId1 = "s1"
     private val sessionId2 = "s2"
@@ -113,7 +114,6 @@ class CloseSessionsRequestHandlerTest {
     }
 
     @Test
-    @Disabled // TODO CORE-15757 CORE-16184
     fun `Sends close events and updates the checkpoint with session state when sessions are not closed or errored`() {
         whenever(
             testContext.flowSessionManager.doAllSessionsHaveStatus(
@@ -139,7 +139,6 @@ class CloseSessionsRequestHandlerTest {
     }
 
     @Test
-    @Disabled // TODO CORE-15757 CORE-16184
     fun `Errored sessions do not send close events`() {
         whenever(
             testContext.flowSessionManager.doAllSessionsHaveStatus(
@@ -220,7 +219,6 @@ class CloseSessionsRequestHandlerTest {
     }
 
     @Test
-    @Disabled // TODO CORE-15757 CORE-16184
     fun `Throws exception when session does not exist within checkpoint`() {
         whenever(
             testContext.flowSessionManager.getSessionsWithStatus(

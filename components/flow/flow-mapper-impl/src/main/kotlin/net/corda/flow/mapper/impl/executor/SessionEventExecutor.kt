@@ -79,22 +79,17 @@ class SessionEventExecutor(
      */
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
         val messageDirection = sessionEvent.messageDirection
-        val errorMsg = "Flow mapper received error event from counterparty for session which does not exist. " +
-                "Session may have expired. Key: $eventKey, Event: $sessionEvent. "
+        val msg = "Attempted to process a message ${sessionEvent.messageDirection} " +
+                "but flow mapper state is in ${flowMapperState.status}. Session ID: ${sessionEvent.sessionId}. Ignoring Event"
 
         return when (flowMapperState.status) {
             null -> {
                 log.warn("FlowMapperState with null status. Key: $eventKey, Event: $sessionEvent.")
                 FlowMapperResult(null, listOf())
             }
-            FlowMapperStateType.CLOSING -> {
-                //TODO CORE-15757/ CORE-16184
-                if (messageDirection == MessageDirection.OUTBOUND) {
-                    log.warn("Attempted to send a message but flow mapper state is in CLOSING. Session ID: ${sessionEvent.sessionId}")
-                    FlowMapperResult(flowMapperState, listOf())
-                } else {
-                    FlowMapperResult(flowMapperState, listOf())
-                }
+            FlowMapperStateType.CLOSING, FlowMapperStateType.ERROR -> {
+                log.warn(msg)
+                FlowMapperResult(flowMapperState, listOf())
             }
             FlowMapperStateType.OPEN -> {
                 val outputTopic = recordFactory.getSessionEventOutputTopic(sessionEvent, messageDirection)
@@ -104,10 +99,6 @@ class SessionEventExecutor(
                     Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
                 }
                 FlowMapperResult(flowMapperState, listOf(outputRecord))
-            }
-            FlowMapperStateType.ERROR -> {
-                log.warn(errorMsg + "Ignoring event.")
-                FlowMapperResult(flowMapperState, listOf())
             }
         }
     }

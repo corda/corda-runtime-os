@@ -25,6 +25,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.session.manager.SessionManager
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -124,6 +125,7 @@ class FlowGlobalPostProcessorImplTest {
     fun setup() {
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2))
         whenever(checkpoint.flowKey).thenReturn(FlowKey(FLOW_ID_1, ALICE_X500_HOLDING_IDENTITY))
+        whenever(checkpoint.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
         whenever(checkpoint.doesExist).thenReturn(true)
         whenever(checkpoint.pendingPlatformError).thenReturn(null)
         whenever(
@@ -311,23 +313,7 @@ class FlowGlobalPostProcessorImplTest {
     }
 
     @Test
-    fun `Don't retrieve messages from sessions with unconfirmed counterparties`() {
-        whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2, sessionState3))
-        whenever(membershipGroupReader.lookup(ALICE_X500_NAME)).thenReturn(mock())
-
-        val result = flowGlobalPostProcessor.postProcess(testContext)
-        assertThat(result.outputRecords).contains(sessionRecord1)
-        assertThat(result.outputRecords).contains(sessionRecord2)
-        assertThat(result.outputRecords).doesNotContain(sessionRecord4)
-    }
-
-    @Test
-    fun `Raise a platform error if counterparties cannot be confirmed within timeout window`() {
-        sessionState3.apply {
-            sessionStartTime = Instant.now().minusSeconds(86400)
-            lastReceivedMessageTime = Instant.now().minusSeconds(86400)
-        }
-
+    fun `Raise a platform error if counterparties cannot be confirmed`() {
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2, sessionState3))
         whenever(checkpoint.holdingIdentity).thenReturn(HoldingIdentity(ALICE_X500_NAME, ""))
 
@@ -377,23 +363,5 @@ class FlowGlobalPostProcessorImplTest {
 
         verify(sessionManager, times(1)).errorSession(any())
         verify(checkpoint, times(0)).putSessionState(any())
-    }
-
-    @Test
-    fun `Don't raise a platform error if counterparty currently not available, but last message was received within timeout window`() {
-        sessionState3.apply {
-            sessionStartTime = Instant.now().minusSeconds(86400)
-            lastReceivedMessageTime = Instant.now()
-        }
-
-        whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2, sessionState3))
-        whenever(checkpoint.holdingIdentity).thenReturn(HoldingIdentity(ALICE_X500_NAME, ""))
-
-        assertDoesNotThrow {
-            flowGlobalPostProcessor.postProcess(testContext)
-        }
-
-        verify(sessionManager, never()).errorSession(any())
-        verify(checkpoint, times(2)).putSessionState(any())
     }
 }

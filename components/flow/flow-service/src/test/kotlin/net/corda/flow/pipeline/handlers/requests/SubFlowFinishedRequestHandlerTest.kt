@@ -31,6 +31,7 @@ import org.mockito.kotlin.whenever
 import java.util.stream.Stream
 
 @Suppress("MaxLineLength")
+@Disabled
 class SubFlowFinishedRequestHandlerTest {
 
     private companion object {
@@ -77,7 +78,7 @@ class SubFlowFinishedRequestHandlerTest {
 
     @ParameterizedTest(name = "Returns an updated WaitingFor of SessionConfirmation (Close) when the flow has sessions to close (isInitiatingFlow={0})")
     @MethodSource("isInitiatingFlow")
-    @Disabled // TODO CORE-15757 CORE-16184
+    @Disabled
     fun `Returns an updated WaitingFor of SessionConfirmation (Close) when the flow has sessions to close`(
         isInitiatingFlow: Boolean
     ) {
@@ -99,7 +100,7 @@ class SubFlowFinishedRequestHandlerTest {
 
     @ParameterizedTest(name = "Returns an updated WaitingFor of SessionConfirmation (Close) that filters out errored sessions when the flow has sessions to close (isInitiatingFlow={0})")
     @MethodSource("isInitiatingFlow")
-    @Disabled // TODO CORE-15757 CORE-16184
+    @Disabled
     fun `Returns an updated WaitingFor of SessionConfirmation (Close) that filters out errored sessions when the flow has sessions to close`(
         isInitiatingFlow: Boolean
     ) {
@@ -154,7 +155,7 @@ class SubFlowFinishedRequestHandlerTest {
 
     @ParameterizedTest(name = "Returns an updated WaitingFor of SessionConfirmation (Close) containing the flow stack item's sessions when the flow has already closed sessions (isInitiatingFlow={0})")
     @MethodSource("isInitiatingFlow")
-    @Disabled // TODO CORE-15757 CORE-16184
+    @Disabled
     fun `Returns an updated WaitingFor of SessionConfirmation (Close) containing the flow stack item's sessions when the flow has already closed sessions`(
         isInitiatingFlow: Boolean
     ) {

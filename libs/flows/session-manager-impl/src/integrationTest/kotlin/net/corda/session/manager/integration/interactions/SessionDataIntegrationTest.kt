@@ -10,17 +10,13 @@ import net.corda.session.manager.integration.helper.assertAllMessagesDelivered
 import net.corda.session.manager.integration.helper.assertLastReceivedSeqNum
 import net.corda.session.manager.integration.helper.assertLastSentSeqNum
 import net.corda.session.manager.integration.helper.assertStatus
-import net.corda.session.manager.integration.helper.closeSession
 import net.corda.session.manager.integration.helper.initiateNewSession
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.Instant
-@Disabled //TODO CORE-15757
+
 class SessionDataIntegrationTest {
 
     private companion object {
-        private const val FIVE_SECONDS = 5000L
         private const val THIRTY_SECONDS = 30000L
         private val testConfig = ConfigFactory.empty()
             .withValue(FlowConfig.SESSION_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(THIRTY_SECONDS))
@@ -57,16 +53,12 @@ class SessionDataIntegrationTest {
         alice.processAllReceivedMessages(sendMessages = true)
         //process data messages and acks
         bob.processAllReceivedMessages(sendMessages = true)
-        //process acks
-        alice.processAllReceivedMessages()
 
         alice.assertAllMessagesDelivered()
         bob.assertAllMessagesDelivered()
 
-        closeSession(alice, bob)
-
-        alice.assertLastSentSeqNum(8)
-        bob.assertLastReceivedSeqNum(8)
+        alice.assertLastSentSeqNum(7)
+        bob.assertLastReceivedSeqNum(7)
         bob.assertLastSentSeqNum(7)
         alice.assertLastReceivedSeqNum(7)
     }
@@ -100,22 +92,18 @@ class SessionDataIntegrationTest {
         alice.processAllReceivedMessages(sendMessages = true)
         //process data messages and acks
         bob.processAllReceivedMessages(sendMessages = true)
-        //process acks
-        alice.processAllReceivedMessages()
 
         alice.assertAllMessagesDelivered()
         bob.assertAllMessagesDelivered()
 
-        closeSession(alice, bob)
-
-        alice.assertLastSentSeqNum(8)
-        bob.assertLastReceivedSeqNum(8)
-        bob.assertLastSentSeqNum(7)
-        alice.assertLastReceivedSeqNum(7)
+        alice.assertLastSentSeqNum(6)
+        bob.assertLastReceivedSeqNum(6)
+        bob.assertLastSentSeqNum(6)
+        alice.assertLastReceivedSeqNum(6)
     }
 
     @Test
-    fun `Out of order data with duplicate data resends`() {
+    fun `Out of order data with duplicate data`() {
         val (alice, bob) = initiateNewSession(testSmartConfig)
 
         //alice send 2 data
@@ -125,40 +113,18 @@ class SessionDataIntegrationTest {
         }
 
         //bob receive data out of order and send 1 ack back
-        bob.apply {
-            dropNextInboundMessage()
-            processNextReceivedMessage(sendMessages = true)
-        }
-
-        alice.apply {
-            //process 1 ack
-            processNextReceivedMessage()
-            //send close and RESEND data
-            processNewOutgoingMessage(SessionMessageType.CLOSE)
-            sendMessages(Instant.now().plusMillis(FIVE_SECONDS))
-        }
-
-        //duplicate resent data message
-        bob.duplicateMessage(0)
-
-        //bob receive duplicate data message + close
-        bob.processAllReceivedMessages(sendMessages = true)
-        //alice process acks for data and close
-        alice.processAllReceivedMessages()
-        //bob send close to alice
-        bob.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
-        //alice receive close and send ack to bob
-        alice.processNextReceivedMessage(sendMessages = true)
-        //bob process ack
         bob.processNextReceivedMessage()
 
-        alice.assertStatus(SessionStateType.CLOSED)
-        bob.assertStatus(SessionStateType.CLOSED)
+        //duplicate data message
+        bob.duplicateMessage(0)
 
-        alice.assertLastSentSeqNum(4)
-        bob.assertLastReceivedSeqNum(4)
-        bob.assertLastSentSeqNum(1)
-        alice.assertLastReceivedSeqNum(1)
+        //bob receive duplicate data message
+        bob.processAllReceivedMessages()
+
+        alice.assertLastSentSeqNum(3)
+        bob.assertLastReceivedSeqNum(3)
+        bob.assertLastSentSeqNum(0)
+        alice.assertLastReceivedSeqNum(0)
     }
 
     @Test

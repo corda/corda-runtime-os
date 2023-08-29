@@ -7,7 +7,6 @@ import net.corda.flow.testing.tests.FLOW_ID1
 import net.corda.flow.testing.tests.REQUEST_ID1
 import net.corda.flow.testing.tests.SESSION_ID_2
 
-//TODO CORE-15757
 /**
  * Initiate a single flow for [ALICE_HOLDING_IDENTITY] by triggering a send of [DATA_MESSAGE_0] to the [setup]s initiatedIdentityMemberName.
  * Receives an ack back with the sequence number set to [receivedAckSeqNum]. Defaults to 1 to indicate only the init message has been

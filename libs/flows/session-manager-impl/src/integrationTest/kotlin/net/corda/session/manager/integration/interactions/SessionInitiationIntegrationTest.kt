@@ -11,9 +11,8 @@ import net.corda.session.manager.integration.helper.assertAllMessagesDelivered
 import net.corda.session.manager.integration.helper.assertStatus
 import net.corda.session.manager.integration.helper.initiateNewSession
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-@Disabled //TODO CORE-15757
+
 class SessionInitiationIntegrationTest {
 
     private companion object {
@@ -53,11 +52,11 @@ class SessionInitiationIntegrationTest {
         bob.processNextReceivedMessage(sendMessages = true)
         bob.assertStatus(SessionStateType.CONFIRMED)
 
-        //alice receive ack for session init
+        //alice doesn't receive anything yet
         alice.processNextReceivedMessage(sendMessages = true)
-        alice.assertStatus(SessionStateType.CONFIRMED)
+        alice.assertStatus(SessionStateType.CREATED)
 
-        //bob process message
+        //bob process data message
         bob.processNextReceivedMessage()
         bob.assertStatus(SessionStateType.CONFIRMED)
     }
@@ -82,13 +81,6 @@ class SessionInitiationIntegrationTest {
 
         bob.processNextReceivedMessage(sendMessages = true)
         bob.assertStatus(SessionStateType.ERROR)
-
-        //alice receive ack, error and ack
-        alice.processNextReceivedMessage(sendMessages = true)
-        alice.assertStatus(SessionStateType.CONFIRMED)
-
-        alice.processNextReceivedMessage(sendMessages = true)
-        alice.assertStatus(SessionStateType.ERROR)
 
         alice.processNextReceivedMessage(sendMessages = true)
         alice.assertStatus(SessionStateType.ERROR)
