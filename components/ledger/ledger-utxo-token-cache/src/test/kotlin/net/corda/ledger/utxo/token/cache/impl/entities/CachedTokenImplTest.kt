@@ -3,7 +3,7 @@ package net.corda.ledger.utxo.token.cache.impl.entities
 import net.corda.data.ledger.utxo.token.selection.data.Token
 import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.ledger.utxo.token.cache.converters.EntityConverter
-import net.corda.ledger.utxo.token.cache.entities.CachedTokenImpl
+import net.corda.ledger.utxo.token.cache.entities.internal.CachedTokenImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock

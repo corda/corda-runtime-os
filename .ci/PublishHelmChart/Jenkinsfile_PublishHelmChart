@@ -5,7 +5,7 @@ import com.r3.build.enums.BuildEnvironment
 import com.r3.build.utils.PublishingUtils
 
 int cpus = 1
-BuildEnvironment buildEnvironment = BuildEnvironment.AMD64_LINUX
+BuildEnvironment buildEnvironment = BuildEnvironment.AMD64_LINUX_JAVA17
 
 PublishingUtils publishingUtils = new PublishingUtils(this)
 
@@ -20,8 +20,7 @@ pipeline {
             label ([
                     "gradle-build",
                     "${cpus}cpus",
-                    "${buildEnvironment.buildArchitecture.toString().toLowerCase()}",
-                    "${buildEnvironment.buildOperatingSystem.toString().toLowerCase()}"
+                    "${buildEnvironment.jenkinsLabel}"
             ].join('-'))
             showRawYaml false
             defaultContainer 'build'
