@@ -1,7 +1,7 @@
 {{/*
  Create the name of the service account to use for Preinstall Checks
  */}}
-{{- define "corda.bootstrapPreinstall.ServiceAccountName" -}}
+{{- define "corda.bootstrapPreinstallServiceAccountName" -}}
 {{- if .Values.bootstrap.preinstallCheck.serviceAccount.create -}}
     {{ default (printf "%s-preinstall-service-account" (include "corda.fullname" .)) .Values.bootstrap.preinstallCheck.serviceAccount.name }}
 {{- else -}}
@@ -36,7 +36,7 @@ metadata:
   name: {{ include "corda.fullname" . }}-preinstall-role-binding
 subjects:
 - kind: ServiceAccount
-  name: {{ include "corda.bootstrapPreinstall.ServiceAccountName" . }}
+  name: {{ include "corda.bootstrapPreinstallServiceAccountName" . }}
 roleRef:
   kind: Role
   name: {{ include "corda.fullname" . }}-preinstall-role
@@ -49,7 +49,7 @@ metadata:
   annotations:
     "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "-4"
-  name: {{ include "corda.bootstrapPreinstall.ServiceAccountName" . }}
+  name: {{ include "corda.bootstrapPreinstallServiceAccountName" . }}
 {{- end }}
 ---
 apiVersion: batch/v1
@@ -69,7 +69,7 @@ spec:
     spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       {{- include "corda.tolerations" . | nindent 6 }}
-      serviceAccountName: {{ include "corda.bootstrapPreinstall.ServiceAccountName" . }}
+      serviceAccountName: {{ include "corda.bootstrapPreinstallServiceAccountName" . }}
       securityContext:
         runAsUser: 10001
         runAsGroup: 10002
