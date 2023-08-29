@@ -42,6 +42,7 @@ dependencies {
     runtimeOnly project(':libs:ledger:ledger-common-data')
     runtimeOnly project(':libs:ledger:ledger-consensual-data')
     runtimeOnly project(':libs:ledger:ledger-utxo-data')
+    runtimeOnly project(":libs:membership:membership-impl")
     runtimeOnly project(":libs:application:application-impl")
     runtimeOnly project(":libs:flows:external-event-responses-impl")
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
