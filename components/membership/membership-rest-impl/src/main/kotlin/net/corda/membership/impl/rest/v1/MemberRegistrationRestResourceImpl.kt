@@ -17,8 +17,10 @@ import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.rest.v1.types.response.RestRegistrationRequestStatus
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
+import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.rest.v1.types.request.MemberRegistrationRequest
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
+import net.corda.rest.exception.InternalServerException
 import net.corda.virtualnode.read.rest.extensions.parseOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -149,6 +151,8 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                 ).map { it.fromDto() }
             } catch (e: CouldNotFindMemberException) {
                 throw ResourceNotFoundException(e.message!!)
+            } catch (e: ContextDeserializationException) {
+                throw InternalServerException(e.message!!)
             } catch (e: ServiceNotReadyException) {
                 throw ServiceUnavailableException(e.message!!)
             } catch (e: CordaRPCAPIPartitionException) {
@@ -169,6 +173,8 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                 throw ResourceNotFoundException(e.message!!)
             } catch (e: CouldNotFindMemberException) {
                 throw ResourceNotFoundException(e.message!!)
+            } catch (e: ContextDeserializationException) {
+                throw InternalServerException(e.message!!)
             } catch (e: ServiceNotReadyException) {
                 throw ServiceUnavailableException(e.message!!)
             } catch (e: CordaRPCAPIPartitionException) {

@@ -1,10 +1,13 @@
 package net.corda.membership.lib
 
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
-import java.util.*
+import java.util.SortedMap
 
 /**
  * Factory for building [MemberInfo] objects from different sources.
@@ -20,7 +23,7 @@ interface MemberInfoFactory {
      *
      * @return A [MemberInfo] matching the input context maps.
      */
-    fun create(
+    fun createMemberInfo(
         memberContext: SortedMap<String, String?>,
         mgmContext: SortedMap<String, String?>
     ): MemberInfo
@@ -33,7 +36,7 @@ interface MemberInfoFactory {
      *
      * @return A [MemberInfo] matching the input contexts.
      */
-    fun create(
+    fun createMemberInfo(
         memberContext: MemberContext,
         mgmContext: MGMContext
     ): MemberInfo
@@ -46,7 +49,52 @@ interface MemberInfoFactory {
      *
      * @return A [MemberInfo] matching the input member information.
      */
-    fun create(
+    fun createMemberInfo(
         memberInfo: PersistentMemberInfo
     ): MemberInfo
+
+    fun createMemberInfo(
+        memberContext: ByteArray,
+        mgmContext: ByteArray
+    ): MemberInfo
+
+    fun createPersistentMemberInfo(
+        viewOwningMember: HoldingIdentity,
+        memberContext: ByteArray,
+        mgmContext: ByteArray,
+        memberSignature: CryptoSignatureWithKey,
+        memberSignatureSpec: CryptoSignatureSpec,
+    ): PersistentMemberInfo
+
+    @Suppress("LongParameterList")
+    fun createPersistentMemberInfo(
+        viewOwningMember: HoldingIdentity,
+        memberContext: ByteArray,
+        mgmContext: ByteArray,
+        memberSignatureKey: ByteArray,
+        memberSignatureContent: ByteArray,
+        memberSignatureSpec: String,
+    ): PersistentMemberInfo
+
+    fun createPersistentMemberInfo(
+        viewOwningMember: HoldingIdentity,
+        memberInfo: SelfSignedMemberInfo,
+    ): PersistentMemberInfo
+
+    /**
+     * Should be only used when creating members on static networks or for MGM on dynamic networks.
+     */
+    fun createMgmOrStaticPersistentMemberInfo(
+        viewOwningMember: HoldingIdentity,
+        memberInfo: MemberInfo,
+        memberSignature: CryptoSignatureWithKey,
+        memberSignatureSpec: CryptoSignatureSpec,
+    ): PersistentMemberInfo
+
+    fun createSelfSignedMemberInfo(
+        memberContext: ByteArray,
+        mgmContext: ByteArray,
+        memberSignature: CryptoSignatureWithKey,
+        memberSignatureSpec: CryptoSignatureSpec,
+    ): SelfSignedMemberInfo
 }

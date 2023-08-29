@@ -12,7 +12,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
 import net.corda.ledger.utxo.data.transaction.utxoComponentGroupStructure
 import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
-import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersService
+import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
@@ -62,8 +62,8 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     private val utxoLedgerTransactionVerificationService: UtxoLedgerTransactionVerificationService,
     @Reference(service = UtxoLedgerGroupParametersPersistenceService::class)
     private val utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService,
-    @Reference(service = CurrentGroupParametersService::class)
-    private val currentGroupParametersService: CurrentGroupParametersService,
+    @Reference(service = GroupParametersLookupInternal::class)
+    private val groupParametersLookup: GroupParametersLookupInternal,
     @Reference(service = SignedGroupParametersVerifier::class)
     private val signedGroupParametersVerifier: SignedGroupParametersVerifier
 ) : UtxoSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
@@ -120,7 +120,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
 
     @Suspendable
     private fun getAndPersistCurrentMgmGroupParameters(): SignedGroupParameters {
-        val signedGroupParameters = currentGroupParametersService.get()
+        val signedGroupParameters = groupParametersLookup.currentGroupParameters
         signedGroupParametersVerifier.verifySignature(signedGroupParameters)
         utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(signedGroupParameters)
         return signedGroupParameters

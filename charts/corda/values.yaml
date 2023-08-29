@@ -77,7 +77,7 @@ serviceAccount:
 # -- extra annotations (applied to all workers only)
 annotations: {}
 
-# tolerations to schedule worker and bootstrap pods on nodes with matching taints 
+# tolerations to schedule worker and bootstrap pods on nodes with matching taints
 tolerations: []
 
 # Database configuration
@@ -191,6 +191,12 @@ bootstrap:
   preinstallCheck:
     # -- indicates whether the preinstall check is enabled
     enabled: true
+    # Configuration for a service account for the preinstall check
+    serviceAccount:
+      # -- indicates whether the service account should be created
+      create: true
+      # -- name of the service account, if not set and create is true, a name is generated from a template
+      name: ""
   # Configuration for the REST API admin to be created during cluster bootstrap
   restApiAdmin:
     # the username configuration for the REST API admin to be created during cluster bootstrap
@@ -972,4 +978,84 @@ workers:
               # -- the P2P gateway worker SASL password secret name for client connection to Kafka
               name: ""
               # -- the P2P gateway worker SASL password secret key for client connection to Kafka
+              key: ""
+
+  # uniqueness worker configuration
+  uniqueness:
+    # uniqueness worker image configuration
+    image:
+      # -- uniqueness worker image registry, defaults to image.registry
+      registry: ""
+      # -- uniqueness worker image repository
+      repository: "corda-os-uniqueness-worker"
+      # -- uniqueness worker image tag, defaults to image.tag
+      tag: ""
+    # -- uniqueness worker replica count
+    replicaCount: 1
+    # -- uniqueness worker extra annotations
+    annotations: {}
+    # -- additional Java options for the uniqueness worker
+    javaOptions: "-XX:MaxRAMPercentage=75"
+    # uniqueness worker debug configuration
+    debug:
+      # -- run uniqueness worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the uniqueness worker until the debugger is attached
+      suspend: false
+    # logging configuration
+    logging:
+      # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
+      level: null
+      # -- additional Log4j 2 XML configuration
+      override: ""
+    profiling:
+      # -- run uniqueness worker with profiling enabled
+      enabled: false
+    # resource limits and requests configuration for the uniqueness worker containers.
+    resources:
+      # -- the CPU/memory resource requests for the uniqueness worker containers
+      requests: {}
+      # -- the CPU/memory resource limits for the uniqueness worker containers
+      limits: {}
+    # uniqueness worker JDBC connection pool configuration for cluster DB
+    clusterDbConnectionPool:
+      # -- uniqueness worker maximum JDBC connection pool size for cluster DB
+      maxSize: 5
+      # -- uniqueness worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value
+      minSize: null
+      # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+      idleTimeoutSeconds: 120
+      # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+      maxLifetimeSeconds: 1800
+      # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+      keepaliveTimeSeconds: 0
+      # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+      validationTimeoutSeconds: 5
+    # uniqueness worker Kafka configuration
+    kafka:
+      # if kafka.sasl.enabled, the credentials to connect to Kafka with for the uniqueness worker
+      sasl:
+        # uniqueness worker SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
+        username:
+          # -- the uniqueness worker SASL username for client connection to Kafka
+          value: ""
+          # the boostrap SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the uniqueness worker SASL username secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the uniqueness worker SASL username secret name for client connection to Kafka
+              name: ""
+              # -- the uniqueness worker SASL username secret key for client connection to Kafka
+              key: ""
+        # uniqueness worker SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
+        password:
+          # -- the uniqueness worker SASL password for client connection to Kafka
+          value: ""
+          # the uniqueness worker SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the uniqueness worker SASL password secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the uniqueness worker SASL password secret name for client connection to Kafka
+              name: ""
+              # -- the uniqueness worker SASL password secret key for client connection to Kafka
               key: ""

@@ -10,7 +10,7 @@ import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityVersion
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.flows.finality.v1.FinalityNotarizationFailureType.Companion.toFinalityNotarizationFailureType
-import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersService
+import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
@@ -41,7 +41,7 @@ class UtxoReceiveFinalityFlowV1(
     override val log: Logger = UtxoReceiveFinalityFlowV1.log
 
     @CordaInject
-    lateinit var currentGroupParametersService: CurrentGroupParametersService
+    lateinit var groupParametersLookup: GroupParametersLookupInternal
 
     @CordaInject
     lateinit var utxoLedgerGroupParametersPersistenceService: UtxoLedgerGroupParametersPersistenceService
@@ -126,7 +126,7 @@ class UtxoReceiveFinalityFlowV1(
 
     @Suspendable
     private fun verifyLatestGroupParametersAreUsed(initialTransaction: UtxoSignedTransactionInternal): SignedGroupParameters {
-        val currentGroupParameters = currentGroupParametersService.get()
+        val currentGroupParameters = groupParametersLookup.currentGroupParameters
         val txGroupParametersHash =
             (initialTransaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()
         if (txGroupParametersHash != currentGroupParameters.hash.toString()) {

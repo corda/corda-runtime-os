@@ -1,5 +1,6 @@
 package net.corda.membership.impl.client
 
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.ShortHash
@@ -10,6 +11,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.async.request.MembershipAsyncRequest
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus
@@ -31,6 +33,7 @@ import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
+import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -128,8 +131,14 @@ class MemberResourceClientTest {
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on { persistRegistrationRequest(any(), any()) } doReturn operation
     }
+    private val bytes = byteArrayOf(1, 2, 3)
     private val signatureWithKey: CryptoSignatureWithKey = mock()
     private val signatureSpec: CryptoSignatureSpec = mock()
+    private val signedContext = SignedData(
+        ByteBuffer.wrap(bytes),
+        signatureWithKey,
+        signatureSpec,
+    )
     private val holdingIdentity = mock<HoldingIdentity>()
     private val virtualNodeInfo = mock<VirtualNodeInfo> {
         on { holdingIdentity } doReturn holdingIdentity
@@ -138,10 +147,12 @@ class MemberResourceClientTest {
         on { getByHoldingIdentityShortHash(ShortHash.of(HOLDING_IDENTITY_ID)) } doReturn virtualNodeInfo
     }
     private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
-        on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
+        on { serialize(any()) } doReturn bytes
     }
+    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
+        on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn keyValuePairListDeserializer
     }
     private val membershipQueryClient = mock<MembershipQueryClient>()
     private val memberOpsClient = MemberResourceClientImpl(
@@ -305,6 +316,15 @@ class MemberResourceClientTest {
 
     @Test
     fun `checkRegistrationProgress return correct data`() {
+        val bytesId1 = "id1".toByteArray()
+        whenever(keyValuePairListDeserializer.deserialize(bytesId1))
+            .doReturn(KeyValuePairList(listOf(KeyValuePair("key", "value"))))
+        val bytesId2 = "id2".toByteArray()
+        whenever(keyValuePairListDeserializer.deserialize(bytesId2))
+            .doReturn(KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))))
+        val bytesId3 = "id3".toByteArray()
+        whenever(keyValuePairListDeserializer.deserialize(bytesId3))
+            .doReturn(KeyValuePairList(listOf(KeyValuePair("key 3", "value 3"))))
         val response =
             listOf(
                 RegistrationRequestDetails(
@@ -314,12 +334,12 @@ class MemberResourceClientTest {
                     "registration id",
                     "holdingId1",
                     1,
-                    KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                    signatureWithKey,
-                    signatureSpec,
-                    KeyValuePairList(emptyList()),
-                    signatureWithKey,
-                    signatureSpec,
+                    SignedData(
+                        ByteBuffer.wrap(bytesId1),
+                        signatureWithKey,
+                        signatureSpec,
+                    ),
+                    signedContext,
                     null,
                     SERIAL,
                 ),
@@ -330,12 +350,12 @@ class MemberResourceClientTest {
                     "registration id 2",
                     "holdingId2",
                     1,
-                    KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
-                    signatureWithKey,
-                    signatureSpec,
-                    KeyValuePairList(emptyList()),
-                    signatureWithKey,
-                    signatureSpec,
+                    SignedData(
+                        ByteBuffer.wrap(bytesId2),
+                        signatureWithKey,
+                        signatureSpec,
+                    ),
+                    signedContext,
                     null,
                     SERIAL,
                 ),
@@ -346,12 +366,12 @@ class MemberResourceClientTest {
                     "registration id 3",
                     "holdingId3",
                     1,
-                    KeyValuePairList(listOf(KeyValuePair("key 3", "value 3"))),
-                    signatureWithKey,
-                    signatureSpec,
-                    KeyValuePairList(emptyList()),
-                    signatureWithKey,
-                    signatureSpec,
+                    SignedData(
+                        ByteBuffer.wrap(bytesId3),
+                        signatureWithKey,
+                        signatureSpec,
+                    ),
+                    signedContext,
                     null,
                     SERIAL,
                 ),
@@ -435,9 +455,39 @@ class MemberResourceClientTest {
         }
     }
 
+    @Test
+    fun `checkRegistrationProgress throw exception if deserialization fails`() {
+        whenever(membershipQueryClient.queryRegistrationRequests(
+            any(), eq(null), eq(RegistrationStatus.values().toList()), eq(null))
+        ).doReturn(MembershipQueryResult.Success(listOf(
+            RegistrationRequestDetails(
+                clock.instant().plusSeconds(3),
+                clock.instant().plusSeconds(7),
+                RegistrationStatus.APPROVED,
+                "registration id",
+                "holdingId1",
+                1,
+                signedContext,
+                signedContext,
+                null,
+                SERIAL,
+            )
+        )))
+
+        memberOpsClient.start()
+        setUpConfig()
+
+        assertThrows<ContextDeserializationException> {
+            memberOpsClient.checkRegistrationProgress(holdingIdentityId)
+        }
+    }
+
     @ParameterizedTest
     @EnumSource(RegistrationStatus::class)
     fun `checkSpecificRegistrationProgress return correct data when response is not null`(status: RegistrationStatus) {
+        val bytesId = "id".toByteArray()
+        whenever(keyValuePairListDeserializer.deserialize(bytesId))
+            .doReturn(KeyValuePairList(listOf(KeyValuePair("key", "value"))))
         val response =
             RegistrationRequestDetails(
                 clock.instant().plusSeconds(1),
@@ -446,12 +496,12 @@ class MemberResourceClientTest {
                 "registration id",
                 "holdingId1",
                 1,
-                KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                signatureWithKey,
-                signatureSpec,
-                KeyValuePairList(emptyList()),
-                signatureWithKey,
-                signatureSpec,
+                SignedData(
+                    ByteBuffer.wrap(bytesId),
+                    signatureWithKey,
+                    signatureSpec,
+                ),
+                signedContext,
                 null,
                 SERIAL,
             )

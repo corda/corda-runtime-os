@@ -3,14 +3,15 @@ package net.corda.cli.plugins.network
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.membership.rest.v1.MGMRestResource
-import picocli.CommandLine
+import picocli.CommandLine.Command
+import picocli.CommandLine.Parameters
 
-@CommandLine.Command(
+@Command(
     name = "get-preauth-rules",
     description = ["Get the approval rules for requests with pre-auth tokens"]
 )
 class GetPreAuthRules : Runnable, RestCommand() {
-    @CommandLine.Parameters(
+    @Parameters(
         index = "0",
         description = ["The holding identity ID of the MGM"]
     )

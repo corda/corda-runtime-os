@@ -6,7 +6,6 @@ import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.data.membership.PersistentSignedMemberInfo
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
@@ -47,9 +46,9 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.InternalGroupParameters
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
-import net.corda.membership.lib.SignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
@@ -60,7 +59,6 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
@@ -122,29 +120,33 @@ class MembershipPersistenceClientImpl(
 
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
-        memberInfos: Collection<SignedMemberInfo>,
+        memberInfos: Collection<SelfSignedMemberInfo>,
     ): MembershipPersistenceOperation<Unit> {
         logger.info("Persisting ${memberInfos.size} member info(s).")
         val avroViewOwningIdentity = viewOwningIdentity.toAvro()
         val request = MembershipPersistenceRequest(
             buildMembershipRequestContext(avroViewOwningIdentity),
             PersistMemberInfo(
-                memberInfos.map {
-                    PersistentSignedMemberInfo(
-                        PersistentMemberInfo(
-                            avroViewOwningIdentity,
-                            it.memberInfo.memberProvidedContext.toAvro(),
-                            it.memberInfo.mgmProvidedContext.toAvro(),
-                        ),
-                        it.memberSignature,
-                        it.memberSignatureSpec,
-                    )
-                }
-
+                // first is deprecated data, which will be removed in future versions
+                null,
+                createSignedMemberList(avroViewOwningIdentity, memberInfos),
             )
         )
         return request.operation(::nullToUnitConvertor)
     }
+
+    private fun createSignedMemberList(
+        viewOwningIdentity: net.corda.data.identity.HoldingIdentity,
+        memberInfos: Collection<SelfSignedMemberInfo>
+    ) = memberInfos.map {
+            memberInfoFactory.createPersistentMemberInfo(
+                viewOwningIdentity,
+                it.memberContextBytes,
+                it.mgmContextBytes,
+                it.memberSignature,
+                it.memberSignatureSpec,
+            )
+        }
 
     override fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
@@ -201,18 +203,13 @@ class MembershipPersistenceClientImpl(
     }
 
     override fun addNotaryToGroupParameters(
-        viewOwningIdentity: HoldingIdentity,
-        notary: MemberInfo
+        notary: PersistentMemberInfo,
     ): MembershipPersistenceOperation<InternalGroupParameters> {
         logger.info("Adding notary to persisted group parameters.")
         val request = MembershipPersistenceRequest(
-            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
+            buildMembershipRequestContext(notary.viewOwningMember),
             AddNotaryToGroupParameters(
-                PersistentMemberInfo(
-                    viewOwningIdentity.toAvro(),
-                    notary.memberProvidedContext.toAvro(),
-                    notary.mgmProvidedContext.toAvro()
-                )
+                notary
             )
         )
         return request.operation { payload ->
@@ -249,7 +246,7 @@ class MembershipPersistenceClientImpl(
         viewOwningIdentity: HoldingIdentity,
         approvedMember: HoldingIdentity,
         registrationRequestId: String,
-    ): MembershipPersistenceOperation<MemberInfo> {
+    ): MembershipPersistenceOperation<PersistentMemberInfo> {
         val request = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             UpdateMemberAndRegistrationRequestToApproved(
@@ -259,8 +256,8 @@ class MembershipPersistenceClientImpl(
         )
 
         return request.operation { payload ->
-            dataToResultConvertor<UpdateMemberAndRegistrationRequestResponse, MemberInfo>(payload) {
-                memberInfoFactory.create(it.memberInfo)
+            dataToResultConvertor<UpdateMemberAndRegistrationRequestResponse, PersistentMemberInfo>(payload) {
+                it.memberInfo
             }
         }
     }

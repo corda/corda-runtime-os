@@ -8,12 +8,12 @@ import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
 import java.security.MessageDigest
-import java.util.UUID
 import net.corda.cli.plugins.network.enums.MemberRole
+import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
+import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
-import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
@@ -27,8 +27,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATU
 @Command(
     name = "onboard-member",
     description = [
-        "Onboard a member",
-        "This sub command should only be used in for internal development"
+        "Onboard a member"
     ]
 )
 class OnBoardMember : Runnable, BaseOnboard() {
@@ -43,7 +42,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
     @Option(
         names = ["--role", "-r"],
-        description = ["Member role, if any. It is not mandatory to provide a role"],
+        description = ["Member role, if any. It is not mandatory to provide a role. Multiple roles can be specified"],
     )
     var roles: Set<MemberRole> = emptySet()
 
@@ -69,12 +68,6 @@ class OnBoardMember : Runnable, BaseOnboard() {
         description = ["The CPI hash (Use either cpb-file or cpi-hash)."]
     )
     var cpiHash: String? = null
-
-    @Option(
-        names = ["--x500-name", "-x"],
-        description = ["The X500 name of the member. Default to a random member name"]
-    )
-    override var x500Name: String = "O=${UUID.randomUUID()}, L=London, C=GB"
 
     @Option(
         names = ["--pre-auth-token"],
@@ -208,23 +201,11 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
     override val registrationContext by lazy {
         val preAuth = preAuthToken?.let { mapOf("corda.auth.token" to it) } ?: emptyMap()
-
-        val extProperties = customProperties.filter {
-            val key = it.key
-            val value = it.value
-            val keyStartsWithExt = key.startsWith("$CUSTOM_KEY_PREFIX.")
-
-            if (key.length > 128) {
-                throw IllegalArgumentException("The key length cannot exceed 128 characters")
-            }
-            if (value.length > 800) {
-                throw IllegalArgumentException("The value length cannot exceed 800 characters")
-            }
-            keyStartsWithExt
-        }
         val roleProperty: Map<String, String> = roles.mapIndexed { index: Int, memberRole: MemberRole ->
             "$ROLES_PREFIX.$index" to memberRole.value
         }.toMap()
+
+        val extProperties = customProperties.filterKeys { it.startsWith("$CUSTOM_KEY_PREFIX.") }
 
         val notaryProperties = if (roles.contains(MemberRole.NOTARY)) {
             val notaryServiceName = customProperties[NOTARY_SERVICE_NAME] ?:
@@ -243,10 +224,10 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
         val endpoints: Map<String, String> = p2pGatewayUrls
             .flatMapIndexed { index, url ->
-                    listOf(
-                        URL_KEY.format(index) to url,
-                        PROTOCOL_VERSION.format(index) to "1"
-                    )
+                listOf(
+                    URL_KEY.format(index) to url,
+                    PROTOCOL_VERSION.format(index) to "1"
+                )
             }
             .toMap()
 
@@ -263,35 +244,36 @@ class OnBoardMember : Runnable, BaseOnboard() {
     }
 
     override fun run() {
-        println("This sub command should only be used in for internal development")
-        println("On-boarding member $x500Name")
+        verifyAndPrintError {
+            println("On-boarding member $name")
 
-        configureGateway()
+            configureGateway()
 
-        createTlsKeyIdNeeded()
+            createTlsKeyIdNeeded()
 
-        if (mtls) {
-            println(
-                "Using $certificateSubject as client certificate. " +
-                        "The onboarding will fail until the the subject is added to the MGM's allow list. " +
-                        "You can do that using the allowClientCertificate command."
-            )
-        }
+            if (mtls) {
+                println(
+                    "Using $certificateSubject as client certificate. " +
+                            "The onboarding will fail until the the subject is added to the MGM's allow list. " +
+                            "You can do that using the allowClientCertificate command."
+                )
+            }
 
-        setupNetwork()
+            setupNetwork()
 
-        println("Provided registration context: ")
-        println(registrationContext)
+            println("Provided registration context: ")
+            println(registrationContext)
 
-        register(waitForFinalStatus)
+            register(waitForFinalStatus)
 
-        if (waitForFinalStatus) {
-            println("Member $x500Name was onboarded.")
-        } else {
-            println(
-                "Registration request has been submitted. Wait for MGM approval to finalize registration. " +
-                        "MGM may need to approve your request manually."
-            )
+            if (waitForFinalStatus) {
+                println("Member $name was onboarded.")
+            } else {
+                println(
+                    "Registration request has been submitted. Wait for MGM approval to finalize registration. " +
+                            "MGM may need to approve your request manually."
+                )
+            }
         }
     }
 }
