@@ -25,8 +25,8 @@
         <!-- default to warn only for OSGi logging -->
         <Logger name="net.corda.osgi.framework.OSGiFrameworkWrap" level="trace" />
 
-        <root level="trace">
-            <AppenderRef ref="${env:CONSOLE_LOG_FORMAT:-json}" level="trace"/>
+        <root level="debug">
+            <AppenderRef ref="${env:CONSOLE_LOG_FORMAT:-json}" level="debug"/>
         </root>
     </Loggers>
 </Configuration>
