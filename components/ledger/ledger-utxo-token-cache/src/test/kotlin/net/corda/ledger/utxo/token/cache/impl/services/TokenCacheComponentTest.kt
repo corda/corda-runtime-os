@@ -34,7 +34,8 @@ class TokenCacheComponentTest {
 
     private val exampleConfig = mapOf(
         ConfigKeys.BOOT_CONFIG to MINIMUM_SMART_CONFIG,
-        ConfigKeys.MESSAGING_CONFIG to MINIMUM_SMART_CONFIG
+        ConfigKeys.MESSAGING_CONFIG to MINIMUM_SMART_CONFIG,
+        ConfigKeys.UTXO_LEDGER_CONFIG to MINIMUM_SMART_CONFIG
     )
 
     @Test
@@ -60,7 +61,7 @@ class TokenCacheComponentTest {
 
             verify(this.configReadService).registerComponentForUpdates(
                 eq(flowServiceCoordinator),
-                eq(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG))
+                eq(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG, ConfigKeys.UTXO_LEDGER_CONFIG))
             )
         }
     }

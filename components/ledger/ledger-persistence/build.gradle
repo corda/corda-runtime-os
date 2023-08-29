@@ -101,6 +101,7 @@ dependencies {
     integrationTestRuntimeOnly project(':components:db:db-connection-manager-impl')
     integrationTestRuntimeOnly project(':libs:flows:external-event-responses-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    integrationTestRuntimeOnly project(':libs:membership:membership-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
 

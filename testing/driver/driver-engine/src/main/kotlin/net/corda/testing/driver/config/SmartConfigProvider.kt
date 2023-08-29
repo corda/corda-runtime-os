@@ -15,6 +15,7 @@ import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
 import net.corda.schema.configuration.FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW
 import net.corda.schema.configuration.FlowConfig.SESSION_MESSAGE_RESEND_WINDOW
 import net.corda.schema.configuration.FlowConfig.SESSION_P2P_TTL
+import net.corda.schema.configuration.LedgerConfig.UTXO_TOKEN_CACHED_TOKEN_PAGE_SIZE
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import org.osgi.service.component.annotations.Component
@@ -39,6 +40,7 @@ class SmartConfigProvider {
             .withValue(SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
             .withValue(SESSION_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(5000L))
             .withValue(SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(5000L))
+            .withValue(UTXO_TOKEN_CACHED_TOKEN_PAGE_SIZE, ConfigValueFactory.fromAnyRef(100))
             .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
         smartConfig = configFactory.create(config)
     }

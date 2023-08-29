@@ -121,14 +121,17 @@ tasks.named('jar', Jar) {
 
 publishing {
     publications {
-        maven(MavenPublication) {
-            artifactId 'corda-combined-worker'
-            groupId project.group
+        configureEach {
             pom {
-                name = 'corda-combined-worker'
-                description = 'corda-combined-worker'
-                url = 'https://github.com/corda/corda-runtime-os'
+                if (!project.hasProperty('busImpl')) {
+                    name = 'corda-combined-worker'
+                    description = 'corda-combined-worker'
+                } else {
+                    name = 'corda-combined-worker-kakfa'
+                    description = 'corda-combined-worker-kafka'
+                }
 
+                url = 'https://github.com/corda/corda-runtime-os'
                 scm {
                     url = 'https://github.com/corda/corda-runtime-os'
                 }
@@ -148,6 +151,19 @@ publishing {
                         email = 'dev@corda.net'
                     }
                 }
+            }
+        }
+        if (!project.hasProperty('busImpl')) {
+            maven(MavenPublication) {
+                artifactId 'corda-combined-worker'
+                groupId project.group
+            }
+        } else {
+            kafkaCombinedWorker(MavenPublication) {
+                artifactId 'corda-combined-worker-kafka'
+                artifact appJar
+                groupId project.group
+                version project.version
             }
         }
     }
