@@ -75,6 +75,8 @@ import java.util.UUID
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PersistenceExceptionTests {
+
+    
     companion object {
         const val TOPIC = "pretend-topic"
         private const val TIMEOUT_MILLIS = 10000L
@@ -324,7 +326,7 @@ class PersistenceExceptionTests {
         // first update request
         processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), mergeEntityRequest)))
         // check we update same dog
-        val dogDbCount = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId, dogDBTable = "versionedDog")
+        val dogDbCount = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId, dogDBTable = "versioned_dog")
         assertEquals(1, dogDbCount)
         // check timestamp 1
         val dogVersion1 = getDogDbVersion(virtualNodeInfo.vaultDmlConnectionId)
@@ -332,7 +334,7 @@ class PersistenceExceptionTests {
         // duplicate update request
         processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), mergeEntityRequest)))
         // check we update same dog
-        val dogDbCount2 = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId, dogDBTable = "versionedDog")
+        val dogDbCount2 = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId, dogDBTable = "versioned_dog")
         assertEquals(1, dogDbCount2)
         // check timestamp 2
         val dogVersion2 = getDogDbVersion(virtualNodeInfo.vaultDmlConnectionId)
@@ -442,7 +444,7 @@ class PersistenceExceptionTests {
     private fun getDogDbVersion(connectionId: UUID): Int =
         dbConnectionManager
             .getDataSource(connectionId).connection.use { connection ->
-                connection.prepareStatement("SELECT version FROM versionedDog").use {
+                connection.prepareStatement("SELECT version FROM versioned_dog").use {
                     it.executeQuery().use { rs ->
                         if (!rs.next()) {
                             throw IllegalStateException("Should be able to find at least 1 dog entry")

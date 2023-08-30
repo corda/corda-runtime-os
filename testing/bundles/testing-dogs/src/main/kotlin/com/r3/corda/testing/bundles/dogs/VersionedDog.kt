@@ -6,9 +6,11 @@ import java.util.UUID
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
+import javax.persistence.Table
 
 @CordaSerializable
 @Entity
+@Table(name = "versioned_dog")
 data class VersionedDog(
     @get:Id
     @get:Column
