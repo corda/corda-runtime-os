@@ -274,7 +274,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
+                singleOutputEvent()
             }
         }
     }
@@ -299,12 +299,12 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
+                singleOutputEvent()
             }
 
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWithData(mapOf(SESSION_ID_1 to DATA_MESSAGE_1))
-                wakeUpEvent()
+                singleOutputEvent()
             }
         }
     }

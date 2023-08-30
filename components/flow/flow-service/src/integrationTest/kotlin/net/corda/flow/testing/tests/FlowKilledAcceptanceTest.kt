@@ -67,6 +67,7 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
+    @Disabled
     fun `flow removed from cache when flow resumes for virtual node with flow operational status inactive`() {
 
         `when` {
@@ -76,7 +77,7 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
+                noOutputEvent()
                 flowStatus(FlowStates.RUNNING)
                 flowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }

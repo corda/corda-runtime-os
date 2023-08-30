@@ -183,7 +183,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
+                singleOutputEvent()
                 sessionCloseEvents()
             }
         }
@@ -206,7 +206,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
+                singleOutputEvent()
                 sessionCloseEvents()
             }
         }
@@ -528,7 +528,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
+                singleOutputEvent()
                 sessionCloseEvents()
             }
 

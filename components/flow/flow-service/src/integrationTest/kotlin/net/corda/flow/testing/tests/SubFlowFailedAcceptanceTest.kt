@@ -53,7 +53,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionErrorEvents(SESSION_ID_1, SESSION_ID_2)
-                wakeUpEvent()
+                singleOutputEvent()
                 scheduleFlowMapperCleanupEvents(SESSION_ID_1, SESSION_ID_2)
             }
         }
@@ -79,7 +79,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionErrorEvents(SESSION_ID_2)
-                wakeUpEvent()
+                singleOutputEvent()
                 scheduleFlowMapperCleanupEvents(SESSION_ID_1, SESSION_ID_2)
             }
         }
@@ -107,7 +107,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionErrorEvents()
-                wakeUpEvent()
+                singleOutputEvent()
             }
         }
     }
@@ -135,7 +135,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionErrorEvents()
-                wakeUpEvent()
+                singleOutputEvent()
             }
         }
     }
@@ -155,7 +155,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionErrorEvents()
-                wakeUpEvent()
+                singleOutputEvent()
             }
         }
     }
@@ -179,7 +179,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
+                singleOutputEvent()
                 sessionErrorEvents(INITIATED_SESSION_ID_1)
                 scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
             }
@@ -209,7 +209,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionErrorEvents()
-                wakeUpEvent()
+                singleOutputEvent()
             }
         }
     }
@@ -237,7 +237,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionErrorEvents()
-                wakeUpEvent()
+                singleOutputEvent()
             }
         }
     }

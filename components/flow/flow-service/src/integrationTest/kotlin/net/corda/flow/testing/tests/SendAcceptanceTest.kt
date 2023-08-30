@@ -85,7 +85,7 @@ class SendAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 hasPendingUserException()
-                wakeUpEvent()
+                singleOutputEvent()
             }
         }
 
@@ -117,19 +117,19 @@ class SendAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2)
-                wakeUpEvent()
+                singleOutputEvent()
             }
 
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWith(Unit)
                 sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_3, SESSION_ID_2 to DATA_MESSAGE_4)
-                wakeUpEvent()
+                singleOutputEvent()
             }
 
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWith(Unit)
                 sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_5, SESSION_ID_2 to DATA_MESSAGE_6)
-                wakeUpEvent()
+                singleOutputEvent()
             }
         }
     }
@@ -201,7 +201,7 @@ class SendAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
+                singleOutputEvent()
                 flowResumedWith(Unit)
                 sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_1)
             }

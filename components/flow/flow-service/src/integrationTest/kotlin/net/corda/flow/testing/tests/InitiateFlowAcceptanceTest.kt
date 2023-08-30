@@ -89,7 +89,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
+                singleOutputEvent()
             }
         }
     }

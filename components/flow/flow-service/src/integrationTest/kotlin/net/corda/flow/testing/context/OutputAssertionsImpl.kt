@@ -1,6 +1,5 @@
 package net.corda.flow.testing.context
 
-import java.nio.ByteBuffer
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.FlowKey
@@ -31,6 +30,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 
 class OutputAssertionsImpl(
     private val serializer: CordaAvroSerializer<Any>,
@@ -213,7 +213,7 @@ class OutputAssertionsImpl(
         }
     }
 
-    override fun wakeUpEvent() {
+    override fun singleOutputEvent() {
         asserts.add { testRun ->
             assertNotNull(testRun.response, "Test run response")
 
@@ -224,7 +224,7 @@ class OutputAssertionsImpl(
         }
     }
 
-    override fun noWakeUpEvent() {
+    override fun noOutputEvent() {
         asserts.add { testRun ->
             assertNotNull(testRun.response, "Test run response")
 
