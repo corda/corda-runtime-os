@@ -75,8 +75,6 @@ import java.util.UUID
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PersistenceExceptionTests {
-
-    
     companion object {
         const val TOPIC = "pretend-topic"
         private const val TIMEOUT_MILLIS = 10000L
