@@ -53,10 +53,12 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     @VisibleForTesting
     internal constructor(
         clientService: LedgerUniquenessCheckerClientService,
-        transactionSignatureService: TransactionSignatureService
+        transactionSignatureService: TransactionSignatureService,
+        memberLookup: MemberLookup
     ) : this() {
         this.clientService = clientService
         this.transactionSignatureService = transactionSignatureService
+        this.memberLookup = memberLookup
     }
 
     /**
@@ -75,11 +77,9 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     override fun call(session: FlowSession) {
         try {
             val requestPayload = session.receive(NonValidatingNotarizationPayload::class.java)
-            val filteredTx = requestPayload.transaction as UtxoFilteredTransaction
 
-            getCurrentNotaryAndValidateNotary(memberLookup, filteredTx)
+            val txDetails = validateRequest(requestPayload)
 
-            val txDetails = validateRequest(filteredTx)
             if (logger.isTraceEnabled) {
                 logger.trace("Received notarization request for transaction {}", txDetails.id)
             }
@@ -126,12 +126,12 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      * This function will validate selected notary is valid notary to notarize.
      * */
     @Suspendable
-    private fun getCurrentNotaryAndValidateNotary(memberLookup: MemberLookup, filteredTx: UtxoFilteredTransaction) {
+    private fun getCurrentNotaryAndValidateNotary(filteredTx: UtxoFilteredTransaction) {
         val currentNotaryMemberProvidedCtx = memberLookup.myInfo().memberProvidedContext
         val currentNotaryServiceName = currentNotaryMemberProvidedCtx.parse(NOTARY_SERVICE_NAME, MemberX500Name::class.java)
-        val currentNotaryKey = currentNotaryMemberProvidedCtx.parseList(NOTARY_KEYS, PublicKey::class.java)
+        val currentNotaryKey = currentNotaryMemberProvidedCtx.parseList(NOTARY_KEYS, PublicKey::class.java).first()
 
-        val payloadNotaryServiceName = filteredTx.notaryName
+        val payloadNotaryServiceName = filteredTx.notaryName!!
         val payloadNotaryKey = filteredTx.notaryKey
 
         require(currentNotaryServiceName == payloadNotaryServiceName) {
@@ -149,9 +149,9 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      */
     @Suspendable
     @Suppress("TooGenericExceptionCaught")
-    private fun validateRequest(filteredTx: UtxoFilteredTransaction): NonValidatingNotaryTransactionDetails {
+    private fun validateRequest(requestPayload: NonValidatingNotarizationPayload): NonValidatingNotaryTransactionDetails {
         val transactionParts = try {
-            extractParts(filteredTx)
+            extractParts(requestPayload)
         } catch (e: Exception) {
             logger.warn("Could not validate request. Reason: ${e.message}")
             throw IllegalStateException("Could not validate request.", e)
@@ -166,7 +166,9 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      * A helper function that constructs an instance of [NonValidatingNotaryTransactionDetails] from the given transaction.
      */
     @Suspendable
-    private fun extractParts(filteredTx: UtxoFilteredTransaction): NonValidatingNotaryTransactionDetails {
+    private fun extractParts(requestPayload: NonValidatingNotarizationPayload): NonValidatingNotaryTransactionDetails {
+        val filteredTx = requestPayload.transaction as UtxoFilteredTransaction
+
         // The notary component is not needed by us but we validate that it is present just in case
         requireNotNull(filteredTx.notaryName) {
             "Notary name component could not be found on the transaction"
@@ -175,6 +177,8 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         requireNotNull(filteredTx.notaryKey) {
             "Notary key component could not be found on the transaction"
         }
+
+        getCurrentNotaryAndValidateNotary(filteredTx)
 
 
         requireNotNull(filteredTx.metadata) {
