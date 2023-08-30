@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.interop.group.policy.read.InteropGroupPolicyReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -66,8 +67,8 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = InteropGroupPolicyReader::class)
-    private val interopGroupPolicyReader: InteropGroupPolicyReader
+    @Reference(service = InteropGroupPolicyReadService::class)
+    private val interopGroupPolicyReadService: InteropGroupPolicyReadService
 ) : GroupPolicyProvider {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -107,7 +108,7 @@ class GroupPolicyProviderImpl @Activate constructor(
         val groupPolicy = getGroupPolicy(holdingIdentity)
         if (groupPolicy == null ) {
             logger.warn("Could not get the group policy for holding identity [${holdingIdentity}]. Checking interop group policy.")
-            val interopGroupPolicy: String? = interopGroupPolicyReader.getGroupPolicy(holdingIdentity)
+            val interopGroupPolicy: String? = interopGroupPolicyReadService.getGroupPolicy(holdingIdentity.groupId)
             if (interopGroupPolicy == null) {
                 logger.warn("Could not get interop group policy for holding identity [${holdingIdentity}].")
                 return null
@@ -140,6 +141,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                         LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
                         LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                        LifecycleCoordinatorName.forComponent<InteropGroupPolicyReadService>(),
                     )
                 )
             }
