@@ -1,18 +1,12 @@
 package net.corda.libs.configuration.merger.impl
 
-import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.messagebus.api.configuration.BusConfigMerger
 import net.corda.messagebus.api.configuration.getConfigOrEmpty
-import net.corda.messagebus.api.configuration.getStringOrNull
 import net.corda.schema.configuration.BootConfig.BOOT_DB
-import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_JDBC_URL
-import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_DB_PASS
-import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_DB_USER
-import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_TYPE
-import net.corda.schema.configuration.StateManagerConfig
+import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -36,11 +30,9 @@ class ConfigMergerImpl @Activate constructor(
     }
 
     override fun getStateManagerConfig(bootConfig: SmartConfig, stateStorageConfig: SmartConfig?): SmartConfig {
-        val updatedConfig = stateStorageConfig ?: SmartConfigImpl.empty()
-        return updatedConfig
-            .withValue(StateManagerConfig.TYPE, ConfigValueFactory.fromAnyRef(bootConfig.getStringOrNull(BOOT_STATE_MANAGER_TYPE)))
-            .withValue(StateManagerConfig.DB_USER, ConfigValueFactory.fromAnyRef(bootConfig.getStringOrNull(BOOT_STATE_MANAGER_DB_USER)))
-            .withValue(StateManagerConfig.DB_PASS, ConfigValueFactory.fromAnyRef(bootConfig.getStringOrNull(BOOT_STATE_MANAGER_DB_PASS)))
-            .withValue(StateManagerConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(bootConfig.getStringOrNull(BOOT_STATE_MANAGER_JDBC_URL)))
+        val updatedConfig = stateStorageConfig?: SmartConfigImpl.empty()
+        val bootStateManagerConfig = bootConfig.getConfigOrEmpty(BOOT_STATE_MANAGER)
+
+        return bootStateManagerConfig.withFallback(updatedConfig)
     }
 }
