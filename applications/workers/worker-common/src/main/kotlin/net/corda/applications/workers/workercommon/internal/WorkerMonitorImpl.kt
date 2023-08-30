@@ -14,6 +14,7 @@ import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics
 import io.micrometer.core.instrument.binder.system.FileDescriptorMetrics
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics
 import io.micrometer.core.instrument.binder.system.UptimeMetrics
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry
 import io.micrometer.prometheus.PrometheusConfig
 import io.micrometer.prometheus.PrometheusMeterRegistry
 import net.corda.applications.workers.workercommon.WorkerMonitor
@@ -67,6 +68,7 @@ internal class WorkerMonitorImpl @Activate constructor(
 
     private fun setupMetrics(name: String) {
         logger.info("Creating Prometheus metric registry")
+        CordaMetrics.configure(name, prometheusRegistry)
         CordaMetrics.configure(name, cloudWatchRegistry)
 
         ClassLoaderMetrics().bindTo(CordaMetrics.registry)
