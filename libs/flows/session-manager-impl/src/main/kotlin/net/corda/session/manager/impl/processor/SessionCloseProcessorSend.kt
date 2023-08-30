@@ -35,9 +35,6 @@ class SessionCloseProcessorSend(
         val sessionId = sessionEvent.sessionId
         val currentStatus = sessionState.status
         return when {
-            sessionState == null -> {
-                handleNullSession(sessionId)
-            }
             currentStatus in setOf(SessionStateType.CLOSED, SessionStateType.CLOSING) -> {
                 sessionState
             }
