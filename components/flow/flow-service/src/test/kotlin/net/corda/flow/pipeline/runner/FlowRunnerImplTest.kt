@@ -11,6 +11,7 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.data.flow.state.waiting.WaitingFor
+import net.corda.data.flow.state.waiting.external.ExternalEventResponse
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.FLOW_ID_1
@@ -24,6 +25,7 @@ import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
+import net.corda.flow.pipeline.handlers.waiting.WaitingForSessionInit
 import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
 import net.corda.flow.pipeline.runner.impl.FlowRunnerImpl
 import net.corda.flow.pipeline.runner.impl.remoteToLocalContextMapper
@@ -116,6 +118,7 @@ class FlowRunnerImplTest {
         whenever(cpiInfoReadService.get(any())).thenReturn(getMockCpiMetaData())
         whenever(flowCheckpoint.initialPlatformVersion).thenReturn(67890)
         whenever(platformInfoProvider.localWorkerSoftwareVersion).thenReturn("67890")
+        whenever(flowCheckpoint.waitingFor).thenReturn(WaitingFor(WaitingForSessionInit("foo")))
     }
 
     @BeforeEach
@@ -279,6 +282,28 @@ class FlowRunnerImplTest {
 
         assertThat(flowStackItem.sessions).containsOnly(FlowStackItemSession(SESSION_ID_1, true))
         verify(sandboxDependencyInjector).injectServices(initiatedFlow)
+    }
+
+    @Test
+    fun `session init does not start a new flow if correct waiting for is not set`() {
+        val flowContinuation = FlowContinuation.Run()
+        val sessionInit = SessionInit().apply {
+            contextPlatformProperties = platformContext.avro
+            contextUserProperties = userContext.avro
+        }
+        val sessionEvent = SessionEvent().apply {
+            payload = sessionInit
+        }
+        val context = buildFlowEventContext<Any>(flowCheckpoint, sessionEvent)
+        whenever(flowCheckpoint.waitingFor).thenReturn(WaitingFor(ExternalEventResponse("foo")))
+
+        whenever(flowFiberFactory.createAndResumeFlowFiber(flowFiberExecutionContext, flowContinuation)).thenReturn(
+            fiberFuture
+        )
+
+        val result = flowRunner.runFlow(context, flowContinuation)
+
+        assertThat(result).isSameAs(fiberFuture)
     }
 
     @Test

@@ -16,6 +16,7 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
+import net.corda.flow.pipeline.handlers.waiting.WaitingForSessionInit
 import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.utils.KeyValueStore
@@ -68,7 +69,7 @@ class FlowRunnerImpl @Activate constructor(
             }
             is SessionEvent -> {
                 val sessionInit = getInitPayload(receivedEvent)
-                if (sessionInit != null) {
+                if (sessionInit != null && waitingFor is WaitingForSessionInit) {
                     startInitiatedFlow(context, sessionInit, receivedEvent)
                 } else {
                     resumeFlow(context, flowContinuation)
