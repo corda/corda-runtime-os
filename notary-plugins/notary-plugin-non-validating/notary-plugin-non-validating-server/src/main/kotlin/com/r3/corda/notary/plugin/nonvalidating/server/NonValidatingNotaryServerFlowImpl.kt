@@ -80,6 +80,8 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
             val txDetails = validateRequest(requestPayload)
 
+            getCurrentNotaryAndValidateNotary(txDetails)
+
             if (logger.isTraceEnabled) {
                 logger.trace("Received notarization request for transaction {}", txDetails.id)
             }
@@ -126,13 +128,13 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      * This function will validate selected notary is valid notary to notarize.
      * */
     @Suspendable
-    private fun getCurrentNotaryAndValidateNotary(filteredTx: UtxoFilteredTransaction) {
+    private fun getCurrentNotaryAndValidateNotary(txDetails: NonValidatingNotaryTransactionDetails) {
         val currentNotaryMemberProvidedCtx = memberLookup.myInfo().memberProvidedContext
         val currentNotaryServiceName = currentNotaryMemberProvidedCtx.parse(NOTARY_SERVICE_NAME, MemberX500Name::class.java)
         val currentNotaryKey = currentNotaryMemberProvidedCtx.parseList(NOTARY_KEYS, PublicKey::class.java).first()
 
-        val payloadNotaryServiceName = filteredTx.notaryName!!
-        val payloadNotaryKey = filteredTx.notaryKey
+        val payloadNotaryServiceName = txDetails.notaryName
+        val payloadNotaryKey = txDetails.notaryKey
 
         require(currentNotaryServiceName == payloadNotaryServiceName) {
             "Given notary service = $payloadNotaryServiceName is invalid"
@@ -177,9 +179,6 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         requireNotNull(filteredTx.notaryKey) {
             "Notary key component could not be found on the transaction"
         }
-
-        getCurrentNotaryAndValidateNotary(filteredTx)
-
 
         requireNotNull(filteredTx.metadata) {
             "Metadata component could not be found on the transaction"
