@@ -2,6 +2,7 @@ package net.corda.processors.flow.mapper.internal
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.flow.p2p.filter.FlowP2PFilterService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -34,6 +35,8 @@ class FlowMapperProcessorImpl @Activate constructor(
     private val cpiInfoReadService: CpiInfoReadService,
     @Reference(service = FlowMapperService::class)
     private val flowMapperService: FlowMapperService,
+    @Reference(service = FlowP2PFilterService::class)
+    private val flowP2PFilterService: FlowP2PFilterService,
     @Reference(service = GroupParametersReaderService::class)
     private val groupParametersReaderService: GroupParametersReaderService,
     @Reference(service = GroupPolicyProvider::class)
@@ -56,6 +59,7 @@ class FlowMapperProcessorImpl @Activate constructor(
         ::configurationReadService,
         ::cpiInfoReadService,
         ::flowMapperService,
+        ::flowP2PFilterService,
         ::groupParametersReaderService,
         ::groupPolicyProvider,
         ::membershipGroupReaderProvider,
