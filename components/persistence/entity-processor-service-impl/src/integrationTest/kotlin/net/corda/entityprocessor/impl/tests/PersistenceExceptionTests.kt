@@ -264,8 +264,6 @@ class PersistenceExceptionTests {
         assertThat(response.error.exception.errorType).isEqualTo(CordaRuntimeException::class.java.name)
     }
 
-//    @Disabled("This test is disabled for now because currently we do execute duplicate persistence requests." +
-//            "It should be re-enabled after deduplication work is done in epic CORE-5909")
     @Test
     fun `on duplicate persistence request don't execute it - with PK constraint does not throw PK violation`() {
         createDogDb()
