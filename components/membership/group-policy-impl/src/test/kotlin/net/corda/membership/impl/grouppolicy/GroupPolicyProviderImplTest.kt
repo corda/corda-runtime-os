@@ -1080,14 +1080,15 @@ class GroupPolicyProviderImplTest {
         assertThat(called).isZero
     }
 
-    @Test
-    fun `Interop groupPolicy is returned when CPI metadata is null `() {
-        startComponentAndDependencies()
-        postConfigChangedEvent()
-        assertExpectedGroupPolicy(
-            groupPolicyProvider.getGroupPolicy(holdingIdentity6),
-            groupId3,
-            regProtocol3
-        )
-    }
+
+//    @Test TODO test will be covered as part of getP2PParameters test
+//    fun `Interop groupPolicy is returned when CPI metadata is null `() {
+//        startComponentAndDependencies()
+//        postConfigChangedEvent()
+//        assertExpectedGroupPolicy(
+//            groupPolicyProvider.getGroupPolicy(holdingIdentity6),
+//            groupId3,
+//            regProtocol3
+//        )
+//    }
 }

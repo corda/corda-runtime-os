@@ -170,7 +170,7 @@ class MessageConverterTest {
         val flowMessage = authenticatedMessageAndKey(us, peer, ByteBuffer.wrap("DATA".toByteArray()))
         assertThat(MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, groups, members, 1)).isNull()
         loggingInterceptor.assertSingleWarning(
-            "Could not find the group info in the GroupPolicyProvider for our identity = $us." +
+            "Could not find the p2p parameters in the GroupPolicyProvider for our identity = $us." +
                 " The message was discarded."
         )
     }
@@ -192,7 +192,7 @@ class MessageConverterTest {
         val groups = mockGroups(emptyList())
         assertThat(MessageConverter.linkOutMessageFromAck(message, us, peer, session, groups, members)).isNull()
         loggingInterceptor.assertSingleWarning(
-            "Could not find the group info in the GroupPolicyProvider for our identity = $us." +
+            "Could not find the p2p parameters in the GroupPolicyProvider for our identity = $us." +
                     " The message was discarded."
         )
     }

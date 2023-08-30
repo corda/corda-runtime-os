@@ -25,4 +25,13 @@ interface GroupPolicyProvider : Lifecycle {
      * @param name The listener name (the call back will be called only to one instance with that name).
      */
     fun registerListener(name: String, callback: (HoldingIdentity, GroupPolicy) -> Unit)
+
+    /**
+     * Retrieves the [P2PParameters] object for a given member based on the member's holding identity.
+     **
+     * @param holdingIdentity The holding identity of the member doing the lookup.
+     * @return The current [P2PParameters] that was either bundled with the CPI which was installed for the given holding
+     *  identity or associated with interop identity. Returns null if no p2p parameters was found or if error occurs when retrieving p2p parameters.
+     */
+    fun getP2PParameters(holdingIdentity: HoldingIdentity): GroupPolicy.P2PParameters?
 }

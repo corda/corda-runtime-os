@@ -177,13 +177,13 @@ class MessageConverter {
             message: InboundUnauthenticatedMessage,
             source: HoldingIdentity,
             destMemberInfo: MemberInfo,
-            groupPolicy: GroupPolicy,
+            networkType: NetworkType,
         ): LinkOutMessage {
             return createLinkOutMessage(
                 message,
                 source,
                 destMemberInfo,
-                groupPolicy.networkType,
+                networkType,
                 )
         }
 
@@ -232,10 +232,10 @@ class MessageConverter {
                         "which is not in the network map. The message was discarded.")
                 return null
             }
-            val groupPolicy = groupPolicyProvider.getGroupPolicy(source)
-            if (groupPolicy == null) {
+            val p2pParams = groupPolicyProvider.getP2PParameters(source)
+            if (p2pParams == null) {
                 logger.warn(
-                    "Could not find the group info in the " +
+                    "Could not find the p2p parameters in the " +
                         "GroupPolicyProvider for our identity = $source. The message was discarded."
                 )
                 return null
@@ -245,7 +245,7 @@ class MessageConverter {
                 result,
                 source,
                 destMemberInfo,
-                groupPolicy.networkType,
+                p2pParams.networkType,
             )
         }
 
