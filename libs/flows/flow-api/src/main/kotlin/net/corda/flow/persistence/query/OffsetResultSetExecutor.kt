@@ -6,9 +6,9 @@ import java.io.Serializable
 import java.nio.ByteBuffer
 
 /**
- * [ResultSetExecutor] defines the database operation that is executed to retrieve data within [ResultSet.next].
+ * [OffsetResultSetExecutor] defines the database operation that is executed to retrieve data within [ResultSet.next].
  */
-fun interface ResultSetExecutor<R> : Serializable {
+fun interface OffsetResultSetExecutor<R> : Serializable {
 
     /**
      * Retrieve data for a [ResultSet].

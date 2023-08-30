@@ -6,7 +6,7 @@ import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
-import net.corda.flow.persistence.query.ResultSetExecutor
+import net.corda.flow.persistence.query.OffsetResultSetExecutor
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.schema.Schemas
 import net.corda.virtualnode.toAvro
@@ -14,7 +14,7 @@ import org.osgi.service.component.annotations.Component
 import java.nio.ByteBuffer
 
 @Component(service = [ExternalEventFactory::class])
-class NamedQueryExternalEventFactory : ExternalEventFactory<NamedQueryParameters, EntityResponse, ResultSetExecutor.Results> {
+class NamedQueryExternalEventFactory : ExternalEventFactory<NamedQueryParameters, EntityResponse, OffsetResultSetExecutor.Results> {
 
     override val responseType = EntityResponse::class.java
 
@@ -33,12 +33,10 @@ class NamedQueryExternalEventFactory : ExternalEventFactory<NamedQueryParameters
         )
     }
 
-    override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): ResultSetExecutor.Results {
-        val numberOfRowsFromQuery = response.metadata.items.single { it.key == "numberOfRowsFromQuery" }.value.toInt()
-
-        return ResultSetExecutor.Results(
+    override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): OffsetResultSetExecutor.Results {
+        return OffsetResultSetExecutor.Results(
             serializedResults = response.results,
-            numberOfRowsFromQuery = numberOfRowsFromQuery
+            numberOfRowsFromQuery = response.metadata.items.single { it.key == "numberOfRowsFromQuery" }.value.toInt()
         )
     }
 }

@@ -1,18 +1,18 @@
 package net.corda.flow.application.persistence.query
 
-import net.corda.flow.persistence.query.ResultSetExecutor
+import net.corda.flow.persistence.query.OffsetResultSetExecutor
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import java.nio.ByteBuffer
 
-data class ResultSetImpl<R> internal constructor(
+data class OffsetResultSetImpl<R> internal constructor(
     private val serializationService: SerializationService,
     private var serializedParameters: Map<String, ByteBuffer>,
     private var limit: Int,
     private var offset: Int,
     private val resultClass: Class<R>,
-    private val resultSetExecutor: ResultSetExecutor<R>
+    private val resultSetExecutor: OffsetResultSetExecutor<R>
 ) : PagedQuery.ResultSet<R> {
 
     init {
