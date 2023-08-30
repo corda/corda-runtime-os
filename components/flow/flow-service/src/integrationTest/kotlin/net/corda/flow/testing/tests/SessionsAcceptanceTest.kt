@@ -21,7 +21,7 @@ import java.util.stream.Stream
  */
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
-@Disabled//todo - CORE-15747
+@Disabled
 class SessionsAcceptanceTest : FlowServiceTestBase() {
 
     private companion object {

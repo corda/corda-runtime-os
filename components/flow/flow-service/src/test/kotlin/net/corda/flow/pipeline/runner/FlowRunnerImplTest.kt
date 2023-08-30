@@ -26,7 +26,6 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
-import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.runner.impl.FlowRunnerImpl
 import net.corda.flow.pipeline.runner.impl.remoteToLocalContextMapper
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
@@ -235,8 +234,6 @@ class FlowRunnerImplTest {
                 x500Name = MemberX500Name("R3", "London", "GB").toString()
             }
         }
-        whenever(flowCheckpoint.waitingFor).thenReturn(WaitingFor(WaitingForSessionInit("foo")))
-
         val logicAndArgs = InitiatedFlow(initiatedFlow, mock())
 
         // Map the mock context properties to local context properties in the same way the flow runner should, the exact

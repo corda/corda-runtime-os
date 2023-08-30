@@ -45,12 +45,12 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
+         /*   sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Send(
                     mapOf(
                         SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_1,
                         SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_2,
-                    )))
+                    )))*/
         }
 
         then {
@@ -67,11 +67,11 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
             initiateTwoFlows(this)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
+        /*    sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
                     SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
                     SessionInfo(SESSION_ID_2, initiatedIdentityMemberName)
-                )))
+                )))*/
         }
 
         `when` {

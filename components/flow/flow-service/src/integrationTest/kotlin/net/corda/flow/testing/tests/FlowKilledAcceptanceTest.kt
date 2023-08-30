@@ -14,7 +14,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
-@Disabled
 class FlowKilledAcceptanceTest : FlowServiceTestBase() {
 
     @BeforeEach
