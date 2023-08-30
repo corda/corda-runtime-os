@@ -3,7 +3,7 @@ package net.corda.membership.impl.rest.v1
 import net.corda.crypto.core.ShortHash
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.membership.client.CouldNotFindMemberException
+import net.corda.membership.client.CouldNotFindEntityException
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.rest.exception.BadRequestException
@@ -104,7 +104,7 @@ class MGMAdminRestResourceTest {
         fun `forceDeclineRegistrationRequest throws resource not found for invalid member`() {
             whenever(mgmResourceClient.forceDeclineRegistrationRequest(
                 HOLDING_IDENTITY_ID.shortHash(), REQUEST_ID.uuid()
-            )).doThrow(mock<CouldNotFindMemberException>())
+            )).doThrow(mock<CouldNotFindEntityException>())
 
             assertThrows<ResourceNotFoundException> {
                 mgmAdminRestResource.forceDeclineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)

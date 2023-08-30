@@ -6,7 +6,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.membership.client.CouldNotFindMemberException
+import net.corda.membership.client.CouldNotFindEntityException
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.impl.rest.v1.lifecycle.RestResourceLifecycleHandler
@@ -99,7 +99,7 @@ class MGMAdminRestResourceImpl @Activate constructor(
                     ShortHash.parseOrThrow(holdingIdentityShortHash),
                     parseRegistrationRequestId(requestId)
                 )
-            } catch (e: CouldNotFindMemberException) {
+            } catch (e: CouldNotFindEntityException) {
                 throw ResourceNotFoundException("Holding Identity", holdingIdentityShortHash)
             } catch (e: MemberNotAnMgmException) {
                 throw InvalidInputDataException(

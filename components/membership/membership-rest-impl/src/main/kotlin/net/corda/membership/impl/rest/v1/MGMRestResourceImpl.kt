@@ -21,7 +21,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.membership.client.CouldNotFindMemberException
+import net.corda.membership.client.CouldNotFindEntityException
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.rest.v1.MGMRestResource
@@ -792,7 +792,7 @@ class MGMRestResourceImpl internal constructor(
         ): T {
             return try {
                 func.invoke(ShortHash.parseOrThrow(holdingIdentityShortHash))
-            } catch (e: CouldNotFindMemberException) {
+            } catch (e: CouldNotFindEntityException) {
                 holdingIdentityNotFound(holdingIdentityShortHash)
             } catch (e: MemberNotAnMgmException) {
                 notAnMgmError(holdingIdentityShortHash)
