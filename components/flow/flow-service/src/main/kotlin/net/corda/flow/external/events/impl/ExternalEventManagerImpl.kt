@@ -176,7 +176,7 @@ class ExternalEventManagerImpl(
                             "NoResponse",
                             "Received no response for external event request with payload type: " +
                                     "${externalEventState.eventToSend.payload::class.java}" +
-                                    ", ensure all workers are running. Factory type: ${externalEventState.factoryClassName}."
+                                    ", ensure all workers are running. Factory type: ${externalEventState.factoryClassName}." // @TODO Remove this extra logging before merge
                         )
                     externalEventState.status.type = ExternalEventStateType.RETRY
                     externalEventState.retries = externalEventState.retries.inc()
