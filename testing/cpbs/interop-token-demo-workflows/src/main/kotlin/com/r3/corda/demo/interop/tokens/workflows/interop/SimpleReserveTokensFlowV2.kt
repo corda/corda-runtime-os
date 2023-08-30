@@ -5,7 +5,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.interop.FacadeService
-import net.corda.v5.application.interop.InteropIdentityLookUp
+import net.corda.v5.application.interop.InteropIdentityLookup
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import org.slf4j.LoggerFactory
@@ -29,7 +29,7 @@ class SimpleReserveTokensFlowV2 : ClientStartableFlow {
     lateinit var facadeService: FacadeService
 
     @CordaInject
-    lateinit var interopIdentityLookUp: InteropIdentityLookUp
+    lateinit var interopIdentityLookUp: InteropIdentityLookup
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {

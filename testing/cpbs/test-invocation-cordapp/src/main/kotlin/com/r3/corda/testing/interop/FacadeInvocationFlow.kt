@@ -5,7 +5,7 @@ import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.interop.FacadeService
-import net.corda.v5.application.interop.InteropIdentityLookUp
+import net.corda.v5.application.interop.InteropIdentityLookup
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
@@ -22,7 +22,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
     }
 
     @CordaInject
-    lateinit var interopIdentityLookUp: InteropIdentityLookUp
+    lateinit var interopIdentityLookUp: InteropIdentityLookup
 
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
