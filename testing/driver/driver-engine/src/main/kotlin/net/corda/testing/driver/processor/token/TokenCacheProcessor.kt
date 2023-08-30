@@ -5,7 +5,8 @@ import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.messaging.api.records.Record
-import net.corda.ledger.utxo.token.cache.services.DriverTokenCacheEventProcessorFactory
+import net.corda.ledger.utxo.token.cache.factories.TokenCacheEventProcessorFactory
+import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.testing.driver.config.SmartConfigProvider
 import net.corda.testing.driver.processor.ExternalProcessor
 import org.osgi.service.component.annotations.Activate
@@ -15,15 +16,21 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [ TokenCacheProcessor::class ])
 class TokenCacheProcessor @Activate constructor(
     @Reference
-    tokenCacheEventProcessorFactory: DriverTokenCacheEventProcessorFactory,
+    tokenCacheEventProcessorFactory: TokenCacheEventProcessorFactory,
+    @Reference
+    serviceConfiguration: ServiceConfiguration,
     @Reference
     smartConfigProvider: SmartConfigProvider,
     @Reference
     cordaAvroSerializationFactory: CordaAvroSerializationFactory
 ) : ExternalProcessor {
     private val anyDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
-    private val processor = tokenCacheEventProcessorFactory.create(smartConfigProvider.smartConfig)
+    private val processor = tokenCacheEventProcessorFactory.create()
     private var states = mutableMapOf<TokenPoolCacheKey, TokenPoolCacheState>()
+
+    init {
+        serviceConfiguration.init(smartConfigProvider.smartConfig)
+    }
 
     override fun processEvent(record: Record<*, *>): List<Record<*, *>> {
         val cacheKey = requireNotNull(unpack<TokenPoolCacheKey>(record.key)) {
