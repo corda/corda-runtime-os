@@ -429,6 +429,12 @@ internal class DriverDSLImpl(
         MembershipGroupManager(this).forVirtualNode(virtualNodeInfo.holdingIdentity, TIMEOUT, action)
     }
 
+    override fun node(groupName: String, memberName: MemberX500Name, action: ThrowingConsumer<Member>) {
+        val memberNode = virtualNodeInfo[VirtualNodeKey(groupName, memberName)]
+            ?: throw AssertionError("Member '$memberName' not found for group '$groupName'")
+        node(memberNode, action)
+    }
+
     override fun groupFor(virtualNodeInfo: VirtualNodeInfo, action: ThrowingConsumer<MembershipGroupDSL>) {
         MembershipGroupManager(this).forMembershipGroup(virtualNodeInfo.holdingIdentity, TIMEOUT, action)
     }
@@ -437,7 +443,7 @@ internal class DriverDSLImpl(
         val anyMemberNode = virtualNodeInfo.values.firstOrNull { vNode ->
             vNode.cpiIdentifier.name == groupName
         } ?: throw AssertionError("Group '$groupName' not found")
-        return groupFor(anyMemberNode, action)
+        groupFor(anyMemberNode, action)
     }
 
     @Throws(InterruptedException::class)
