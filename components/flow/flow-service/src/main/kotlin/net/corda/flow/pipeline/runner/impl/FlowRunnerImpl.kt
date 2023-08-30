@@ -59,9 +59,9 @@ class FlowRunnerImpl @Activate constructor(
         return when (val receivedEvent = context.inputEvent.payload) {
             is StartFlow -> startFlow(context, receivedEvent)
             is SessionEvent -> {
-                val payload = getInitPayload(receivedEvent)
-                if (payload is SessionInit) {
-                    startInitiatedFlow(context, payload, receivedEvent)
+                val sessionInit = getInitPayload(receivedEvent)
+                if (sessionInit != null) {
+                    startInitiatedFlow(context, sessionInit, receivedEvent)
                 } else {
                     resumeFlow(context, flowContinuation)
                 }
