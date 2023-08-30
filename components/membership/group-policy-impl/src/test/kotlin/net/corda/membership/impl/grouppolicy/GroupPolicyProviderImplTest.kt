@@ -7,6 +7,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.interop.group.policy.read.InteropGroupPolicyReadService
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -27,7 +28,6 @@ import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
-import net.corda.membership.lib.grouppolicy.InteropGroupPolicyReader
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -214,8 +214,8 @@ class GroupPolicyProviderImplTest {
         on { registerComponentForUpdates(eq(coordinator), eq(configs)) } doReturn configHandle
     }
 
-    private val interopGroupPolicyReader: InteropGroupPolicyReader = mock {
-        on { getGroupPolicy(holdingIdentity6) } doReturn groupPolicy6
+    private val interopGroupPolicyReadService: InteropGroupPolicyReadService = mock {
+        on { getGroupPolicy(holdingIdentity6.groupId) } doReturn groupPolicy6
     }
 
     private val subscriptionFactory: SubscriptionFactory = mock {
@@ -274,7 +274,7 @@ class GroupPolicyProviderImplTest {
             membershipQueryClient,
             subscriptionFactory,
             configurationReadService,
-            interopGroupPolicyReader
+            interopGroupPolicyReadService
         )
     }
 

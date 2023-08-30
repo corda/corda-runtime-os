@@ -34,6 +34,7 @@ dependencies {
     implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(':components:membership:locally-hosted-identities-service')
     implementation project(':components:membership:members-client-certificate-publisher-service')
+    implementation project(":components:interop:interop-group-policy-read-service")
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
@@ -63,6 +64,7 @@ dependencies {
     runtimeOnly project(':libs:crypto:merkle-impl')
     runtimeOnly project(':components:membership:locally-hosted-identities-service-impl')
     runtimeOnly project(':components:membership:members-client-certificate-publisher-service-impl')
+    runtimeOnly project(":components:interop:interop-group-policy-read-service-impl")
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
@@ -102,6 +104,7 @@ dependencies {
 
     integrationTestRuntimeOnly project(":components:virtual-node:cpi-info-write-service-impl")
     integrationTestRuntimeOnly project(':components:membership:members-client-certificate-publisher-service-impl')
+    integrationTestRuntimeOnly project(':components:interop:interop-group-policy-read-service-impl')
 
     integrationTestRuntimeOnly project(":libs:messaging:db-message-bus-impl")
     integrationTestRuntimeOnly project(":libs:messaging:db-topic-admin-impl")
