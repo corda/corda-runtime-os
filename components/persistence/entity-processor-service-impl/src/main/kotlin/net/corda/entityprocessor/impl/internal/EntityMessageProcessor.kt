@@ -1,6 +1,5 @@
 package net.corda.entityprocessor.impl.internal
 
-import net.corda.db.schema.DbSchema
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.KeyValuePairList
 import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
@@ -37,7 +36,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
-import java.sql.SQLException
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -65,17 +63,6 @@ class EntityMessageProcessor(
 ) : DurableProcessor<String, EntityRequest> {
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-
-        const val SQL_PK_VIOLATION_CODE = "23505"
-
-        fun isDuplicateRequest(e: PersistenceException): Boolean =
-            (e.cause?.cause?.cause as? SQLException).let {
-                it?.sqlState == SQL_PK_VIOLATION_CODE &&
-                        it.message?.contains(
-                            DbSchema.VNODE_PERSISTENCE_REQUEST_ID_TABLE,
-                            ignoreCase = true
-                        ) == true
-            }
     }
 
     override val keyClass = String::class.java
@@ -159,28 +146,27 @@ class EntityMessageProcessor(
         val em = entityManagerFactory.createEntityManager()
         return when (val entityRequest = request.request) {
             is PersistEntities -> {
-                // We should require requestId to be a UUID to avoid request ids collisions
-                val requestId =
-                    UUID.fromString(request.flowExternalEventContext.requestId)
-
-                try {
-                    val entityResponse = em.transaction {
+                em.transaction {
+                    try {
+                        // We should require requestId to be a UUID to avoid request ids collisions
+                        val requestId =
+                            UUID.fromString(request.flowExternalEventContext.requestId)
                         requestsIdsRepository.persist(requestId, it)
-                        persistenceServiceInternal.persist(serializationService, it, entityRequest)
+                        it.flush()
+                    } catch (e: PersistenceException) {
+                        // A persistence exception thrown in the de-duplication check means we have already performed the operation and
+                        // can therefore treat the request as successful
+                        it.transaction.setRollbackOnly()
+                        return@transaction responseFactory.successResponse(
+                            request.flowExternalEventContext,
+                            EntityResponse(emptyList(), KeyValuePairList(emptyList()))
+                        )
                     }
+                    val entityResponse = persistenceServiceInternal.persist(serializationService, it, entityRequest)
                     responseFactory.successResponse(
                         request.flowExternalEventContext,
                         entityResponse
                     )
-                } catch (e: PersistenceException) {
-                    if (isDuplicateRequest(e)) {
-                        responseFactory.successResponse(
-                            request.flowExternalEventContext,
-                            EntityResponse(emptyList(), KeyValuePairList(emptyList()))
-                        )
-                    } else {
-                        throw e
-                    }
                 }
             }
 
@@ -203,26 +189,26 @@ class EntityMessageProcessor(
             }
 
             is MergeEntities -> {
-                val requestId = UUID.fromString(request.flowExternalEventContext.requestId)
-                // We should require requestId to be a UUID to avoid request ids collisions
-                try {
-                    val entityResponse = em.transaction {
+                em.transaction {
+                    try {
+                        val requestId = UUID.fromString(request.flowExternalEventContext.requestId)
+                        // We should require requestId to be a UUID to avoid request ids collisions
                         requestsIdsRepository.persist(requestId, it)
-                        persistenceServiceInternal.merge(serializationService, it, entityRequest)
+                        it.flush()
+                    } catch (e: PersistenceException) {
+                        // A persistence exception thrown in the de-duplication check means we have already performed the operation and
+                        // can therefore treat the request as successful
+                        it.transaction.setRollbackOnly()
+                        return@transaction responseFactory.successResponse(
+                            request.flowExternalEventContext,
+                            EntityResponse(emptyList(), KeyValuePairList(emptyList()))
+                        )
                     }
+                    val entityResponse = persistenceServiceInternal.merge(serializationService, it, entityRequest)
                     responseFactory.successResponse(
                         request.flowExternalEventContext,
                         entityResponse
                     )
-                } catch (e: PersistenceException) {
-                    if (isDuplicateRequest(e)) {
-                        responseFactory.successResponse(
-                            request.flowExternalEventContext,
-                            EntityResponse(emptyList(), KeyValuePairList(emptyList()))
-                        )
-                    } else {
-                        throw e
-                    }
                 }
             }
 
