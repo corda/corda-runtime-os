@@ -91,7 +91,6 @@ class PersistenceExceptionTests {
     @RegisterExtension
     private val beforeEachLifecycle = EachTestLifecycle()
 
-//    private lateinit var virtualNodeService: VirtualNodeService
     private lateinit var virtualNodeLoader: VirtualNodeLoader
 
     private lateinit var sandboxGroupContextComponent: SandboxGroupContextComponent
