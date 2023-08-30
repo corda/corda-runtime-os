@@ -34,7 +34,8 @@ class ConfigProcessorTest {
     private val smartConfigFactory = SmartConfigFactory.createWithoutSecurityServices()
     private val configMerger: ConfigMerger = mock {
         on { getMessagingConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig }
-        on { getDbConfig(any(), anyOrNull()) } doAnswer { SmartConfigImpl.empty()  }
+        on { getDbConfig(any(), anyOrNull()) } doAnswer { SmartConfigImpl.empty() }
+        on { getStateManagerConfig(any(), anyOrNull()) } doAnswer { SmartConfigImpl.empty() }
     }
 
     companion object {
