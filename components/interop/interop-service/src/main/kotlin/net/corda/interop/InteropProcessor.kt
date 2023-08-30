@@ -161,7 +161,7 @@ class InteropProcessor(
 
         // The translated source is our source identity in the given interop group
         val translatedSource = sourceIdentity.apply {
-            val interopIdentity = checkNotNull(sourceRegistryView.getOwnedIdentities()[interopGroupId]) {
+            val interopIdentity = checkNotNull(sourceRegistryView.getOwnedIdentity(interopGroupId)) {
                 "Source identity '${this.x500Name}' does not own an interop identity in interop group '$interopGroupId'"
             }
             this.x500Name = interopIdentity.x500Name
@@ -171,7 +171,7 @@ class InteropProcessor(
         // The translated destination is the non-owned interop identity within the given group which has the
         // given destination interop identity x500 name
         val translatedDestination = destinationIdentity.apply {
-            val groupIdentities = checkNotNull(sourceRegistryView.getIdentitiesByGroupId()[interopGroupId]) {
+            val groupIdentities = checkNotNull(sourceRegistryView.getIdentitiesByGroupId(interopGroupId)) {
                 "No identities in group '$interopGroupId' found within view of source identity '$sourceIdentity'"
             }
             val destinationIdentityList = groupIdentities.filter {

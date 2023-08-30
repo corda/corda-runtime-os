@@ -2,6 +2,7 @@ package net.corda.interop.identity.registry
 
 import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
+import net.corda.v5.application.interop.facade.FacadeId
 
 
 /**
@@ -16,46 +17,59 @@ interface InteropIdentityRegistryView {
     fun getIdentities(): Set<InteropIdentity>
 
     /**
-     * Get identities within the view as a map with the group ID as a key.
+     * Get identities within the view with a specific group ID.
      *
-     * @return Map of group ID strings to sets of [InteropIdentity] objects.
+     * @param groupId Group ID of the interop identities to return.
+     * @return Set of [InteropIdentity] objects with the specified group ID.
      */
-    fun getIdentitiesByGroupId(): Map<String, Set<InteropIdentity>>
+    fun getIdentitiesByGroupId(groupId: String): Set<InteropIdentity>
 
     /**
-     * Get identities within the view as a map with the virtual node short hash as a key.
+     * Get the identity within the view with a specific short hash.
      *
-     * @return Map of virtual node short hashes to sets of [InteropIdentity] objects.
+     * @param shortHash Short hash of the interop identity to return.
+     * @return [InteropIdentity] object with the specified short hash or null if no such identity exists.
      */
-    fun getIdentitiesByVirtualNode(): Map<ShortHash, Set<InteropIdentity>>
+    fun getIdentityWithShortHash(shortHash: ShortHash): InteropIdentity?
 
     /**
-     * Get identities within the view as a map with the interop identity short hash as a key.
+     * Get identities within the view with a specific application name.
      *
-     * @return Map of interop identity short hashes to sets of [InteropIdentity] objects.
+     * @param applicationName Application name of the interop identities to return.
+     * @return Set of [InteropIdentity] objects with the specified application name.
      */
-    fun getIdentitiesByShortHash(): Map<ShortHash, InteropIdentity>
+    fun getIdentitiesByApplicationName(applicationName: String): Set<InteropIdentity>
 
     /**
-     * Get identities within the view as a map with the interop identity application name as a key.
+     * Get interop identity with the matching application name.
      *
-     * @return Map of interop identity application names to [InteropIdentity] objects.
+     * @param applicationName Application name of identity to return.
+     * @return [InteropIdentity] with the specified application name or null if no such identity exists.
      */
-    fun getIdentitiesByApplicationName(): Map<String, InteropIdentity>
+    fun getIdentityWithApplicationName(applicationName: String): InteropIdentity?
 
     /**
-     * Get identities within the view as a map with the FacadeId as the key and a set of InterOpIdentities that
-     * implement those facades as the value.
+     * Get identities within the view with the specified facade ID.
      *
-     * @return Map of facade IDs to sets of [InteropIdentity] objects.
+     * @param facadeId Facade ID for the query.
+     * @return Set of [InteropIdentity] objects with the specified facade ID.
      */
-    fun getIdentitiesByFacadeId(): Map<String, Set<InteropIdentity>>
-
+    fun getIdentitiesByFacadeId(facadeId: FacadeId): Set<InteropIdentity>
 
     /**
-     * Get interop identities owned by the owning virtual node of this view by group ID.
+     * Get owned identities within the view with the specified interop group.
      *
-     * @return Map of group IDs to [InteropIdentity] objects.
+     * @param groupId Group ID of the interop group to return owned identities from.
+     * @return Set of [InteropIdentity] objects with the specified group ID.
      */
-    fun getOwnedIdentities(): Map<String, InteropIdentity>
+    fun getOwnedIdentities(groupId: String): Set<InteropIdentity>
+
+    /**
+     * Get owned identity within the view for the specified interop group.
+     *
+     * @param groupId Group ID of the interop group to get the owned identity of.
+     * @return The owned [InteropIdentity] in the specified group if there is one, null otherwise.
+     * @throws InteropIdentityRegistryStateError if multiple owned identities are present in the registry.
+     */
+    fun getOwnedIdentity(groupId: String): InteropIdentity?
 }

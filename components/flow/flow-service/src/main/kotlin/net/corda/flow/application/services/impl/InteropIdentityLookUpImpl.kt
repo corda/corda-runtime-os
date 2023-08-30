@@ -24,7 +24,7 @@ class InteropIdentityLookUpImpl @Activate constructor(
 
     @Suspendable
     override fun lookup(applicationName: String): InterOpIdentityInfo? {
-        val identityInfo = getInteropRegistry().getIdentitiesByApplicationName()[applicationName] ?: return null
+        val identityInfo = getInteropRegistry().getIdentityWithApplicationName(applicationName) ?: return null
         return InteropIdentityInfoImpl(
             identityInfo.applicationName,
             identityInfo.facadeIds,
@@ -35,7 +35,7 @@ class InteropIdentityLookUpImpl @Activate constructor(
 
     @Suspendable
     override fun lookup(facadeId: FacadeId): List<InterOpIdentityInfo> {
-        val identityInfo = getInteropRegistry().getIdentitiesByFacadeId()[facadeId.toString()] ?: return emptyList()
+        val identityInfo = getInteropRegistry().getIdentitiesByFacadeId(facadeId)
         return identityInfo.map { InteropIdentityInfoImpl(it.applicationName, it.facadeIds, it.x500Name, it.groupId) }
     }
 
