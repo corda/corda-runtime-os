@@ -217,6 +217,7 @@ class FlowRunnerImplTest {
 
     private fun runInitiatedTest(eventPayload: Any) {
         val sessionEvent = SessionEvent().apply {
+            sessionId = SESSION_ID_1
             sequenceNum = 1
             payload = eventPayload
             contextSessionProperties = sessionContext.avro
