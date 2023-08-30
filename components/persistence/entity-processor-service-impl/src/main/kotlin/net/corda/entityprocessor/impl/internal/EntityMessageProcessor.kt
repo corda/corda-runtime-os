@@ -147,8 +147,9 @@ class EntityMessageProcessor(
         val em = entityManagerFactory.createEntityManager()
         return when (val entityRequest = request.request) {
             is PersistEntities -> {
+                val requestId = UUID.fromString(request.flowExternalEventContext.requestId)
                 val entityResponse = withDeduplicationCheck(
-                    request,
+                    requestId,
                     em
                 ) {
                     persistenceServiceInternal.persist(serializationService, em, entityRequest)
@@ -179,8 +180,9 @@ class EntityMessageProcessor(
             }
 
             is MergeEntities -> {
+                val requestId = UUID.fromString(request.flowExternalEventContext.requestId)
                 val entityResponse = withDeduplicationCheck(
-                    request,
+                    requestId,
                     em
                 ) {
                     persistenceServiceInternal.merge(serializationService, it, entityRequest)
@@ -224,16 +226,14 @@ class EntityMessageProcessor(
 
     private fun String.toSecureHash() = parseSecureHash(this)
 
+    // We should require requestId to be a UUID to avoid request ids collisions
     private fun withDeduplicationCheck(
-        request: EntityRequest,
+        requestId: UUID,
         em: EntityManager,
         block: (EntityManager) -> EntityResponse
     ): EntityResponse {
         return em.transaction {
             try {
-                // We should require requestId to be a UUID to avoid request ids collisions
-                val requestId =
-                    UUID.fromString(request.flowExternalEventContext.requestId)
                 requestsIdsRepository.persist(requestId, it)
                 it.flush()
             } catch (e: PersistenceException) {
