@@ -111,7 +111,7 @@ class FlowRunnerImpl @Activate constructor(
         sessionEvent: SessionEvent
     ): FiberFuture {
         val flowStartContext = context.checkpoint.flowStartContext
-        val sessionId = flowStartContext.statusKey.id
+        val sessionId = sessionEvent.sessionId
 
         val localContext = remoteToLocalContextMapper(
             remoteUserContextProperties = sessionInitEvent.contextUserProperties,

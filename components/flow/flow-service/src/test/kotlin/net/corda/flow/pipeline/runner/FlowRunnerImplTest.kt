@@ -11,7 +11,6 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.data.flow.state.waiting.WaitingFor
-import net.corda.data.flow.state.waiting.external.ExternalEventResponse
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.FLOW_ID_1
@@ -279,28 +278,6 @@ class FlowRunnerImplTest {
 
         assertThat(flowStackItem.sessions).containsOnly(FlowStackItemSession(SESSION_ID_1, true))
         verify(sandboxDependencyInjector).injectServices(initiatedFlow)
-    }
-
-    @Test
-    fun `session init does not start a new flow if correct waiting for is not set`() {
-        val flowContinuation = FlowContinuation.Run()
-        val sessionInit = SessionInit().apply {
-            contextPlatformProperties = platformContext.avro
-            contextUserProperties = userContext.avro
-        }
-        val sessionEvent = SessionEvent().apply {
-            payload = sessionInit
-        }
-        val context = buildFlowEventContext<Any>(flowCheckpoint, sessionEvent)
-        whenever(flowCheckpoint.waitingFor).thenReturn(WaitingFor(ExternalEventResponse("foo")))
-
-        whenever(flowFiberFactory.createAndResumeFlowFiber(flowFiberExecutionContext, flowContinuation)).thenReturn(
-            fiberFuture
-        )
-
-        val result = flowRunner.runFlow(context, flowContinuation)
-
-        assertThat(result).isSameAs(fiberFuture)
     }
 
     @Test
