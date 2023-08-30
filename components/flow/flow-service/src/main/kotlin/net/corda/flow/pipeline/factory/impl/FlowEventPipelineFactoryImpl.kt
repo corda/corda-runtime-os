@@ -106,7 +106,7 @@ class FlowEventPipelineFactoryImpl(
         val flowCheckpoint = flowCheckpointFactory.create(
             event.flowId,
             checkpoint,
-            configs[FLOW_CONFIG]!!
+            configs.getConfig(FLOW_CONFIG)
         )
 
         val metrics = flowMetricsFactory.create(eventRecordTimestamp, flowCheckpoint)
