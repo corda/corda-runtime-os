@@ -323,7 +323,7 @@ class PersistenceExceptionTests {
         // check we update same dog
         val dogDbCount = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId, dogDBTable = "versioned_dog")
         assertEquals(1, dogDbCount)
-        // check timestamp 1
+        // check version 1
         val dogVersion1 = getDogDbVersion(virtualNodeInfo.vaultDmlConnectionId)
 
         // duplicate update request
@@ -331,7 +331,7 @@ class PersistenceExceptionTests {
         // check we update same dog
         val dogDbCount2 = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId, dogDBTable = "versioned_dog")
         assertEquals(1, dogDbCount2)
-        // check timestamp 2
+        // check version 2
         val dogVersion2 = getDogDbVersion(virtualNodeInfo.vaultDmlConnectionId)
         assertEquals(dogVersion1, dogVersion2)
     }
