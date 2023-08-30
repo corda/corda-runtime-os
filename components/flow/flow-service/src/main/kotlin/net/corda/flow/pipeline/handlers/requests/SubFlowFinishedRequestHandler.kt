@@ -3,7 +3,6 @@ package net.corda.flow.pipeline.handlers.requests
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
-import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
@@ -13,7 +12,6 @@ import net.corda.flow.pipeline.handlers.requests.sessions.service.CloseSessionSe
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Instant
 
 @Component(service = [FlowRequestHandler::class])
 class SubFlowFinishedRequestHandler @Activate constructor(
@@ -43,7 +41,7 @@ class SubFlowFinishedRequestHandler @Activate constructor(
         return if (sessionsToClose.isEmpty()) {
             WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
         } else {
-            WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
+            WaitingFor(SessionConfirmation(sessionsToClose, SessionConfirmationType.CLOSE))
         }
     }
 
@@ -56,21 +54,6 @@ class SubFlowFinishedRequestHandler @Activate constructor(
         val sessionsNotTerminated = try {
             closeSessionService.handleCloseForSessions(getSessionsToClose(request), checkpoint)
         } catch (e: Exception) {
-            checkpoint.putSessionStates(flowSessionManager.sendCloseMessages(checkpoint, sessionsToClose, Instant.now()))
-            val sessionStates = sessionsToClose.mapNotNull { sessionToClose ->
-                val sessionState = checkpoint.sessions.find {
-                    sessionToClose == it.sessionId
-                }
-                sessionState?.status = SessionStateType.CLOSED
-                sessionState
-            }
-            checkpoint.putSessionStates(sessionStates)
-            sessionsToClose.isEmpty() || flowSessionManager.doAllSessionsHaveStatus(
-                checkpoint,
-                sessionsToClose,
-                SessionStateType.CLOSED
-            )
-        } catch (e: FlowSessionStateException) {
             // TODO CORE-4850 Wakeup with error when session does not exist
             val msg = e.message ?: "An error occurred in the platform - A session in ${request.sessionIds} was missing from the checkpoint"
             throw FlowFatalException(msg, e)
