@@ -1,6 +1,7 @@
-package net.corda.ledger.utxo.flow.impl.groupparameters
+package net.corda.flow.application.services
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.flow.application.services.impl.GroupParametersLookupImpl
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
@@ -21,7 +22,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
 
-class CurrentGroupParametersServiceImplTest {
+class GroupParametersLookupImplTest {
     private val holdingIdentity = HoldingIdentity(MemberX500Name.parse("CN=Bob, O=Bob Corp, L=LDN, C=GB"), "group")
     private val virtualNode = mock<VirtualNodeContext> {
         on { holdingIdentity } doReturn holdingIdentity
@@ -53,7 +54,7 @@ class CurrentGroupParametersServiceImplTest {
     private val groupPolicyProvider = mock<GroupPolicyProvider> {
         on { getGroupPolicy(holdingIdentity) } doReturn groupPolicy
     }
-    private val impl = CurrentGroupParametersServiceImpl(
+    private val impl = GroupParametersLookupImpl(
         currentSandboxGroupContext,
         membershipGroupReaderProvider,
         keyEncodingService,
@@ -62,7 +63,7 @@ class CurrentGroupParametersServiceImplTest {
 
     @Test
     fun `get return the correct parameters`() {
-        assertThat(impl.get()).isEqualTo(parameters)
+        assertThat(impl.getCurrentGroupParameters()).isEqualTo(parameters)
     }
 
     @Test
@@ -70,7 +71,7 @@ class CurrentGroupParametersServiceImplTest {
         whenever(membershipGroupReader.signedGroupParameters).doReturn(null)
 
         assertThrows<IllegalArgumentException> {
-            impl.get()
+            impl.getCurrentGroupParameters()
         }
     }
 

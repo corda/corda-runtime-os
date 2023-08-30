@@ -5,6 +5,10 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.parseSecureHash
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
@@ -27,6 +31,7 @@ import net.corda.ledger.verification.processor.impl.VerificationRequestHandlerIm
 import net.corda.ledger.verification.processor.impl.VerificationRequestProcessor
 import net.corda.ledger.verification.tests.helpers.VirtualNodeService
 import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
@@ -39,6 +44,7 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.KeySchemeCodes
 import net.corda.v5.ledger.utxo.BelongsToContract
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.Contract
@@ -77,6 +83,9 @@ class VerificationRequestProcessorTest {
         const val TEST_CPB = "/META-INF/ledger-utxo-demo-app.cpb"
         const val VERIFICATION_ERROR_MESSAGE = "Output state has invalid field value"
         const val TIMEOUT_MILLIS = 10000L
+        const val CATEGORY = "SESSION_INIT"
+        const val SCHEME = KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
+
         val NOTARY_X500_NAME = MemberX500Name.parse("O=ExampleNotaryService, L=London, C=GB")
         val PUBLIC_KEY: PublicKey = KeyPairGenerator.getInstance("RSA")
             .also {
@@ -104,6 +113,9 @@ class VerificationRequestProcessorTest {
     private lateinit var jsonMarshallingService: JsonMarshallingService
     private lateinit var jsonValidator: JsonValidator
     private lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
+    private lateinit var groupParametersFactory: GroupParametersFactory
+    private lateinit var keyValueSerializer: CordaAvroSerializer<KeyValuePairList>
+    private lateinit var keyEncodingService: KeyEncodingService
 
     @BeforeAll
     fun setup(
@@ -125,6 +137,10 @@ class VerificationRequestProcessorTest {
             jsonMarshallingService = setup.fetchService(TIMEOUT_MILLIS)
             jsonValidator = setup.fetchService(TIMEOUT_MILLIS)
             currentSandboxGroupContext = setup.fetchService(TIMEOUT_MILLIS)
+            groupParametersFactory = setup.fetchService(TIMEOUT_MILLIS)
+            keyValueSerializer = setup.fetchService<CordaAvroSerializationFactory>(TIMEOUT_MILLIS)
+                .createAvroSerializer { }
+            keyEncodingService = setup.fetchService(TIMEOUT_MILLIS)
         }
     }
 
@@ -221,7 +237,7 @@ class VerificationRequestProcessorTest {
             currentSandboxGroupContext,
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
-            externalEventResponseFactory
+            externalEventResponseFactory,
         )
 
         // Send request to message processor (there were max number of redeliveries)
@@ -278,7 +294,23 @@ class VerificationRequestProcessorTest {
         )
         val inputStateAndRefs: List<StateAndRef<*>> = listOf()
         val referenceStateAndRefs: List<StateAndRef<*>> = listOf()
-        return UtxoLedgerTransactionContainer(wireTransaction, inputStateAndRefs, referenceStateAndRefs)
+
+        val groupParameters = KeyValuePairList(
+            listOf(
+                KeyValuePair("corda.epoch", "5"),
+                KeyValuePair("corda.modifiedTime", Instant.now().toString()),
+            ).sorted()
+        )
+        val serializedGroupParameters = keyValueSerializer.serialize(groupParameters)!!
+        val mgmSignatureGroupParameters = DigitalSignatureWithKey(publicKeyExample, "bytes".toByteArray())
+
+        val signedGroupParameters = groupParametersFactory.create(
+            ByteBuffer.wrap(serializedGroupParameters).array(),
+            mgmSignatureGroupParameters,
+            SignatureSpecImpl("dummySignatureName")
+        )
+
+        return UtxoLedgerTransactionContainer(wireTransaction, inputStateAndRefs, referenceStateAndRefs, signedGroupParameters)
     }
 
     private fun CpkMetadata.toCpkSummary() =
