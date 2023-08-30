@@ -901,8 +901,58 @@ class FlowSessionManagerImplTest {
     }
 
     @Test
-    fun `getRequireCloseTrueAndFalse`() {
-        flowSessionManager.getRequireCloseTrueAndFalse(checkpoint, listOf(SESSION_ID, ANOTHER_SESSION_ID))
+    fun `getRequireCloseTrueAndFalse when states are in CONFIRMED or CREATED or CLOSING and requireClose is true or false`() {
+        sessionState.status = SessionStateType.CONFIRMED
+        anotherSessionState.status = SessionStateType.CREATED
+
+        sessionState.requireClose = true
+        anotherSessionState.requireClose = false
+
+        assertEquals(Pair(
+            listOf(SESSION_ID), listOf(ANOTHER_SESSION_ID)),
+            flowSessionManager.getRequireCloseTrueAndFalse(
+                checkpoint,
+                listOf(SESSION_ID, ANOTHER_SESSION_ID)
+            )
+        )
+
+    }
+
+    @Test
+    fun `getRequireCloseTrueAndFalse when states are in CONFIRMED or CREATED or CLOSING and requireClose is true`() {
+        sessionState.status = SessionStateType.CLOSING
+        anotherSessionState.status = SessionStateType.CLOSING
+
+        sessionState.requireClose = true
+        anotherSessionState.requireClose = true
+
+        assertEquals(Pair(
+            listOf(ANOTHER_SESSION_ID, SESSION_ID), emptyList<String>()),
+            flowSessionManager.getRequireCloseTrueAndFalse(
+                checkpoint,
+                listOf(ANOTHER_SESSION_ID, SESSION_ID)
+            )
+        )
+
+    }
+
+    @Test
+    fun `getRequireCloseTrueAndFalse when states are in ERROR or CLOSED and requireClose is true or false`() {
+        sessionState.status = SessionStateType.ERROR
+        anotherSessionState.status = SessionStateType.CLOSED
+
+        sessionState.requireClose = true
+        anotherSessionState.requireClose = false
+
+        assertEquals(Pair(
+            emptyList<String>(), emptyList<String>()
+        ),
+            flowSessionManager.getRequireCloseTrueAndFalse(
+                checkpoint,
+                listOf(SESSION_ID, ANOTHER_SESSION_ID)
+            )
+        )
+
     }
 
     @Test
