@@ -136,7 +136,7 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                 ).fromDto()
             } catch (e: CouldNotFindEntityException) {
                 throw ResourceNotFoundException(
-                    "holdingIdentityShortHash",
+                    e.entity,
                     holdingIdentityShortHash,
                 )
             } catch (e: CordaRPCAPIPartitionException) {

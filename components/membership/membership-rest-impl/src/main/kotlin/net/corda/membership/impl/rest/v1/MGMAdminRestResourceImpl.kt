@@ -100,7 +100,7 @@ class MGMAdminRestResourceImpl @Activate constructor(
                     parseRegistrationRequestId(requestId)
                 )
             } catch (e: CouldNotFindEntityException) {
-                throw ResourceNotFoundException("Holding Identity", holdingIdentityShortHash)
+                throw ResourceNotFoundException(e.entity, holdingIdentityShortHash)
             } catch (e: MemberNotAnMgmException) {
                 throw InvalidInputDataException(
                     details = mapOf("holdingIdentityShortHash" to holdingIdentityShortHash),

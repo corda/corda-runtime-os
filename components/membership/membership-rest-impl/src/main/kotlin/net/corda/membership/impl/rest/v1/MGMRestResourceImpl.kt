@@ -719,9 +719,6 @@ class MGMRestResourceImpl internal constructor(
             throw ResourceNotFoundException("${e.message}")
         }
 
-        private fun holdingIdentityNotFound(holdingIdentityShortHash: String): Nothing =
-            throw ResourceNotFoundException("Holding Identity", holdingIdentityShortHash)
-
         private fun notAnMgmError(holdingIdentityShortHash: String): Nothing =
             throw InvalidInputDataException(
                 details = mapOf("holdingIdentityShortHash" to holdingIdentityShortHash),
@@ -793,7 +790,7 @@ class MGMRestResourceImpl internal constructor(
             return try {
                 func.invoke(ShortHash.parseOrThrow(holdingIdentityShortHash))
             } catch (e: CouldNotFindEntityException) {
-                holdingIdentityNotFound(holdingIdentityShortHash)
+                throw ResourceNotFoundException(e.entity, holdingIdentityShortHash)
             } catch (e: MemberNotAnMgmException) {
                 notAnMgmError(holdingIdentityShortHash)
             } catch (e: CordaRPCAPIPartitionException) {
