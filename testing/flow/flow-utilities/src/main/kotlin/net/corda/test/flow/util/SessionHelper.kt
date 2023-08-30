@@ -19,7 +19,7 @@ fun buildSessionState(
     sessionStartTime: Instant = Instant.now(),
     sessionId: String = "sessionId",
     counterpartyIdentity: HoldingIdentity = HoldingIdentity("Alice", "group1"),
-    requireClose: Boolean
+    requireClose: Boolean = false
 ): SessionState {
     return SessionState.newBuilder()
         .setSessionId(sessionId)
