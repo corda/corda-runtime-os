@@ -1,4 +1,4 @@
-package net.corda.cipher.suite.impl
+package net.corda.flow.application.crypto
 
 import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.v5.crypto.SignatureSpec
