@@ -232,7 +232,7 @@ class FlowSessionImplTest {
     fun `Get counterparty info retrieves data when it is available in the fiber`() {
         val checkpoint = mockFlowFiberService.flowCheckpoint
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(SessionState().apply {
-            counterpartySessionProperties =
+            sessionProperties =
                 testSessionProps()
         })
 
