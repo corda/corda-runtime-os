@@ -18,6 +18,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.client.CouldNotFindEntityException
+import net.corda.membership.client.Entity
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.ContextDeserializationException
@@ -118,7 +119,7 @@ class MGMRestResourceTest {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
     }
     private val couldNotFindEntityException = mock<CouldNotFindEntityException> {
-        on { entity } doReturn "test"
+        on { entity } doReturn Entity.VIRTUAL_NODE
     }
 
     private val mgmRestResource = MGMRestResourceImpl(
@@ -1035,7 +1036,7 @@ class MGMRestResourceTest {
             startService()
             whenever(
                 mgmResourceClient.generatePreAuthToken(any(), any(), anyOrNull(), anyOrNull())
-            ).doThrow(CouldNotFindEntityException("virtual node", ShortHash.of(HOLDING_IDENTITY_ID)))
+            ).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.generatePreAuthToken(HOLDING_IDENTITY_ID, PreAuthTokenRequest(subject, Duration.ofDays(5)))
@@ -1106,7 +1107,7 @@ class MGMRestResourceTest {
             startService()
             whenever(
                 mgmResourceClient.getPreAuthTokens(any(), anyOrNull(), anyOrNull(), any())
-            ).doThrow(CouldNotFindEntityException("virtual node", ShortHash.of(HOLDING_IDENTITY_ID)))
+            ).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.getPreAuthTokens(HOLDING_IDENTITY_ID, null, null, false)
@@ -1169,7 +1170,7 @@ class MGMRestResourceTest {
             startService()
             whenever(
                 mgmResourceClient.revokePreAuthToken(any(), any(), anyOrNull())
-            ).doThrow(CouldNotFindEntityException("virtual node", ShortHash.of(HOLDING_IDENTITY_ID)))
+            ).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.revokePreAuthToken(HOLDING_IDENTITY_ID, tokenId.toString())

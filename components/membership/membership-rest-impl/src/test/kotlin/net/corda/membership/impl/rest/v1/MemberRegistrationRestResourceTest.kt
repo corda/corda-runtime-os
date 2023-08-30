@@ -7,6 +7,7 @@ import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.client.CouldNotFindEntityException
+import net.corda.membership.client.Entity
 import net.corda.membership.client.MemberResourceClient
 import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.client.ServiceNotReadyException
@@ -98,7 +99,7 @@ class MemberRegistrationRestResourceTest {
         memberRegistrationRestResource.start()
         memberRegistrationRestResource.activate("")
         whenever(memberResourceClient.startRegistration(any(), any()))
-            .doThrow(CouldNotFindEntityException("member", holdingIdShortHash))
+            .doThrow(CouldNotFindEntityException(Entity.VIRTUAL_NODE, holdingIdShortHash))
 
         assertThrows<ResourceNotFoundException> {
             memberRegistrationRestResource.startRegistration(HOLDING_IDENTITY_ID, MemberRegistrationRequest(emptyMap()))
@@ -168,7 +169,7 @@ class MemberRegistrationRestResourceTest {
     fun `checkRegistrationProgress throw 404 when member can not be found`() {
         whenever(
             memberResourceClient.checkRegistrationProgress(holdingIdShortHash)
-        ).doThrow(CouldNotFindEntityException("member", holdingIdShortHash))
+        ).doThrow(CouldNotFindEntityException(Entity.VIRTUAL_NODE, holdingIdShortHash))
         memberRegistrationRestResource.start()
         memberRegistrationRestResource.activate("")
 
@@ -229,7 +230,7 @@ class MemberRegistrationRestResourceTest {
     @Test
     fun `checkSpecificRegistrationProgress throw 404 when the member can not be found`() {
         whenever(memberResourceClient.checkSpecificRegistrationProgress(holdingIdShortHash, REQUEST_ID))
-            .doThrow(CouldNotFindEntityException("member", holdingIdShortHash))
+            .doThrow(CouldNotFindEntityException(Entity.VIRTUAL_NODE, holdingIdShortHash))
         memberRegistrationRestResource.start()
         memberRegistrationRestResource.activate("")
 
