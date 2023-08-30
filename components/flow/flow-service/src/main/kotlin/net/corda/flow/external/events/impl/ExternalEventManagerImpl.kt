@@ -1,5 +1,8 @@
 package net.corda.flow.external.events.impl
 
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
@@ -24,9 +27,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.slf4j.Marker
 import org.slf4j.MarkerFactory
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 
 @Component(service = [ExternalEventManager::class])
 class ExternalEventManagerImpl(
@@ -174,7 +174,9 @@ class ExternalEventManagerImpl(
                     externalEventState.status.exception =
                         ExceptionEnvelope(
                             "NoResponse",
-                            "Received no response for external event request, ensure all workers are running"
+                            "Received no response for external event request with payload type: " +
+                                    "${externalEventState.eventToSend.payload::class.java}" +
+                                    ", ensure all workers are running. Factory type: ${externalEventState.factoryClassName}."
                         )
                     externalEventState.status.type = ExternalEventStateType.RETRY
                     externalEventState.retries = externalEventState.retries.inc()
