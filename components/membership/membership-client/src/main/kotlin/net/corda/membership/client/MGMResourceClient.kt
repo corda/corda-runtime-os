@@ -28,7 +28,7 @@ interface MGMResourceClient : Lifecycle {
      *
      * @return [String] Generated Group Policy Response.
      *
-     * @throws [CouldNotFindEntityException] If there is no member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindEntityException] If there is no member or virtual node with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      */
     @Throws(CouldNotFindEntityException::class, MemberNotAnMgmException::class)
@@ -98,7 +98,7 @@ interface MGMResourceClient : Lifecycle {
      *
      * @return Details of the newly persisted approval rule.
      *
-     * @throws [CouldNotFindEntityException] If there is no member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindEntityException] If there is no member or virtual node with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      * @throws [MembershipPersistenceException] If an identical rule already exists.
      */
@@ -117,7 +117,7 @@ interface MGMResourceClient : Lifecycle {
      * @return Approval rules as a collection of [ApprovalRuleDetails], or an empty collection if no rules have been
      * added.
      *
-     * @throws [CouldNotFindEntityException] If there is no member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindEntityException] If there is no member or virtual node with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      */
     @Throws(CouldNotFindEntityException::class, MemberNotAnMgmException::class)
@@ -130,7 +130,7 @@ interface MGMResourceClient : Lifecycle {
      * @param ruleId ID of the group approval rule to be deleted.
      * @param ruleType The approval rule type for this rule. See [ApprovalRuleType] for the available types.
      *
-     * @throws [CouldNotFindEntityException] If there is no member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindEntityException] If there is no member or virtual node with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      * @throws [MembershipPersistenceException] If the specified rule does not exist.
      */
@@ -148,7 +148,7 @@ interface MGMResourceClient : Lifecycle {
      *
      * @return Registration requests as a collection of [RegistrationRequestDetails].
      *
-     * @throws [CouldNotFindEntityException] If there is no member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindEntityException] If there is no member or virtual node with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      */
     @Throws(CouldNotFindEntityException::class, MemberNotAnMgmException::class)
@@ -167,7 +167,7 @@ interface MGMResourceClient : Lifecycle {
      * @param approve Set to 'true' if request is approved, 'false' if declined.
      * @param reason Reason if registration request is declined.
      *
-     * @throws [CouldNotFindEntityException] If there is no member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindEntityException] If there is no member or virtual node with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      * @throws [IllegalArgumentException] If request is not found, if request is not pending review, or if member name
      * is missing from the context.
@@ -188,7 +188,7 @@ interface MGMResourceClient : Lifecycle {
      * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
      * @param requestId ID of the registration request.
      *
-     * @throws [CouldNotFindEntityException] If there is no member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindEntityException] If there is no member or virtual node with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      * @throws [IllegalArgumentException] If the request is not found, or has already been approved/declined.
      */
@@ -206,7 +206,7 @@ interface MGMResourceClient : Lifecycle {
      * @param serialNumber Optional. Serial number of the member's [MemberInfo].
      * @param reason Optional. Reason for suspension.
      *
-     * @throws [CouldNotFindEntityException] If there is no member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindEntityException] If there is no member or virtual node with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      * @throws [IllegalArgumentException] If the member to be suspended is the MGM itself.
      * @throws [NoSuchElementException] If the member to be suspended is not found.
@@ -232,7 +232,7 @@ interface MGMResourceClient : Lifecycle {
      * @param serialNumber Optional. Serial number of the member's [MemberInfo].
      * @param reason Optional. Reason for activation.
      *
-     * @throws [CouldNotFindEntityException] If there is no member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindEntityException] If there is no member or virtual node with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      * @throws [IllegalArgumentException] If the member to be activated is the MGM itself.
      * @throws [NoSuchElementException] If the member to be activated is not found.
@@ -256,7 +256,7 @@ interface MGMResourceClient : Lifecycle {
      * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
      * @param newGroupParameters Updated version of the group parameters.
      *
-     * @throws [CouldNotFindEntityException] If there is no member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindEntityException] If there is no member or virtual node with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      */
     @Throws(

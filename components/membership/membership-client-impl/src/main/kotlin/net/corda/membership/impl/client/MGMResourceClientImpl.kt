@@ -38,6 +38,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.client.CouldNotFindEntityException
+import net.corda.membership.client.Entity
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
@@ -453,13 +454,13 @@ class MGMResourceClientImpl @Activate constructor(
         fun mgmHoldingIdentity(holdingIdentityShortHash: ShortHash): HoldingIdentity {
             val holdingIdentity =
                 virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-                    ?: throw CouldNotFindEntityException("virtual node", holdingIdentityShortHash)
+                    ?: throw CouldNotFindEntityException(Entity.VIRTUAL_NODE, holdingIdentityShortHash)
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
 
             val filteredMembers =
                 reader.lookup(holdingIdentity.x500Name)
-                    ?:throw CouldNotFindEntityException("member", holdingIdentityShortHash)
+                    ?:throw CouldNotFindEntityException(Entity.MEMBER, holdingIdentityShortHash)
 
             if (!filteredMembers.isMgm) {
                 throw MemberNotAnMgmException(holdingIdentityShortHash)
