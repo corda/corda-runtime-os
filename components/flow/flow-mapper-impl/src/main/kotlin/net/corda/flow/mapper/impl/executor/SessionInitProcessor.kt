@@ -1,5 +1,6 @@
 package net.corda.flow.mapper.impl.executor
 
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
@@ -10,6 +11,7 @@ import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
+import net.corda.schema.Schemas
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -69,7 +71,7 @@ class SessionInitProcessor @Activate constructor(
         sessionInit.flowId = flowId
         SessionInitOutputs(
             flowId,
-            recordFactory.forwardEvent(sessionEvent, instant, flowConfig, sessionEvent.messageDirection)
+            Record(Schemas.Flow.FLOW_EVENT_TOPIC, flowId, FlowEvent(flowId, sessionEvent))
         )
     } else {
         //reusing SessionInit object for inbound and outbound traffic rather than creating a new object identical to SessionInit
