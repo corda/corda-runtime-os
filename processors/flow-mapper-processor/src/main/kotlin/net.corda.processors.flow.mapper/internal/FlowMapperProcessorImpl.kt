@@ -1,9 +1,8 @@
-package net.corda.processors.flow.internal
+package net.corda.processors.flow.mapper.internal
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.cpk.read.CpkReadService
-import net.corda.flow.service.FlowService
+import net.corda.flow.p2p.filter.FlowP2PFilterService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -17,8 +16,8 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.processors.flow.FlowProcessor
-import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.processors.flow.mapper.FlowMapperProcessor
+import net.corda.session.mapper.service.FlowMapperService
 import net.corda.utilities.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -28,31 +27,29 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList", "Unused")
-@Component(service = [FlowProcessor::class])
-class FlowProcessorImpl @Activate constructor(
-    @Reference(service = LifecycleCoordinatorFactory::class)
-    private val coordinatorFactory: LifecycleCoordinatorFactory,
+@Component(service = [FlowMapperProcessor::class])
+class FlowMapperProcessorImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = FlowService::class)
-    private val flowService: FlowService,
-    @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService,
-    @Reference(service = SandboxGroupContextComponent::class)
-    private val sandboxGroupContextComponent: SandboxGroupContextComponent,
-    @Reference(service = MembershipGroupReaderProvider::class)
-    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = FlowMapperService::class)
+    private val flowMapperService: FlowMapperService,
+    @Reference(service = FlowP2PFilterService::class)
+    private val flowP2PFilterService: FlowP2PFilterService,
     @Reference(service = GroupParametersReaderService::class)
     private val groupParametersReaderService: GroupParametersReaderService,
-    @Reference(service = CpkReadService::class)
-    private val cpkReadService: CpkReadService,
     @Reference(service = GroupPolicyProvider::class)
     private val groupPolicyProvider: GroupPolicyProvider,
+    @Reference(service = LifecycleCoordinatorFactory::class)
+    private val coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = MembershipGroupReaderProvider::class)
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     @Reference(service = MembershipQueryClient::class)
-    private val membershipQueryClient: MembershipQueryClient
-) : FlowProcessor {
+    private val membershipQueryClient: MembershipQueryClient,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+) : FlowMapperProcessor {
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -60,40 +57,39 @@ class FlowProcessorImpl @Activate constructor(
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
-        ::flowService,
-        ::virtualNodeInfoReadService,
         ::cpiInfoReadService,
-        ::sandboxGroupContextComponent,
-        ::membershipGroupReaderProvider,
+        ::flowMapperService,
+        ::flowP2PFilterService,
         ::groupParametersReaderService,
-        ::cpkReadService,
         ::groupPolicyProvider,
-        ::membershipQueryClient
+        ::membershipGroupReaderProvider,
+        ::membershipQueryClient,
+        ::virtualNodeInfoReadService
     )
 
     private val lifecycleCoordinator =
-        coordinatorFactory.createCoordinator<FlowProcessorImpl>(dependentComponents, ::eventHandler)
+        coordinatorFactory.createCoordinator<FlowMapperProcessorImpl>(dependentComponents, ::eventHandler)
 
     override fun start(bootConfig: SmartConfig) {
-        log.info("Flow processor starting.")
+        log.info("Flow mapper processor starting.")
         lifecycleCoordinator.start()
         lifecycleCoordinator.postEvent(BootConfigEvent(bootConfig))
     }
 
     override fun stop() {
-        log.info("Flow processor stopping.")
+        log.info("Flow mapper processor stopping.")
         lifecycleCoordinator.stop()
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        log.debug { "Flow processor received event $event." }
+        log.debug { "Flow mapper processor received event $event." }
 
         when (event) {
             is StartEvent -> {
                 // Nothing to do
             }
             is RegistrationStatusChangeEvent -> {
-                log.info("Flow processor is ${event.status}")
+                log.info("Flow mapper processor is ${event.status}")
                 coordinator.updateStatus(event.status)
             }
             is BootConfigEvent -> {

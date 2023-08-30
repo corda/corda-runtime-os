@@ -193,6 +193,7 @@ class CheckKafka : Callable<Int>, PluginContext() {
         checkKafka(kafkaProperties, "crypto", yaml.kafka.sasl, yaml.workers?.crypto?.kafka?.sasl, replicas)
         checkKafka(kafkaProperties, "db", yaml.kafka.sasl, yaml.workers?.db?.kafka?.sasl, replicas)
         checkKafka(kafkaProperties, "flow", yaml.kafka.sasl, yaml.workers?.flow?.kafka?.sasl, replicas)
+        checkKafka(kafkaProperties, "flowMapper", yaml.kafka.sasl, yaml.workers?.flowMapper?.kafka?.sasl, replicas)
         checkKafka(kafkaProperties, "verification", yaml.kafka.sasl, yaml.workers?.verification?.kafka?.sasl, replicas)
         checkKafka(kafkaProperties, "membership", yaml.kafka.sasl, yaml.workers?.membership?.kafka?.sasl, replicas)
         checkKafka(kafkaProperties, "rest", yaml.kafka.sasl, yaml.workers?.rest?.kafka?.sasl, replicas)
