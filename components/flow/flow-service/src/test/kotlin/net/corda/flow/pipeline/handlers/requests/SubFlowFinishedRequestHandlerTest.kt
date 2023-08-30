@@ -29,7 +29,6 @@ import org.mockito.kotlin.whenever
 import java.util.stream.Stream
 
 @Suppress("MaxLineLength")
-@Disabled
 class SubFlowFinishedRequestHandlerTest {
 
     private companion object {
