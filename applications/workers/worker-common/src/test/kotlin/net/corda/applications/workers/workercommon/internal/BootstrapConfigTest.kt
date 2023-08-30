@@ -29,8 +29,8 @@ class BootstrapConfigTest {
     private val extraParamsMap = listOf(
         PathAndConfig("fred", mapOf("age" to "12", "hair" to "none"))
     )
-    private val file1 = Path.of(this::class.java.classLoader.getResource("test1.properties").toURI())
-    private val file2 = Path.of(this::class.java.classLoader.getResource("test2.properties").toURI())
+    private val file1 = Path.of(this::class.java.classLoader.getResource("test1.properties")!!.toURI())
+    private val file2 = Path.of(this::class.java.classLoader.getResource("test2.properties")!!.toURI())
 
     @Test
     fun `when file is provided use it as fallback`() {
@@ -79,13 +79,14 @@ class BootstrapConfigTest {
             mockSecretsServiceFactoryResolver,
             DefaultWorkerParams(1234).also {
                 it.configFiles =
-                    listOf(Path.of(this::class.java.classLoader.getResource("example-config.json").toURI()))
+                    listOf(Path.of(this::class.java.classLoader.getResource("example-config.json")!!.toURI()))
             },
             mockConfigurationValidator,
             listOf(
                 PathAndConfig(BootConfig.BOOT_DB, emptyMap()),
                 PathAndConfig(BootConfig.BOOT_CRYPTO, emptyMap()),
                 PathAndConfig(BootConfig.BOOT_REST, emptyMap()),
+                PathAndConfig(BootConfig.BOOT_STATE_MANAGER, emptyMap()),
             )
         )
 
@@ -116,6 +117,15 @@ class BootstrapConfigTest {
             softly.assertThat(config.getString("rest.tls.keystore.path")).isEqualTo("tls-path")
 
             softly.assertThat(config.hasPath("secrets")).isFalse
+
+            softly.assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_TYPE))
+                .isEqualTo("DATABASE")
+            softly.assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_JDBC_URL))
+                .isEqualTo("cnx-url")
+            softly.assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_DB_USER))
+                .isEqualTo("cnx-user")
+            softly.assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_DB_PASS))
+                .isEqualTo("cnx-password")
         }
     }
 

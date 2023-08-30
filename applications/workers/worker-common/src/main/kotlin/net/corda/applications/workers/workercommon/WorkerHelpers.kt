@@ -35,7 +35,7 @@ class WorkerHelpers {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val BOOT_CONFIG_PATH = "net/corda/applications/workers/workercommon/boot/corda.boot.json"
-        private val SENSITIVE_ARGS = setOf("-ddatabase.pass", "-spassphrase", "-msasl.jaas.config")
+        private val SENSITIVE_ARGS = setOf("-ddatabase.pass", "-Sdatabase.pass", "-spassphrase", "-msasl.jaas.config")
 
         /**
          * Parses the [args] into the [params].
@@ -92,9 +92,7 @@ class WorkerHelpers {
                 .mapNotNull { t -> t.second?.let { t.first to t.second } }
                 .toMap()
 
-            val defaultParamsDefaultValuesMap = defaultParamsAndValues
-                .map { it.first to it.third }
-                .toMap()
+            val defaultParamsDefaultValuesMap = defaultParamsAndValues.associate { it.first to it.third }
 
             //if we've requested a db message bus use that. default use kafka when not set
             val defaultMessagingParams = defaultParams.messaging

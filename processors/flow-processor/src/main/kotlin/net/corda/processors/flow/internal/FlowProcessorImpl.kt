@@ -28,7 +28,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-@Suppress("LongParameterList", "Unused")
+@Suppress("LongParameterList", "Unused", "ForbiddenComment")
 @Component(service = [FlowProcessor::class])
 class FlowProcessorImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -53,6 +53,7 @@ class FlowProcessorImpl @Activate constructor(
     private val groupPolicyProvider: GroupPolicyProvider,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
+    // TODO: move to the correct components within the new Corda Topology Design.
     @Reference(service = StateManagerService::class)
     private val stateManagerService: StateManagerService,
 ) : FlowProcessor {

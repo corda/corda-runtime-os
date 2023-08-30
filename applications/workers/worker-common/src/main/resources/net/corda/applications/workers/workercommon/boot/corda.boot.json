@@ -195,7 +195,7 @@
     "stateManager": {
       "description": "Configuration options for the state manager.",
       "properties": {
-        "stateManagerType": {
+        "type": {
           "description": "The type of state manager.",
           "type": [
             "string",
@@ -203,43 +203,46 @@
           ]
         },
         "database": {
-          "description": "Database params",
+          "description": "Connection parameters when using database as the persistent storage",
           "properties": {
             "jdbc": {
               "description": "The JDBC database info",
               "properties": {
                 "url": {
-                  "description": "The JDBC URL used by the db worker",
+                  "description": "The JDBC URL to use by the state manager when using database as the persistent storage",
                   "type": [
                     "string",
                     "null"
                   ]
                 },
                 "directory": {
-                  "description": "The JDBC directory",
+                  "description": "The JDBC directory to use by the state manager when using database as the persistent storage",
                   "type": [
                     "string",
                     "null"
                   ]
                 }
-              }
+              },
+              "additionalProperties": false
             },
             "user": {
-              "description": "Cluster admin username to connect to the database with.",
+              "description": "Admin username to use by the state manager when connecting to the database used as the persistent storage",
               "type": [
                 "string",
                 "null"
               ]
             },
             "pass": {
-              "description": "Cluster admin password to connect to the database with.",
+              "description": "Admin password to use by the state manager when connecting to the database used as the persistent storage",
               "type": [
                 "string",
                 "null"
               ]
-            }
+            },
+            "additionalProperties": false
           }
-        }
+        },
+        "additionalProperties": false
       }
     },
     "additionalProperties": false

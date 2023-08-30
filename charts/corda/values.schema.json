@@ -974,7 +974,7 @@
                                 }
                             }]
                         },
-                        "statemanager": {
+                        "stateManager": {
                             "type": "object",
                             "default": {},
                             "title": "State-manager db configuration",
@@ -985,10 +985,10 @@
                             "properties": {
                                 "schema": {
                                     "type": "string",
-                                    "default": "STATEMANAGER",
+                                    "default": "STATE_MANAGER",
                                     "title": "the schema in which the state-manager entities will be stored",
                                     "examples": [
-                                        "STATEMANAGER"
+                                        "STATE_MANAGER"
                                     ],
                                     "minLength": 1
                                 },
@@ -1029,7 +1029,7 @@
                                                 }
                                             ],
                                             "default": null,
-                                            "title": "minimum JDBC connection pool size for RBAC DB; null value means pool's min size will default to pool's max size value"
+                                            "title": "minimum JDBC connection pool size for State Manager DB; null value means pool's min size will default to pool's max size value"
                                         },
                                         "idleTimeoutSeconds": {
                                             "type": "integer",
@@ -1062,7 +1062,7 @@
                                 }
                             },
                             "examples": [{
-                                "schema": "STATEMANAGER",
+                                "schema": "STATE_MANAGER",
                                 "password": {
                                     "value": "password"
                                 },

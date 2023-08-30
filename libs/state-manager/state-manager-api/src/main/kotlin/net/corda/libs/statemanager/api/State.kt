@@ -1,5 +1,23 @@
 package net.corda.libs.statemanager.api
 
+import java.time.Instant
+
+/**
+ * Mutable map that only allows primitive types to be used as values.
+ */
+class PrimitiveTypeMap<K, V : Any>(
+    private val map: MutableMap<K, V> = mutableMapOf()
+) : MutableMap<K, V> by map {
+
+    override fun put(key: K, value: V): V? {
+        if (!(value::class.java.isPrimitive) && (value !is String)) {
+            throw IllegalArgumentException("Only primitive types are allowed: ${value::class.simpleName}")
+        }
+
+        return map.put(key, value)
+    }
+}
+
 /**
  * A state managed via the state manager.
  */
@@ -7,7 +25,7 @@ data class State<S>(
     /**
      * The typed state itself.
      */
-    val state: S?,
+    val state: S,
 
     /**
      * Identifier for the state.
@@ -22,10 +40,11 @@ data class State<S>(
     /**
      * Time when the state was last modified.
      */
-    val modifiedTime: Long,
+    val modifiedTime: Instant,
 
     /**
-     * Key/value pairs that map to a JSON.
+     * Arbitrary Map of primitive types that can be used to store and query extra data associated with the state
+     * that must generally not be part of the state itself.
      */
-    val metadata: MutableMap<String, String>?,
+    val metadata: PrimitiveTypeMap<String, Any> = PrimitiveTypeMap()
 )

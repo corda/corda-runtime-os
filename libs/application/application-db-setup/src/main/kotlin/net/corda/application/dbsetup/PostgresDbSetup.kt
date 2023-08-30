@@ -26,6 +26,7 @@ class PostgresDbSetup(
     smartConfigFactory: SmartConfigFactory
 ) : DbSetup {
 
+    // TODO-[CORE-16419]: isolate StateManager database from the Cluster database
     companion object {
         private const val DB_DRIVER = "org.postgresql.Driver"
 
@@ -114,7 +115,7 @@ class PostgresDbSetup(
     private fun configConnection() =
         OSGiDataSourceFactory.create(
             DB_DRIVER,
-            dbAdminUrl + "&currentSchema=CONFIG",
+            "$dbAdminUrl&currentSchema=CONFIG",
             dbAdmin,
             dbAdminPassword
         ).connection
@@ -122,13 +123,13 @@ class PostgresDbSetup(
     private fun messageBusConnection() =
         OSGiDataSourceFactory.create(
             DB_DRIVER,
-            dbAdminUrl + "&currentSchema=MESSAGEBUS",
+            "$dbAdminUrl&currentSchema=MESSAGEBUS",
             dbAdmin,
             dbAdminPassword
         ).connection.also { it.autoCommit = false }
 
     private fun rbacConnection() =
-        OSGiDataSourceFactory.create(DB_DRIVER, dbAdminUrl + "&currentSchema=RBAC", dbAdmin, dbAdminPassword).connection
+        OSGiDataSourceFactory.create(DB_DRIVER, "$dbAdminUrl&currentSchema=RBAC", dbAdmin, dbAdminPassword).connection
 
     private fun dbInitialised(): Boolean {
         superUserConnection()

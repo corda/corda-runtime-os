@@ -24,6 +24,7 @@ class StateManagerFactoryImpl @Activate constructor(
     private val avroSerializationFactory: CordaAvroSerializationFactory,
 ) : StateManagerFactory {
 
+    // TODO-[CORE-16663]: make the database provider pluggable.
     override fun create(config: SmartConfig): StateManager {
         val dataSource = PostgresDataSourceFactory().create(
             jdbcUrl = config.getString(StateManagerConfig.JDBC_URL),
@@ -35,6 +36,7 @@ class StateManagerFactoryImpl @Activate constructor(
             StateManagerEntities.classes,
             DbEntityManagerConfiguration(dataSource)
         )
+
         return StateManagerImpl(
             StateManagerRepositoryImpl(),
             entityManagerFactory,

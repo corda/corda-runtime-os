@@ -2,12 +2,12 @@ package net.corda.libs.statemanager.impl
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
-import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import javax.persistence.EntityManagerFactory
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.libs.statemanager.api.PrimitiveTypeMap
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.impl.dto.StateDto
@@ -22,25 +22,7 @@ class StateManagerImpl(
     private val deserializers: MutableMap<Class<*>, CordaAvroDeserializer<*>> = ConcurrentHashMap(),
 ) : StateManager {
 
-    private val objectMapper: ThreadLocal<ObjectMapper> = object : ThreadLocal<ObjectMapper>() {
-        override fun initialValue() = ObjectMapper()
-    }
-
-    override fun <S : Any> get(clazz: Class<S>, keys: Set<String>): Map<String, State<S>> {
-        val deserializer = getOrCreateDeserializer(clazz)
-        return entityManagerFactory.transaction { em ->
-            stateManagerRepository.get(em, keys)
-        }
-            .map { it.toState(deserializer) }
-            .associateBy { it.key }
-    }
-
-    override fun <S : Any> put(clazz: Class<S>, states: Set<State<S>>) {
-        val dtos = states.map { it.toDto(getOrCreateSerializer(clazz)) }
-        entityManagerFactory.transaction { em ->
-            stateManagerRepository.put(em, dtos)
-        }
-    }
+    private val objectMapper = ObjectMapper()
 
     @Suppress("UNCHECKED_CAST")
     private fun <S : Any> getOrCreateDeserializer(clazz: Class<S>): CordaAvroDeserializer<S> {
@@ -57,25 +39,41 @@ class StateManagerImpl(
     }
 
     private fun <S : Any> StateDto.toState(deserializer: CordaAvroDeserializer<S>) = State(
-        state?.let { deserializer.deserialize(state) },
+        deserializer.deserialize(state)!!,
         key,
         version,
-        modifiedTime.toEpochMilli(),
-        metadata?.unmarshallJsonToMap()
+        modifiedTime,
+        metadata.unmarshallJsonToMap()
     )
 
     private fun String.unmarshallJsonToMap() =
-        objectMapper.get().readValue(this, object : TypeReference<Map<String, String>>() {}).toMutableMap()
+        objectMapper.readValue(this, object : TypeReference<PrimitiveTypeMap<String, Any>>() {})
 
     private fun <R : Any> State<R>.toDto(serializer: CordaAvroSerializer<R>): StateDto {
-        val stateOrNull = state?.let { serializer.serialize(state!!) }
+        val stateOrNull = state.let { serializer.serialize(state) }
         return StateDto(
             key,
-            stateOrNull,
+            stateOrNull!!,
             version,
-            objectMapper.get().writeValueAsString(metadata),
-            Instant.ofEpochMilli(modifiedTime)
+            objectMapper.writeValueAsString(metadata),
+            modifiedTime
         )
+    }
+
+    override fun <S : Any> get(clazz: Class<S>, keys: Set<String>): Map<String, State<S>> {
+        val deserializer = getOrCreateDeserializer(clazz)
+        return entityManagerFactory.transaction { em ->
+            stateManagerRepository.get(em, keys)
+        }
+            .map { it.toState(deserializer) }
+            .associateBy { it.key }
+    }
+
+    override fun <S : Any> put(clazz: Class<S>, states: Set<State<S>>) {
+        val dtoInstances = states.map { it.toDto(getOrCreateSerializer(clazz)) }
+        entityManagerFactory.transaction { em ->
+            stateManagerRepository.put(em, dtoInstances)
+        }
     }
 
     override fun close() {

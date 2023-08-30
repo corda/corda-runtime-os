@@ -20,9 +20,9 @@ import org.junit.jupiter.api.TestInstance
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StateManagerIntegrationTest {
-    private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("statemanager_db")
+    private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("state_manager_db")
     private val emf = EntityManagerFactoryFactoryImpl().create(
-        "test_unit",
+        "state_manager_test",
         StateManagerEntities.classes.toList(),
         dbConfig
     )
@@ -50,6 +50,7 @@ class StateManagerIntegrationTest {
 
     @Test
     fun `can persist state using state manager`() {
+        // TODO-[CORE-16663]: make the database provider pluggable.
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val key = UUID.randomUUID().toString()
         val jsonb = """{"metadatakey_$key": "metadatavalue_$key"}"""
@@ -68,6 +69,7 @@ class StateManagerIntegrationTest {
 
     @Test
     fun `can persist and load the same state using state manager`() {
+        // TODO-[CORE-16663]: make the database provider pluggable.
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val key = UUID.randomUUID().toString()
         val jsonb = """{"metadatakey_$key": "metadatavalue_$key"}"""

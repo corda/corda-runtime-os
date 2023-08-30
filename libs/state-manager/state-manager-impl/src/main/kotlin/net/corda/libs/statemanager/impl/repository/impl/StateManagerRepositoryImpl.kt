@@ -15,8 +15,8 @@ class StateManagerRepositoryImpl : StateManagerRepository {
 
     override fun get(entityManager: EntityManager, keys: Collection<String>): List<StateDto> {
         val results = findByKeys(entityManager, keys)
-        return results
-            .map { it.toDto() }
+
+        return results.map { it.toDto() }
     }
 
     private fun findByKeys(
@@ -29,6 +29,7 @@ class StateManagerRepositoryImpl : StateManagerRepository {
                 .setParameter("keys", chunkedKeys)
                 .resultList
         }
+
         return results.flatten()
     }
 
@@ -46,6 +47,7 @@ class StateManagerRepositoryImpl : StateManagerRepository {
     // hibernate 5 does not support inserting a String to a jsonb column type out of the box. Native query with casting is also used
     // in the ledger. It means, however, this does not work with HSQLDB. Thus, integration tests are skipped when using this in-memory
     // database.
+    // TODO-[CORE-16663]: make the database provider pluggable.
     private fun persistWithNativeQuery(entityManager: EntityManager, it: StateDto) {
         entityManager.createNativeQuery(
             """
@@ -67,5 +69,5 @@ class StateManagerRepositoryImpl : StateManagerRepository {
             .executeUpdate()
     }
 
-    private fun StateEntity.toDto() = StateDto(key, state, version!!, metadata, modifiedTime!!)
+    private fun StateEntity.toDto() = StateDto(key, state, version!!, metadata, modifiedTime)
 }

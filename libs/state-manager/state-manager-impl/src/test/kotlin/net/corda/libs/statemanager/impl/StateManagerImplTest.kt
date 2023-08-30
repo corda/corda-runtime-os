@@ -55,7 +55,7 @@ class StateManagerImplTest {
         val result = stateManager.get(Any::class.java, keys)
 
         assertThat(result.keys).isEqualTo(keys)
-        val metadata = result[key]!!.metadata!!
+        val metadata = result[key]!!.metadata
         assertThat(metadata["metadatakey"]).isNotNull()
         assertThat(metadata["metadatakey"]).isEqualTo("metadatavalue")
     }

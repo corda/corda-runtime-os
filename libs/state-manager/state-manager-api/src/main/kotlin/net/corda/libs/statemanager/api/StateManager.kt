@@ -1,9 +1,10 @@
 package net.corda.libs.statemanager.api
 
 /**
- * The [StateManager] provides functions to manage states to the underlying storage mechanism.
+ * The [StateManager] provides functions to manage states within the underlying persistent storage.
  */
 interface StateManager : AutoCloseable {
+
     /**
      * Get all states referenced by [keys].
      * Only states that have been successfully committed and distributed within the underlying persistent

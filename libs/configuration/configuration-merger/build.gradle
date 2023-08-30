@@ -14,10 +14,10 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
-    implementation project(':libs:configuration:configuration-core')
-    implementation project(':libs:messaging:message-bus')
-    implementation project(':libs:state-manager:state-manager-api')
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation project(':libs:messaging:message-bus')
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:state-manager:state-manager-api')
 }

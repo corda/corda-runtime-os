@@ -6,6 +6,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
 
 interface StateManagerService : Lifecycle {
-    val lifecycleCoordinatorName: LifecycleCoordinatorName
     val stateManager: Supplier<StateManager?>
+
+    val lifecycleCoordinatorName: LifecycleCoordinatorName
 }

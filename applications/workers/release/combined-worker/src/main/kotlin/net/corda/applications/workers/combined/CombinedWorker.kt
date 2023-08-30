@@ -121,7 +121,7 @@ class CombinedWorker @Activate constructor(
         // Add the config schema to the JDBC URL in the params so that any processors which need the JDBC URL are using
         // the config schema.
         params.addSchemaToJdbcUrl("CONFIG")
-        params.addDatabaseParam(DatabaseConfig.JDBC_URL + "_messagebus", dbUrl + "?currentSchema=MESSAGEBUS")
+        params.addDatabaseParam(DatabaseConfig.JDBC_URL + "_messagebus", "$dbUrl?currentSchema=MESSAGEBUS")
 
         if (printHelpOrVersion(params.defaultParams, CombinedWorker::class.java, shutDownService)) return
         if (params.hsmId.isBlank()) {

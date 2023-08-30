@@ -15,18 +15,19 @@ internal class StateEntity(
     @Column(name = "key", length = 255)
     val key: String,
 
-    @Column(name = "state", columnDefinition = "BLOB")
-    val state: ByteArray?,
+    @Column(name = "state", columnDefinition = "BLOB", nullable = false)
+    val state: ByteArray,
 
     @Version
     @Column(name = "version")
     var version: Int? = null,
 
-    @Column(name = "metadata", columnDefinition = "jsonb")
-    var metadata: String? = null,
+    // TODO-[CORE-16663]: make the database provider pluggable.
+    @Column(name = "metadata", columnDefinition = "jsonb", nullable = false)
+    var metadata: String,
 
-    @Column(name = "modified_time", insertable = false, updatable = true)
-    var modifiedTime: Instant? = null
+    @Column(name = "modified_time", insertable = false, updatable = false)
+    var modifiedTime: Instant = Instant.MIN,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

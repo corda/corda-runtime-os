@@ -75,13 +75,13 @@ class FlowWorker @Activate constructor(
 
         configureTracing("Flow Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
 
-        val stateManagerPathAndConfig = PathAndConfig(BootConfig.BOOT_STATE_MANAGER, params.stateManagerParams)
-
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(stateManagerPathAndConfig)
+            listOf(
+                PathAndConfig(BootConfig.BOOT_STATE_MANAGER, params.stateManagerParams)
+            )
         )
 
         flowProcessor.start(config)
@@ -100,6 +100,9 @@ private class FlowWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
 
-    @CommandLine.Option(names = ["-S", "--${BootConfig.BOOT_STATE_MANAGER}"], description = ["Parameters for the state manager."])
+    @CommandLine.Option(
+        names = ["-S", "--${BootConfig.BOOT_STATE_MANAGER}"],
+        description = ["Configuration for the state manager."]
+    )
     var stateManagerParams = emptyMap<String, String>()
 }

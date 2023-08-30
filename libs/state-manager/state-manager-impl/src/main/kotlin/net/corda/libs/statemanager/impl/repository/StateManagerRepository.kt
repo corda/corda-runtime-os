@@ -7,6 +7,7 @@ import net.corda.libs.statemanager.impl.dto.StateDto
  * Repository for entity operations on state manager entities.
  */
 interface StateManagerRepository {
+
     /**
      * Get entities with the given keys.
      *
@@ -19,7 +20,7 @@ interface StateManagerRepository {
     fun get(entityManager: EntityManager, keys: Collection<String>): List<StateDto>
 
     /**
-     * Put states states into the persistence context.
+     * Put states into the persistence context.
      *
      * Transaction should be controlled by the caller.
      *

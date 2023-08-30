@@ -6,6 +6,7 @@ import net.corda.libs.configuration.SmartConfig
  * Factory for creating type
  */
 interface StateManagerFactory {
+
     /**
      * Create a state manager with the given config.
      *

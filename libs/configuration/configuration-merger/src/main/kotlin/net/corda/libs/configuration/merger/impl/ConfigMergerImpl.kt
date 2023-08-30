@@ -9,8 +9,9 @@ import net.corda.messagebus.api.configuration.getConfigOrEmpty
 import net.corda.messagebus.api.configuration.getStringOrNull
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_JDBC_URL
-import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_PASS
-import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_USER
+import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_DB_PASS
+import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_DB_USER
+import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_TYPE
 import net.corda.schema.configuration.StateManagerConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -37,9 +38,9 @@ class ConfigMergerImpl @Activate constructor(
     override fun getStateManagerConfig(bootConfig: SmartConfig, stateStorageConfig: SmartConfig?): SmartConfig {
         val updatedConfig = stateStorageConfig ?: SmartConfigImpl.empty()
         return updatedConfig
-            .withValue(StateManagerConfig.TYPE, ConfigValueFactory.fromAnyRef("DATABASE"))
+            .withValue(StateManagerConfig.TYPE, ConfigValueFactory.fromAnyRef(bootConfig.getStringOrNull(BOOT_STATE_MANAGER_TYPE)))
+            .withValue(StateManagerConfig.DB_USER, ConfigValueFactory.fromAnyRef(bootConfig.getStringOrNull(BOOT_STATE_MANAGER_DB_USER)))
+            .withValue(StateManagerConfig.DB_PASS, ConfigValueFactory.fromAnyRef(bootConfig.getStringOrNull(BOOT_STATE_MANAGER_DB_PASS)))
             .withValue(StateManagerConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(bootConfig.getStringOrNull(BOOT_STATE_MANAGER_JDBC_URL)))
-            .withValue(StateManagerConfig.DB_USER, ConfigValueFactory.fromAnyRef(bootConfig.getStringOrNull(BOOT_STATE_MANAGER_USER)))
-            .withValue(StateManagerConfig.DB_PASS, ConfigValueFactory.fromAnyRef(bootConfig.getStringOrNull(BOOT_STATE_MANAGER_PASS)))
     }
 }
