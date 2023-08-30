@@ -41,7 +41,7 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun getCounterpartyFlowInfo(): FlowInfo {
-        val counterPartyFlowInfo = getCounterpartySessionContext()
+        val counterPartyFlowInfo = getFlowInfoFromSessionContext()
         return if (counterPartyFlowInfo != null) {
             counterPartyFlowInfo
         } else {
@@ -49,30 +49,20 @@ class FlowSessionImpl(
             fiber.suspend(request)
             //If we are able to receive counterparty info this means the session initiation has been completed.
             setSessionConfirmed()
-            getCounterpartySessionContext() ?: throw CordaRuntimeException(
+            getFlowInfoFromSessionContext() ?: throw CordaRuntimeException(
                 "Failed to get counterparties flow info. Session is in an " +
                         "invalid state"
             )
         }
     }
 
-    private fun getCounterpartySessionContext(): FlowInfo? {
-        val flowCheckpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
-        val sessionState = flowCheckpoint.getSessionState(sourceSessionId)
-        val counterpartySessionProperties = sessionState?.counterpartySessionProperties
-        return if (counterpartySessionProperties != null) {
-            getFlowInfoFromSessionProps(counterpartySessionProperties)
-        } else {
-            null
-        }
-    }
-
-    private fun getFlowInfoFromSessionProps(counterpartySessionProperties: KeyValuePairList): FlowInfo {
-        val props = KeyValueStore(counterpartySessionProperties)
+    private fun getFlowInfoFromSessionContext(): FlowInfo? {
+        val sessionState = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.getSessionState(sourceSessionId)
+        val sessionProperties = sessionState?.sessionProperties ?: return null
+        val props = KeyValueStore(sessionProperties)
         val protocol = props[Constants.FLOW_PROTOCOL]
-            ?: throw CordaRuntimeException("Failed to get counterparty info. Counterparty protocol was set to null")
         val protocolVersion = props[Constants.FLOW_PROTOCOL_VERSION_USED]?.toInt()
-            ?: throw CordaRuntimeException("Failed to get counterparty info. Counterparty protocol version was set to null")
+        if (protocol == null || protocolVersion == null) return null
         return FlowInfoImpl(protocol, protocolVersion)
     }
 
@@ -114,17 +104,14 @@ class FlowSessionImpl(
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
         val request = FlowIORequest.Receive(setOf(getSessionInfo()))
         val received = fiber.suspend(request)
-
         setSessionConfirmed()
-
         return processReceivedPayload(received, receiveType)
     }
 
     @Suspendable
     override fun send(payload: Any) {
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
-        val request =
-            FlowIORequest.Send(mapOf(getSessionInfo() to serialize(payload)))
+        val request = FlowIORequest.Send(mapOf(getSessionInfo() to serialize(payload)))
         fiber.suspend(request)
         setSessionConfirmed()
     }

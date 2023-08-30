@@ -9,13 +9,12 @@ import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-@Disabled //todo CORE-15757
+
 class SessionInitProcessorReceiveTest {
 
     private fun createSessionInit() =
-        SessionInit("flow", "flowId1", emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList())
+        SessionInit("flow", "flowId1", emptyKeyValuePairList(), emptyKeyValuePairList())
 
     @Test
     fun `Receive duplicate init when state is not null`() {
@@ -23,7 +22,8 @@ class SessionInitProcessorReceiveTest {
             MessageDirection.INBOUND,
             "sessionId",
             1,
-            createSessionInit()
+            createSessionInit(),
+            contextSessionProps = emptyKeyValuePairList()
         )
 
         val sessionInitProcessor = SessionInitProcessorReceive(
@@ -47,7 +47,8 @@ class SessionInitProcessorReceiveTest {
             MessageDirection.INBOUND,
             "sessionId",
             1,
-            createSessionInit()
+            createSessionInit(),
+            contextSessionProps = emptyKeyValuePairList()
         )
 
         val sessionInitProcessor = SessionInitProcessorReceive(
@@ -75,7 +76,8 @@ class SessionInitProcessorReceiveTest {
             MessageDirection.INBOUND,
             "sessionId",
             1,
-            createSessionInit()
+            createSessionInit(),
+            contextSessionProps = emptyKeyValuePairList()
         )
 
         val sessionInitProcessor = SessionInitProcessorReceive("key", null, sessionInitEvent, Instant.now())

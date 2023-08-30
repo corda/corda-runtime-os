@@ -2,16 +2,14 @@ package net.corda.session.manager.impl
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import java.nio.ByteBuffer
-import java.time.Instant
 import net.corda.data.chunking.Chunk
 import net.corda.data.crypto.SecureHash
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
-import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.chunking.ChunkDeserializerService
 import net.corda.messaging.api.chunking.MessagingChunkFactory
@@ -22,26 +20,24 @@ import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
+import java.time.Instant
 
-@Disabled //todo CORE-15757
 class SessionManagerImplTest {
 
     private lateinit var messagingChunkFactory: MessagingChunkFactory
     private lateinit var chunkDeserializerService: ChunkDeserializerService<ByteArray>
     private lateinit var sessionManager: SessionManager
-    private val realBytes =ByteArray(500)
+    private val realBytes = ByteArray(500)
     private val realBytesBuffer = ByteBuffer.wrap(realBytes)
-    private val testResendWindow = 5000L
-    private val testHeartbeatTimeout = 30000L
+    private val sessionTimeout = 30000L
     private val testIdentity = HoldingIdentity()
     private val testConfig = ConfigFactory.empty()
-        .withValue(FlowConfig.SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(testResendWindow))
-        .withValue(FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(testHeartbeatTimeout))
+        .withValue(FlowConfig.SESSION_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(sessionTimeout))
     private val configFactory = SmartConfigFactory.createWithoutSecurityServices()
     private val testSmartConfig = configFactory.create(testConfig)
 
@@ -62,9 +58,9 @@ class SessionManagerImplTest {
             SessionStateType.CONFIRMED,
             1,
             listOf(
-                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionData()),
-                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 3, SessionData()),
-                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 4, SessionData()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionData(), contextSessionProps = emptyKeyValuePairList()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 3, SessionData(), contextSessionProps = emptyKeyValuePairList()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 4, SessionData(), contextSessionProps = emptyKeyValuePairList()),
             ),
             0,
             listOf()
@@ -80,8 +76,8 @@ class SessionManagerImplTest {
             SessionStateType.CONFIRMED,
             1,
             listOf(
-                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 3, SessionData()),
-                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 4, SessionData()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 3, SessionData(), contextSessionProps = emptyKeyValuePairList()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 4, SessionData(), contextSessionProps = emptyKeyValuePairList()),
             ),
             0,
             listOf()
@@ -96,9 +92,9 @@ class SessionManagerImplTest {
             SessionStateType.CONFIRMED,
             1,
             listOf(
-                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionData()),
-                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 3, SessionData()),
-                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 4, SessionData()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionData(), contextSessionProps = emptyKeyValuePairList()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 3, SessionData(), contextSessionProps = emptyKeyValuePairList()),
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 4, SessionData(), contextSessionProps = emptyKeyValuePairList()),
             ),
             0,
             listOf()
@@ -109,7 +105,7 @@ class SessionManagerImplTest {
     }
 
     @Test
-    fun `Get messages with datas, error and acks with timestamps in the future and past`() {
+    fun `Get messages to send`() {
         val instant = Instant.now()
         val sessionState = buildSessionState(
             SessionStateType.CONFIRMED,
@@ -117,85 +113,29 @@ class SessionManagerImplTest {
             listOf(),
             4,
             listOf(
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 2, SessionData(), instant.minusMillis(50)),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 3, SessionData(), instant),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 4, SessionData(), instant.plusMillis(100)),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    2,
+                    SessionData(),
+                    instant.minusMillis(50),
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    3,
+                    SessionData(),
+                    instant,
+                    contextSessionProps = emptyKeyValuePairList()
+                )
             ),
         )
         //validate only messages with a timestamp in the past are returned.
         val (outputState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
         assertThat(messagesToSend.size).isEqualTo(2)
         //validate all acks removed
-        assertThat(outputState.sendEventsState.undeliveredMessages.size).isEqualTo(3)
-
-        //Validate all acks removed and normal session events are resent
-        val (secondOutputState, secondMessagesToSend) = sessionManager.getMessagesToSend(
-            sessionState, instant.plusMillis(testResendWindow + 100),
-            testSmartConfig,
-            testIdentity
-        )
-        assertThat(secondMessagesToSend.size).isEqualTo(3)
-        assertThat(secondOutputState.sendEventsState.undeliveredMessages.size).isEqualTo(3)
-    }
-
-    @Test
-    fun `Send heartbeat`() {
-        val instant = Instant.now()
-        val sessionState = buildSessionState(
-            SessionStateType.CONFIRMED,
-            0,
-            listOf(),
-            4,
-            listOf(),
-            instant
-        )
-
-        //validate no heartbeat
-        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
-        assertThat(messagesToSend.size).isEqualTo(0)
-
-        //Validate heartbeat
-        val (_, secondMessagesToSend) = sessionManager.getMessagesToSend(
-            sessionState, instant.plusMillis(testResendWindow  + 1),
-            testSmartConfig,
-            testIdentity
-        )
-
-        assertThat(secondMessagesToSend.size).isEqualTo(1)
-    }
-
-    @Test
-    fun `Send Ack when flag is set`() {
-        val instant = Instant.now()
-        val sessionState = buildSessionState(
-            SessionStateType.CONFIRMED,
-            0,
-            listOf(),
-            4,
-            listOf(),
-            instant
-        )
-
-        //validate no heartbeat
-        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
-        assertThat(messagesToSend.size).isEqualTo(1)
-    }
-
-    @Test
-    fun `Dont send Ack when flag is not set`() {
-        val instant = Instant.now()
-        val sessionState = buildSessionState(
-            SessionStateType.CONFIRMED,
-            0,
-            listOf(),
-            4,
-            listOf(),
-            instant
-        )
-
-        //validate no heartbeat
-        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
-        assertThat(messagesToSend).isEmpty()
+        assertThat(outputState.sendEventsState.undeliveredMessages.size).isEqualTo(0)
     }
 
     @Test
@@ -217,7 +157,7 @@ class SessionManagerImplTest {
 
         //Validate heartbeat
         val (secondUpdatedState, secondMessagesToSend) = sessionManager.getMessagesToSend(
-            sessionState, instant.plusMillis(testHeartbeatTimeout  + 1),
+            sessionState, instant.plusMillis(sessionTimeout  + 1),
             testSmartConfig,
             testIdentity
         )
@@ -226,42 +166,6 @@ class SessionManagerImplTest {
         assertThat(secondUpdatedState.status).isEqualTo(SessionStateType.ERROR)
         val messageToSend = secondMessagesToSend.first()
         assertThat(messageToSend.payload::class.java).isEqualTo(SessionError::class.java)
-    }
-
-    @Test
-    fun `If we have an undelivered SessionInit, we should send only that`() {
-        val instant = Instant.now()
-        val sessionState = buildSessionState(
-            SessionStateType.CREATED,
-            0,
-            listOf(),
-            4,
-            listOf(
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 2, SessionData(), instant.minusMillis(100)),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 3, SessionData(), instant.minusMillis(100)),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 4, SessionInit(), instant.minusMillis(50)),
-            ),
-        )
-
-        // Ensure that only the SessionInit event is returned
-        val (_, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
-        assertThat(messagesToSend.size).isEqualTo(1)
-        assertThat(messagesToSend.first().payload is SessionInit).isTrue
-    }
-
-    @Test
-    fun `CREATED state, data received for init message sent, state moves to CONFIRMED`() {
-        val init = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionInit())
-        val sessionState = buildSessionState(
-            SessionStateType.CREATED, 0, emptyList(), 1,
-            mutableListOf(init)
-        )
-
-        val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", null, SessionData())
-        val updatedState = sessionManager.processMessageReceived("key", sessionState, sessionEvent, Instant.now())
-
-        assertThat(updatedState.status).isEqualTo(SessionStateType.CONFIRMED)
-        assertThat(updatedState.sendEventsState?.undeliveredMessages).isEmpty()
     }
 
     @Test
@@ -277,9 +181,30 @@ class SessionManagerImplTest {
             SessionStateType.CONFIRMED,
             4,
             listOf(
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 2, SessionData(chunks[0], null), instant),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 3, SessionData(chunks[1], null), instant),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 4, SessionData(chunks[2], null), instant),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    2,
+                    SessionData(chunks[0], null),
+                    instant,
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    3,
+                    SessionData(chunks[1], null),
+                    instant,
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    4,
+                    SessionData(chunks[2], null),
+                    instant,
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
             ),
             4,
             listOf(),
@@ -302,9 +227,30 @@ class SessionManagerImplTest {
             SessionStateType.CONFIRMED,
             4,
             listOf(
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 2, SessionData(chunks[0], null), instant),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 3, SessionData(chunks[1], null), instant),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 4, SessionData(chunks[2], null), instant),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    2,
+                    SessionData(chunks[0], null),
+                    instant,
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    3,
+                    SessionData(chunks[1], null),
+                    instant,
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    4,
+                    SessionData(chunks[2], null),
+                    instant,
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
             ),
             4,
             listOf(),
@@ -317,8 +263,7 @@ class SessionManagerImplTest {
     }
 
     @Test
-    fun `next message is a chunk and all chunks are present but deserialization fails, returns null and updates the session state to error`
-                () {
+    fun `next message is a chunk and all chunks are present but deserialization fails, returns null and set session state to error`() {
         whenever(chunkDeserializerService.assembleChunks(any())).thenReturn(null)
         val instant = Instant.now()
         val requestId = "chunkId"
@@ -331,9 +276,30 @@ class SessionManagerImplTest {
             SessionStateType.CONFIRMED,
             4,
             listOf(
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 2, SessionData(chunks[0], null), instant),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 3, SessionData(chunks[1], null), instant),
-                buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 4, SessionData(chunks[2], null), instant),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    2,
+                    SessionData(chunks[0], null),
+                    instant,
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    3,
+                    SessionData(chunks[1], null),
+                    instant,
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    4,
+                    SessionData(chunks[2], null),
+                    instant,
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
             ),
             4,
             listOf(),

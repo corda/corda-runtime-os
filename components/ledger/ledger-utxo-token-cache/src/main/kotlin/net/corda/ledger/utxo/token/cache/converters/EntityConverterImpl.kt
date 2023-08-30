@@ -1,7 +1,5 @@
 package net.corda.ledger.utxo.token.cache.converters
 
-import java.math.BigDecimal
-import java.math.BigInteger
 import net.corda.data.ledger.utxo.token.selection.data.Token
 import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.data.TokenBalanceQuery
@@ -12,23 +10,19 @@ import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.BalanceQuery
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
-import net.corda.ledger.utxo.token.cache.entities.CachedTokenImpl
+import net.corda.ledger.utxo.token.cache.entities.internal.CachedTokenImpl
 import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
 import net.corda.ledger.utxo.token.cache.entities.ClaimRelease
 import net.corda.ledger.utxo.token.cache.entities.LedgerChange
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
-import net.corda.ledger.utxo.token.cache.entities.PoolCacheStateImpl
-import net.corda.ledger.utxo.token.cache.entities.TokenCache
-import net.corda.ledger.utxo.token.cache.entities.TokenCacheImpl
+import net.corda.ledger.utxo.token.cache.entities.internal.PoolCacheStateImpl
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
+import java.math.BigDecimal
+import java.math.BigInteger
 
 class EntityConverterImpl : EntityConverter {
     override fun toCachedToken(avroToken: Token): CachedToken {
         return CachedTokenImpl(avroToken, this)
-    }
-
-    override fun toTokenCache(avroCacheState: TokenPoolCacheState): TokenCache {
-        return TokenCacheImpl(avroCacheState, this)
     }
 
     override fun toPoolCacheState(avroCacheState: TokenPoolCacheState): PoolCacheState {
@@ -88,21 +82,12 @@ class EntityConverterImpl : EntityConverter {
         )
     }
 
-    override fun toTokenPoolKey(tokenPoolCacheKey: TokenPoolCacheKey) =
-        TokenPoolKey(
-            tokenPoolCacheKey.shortHolderId,
-            tokenPoolCacheKey.tokenType,
-            tokenPoolCacheKey.issuerHash,
-            tokenPoolCacheKey.notaryX500Name,
-            tokenPoolCacheKey.symbol
-        )
-
-    override fun toTokenPoolCacheKey(tokenPoolKey: TokenPoolKey): TokenPoolCacheKey =
-        TokenPoolCacheKey(
-            tokenPoolKey.shortHolderId,
-            tokenPoolKey.tokenType,
-            tokenPoolKey.issuerHash,
-            tokenPoolKey.notaryX500Name,
-            tokenPoolKey.symbol
-        )
+    override fun toTokenPoolKey(avroTokenPoolKey: TokenPoolCacheKey): TokenPoolKey {
+        return TokenPoolKey(
+            avroTokenPoolKey.shortHolderId,
+            avroTokenPoolKey.tokenType,
+            avroTokenPoolKey.issuerHash,
+            avroTokenPoolKey.notaryX500Name,
+            avroTokenPoolKey.symbol)
+    }
 }

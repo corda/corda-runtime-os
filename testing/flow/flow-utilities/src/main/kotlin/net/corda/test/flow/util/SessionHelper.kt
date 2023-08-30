@@ -31,7 +31,8 @@ fun buildSessionState(
         .setSendEventsState(SessionProcessState(lastSentSeqNum, eventsToSend))
         .setStatus(status)
         .setHasScheduledCleanup(false)
-        .setCounterpartySessionProperties(KeyValuePairList())
+        .setSessionProperties(null)
+        .setRequireClose(false)
         .build()
 }
 
@@ -44,6 +45,7 @@ fun buildSessionEvent(
     timestamp: Instant = Instant.now(),
     initiatingIdentity: HoldingIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group1"),
     initiatedIdentity: HoldingIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group1"),
+    contextSessionProps: KeyValuePairList? = null
 ): SessionEvent {
     return SessionEvent.newBuilder()
         .setSessionId(sessionId)
@@ -53,5 +55,6 @@ fun buildSessionEvent(
         .setInitiatedIdentity(initiatedIdentity)
         .setPayload(payload)
         .setTimestamp(timestamp)
+        .setContextSessionProperties(contextSessionProps)
         .build()
 }

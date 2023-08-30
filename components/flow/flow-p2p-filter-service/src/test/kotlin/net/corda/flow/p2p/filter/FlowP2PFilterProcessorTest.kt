@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+
 class FlowP2PFilterProcessorTest {
 
     private lateinit var processor: FlowP2PFilterProcessor
@@ -54,9 +55,9 @@ class FlowP2PFilterProcessorTest {
                 testValue,
                 null,
                 emptyKeyValuePairList(),
-                emptyKeyValuePairList(),
                 emptyKeyValuePairList()
-            )
+            ),
+            emptyKeyValuePairList(),
         )
 
         val flowEventMockData: ByteArray = "flowEvent".toByteArray()

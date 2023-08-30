@@ -52,8 +52,7 @@ class SessionErrorExecutorTest {
         val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError())
 
         val result = SessionErrorExecutor(
-            sessionId, payload,
-            FlowMapperState(
+            sessionId, payload, FlowMapperState(
                 "flowId1", null, FlowMapperStateType.CLOSING
             ),
             flowConfig,
@@ -72,8 +71,7 @@ class SessionErrorExecutorTest {
         val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError())
 
         val result = SessionErrorExecutor(
-            sessionId, payload,
-            FlowMapperState(
+            sessionId, payload, FlowMapperState(
                 "flowId1", null, FlowMapperStateType.ERROR
             ),
             flowConfig,
@@ -92,8 +90,7 @@ class SessionErrorExecutorTest {
         val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError())
 
         val result = SessionErrorExecutor(
-            sessionId, payload,
-            FlowMapperState(
+            sessionId, payload, FlowMapperState(
                 "flowId1", null, FlowMapperStateType.OPEN
             ),
             flowConfig,

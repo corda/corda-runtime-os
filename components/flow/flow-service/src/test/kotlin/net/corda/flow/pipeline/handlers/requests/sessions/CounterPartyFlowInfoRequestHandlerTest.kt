@@ -16,7 +16,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-class CounterpartyInfoRequestHandlerTest {
+class CounterPartyFlowInfoRequestHandlerTest {
     private val sessionId1 = "s1"
     val record = Record("", "", FlowEvent())
     private val sessionState1 = SessionState().apply { this.sessionId = sessionId1 }
@@ -24,10 +24,9 @@ class CounterpartyInfoRequestHandlerTest {
 
     private val ioRequest = FlowIORequest.CounterPartyFlowInfo(
         SessionInfo(sessionId1, testContext.counterparty)
-
     )
     private val handler =
-        CounterPartyFlowInfoRequestHandler(testContext.initiateFlowReqService)
+        CounterPartyFlowInfoRequestHandler(testContext.initiateFlowReqService, testContext.flowSessionManager)
 
 
     @Suppress("Unused")
@@ -47,6 +46,7 @@ class CounterpartyInfoRequestHandlerTest {
     fun `Initiates flows not initiated yet`() {
         handler.postProcess(testContext.flowEventContext, ioRequest)
         verify(testContext.initiateFlowReqService).initiateFlowsNotInitiated(any(), any())
+        verify(testContext.flowSessionManager).sendInitMessage(any(), any(), any(), any(), any(), any())
     }
 
     @Test

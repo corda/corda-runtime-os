@@ -1,6 +1,5 @@
 package net.corda.flow.mapper.impl
 
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -15,14 +14,13 @@ import net.corda.flow.mapper.impl.executor.ExecuteCleanupEventExecutor
 import net.corda.flow.mapper.impl.executor.ScheduleCleanupEventExecutor
 import net.corda.flow.mapper.impl.executor.SessionErrorExecutor
 import net.corda.flow.mapper.impl.executor.SessionEventExecutor
+import net.corda.flow.mapper.impl.executor.SessionInitProcessor
 import net.corda.flow.mapper.impl.executor.StartFlowExecutor
 import net.corda.libs.configuration.SmartConfigImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 import java.time.Instant
 
 class FlowMapperEventExecutorFactoryImplTest {
@@ -31,10 +29,9 @@ class FlowMapperEventExecutorFactoryImplTest {
 
     @BeforeEach
     fun setup() {
-        val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
         val recordFactory: RecordFactory = mock()
-        whenever(cordaAvroSerializationFactory.createAvroSerializer<SessionEvent>(anyOrNull())).thenReturn(mock())
-        executorFactoryImpl = FlowMapperEventExecutorFactoryImpl(cordaAvroSerializationFactory, recordFactory)
+        val sessionInitProcessor: SessionInitProcessor = mock()
+        executorFactoryImpl = FlowMapperEventExecutorFactoryImpl(recordFactory, sessionInitProcessor)
     }
 
     @Test
@@ -48,7 +45,7 @@ class FlowMapperEventExecutorFactoryImplTest {
         val executor = executorFactoryImpl.create(
             "",
             FlowMapperEvent(SessionEvent(MessageDirection.INBOUND, Instant.now(), "", 1,
-                HoldingIdentity(), HoldingIdentity(), null)),
+                HoldingIdentity(), HoldingIdentity(), null, null)),
             null,
             SmartConfigImpl.empty(),
             Instant.now()
@@ -70,7 +67,9 @@ class FlowMapperEventExecutorFactoryImplTest {
                         "FlowMapper-SessionError",
                         "Received SessionError with sessionId 1"
                     )
-                ))),
+                ),
+                null
+            )),
             null,
             SmartConfigImpl.empty(),
             Instant.now()

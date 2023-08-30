@@ -4,7 +4,6 @@ import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.messaging.api.publisher.Publisher
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
@@ -14,7 +13,7 @@ import org.mockito.kotlin.whenever
 import java.time.Clock
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-@Disabled //todo CORE-15757
+
 class FlowMapperListenerTest {
 
     private val eventTopic = "eventTopic"

@@ -4,18 +4,23 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.Instant
-@Disabled //todo CORE-15757
 class SessionCloseProcessorReceiveTest {
 
     @Test
     fun testNullState() {
-        val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 3, SessionClose())
+        val sessionEvent = buildSessionEvent(
+            MessageDirection.INBOUND,
+            "sessionId",
+            3,
+            SessionClose(),
+            contextSessionProps = emptyKeyValuePairList()
+        )
         val result = SessionCloseProcessorReceive("key", null, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
@@ -25,7 +30,13 @@ class SessionCloseProcessorReceiveTest {
 
     @Test
     fun `Receive a duplicate close when status is CLOSING`() {
-        val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionClose())
+        val sessionEvent = buildSessionEvent(
+            MessageDirection.INBOUND,
+            "sessionId",
+            1,
+            SessionClose(),
+            contextSessionProps = emptyKeyValuePairList()
+        )
         val inputState = buildSessionState(
             SessionStateType.CLOSING, 2, mutableListOf(sessionEvent), 0, mutableListOf()
         )
@@ -38,7 +49,13 @@ class SessionCloseProcessorReceiveTest {
 
     @Test
     fun `Receive a close when status is ERROR`() {
-        val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionClose())
+        val sessionEvent = buildSessionEvent(
+            MessageDirection.INBOUND,
+            "sessionId",
+            1,
+            SessionClose(),
+            contextSessionProps = emptyKeyValuePairList()
+        )
         val inputState = buildSessionState(
             SessionStateType.ERROR, 0, mutableListOf(), 0, mutableListOf()
         )
@@ -52,7 +69,13 @@ class SessionCloseProcessorReceiveTest {
 
     @Test
     fun `Receive a close when status is CONFIRMED`() {
-        val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionClose())
+        val sessionEvent = buildSessionEvent(
+            MessageDirection.INBOUND,
+            "sessionId",
+            1,
+            SessionClose(),
+            contextSessionProps = emptyKeyValuePairList()
+        )
         val inputState = buildSessionState(
             SessionStateType.CONFIRMED, 0, mutableListOf(), 0, mutableListOf()
         )
@@ -65,7 +88,13 @@ class SessionCloseProcessorReceiveTest {
 
     @Test
     fun `Receive a close when status is CREATED`() {
-        val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionClose())
+        val sessionEvent = buildSessionEvent(
+            MessageDirection.INBOUND,
+            "sessionId",
+            1,
+            SessionClose(),
+            contextSessionProps = emptyKeyValuePairList()
+        )
         val inputState = buildSessionState(
             SessionStateType.CREATED, 0, mutableListOf(), 0, mutableListOf()
         )
@@ -78,7 +107,13 @@ class SessionCloseProcessorReceiveTest {
 
     @Test
     fun `Receive a close when status is CLOSING`() {
-        val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionClose())
+        val sessionEvent = buildSessionEvent(
+            MessageDirection.INBOUND,
+            "sessionId",
+            1,
+            SessionClose(),
+            contextSessionProps = emptyKeyValuePairList()
+        )
         val inputState = buildSessionState(
             SessionStateType.CLOSING, 0, mutableListOf(), 0, mutableListOf()
         )
@@ -91,12 +126,19 @@ class SessionCloseProcessorReceiveTest {
 
     @Test
     fun `Receive a close when status is CLOSING but some sent messages not acked`() {
-        val sessionEvent = buildSessionEvent(MessageDirection.INBOUND, "sessionId-test", 1, SessionClose())
+        val sessionEvent = buildSessionEvent(
+            MessageDirection.INBOUND,
+            "sessionId-test",
+            1,
+            SessionClose(),
+            contextSessionProps = emptyKeyValuePairList()
+        )
         val inputState = buildSessionState(
             SessionStateType.CLOSING, 0, mutableListOf(), 0, mutableListOf(buildSessionEvent(
                 MessageDirection.OUTBOUND,
                 "sessionId-test2", 2,
-                SessionClose()
+                SessionClose(),
+                contextSessionProps = emptyKeyValuePairList()
             ))
         )
 

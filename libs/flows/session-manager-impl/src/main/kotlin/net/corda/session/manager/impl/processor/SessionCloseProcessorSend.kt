@@ -22,7 +22,7 @@ import java.time.Instant
  */
 class SessionCloseProcessorSend(
     private val key: Any,
-    private val sessionState: SessionState?,
+    private val sessionState: SessionState,
     private val sessionEvent: SessionEvent,
     private val instant: Instant
 ) : SessionEventProcessor {
@@ -33,7 +33,7 @@ class SessionCloseProcessorSend(
 
     override fun execute(): SessionState {
         val sessionId = sessionEvent.sessionId
-        val currentStatus = sessionState?.status
+        val currentStatus = sessionState.status
         return when {
             sessionState == null -> {
                 handleNullSession(sessionId)
@@ -53,12 +53,6 @@ class SessionCloseProcessorSend(
                 getResultByCurrentState(sessionState, sessionId, nextSeqNum)
             }
         }
-    }
-
-    private fun handleNullSession(sessionId: String): SessionState {
-        val errorMessage = "Tried to send SessionClose with flow key $key and sessionId $sessionId  with null state"
-        logger.warn(errorMessage)
-        return generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionCLose-StateNull", instant)
     }
 
     private fun hasUnprocessedReceivedDataEvents(sessionState: SessionState): Boolean {

@@ -15,7 +15,6 @@ import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
-import net.corda.schema.configuration.FlowConfig.SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW
 import net.corda.session.manager.SessionManager
 import net.corda.utilities.debug
 import net.corda.v5.base.types.MemberX500Name
@@ -64,7 +63,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
 
         return checkpoint.sessions
             .filter {
-                verifyCounterparty(context, it, now)
+                verifyCounterparty(context, it)
             }
             .map { sessionState ->
                 sessionManager.getMessagesToSend(
@@ -88,8 +87,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
 
     private fun verifyCounterparty(
         context: FlowEventContext<Any>,
-        sessionState: SessionState,
-        now: Instant
+        sessionState: SessionState
     ): Boolean {
         if (sessionState.status == SessionStateType.CLOSED || sessionState.status == SessionStateType.ERROR) {
             //we dont need to verify that a counterparty exists if the session is already terminated.
@@ -102,28 +100,18 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         val counterpartyExists: Boolean = null != groupReader.lookup(counterparty)
 
         /**
-         * If the counterparty doesn't exist in our network, don't send our queued messages yet.
-         * If we've also exceeded the [SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW], throw a [FlowPlatformException]
+         * If the counterparty doesn't exist in our network, throw a [FlowPlatformException]
          */
         if (!counterpartyExists) {
-            val timeoutWindow = context.config.getLong(SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW)
-            val expiryTime = maxOf(
-                sessionState.lastReceivedMessageTime,
-                sessionState.sessionStartTime
-            ).plusMillis(timeoutWindow)
-
-            if (expiryTime < now) {
-                val msg =
-                    "[${context.checkpoint.holdingIdentity.x500Name}] has failed to create a flow with counterparty: " +
-                            "[${counterparty}] as the recipient doesn't exist in the network."
-                sessionManager.errorSession(sessionState)
-                if (doesCheckpointExist) {
-                    log.debug { "$msg. Throwing FlowPlatformException" }
-                    checkpoint.putSessionState(sessionState)
-                    throw FlowPlatformException(msg)
-                } else {
-                    log.debug { "$msg. Checkpoint is already marked for deletion." }
-                }
+            val msg = "[${context.checkpoint.holdingIdentity.x500Name}] has failed to create a flow with counterparty: " +
+                    "[${counterparty}] as the recipient doesn't exist in the network."
+            sessionManager.errorSession(sessionState)
+            if (doesCheckpointExist) {
+                log.debug { "$msg. Throwing FlowPlatformException" }
+                checkpoint.putSessionState(sessionState)
+                throw FlowPlatformException(msg)
+            } else {
+                log.debug { "$msg. Checkpoint is already marked for deletion." }
             }
 
             return false

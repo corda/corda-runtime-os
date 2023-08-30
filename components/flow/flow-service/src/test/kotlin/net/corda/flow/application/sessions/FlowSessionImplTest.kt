@@ -214,8 +214,7 @@ class FlowSessionImplTest {
                 SessionState()
             } else {
                 SessionState().apply {
-                    counterpartySessionProperties =
-                        testSessionProps()
+                    sessionProperties = testSessionProps()
                 }
             }
         }
@@ -236,6 +235,7 @@ class FlowSessionImplTest {
             counterpartySessionProperties =
                 testSessionProps()
         })
+
         val session = createInitiatingSession()
 
         val info = session.counterpartyFlowInfo

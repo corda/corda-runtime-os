@@ -4,7 +4,9 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.flow.mapper.FlowMapperResult
@@ -22,19 +24,26 @@ class SessionEventExecutor(
     private val flowMapperState: FlowMapperState?,
     private val flowConfig: SmartConfig,
     private val recordFactory: RecordFactory,
-    private val instant: Instant
-    ) : FlowMapperEventExecutor {
+    private val instant: Instant,
+    private val sessionInitProcessor: SessionInitProcessor
+) : FlowMapperEventExecutor {
 
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun execute(): FlowMapperResult {
-        return if (flowMapperState == null) {
-            handleNullState()
-        } else {
-            processOtherSessionEvents(flowMapperState)
-        }
+    override fun execute() = if (flowMapperState == null) {
+        getInitPayload(sessionEvent.payload)?.let { sessionInit->
+            sessionInitProcessor.processSessionInit(sessionEvent, sessionInit, flowConfig, instant)
+        } ?: handleNullState()
+    } else {
+        processOtherSessionEvents(flowMapperState)
+    }
+
+    private fun getInitPayload(payload: Any) = when (payload) {
+        is SessionInit -> payload
+        is SessionData -> payload.sessionInit
+        else -> null
     }
 
     private fun handleNullState(): FlowMapperResult {
@@ -70,21 +79,17 @@ class SessionEventExecutor(
      */
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
         val messageDirection = sessionEvent.messageDirection
-        val errorMsg = "Flow mapper received error event from counterparty for session which does not exist. " +
-                "Session may have expired. Key: $eventKey, Event: $sessionEvent. "
+        val msg = "Attempted to process a message ${sessionEvent.messageDirection} " +
+                "but flow mapper state is in ${flowMapperState.status}. Session ID: ${sessionEvent.sessionId}. Ignoring Event"
 
         return when (flowMapperState.status) {
             null -> {
                 log.warn("FlowMapperState with null status. Key: $eventKey, Event: $sessionEvent.")
                 FlowMapperResult(null, listOf())
             }
-            FlowMapperStateType.CLOSING -> {
-                if (messageDirection == MessageDirection.OUTBOUND) {
-                    log.warn("Attempted to send a message but flow mapper state is in CLOSING. Session ID: ${sessionEvent.sessionId}")
-                    FlowMapperResult(flowMapperState, listOf())
-                } else {
-                    FlowMapperResult(flowMapperState, listOf())
-                }
+            FlowMapperStateType.CLOSING, FlowMapperStateType.ERROR -> {
+                log.warn(msg)
+                FlowMapperResult(flowMapperState, listOf())
             }
             FlowMapperStateType.OPEN -> {
                 val outputTopic = recordFactory.getSessionEventOutputTopic(sessionEvent, messageDirection)
@@ -94,10 +99,6 @@ class SessionEventExecutor(
                     Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
                 }
                 FlowMapperResult(flowMapperState, listOf(outputRecord))
-            }
-            FlowMapperStateType.ERROR -> {
-                log.warn(errorMsg + "Ignoring event.")
-                FlowMapperResult(flowMapperState, listOf())
             }
         }
     }

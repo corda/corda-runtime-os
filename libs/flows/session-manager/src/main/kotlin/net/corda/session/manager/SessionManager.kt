@@ -1,11 +1,12 @@
 package net.corda.session.manager
 
-import java.time.Instant
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
+import java.time.Instant
 
 /**
  * Session Manager offers methods to interact with and update the [SessionState].
@@ -15,7 +16,7 @@ import net.corda.libs.configuration.SmartConfig
  * of the [sessionState]. Messages to be sent to counterparties can be retrieved via [getMessagesToSend].
  * A status is tracked for the session based on what events have been sent/received.
  * Client library can get the next available event received via [getNextReceivedEvent].
- * [SessionError]/[SessionAck] events influence the session state but are not passed to the client lib.
+ * [SessionError] events influence the session state but are not passed to the client lib.
  * Client library must mark events received as consumed via [acknowledgeReceivedEvent].
  */
 interface SessionManager {
@@ -51,7 +52,23 @@ interface SessionManager {
      * @param maxMsgSize Max size of messages to send
      * @return Updated session state with any output messages added to the undelivered sentEvents queue
      */
-    fun processMessageToSend(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant, maxMsgSize: Long): SessionState
+    fun processMessageToSend(key: Any, sessionState: SessionState, event: SessionEvent, instant: Instant, maxMsgSize: Long): SessionState
+
+
+    /**
+     * Generate a new session state
+     * @param sessionId id of the session
+     * @param contextSessionProperties session properties
+     * @param counterparty party to communicate to
+     * @param instant timestamp to set on session state
+     * @return a new session state
+     */
+    fun generateSessionState(
+        sessionId: String,
+        contextSessionProperties: KeyValuePairList,
+        counterparty: HoldingIdentity,
+        instant: Instant
+    ): SessionState
 
     /**
      * Get and return the next available buffered event in the correct sequence from the [sessionState] received from a counterparty.
@@ -72,16 +89,12 @@ interface SessionManager {
 
     /**
      * Get any messages to send to a peer from the [sessionState].
-     * All messages with a timestamp in the past will be returned.
-     * All messages of type SessionAck will be returned regardless of timestamp.
-     * SessionAcks are also removed from the undelivered sendEvents state.
-     * Triggers heartbeat messages at regular intervals.
      * If no response from counterparty after a configurable timeouts, session will move to error state.
      * @param sessionState The session state.
      * @param instant The time to check session events against when determining which messages need to be sent
-     * @param config The config containing the flow session config values such as the resend time window
+     * @param config The config containing the flow session timeout value
      * @param identity Identity of the calling party who owns the session state
-     * @return The updated [SessionState] with SessionAcks removed as well as any messages to send to the counterparty.
+     * @return The updated [SessionState]
      */
     fun getMessagesToSend(sessionState: SessionState, instant: Instant, config: SmartConfig, identity: HoldingIdentity): Pair<SessionState,
             List<SessionEvent>>

@@ -13,11 +13,13 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.helper.isInitiatingIdentity
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.keyValuePairListOf
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.session.manager.Constants
@@ -58,18 +60,17 @@ class FlowSessionManagerImpl @Activate constructor(
     override fun sendInitMessage(
         checkpoint: FlowCheckpoint,
         sessionId: String,
-        x500Name: MemberX500Name,
         contextUserProperties: KeyValuePairList,
         contextPlatformProperties: KeyValuePairList,
-        sessionProperties: KeyValuePairList,
+        x500Name: MemberX500Name,
         instant: Instant
     ): SessionState {
+        val sessionState = getAndRequireSession(checkpoint, sessionId)
         val payload = SessionInit.newBuilder()
             .setFlowId(checkpoint.flowId)
             .setCpiId(checkpoint.flowStartContext.cpiId)
             .setContextPlatformProperties(contextPlatformProperties)
             .setContextUserProperties(contextUserProperties)
-            .setContextSessionProperties(sessionProperties)
             .build()
         val event = SessionEvent.newBuilder()
             .setSessionId(sessionId)
@@ -79,16 +80,33 @@ class FlowSessionManagerImpl @Activate constructor(
             .setInitiatingIdentity(checkpoint.holdingIdentity.toAvro())
             .setInitiatedIdentity(HoldingIdentity(x500Name.toString(), checkpoint.holdingIdentity.groupId))
             .setPayload(payload)
+            .setContextSessionProperties(sessionState.sessionProperties)
             .build()
 
         return sessionManager.processMessageToSend(
             key = checkpoint.flowId,
-            sessionState = null,
+            sessionState = sessionState,
             event = event,
             instant = instant,
             maxMsgSize = checkpoint.maxMessageSize
         )
     }
+
+    override fun generateSessionState(
+        checkpoint: FlowCheckpoint,
+        sessionId: String,
+        x500Name: MemberX500Name,
+        sessionProperties: KeyValuePairList,
+        instant: Instant
+    ): SessionState {
+        return sessionManager.generateSessionState(
+            sessionId,
+            sessionProperties,
+            HoldingIdentity(x500Name.toString(), checkpoint.holdingIdentity.groupId),
+            instant
+        )
+    }
+
 
     override fun sendConfirmMessage(
         checkpoint: FlowCheckpoint,
@@ -99,25 +117,44 @@ class FlowSessionManagerImpl @Activate constructor(
         return sendSessionMessageToExistingSession(
             checkpoint,
             sessionId,
-            payload = SessionConfirm(contextSessionProperties),
+            payload = SessionConfirm(),
             instant
         )
     }
 
     override fun sendDataMessages(
         checkpoint: FlowCheckpoint,
-        sessionToPayload: Map<String, ByteArray>,
+        sessionToPayload: Map<SessionInfo, ByteArray>,
         instant: Instant,
     ): List<SessionState> {
-        validateSessionStates(checkpoint, sessionToPayload.keys, Operation.SENDING)
-        return sessionToPayload.map { (sessionId, payload) ->
+        validateSessionStates(checkpoint, sessionToPayload.keys.map { it.sessionId }, Operation.SENDING)
+        return sessionToPayload.map { (sessionInfo, payload) ->
+            val sessionId = sessionInfo.sessionId
+            val sessionState = getAndRequireSession(checkpoint, sessionId)
             sendSessionMessageToExistingSession(
                 checkpoint,
                 sessionId,
-                payload = SessionData(ByteBuffer.wrap(payload), null),
+                payload = getSessionData(payload, checkpoint, sessionState, sessionInfo),
                 instant
             )
         }
+    }
+
+    private fun getSessionData(
+        payload: ByteArray,
+        checkpoint: FlowCheckpoint,
+        sessionState: SessionState,
+        sessionInfo: SessionInfo
+    ): SessionData {
+        val sessionInit = if (sessionState.status != SessionStateType.CREATED) null else {
+            SessionInit.newBuilder()
+                .setFlowId(checkpoint.flowId)
+                .setCpiId(checkpoint.flowStartContext.cpiId)
+                .setContextPlatformProperties(keyValuePairListOf(sessionInfo.contextPlatformProperties))
+                .setContextUserProperties(keyValuePairListOf(sessionInfo.contextUserProperties))
+                .build()
+        }
+        return SessionData(ByteBuffer.wrap(payload), sessionInit)
     }
 
     override fun sendCloseMessages(
@@ -193,11 +230,9 @@ class FlowSessionManagerImpl @Activate constructor(
         checkpoint: FlowCheckpoint,
         sessionIds: List<String>,
         status: SessionStateType
-    ): List<SessionState> {
-        return sessionIds
+    ): List<SessionState> = sessionIds
             .map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
             .filter { sessionState -> sessionState.status == status }
-    }
 
     override fun getRequireCloseTrueAndFalse(
         checkpoint: FlowCheckpoint,
@@ -309,6 +344,7 @@ class FlowSessionManagerImpl @Activate constructor(
                 .setInitiatedIdentity(initiatedIdentity)
                 .setSequenceNum(null)
                 .setPayload(payload)
+                .setContextSessionProperties(null)
                 .build(),
             instant = instant,
             maxMsgSize = checkpoint.maxMessageSize

@@ -11,6 +11,7 @@ dependencies {
     implementation project(":components:flow:flow-mapper")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:messaging:messaging")
+    implementation project(":libs:flows:flow-utils")
     implementation project(":libs:flows:session-manager")
     implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(":libs:metrics")
