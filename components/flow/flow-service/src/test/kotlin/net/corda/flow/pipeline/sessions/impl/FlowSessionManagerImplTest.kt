@@ -149,8 +149,22 @@ class FlowSessionManagerImplTest {
     fun `get session error event records`() {
         whenever(checkpoint.sessions).thenReturn(sessionsWithErrors)
 
-        whenever(sessionManager.getMessagesToSend(eq(errorSessionState1), any(), any(), any())).thenReturn(errorPairing1)
-        whenever(sessionManager.getMessagesToSend(eq(errorSessionState2), any(), any(), any())).thenReturn(errorPairing2)
+        whenever(
+            sessionManager.getMessagesToSend(
+                eq(errorSessionState1),
+                any(),
+                any(),
+                any()
+            )
+        ).thenReturn(errorPairing1)
+        whenever(
+            sessionManager.getMessagesToSend(
+                eq(errorSessionState2),
+                any(),
+                any(),
+                any()
+            )
+        ).thenReturn(errorPairing2)
 
         whenever(flowRecordFactory.createFlowMapperEventRecord(eq("s1"), eq(errorEvent1))).thenReturn(record1)
         whenever(flowRecordFactory.createFlowMapperEventRecord(eq("s2"), eq(errorEvent2))).thenReturn(record2)
@@ -850,7 +864,12 @@ class FlowSessionManagerImplTest {
             MessageDirection.OUTBOUND,
             SESSION_ID,
             sequenceNum = null,
-            payload = SessionError(ExceptionEnvelope(IllegalArgumentException::class.qualifiedName, "No exception message provided.")),
+            payload = SessionError(
+                ExceptionEnvelope(
+                    IllegalArgumentException::class.qualifiedName,
+                    "No exception message provided."
+                )
+            ),
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY
@@ -860,7 +879,12 @@ class FlowSessionManagerImplTest {
             MessageDirection.OUTBOUND,
             ANOTHER_SESSION_ID,
             sequenceNum = null,
-            payload = SessionError(ExceptionEnvelope(IllegalArgumentException::class.qualifiedName, "No exception message provided.")),
+            payload = SessionError(
+                ExceptionEnvelope(
+                    IllegalArgumentException::class.qualifiedName,
+                    "No exception message provided."
+                )
+            ),
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY
@@ -908,8 +932,10 @@ class FlowSessionManagerImplTest {
         sessionState.requireClose = true
         anotherSessionState.requireClose = false
 
-        assertEquals(Pair(
-            listOf(SESSION_ID), listOf(ANOTHER_SESSION_ID)),
+        assertEquals(
+            Pair(
+                listOf(SESSION_ID), listOf(ANOTHER_SESSION_ID)
+            ),
             flowSessionManager.getRequireCloseTrueAndFalse(
                 checkpoint,
                 listOf(SESSION_ID, ANOTHER_SESSION_ID)
@@ -926,8 +952,10 @@ class FlowSessionManagerImplTest {
         sessionState.requireClose = true
         anotherSessionState.requireClose = true
 
-        assertEquals(Pair(
-            listOf(ANOTHER_SESSION_ID, SESSION_ID), emptyList<String>()),
+        assertEquals(
+            Pair(
+                listOf(ANOTHER_SESSION_ID, SESSION_ID), emptyList<String>()
+            ),
             flowSessionManager.getRequireCloseTrueAndFalse(
                 checkpoint,
                 listOf(ANOTHER_SESSION_ID, SESSION_ID)
@@ -944,9 +972,10 @@ class FlowSessionManagerImplTest {
         sessionState.requireClose = true
         anotherSessionState.requireClose = false
 
-        assertEquals(Pair(
-            emptyList<String>(), emptyList<String>()
-        ),
+        assertEquals(
+            Pair(
+                emptyList<String>(), emptyList<String>()
+            ),
             flowSessionManager.getRequireCloseTrueAndFalse(
                 checkpoint,
                 listOf(SESSION_ID, ANOTHER_SESSION_ID)
@@ -956,12 +985,21 @@ class FlowSessionManagerImplTest {
     }
 
     @Test
-    fun `getInitiatingAndInitiatedSessions`() {
-        flowSessionManager.getInitiatingAndInitiatedSessions(listOf(SESSION_ID, ANOTHER_SESSION_ID))
+    fun getInitiatingAndInitiatedSessions() {
+        sessionState.sessionId = "$SESSION_ID-INITIATED"
+
+        assertEquals(
+            Pair(
+                listOf(anotherSessionState.sessionId), listOf(sessionState.sessionId)
+            ),
+            flowSessionManager.getInitiatingAndInitiatedSessions(
+                (listOf(sessionState.sessionId, anotherSessionState.sessionId))
+            )
+        )
     }
 
     @Test
-    fun `updateStatus`() {
+    fun updateStatus() {
         sessionState.status = SessionStateType.CREATED
         assertEquals(
             listOf(sessionState),
