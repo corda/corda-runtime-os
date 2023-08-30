@@ -1,17 +1,18 @@
 package net.corda.session.manager.integration.helper
 
-import java.nio.ByteBuffer
-import java.time.Instant
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
+import net.corda.data.flow.event.session.SessionConfirm
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.session.manager.integration.SessionMessageType
 import net.corda.test.flow.util.buildSessionEvent
+import java.nio.ByteBuffer
+import java.time.Instant
 
 fun generateMessage(
     messageType: SessionMessageType,
@@ -21,6 +22,7 @@ fun generateMessage(
         SessionEvent {
     return when (messageType) {
         SessionMessageType.INIT -> generateInit(instant, messageDirection)
+        SessionMessageType.CONFIRM -> generateConfirm(instant, messageDirection)
         SessionMessageType.DATA -> generateData(instant, messageDirection)
         SessionMessageType.ERROR -> generateError(instant, messageDirection)
         SessionMessageType.CLOSE -> generateClose(instant, messageDirection)
@@ -33,7 +35,6 @@ fun generateInit(instant: Instant, messageDirection: MessageDirection = MessageD
         .setFlowId(null)
         .setContextPlatformProperties(emptyKeyValuePairList())
         .setContextUserProperties(emptyKeyValuePairList())
-        .setContextSessionProperties(emptyKeyValuePairList())
         .build()
     return generateSessionEvent(sessionInit, instant, messageDirection)
 }
@@ -42,6 +43,9 @@ fun generateData(instant: Instant, messageDirection: MessageDirection): SessionE
     return generateSessionEvent(SessionData(ByteBuffer.wrap("bytes".toByteArray()), null), instant, messageDirection)
 }
 
+fun generateConfirm(instant: Instant, messageDirection: MessageDirection): SessionEvent {
+    return generateSessionEvent(SessionConfirm(), instant, messageDirection)
+}
 
 fun generateError(instant: Instant, messageDirection: MessageDirection): SessionEvent {
     return generateSessionEvent(
@@ -56,5 +60,5 @@ fun generateClose(instant: Instant, messageDirection: MessageDirection): Session
 }
 
 fun generateSessionEvent(payload: Any, instant: Instant, messageDirection: MessageDirection): SessionEvent {
-    return buildSessionEvent(messageDirection, "sessionId", null, payload, instant)
+    return buildSessionEvent(messageDirection, "sessionId", null, payload, instant, contextSessionProps = emptyKeyValuePairList())
 }

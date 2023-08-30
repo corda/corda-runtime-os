@@ -12,11 +12,11 @@ import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
+import net.corda.data.flow.state.waiting.Wakeup
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.pipeline.CheckpointInitializer
 import net.corda.flow.pipeline.exceptions.FlowEventException
-import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
@@ -47,6 +47,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.stream.Stream
 
@@ -79,7 +80,7 @@ class SessionEventHandlerTest {
     private val flowSessionManager = mock<FlowSessionManager>()
 
     private val holdingIdentity = ALICE_X500_HOLDING_IDENTITY
-    private val waitingFor = WaitingFor(WaitingForSessionInit(SESSION_ID))
+    private val waitingFor = WaitingFor(Wakeup())
     private val expectedCheckpoint = mock<FlowCheckpoint>()
 
     private val fakeCheckpointInitializerService = FakeCheckpointInitializerService(
@@ -133,6 +134,18 @@ class SessionEventHandlerTest {
     }
 
     @Test
+    fun `Receiving a session data with init payload creates a checkpoint and adds the new session to it, does not reply with confirm`() {
+        val sessionEvent = createSessionDatWithInit()
+        val inputContext = buildFlowEventContext(checkpoint = expectedCheckpoint, inputEventPayload = sessionEvent)
+
+        whenever(sessionManager.getNextReceivedEvent(updatedSessionState)).thenReturn(sessionEvent)
+
+        sessionEventHandler.preProcess(inputContext)
+
+        verify(flowSessionManager, times(0)).sendConfirmMessage(any(), any(), anyOrNull(), any())
+    }
+
+    @Test
     fun `Receiving a session init payload throws an exception when the session manager returns no next received event`() {
         val sessionEvent = createSessionInit()
         val inputContext = buildFlowEventContext(checkpoint = expectedCheckpoint, inputEventPayload = sessionEvent)
@@ -183,13 +196,25 @@ class SessionEventHandlerTest {
             .setCpiId(CPI_ID)
             .setContextPlatformProperties(emptyKeyValuePairList())
             .setContextUserProperties(emptyKeyValuePairList())
-            .setContextSessionProperties(sessionContextProperties())
             .build()
 
         return createSessionEvent(payload)
     }
 
-    private fun sessionContextProperties() :KeyValuePairList {
+    private fun createSessionDatWithInit(): SessionEvent {
+        val sessionInit = SessionInit.newBuilder()
+            .setFlowId(FLOW_ID)
+            .setCpiId(CPI_ID)
+            .setContextPlatformProperties(emptyKeyValuePairList())
+            .setContextUserProperties(emptyKeyValuePairList())
+            .build()
+
+        val payload = SessionData(ByteBuffer.allocate(1), sessionInit)
+
+        return createSessionEvent(payload)
+    }
+
+    private fun contextSessionProperties() :KeyValuePairList {
         return KeyValueStore().apply {
             put(FLOW_PROTOCOL, PROTOCOL.protocol)
             put(FLOW_PROTOCOL_VERSIONS_SUPPORTED, "1")
@@ -204,6 +229,7 @@ class SessionEventHandlerTest {
             .setPayload(payload)
             .setInitiatedIdentity(ALICE_X500_HOLDING_IDENTITY)
             .setInitiatingIdentity(BOB_X500_HOLDING_IDENTITY)
+            .setContextSessionProperties(contextSessionProperties())
             .build()
     }
 

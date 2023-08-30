@@ -61,7 +61,8 @@ internal class RecordFactoryImplTest {
                     "FlowMapper-SessionError",
                     "Received SessionError with sessionId 1"
                 )
-            )
+            ),
+            null
         )
 
         val record = recordFactoryImplSameCluster.forwardError(
@@ -85,7 +86,8 @@ internal class RecordFactoryImplTest {
             Instant.now(), "", 1,
             HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1"),
             HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1"),
-            SessionData()
+            SessionData(),
+            null
         )
 
         val record = recordFactoryImplSameCluster.forwardEvent(
@@ -111,7 +113,8 @@ internal class RecordFactoryImplTest {
                     "FlowMapper-SessionError",
                     "Received SessionError with sessionId 1"
                 )
-            )
+            ),
+            null
         )
 
         val record = recordFactoryImplDifferentCluster.forwardError(
@@ -137,6 +140,8 @@ internal class RecordFactoryImplTest {
             HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1"),
             SessionData(
                 ByteBuffer.wrap("data".toByteArray()), null)
+            ,
+            null
         )
         val record = recordFactoryImplDifferentCluster.forwardEvent(
             sessionEvent,
@@ -156,7 +161,8 @@ internal class RecordFactoryImplTest {
             Instant.now(), "", 1,
             HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1"),
             HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1"),
-            SessionData()
+            SessionData(),
+            null
         )
 
         val topic = recordFactoryImplSameCluster.getSessionEventOutputTopic(
@@ -174,7 +180,8 @@ internal class RecordFactoryImplTest {
             Instant.now(), "", 1,
             HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1"),
             HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1"),
-            SessionData()
+            SessionData(),
+            null
         )
 
         val topic = recordFactoryImplDifferentCluster.getSessionEventOutputTopic(

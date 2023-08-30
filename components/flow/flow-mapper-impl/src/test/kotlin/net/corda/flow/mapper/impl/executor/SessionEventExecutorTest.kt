@@ -7,19 +7,22 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.flow.mapper.factory.RecordFactory
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig.SESSION_P2P_TTL
 import net.corda.test.flow.util.buildSessionEvent
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -35,12 +38,19 @@ class SessionEventExecutorTest {
         on { forwardEvent(any(), any(), any(), any()) } doReturn record
         on { getSessionEventOutputTopic(any(), any()) } doReturn "Topic"
     }
+    private val sessionInitProcessor = mock<SessionInitProcessor>()
 
     @Test
     fun `Session event executor test outbound data message and non null state`() {
         val bytes = "bytes".toByteArray()
         whenever(sessionEventSerializer.serialize(any())).thenReturn(bytes)
-        val payload = buildSessionEvent(MessageDirection.OUTBOUND, sessionId, 1, SessionData(ByteBuffer.wrap(bytes), null))
+        val payload = buildSessionEvent(
+            MessageDirection.OUTBOUND,
+            sessionId,
+            1,
+            SessionData(ByteBuffer.wrap(bytes), null),
+            contextSessionProps = emptyKeyValuePairList()
+        )
 
         val result = SessionEventExecutor(
             sessionId,
@@ -50,7 +60,8 @@ class SessionEventExecutorTest {
             ),
             flowConfig,
             recordFactory,
-            Instant.now()
+            Instant.now(),
+            sessionInitProcessor
             ).execute()
 
         val state = result.flowMapperState
@@ -76,7 +87,8 @@ class SessionEventExecutorTest {
             ),
             flowConfig,
             recordFactory,
-            Instant.now()
+            Instant.now(),
+            sessionInitProcessor
             ).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
@@ -99,7 +111,8 @@ class SessionEventExecutorTest {
             null,
             flowConfig,
             recordFactory,
-            Instant.now()
+            Instant.now(),
+            sessionInitProcessor
             ).execute()
 
         val state = result.flowMapperState
@@ -113,8 +126,6 @@ class SessionEventExecutorTest {
     }
 
     @Test
-    @Disabled
-    //todo core-15757
     fun `Session event received with CLOSING state`() {
         val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionClose())
 
@@ -125,16 +136,14 @@ class SessionEventExecutorTest {
             ),
             flowConfig,
             recordFactory,
-            Instant.now()
+            Instant.now(),
+            sessionInitProcessor
             ).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
 
         assertThat(state?.status).isEqualTo(FlowMapperStateType.CLOSING)
-        assertThat(outboundEvents.size).isEqualTo(1)
-        val outboundEvent = outboundEvents.first()
-        assertThat(outboundEvent.topic).isEqualTo("Topic")
-        assertThat(outboundEvent.key).isEqualTo("Key")
+        assertThat(outboundEvents.size).isEqualTo(0)
     }
 
     @Test
@@ -148,7 +157,8 @@ class SessionEventExecutorTest {
             ),
             flowConfig,
             recordFactory,
-            Instant.now()
+            Instant.now(),
+            sessionInitProcessor
             ).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
@@ -161,4 +171,22 @@ class SessionEventExecutorTest {
         assertThat(outboundEvent.value!!::class).isEqualTo(FlowEvent::class)
         assertThat(payload.sessionId).isEqualTo(sessionId)
     }
+
+    @Test
+    fun `Session Data with null state and init info`() {
+        val payload =
+            buildSessionEvent(MessageDirection.INBOUND, sessionId, 1,  SessionData(ByteBuffer.allocate(1), SessionInit()))
+
+        SessionEventExecutor(
+            sessionId,
+            payload,
+            null,
+            flowConfig,
+            recordFactory,
+            Instant.now(),
+            sessionInitProcessor
+        ).execute()
+        verify(sessionInitProcessor, times(1)).processSessionInit(any(), any(), any(), any())
+    }
+
 }

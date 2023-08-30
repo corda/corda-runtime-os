@@ -46,7 +46,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
@@ -60,7 +59,6 @@ import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Disabled //todo CORE-15757
 class FlowMapperServiceIntegrationTest {
 
     private companion object {
@@ -141,7 +139,8 @@ class FlowMapperServiceIntegrationTest {
     }
 
     @Test
-    fun testSessionInitOutAndDataInbound() {
+    fun `Test first session event outbound sets up flow mapper state, verify subsequent messages received are passed to flow event topic`
+                () {
         val testId = "test1"
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
 
@@ -149,9 +148,10 @@ class FlowMapperServiceIntegrationTest {
         val sessionInitEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 buildSessionEvent(
-                    MessageDirection.OUTBOUND, testId, 1, SessionInit(
-                        testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList()
-                    )
+                    MessageDirection.OUTBOUND, testId, 1, SessionData(ByteBuffer.wrap("bytes".toByteArray()), SessionInit(
+                        testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList()
+                    )),
+                    contextSessionProps = emptyKeyValuePairList()
                 )
             )
         )
@@ -171,7 +171,13 @@ class FlowMapperServiceIntegrationTest {
         //send data back
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                buildSessionEvent(MessageDirection.INBOUND, testId, 2, SessionData(ByteBuffer.wrap("".toByteArray()), null))
+                buildSessionEvent(
+                    MessageDirection.INBOUND,
+                    testId,
+                    2,
+                    SessionData(ByteBuffer.wrap("".toByteArray()), null),
+                    contextSessionProps = emptyKeyValuePairList()
+                )
             )
         )
         publisher.publish(listOf(sessionDataEvent))
@@ -267,7 +273,13 @@ class FlowMapperServiceIntegrationTest {
         //send data, no state
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                buildSessionEvent(MessageDirection.OUTBOUND, testId, 1, SessionData(ByteBuffer.wrap("".toByteArray()), null))
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    testId,
+                    1,
+                    SessionData(ByteBuffer.wrap("".toByteArray()), null),
+                    contextSessionProps = emptyKeyValuePairList()
+                )
             )
         )
         publisher.publish(listOf(sessionDataEvent))
@@ -293,8 +305,8 @@ class FlowMapperServiceIntegrationTest {
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 buildSessionEvent(
                     MessageDirection.OUTBOUND, testId, 1, SessionInit(
-                        testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList()
-                    )
+                        testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList()
+                    ), contextSessionProps = emptyKeyValuePairList()
                 )
             )
         )
@@ -317,7 +329,13 @@ class FlowMapperServiceIntegrationTest {
         //send data back
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                buildSessionEvent(MessageDirection.INBOUND, testId, 2, SessionData(ByteBuffer.wrap("".toByteArray()), null))
+                buildSessionEvent(
+                    MessageDirection.INBOUND,
+                    testId,
+                    2,
+                    SessionData(ByteBuffer.wrap("".toByteArray()), null),
+                    contextSessionProps = emptyKeyValuePairList()
+                )
             )
         )
         publisher.publish(listOf(sessionDataEvent))
