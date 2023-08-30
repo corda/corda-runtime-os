@@ -152,7 +152,7 @@ class EntityMessageProcessor(
                     requestId,
                     em
                 ) {
-                    persistenceServiceInternal.persist(serializationService, em, entityRequest)
+                    persistenceServiceInternal.persist(serializationService, it, entityRequest)
                 }
 
                 responseFactory.successResponse(
