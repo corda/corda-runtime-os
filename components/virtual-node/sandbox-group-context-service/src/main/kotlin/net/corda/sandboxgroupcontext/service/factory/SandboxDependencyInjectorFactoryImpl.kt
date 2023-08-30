@@ -9,9 +9,9 @@ import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
 import net.corda.sandboxgroupcontext.service.impl.SandboxDependencyInjectorImpl
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.Bundle
-import org.osgi.framework.Constants.SERVICE_SCOPE
-import org.osgi.framework.Constants.SCOPE_SINGLETON
 import org.osgi.framework.Constants.OBJECTCLASS
+import org.osgi.framework.Constants.SCOPE_SINGLETON
+import org.osgi.framework.Constants.SERVICE_SCOPE
 import org.osgi.framework.ServiceReference
 import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory

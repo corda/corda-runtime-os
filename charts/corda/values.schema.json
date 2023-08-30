@@ -1292,6 +1292,7 @@
                 "crypto",
                 "db",
                 "flow",
+                "verification",
                 "membership",
                 "rest",
                 "p2pLinkManager",
@@ -1526,6 +1527,66 @@
                                 "image": {
                                     "registry": "corda-os-docker.software.r3.com",
                                     "repository": "corda-os-flow-worker",
+                                    "tag": ""
+                                },
+                                "replicaCount": 1,
+                                "debug": {
+                                    "enabled": false,
+                                    "suspend": false
+                                },
+                                "logging": {
+                                    "level": "warn"
+                                },
+                                "profiling": {
+                                    "enabled": false
+                                },
+                                "resources": {
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    },
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    }
+                                },
+                                "verifyInstrumentation": false
+                            }]
+                        }
+                    ]
+                },
+                "verification": {
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/worker"
+                        },
+                        {
+                            "required": [
+                                "verifyInstrumentation"
+                            ],
+                            "properties": {
+                                "image": {},
+                                "javaOptions": {},
+                                "annotations": {},
+                                "replicaCount": {},
+                                "debug": {},
+                                "logging": {},
+                                "profiling": {},
+                                "resources": {},
+                                "kafka": {},
+                                "verifyInstrumentation": {
+                                    "type": "boolean",
+                                    "default": false,
+                                    "title": "run verification worker with Quasar's verifyInstrumentation enabled",
+                                    "examples": [
+                                        false
+                                    ]
+                                }
+                            },
+                            "examples": [{
+                                "image": {
+                                    "registry": "corda-os-docker.software.r3.com",
+                                    "repository": "corda-os-verification-worker",
                                     "tag": ""
                                 },
                                 "replicaCount": 1,
@@ -2233,6 +2294,35 @@
                     "image": {
                         "registry": "corda-os-docker.software.r3.com",
                         "repository": "corda-os-flow-worker",
+                        "tag": ""
+                    },
+                    "replicaCount": 1,
+                    "debug": {
+                        "enabled": false,
+                        "suspend": false
+                    },
+                    "logging": {
+                        "level": "warn"
+                    },
+                    "profiling": {
+                        "enabled": false
+                    },
+                    "resources": {
+                        "requests": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        },
+                        "limits": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        }
+                    },
+                    "verifyInstrumentation": false
+                },
+                "verification": {
+                    "image": {
+                        "registry": "corda-os-docker.software.r3.com",
+                        "repository": "corda-os-verification-worker",
                         "tag": ""
                     },
                     "replicaCount": 1,
