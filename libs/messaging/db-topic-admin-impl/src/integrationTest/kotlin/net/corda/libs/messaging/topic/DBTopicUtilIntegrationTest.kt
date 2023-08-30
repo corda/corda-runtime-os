@@ -4,7 +4,7 @@ import com.typesafe.config.ConfigFactory
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
-import net.corda.db.testkit.PostgresDbUtils.getEntityManagerConfiguration
+import net.corda.db.testkit.DbUtils.getEntityManagerConfiguration
 import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry

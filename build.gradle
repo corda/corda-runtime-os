@@ -268,9 +268,11 @@ allprojects {
         systemProperty 'postgresPassword', postgresPassword
         systemProperty 'org.slf4j.simpleLogger.showDateTime', true
         systemProperty 'org.slf4j.simpleLogger.dateTimeFormat', 'yyyy-MM-dd HH:mm:ss:SSS Z'
-        systemProperty 'sqlPort', sqlPort
-        systemProperty 'sqlUser',sqlUser
-        systemProperty 'sqlPassword',sqlPassword
+        systemProperty 'mssqlHost', mssqlHost
+        systemProperty 'mssqlDb', mssqlDb
+        systemProperty 'mssqlPort', mssqlPort
+        systemProperty 'mssqlUser',mssqlUser
+        systemProperty 'mssqlPassword',mssqlPassword
 
         shouldRunAfter tasks.named('test', Test)
     }

@@ -31,13 +31,13 @@ class TestDbInfo(
     }
 
     val config: SmartConfig = configFactory.create(
-        PostgresDbUtils.createConfig(
+        DbUtils.createConfig(
             inMemoryDbName = name,
             schemaName = schemaName
         )
     )
 
-    val emConfig: EntityManagerConfiguration = PostgresDbUtils.getEntityManagerConfiguration(
+    val emConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration(
         inMemoryDbName = name,
         schemaName = schemaName,
         showSql = showSql,

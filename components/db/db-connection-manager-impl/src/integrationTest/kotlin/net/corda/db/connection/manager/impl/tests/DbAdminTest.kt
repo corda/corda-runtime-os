@@ -8,7 +8,7 @@ import net.corda.db.connection.manager.impl.DbConnectionManagerImpl
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
-import net.corda.db.testkit.PostgresDbUtils
+import net.corda.db.testkit.DbUtils
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
@@ -63,7 +63,7 @@ class DbAdminTest {
                 )
             )
         )
-        dbConfig = PostgresDbUtils.getEntityManagerConfiguration("configuration_db")
+        dbConfig = DbUtils.getEntityManagerConfiguration("configuration_db")
         dbConfig.dataSource.connection.use { connection ->
             LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
         }
@@ -97,7 +97,7 @@ class DbAdminTest {
                 EntityManagerFactoryFactoryImpl(),
                 entitiesRegistry
             )
-        val config = configFactory.create(PostgresDbUtils.createConfig("configuration_db", adminUser, adminPassword))
+        val config = configFactory.create(DbUtils.createConfig("configuration_db", adminUser, adminPassword))
         entitiesRegistry.register(
             CordaDb.CordaCluster.persistenceUnitName,
             ConfigurationEntities.classes
@@ -111,7 +111,7 @@ class DbAdminTest {
     @Test
     fun `when createDbAndUser create schema`() {
         val dba = createDbAdmin()
-        Assumptions.assumeFalse(PostgresDbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
 
         val random = Random.nextLong(Long.MAX_VALUE)
         val schema = "test_schema_$random"
@@ -138,7 +138,7 @@ class DbAdminTest {
         )
 
         // validate the DDL User can create a table
-        val ddlDataSource = PostgresDbUtils.createDataSource(ddlUser, ddlPassword, schema)
+        val ddlDataSource = DbUtils.createDataSource(ddlUser, ddlPassword, schema)
         ddlDataSource.use { dataSource ->
             dataSource.connection.use {
                 it.createStatement().execute("CREATE TABLE superhero(name VARCHAR(255))")
@@ -157,11 +157,11 @@ class DbAdminTest {
                 ),
             )
         )
-        val ddlConnection = PostgresDbUtils.createDataSource(ddlUser, ddlPassword, schema).connection
+        val ddlConnection = DbUtils.createDataSource(ddlUser, ddlPassword, schema).connection
         LiquibaseSchemaMigratorImpl().updateDb(ddlConnection, cl)
 
         // validate the DML User can query a table
-        val dmlDataSource = PostgresDbUtils.createDataSource(dmlUser, dmlPassword, schema)
+        val dmlDataSource = DbUtils.createDataSource(dmlUser, dmlPassword, schema)
         dmlDataSource.use { dataSource ->
             dataSource.connection.use {
                 it.createStatement().execute("INSERT INTO $schema.superhero(name) VALUES('hulk')")
@@ -178,20 +178,20 @@ class DbAdminTest {
 
     @Test
     fun `DML user can use table created by DDL user`() {
-        Assumptions.assumeFalse(PostgresDbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
 
         testDmlUserCanUseTableCreatedByDdlUser()
     }
 
     @Test
     fun `when DB admin is not superuser, DML user can use table created by DDL user`() {
-        Assumptions.assumeFalse(PostgresDbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
 
         // Create admin user that is not superuser
         val random = Random.nextLong(Long.MAX_VALUE)
         val adminUser = "test_admin_$random"
         val adminPassword = "test_admin_password_$random"
-        createAdminUser(PostgresDbUtils.dbName, adminUser, adminPassword)
+        createAdminUser(DbUtils.getDatabase(), adminUser, adminPassword)
 
         testDmlUserCanUseTableCreatedByDdlUser(adminUser, adminPassword)
     }
@@ -219,7 +219,7 @@ class DbAdminTest {
         assertThat(dba.userExists(dmlUser)).isTrue
 
         // Validate that DDL user can create a table
-        val ddlDataSource = PostgresDbUtils.createDataSource(ddlUser, password, schema)
+        val ddlDataSource = DbUtils.createDataSource(ddlUser, password, schema)
         ddlDataSource.use { dataSource ->
             dataSource.connection.use {
                 it.createStatement().execute("CREATE TABLE $schema.test_table (message VARCHAR(64))")
@@ -229,7 +229,7 @@ class DbAdminTest {
         }
 
         // Validate that DML user can select from table
-        val dmlDataSource = PostgresDbUtils.createDataSource(dmlUser, password, schema)
+        val dmlDataSource = DbUtils.createDataSource(dmlUser, password, schema)
         dmlDataSource.use { dataSource ->
             dataSource.connection.use {
                 it.createStatement().execute("INSERT INTO $schema.test_table VALUES('test2')")
@@ -246,20 +246,20 @@ class DbAdminTest {
 
     @Test
     fun `recreated DDL user can create table`() {
-        Assumptions.assumeFalse(PostgresDbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
 
         recreatedDdlUserCanCreateTable()
     }
 
     @Test
     fun `when DB admin is not superuser, recreated DDL user can create table`() {
-        Assumptions.assumeFalse(PostgresDbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
 
         // Create admin user that is not superuser
         val random = Random.nextLong(Long.MAX_VALUE)
         val adminUser = "test_admin_$random"
         val adminPassword = "test_admin_password_$random"
-        createAdminUser(PostgresDbUtils.dbName, adminUser, adminPassword)
+        createAdminUser(DbUtils.getDatabase(), adminUser, adminPassword)
 
         recreatedDdlUserCanCreateTable(adminUser, adminPassword)
     }
@@ -307,7 +307,7 @@ class DbAdminTest {
      * @param newPassword New user's password
      */
     private fun createAdminUser(database: String, newUser: String, newPassword: String) {
-        PostgresDbUtils.createDataSource().use { dataSource ->
+        DbUtils.createDataSource().use { dataSource ->
             dataSource.connection.use {
                 it.createStatement().execute("CREATE USER $newUser WITH PASSWORD '$newPassword'")
                 it.createStatement().execute("ALTER ROLE $newUser NOSUPERUSER CREATEDB CREATEROLE INHERIT LOGIN")
@@ -326,7 +326,7 @@ class DbAdminTest {
      * @param password Password
      */
     private fun createTable(schema: String, table: String, user: String, password: String) {
-        PostgresDbUtils.createDataSource(user, password).use { dataSource ->
+        DbUtils.createDataSource(user, password).use { dataSource ->
             dataSource.connection.use {
                 it.createStatement().execute(
                     "CREATE TABLE $schema.$table (message VARCHAR(64))"

@@ -2,7 +2,7 @@ package net.corda.db.test.osgi
 
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
-import net.corda.db.testkit.PostgresDbUtils.getEntityManagerConfiguration
+import net.corda.db.testkit.DbUtils.getEntityManagerConfiguration
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.utils.transaction

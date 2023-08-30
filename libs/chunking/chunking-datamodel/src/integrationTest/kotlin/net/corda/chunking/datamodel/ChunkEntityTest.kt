@@ -3,7 +3,7 @@ package net.corda.chunking.datamodel
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
-import net.corda.db.testkit.PostgresDbUtils
+import net.corda.db.testkit.DbUtils
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import org.assertj.core.api.Assertions.assertThat
@@ -15,7 +15,7 @@ import javax.persistence.EntityManagerFactory
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class ChunkEntityTest {
-    val emConfig = PostgresDbUtils.getEntityManagerConfiguration("chunking_db_for_test")
+    val emConfig = DbUtils.getEntityManagerConfiguration("chunking_db_for_test")
     private val entityManagerFactory: EntityManagerFactory
 
     companion object {

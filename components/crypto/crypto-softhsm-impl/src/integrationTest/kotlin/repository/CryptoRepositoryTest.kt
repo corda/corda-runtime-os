@@ -4,7 +4,7 @@ import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
-import net.corda.db.testkit.PostgresDbUtils
+import net.corda.db.testkit.DbUtils
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import org.junit.jupiter.api.AfterAll
@@ -38,7 +38,7 @@ abstract class CryptoRepositoryTest {
                     )
                 )
                 val dbConfig =
-                    PostgresDbUtils.getEntityManagerConfiguration(
+                    DbUtils.getEntityManagerConfiguration(
                         inMemoryDbName = "${this::class.java.simpleName}-$k",
                         schemaName = k,
                         createSchema = true

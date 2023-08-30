@@ -8,7 +8,7 @@ import net.corda.crypto.core.parseSecureHash
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
-import net.corda.db.testkit.PostgresDbUtils
+import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpkFile
 import net.corda.libs.cpi.datamodel.entities.internal.CpiCpkEntity
@@ -29,7 +29,7 @@ import org.junit.jupiter.api.TestInstance
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CpiEntitiesIntegrationTest {
-    private val dbConfig: EntityManagerConfiguration = PostgresDbUtils.getEntityManagerConfiguration("cpi_db")
+    private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("cpi_db")
     private val emf = EntityManagerFactoryFactoryImpl().create(
         "test_unit",
         CpiEntities.classes.toList(),

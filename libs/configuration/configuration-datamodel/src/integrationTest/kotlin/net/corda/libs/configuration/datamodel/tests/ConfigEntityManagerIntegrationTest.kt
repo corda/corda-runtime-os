@@ -5,7 +5,7 @@ import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.DbSchema
-import net.corda.db.testkit.PostgresDbUtils
+import net.corda.db.testkit.DbUtils
 import net.corda.libs.configuration.datamodel.ConfigAuditEntity
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
@@ -26,7 +26,7 @@ import kotlin.random.Random
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ConfigEntityManagerIntegrationTest {
-    private val dbConfig = PostgresDbUtils.getEntityManagerConfiguration("configuration_db")
+    private val dbConfig = DbUtils.getEntityManagerConfiguration("configuration_db")
     private val entityManagerFactory: EntityManagerFactory
 
     private companion object {

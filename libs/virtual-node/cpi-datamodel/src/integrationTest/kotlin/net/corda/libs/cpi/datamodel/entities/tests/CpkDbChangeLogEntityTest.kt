@@ -5,7 +5,7 @@ import net.corda.crypto.core.parseSecureHash
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
-import net.corda.db.testkit.PostgresDbUtils
+import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogAudit
@@ -29,7 +29,7 @@ import org.junit.jupiter.api.TestInstance
 class CpkDbChangeLogEntityTest {
 
     private val dbConfig: EntityManagerConfiguration =
-        PostgresDbUtils.getEntityManagerConfiguration("cpk_changelog_db")
+        DbUtils.getEntityManagerConfiguration("cpk_changelog_db")
     private val emf = EntityManagerFactoryFactoryImpl().create(
         "test_unit",
         CpiEntities.classes.toList(),

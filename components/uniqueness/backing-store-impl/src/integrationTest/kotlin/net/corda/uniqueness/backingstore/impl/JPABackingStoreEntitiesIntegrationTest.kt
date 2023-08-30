@@ -6,7 +6,7 @@ import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.ClassloaderChangeLog.ChangeLogResourceFiles
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
-import net.corda.db.testkit.PostgresDbUtils
+import net.corda.db.testkit.DbUtils
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.test.util.time.AutoTickTestClock
@@ -26,7 +26,7 @@ import javax.persistence.EntityManagerFactory
 @Suppress("FunctionNaming")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JPABackingStoreEntitiesIntegrationTest {
-    private val dbConfig = PostgresDbUtils.getEntityManagerConfiguration("uniqueness_db")
+    private val dbConfig = DbUtils.getEntityManagerConfiguration("uniqueness_db")
     private val entityManagerFactory: EntityManagerFactory
 
     // Test clock is restricted to milliseconds because this is the granularity stored in the DB

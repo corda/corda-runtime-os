@@ -7,7 +7,7 @@ import net.corda.crypto.core.SecureHashImpl
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
-import net.corda.db.testkit.PostgresDbUtils
+import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.libs.cpiupload.DuplicateCpiUploadException
@@ -56,7 +56,7 @@ class UpsertCpiTests {
     }
 
     // N.B.  We're pulling in the config tables as well.
-    private val emConfig = PostgresDbUtils.getEntityManagerConfiguration("chunking_db_for_test")
+    private val emConfig = DbUtils.getEntityManagerConfiguration("chunking_db_for_test")
     private val entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
         "test_unit",
         ChunkingEntities.classes.toList() + CpiEntities.classes.toList(),

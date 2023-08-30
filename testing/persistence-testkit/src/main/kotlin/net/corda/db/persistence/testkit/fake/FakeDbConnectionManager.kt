@@ -6,7 +6,7 @@ import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DataSourceFactory
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
-import net.corda.db.testkit.PostgresDbUtils
+import net.corda.db.testkit.DbUtils
 import net.corda.libs.configuration.SmartConfig
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
@@ -36,7 +36,7 @@ class FakeDbConnectionManager(
     private data class NamedDataSources(val id: UUID, val name: String, val dataSource: CloseableDataSource)
 
     private val dbSources: List<NamedDataSources> = connections.map {
-        val source = PostgresDbUtils.getEntityManagerConfiguration(
+        val source = DbUtils.getEntityManagerConfiguration(
             "fake-db-manager-db-$schemaName",
             schemaName = "$schemaName${it.second.replace("-","")}",
             createSchema = true).dataSource
