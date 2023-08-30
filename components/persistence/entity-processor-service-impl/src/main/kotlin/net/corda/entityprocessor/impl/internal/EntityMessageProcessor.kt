@@ -39,6 +39,7 @@ import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
+import javax.persistence.EntityManager
 import javax.persistence.PersistenceException
 
 fun SandboxGroupContext.getClass(fullyQualifiedClassName: String) =
@@ -146,28 +147,17 @@ class EntityMessageProcessor(
         val em = entityManagerFactory.createEntityManager()
         return when (val entityRequest = request.request) {
             is PersistEntities -> {
-                em.transaction {
-                    try {
-                        // We should require requestId to be a UUID to avoid request ids collisions
-                        val requestId =
-                            UUID.fromString(request.flowExternalEventContext.requestId)
-                        requestsIdsRepository.persist(requestId, it)
-                        it.flush()
-                    } catch (e: PersistenceException) {
-                        // A persistence exception thrown in the de-duplication check means we have already performed the operation and
-                        // can therefore treat the request as successful
-                        it.transaction.setRollbackOnly()
-                        return@transaction responseFactory.successResponse(
-                            request.flowExternalEventContext,
-                            EntityResponse(emptyList(), KeyValuePairList(emptyList()))
-                        )
-                    }
-                    val entityResponse = persistenceServiceInternal.persist(serializationService, it, entityRequest)
-                    responseFactory.successResponse(
-                        request.flowExternalEventContext,
-                        entityResponse
-                    )
+                val entityResponse = withDeduplicationCheck(
+                    request,
+                    em
+                ) {
+                    persistenceServiceInternal.persist(serializationService, em, entityRequest)
                 }
+
+                responseFactory.successResponse(
+                    request.flowExternalEventContext,
+                    entityResponse
+                )
             }
 
             is DeleteEntities -> em.transaction {
@@ -189,27 +179,17 @@ class EntityMessageProcessor(
             }
 
             is MergeEntities -> {
-                em.transaction {
-                    try {
-                        val requestId = UUID.fromString(request.flowExternalEventContext.requestId)
-                        // We should require requestId to be a UUID to avoid request ids collisions
-                        requestsIdsRepository.persist(requestId, it)
-                        it.flush()
-                    } catch (e: PersistenceException) {
-                        // A persistence exception thrown in the de-duplication check means we have already performed the operation and
-                        // can therefore treat the request as successful
-                        it.transaction.setRollbackOnly()
-                        return@transaction responseFactory.successResponse(
-                            request.flowExternalEventContext,
-                            EntityResponse(emptyList(), KeyValuePairList(emptyList()))
-                        )
-                    }
-                    val entityResponse = persistenceServiceInternal.merge(serializationService, it, entityRequest)
-                    responseFactory.successResponse(
-                        request.flowExternalEventContext,
-                        entityResponse
-                    )
+                val entityResponse = withDeduplicationCheck(
+                    request,
+                    em
+                ) {
+                    persistenceServiceInternal.merge(serializationService, it, entityRequest)
                 }
+
+                responseFactory.successResponse(
+                    request.flowExternalEventContext,
+                    entityResponse
+                )
             }
 
             is FindEntities -> em.transaction {
@@ -243,4 +223,26 @@ class EntityMessageProcessor(
     }
 
     private fun String.toSecureHash() = parseSecureHash(this)
+
+    private fun withDeduplicationCheck(
+        request: EntityRequest,
+        em: EntityManager,
+        block: (EntityManager) -> EntityResponse
+    ): EntityResponse {
+        return em.transaction {
+            try {
+                // We should require requestId to be a UUID to avoid request ids collisions
+                val requestId =
+                    UUID.fromString(request.flowExternalEventContext.requestId)
+                requestsIdsRepository.persist(requestId, it)
+                it.flush()
+            } catch (e: PersistenceException) {
+                // A persistence exception thrown in the de-duplication check means we have already performed the operation and
+                // can therefore treat the request as successful
+                it.transaction.setRollbackOnly()
+                return@transaction EntityResponse(emptyList(), KeyValuePairList(emptyList()))
+            }
+            block(em)
+        }
+    }
 }
