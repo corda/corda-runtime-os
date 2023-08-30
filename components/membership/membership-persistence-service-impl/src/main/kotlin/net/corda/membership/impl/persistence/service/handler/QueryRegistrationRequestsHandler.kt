@@ -56,6 +56,7 @@ internal class QueryRegistrationRequestsHandler(persistenceHandlerServices: Pers
                     this
                 }.map { it.toDetails() }
             }
+
             RegistrationRequestsQueryResponse(details)
         }
     }

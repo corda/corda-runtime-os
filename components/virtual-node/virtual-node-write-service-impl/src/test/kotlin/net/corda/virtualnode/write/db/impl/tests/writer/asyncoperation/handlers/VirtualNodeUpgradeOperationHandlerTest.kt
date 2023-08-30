@@ -115,6 +115,8 @@ class VirtualNodeUpgradeOperationHandlerTest {
         membershipQueryClient,
         externalMessagingRouteConfigGenerator,
         cordaAvroSerializationFactory,
+        mock(),
+        mock(),
         mockCpkDbChangeLogRepository,
         virtualNodeRepository,
     )

@@ -137,7 +137,7 @@ class MGMRegistrationService @Activate constructor(
         private val mgmRegistrationContextValidator = MGMRegistrationContextValidator(
             membershipSchemaValidatorFactory,
             configurationGetService = configurationGetService,
-            clock = UTCClock()
+            clock = UTCClock(),
         )
         private val mgmRegistrationMemberInfoHandler = MGMRegistrationMemberInfoHandler(
             clock,
@@ -145,6 +145,7 @@ class MGMRegistrationService @Activate constructor(
             keyEncodingService,
             memberInfoFactory,
             membershipPersistenceClient,
+            membershipQueryClient,
             platformInfoProvider,
             virtualNodeInfoReadService,
             cordaAvroSerializationFactory,
@@ -152,6 +153,7 @@ class MGMRegistrationService @Activate constructor(
         private val mgmRegistrationGroupPolicyHandler = MGMRegistrationGroupPolicyHandler(
             layeredPropertyMapFactory,
             membershipPersistenceClient,
+            membershipQueryClient
         )
         private val mgmRegistrationOutputPublisher = MGMRegistrationOutputPublisher(memberInfoFactory)
 
@@ -161,28 +163,38 @@ class MGMRegistrationService @Activate constructor(
             context: Map<String, String>
         ): Collection<Record<*, *>> {
             return try {
-                mgmRegistrationRequestHandler.throwIfRegistrationAlreadyApproved(member)
-                mgmRegistrationContextValidator.validate(context)
+                val lastRegistrationRequest = mgmRegistrationRequestHandler.getLastRegistrationRequest(member)
+                val mgmInfo = if (lastRegistrationRequest != null) {
+                    val lastMemberInfo = mgmRegistrationMemberInfoHandler.queryForMGMMemberInfo(member)
+                    //TODO check the request for the serial number
+                    val mgmInfo = mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(member, context, lastMemberInfo.serial + 1)
+                    mgmRegistrationContextValidator.validateMemberContext(mgmInfo, lastMemberInfo)
+                    val lastGroupPolicy = mgmRegistrationGroupPolicyHandler.getLastGroupPolicy(member)
+                    mgmRegistrationContextValidator.validateGroupPolicy(context, lastGroupPolicy)
+                    mgmRegistrationMemberInfoHandler.persistMgmMemberInfo(member, mgmInfo)
+                    mgmRegistrationRequestHandler.persistRegistrationRequest(registrationId, member, mgmInfo)
+                    mgmInfo
+                } else {
+                    mgmRegistrationContextValidator.validate(context)
+                    val mgmInfo = mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(member, context, 1)
+                    mgmRegistrationMemberInfoHandler.persistMgmMemberInfo(member, mgmInfo)
+                    mgmRegistrationGroupPolicyHandler.buildAndPersist(
+                        member,
+                        context
+                    )
 
-                val mgmInfo = mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(member, context)
+                    // Persist group parameters snapshot
+                    val groupParametersPersistenceResult = membershipPersistenceClient.persistGroupParametersInitialSnapshot(member).execute()
+                    if (groupParametersPersistenceResult is MembershipPersistenceResult.Failure) {
+                        throw NotReadyMembershipRegistrationException(groupParametersPersistenceResult.errorMsg)
+                    }
+                    mgmRegistrationRequestHandler.persistRegistrationRequest(registrationId, member, mgmInfo)
 
-                mgmRegistrationGroupPolicyHandler.buildAndPersist(
-                    member,
-                    context
-                )
-
-                // Persist group parameters snapshot
-                val groupParametersPersistenceResult =
-                    membershipPersistenceClient.persistGroupParametersInitialSnapshot(member)
-                        .execute()
-                if (groupParametersPersistenceResult is MembershipPersistenceResult.Failure) {
-                    throw NotReadyMembershipRegistrationException(groupParametersPersistenceResult.errorMsg)
+                    // Publish group parameters to Kafka
+                    val groupParameters = groupParametersPersistenceResult.getOrThrow()
+                    groupParametersWriterService.put(member, groupParameters)
+                    mgmInfo
                 }
-                mgmRegistrationRequestHandler.persistRegistrationRequest(registrationId, member, mgmInfo)
-
-                // Publish group parameters to Kafka
-                val groupParameters = groupParametersPersistenceResult.getOrThrow()
-                groupParametersWriterService.put(member, groupParameters)
 
                 expirationProcessor.scheduleProcessingOfExpiredRequests(member)
 

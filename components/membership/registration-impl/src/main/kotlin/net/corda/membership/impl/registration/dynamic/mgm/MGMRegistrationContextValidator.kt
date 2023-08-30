@@ -20,6 +20,14 @@ import java.security.cert.CertificateFactory
 import java.security.cert.CertificateNotYetValidException
 import java.security.cert.X509Certificate
 import java.util.Date
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.data.KeyValuePairList
+import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.SelfSignedMemberInfo
+import net.corda.membership.lib.toMap
+import net.corda.v5.base.types.LayeredPropertyMap
+import org.slf4j.LoggerFactory
 
 internal class MGMRegistrationContextValidator(
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
@@ -28,7 +36,6 @@ internal class MGMRegistrationContextValidator(
     private val configurationGetService: ConfigurationGetService,
     private val clock: Clock
 ) {
-
     private companion object {
         const val errorMessageTemplate = "No %s was provided."
 
@@ -50,6 +57,7 @@ internal class MGMRegistrationContextValidator(
         val SUPPORTED_SYNC_PROTOCOLS = setOf(
             "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl"
         )
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val certificateFactory = CertificateFactory.getInstance("X.509")
@@ -74,6 +82,39 @@ internal class MGMRegistrationContextValidator(
             throw MGMRegistrationContextValidationException(
                 "Onboarding MGM failed. Unexpected error occurred during context validation. ${ex.message}",
                 ex
+            )
+        }
+    }
+
+    /**
+     * Performs the same checks as [validate] but additionally checks the
+     */
+    @Throws(MGMRegistrationContextValidationException::class)
+    fun validateMemberContext(
+        newContext: SelfSignedMemberInfo,
+        lastMemberInfo: SelfSignedMemberInfo
+    ) {
+        val newMemberContext = newContext.memberProvidedContext.toMap()
+        val lastMemberContext = lastMemberInfo.memberProvidedContext.toMap()
+        val diff = ((newMemberContext.entries - lastMemberContext.entries) + (lastMemberContext.entries - newMemberContext.entries))
+            .filterNot {
+                it.key.startsWith(MemberInfoExtension.ENDPOINTS)
+            }
+        if (diff.isNotEmpty()) {
+            throw MGMRegistrationContextValidationException(
+                "Fields ${diff.map { it.key }} cannot be added, removed or updated during MGM re-registration.", null
+            )
+        }
+    }
+
+    @Throws(MGMRegistrationContextValidationException::class)
+    fun validateGroupPolicy(registrationContext: Map<String, String>, lastGroupPolicy: LayeredPropertyMap) {
+        val groupPolicy = registrationContext.filterKeys { it.startsWith(GROUP_POLICY_PREFIX) }
+            .mapKeys { it.key.replace("$GROUP_POLICY_PREFIX.", "") }
+        val diff = ((groupPolicy.entries - lastGroupPolicy.entries) + (lastGroupPolicy.entries - groupPolicy.entries))
+        if (diff.isNotEmpty()) {
+            throw MGMRegistrationContextValidationException(
+                "Fields ${diff.map { it.key }} cannot be added, removed or updated during MGM re-registration.", null
             )
         }
     }

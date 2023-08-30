@@ -63,6 +63,7 @@ class MGMRegistrationGroupPolicyHandlerTest {
     private val mgmRegistrationGroupPolicyHandler = MGMRegistrationGroupPolicyHandler(
         layeredPropertyMapFactory,
         membershipPersistenceClient,
+        mock()
     )
 
     @Test

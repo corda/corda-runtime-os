@@ -44,6 +44,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.security.PublicKey
+import net.corda.membership.persistence.client.MembershipQueryClient
 
 @Suppress("LongParameterList")
 internal class MGMRegistrationMemberInfoHandler(
@@ -52,6 +53,7 @@ internal class MGMRegistrationMemberInfoHandler(
     private val keyEncodingService: KeyEncodingService,
     private val memberInfoFactory: MemberInfoFactory,
     private val membershipPersistenceClient: MembershipPersistenceClient,
+    private val membershipQueryClient: MembershipQueryClient,
     private val platformInfoProvider: PlatformInfoProvider,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
@@ -75,14 +77,17 @@ internal class MGMRegistrationMemberInfoHandler(
     }
 
     @Throws(MGMRegistrationMemberInfoHandlingException::class)
-    fun buildAndPersistMgmMemberInfo(
-        holdingIdentity: HoldingIdentity,
-        context: Map<String, String>
-    ): SelfSignedMemberInfo {
+    fun persistMgmMemberInfo(holdingIdentity: HoldingIdentity, selfSignedMemberInfo: SelfSignedMemberInfo) {
         logger.info("Started building mgm member info.")
-        return buildMgmInfo(holdingIdentity, context).also {
-            persistMemberInfo(holdingIdentity, it)
-        }
+        return persistMemberInfo(holdingIdentity, selfSignedMemberInfo)
+    }
+
+    fun queryForMGMMemberInfo(holdingIdentity: HoldingIdentity): SelfSignedMemberInfo {
+        return membershipQueryClient.queryMemberInfo(
+            holdingIdentity,
+            setOf(holdingIdentity),
+            listOf(MEMBER_STATUS_ACTIVE)
+        ).getOrThrow().single()
     }
 
     @Suppress("ThrowsCount")
@@ -128,9 +133,10 @@ internal class MGMRegistrationMemberInfoHandler(
         }
     }
 
-    private fun buildMgmInfo(
+    fun buildMgmMemberInfo(
         holdingIdentity: HoldingIdentity,
-        context: Map<String, String>
+        context: Map<String, String>,
+        serialNumber: Long
     ): SelfSignedMemberInfo {
         val cpi = virtualNodeInfoReadService.get(holdingIdentity)?.cpiIdentifier
             ?: throw MGMRegistrationMemberInfoHandlingException(
@@ -176,7 +182,7 @@ internal class MGMRegistrationMemberInfoHandler(
                     MODIFIED_TIME to now,
                     STATUS to MEMBER_STATUS_ACTIVE,
                     IS_MGM to "true",
-                    SERIAL to SERIAL_CONST,
+                    SERIAL to serialNumber.toString(),
                 ).toWire()
             ),
             CryptoSignatureWithKey(
