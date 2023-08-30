@@ -219,7 +219,12 @@ internal class OutboundMessageProcessor(
                 return emptyList()
             }
 
-            val linkOutMessage = MessageConverter.linkOutFromUnauthenticatedMessage(inboundMessage, source, destMemberInfo, p2pParams.networkType)
+            val linkOutMessage = MessageConverter.linkOutFromUnauthenticatedMessage(
+                inboundMessage,
+                source,
+                destMemberInfo,
+                p2pParams.networkType
+            )
             //TODO logger info level and source identity added temporarily for Interop Team, revert to debug as part of CORE-10683
             logger.info ("Sending outbound message ${message.header.messageId} to ${message.header.destination} " +
                     "for ${linkOutMessage.header.address}." )
