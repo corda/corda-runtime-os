@@ -1,8 +1,5 @@
 package net.corda.flow.pipeline.sessions.impl
 
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.stream.Stream
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -38,7 +35,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -51,8 +47,11 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.stream.Stream
 
-@Disabled//todo - core-15757
+//@Disabled//todo - core-15757
 class FlowSessionManagerImplTest {
 
     private companion object {
@@ -96,7 +95,8 @@ class FlowSessionManagerImplTest {
         0,
         mutableListOf(),
         sessionId = SESSION_ID,
-        counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
+        counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
+        requireClose = false
     )
 
     private val anotherSessionState = buildSessionState(
@@ -106,7 +106,8 @@ class FlowSessionManagerImplTest {
         0,
         mutableListOf(),
         sessionId = ANOTHER_SESSION_ID,
-        counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
+        counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
+        requireClose = false
     )
 
     private val flowKey = mock<FlowKey>()
@@ -693,7 +694,8 @@ class FlowSessionManagerImplTest {
             0,
             mutableListOf(),
             sessionId = SESSION_ID,
-            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
+            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
+            requireClose = false
         )
 
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(closingSessionState)
@@ -704,7 +706,7 @@ class FlowSessionManagerImplTest {
     }
 
     @Test
-    fun `validate doesnt find closing state when closing session not listed in given session ids`() {
+    fun `validate doesn't find closing state when closing session not listed in given session ids`() {
         val closingSessionState = buildSessionState(
             SessionStateType.CLOSING,
             1,
@@ -712,7 +714,8 @@ class FlowSessionManagerImplTest {
             0,
             mutableListOf(),
             sessionId = SESSION_ID,
-            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
+            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
+            requireClose = false
         )
 
         whenever(checkpoint.sessions).thenReturn(listOf(closingSessionState))
@@ -733,7 +736,8 @@ class FlowSessionManagerImplTest {
             0,
             mutableListOf(),
             sessionId = SESSION_ID,
-            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
+            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
+            requireClose = false
         )
 
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(closingSessionState)
@@ -753,7 +757,8 @@ class FlowSessionManagerImplTest {
             0,
             mutableListOf(),
             sessionId = SESSION_ID,
-            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
+            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
+            requireClose = false
         )
 
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(closingSessionState)
@@ -885,12 +890,52 @@ class FlowSessionManagerImplTest {
             0,
             mutableListOf(),
             sessionId = SESSION_ID,
-            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
+            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
+            requireClose = false
         )
 
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(confirmedSessionState)
 
         flowSessionManager.sendConfirmMessage(checkpoint, SESSION_ID, emptyKeyValuePairList(), Instant.now())
         verify(sessionManager, times(1)).processMessageToSend(any(), any(), any(), any(), any())
+    }
+
+    @Test
+    fun `getRequireCloseTrueAndFalse`() {
+        flowSessionManager.getRequireCloseTrueAndFalse(checkpoint, listOf(SESSION_ID, ANOTHER_SESSION_ID))
+    }
+
+    @Test
+    fun `getInitiatingAndInitiatedSessions`() {
+        flowSessionManager.getInitiatingAndInitiatedSessions(listOf(SESSION_ID, ANOTHER_SESSION_ID))
+    }
+
+    @Test
+    fun `updateStatus`() {
+        sessionState.status = SessionStateType.CREATED
+        assertEquals(
+            listOf(sessionState),
+            flowSessionManager.getSessionsWithStatus(
+                checkpoint,
+                listOf(SESSION_ID),
+                SessionStateType.CREATED
+            )
+        )
+
+        anotherSessionState.status = SessionStateType.CONFIRMED
+        assertEquals(
+            listOf(anotherSessionState),
+            flowSessionManager.getSessionsWithStatus(
+                checkpoint,
+                listOf(ANOTHER_SESSION_ID),
+                SessionStateType.CONFIRMED
+            )
+        )
+
+        flowSessionManager.updateStatus(checkpoint, listOf(SESSION_ID), SessionStateType.CLOSED)
+        assertThat(sessionState.status).isEqualTo(SessionStateType.CLOSED)
+
+        flowSessionManager.updateStatus(checkpoint, listOf(ANOTHER_SESSION_ID), SessionStateType.CLOSING)
+        assertThat(anotherSessionState.status).isEqualTo(SessionStateType.CLOSING)
     }
 }

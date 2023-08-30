@@ -225,7 +225,7 @@ class FlowSessionManagerImpl @Activate constructor(
         return sessionIds
             .map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
             .onEach {
-                it.status = SessionStateType.CLOSED
+                it.status = status
             }
     }
 
