@@ -1,18 +1,21 @@
 package net.corda.session.manager.impl
 
+import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
-import net.corda.data.flow.event.session.SessionError
-import net.corda.data.flow.event.session.SessionInit
+import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.utils.toMap
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.chunking.MessagingChunkFactory
+import net.corda.schema.configuration.FlowConfig
+import net.corda.session.manager.Constants
 import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
+import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.setErrorState
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
@@ -49,13 +52,31 @@ class SessionManagerImpl @Activate constructor(
 
     override fun processMessageToSend(
         key: Any,
-        sessionState: SessionState?,
+        sessionState: SessionState,
         event: SessionEvent,
         instant: Instant,
         maxMsgSize: Long,
     ): SessionState {
         return sessionEventProcessorFactory.createEventToSendProcessor(key, event, sessionState, instant, maxMsgSize).execute()
     }
+
+    override fun generateSessionState(
+        sessionId: String,
+        contextSessionProperties: KeyValuePairList,
+        counterparty: HoldingIdentity,
+        instant: Instant,
+    ): SessionState = SessionState.newBuilder()
+            .setSessionId(sessionId)
+            .setSessionStartTime(instant)
+            .setLastReceivedMessageTime(instant)
+            .setCounterpartyIdentity(counterparty)
+            .setReceivedEventsState(SessionProcessState(0, mutableListOf()))
+            .setSendEventsState(SessionProcessState(0, mutableListOf()))
+            .setSessionProperties(contextSessionProperties)
+            .setStatus(SessionStateType.CREATED)
+            .setHasScheduledCleanup(false)
+            .setRequireClose(contextSessionProperties.toMap()[Constants.FLOW_SESSION_REQUIRE_CLOSE].toBoolean())
+            .build()
 
     override fun getNextReceivedEvent(sessionState: SessionState): SessionEvent? {
         val receivedEvents = sessionState.receivedEventsState ?: return null
@@ -67,8 +88,6 @@ class SessionManagerImpl @Activate constructor(
             undeliveredMessages.isEmpty() -> null
             //don't allow data messages to be consumed when session is not fully established or if there is an error
             incorrectSessionState -> null
-            //only allow client to see a close message after the session is closed on both sides
-            status != SessionStateType.CLOSED && undeliveredMessages.first().payload is SessionClose -> null
             //return the next valid message
             undeliveredMessages.first().sequenceNum <= receivedEvents.lastProcessedSequenceNum -> {
                 val nextMessage = undeliveredMessages.first()
@@ -96,41 +115,38 @@ class SessionManagerImpl @Activate constructor(
         instant: Instant,
         config: SmartConfig,
         identity: HoldingIdentity,
-    ): Pair<SessionState,
-            List<SessionEvent>> {
-        val messagesToReturn = getMessagesToSendAndUpdateSendState(sessionState, instant)
+    ): Pair<SessionState, List<SessionEvent>> {
+        val sessionEvents = getMessagesToSend(sessionState)
+        val messagesToReturn = handleSessionTimeouts(sessionState, config, instant, sessionEvents, identity)
+        sessionState.sendEventsState.undeliveredMessages = emptyList()
         return Pair(sessionState, messagesToReturn)
     }
 
-    override fun errorSession(sessionState: SessionState) : SessionState {
+    override fun errorSession(sessionState: SessionState): SessionState {
         sessionState.status = SessionStateType.ERROR
         return sessionState
     }
 
     /**
-     * Get any new messages to send from the sendEvents state within [sessionState].
-     * If we're in [SessionStateType.CREATED], only send [SessionInit] events.
-     * Send any Acks or Errors regardless of timestamps.
-     * Send any other messages with a timestamp less than that of [instantInMillis].
-     * Don't send a SessionAck if other events present in the send list as ack info is present at SessionEvent level on all events.
-     * Update sendEvents state to remove acks/errors and increase timestamps of messages to send.
+     * Get any new messages to send from the sendEvents state within [sessionState]
+     * and log some debug information.
      * @param sessionState to examine sendEventsState.undeliveredMessages
-     * @param instant to compare against messages to avoid resending messages in quick succession
-     * @param config config to get resend values from
      * @return Messages to send
      */
-    private fun getMessagesToSendAndUpdateSendState(
+    private fun getMessagesToSend(
         sessionState: SessionState,
-        instant: Instant,
     ): List<SessionEvent> {
-        val sessionEvents = filterSessionEvents(sessionState, instant)
-        if (sessionEvents.isEmpty()) return emptyList()
-
-
-        logger.debug {
-            "Dispatching events for session [${sessionState.sessionId}]: " +
-            sessionEvents.joinToString {
-                "[Sequence: ${it.sequenceNum}, Class: ${it.payload::class.java.simpleName}, Resend timestamp: ${it.timestamp}]"
+        val sessionEvents = sessionState.sendEventsState.undeliveredMessages
+        if (sessionEvents.isNotEmpty()) {
+            logger.debug {
+                "Dispatching events for session [${sessionState.sessionId}]: " +
+                        sessionEvents.joinToString {
+                            "[Sequence: ${it.sequenceNum}, Class: ${it.payload::class.java.simpleName}, Resend timestamp: ${it.timestamp}]"
+                        }
+            }
+        } else {
+            logger.debug {
+                "No SessionEvents to dispatch for [${sessionState.sessionId}]"
             }
         }
 
@@ -138,30 +154,59 @@ class SessionManagerImpl @Activate constructor(
     }
 
     /**
-     * Filters session events from the given [SessionState] that are ready to be sent based on the given [instant].
-     * Events with a timestamp in the past or any error events are included in the filtered list.
-     *
-     * If the [SessionState] status is [SessionStateType.CREATED], only the first [SessionInit] event from the filtered
-     * list is returned (if present), otherwise all events are returned.
-     *
-     * @param sessionState the [SessionState] from which to filter session events.
-     * @param instant the [Instant] to use for filtering events based on their timestamp.
-     * @return a list of [SessionEvent] objects that are ready to be sent.
+     * If no message received from counterparty after session timeout has been reached, error the session
+     * else return back [messagesToReturn]
+     * @param sessionState to update
+     * @param config contains message resend window and heartbeat timeout values
+     * @param instant for timestamps of new messages
+     * @param sessionEvents session events to send
+     * @param identity identity of the party sending messages
+     * @return Messages to send to the counterparty
      */
-    private fun filterSessionEvents(
+    private fun handleSessionTimeouts(
         sessionState: SessionState,
-        instant: Instant
+        config: SmartConfig,
+        instant: Instant,
+        sessionEvents: List<SessionEvent>,
+        identity: HoldingIdentity,
     ): List<SessionEvent> {
-        if (sessionState.sendEventsState.undeliveredMessages.isEmpty()) return emptyList()
+        val lastReceivedMessageTime = sessionState.lastReceivedMessageTime
 
-        val pastEventsAndErrors = sessionState.sendEventsState.undeliveredMessages.filter {
-            it.timestamp <= instant || it.payload is SessionError
-        }
+        val sessionTimeoutTimestamp = lastReceivedMessageTime.plusMillis(config.getLong(FlowConfig.SESSION_TIMEOUT_WINDOW))
 
-        return if (SessionStateType.CREATED == sessionState.status) {
-            pastEventsAndErrors.firstOrNull { it.payload is SessionInit }?.let { listOf(it) } ?: emptyList()
+        return if (instant > sessionTimeoutTimestamp) {
+            //send an error if the session has timed out
+            val updatedSessionState = errorSession(sessionState)
+            val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(updatedSessionState, identity)
+            listOf(
+                generateErrorEvent(
+                    updatedSessionState,
+                    initiatingIdentity,
+                    initiatedIdentity,
+                    "Session has timed out. No messages received since $lastReceivedMessageTime",
+                    "SessionTimeout-Heartbeat",
+                    instant
+                ).apply {
+                    this.initiatedIdentity = initiatedIdentity
+                    this.initiatingIdentity = initiatingIdentity
+                }
+            )
+
+        } else sessionEvents
+    }
+
+    /**
+     * Get the initiating and initiated identities.
+     * @param sessionState Session state
+     * @param identity The identity of the party to send messages from
+     * @return Pair with initiating party as the first identity, initiated party as the second identity
+     */
+    private fun getInitiatingAndInitiatedParties(sessionState: SessionState, identity: HoldingIdentity):
+            Pair<HoldingIdentity, HoldingIdentity> {
+        return if (sessionState.sessionId.contains(Constants.INITIATED_SESSION_ID_SUFFIX)) {
+            Pair(sessionState.counterpartyIdentity, identity)
         } else {
-            pastEventsAndErrors
+            Pair(identity, sessionState.counterpartyIdentity)
         }
     }
 

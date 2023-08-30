@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests.sessions.service
 
-import java.time.Instant
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
@@ -9,7 +8,6 @@ import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.utils.KeyValueStore
-import net.corda.flow.utils.keyValuePairListOf
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPPORTED
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
@@ -18,6 +16,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 @Component(service = [InitiateFlowRequestService::class])
 class InitiateFlowRequestService @Activate constructor(
@@ -45,12 +44,12 @@ class InitiateFlowRequestService @Activate constructor(
     ) {
         val sessionsNotInitiated = getSessionsNotInitiated(context, sessionToInfo)
         if (sessionsNotInitiated.isNotEmpty()) {
-            initiateFlows(context, sessionsNotInitiated)
+            generateSessionStates(context, sessionsNotInitiated)
         }
     }
 
     @Suppress("ThrowsCount")
-    private fun initiateFlows(
+    private fun generateSessionStates(
         context: FlowEventContext<Any>,
         sessionsNotInitiated: Set<SessionInfo>
     ) {
@@ -85,12 +84,10 @@ class InitiateFlowRequestService @Activate constructor(
 
         checkpoint.putSessionStates(
             sessionsNotInitiated.map {
-                flowSessionManager.sendInitMessage(
+                flowSessionManager.generateSessionState(
                     checkpoint,
                     it.sessionId,
                     it.counterparty,
-                    contextUserProperties = keyValuePairListOf(it.contextUserProperties),
-                    contextPlatformProperties = keyValuePairListOf(it.contextPlatformProperties),
                     sessionProperties = sessionContext.apply { put(FLOW_SESSION_REQUIRE_CLOSE, it.requireClose.toString()) }.avro,
                     Instant.now()
                 )

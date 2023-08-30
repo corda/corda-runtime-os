@@ -8,7 +8,6 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -16,7 +15,6 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.whenever
 
-@Disabled//todo - core-15757
 class SessionUtilsTest {
 
     private val flowFiberService: FlowFiberService = mock()
@@ -44,7 +42,7 @@ class SessionUtilsTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = SessionStateType::class, names = ["CREATED", "CONFIRMED", "CLOSING", "WAIT_FOR_FINAL_ACK"])
+    @EnumSource(value = SessionStateType::class, names = ["CREATED", "CONFIRMED", "CLOSING"])
     fun `verifySessionStatusNotErrorOrClose doesnt throw on all types`(sessionStateType: SessionStateType) {
         whenever(sessionState.status).thenReturn(sessionStateType)
         assertDoesNotThrow {

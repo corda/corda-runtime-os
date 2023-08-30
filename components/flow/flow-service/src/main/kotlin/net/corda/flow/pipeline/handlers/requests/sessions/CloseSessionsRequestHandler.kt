@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
-import java.time.Instant
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
@@ -12,7 +11,6 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.sessions.FlowSessionManager
-import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -47,24 +45,15 @@ class CloseSessionsRequestHandler @Activate constructor(
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.CloseSessions): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
-
-        val hasNoSessionsOrAllClosed = try {
-            val sessionsToClose = getSessionsToClose(checkpoint, request)
-
-            checkpoint.putSessionStates(flowSessionManager.sendCloseMessages(checkpoint, sessionsToClose, Instant.now()))
-
-            sessionsToClose.isEmpty() || flowSessionManager.doAllSessionsHaveStatus(checkpoint, sessionsToClose, SessionStateType.CLOSED)
-        } catch (e: FlowSessionStateException) {
-            // TODO CORE-4850 Wakeup with error when session does not exist
-            throw FlowFatalException(e.message, e)
+        val sessionsToClose = getSessionsToClose(checkpoint, request)
+        context.checkpoint.sessions.onEach {
+            if (sessionsToClose.contains(it.sessionId)) {
+                it.status = SessionStateType.CLOSED
+            }
         }
 
-        return if (hasNoSessionsOrAllClosed) {
-            val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
-            context.copy(outputRecords = context.outputRecords + listOf(record))
-        } else {
-            context
-        }
+        val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
+        return context.copy(outputRecords = context.outputRecords + listOf(record))
     }
 
     private fun getSessionsToClose(checkpoint: FlowCheckpoint, request: FlowIORequest.CloseSessions): List<String> {

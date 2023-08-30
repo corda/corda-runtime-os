@@ -4,6 +4,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
@@ -58,15 +59,22 @@ class FlowRunnerImpl @Activate constructor(
         return when (val receivedEvent = context.inputEvent.payload) {
             is StartFlow -> startFlow(context, receivedEvent)
             is SessionEvent -> {
-                val payload = receivedEvent.payload
-                if (payload is SessionInit) {
-                    startInitiatedFlow(context, payload)
+                val sessionInit = getInitPayload(receivedEvent)
+                if (sessionInit != null) {
+                    startInitiatedFlow(context, sessionInit, receivedEvent)
                 } else {
                     resumeFlow(context, flowContinuation)
                 }
             }
-
             else -> resumeFlow(context, flowContinuation)
+        }
+    }
+
+    private fun getInitPayload(sessionEvent: SessionEvent): SessionInit? {
+        return when (val payload = sessionEvent.payload) {
+            is SessionInit -> payload
+            is SessionData -> if (sessionEvent.sequenceNum == 1) payload.sessionInit else null
+            else -> null
         }
     }
 
@@ -91,7 +99,8 @@ class FlowRunnerImpl @Activate constructor(
 
     private fun startInitiatedFlow(
         context: FlowEventContext<Any>,
-        sessionInitEvent: SessionInit
+        sessionInitEvent: SessionInit,
+        sessionEvent: SessionEvent
     ): FiberFuture {
         val flowStartContext = context.checkpoint.flowStartContext
         val sessionId = flowStartContext.statusKey.id
@@ -102,7 +111,7 @@ class FlowRunnerImpl @Activate constructor(
             mapOf("corda.account" to "account-zero")
         )
 
-        val requireClose = getRequireClose(sessionInitEvent)
+        val requireClose = getRequireClose(sessionEvent)
 
         return startFlow(
             context,
@@ -111,7 +120,7 @@ class FlowRunnerImpl @Activate constructor(
                     flowStartContext,
                     requireClose,
                     sgc,
-                    localContext.counterpartySessionProperties
+                    localContext.sessionProperties
                 )
             },
             updateFlowStackItem = { fsi -> addFlowStackItemSession(fsi, sessionId) },
@@ -123,8 +132,8 @@ class FlowRunnerImpl @Activate constructor(
         )
     }
 
-    private fun getRequireClose(sessionInitEvent: SessionInit): Boolean {
-        val sessionProps = sessionInitEvent.contextSessionProperties.toMap()
+    private fun getRequireClose(sessionEvent: SessionEvent): Boolean {
+        val sessionProps = sessionEvent.contextSessionProperties.toMap()
         return sessionProps[FLOW_SESSION_REQUIRE_CLOSE].toBoolean()
     }
 
