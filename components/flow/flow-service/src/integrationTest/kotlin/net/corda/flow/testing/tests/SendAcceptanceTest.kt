@@ -4,8 +4,8 @@ import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.flowResumedWithError
-import net.corda.flow.testing.context.initiateSingleFlow
-import net.corda.flow.testing.context.initiateTwoFlows
+import net.corda.flow.testing.context.startFlow
+import net.corda.flow.testing.context.startFloww
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
@@ -44,24 +44,18 @@ class SendAcceptanceTest : FlowServiceTestBase() {
 
     @Test
     fun `Calling 'send' on initiated sessions sends a session data event`() {
-        given {
-            initiateTwoFlows(this)
-                .suspendsWith(FlowIORequest.Receive(setOf(SessionInfo(SESSION_ID_2, initiatedIdentityMemberName))))
-        }
 
         `when` {
-            /*sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
+            startFlow(this)
                 .suspendsWith(FlowIORequest.Send(
                     mapOf(
-                    SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
-                    SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_2,
-                )))
-                .completedSuccessfullyWith("hello")*/
+                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1
+                    )))
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2)
+                sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_1)
             }
         }
     }
@@ -70,7 +64,7 @@ class SendAcceptanceTest : FlowServiceTestBase() {
     @Disabled
     fun `Calling 'send' on an invalid session fails and reports the exception to user code`() {
         given {
-            initiateSingleFlow(this)
+            startFloww(this)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -101,7 +95,7 @@ class SendAcceptanceTest : FlowServiceTestBase() {
     @Disabled
     fun `Calling 'send' multiple times on initiated sessions resumes the flow and sends a session data events each time`() {
         given {
-            initiateTwoFlows(this)
+            startFlow(this)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -138,7 +132,7 @@ class SendAcceptanceTest : FlowServiceTestBase() {
     @Disabled
     fun `Given a flow resumes after receiving session data events calling 'send' on the sessions sends session data events and no session ack for the session that resumed the flow`() {
         given {
-            initiateTwoFlows(this)
+            startFlow(this)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
            /* sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)

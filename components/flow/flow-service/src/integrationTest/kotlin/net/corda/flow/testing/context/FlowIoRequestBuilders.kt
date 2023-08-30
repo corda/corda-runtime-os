@@ -12,7 +12,7 @@ import net.corda.flow.testing.tests.SESSION_ID_2
  * Receives an ack back with the sequence number set to [receivedAckSeqNum]. Defaults to 1 to indicate only the init message has been
  * processed so far. Set to 2 to confirm both the init and data messages sent by [ALICE_HOLDING_IDENTITY]
  */
-fun initiateSingleFlow(setup: StepSetup): FlowIoRequestSetup {
+fun startFloww(setup: StepSetup): FlowIoRequestSetup {
     return setup.startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
 }
 
@@ -23,7 +23,7 @@ fun initiateSingleFlow(setup: StepSetup): FlowIoRequestSetup {
  * For the second session it receives an ack back with the sequence number set to [receivedAckSeqNumSecondSesion]. Defaults to 1 to indicate only the
  * init message has been processed so far for [SESSION_ID_2]. Set to 2 to confirm both the init and data messages sent by [ALICE_HOLDING_IDENTITY]
  */
-fun initiateTwoFlows(setup: StepSetup): FlowIoRequestSetup {
+fun startFlow(setup: StepSetup): FlowIoRequestSetup {
     return setup.startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
 }
 
