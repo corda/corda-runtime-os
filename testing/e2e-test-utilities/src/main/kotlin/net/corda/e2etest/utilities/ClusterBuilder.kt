@@ -94,10 +94,15 @@ class ClusterBuilder {
     fun importCertificate(resourceName: String, usage: String, alias: String) =
         if (REST_API_VERSION_PATH == RestApiVersion.C5_0.versionPath) {
             // Used to test RestApiVersion.C5_0 CertificateRestResource, remove after LTS
-            uploadCertificateResource("/api/${RestApiVersion.C5_0.versionPath}/certificates/cluster/$usage", resourceName, alias)
+            deprecatedImportCertificate(resourceName, usage, alias)
         } else {
             uploadCertificateResource("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage", resourceName, alias)
         }
+
+    // Used to test RestApiVersion.C5_0 CertificateRestResource from 5.1 cluster, remove after LTS
+    fun deprecatedImportCertificate(resourceName: String, usage: String, alias: String) =
+        uploadCertificateResource("/api/${RestApiVersion.C5_0.versionPath}/certificates/cluster/$usage", resourceName, alias)
+
 
     fun importCertificate(file: File, usage: String, alias: String) =
         if (REST_API_VERSION_PATH == RestApiVersion.C5_0.versionPath) {
@@ -331,13 +336,17 @@ class ClusterBuilder {
     fun createKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
         if (REST_API_VERSION_PATH == RestApiVersion.C5_0.versionPath) {
             // Used to test RestApiVersion.C5_0 CertificateRestResource, remove after LTS
-            post(
-                "/api/${RestApiVersion.C5_0.versionPath}/keys/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme",
-                body = ""
-            )
+            deprecatedCreateKey(holdingIdentityShortHash, alias, category, scheme)
         } else {
             post("/api/$REST_API_VERSION_PATH/key/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme", body = "")
         }
+
+    // Used to test RestApiVersion.C5_0 KeysRestResource from 5.1 cluster, remove after LTS
+    fun deprecatedCreateKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
+        post(
+            "/api/${RestApiVersion.C5_0.versionPath}/keys/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme",
+            body = ""
+        )
 
     fun getKey(tenantId: String, keyId: String) =
         if (REST_API_VERSION_PATH == RestApiVersion.C5_0.versionPath) {
