@@ -67,7 +67,7 @@ class FlowExecutorImpl constructor(
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
             val messagingConfig = toMessagingConfig(config)
-
+            config.getConfig(FLOW_CONFIG) // We need to make sure the flow config is present
             val updatedConfigs = config.mapValues {
                 if (it.key == FLOW_CONFIG) {
                     it.value.withValue(
