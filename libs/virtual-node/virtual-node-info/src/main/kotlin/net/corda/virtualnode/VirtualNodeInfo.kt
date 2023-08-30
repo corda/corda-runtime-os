@@ -30,7 +30,7 @@ data class VirtualNodeInfo(
     /** Uniqueness DDL DB connection ID */
     val uniquenessDdlConnectionId: UUID? = null,
     /** Uniqueness DML DB connection ID */
-    val uniquenessDmlConnectionId: UUID,
+    val uniquenessDmlConnectionId: UUID? = null,
     /** HSM connection ID */
     val hsmConnectionId: UUID? = null,
     /** Current state of the virtual node instance */
