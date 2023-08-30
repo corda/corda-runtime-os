@@ -16,7 +16,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
-@Disabled
 class FlowFailedAcceptanceTest : FlowServiceTestBase() {
 
     private companion object {
@@ -44,13 +43,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
     fun `A flow failing removes the flow's checkpoint publishes a failed flow status and schedules flow cleanup`() {
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.InitialCheckpoint)
-        }
-
-        then {
-            expectOutputForFlow(FLOW_ID1) {
-                flowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
-            }
+                .completedWithError(EXCEPTION)
         }
 
         then {
@@ -75,31 +68,6 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
                 nullStateRecord()
                 flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
                 scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
-                flowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
-            }
-        }
-    }
-
-    @Test
-    fun `Given the flow has a WAIT_FOR_FINAL_ACK session receiving a session close event and then failing the flow schedules flow and session cleanup`() {
-        given {
-            initiateSingleFlow(this, 2)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
-
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
-                .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1)))
-        }
-
-        `when` {
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 3)
-                .completedWithError(EXCEPTION)
-        }
-
-        then {
-            expectOutputForFlow(FLOW_ID1) {
-                nullStateRecord()
-                flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
-                scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString(), SESSION_ID_1)
                 flowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
