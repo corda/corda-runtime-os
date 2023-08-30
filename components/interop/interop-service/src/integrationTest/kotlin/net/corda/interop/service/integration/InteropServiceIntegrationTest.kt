@@ -16,7 +16,6 @@ import net.corda.data.interop.InteropMessage
 import net.corda.data.p2p.app.AppMessage
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.utils.emptyKeyValuePairList
-import net.corda.interop.InteropAliasProcessor.Companion.createHostedAliasIdentity
 import net.corda.interop.InteropService
 import net.corda.interop.identity.registry.InteropIdentityRegistryService
 import net.corda.interop.service.InteropFacadeToFlowMapperService
@@ -39,7 +38,6 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
-import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -158,6 +156,12 @@ class InteropServiceIntegrationTest {
         assertTrue(true)
     }
 
+    /**
+     * Note to maintainers.
+     * This test originally used the now defunct `createHostedAliasIdentity()` method of the interop alias processor
+     * to create publish derived interop group members. However, as part of the registration process implementation, the
+     * InteropAliasProcessor has been removed and this code no longer compiles.
+     */
     //@Test
     fun `verify interop processor sends messages to flow mapper event topic and p2p out topic`() {
         interopService.start()
@@ -165,8 +169,9 @@ class InteropServiceIntegrationTest {
         // Test config updates don't break Interop Service
         republishConfig(publisher)
         // Need to publish at least 2 identities in order to trigger InteropAliasProcessor to create synthetic aliases
-        publisher.publish(listOf(createHostedAliasIdentity(sourceIdentity.toCorda())))
-        publisher.publish(listOf(createHostedAliasIdentity(destinationIdentity.toCorda())))
+        // This code has been disabled due to the removal of the InteropAliasProcessor.
+        //publisher.publish(listOf(createHostedAliasIdentity(sourceIdentity.toCorda())))
+        //publisher.publish(listOf(createHostedAliasIdentity(destinationIdentity.toCorda())))
         val session = "session1"
         //TODO revisit sleep in CORE-12134
         Thread.sleep(30000)
