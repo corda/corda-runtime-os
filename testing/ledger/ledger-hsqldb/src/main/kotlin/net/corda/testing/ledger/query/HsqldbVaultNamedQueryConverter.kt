@@ -75,7 +75,7 @@ class HsqldbVaultNamedQueryConverter @Activate constructor(
                 write(output, listOf(As(token.op1, token.op2), RightParenthesis))
             }
             else ->
-                throw IllegalArgumentException("Invalid token in expression - $token")
+                super.writeCustom(output, token)
         }
     }
 }

@@ -28,7 +28,7 @@ class PostgresVaultNamedQueryConverter @Activate constructor(
             is JsonCast -> writeBinaryOperator(output, "\\:\\:", token)
             is JsonKeyExists -> writeBinaryOperator(output, " \\?\\? ", token)
             else ->
-                throw IllegalArgumentException("Invalid token in expression - $token")
+                super.writeCustom(output, token)
         }
     }
 }

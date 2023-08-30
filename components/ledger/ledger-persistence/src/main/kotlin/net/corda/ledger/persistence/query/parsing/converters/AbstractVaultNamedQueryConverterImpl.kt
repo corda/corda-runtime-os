@@ -29,7 +29,9 @@ import net.corda.ledger.persistence.query.parsing.Where
 @Suppress("MemberVisibilityCanBePrivate")
 abstract class AbstractVaultNamedQueryConverterImpl : VaultNamedQueryConverter {
 
-    protected abstract fun writeCustom(output: StringBuilder, token: Token)
+    protected open fun writeCustom(output: StringBuilder, token: Token) {
+        throw IllegalArgumentException("Invalid token in expression - $token")
+    }
 
     protected fun writePrefixOperator(output: StringBuilder, text: String, unary: UnaryKeyword) {
         output.append(text)
