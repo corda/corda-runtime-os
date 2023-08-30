@@ -102,9 +102,12 @@ class MGMAdminRestResourceTest {
 
         @Test
         fun `forceDeclineRegistrationRequest throws resource not found for invalid member`() {
+            val couldNotFindEntityException = mock<CouldNotFindEntityException> {
+                on { entity } doReturn "test"
+            }
             whenever(mgmResourceClient.forceDeclineRegistrationRequest(
                 HOLDING_IDENTITY_ID.shortHash(), REQUEST_ID.uuid()
-            )).doThrow(mock<CouldNotFindEntityException>())
+            )).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmAdminRestResource.forceDeclineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
