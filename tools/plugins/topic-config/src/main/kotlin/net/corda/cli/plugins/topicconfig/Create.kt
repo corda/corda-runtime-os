@@ -66,6 +66,7 @@ class Create(
         "db" to listOf("db", "combined"),
         "flow" to listOf("flow", "combined"),
         "flowMapper" to listOf("flowMapper", "combined"),
+        "verification" to listOf("verification", "combined"),
         "membership" to listOf("membership", "combined"),
         "gateway" to listOf("p2pGateway", "combined"),
         "link-manager" to listOf("p2pLinkManager", "combined"),

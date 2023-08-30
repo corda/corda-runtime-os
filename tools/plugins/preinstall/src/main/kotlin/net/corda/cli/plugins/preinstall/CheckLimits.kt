@@ -163,6 +163,7 @@ class CheckLimits : Callable<Int>, PluginContext() {
         checkResources(yaml.workers?.db?.resources, "DB")
         checkResources(yaml.workers?.flow?.resources, "flow")
         checkResources(yaml.workers?.flowMapper?.resources, "flowMapper")
+        checkResources(yaml.workers?.verification?.resources, "verification")
         checkResources(yaml.workers?.membership?.resources, "membership")
         checkResources(yaml.workers?.rest?.resources, "rest")
         checkResources(yaml.workers?.p2pLinkManager?.resources, "P2P link manager")

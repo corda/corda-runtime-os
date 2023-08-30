@@ -8,6 +8,7 @@ kafka:
           - "db"
           - "flow"
           - "flowMapper"
+          - "verification"
           - "membership"
           - "p2pGateway"
           - "p2pLinkManager"

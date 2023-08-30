@@ -47,6 +47,12 @@ workers:
         username:
           value: "alice"
 
+  verification:
+    kafka:
+      sasl:
+        username:
+          value: "alice"
+
   membership:
     kafka:
       sasl:

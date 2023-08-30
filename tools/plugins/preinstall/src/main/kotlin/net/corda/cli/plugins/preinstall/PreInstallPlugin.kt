@@ -247,6 +247,8 @@ class PreInstallPlugin : Plugin() {
         val flow: KafkaWorker?,
         @JsonProperty("flowMapper")
         val flowMapper: KafkaWorker?,
+        @JsonProperty("verification")
+        val verification: KafkaWorker?,
         @JsonProperty("membership")
         val membership: KafkaWorker?,
         @JsonProperty("rest")
@@ -368,6 +370,8 @@ class PreInstallPlugin : Plugin() {
         val flow: Resources?,
         @JsonProperty("flowMapper")
         val flowMapper: Resources?,
+        @JsonProperty("verification")
+        val verification: Resources?,
         @JsonProperty("membership")
         val membership: Resources?,
         @JsonProperty("rest")
