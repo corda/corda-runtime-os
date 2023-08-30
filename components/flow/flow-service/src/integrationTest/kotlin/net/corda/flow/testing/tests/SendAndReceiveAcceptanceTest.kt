@@ -14,7 +14,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
-@Disabled//todo - CORE-15747
+@Disabled
 class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
 
     private companion object {
@@ -45,7 +45,12 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
+                .suspendsWith(FlowIORequest.Send(
+                    mapOf(
+                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_1,
+                        SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_2,
+                    )))
         }
 
         then {
@@ -61,6 +66,12 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
         given {
             initiateTwoFlows(this)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                    SessionInfo(SESSION_ID_2, initiatedIdentityMemberName)
+                )))
         }
 
         `when` {

@@ -1,7 +1,7 @@
 package net.corda.flow.pipeline.handlers.waiting.sessions
 
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
@@ -93,7 +93,7 @@ class SessionConfirmationWaitingForHandlerTest {
 
     @Test
     fun `Receiving a non-session event while waiting for a session confirmation (Initiate) returns a FlowContinuation#Continue`() {
-        val inputContext = buildFlowEventContext(checkpoint = checkpoint, inputEventPayload = Wakeup())
+        val inputContext = buildFlowEventContext(checkpoint = checkpoint, inputEventPayload = ExternalEventResponse())
         val continuation = sessionConfirmationWaitingForHandler.runOrContinue(
             inputContext,
             SessionConfirmation(listOf(SESSION_ID), SessionConfirmationType.INITIATE)

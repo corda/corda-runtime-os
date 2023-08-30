@@ -6,7 +6,6 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionClose
@@ -221,9 +220,7 @@ class OutputAssertionsImpl(
             val eventRecords = getMatchedFlowEventRecords(flowId, testRun.response!!)
             assertTrue(eventRecords.any(), "Expected at least one event record")
 
-            val wakeupEvents = eventRecords.filter { it.payload is Wakeup }
-
-            assertEquals(1, wakeupEvents.size, "Expected one wakeup event")
+            assertEquals(1, eventRecords.size, "Expected one wakeup event")
         }
     }
 
@@ -232,9 +229,8 @@ class OutputAssertionsImpl(
             assertNotNull(testRun.response, "Test run response")
 
             val eventRecords = getMatchedFlowEventRecords(flowId, testRun.response!!)
-            val wakeupEvents = eventRecords.filter { it.payload is Wakeup }
 
-            assertEquals(0, wakeupEvents.size, "Expected no wakeup event")
+            assertEquals(0, eventRecords.size, "Expected no wakeup event")
         }
     }
 

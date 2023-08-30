@@ -4,7 +4,6 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.external.messaging.services.ExternalMessagingRoutingService
-import net.corda.flow.scheduler.FlowWakeUpScheduler
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -35,8 +34,6 @@ class FlowService @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = FlowExecutor::class)
     private val flowExecutor: FlowExecutor,
-    @Reference(service = FlowWakeUpScheduler::class)
-    private val flowWakeUpScheduler: FlowWakeUpScheduler,
     @Reference(service = ExternalMessagingRoutingService::class)
     private val externalMessagingRoutingService: ExternalMessagingRoutingService,
     ) : Lifecycle {
@@ -87,7 +84,6 @@ class FlowService @Activate constructor(
                  * is configured before we configure the executor to prevent a race between receiving the first
                  * state events and scheduler creating a publisher.
                  */
-                flowWakeUpScheduler.onConfigChange(config)
                 flowExecutor.onConfigChange(config)
                 externalMessagingRoutingService.onConfigChange(config)
                 coordinator.updateStatus(LifecycleStatus.UP)

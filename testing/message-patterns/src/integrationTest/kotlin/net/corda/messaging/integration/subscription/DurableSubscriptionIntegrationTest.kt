@@ -31,7 +31,6 @@ import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC3_D
 import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC3_OUTPUT
 import net.corda.messaging.integration.TopicTemplates.Companion.DURABLE_TOPIC3_TEMPLATE
 import net.corda.messaging.integration.getDemoRecords
-import net.corda.messaging.integration.getDummyRecords
 import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.getStringRecords
 import net.corda.messaging.integration.getTopicConfig
@@ -196,7 +195,7 @@ class DurableSubscriptionIntegrationTest {
 
         publisherConfig = PublisherConfig(CLIENT_ID + DURABLE_TOPIC3, false)
         publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
-        val futures = publisher.publish(getDummyRecords(DURABLE_TOPIC3, 5, 2))
+        val futures = publisher.publish(getStringRecords(DURABLE_TOPIC3, 5, 2))
         assertThat(futures.size).isEqualTo(10)
         futures.forEach { it.get(10, TimeUnit.SECONDS) }
         val futures2 = publisher.publish(getDemoRecords(DURABLE_TOPIC3, 5, 2))

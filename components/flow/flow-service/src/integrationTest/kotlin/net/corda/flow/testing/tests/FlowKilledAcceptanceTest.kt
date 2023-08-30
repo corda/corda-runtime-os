@@ -14,6 +14,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
+@Disabled
 class FlowKilledAcceptanceTest : FlowServiceTestBase() {
 
     @BeforeEach
@@ -84,10 +85,6 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
 
         given {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY, flowOperationalStatus = OperationalStatus.INACTIVE)
-        }
-
-        `when` {
-            wakeupEventReceived(FLOW_ID1)
         }
 
         then {

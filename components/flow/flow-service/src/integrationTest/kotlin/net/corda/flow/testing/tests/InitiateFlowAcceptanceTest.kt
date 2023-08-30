@@ -16,7 +16,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
-@Disabled//todo - CORE-15747
+@Disabled
 class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
 
     @BeforeEach
@@ -69,11 +69,6 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(FlowIORequest.Send(mapOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
         }
 
-        `when` {
-            wakeupEventReceived(FLOW_ID1)
-                .suspendsWith(FlowIORequest.CounterPartyFlowInfo(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName)))
-        }
-
         then {
             expectOutputForFlow(FLOW_ID1) {
                 noFlowEvents()
@@ -89,7 +84,8 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         then {
@@ -157,6 +153,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
         }
 
         then {

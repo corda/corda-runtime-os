@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
@@ -10,7 +9,6 @@ import net.corda.flow.RequestHandlerTestContext
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
-import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
@@ -30,10 +28,9 @@ class CloseSessionsRequestHandlerTest {
     private val sessions = listOf(sessionId1, sessionId2)
     private val sessionState1 = SessionState().apply { this.sessionId = sessionId1 }
     private val sessionState2 = SessionState().apply { this.sessionId = sessionId2 }
-    private val record = Record("", "", FlowEvent())
     private val testContext = RequestHandlerTestContext(Any())
     private val ioRequest = FlowIORequest.CloseSessions(sessions.toSet())
-    private val handler = CloseSessionsRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory)
+    private val handler = CloseSessionsRequestHandler(testContext.flowSessionManager)
 
     @Suppress("Unused")
     @BeforeEach
@@ -50,8 +47,6 @@ class CloseSessionsRequestHandlerTest {
                 any()
             )
         ).thenReturn(listOf(sessionState1, sessionState2))
-
-        whenever(testContext.flowRecordFactory.createFlowEventRecord(any(), any())).thenReturn(record)
     }
 
     @Test
@@ -192,7 +187,7 @@ class CloseSessionsRequestHandlerTest {
 
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
 
-        assertThat(outputContext.outputRecords).containsOnly(record)
+        assertThat(outputContext.outputRecords).isEmpty()
     }
 
     @Test
@@ -215,7 +210,7 @@ class CloseSessionsRequestHandlerTest {
 
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
 
-        assertThat(outputContext.outputRecords).containsOnly(record)
+        assertThat(outputContext.outputRecords).isEmpty()
     }
 
     @Test
