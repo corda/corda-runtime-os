@@ -43,7 +43,11 @@ internal class WorkerMonitorImpl @Activate constructor(
     @Reference(service = LifecycleRegistry::class)
     private val lifecycleRegistry: LifecycleRegistry
 ) : WorkerMonitor {
-    private val logger = LoggerFactory.getLogger(this::class.java)
+
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val CORDA_NAMESPACE = "CORDA"
+    }
 
     // The use of Javalin is temporary, and will be replaced in the future.
     private var server: Javalin? = null
@@ -55,7 +59,7 @@ internal class WorkerMonitorImpl @Activate constructor(
         }
 
         override fun namespace(): String {
-            return "foo"
+            return CORDA_NAMESPACE
         }
     }
     private val cloudWatchRegistry = CloudWatchMeterRegistry(cloudwatchConfig, Clock.SYSTEM, CloudWatchAsyncClient.create())
