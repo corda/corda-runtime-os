@@ -17,8 +17,8 @@ class CloseSessionService @Activate constructor(
      * Takes a list of [sessions] to evaluate.
      * Checks whether the flow needs to wait for any of the sessions to terminate.
      * Returns a list of sessions not yet terminated.
-     * @param checkpoint - the checkpoint
-     * @param sessions - list of sessions IDs to evaluate
+     * @param checkpoint The checkpoint.
+     * @param sessions List of sessions IDs to evaluate.
      * @return Sessions not yet terminated
      */
     fun getSessionsToCloseForWaitingFor(
@@ -32,8 +32,8 @@ class CloseSessionService @Activate constructor(
 
     /**
      * Executes the close logic for the given [sessions].
-     * @param checkpoint - the checkpoint
-     * @param sessions - list of sessions IDs
+     * @param checkpoint The checkpoint.
+     * @param sessions List of sessions IDs.
      * @return List of sessions that are not CLOSED or ERROR
      */
     fun handleCloseForSessions(sessions: List<String>, checkpoint: FlowCheckpoint): List<String> {
@@ -70,9 +70,9 @@ class CloseSessionService @Activate constructor(
     /**
      * Put a session status in CLOSING if the session states status are in the given set of [statuses].
      * Sessions in states ERROR/CLOSED are already terminated and do not need to be updated.
-     * @param checkpoint - the checkpoint
-     * @param sessions - list of sessions to update
-     * @param statuses - set of statuses to put in CLOSING
+     * @param checkpoint The checkpoint.
+     * @param sessions List of sessions to update.
+     * @param statuses sSet of statuses to put in CLOSING
      */
     private fun putSessionsInClosing(checkpoint: FlowCheckpoint, sessions: List<String>, statuses: Set<SessionStateType>) {
         val statesToClose = flowSessionManager.getSessionsWithStatuses(checkpoint, sessions, statuses)
@@ -83,8 +83,8 @@ class CloseSessionService @Activate constructor(
     /**
      * Put a session status from CLOSING to CLOSED.
      * If status is CLOSING then a close message has already been received.
-     * @param checkpoint - the checkpoint
-     * @param sessions - list of sessions IDs
+     * @param checkpoint The checkpoint.
+     * @param sessions List of sessions IDs.
      */
     private fun closeSessionsAlreadyInClosing(checkpoint: FlowCheckpoint, sessions: List<String>) {
         val statesAlreadyInClosing = flowSessionManager.getSessionsWithStatus(checkpoint, sessions, SessionStateType.CLOSING)

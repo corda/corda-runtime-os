@@ -2,19 +2,13 @@ package net.corda.flow.pipeline.handlers.requests.sessions.service
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.session.SessionState
-import net.corda.data.flow.state.session.SessionStateType
-import net.corda.data.flow.state.waiting.Wakeup
 import net.corda.flow.RequestHandlerTestContext
-import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.handlers.requests.sessions.CloseSessionsRequestHandler
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -26,12 +20,9 @@ internal class CloseSessionServiceTest {
     private val sessionState2 = SessionState().apply { this.sessionId = sessionId2 }
     private val record = Record("", "", FlowEvent())
     private val testContext = RequestHandlerTestContext(Any())
-    private val ioRequest = FlowIORequest.CloseSessions(sessions.toSet())
-    private val handler = CloseSessionsRequestHandler(
-        testContext.flowRecordFactory,
-        testContext.closeSessionService
+    private val handler = CloseSessionService(
+        testContext.flowSessionManager
     )
-    private val pair = Pair
 
     @Suppress("Unused")
     @BeforeEach
@@ -50,101 +41,39 @@ internal class CloseSessionServiceTest {
     }
 
     @Test
-    fun `getSessionsToCloseForWaitingFor calls flow manager api`() {
-        whenever(testContext.flowSessionManager.getInitiatingAndInitiatedSessions(sessions))
-            .thenReturn(Pair(listOf(sessionId1),listOf(sessionId2)))
-        whenever(testContext.flowSessionManager.getRequireCloseTrueAndFalse(testContext.flowCheckpoint, sessions))
-            .thenReturn(Pair(listOf(sessionId1),listOf(sessionId2)))
+    fun `handleCloseForSessions calls flow manager api`() {
+        whenever(testContext.flowSessionManager.getInitiatingAndInitiatedSessions(any()))
+            .thenReturn(Pair(listOf(sessionId1), listOf(sessionId2)))
+        whenever(testContext.flowSessionManager.sendCloseMessages(any(), any(), any()))
+            .thenReturn(listOf(sessionState1, sessionState2))
+        whenever(testContext.flowSessionManager.getSessionsWithStatuses(any(), any(), any()))
+            .thenReturn(listOf(sessionState1, sessionState2))
+        whenever(testContext.flowSessionManager.getRequireCloseTrueAndFalse(any(), any()))
+            .thenReturn(Pair(listOf(sessionId1), listOf(sessionId2)))
+        whenever(testContext.flowSessionManager.updateStatus(any(), any(), any()))
+            .thenReturn(listOf(sessionState1, sessionState2))
 
-        val sessionsToClose = testContext.closeSessionService.getSessionsToCloseForWaitingFor(testContext.flowCheckpoint, sessions)
+        val sessionsToClose = handler.handleCloseForSessions(sessions, testContext.flowCheckpoint)
 
-        //verify(testContext.flowSessionManager.getInitiatingAndInitiatedSessions(sessions))
-        //verify(testContext.flowSessionManager.getRequireCloseTrueAndFalse(testContext.flowCheckpoint, sessions))
+        verify(testContext.flowSessionManager).getInitiatingAndInitiatedSessions(any())
+        verify(testContext.flowSessionManager).sendCloseMessages(any(), any(), any())
+        verify(testContext.flowSessionManager, times(2)).getSessionsWithStatuses(any(), any(), any())
+        verify(testContext.flowSessionManager).getRequireCloseTrueAndFalse(any(), any())
+        verify(testContext.flowSessionManager, times(3)).updateStatus(any(), any(), any())
         assertThat(sessionsToClose).isNotEmpty
     }
 
-    /**
-     * Executes the close logic for the given [sessions].
-     * @param checkpoint - the checkpoint
-     * @param sessions - list of sessions IDs
-     * @return List of sessions that are not CLOSED or ERROR
-     */
     @Test
-    fun handleCloseForSessions() {
-    }
+    fun `getSessionsToCloseForWaitingFor calls flow manager api`() {
+        whenever(testContext.flowSessionManager.getInitiatingAndInitiatedSessions(any()))
+            .thenReturn(Pair(listOf(sessionId1), listOf(sessionId2)))
+        whenever(testContext.flowSessionManager.getRequireCloseTrueAndFalse(any(), any()))
+            .thenReturn(Pair(listOf(sessionId1), listOf(sessionId2)))
 
-    @Test
-    fun `Returns an updated WaitingFor of Wakeup when all the sessions are errored`() {
-        whenever(
-            testContext.flowSessionManager.getSessionsWithStatus(
-                testContext.flowCheckpoint,
-                sessions,
-                SessionStateType.ERROR
-            )
-        ).thenReturn(listOf(sessionState1, sessionState2))
+        val sessionsToClose = handler.getSessionsToCloseForWaitingFor(testContext.flowCheckpoint, sessions)
 
-        val waitingFor = handler.getUpdatedWaitingFor(testContext.flowEventContext, ioRequest)
-        assertInstanceOf(Wakeup::class.java, waitingFor.value)
-    }
-
-    @Test
-    fun `Errored sessions do not send close events`() {
-        whenever(
-            testContext.flowSessionManager.doAllSessionsHaveStatus(
-                testContext.flowCheckpoint,
-                sessions,
-                SessionStateType.CLOSED
-            )
-        ).thenReturn(false)
-
-        whenever(
-            testContext.flowSessionManager.getSessionsWithStatus(
-                testContext.flowCheckpoint,
-                sessions,
-                SessionStateType.ERROR
-            )
-        ).thenReturn(listOf(sessionState2))
-
-        whenever(
-            testContext.flowSessionManager.sendCloseMessages(
-                eq(testContext.flowCheckpoint),
-                eq(listOf(sessionId1)),
-                any()
-            )
-        ).thenReturn(listOf(sessionState1))
-
-        val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
-
-        verify(testContext.flowSessionManager).sendCloseMessages(
-            eq(testContext.flowCheckpoint),
-            eq(listOf(sessionId1)),
-            any()
-        )
-        verify(testContext.flowCheckpoint).putSessionStates(listOf(sessionState1))
-        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState2)
-        assertThat(outputContext.outputRecords).hasSize(0)
-    }
-
-    @Test
-    fun `Creates Wakeup record when all the sessions are errored`() {
-        whenever(
-            testContext.flowSessionManager.doAllSessionsHaveStatus(
-                testContext.flowCheckpoint,
-                sessions,
-                SessionStateType.CLOSED
-            )
-        ).thenReturn(false)
-
-        whenever(
-            testContext.flowSessionManager.getSessionsWithStatus(
-                testContext.flowCheckpoint,
-                sessions,
-                SessionStateType.ERROR
-            )
-        ).thenReturn(listOf(sessionState1, sessionState2))
-
-        val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
-
-        assertThat(outputContext.outputRecords).containsOnly(record)
+        verify(testContext.flowSessionManager).getInitiatingAndInitiatedSessions(any())
+        verify(testContext.flowSessionManager).getRequireCloseTrueAndFalse(any(), any())
+        assertThat(sessionsToClose).isNotEmpty
     }
 }
