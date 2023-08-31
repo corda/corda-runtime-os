@@ -35,25 +35,19 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
 
     @Test
     fun `Given a subFlow contains only initiated sessions when the subFlow fails a wakeup event is scheduled session error events are sent and session cleanup is scheduled`() {
-        given {
-            startFlow(this)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
-        }
-
         `when` {
-            /*sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
+            startFlow(this)
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),
                         listOf(SESSION_ID_1, SESSION_ID_2)
                     )
-                )*/
+                )
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionErrorEvents(SESSION_ID_1, SESSION_ID_2)
-                singleOutputEvent()
                 scheduleFlowMapperCleanupEvents(SESSION_ID_1, SESSION_ID_2)
             }
         }

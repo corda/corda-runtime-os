@@ -5,7 +5,6 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.startFlow
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -14,7 +13,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
-@Disabled
 class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
 
     private companion object {
@@ -38,19 +36,18 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `(SendAndReceive) Calling 'sendAndReceive' on an initiated session sends a session data event`() {
-        given {
-            startFlow(this)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
-        }
+    fun `(SendAndReceive) Calling 'sendAndReceive' on a session sends a session data event`() {
 
         `when` {
-         /*   sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
-                .suspendsWith(FlowIORequest.Send(
-                    mapOf(
-                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_1,
-                        SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_2,
-                    )))*/
+            startFlow(this)
+                .suspendsWith(
+                    FlowIORequest.SendAndReceive(
+                        mapOf(
+                            SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_1,
+                            SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_2,
+                        )
+                    )
+                )
         }
 
         then {
@@ -65,36 +62,38 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
     fun `(SendAndReceive) Given a flow resumes after receiving session data events calling 'sendAndReceive' on the sessions sends session data events and no session ack for the session that resumed the flow`() {
         given {
             startFlow(this)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
-
-        /*    sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
-                .suspendsWith(FlowIORequest.Receive(setOf(
-                    SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
-                    SessionInfo(SESSION_ID_2, initiatedIdentityMemberName)
-                )))*/
+                .suspendsWith(
+                    FlowIORequest.Receive(
+                        setOf(
+                            SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                            SessionInfo(SESSION_ID_2, initiatedIdentityMemberName)
+                        )
+                    )
+                )
         }
 
         `when` {
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1)
 
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1)
-                .suspendsWith(FlowIORequest.SendAndReceive(
-                    mapOf(
-                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_3,
-                        SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_4,
-                    )))
+                .suspendsWith(
+                    FlowIORequest.SendAndReceive(
+                        mapOf(
+                            SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_3,
+                            SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_4,
+                        )
+                    )
+                )
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
-                sessionAckEvents(SESSION_ID_1)
             }
 
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWithData(mapOf(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2))
                 sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_3, SESSION_ID_2 to DATA_MESSAGE_4)
-                sessionAckEvents()
             }
         }
     }

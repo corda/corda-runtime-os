@@ -427,28 +427,21 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
                     SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0,
                     SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_0),
                 ))
-
-          /*  sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
                 .suspendsWith(FlowIORequest.Send(
                     mapOf(
                         SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
                         SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
                     )))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Send(
                     mapOf(
                         SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_2,
                     )))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Receive(
                     setOf(
                         SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
                         SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
-                    )))*/
+                    )))
+
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_3, 1)
 
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_3, 1)
@@ -461,15 +454,14 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_4, 2)
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_5, 3)
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_6, 4)
+        }
 
+        `when` {
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_4, 2)
                 .suspendsWith(FlowIORequest.Receive(
                     setOf(
                         SessionInfo(SESSION_ID_1, initiatedIdentityMemberName)
                     )))
-        }
-
-        `when` {
         }
 
         then {
