@@ -195,6 +195,7 @@ class GroupPolicyProviderImplTest {
         LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
         LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+        LifecycleCoordinatorName.forComponent<InteropGroupPolicyReadService>(),
     )
     private val dependencyServiceRegistration: RegistrationHandle = mock()
     private val configHandle: Resource = mock()
