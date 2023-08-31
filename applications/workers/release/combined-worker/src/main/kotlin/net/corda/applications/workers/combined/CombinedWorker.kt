@@ -162,7 +162,7 @@ class CombinedWorker @Activate constructor(
             config.factory,
         ).run()
 
-        setupWebserver(webServer, params.defaultParams)
+        webServer.setupWebserver(params.defaultParams)
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
         configureTracing("Combined Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)

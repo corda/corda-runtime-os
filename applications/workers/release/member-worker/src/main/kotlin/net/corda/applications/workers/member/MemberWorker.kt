@@ -58,7 +58,7 @@ class MemberWorker @Activate constructor(
         applicationBanner.show("Member Worker", platformInfoProvider)
 
         val params = getParams(args, MemberWorkerParams())
-        setupWebserver(webServer, params.defaultParams)
+        webServer.setupWebserver(params.defaultParams)
         if (printHelpOrVersion(params.defaultParams, MemberWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 

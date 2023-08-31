@@ -5,7 +5,7 @@ import java.io.InputStream
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.web.api.WebContext
 
-class JavalinContext(private val ctx: Context) : WebContext {
+internal class JavalinContext(private val ctx: Context) : WebContext {
     override fun status(status: Int) {
         ctx.status(status)
     }

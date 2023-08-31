@@ -53,7 +53,7 @@ class LinkManagerWorker @Activate constructor(
         applicationBanner.show("P2P Link Manager Worker", platformInfoProvider)
 
         val params = WorkerHelpers.getParams(args, LinkManagerWorkerParams())
-        setupWebserver(webServer, params.defaultParams)
+        webServer.setupWebserver(params.defaultParams)
         if (WorkerHelpers.printHelpOrVersion(params.defaultParams, this::class.java, shutDownService)) return
         WorkerHelpers.setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 

@@ -64,7 +64,7 @@ class UniquenessWorker @Activate constructor(
         JavaSerialisationFilter.install()
 
         val params = getParams(args, UniquenessWorkerParams())
-        setupWebserver(webServer, params.defaultParams)
+        webServer.setupWebserver(params.defaultParams)
         if (printHelpOrVersion(params.defaultParams, UniquenessWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 

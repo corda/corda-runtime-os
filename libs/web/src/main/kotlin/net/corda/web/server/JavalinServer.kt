@@ -75,7 +75,7 @@ class JavalinServer @Activate constructor(
     }
 
     override fun stop() {
-        throwIfNull()
+        requireServerInitialized()
         coordinator.updateStatus(LifecycleStatus.DOWN)
         server?.stop()
         coordinator.stop()
@@ -94,7 +94,7 @@ class JavalinServer @Activate constructor(
 
     private fun registerEndpointInternal(endpoint: Endpoint) {
         endpoint.validate()
-        throwIfNull()
+        requireServerInitialized()
         when (endpoint.methodType) {
             HTTPMethod.GET -> server?.get(endpoint.endpoint) { endpoint.webHandler.handle(JavalinContext(it)) }
             HTTPMethod.POST -> server?.post(endpoint.endpoint) { endpoint.webHandler.handle(JavalinContext(it)) }
@@ -103,7 +103,7 @@ class JavalinServer @Activate constructor(
 
     override val port: Int? get() = server?.port()
 
-    private fun throwIfNull() {
+    private fun requireServerInitialized() {
         if (server == null) {
             throw CordaRuntimeException("The Javalin webserver has not been initialized")
         }

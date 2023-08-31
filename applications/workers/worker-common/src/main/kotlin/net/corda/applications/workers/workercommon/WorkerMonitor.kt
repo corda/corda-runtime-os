@@ -11,7 +11,7 @@ package net.corda.applications.workers.workercommon
  * considered ready if no component has a `LifecycleStatus` of either `LifecycleStatus.DOWN` or `LifecycleStatus.ERROR`.
  */
 interface WorkerMonitor {
-    /** Serves worker health and readiness on [port]. */
+    /** registers health and readiness endpoints against the workers webserver. */
     fun registerEndpoints(workerType: String)
 
 }

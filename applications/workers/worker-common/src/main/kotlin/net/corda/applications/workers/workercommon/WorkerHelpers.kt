@@ -158,8 +158,8 @@ class WorkerHelpers {
             }
         }
 
-        fun setupWebserver(webServer: WebServer, params: DefaultWorkerParams) {
-            webServer.start(params.workerMonitorPort)
+        fun WebServer.setupWebserver(params: DefaultWorkerParams) {
+            this.start(params.workerMonitorPort)
         }
 
         fun startBanner() {

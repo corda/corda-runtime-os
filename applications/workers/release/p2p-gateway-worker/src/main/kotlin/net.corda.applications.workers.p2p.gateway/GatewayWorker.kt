@@ -53,7 +53,7 @@ class GatewayWorker @Activate constructor(
         applicationBanner.show("P2P Gateway Worker", platformInfoProvider)
 
         val params = WorkerHelpers.getParams(args, GatewayWorkerParams())
-        setupWebserver(webServer, params.defaultParams)
+        webServer.setupWebserver(params.defaultParams)
         if (WorkerHelpers.printHelpOrVersion(params.defaultParams, this::class.java, shutDownService)) return
         WorkerHelpers.setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
