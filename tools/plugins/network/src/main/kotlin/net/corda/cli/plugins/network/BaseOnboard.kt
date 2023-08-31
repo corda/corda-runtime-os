@@ -202,7 +202,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         }
     }
 
-    val holdingId: String by lazy {
+    protected val holdingId: String by lazy {
         val request = CreateVirtualNodeRequest(
             x500Name = name,
             cpiFileChecksum = cpiFileChecksum,
