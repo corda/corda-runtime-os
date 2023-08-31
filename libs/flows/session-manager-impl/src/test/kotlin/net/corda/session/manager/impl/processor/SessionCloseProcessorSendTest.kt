@@ -134,7 +134,7 @@ class SessionCloseProcessorSendTest {
     }
 
     @Test
-    fun `Send close when status is already CLOSING due to close received`() {
+    fun `If state is CLOSING or CLOSED, no update required`() {
         val sessionEvent = buildSessionEvent(
             MessageDirection.OUTBOUND,
             "sessionId",
@@ -149,10 +149,8 @@ class SessionCloseProcessorSendTest {
 
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
-        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
-        val sessionEventOutput = result.sendEventsState.undeliveredMessages.first()
-        assertThat(sessionEventOutput.sequenceNum).isNotNull
-        assertThat(sessionEventOutput.payload).isEqualTo(sessionEvent.payload)
+        assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(0)
+        result.sendEventsState.undeliveredMessages.isEmpty()
     }
 
 
