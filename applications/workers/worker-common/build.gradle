@@ -25,6 +25,7 @@ dependencies {
     implementation project(':osgi-framework-api')
     implementation project(':libs:serialization:serialization-avro')
     implementation project(':libs:web')
+    implementation project(':libs:rest:rest')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'

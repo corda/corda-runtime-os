@@ -87,13 +87,13 @@ internal class HttpRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     } else {
                         log.error("Response Payload was Null")
                         context.result("Response Payload was Null")
-                        context.status(ResponseCode.BAD_REQUEST.statusCode)
+                        context.status(ResponseCode.BAD_REQUEST)
                         context
                     }
                 } else {
                     log.error("Request Payload was Null")
                     context.result("Request Payload was Null")
-                    context.status(ResponseCode.INTERNAL_SERVER_ERROR.statusCode)
+                    context.status(ResponseCode.INTERNAL_SERVER_ERROR)
                     return context
                 }
             }

@@ -21,6 +21,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
+import net.corda.rest.ResponseCode
 import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
 import net.corda.web.api.WebContext
@@ -69,13 +70,13 @@ internal class WorkerMonitorImpl @Activate constructor(
                 val unhealthyComponents = componentWithStatus(setOf(LifecycleStatus.ERROR))
                 val status = if (unhealthyComponents.isEmpty()) {
                     clearLastLogMessageForRoute(HTTP_HEALTH_ROUTE)
-                    HTTP_OK_CODE
+                    ResponseCode.OK
                 } else {
                     logIfDifferentFromLastMessage(
                         HTTP_HEALTH_ROUTE,
                         "Status is unhealthy. The status of $unhealthyComponents has error."
                     )
-                    HTTP_SERVICE_UNAVAILABLE_CODE
+                    ResponseCode.SERVICE_UNAVAILABLE
                 }
                 context.status(status)
                 context.header(Header.CACHE_CONTROL, NO_CACHE)
@@ -88,13 +89,13 @@ internal class WorkerMonitorImpl @Activate constructor(
                 val notReadyComponents = componentWithStatus(setOf(LifecycleStatus.DOWN, LifecycleStatus.ERROR))
                 val status = if (notReadyComponents.isEmpty()) {
                     clearLastLogMessageForRoute(HTTP_STATUS_ROUTE)
-                    HTTP_OK_CODE
+                    ResponseCode.OK
                 } else {
                     logIfDifferentFromLastMessage(
                         HTTP_STATUS_ROUTE,
                         "There are components with error or down state: $notReadyComponents."
                     )
-                    HTTP_SERVICE_UNAVAILABLE_CODE
+                    ResponseCode.SERVICE_UNAVAILABLE
                 }
                 context.status(status)
                 context.result(objectMapper.writeValueAsString(lifecycleRegistry.componentStatus()))

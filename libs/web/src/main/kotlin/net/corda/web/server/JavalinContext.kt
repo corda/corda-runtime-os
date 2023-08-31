@@ -2,12 +2,13 @@ package net.corda.web.server
 
 import io.javalin.http.Context
 import java.io.InputStream
+import net.corda.rest.ResponseCode
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.web.api.WebContext
 
 internal class JavalinContext(private val ctx: Context) : WebContext {
-    override fun status(status: Int) {
-        ctx.status(status)
+    override fun status(status: ResponseCode) {
+        ctx.status(status.statusCode)
     }
 
     override fun bodyAsBytes() = ctx.bodyAsBytes()

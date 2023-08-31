@@ -1,5 +1,7 @@
 package net.corda.web.api
 
+import net.corda.rest.ResponseCode
+
 interface WebContext {
 
     /**
@@ -7,7 +9,7 @@ interface WebContext {
      *
      * @param status The status code to be returned.
      */
-    fun status(status: Int)
+    fun status(status: ResponseCode)
 
     /**
      * Retrieves the body of the request as a byte array.
