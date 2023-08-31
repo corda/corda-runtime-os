@@ -99,7 +99,6 @@ internal class OutboundMessageProcessor(
     }
 
     private fun processEvent(event: EventLogRecord<String, AppMessage>): List<Record<String, *>> {
-
         val message = event.value?.message
         if (message == null) {
             logger.error("Received null message. The message was discarded.")
@@ -248,6 +247,10 @@ internal class OutboundMessageProcessor(
         messageAndKey: AuthenticatedMessageAndKey,
         isReplay: Boolean = false
     ): List<Record<String, *>> {
+        logger.info(
+            "QQQ Sending message from ${messageAndKey.message.header.source.x500Name} " +
+                    "to ${messageAndKey.message.header.destination.x500Name}"
+        )
         logger.trace {
             "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
                 "to ${messageAndKey.message.header.destination}."
