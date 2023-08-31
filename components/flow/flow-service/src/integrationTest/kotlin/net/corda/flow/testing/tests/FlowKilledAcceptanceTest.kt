@@ -33,7 +33,6 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
-/*
     @Test
     fun `test flow start event killed due to inactive flow operational status`() {
         `when` {
@@ -65,7 +64,6 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
             }
         }
     }
-*/
 
     @Test
     fun `flow removed from cache when flow resumes for virtual node with flow operational status inactive`() {
