@@ -27,8 +27,8 @@ data class BytesAndSchemas<T : Any>(
  * @param serializerFactory This is the factory for [AMQPSerializer] instances and can be shared across multiple
  * instances and threads.
  */
-open class SerializationOutput constructor(
-        internal val serializerFactory: LocalSerializerFactory
+open class SerializationOutput(
+    private val serializerFactory: LocalSerializerFactory
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)

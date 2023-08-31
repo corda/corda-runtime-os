@@ -10,7 +10,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.membership.lib.InternalGroupParameters
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -19,7 +19,6 @@ import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -60,7 +59,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
 
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
-        memberInfos: Collection<SignedMemberInfo>
+        memberInfos: Collection<SelfSignedMemberInfo>
     ): MembershipPersistenceOperation<Unit> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
@@ -102,8 +101,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
     }
 
     override fun addNotaryToGroupParameters(
-        viewOwningIdentity: HoldingIdentity,
-        notary: MemberInfo
+        notary: PersistentMemberInfo
     ): MembershipPersistenceOperation<InternalGroupParameters> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
@@ -125,7 +123,7 @@ class TestMembershipPersistenceClientImpl @Activate constructor(
         viewOwningIdentity: HoldingIdentity,
         approvedMember: HoldingIdentity,
         registrationRequestId: String
-    ): MembershipPersistenceOperation<MemberInfo> {
+    ): MembershipPersistenceOperation<PersistentMemberInfo> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)

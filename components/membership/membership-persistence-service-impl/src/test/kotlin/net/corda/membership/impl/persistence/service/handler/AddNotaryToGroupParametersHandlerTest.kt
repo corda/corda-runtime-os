@@ -7,8 +7,11 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.db.connection.manager.DbConnectionManager
@@ -30,7 +33,6 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.notary.MemberNotaryKey
-import net.corda.membership.lib.toWire
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.time.TestClock
@@ -53,6 +55,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.SortedMap
 import java.util.UUID
@@ -204,15 +207,24 @@ class AddNotaryToGroupParametersHandlerTest {
         on { serial } doReturn 2L
     }
     private val memberInfoFactory = mock<MemberInfoFactory> {
-        on { create(any()) } doReturn notaryInRequest
+        on { createMemberInfo(any()) } doReturn notaryInRequest
     }
     private val requestContext = mock<MembershipRequestContext> {
         on { holdingIdentity } doReturn knownIdentity
     }
     private val persistentNotary = PersistentMemberInfo(
         knownIdentity,
-        notaryInRequest.memberProvidedContext.toWire(),
-        notaryInRequest.mgmProvidedContext.toWire()
+        null,
+        null,
+        SignedData(
+            ByteBuffer.wrap(byteArrayOf(1)),
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap(byteArrayOf(2)),
+                ByteBuffer.wrap(byteArrayOf(2)),
+            ),
+            CryptoSignatureSpec("", null, null),
+        ),
+        ByteBuffer.wrap(byteArrayOf(3)),
     )
     private val request = mock<AddNotaryToGroupParameters> {
         on { notary } doReturn persistentNotary
@@ -254,7 +266,7 @@ class AddNotaryToGroupParametersHandlerTest {
             on { name } doReturn MemberX500Name.parse(knownIdentity.x500Name)
             on { serial } doReturn 1L
         }
-        whenever(memberInfoFactory.create(any(), any<SortedMap<String, String?>>())).doReturn(otherNotary)
+        whenever(memberInfoFactory.createMemberInfo(any(), any<SortedMap<String, String?>>())).doReturn(otherNotary)
         whenever(membersQuery.resultList).doReturn(listOf(otherNotaryEntity))
         whenever(keyValuePairListDeserializer.deserialize(any())).doReturn(
             KeyValuePairList(listOf(

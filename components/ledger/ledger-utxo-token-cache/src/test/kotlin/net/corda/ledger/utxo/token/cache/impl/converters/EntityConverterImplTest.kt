@@ -6,11 +6,11 @@ import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQuery
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimRelease
 import net.corda.data.ledger.utxo.token.selection.data.TokenLedgerChange
-import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
+import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.ledger.utxo.token.cache.converters.EntityConverterImpl
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
-import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
+import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
@@ -47,7 +47,7 @@ class EntityConverterImplTest {
         assertThat(result.externalEventRequestId).isEqualTo("r1")
         assertThat(result.flowId).isEqualTo("f1")
         assertThat(result.targetAmount).isEqualTo(bigDecimal)
-        assertThat(result.poolKey).isEqualTo(POOL_CACHE_KEY)
+        assertThat(result.poolKey).isEqualTo(POOL_KEY)
     }
 
     @Test
@@ -68,12 +68,7 @@ class EntityConverterImplTest {
         assertThat(result.externalEventRequestId).isEqualTo("r1")
         assertThat(result.flowId).isEqualTo("f1")
         assertThat(result.usedTokens).containsOnly("s1", "s2")
-        assertThat(result.poolKey).isEqualTo(POOL_CACHE_KEY)
-    }
-
-    @Test
-    fun `toTokenCache creates and instance of TokenCache`() {
-        assertThat(EntityConverterImpl().toTokenCache(TokenPoolCacheState())).isInstanceOf(TokenCache::class.java)
+        assertThat(result.poolKey).isEqualTo(POOL_KEY)
     }
 
     @Test
@@ -92,7 +87,7 @@ class EntityConverterImplTest {
         val result = EntityConverterImpl()
             .toLedgerChange(POOL_CACHE_KEY, ledgerChange)
 
-        assertThat(result.poolKey).isEqualTo(POOL_CACHE_KEY)
+        assertThat(result.poolKey).isEqualTo(POOL_KEY)
         assertThat(result.producedTokens.map { it.stateRef }).containsOnly("s1","s2")
         assertThat(result.consumedTokens.map { it.stateRef }).containsOnly("s3","s4")
     }
@@ -129,5 +124,25 @@ class EntityConverterImplTest {
         assertThat(
             EntityConverterImpl().amountToBigDecimal(tokenAmount)
         ).isEqualTo(bigDecimal)
+    }
+
+    @Test
+    fun `toTokenPoolKey creates and instance of TokenPoolKey`() {
+        val tokenClaimRelease = TokenPoolCacheKey.newBuilder()
+            .setTokenType("tt")
+            .setSymbol("sym")
+            .setNotaryX500Name("not")
+            .setIssuerHash("ih")
+            .setShortHolderId("shid")
+            .build()
+
+        val result = EntityConverterImpl()
+            .toTokenPoolKey( tokenClaimRelease)
+
+        assertThat(result.tokenType).isEqualTo("tt")
+        assertThat(result.symbol).isEqualTo("sym")
+        assertThat(result.notaryX500Name).isEqualTo("not")
+        assertThat(result.issuerHash).isEqualTo("ih")
+        assertThat(result.shortHolderId).isEqualTo("shid")
     }
 }

@@ -146,13 +146,14 @@ class MGMRegistrationService @Activate constructor(
             memberInfoFactory,
             membershipPersistenceClient,
             platformInfoProvider,
-            virtualNodeInfoReadService
+            virtualNodeInfoReadService,
+            cordaAvroSerializationFactory,
         )
         private val mgmRegistrationGroupPolicyHandler = MGMRegistrationGroupPolicyHandler(
             layeredPropertyMapFactory,
             membershipPersistenceClient,
         )
-        private val mgmRegistrationOutputPublisher = MGMRegistrationOutputPublisher()
+        private val mgmRegistrationOutputPublisher = MGMRegistrationOutputPublisher(memberInfoFactory)
 
         override fun register(
             registrationId: UUID,
@@ -185,7 +186,7 @@ class MGMRegistrationService @Activate constructor(
 
                 expirationProcessor.scheduleProcessingOfExpiredRequests(member)
 
-                mgmRegistrationOutputPublisher.createRecords(mgmInfo.memberInfo)
+                mgmRegistrationOutputPublisher.createRecords(mgmInfo)
             } catch (ex: MGMRegistrationContextValidationException) {
                 throw InvalidMembershipRegistrationException(ex.reason, ex)
             } catch (ex: MGMRegistrationMemberInfoHandlingException) {

@@ -32,7 +32,7 @@ plugins {
 }
 
 tasks.named("wrapper") {
-    gradleVersion = '8.1.1'
+    gradleVersion = '8.2.1'
     distributionType = Wrapper.DistributionType.BIN
 }
 
@@ -65,13 +65,29 @@ allprojects {
 
         tasks.withType(Test).configureEach {
             useJUnitPlatform(){
-                excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
+                if (project.hasProperty('runMultiClusterTests')) {
+                    includeTags 'MultiCluster'
+                } else if (project.hasProperty('runUnstableTests')) {
+                    includeTags 'Unstable'
+                } else {
+                    excludeTags 'MultiCluster', 'Unstable'
+                }
             }
 
             doFirst {
                 systemProperty 'java.io.tmpdir', buildDir.absolutePath
-                jvmArgs '--illegal-access=deny'
+                jvmArgs '--add-opens', 'java.base/java.lang=ALL-UNNAMED'
             }
+//            tasks.withType(Test).configureEach {
+//                useJUnitPlatform(){
+//                    excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
+//                }
+//
+//                doFirst {
+//                    systemProperty 'java.io.tmpdir', buildDir.absolutePath
+//                    jvmArgs '--illegal-access=deny'
+//                }
+//            }
         }
     }
 
@@ -84,7 +100,7 @@ allprojects {
             includeConfigs = ["runtimeClasspath"]
             skipProjects = [rootProject.name]
             destination = file("${buildDir}/reports/SBOM")
-            outputName = "${project.name}-corda-runtime-os-sbom"   
+            outputName = "${project.name}-corda-runtime-os-sbom"
         }
     }
 
@@ -205,18 +221,6 @@ allprojects {
             }
         } else {
             mavenCentral()
-
-            exclusiveContent {
-                forRepository {
-                    maven {
-                        url 'https://repository.mulesoft.org/nexus/content/repositories/public'
-                    }
-                }
-                filter {
-                    includeGroup 'org.mule.distributions'
-                    includeGroup 'antlr'
-                }
-            }
         }
     }
 
@@ -283,8 +287,9 @@ allprojects {
     dependencies {
         // Test utilities
         testImplementation "org.assertj:assertj-core:$assertjVersion"
-        testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+        testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
 }
 
@@ -460,7 +465,6 @@ subprojects {
             cacheChangingModulesFor 0, 'seconds'
 
             dependencySubstitution {
-                substitute module("antlr:antlr") using module("antlr:antlr.osgi:$antlrVersion")
                 substitute module("org.dom4j:dom4j") using module("org.apache.servicemix.bundles:org.apache.servicemix.bundles.dom4j:$dom4jOsgiVersion")
             }
         }

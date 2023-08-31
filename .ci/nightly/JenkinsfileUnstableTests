@@ -1,7 +1,7 @@
 //catch all job for flaky tests
-@Library('corda-shared-build-pipeline-steps@5.0.1') _
+@Library('corda-shared-build-pipeline-steps@5.1') _
 
-cordaPipeline(
+cordaPipelineKubernetesAgent(
     runIntegrationTests: true,
     createPostgresDb: true,
     gradleAdditionalArgs: '-PrunUnstableTests',

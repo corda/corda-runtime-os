@@ -2,7 +2,7 @@ package net.corda.ledger.utxo.flow.impl.groupparameters.verifier
 
 import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
-import net.corda.ledger.utxo.flow.impl.groupparameters.CurrentGroupParametersService
+import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
@@ -25,8 +25,8 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 class SignedGroupParametersVerifierImpl @Activate constructor(
     @Reference(service = SignatureVerificationService::class)
     private val signatureVerificationService: SignatureVerificationService,
-    @Reference(service = CurrentGroupParametersService::class)
-    private val currentGroupParametersService: CurrentGroupParametersService
+    @Reference(service = GroupParametersLookupInternal::class)
+    private val groupParametersLookup: GroupParametersLookupInternal
 ): SignedGroupParametersVerifier, UsedByFlow, SingletonSerializeAsToken {
 
     override fun verify(
@@ -51,7 +51,7 @@ class SignedGroupParametersVerifierImpl @Activate constructor(
     }
 
     override fun verifySignature(signedGroupParameters: SignedGroupParameters) {
-        check(currentGroupParametersService.getMgmKeys().contains(signedGroupParameters.mgmSignature.by)) {
+        check(groupParametersLookup.getMgmKeys().contains(signedGroupParameters.mgmSignature.by)) {
             "The group parameters is not signed with a recognized MGM public key."
         }
         signatureVerificationService.verify(

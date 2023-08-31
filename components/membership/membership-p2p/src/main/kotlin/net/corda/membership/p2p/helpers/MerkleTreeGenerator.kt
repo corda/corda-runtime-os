@@ -1,10 +1,11 @@
 package net.corda.membership.p2p.helpers
 
-import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.data.KeyValuePairList
 import net.corda.layeredpropertymap.toAvro
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.HashDigestConstants.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
@@ -36,7 +37,7 @@ class MerkleTreeGenerator(
         }
     }
 
-    fun generateTree(members: Collection<MemberInfo>): MerkleTree {
+    fun generateTreeUsingMembers(members: Collection<MemberInfo>): MerkleTree {
         val leaves = members
             .sortedBy { member ->
                 member.name
@@ -46,6 +47,19 @@ class MerkleTreeGenerator(
                     serializer.serialize(member.mgmProvidedContext.toAvro()),
                 )
             }.filterNotNull()
+        return createTree(leaves)
+    }
+
+    fun generateTreeUsingSignedMembers(members: Collection<SelfSignedMemberInfo>): MerkleTree {
+        val leaves = members
+            .sortedBy { member ->
+                member.name
+            }.flatMap { member ->
+                listOf(
+                    member.memberContextBytes,
+                    member.mgmContextBytes,
+                )
+            }
         return createTree(leaves)
     }
 

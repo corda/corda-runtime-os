@@ -1,66 +1,58 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import net.corda.avro.serialization.CordaAvroDeserializer
-import net.corda.data.KeyValuePairList
-import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.virtualnode.toCorda
+import javax.persistence.criteria.Predicate
 
 internal class QueryMemberInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<QueryMemberInfo, MemberInfoQueryResponse>(persistenceHandlerServices) {
     override val operation = QueryMemberInfo::class.java
-    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
-        cordaAvroSerializationFactory.createAvroDeserializer(
-            {
-                logger.error("Failed to deserialize key value pair list.")
-            },
-            KeyValuePairList::class.java
+
+    @Suppress("SpreadOperator")
+    override fun invoke(context: MembershipRequestContext, request: QueryMemberInfo): MemberInfoQueryResponse {
+        return MemberInfoQueryResponse(
+            transaction(context.holdingIdentity.toCorda().shortHash) { em ->
+                val criteriaBuilder = em.criteriaBuilder
+                val memberQueryBuilder = criteriaBuilder.createQuery(MemberInfoEntity::class.java)
+                val root = memberQueryBuilder.from(MemberInfoEntity::class.java)
+                val predicates = mutableListOf<Predicate>()
+                if (request.queryIdentities.isNotEmpty()) {
+                    logger.info("Querying MemberInfo(s) by name.")
+                    val inStatus = criteriaBuilder.`in`(root.get<String>("memberX500Name"))
+                    request.queryIdentities.forEach { queryIdentity ->
+                        inStatus.value(queryIdentity.x500Name)
+                    }
+                    predicates.add(inStatus)
+                }
+                if (!request.queryStatuses.isNullOrEmpty()) {
+                    logger.info("Querying MemberInfo(s) by status.")
+                    val inStatus = criteriaBuilder.`in`(root.get<String>("status"))
+                    request.queryStatuses.forEach { queryStatus ->
+                        inStatus.value(queryStatus.toString())
+                    }
+                    predicates.add(inStatus)
+                }
+                predicates.add(criteriaBuilder.equal(root.get<Boolean>("isDeleted"), false))
+                em.createQuery(
+                    memberQueryBuilder.select(root).where(*predicates.toTypedArray())
+                ).resultList.map {
+                    it.toPersistentMemberInfo(context.holdingIdentity)
+                }
+            }
         )
     }
 
-    override fun invoke(context: MembershipRequestContext, request: QueryMemberInfo): MemberInfoQueryResponse {
-        logger.info("Querying for ${request.queryIdentities.size} identities")
-        return if (request.queryIdentities.isEmpty()) {
-            logger.info("Query filter list is empty. Returning full member list.")
-            MemberInfoQueryResponse(
-                transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-                    em.createQuery(
-                        "SELECT m FROM ${MemberInfoEntity::class.simpleName} m",
-                        MemberInfoEntity::class.java
-                    ).resultList
-                }.map {
-                    it.toPersistentMemberInfo(context.holdingIdentity)
-                }
-            )
-        } else {
-            logger.info("Querying for ${request.queryIdentities.size} members MemberInfo(s).")
-            MemberInfoQueryResponse(
-                transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-                    request.queryIdentities.flatMap { holdingIdentity ->
-                        em.createQuery(
-                            "SELECT m FROM ${MemberInfoEntity::class.simpleName} " +
-                                    "m where m.groupId = :groupId and m.memberX500Name = :memberX500Name",
-                            MemberInfoEntity::class.java
-                        )
-                            .setParameter("groupId", holdingIdentity.groupId)
-                            .setParameter("memberX500Name", holdingIdentity.x500Name)
-                            .resultList
-                    }.map {
-                        it.toPersistentMemberInfo(context.holdingIdentity)
-                    }
-                }
-            )
-        }
-    }
-
     private fun MemberInfoEntity.toPersistentMemberInfo(viewOwningMember: net.corda.data.identity.HoldingIdentity) =
-        PersistentMemberInfo(
+        memberInfoFactory.createPersistentMemberInfo(
             viewOwningMember,
-            keyValuePairListDeserializer.deserialize(this.memberContext),
-            keyValuePairListDeserializer.deserialize(this.mgmContext)
+            memberContext,
+            mgmContext,
+            memberSignatureKey,
+            memberSignatureContent,
+            memberSignatureSpec,
         )
 }

@@ -17,7 +17,7 @@ import java.time.Instant
 @Suppress("TooManyFunctions")
 class ClusterBuilder {
     
-    private companion object {
+    internal companion object {
         val REST_API_VERSION_PATH = RestApiVersion.C5_1.versionPath
     }
     
@@ -166,8 +166,30 @@ class ClusterBuilder {
     /** List all CPIs in the system */
     fun cpiList() = client!!.get("/api/$REST_API_VERSION_PATH/cpi")
 
-    private fun vNodeBody(cpiHash: String, x500Name: String) =
-        """{ "cpiFileChecksum" : "$cpiHash", "x500Name" : "$x500Name"}"""
+    @Suppress("LongParameterList")
+    private fun vNodeBody(
+        cpiHash: String,
+        x500Name: String,
+        cryptoDdlConnection: String?,
+        cryptoDmlConnection: String?,
+        uniquenessDdlConnection: String?,
+        uniquenessDmlConnection: String?,
+        vaultDdlConnection: String?,
+        vaultDmlConnection: String?
+    ): String {
+        val body: List<String> = mutableListOf(
+            """"cpiFileChecksum": "$cpiHash"""",
+            """"x500Name": "$x500Name""""
+        ).apply {
+            cryptoDdlConnection?.let { add(""""cryptoDdlConnection": "$it"""") }
+            cryptoDmlConnection?.let { add(""""cryptoDmlConnection": "$it"""") }
+            uniquenessDdlConnection?.let { add(""""uniquenessDdlConnection": "$it"""") }
+            uniquenessDmlConnection?.let { add(""""uniquenessDmlConnection": "$it"""") }
+            vaultDdlConnection?.let { add(""""vaultDdlConnection": "$it"""") }
+            vaultDmlConnection?.let { add(""""vaultDmlConnection": "$it"""") }
+        }
+        return body.joinToString(prefix = "{", postfix = "}")
+    }
 
     private fun registerMemberBody(
         customMetadata: Map<String, String>,
@@ -196,7 +218,7 @@ class ClusterBuilder {
 
     private fun createRbacRoleBody(roleName: String, groupVisibility: String?): String {
         val body: List<String> = mutableListOf(""""roleName": "$roleName"""").apply {
-            groupVisibility?.let { add(""""groupVisibility": "$groupVisibility"""") }
+            groupVisibility?.let { add(""""groupVisibility": "$it"""") }
         }
         return body.joinToString(prefix = "{", postfix = "}")
     }
@@ -216,8 +238,8 @@ class ClusterBuilder {
             """"initialPassword": "$password"""",
             """"loginName": "$loginName""""
         ).apply {
-            parentGroup?.let { add(""""parentGroup": "$parentGroup"""") }
-            passwordExpiry?.let { add(""""passwordExpiry": "$passwordExpiry"""") }
+            parentGroup?.let { add(""""parentGroup": "$it"""") }
+            passwordExpiry?.let { add(""""passwordExpiry": "$it"""") }
         }
         return body.joinToString(prefix = "{", postfix = "}")
     }
@@ -232,8 +254,8 @@ class ClusterBuilder {
             """"permissionString": "$permissionString"""",
             """"permissionType": "$permissionType""""
         ).apply {
-            groupVisibility?.let { add(""""groupVisibility": "$groupVisibility"""") }
-            virtualNode?.let { add(""""virtualNode": "$virtualNode"""") }
+            groupVisibility?.let { add(""""groupVisibility": "$it"""") }
+            virtualNode?.let { add(""""virtualNode": "$it"""") }
         }
         return body.joinToString(prefix = "{", postfix = "}")
     }
@@ -261,8 +283,29 @@ class ClusterBuilder {
     }
 
     /** Create a virtual node */
-    fun vNodeCreate(cpiHash: String, x500Name: String) =
-        post("/api/$REST_API_VERSION_PATH/virtualnode", vNodeBody(cpiHash, x500Name))
+    @Suppress("LongParameterList")
+    fun vNodeCreate(
+        cpiHash: String,
+        x500Name: String,
+        cryptoDdlConnection: String? = null,
+        cryptoDmlConnection: String? = null,
+        uniquenessDdlConnection: String? = null,
+        uniquenessDmlConnection: String? = null,
+        vaultDdlConnection: String? = null,
+        vaultDmlConnection: String? = null
+    )=
+        post("/api/$REST_API_VERSION_PATH/virtualnode",
+            vNodeBody(
+                cpiHash,
+                x500Name,
+                cryptoDdlConnection,
+                cryptoDmlConnection,
+                uniquenessDdlConnection,
+                uniquenessDmlConnection,
+                vaultDdlConnection,
+                vaultDmlConnection
+            )
+        )
 
     /** Trigger upgrade of a virtual node's CPI to the given  */
     fun vNodeUpgrade(virtualNodeShortHash: String, targetCpiFileChecksum: String) =
@@ -426,7 +469,7 @@ class ClusterBuilder {
         permissionStringPrefix: String? = null
     ): SimpleResponse {
         val queries: List<String> = mutableListOf("limit=$limit", "permissiontype=$permissionType").apply {
-            permissionStringPrefix?.let { add("permissionstringprefix=$permissionStringPrefix") }
+            permissionStringPrefix?.let { add("permissionstringprefix=$it") }
         }
         val queryStr = queries.joinToString(prefix = "?", separator = "&")
         return get("/api/$REST_API_VERSION_PATH/permission$queryStr")

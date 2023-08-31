@@ -1,8 +1,6 @@
 package net.corda.membership.impl.persistence.client
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
@@ -13,7 +11,6 @@ import net.corda.data.membership.db.request.query.MutualTlsListAllowedCertificat
 import net.corda.data.membership.db.request.query.QueryApprovalRules
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
-import net.corda.data.membership.db.request.query.QueryMemberSignature
 import net.corda.data.membership.db.request.query.QueryPreAuthToken
 import net.corda.data.membership.db.request.query.QueryRegistrationRequest
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
@@ -21,7 +18,6 @@ import net.corda.data.membership.db.request.query.QueryStaticNetworkInfo
 import net.corda.data.membership.db.response.query.ApprovalRulesQueryResponse
 import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
-import net.corda.data.membership.db.response.query.MemberSignatureQueryResponse
 import net.corda.data.membership.db.response.query.MutualTlsListAllowedCertificatesResponse
 import net.corda.data.membership.db.response.query.PreAuthTokenQueryResponse
 import net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse
@@ -33,6 +29,7 @@ import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -42,10 +39,8 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
-import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -89,24 +84,35 @@ class MembershipQueryClientImpl(
     override val groupName = "membership.db.query.client.group"
     override val clientName = "membership.db.query.client"
 
-    override fun queryMemberInfo(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Collection<MemberInfo>> {
+    override fun queryMemberInfo(
+        viewOwningIdentity: HoldingIdentity,
+        statusFilter: List<String>
+    ): MembershipQueryResult<Collection<SelfSignedMemberInfo>> {
         logger.info("Querying for all member infos visible from holding identity [${viewOwningIdentity.shortHash}].")
-        return queryMemberInfo(viewOwningIdentity, emptyList())
+        return queryMemberInfo(viewOwningIdentity, emptyList(), statusFilter)
     }
 
     override fun queryMemberInfo(
         viewOwningIdentity: HoldingIdentity,
-        queryFilter: Collection<HoldingIdentity>,
-    ): MembershipQueryResult<Collection<MemberInfo>> {
-        if (queryFilter.isNotEmpty()) {
-            logger.info("Querying for member infos represented by ${queryFilter.size} holding identities")
+        holdingIdentityFilter: Collection<HoldingIdentity>,
+        statusFilter: List<String>,
+    ): MembershipQueryResult<Collection<SelfSignedMemberInfo>> {
+        if (holdingIdentityFilter.isNotEmpty()) {
+            logger.info("Querying for member infos represented by ${holdingIdentityFilter.size} holding identities")
         }
         return MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryMemberInfo(queryFilter.map { it.toAvro() }),
+            QueryMemberInfo(holdingIdentityFilter.map { it.toAvro() }, statusFilter),
         ).execute("query member info") { payload: MemberInfoQueryResponse ->
             logger.info("Found ${payload.members.size} results.")
-            payload.members.map { memberInfoFactory.create(it) }
+            payload.members.map {
+                memberInfoFactory.createSelfSignedMemberInfo(
+                    it.signedMemberContext.data.array(),
+                    it.serializedMgmContext.array(),
+                    it.signedMemberContext.signature,
+                    it.signedMemberContext.signatureSpec,
+                )
+            }
         }
     }
 
@@ -133,24 +139,6 @@ class MembershipQueryClientImpl(
             QueryRegistrationRequests(requestSubjectX500Name?.toString(), statuses, limit),
         ).execute("retrieve registration requests") { payload: RegistrationRequestsQueryResponse ->
             payload.registrationRequests
-        }
-    }
-
-    override fun queryMembersSignatures(
-        viewOwningIdentity: HoldingIdentity,
-        holdingsIdentities: Collection<HoldingIdentity>,
-    ): MembershipQueryResult<Map<HoldingIdentity, Pair<CryptoSignatureWithKey, CryptoSignatureSpec>>> {
-        if (holdingsIdentities.isEmpty()) {
-            return MembershipQueryResult.Success(emptyMap())
-        }
-        return MembershipPersistenceRequest(
-            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
-            QueryMemberSignature(holdingsIdentities.map { it.toAvro() }),
-        ).execute("find members signatures") { payload: MemberSignatureQueryResponse ->
-            payload.membersSignatures.associate { memberSignature ->
-                memberSignature.holdingIdentity.toCorda() to
-                    (memberSignature.signature to memberSignature.signatureSpec)
-            }
         }
     }
 
