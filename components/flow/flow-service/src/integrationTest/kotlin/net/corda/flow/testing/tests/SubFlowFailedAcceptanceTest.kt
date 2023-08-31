@@ -75,13 +75,13 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
                         listOf(SESSION_ID_1, SESSION_ID_2)
                     )
                 )
+                .completedWithError(CordaRuntimeException("error"))
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionErrorEvents(SESSION_ID_2)
-                singleOutputEvent()
-                scheduleFlowMapperCleanupEvents(SESSION_ID_1, SESSION_ID_2)
+                scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY, SESSION_ID_1, SESSION_ID_2)
             }
         }
     }

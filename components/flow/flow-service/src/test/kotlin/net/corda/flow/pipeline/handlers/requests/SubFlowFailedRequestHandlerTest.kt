@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests
 
-import java.util.stream.Stream
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.data.flow.state.session.SessionState
@@ -25,6 +24,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.stream.Stream
 
 @Suppress("MaxLineLength")
 class SubFlowFailedRequestHandlerTest {
@@ -57,7 +57,7 @@ class SubFlowFailedRequestHandlerTest {
         .build()
     private val ioRequest = FlowIORequest.SubFlowFailed(flowError, SESSION_IDS)
     private val testContext = RequestHandlerTestContext(Any())
-    private val handler = SubFlowFailedRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory)
+    private val handler = SubFlowFailedRequestHandler(testContext.flowSessionManager)
 
     @Suppress("Unused")
     @BeforeEach
