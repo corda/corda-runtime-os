@@ -49,6 +49,7 @@ internal class WorkerMonitorImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val CORDA_NAMESPACE = "CORDA"
         private const val K8S_NAMESPACE_KEY = "K8S_NAMESPACE"
+        private const val CLOUDWATCH_ENABLED_KEY = "ENABLE_CLOUDWATCH"
     }
 
     // The use of Javalin is temporary, and will be replaced in the future.
@@ -77,7 +78,9 @@ internal class WorkerMonitorImpl @Activate constructor(
     private fun setupMetrics(name: String) {
         logger.info("Creating Prometheus metric registry")
         CordaMetrics.configure(name, prometheusRegistry)
-        CordaMetrics.configure(name, cloudWatchRegistry)
+        if (System.getenv(CLOUDWATCH_ENABLED_KEY) == "true") {
+            CordaMetrics.configure(name, cloudWatchRegistry)
+        }
 
         ClassLoaderMetrics().bindTo(CordaMetrics.registry)
         JvmMemoryMetrics().bindTo(CordaMetrics.registry)
