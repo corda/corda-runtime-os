@@ -1,28 +1,21 @@
-package net.corda.ledger.utxo.flow.impl.groupparameters.serializer.amqp
+package net.corda.ledger.utxo.data.groupparameters.serializer.amqp
 
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.SignedGroupParameters
-import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
-import net.corda.sandbox.type.UsedByFlow
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.crypto.SignatureSpec
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
-@Component(
-    service = [ InternalCustomSerializer::class, UsedByFlow::class ],
-    property = [ CORDA_UNINJECTABLE_SERVICE ],
-    scope = PROTOTYPE
-)
+@Component(service = [ InternalCustomSerializer::class ])
 @Suppress("Unused")
 class SignedGroupParametersSerializer @Activate constructor(
     @Reference(service = GroupParametersFactory::class)
     private val groupParametersFactory: GroupParametersFactory
-) : BaseProxySerializer<SignedGroupParameters, SignedGroupParametersProxy>(), UsedByFlow {
+) : BaseProxySerializer<SignedGroupParameters, SignedGroupParametersProxy>() {
     override val type
         get() = SignedGroupParameters::class.java
 

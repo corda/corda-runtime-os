@@ -14,7 +14,8 @@ interface UtxoTokenRepository {
         entityManager: EntityManager,
         poolKey: TokenPoolKey,
         ownerHash: String?,
-        regexTag: String?
+        regexTag: String?,
+        maxTokens: Int
     ): AvailTokenQueryResult
 
     /**

@@ -1,6 +1,7 @@
-package net.corda.ledger.utxo.flow.impl.groupparameters
+package net.corda.flow.application.services.impl
 
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
@@ -9,6 +10,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandbox.type.SandboxConstants
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.v5.membership.GroupParametersLookup
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
@@ -20,11 +22,11 @@ import java.security.PublicKey
 
 @Suppress("Unused")
 @Component(
-    service = [CurrentGroupParametersService::class, UsedByFlow::class],
+    service = [GroupParametersLookup::class, GroupParametersLookupInternal::class, UsedByFlow::class],
     property = [SandboxConstants.CORDA_SYSTEM_SERVICE],
     scope = ServiceScope.PROTOTYPE
 )
-class CurrentGroupParametersServiceImpl @Activate constructor(
+class GroupParametersLookupImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class)
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = MembershipGroupReaderProvider::class)
@@ -33,13 +35,13 @@ class CurrentGroupParametersServiceImpl @Activate constructor(
     private val keyEncodingService: KeyEncodingService,
     @Reference(service = GroupPolicyProvider::class)
     private val groupPolicyProvider: GroupPolicyProvider
-) : CurrentGroupParametersService, UsedByFlow, SingletonSerializeAsToken {
+) : GroupParametersLookup, GroupParametersLookupInternal, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun get(): SignedGroupParameters {
+    override fun getCurrentGroupParameters(): SignedGroupParameters {
         val groupReader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
         val signedGroupParameters = requireNotNull(groupReader.signedGroupParameters) {
             "signedGroupParameters could not be accessed."

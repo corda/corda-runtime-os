@@ -538,17 +538,19 @@ artifacts {
 pluginManager.withPlugin('maven-publish') {
     publishing {
         publications {
-            maven(MavenPublication) {
-                artifactId appJarBaseName
-                artifact appJar
+            if (!project.hasProperty('busImpl')) {
+                maven(MavenPublication) {
+                    artifactId appJarBaseName
+                    artifact appJar
 
-                afterEvaluate { proj ->
-                    groupId proj.group
-                    version proj.version
+                    afterEvaluate { proj ->
+                        groupId proj.group
+                        version proj.version
 
-                    try {
-                        artifact tasks.named('sourcesJar', Jar)
-                    } catch (UnknownTaskException ignored) {
+                        try {
+                            artifact tasks.named('sourcesJar', Jar)
+                        } catch (UnknownTaskException ignored) {
+                        }
                     }
                 }
             }
