@@ -9,7 +9,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.membership.client.CouldNotFindMemberException
+import net.corda.membership.client.CouldNotFindEntityException
 import net.corda.membership.client.MemberResourceClient
 import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.client.ServiceNotReadyException
@@ -134,9 +134,9 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                     ShortHash.parseOrThrow(holdingIdentityShortHash),
                     memberRegistrationContext
                 ).fromDto()
-            } catch (e: CouldNotFindMemberException) {
+            } catch (e: CouldNotFindEntityException) {
                 throw ResourceNotFoundException(
-                    "holdingIdentityShortHash",
+                    e.entity,
                     holdingIdentityShortHash,
                 )
             } catch (e: CordaRPCAPIPartitionException) {
@@ -149,7 +149,7 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                 memberResourceClient.checkRegistrationProgress(
                     ShortHash.parseOrThrow(holdingIdentityShortHash)
                 ).map { it.fromDto() }
-            } catch (e: CouldNotFindMemberException) {
+            } catch (e: CouldNotFindEntityException) {
                 throw ResourceNotFoundException(e.message!!)
             } catch (e: ContextDeserializationException) {
                 throw InternalServerException(e.message!!)
@@ -171,7 +171,7 @@ class MemberRegistrationRestResourceImpl @Activate constructor(
                 ).fromDto()
             } catch (e: RegistrationProgressNotFoundException) {
                 throw ResourceNotFoundException(e.message!!)
-            } catch (e: CouldNotFindMemberException) {
+            } catch (e: CouldNotFindEntityException) {
                 throw ResourceNotFoundException(e.message!!)
             } catch (e: ContextDeserializationException) {
                 throw InternalServerException(e.message!!)
