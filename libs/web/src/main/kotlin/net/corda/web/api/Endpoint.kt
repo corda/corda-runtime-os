@@ -8,7 +8,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 data class Endpoint(val methodType: HTTPMethod, val endpoint: String, val webHandler: WebHandler) {
     fun validate() {
         val error = StringBuilder()
-        if (endpoint.isBlank() || endpoint.isEmpty()) error.appendLine("Endpoint must not be null or empty")
+        if (endpoint.isBlank()) error.appendLine("Endpoint must not be null or empty")
         if (!endpoint.startsWith("/")) error.appendLine("Endpoint $endpoint must start with '/'")
         if (!isValidEndpoint(endpoint)) error.appendLine("Endpoint $endpoint is not validly formed")
 

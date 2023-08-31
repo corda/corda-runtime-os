@@ -25,7 +25,7 @@ class JavalinServer @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = JavalinFactory::class)
     private val javalinFactory: JavalinFactory
-): WebServer {
+) : WebServer {
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -36,8 +36,7 @@ class JavalinServer @Activate constructor(
     private val endpoints: MutableList<Endpoint> = mutableListOf()
 
     override fun start(port: Int) {
-        if(server != null) {
-            log.error("The Javalin webserver is already initialized")
+        if (server != null) {
             throw CordaRuntimeException("The Javalin webserver is already initialized")
         }
         coordinator.start()
@@ -47,14 +46,12 @@ class JavalinServer @Activate constructor(
             server = javalinFactory.create()
             startServer(port)
 
-            if(endpoints.isNotEmpty()) {
-                endpoints.forEach {
-                    registerEndpointInternal(it)
-                }
+            endpoints.forEach {
+                registerEndpointInternal(it)
             }
 
         } catch (ex: Exception) {
-            throw CordaRuntimeException("Webserver already active on that port")
+            throw CordaRuntimeException(ex.message)
         }
     }
 
@@ -91,9 +88,11 @@ class JavalinServer @Activate constructor(
 
     override fun removeEndpoint(endpoint: Endpoint) {
         endpoints.remove(endpoint)
+        stop()
+        port?.let { startServer(it) }
     }
 
-    private fun registerEndpointInternal(endpoint: Endpoint){
+    private fun registerEndpointInternal(endpoint: Endpoint) {
         endpoint.validate()
         throwIfNull()
         when (endpoint.methodType) {
@@ -102,7 +101,7 @@ class JavalinServer @Activate constructor(
         }
     }
 
-    override val port get() = server?.port()
+    override val port: Int? get() = server?.port()
 
     private fun throwIfNull() {
         if (server == null) {

@@ -1,6 +1,7 @@
 package net.corda.web.server
 
 import io.javalin.Javalin
+import java.lang.reflect.Field
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -8,6 +9,7 @@ import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
 import net.corda.web.api.WebContext
 import net.corda.web.api.WebHandler
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -20,12 +22,13 @@ import org.mockito.kotlin.verify
 
 class JavalinServerTest {
 
-    private val lifecycleCoordinator = org.mockito.kotlin.mock<LifecycleCoordinator>()
-    private val lifecycleCoordinatorFactory = org.mockito.kotlin.mock<LifecycleCoordinatorFactory> {
+    private val lifecycleCoordinator = mock<LifecycleCoordinator>()
+    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), any()) }.doReturn(lifecycleCoordinator)
     }
 
     private lateinit var javalinServer: JavalinServer
+    private lateinit var endpointsField: Field
     private val javalinMock: Javalin = mock()
     private val javalinFactory = mock<JavalinFactory> {
         on { create() }.doReturn(javalinMock)
@@ -41,6 +44,9 @@ class JavalinServerTest {
     @BeforeEach
     fun setup() {
         javalinServer = JavalinServer(lifecycleCoordinatorFactory, javalinFactory)
+
+        endpointsField = JavalinServer::class.java.getDeclaredField("endpoints")
+        endpointsField.isAccessible = true
     }
 
     @Test
@@ -83,7 +89,7 @@ class JavalinServerTest {
     }
 
     @Test
-    fun `registering an endpoint should call the correct method on javalin` (){
+    fun `registering an endpoint should call the correct method on javalin`() {
         javalinServer.start(port)
 
         javalinServer.registerEndpoint(Endpoint(HTTPMethod.GET, "/url", webHandler))
@@ -91,5 +97,46 @@ class JavalinServerTest {
 
         javalinServer.registerEndpoint(Endpoint(HTTPMethod.POST, "/url", webHandler))
         verify(javalinMock).post(eq("/url"), any())
+    }
+
+    @Test
+    fun `registering an endpoint add it to the endpoints list`() {
+        javalinServer.start(port)
+        val getEndpoint = Endpoint(HTTPMethod.GET, "/url1", webHandler)
+        val postEndpoint = Endpoint(HTTPMethod.POST, "/url2", webHandler)
+
+        javalinServer.registerEndpoint(getEndpoint)
+        javalinServer.registerEndpoint(postEndpoint)
+
+        val endpoints = listCast(endpointsField.get(javalinServer) as MutableList<*>)
+
+        assertEquals(2, endpoints.size)
+        assertEquals(getEndpoint, endpoints[0])
+        assertEquals(postEndpoint, endpoints[1])
+    }
+
+    @Test
+    fun `unregistering an endpoint removes it from the endpoints list and restarts the server`() {
+        javalinServer.start(port)
+
+        val getEndpoint = Endpoint(HTTPMethod.GET, "/url1", webHandler)
+        val postEndpoint = Endpoint(HTTPMethod.POST, "/url2", webHandler)
+
+        javalinServer.registerEndpoint(getEndpoint)
+        javalinServer.registerEndpoint(postEndpoint)
+
+        javalinServer.removeEndpoint(getEndpoint)
+
+        verify(javalinMock).stop()
+        verify(javalinMock).start(port)
+
+        val endpoints = listCast(endpointsField.get(javalinServer) as MutableList<*>)
+        assertEquals(1, endpoints.size)
+        assertEquals(postEndpoint, endpoints[0])
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun listCast(inputList: MutableList<*>): MutableList<Endpoint> {
+        return inputList as? MutableList<Endpoint> ?: mutableListOf()
     }
 }
