@@ -64,7 +64,7 @@ internal class WorkerMonitorImpl @Activate constructor(
     override fun registerEndpoints(workerType: String) {
         setupMetrics(workerType)
 
-        val healthRoutehandler = object : WebHandler {
+        val healthRouteHandler = object : WebHandler {
             override fun handle(context: WebContext): WebContext {
                 val unhealthyComponents = componentWithStatus(setOf(LifecycleStatus.ERROR))
                 val status = if (unhealthyComponents.isEmpty()) {
@@ -112,7 +112,7 @@ internal class WorkerMonitorImpl @Activate constructor(
 
         }
 
-        webServer.registerEndpoint(Endpoint(HTTPMethod.GET, HTTP_HEALTH_ROUTE, healthRoutehandler))
+        webServer.registerEndpoint(Endpoint(HTTPMethod.GET, HTTP_HEALTH_ROUTE, healthRouteHandler))
         webServer.registerEndpoint(Endpoint(HTTPMethod.GET, HTTP_STATUS_ROUTE, statusRouteHandler))
         webServer.registerEndpoint(Endpoint(HTTPMethod.GET, HTTP_METRICS_ROUTE, metricsRouteHandler))
     }
