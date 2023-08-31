@@ -79,6 +79,7 @@ internal class WorkerMonitorImpl @Activate constructor(
         logger.info("Creating Prometheus metric registry")
         CordaMetrics.configure(name, prometheusRegistry)
         if (System.getenv(CLOUDWATCH_ENABLED_KEY) == "true") {
+            logger.info("Enabling the cloudwatch metrics registry")
             CordaMetrics.configure(name, cloudWatchRegistry)
         }
 

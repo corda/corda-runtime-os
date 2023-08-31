@@ -165,6 +165,7 @@ spec:
                 true
               {{- else }}
                 false
+              {{- end }}
           - name: JAVA_TOOL_OPTIONS
             value:
               {{ .javaOptions }}
