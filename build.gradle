@@ -78,16 +78,6 @@ allprojects {
                 systemProperty 'java.io.tmpdir', buildDir.absolutePath
                 jvmArgs '--add-opens', 'java.base/java.lang=ALL-UNNAMED'
             }
-//            tasks.withType(Test).configureEach {
-//                useJUnitPlatform(){
-//                    excludeTags project.hasProperty('runUnstableTests') ? 'runAllTestsNoExclusions' : 'Unstable'
-//                }
-//
-//                doFirst {
-//                    systemProperty 'java.io.tmpdir', buildDir.absolutePath
-//                    jvmArgs '--illegal-access=deny'
-//                }
-//            }
         }
     }
 

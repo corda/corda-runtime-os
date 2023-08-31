@@ -83,7 +83,9 @@ class MembershipInfoProducer(private val publisher: AtomicReference<Publisher?>)
                     PersistentMemberInfo(
                         viewOwningMemberHoldingIdentity.copy(groupId = ownedInteropIdentity.groupId).toAvro(),
                         KeyValuePairList(memberContext),
-                        KeyValuePairList(mgmContext)
+                        KeyValuePairList(mgmContext),
+                        null,
+                        null
                     )
                 )
             }
