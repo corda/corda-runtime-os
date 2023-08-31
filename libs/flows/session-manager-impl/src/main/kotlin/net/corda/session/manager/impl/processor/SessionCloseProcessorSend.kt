@@ -18,7 +18,7 @@ import java.time.Instant
  * session mismatch has occurred.
  * If state is CLOSING or CLOSED, no update required.
  * If the client has not consumed all received events and it tries to send a close then trigger an error as this is a bug/session mismatch.
- * If the state is CONFIRMED then set the status to CLOSING
+ * If the state is CONFIRMED then set the status to CLOSED
  */
 class SessionCloseProcessorSend(
     private val key: Any,
@@ -86,8 +86,7 @@ class SessionCloseProcessorSend(
         nextSeqNum: Int,
     ) : SessionState {
         val requireClose = sessionState.requireClose
-        var status = sessionState.status
-        return if (isInitiatedIdentity(sessionEvent) && status !in listOf(SessionStateType.ERROR, SessionStateType.CLOSED)) {
+        return if (isInitiatedIdentity(sessionEvent) && sessionState.status !in listOf(SessionStateType.ERROR, SessionStateType.CLOSED)) {
             if (requireClose) {
                 sessionState.apply {
                     logger.trace {
@@ -101,10 +100,11 @@ class SessionCloseProcessorSend(
                         sessionState.sendEventsState.undeliveredMessages.plus(sessionEvent)
                 }
             } else {
-                status = SessionStateType.CLOSED
+                sessionState.status = SessionStateType.CLOSED
                 sessionState
             }
         } else {
+            val status = sessionState.status
             val errorMessage: String = if (status in listOf(SessionStateType.ERROR, SessionStateType.CLOSED)) {
                 "Tried to send SessionClose when status is not correct for sending a close. " +
                         "Key: $key sessionId: $sessionId, session status is " +
