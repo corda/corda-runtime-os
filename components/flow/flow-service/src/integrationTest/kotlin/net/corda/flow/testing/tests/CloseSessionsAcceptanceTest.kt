@@ -1,8 +1,8 @@
 package net.corda.flow.testing.tests
 
-import net.corda.data.flow.FlowKey
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.testing.context.ALICE_FLOW_KEY
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.startFlow
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -16,10 +16,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
 class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
-
-    private companion object {
-        val ALICE_FLOW_KEY = FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString()
-    }
 
     @BeforeEach
     fun beforeEach() {
@@ -95,5 +91,4 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
             }
         }
     }
-
 }
