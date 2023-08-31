@@ -94,7 +94,7 @@ class NonValidatingNotaryServerFlowImplTest {
         whenever(mockTransactionSignatureService.signBatch(any(), any())).thenThrow(
             TransactionNoAvailableKeysException("The publicKeys do not have any private counterparts available.", null)
         )
-        createAndCallServer(mockSuccessfulUniquenessClientService(), notaryServiceName) {
+        createAndCallServer(mockSuccessfulUniquenessClientService()) {
             assertThat(responseFromServer).hasSize(1)
 
             val responseError = responseFromServer.first().error
@@ -111,7 +111,6 @@ class NonValidatingNotaryServerFlowImplTest {
         // We sign with a key that is not part of the notary composite key
         createAndCallServer(
             mockSuccessfulUniquenessClientService(),
-            notaryServiceName,
             notaryServiceKey = notaryVNodeAliceKey
         ) {
             assertThat(responseFromServer).hasSize(1)
@@ -125,7 +124,7 @@ class NonValidatingNotaryServerFlowImplTest {
 
     @Test
     fun `Non-validating notary plugin server should respond with error if request signature is invalid`() {
-        createAndCallServer(mockSuccessfulUniquenessClientService(), notaryServiceName) {
+        createAndCallServer(mockSuccessfulUniquenessClientService()) {
             assertThat(responseFromServer).hasSize(1)
 
             val responseError = responseFromServer.first().error
@@ -138,7 +137,7 @@ class NonValidatingNotaryServerFlowImplTest {
 
     @Test
     fun `Non-validating notary plugin server should respond with error if the uniqueness check fails`() {
-        createAndCallServer(mockErrorUniquenessClientService(UniquenessCheckErrorReferenceStateUnknownImpl(emptyList())), notaryServiceName) {
+        createAndCallServer(mockErrorUniquenessClientService(UniquenessCheckErrorReferenceStateUnknownImpl(emptyList()))) {
             assertThat(responseFromServer).hasSize(1)
 
             val responseError = responseFromServer.first().error
@@ -151,7 +150,7 @@ class NonValidatingNotaryServerFlowImplTest {
 
     @Test
     fun `Non-validating notary plugin server should respond with error if an error encountered during uniqueness check`() {
-        createAndCallServer(mockThrowErrorUniquenessCheckClientService(), notaryServiceName) {
+        createAndCallServer(mockThrowErrorUniquenessCheckClientService()) {
             assertThat(responseFromServer).hasSize(1)
 
             val responseError = responseFromServer.first().error
@@ -171,7 +170,7 @@ class NonValidatingNotaryServerFlowImplTest {
         )
 
         createAndCallServer(
-            mockSuccessfulUniquenessClientService(), notaryServiceName
+            mockSuccessfulUniquenessClientService(),
         ) {
             assertThat(responseFromServer).hasSize(1)
 
@@ -184,11 +183,7 @@ class NonValidatingNotaryServerFlowImplTest {
 
     @Test
     fun `Non-validating notary plugin server should respond with error if time window not present on filtered tx`() {
-        createAndCallServer(
-            mockSuccessfulUniquenessClientService(),
-            notaryServiceName,
-            filteredTxContents = mapOf("timeWindow" to null)
-        ) {
+        createAndCallServer(mockSuccessfulUniquenessClientService(), filteredTxContents = mapOf("timeWindow" to null)) {
             assertThat(responseFromServer).hasSize(1)
 
             val responseError = responseFromServer.first().error
@@ -204,7 +199,6 @@ class NonValidatingNotaryServerFlowImplTest {
     fun `Non-validating notary plugin server should respond with error if notary name not present on filtered tx`() {
         createAndCallServer(
             mockSuccessfulUniquenessClientService(),
-            notaryServiceName,
             filteredTxContents = mapOf("notaryName" to null)) {
             assertThat(responseFromServer).hasSize(1)
 
@@ -221,7 +215,6 @@ class NonValidatingNotaryServerFlowImplTest {
     fun `Non-validating notary plugin server should respond with error if notary key not present on filtered tx`() {
         createAndCallServer(
             mockSuccessfulUniquenessClientService(),
-            notaryServiceName,
             filteredTxContents = mapOf("notaryKey" to null)) {
             assertThat(responseFromServer).hasSize(1)
 
@@ -241,7 +234,6 @@ class NonValidatingNotaryServerFlowImplTest {
 
         createAndCallServer(
             mockSuccessfulUniquenessClientService(),
-            notaryServiceName,
             filteredTxContents = mapOf("inputStateRefs" to mockInputStateProof)
         ) {
             assertThat(responseFromServer).hasSize(1)
@@ -260,11 +252,7 @@ class NonValidatingNotaryServerFlowImplTest {
         fun throwVerify() {
             throw IllegalArgumentException("DUMMY ERROR")
         }
-        createAndCallServer(
-            mockSuccessfulUniquenessClientService(),
-            notaryServiceName,
-            txVerificationLogic = ::throwVerify
-        ) {
+        createAndCallServer(mockSuccessfulUniquenessClientService(), txVerificationLogic = ::throwVerify) {
             assertThat(responseFromServer).hasSize(1)
 
             val responseError = responseFromServer.first().error
@@ -282,8 +270,7 @@ class NonValidatingNotaryServerFlowImplTest {
                 IllegalArgumentException::class.java.name,
                 "Unhandled error!"
             )
-        ), notaryServiceName
-            ) {
+        )) {
             assertThat(responseFromServer).hasSize(1)
 
             val responseError = responseFromServer.first().error
@@ -299,7 +286,6 @@ class NonValidatingNotaryServerFlowImplTest {
     fun `Non-validating notary plugin server should respond with error if notary identity invalid`() {
         createAndCallServer(
             mockSuccessfulUniquenessClientService(),
-            notaryServiceName,
             // What party we pass in here does not matter, it just needs to be different from the notary server party
             filteredTxContents = mapOf("notaryName" to MemberX500Name.parse("C=GB,L=London,O=Bob"))
         ) {
@@ -316,12 +302,11 @@ class NonValidatingNotaryServerFlowImplTest {
     @Suppress("LongParameterList")
     private fun createAndCallServer(
         clientService: LedgerUniquenessCheckerClientService,
-        notaryServiceName: MemberX500Name,
         notaryServiceKey: PublicKey = notaryServiceCompositeKey,
         filteredTxContents: Map<String, Any?> = emptyMap(),
         flowSession: FlowSession? = null,
         txVerificationLogic: () -> Unit = {},
-        extractData: (sigs: List<NotarizationResponse>) -> Unit,
+        extractData: (sigs: List<NotarizationResponse>) -> Unit
     ) {
         val txId = randomSecureHash()
 
