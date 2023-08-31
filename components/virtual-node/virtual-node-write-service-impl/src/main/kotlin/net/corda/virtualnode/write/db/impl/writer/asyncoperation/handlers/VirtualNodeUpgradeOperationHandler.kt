@@ -221,13 +221,13 @@ internal class VirtualNodeUpgradeOperationHandler(
                 val registrationRequestDetails = (registrationRequest as MembershipQueryResult.Success)
                     .payload
                     .first()
-                val updatedSerial = (registrationRequestDetails.serial + 1).toString()
+                val updatedSerial = registrationRequestDetails.serial + 1
                 val registrationContext = registrationRequestDetails
                     .memberProvidedContext.data.array()
                     .deserializeContext(keyValuePairListDeserializer)
                     .toMutableMap()
 
-                registrationContext[MemberInfoExtension.SERIAL] = updatedSerial
+                registrationContext[MemberInfoExtension.SERIAL] = updatedSerial.toString()
 
                 memberResourceClient.startRegistration(
                     holdingIdentity.shortHash,
