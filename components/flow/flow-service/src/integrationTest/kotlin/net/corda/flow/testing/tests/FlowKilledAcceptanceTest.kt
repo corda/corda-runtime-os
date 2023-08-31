@@ -1,11 +1,11 @@
 package net.corda.flow.testing.tests
 
 import net.corda.data.flow.output.FlowStates
+import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.virtualnode.OperationalStatus
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -49,7 +49,6 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    @Disabled
     fun `test init flow event killed due to inactive flow operational status`() {
         `when` {
             sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL)
@@ -67,12 +66,14 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    @Disabled
     fun `flow removed from cache when flow resumes for virtual node with flow operational status inactive`() {
 
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitialCheckpoint)
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                )))
         }
 
         then {
@@ -87,6 +88,10 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
             virtualNode(CPI1, ALICE_HOLDING_IDENTITY, flowOperationalStatus = OperationalStatus.INACTIVE)
         }
 
+        `when` {
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1)
+        }
+
         then {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
@@ -95,5 +100,4 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
             }
         }
     }
-
 }

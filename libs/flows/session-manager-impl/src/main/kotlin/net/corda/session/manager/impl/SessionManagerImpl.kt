@@ -3,6 +3,7 @@ package net.corda.session.manager.impl
 import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
@@ -88,6 +89,8 @@ class SessionManagerImpl @Activate constructor(
             undeliveredMessages.isEmpty() -> null
             //don't allow data messages to be consumed when session is not fully established or if there is an error
             incorrectSessionState -> null
+            //only allow client to see a close message after the session is closed
+            status != SessionStateType.CLOSED && undeliveredMessages.first().payload is SessionClose -> null
             //return the next valid message
             undeliveredMessages.first().sequenceNum <= receivedEvents.lastProcessedSequenceNum -> {
                 val nextMessage = undeliveredMessages.first()

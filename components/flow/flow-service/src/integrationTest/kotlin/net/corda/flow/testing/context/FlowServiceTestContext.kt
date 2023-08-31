@@ -137,6 +137,9 @@ class FlowServiceTestContext @Activate constructor(
     override val initiatedIdentityMemberName: MemberX500Name
         get() = MemberX500Name.parse(sessionInitiatedIdentity!!.x500Name)
 
+    override val initiatingIdentityMemberName: MemberX500Name
+        get() = MemberX500Name.parse(sessionInitiatingIdentity!!.x500Name)
+
     override fun virtualNode(
         cpiId: String,
         holdingId: HoldingIdentity,
@@ -297,9 +300,7 @@ class FlowServiceTestContext @Activate constructor(
         flowId: String,
         sessionId: String,
         data: ByteArray,
-        sequenceNum: Int,
-        receivedSequenceNum: Int,
-        outOfOrderSeqNums: List<Int>
+        sequenceNum: Int
     ): FlowIoRequestSetup {
         return createAndAddSessionEvent(
             flowId,
@@ -316,7 +317,6 @@ class FlowServiceTestContext @Activate constructor(
         flowId: String,
         sessionId: String,
         sequenceNum: Int,
-        receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?
     ): FlowIoRequestSetup {
@@ -334,7 +334,6 @@ class FlowServiceTestContext @Activate constructor(
     override fun sessionErrorEventReceived(
         flowId: String,
         sessionId: String,
-        receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?
     ): FlowIoRequestSetup {
