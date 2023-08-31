@@ -1,56 +1,22 @@
 package net.corda.flow.testing.tests
 
-import net.corda.data.flow.event.session.SessionClose
-import net.corda.data.flow.event.session.SessionData
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.ALICE_FLOW_KEY
 import net.corda.flow.testing.context.FlowServiceTestBase
-import net.corda.flow.testing.context.StepSetup
 import net.corda.flow.testing.context.startFlow
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
-import org.junit.jupiter.params.provider.Arguments
 import org.osgi.test.junit5.service.ServiceExtension
-import java.util.stream.Stream
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
-@Disabled
-class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
-    private companion object {
-        @JvmStatic
-        fun unrelatedSessionEvents(): Stream<Arguments> {
-            return Stream.of(
-                Arguments.of(
-                    SessionData::class.simpleName,
-                    { dsl: StepSetup ->
-                        dsl.sessionDataEventReceived(
-                            FLOW_ID1,
-                            SESSION_ID_2,
-                            DATA_MESSAGE_1,
-                            sequenceNum = 1
-                        )
-                    }
-                ),
-                Arguments.of(
-                    SessionClose::class.simpleName,
-                    { dsl: StepSetup ->
-                        dsl.sessionCloseEventReceived(
-                            FLOW_ID1,
-                            SESSION_ID_2,
-                            sequenceNum = 1
-                        )
-                    }
-                )
-            )
-        }
-    }
+class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
     @BeforeEach
     fun beforeEach() {
@@ -143,6 +109,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(
                     FlowIORequest.SubFlowFinished(listOf(INITIATED_SESSION_ID_1))
                 )
+                .completedWithError(CordaRuntimeException("error"))
         }
 
         then {
