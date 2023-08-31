@@ -12,6 +12,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import static net.corda.testing.driver.node.MemberStatus.ACTIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
@@ -48,6 +49,24 @@ class DriverJavaTest {
             assertThat(dsl.nodesFor("extendable-cpb"))
                 .hasEntrySatisfying(ALICE, vNode -> assertThat(aliceNodes).contains(vNode))
                 .doesNotContainKeys(BOB, LUCY);
+
+            dsl.node("mandelbrot", ALICE, alice ->
+                assertThat(alice.getStatus()).isEqualTo(ACTIVE)
+            );
+            dsl.node("extendable-cpb", ALICE, alice ->
+                assertThat(alice.getStatus()).isEqualTo(ACTIVE)
+            );
+
+            dsl.group("mandelbrot", group ->
+                group.member(LUCY, lucy ->
+                    assertThat(lucy.getStatus()).isEqualTo(ACTIVE)
+                )
+            );
+            dsl.group("extendable-cpb", group ->
+                group.member(LUCY, lucy ->
+                    assertThat(lucy.getStatus()).isEqualTo(ACTIVE)
+                )
+            );
         });
     }
 

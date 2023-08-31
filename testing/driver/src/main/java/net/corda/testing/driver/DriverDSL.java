@@ -40,6 +40,12 @@ public interface DriverDSL {
         @NotNull ThrowingConsumer<@NotNull Member> action
     );
 
+    void node(
+        @NotNull String groupName,
+        @NotNull MemberX500Name memberName,
+        @NotNull ThrowingConsumer<@NotNull Member> action
+    );
+
     void groupFor(
         @NotNull VirtualNodeInfo virtualNodeInfo,
         @NotNull ThrowingConsumer<@NotNull MembershipGroupDSL> action
