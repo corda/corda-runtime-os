@@ -125,7 +125,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 

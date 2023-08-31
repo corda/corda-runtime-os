@@ -7,8 +7,8 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.StepSetup
 import net.corda.flow.testing.context.flowResumedWithError
-import net.corda.flow.testing.context.startFloww
 import net.corda.flow.testing.context.startFlow
+import net.corda.flow.testing.context.startFloww
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
@@ -39,8 +39,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
                             FLOW_ID1,
                             SESSION_ID_2,
                             DATA_MESSAGE_1,
-                            sequenceNum = 1,
-                            receivedSequenceNum = 3
+                            sequenceNum = 1
                         )
                     }
                 ),
@@ -50,8 +49,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
                         dsl.sessionCloseEventReceived(
                             FLOW_ID1,
                             SESSION_ID_2,
-                            sequenceNum = 1,
-                            receivedSequenceNum = 3
+                            sequenceNum = 1
                         )
                     }
                 )
@@ -114,7 +112,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
                     SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)
                 ))
 
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1)
         }
 
         `when` {
@@ -136,7 +134,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 3)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
@@ -155,7 +153,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
@@ -172,12 +170,12 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
             startFlow(this)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1)))
 
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 3)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         `when` {
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
@@ -195,12 +193,12 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
             startFlow(this)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         `when` {
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
@@ -221,7 +219,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 2, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -240,7 +238,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -305,7 +303,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -324,7 +322,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 3)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1)
         }
 
         then {
@@ -344,9 +342,9 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 3)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1)
 
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 3)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -381,12 +379,12 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
             startFlow(this)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 3)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1)
         }
 
         then {
@@ -420,12 +418,12 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
             startFlow(this)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 3)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -449,12 +447,12 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
             startFlow(this)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
 
         }
@@ -483,12 +481,12 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
             startFlow(this)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1)))
         }
 
@@ -517,11 +515,11 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
             startFlow(this)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
 
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 3)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1)
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 3)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
 
         }
@@ -550,7 +548,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1)
         }
 
         then {
@@ -572,9 +570,9 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1)
 
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
@@ -600,7 +598,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 3)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1)
         }
 
         then {
@@ -619,8 +617,8 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 3)
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 3)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -645,8 +643,8 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 3)
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 3)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -672,8 +670,8 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 3)
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 3)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -698,8 +696,8 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 3)
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 3)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_1, sequenceNum = 1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 

@@ -67,7 +67,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 3)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1)
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),
@@ -91,11 +91,11 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
             startFlow(this)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
 
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 3)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1)
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 3)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1)
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),
@@ -118,12 +118,12 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
             startFlow(this)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 3)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         `when` {
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 3)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2)
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),
@@ -197,7 +197,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, sequenceNum = 2, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, sequenceNum = 2)
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),
@@ -225,7 +225,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionErrorEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, receivedSequenceNum = 1)
+            sessionErrorEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1)
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),

@@ -17,7 +17,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
-@Disabled
 class SendAcceptanceTest : FlowServiceTestBase() {
 
     private companion object {
@@ -43,47 +42,57 @@ class SendAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Calling 'send' on initiated sessions sends a session data event`() {
+    fun `Calling 'send' multiple times on initiated sessions sends multiple session data events`() {
+        given {
+            startFlow(this)
+                .suspendsWith(FlowIORequest.Receive(setOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName))))
+        }
 
         `when` {
-            startFlow(this)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1)
                 .suspendsWith(FlowIORequest.Send(
                     mapOf(
-                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1
+                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
                     )))
+                .suspendsWith(FlowIORequest.Send(
+                    mapOf(
+                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_2,
+                    )))
+                .suspendsWith(FlowIORequest.Receive(setOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName))))
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_1)
+                multipleSessionDataEvents(mapOf(SESSION_ID_1 to listOf(DATA_MESSAGE_1, DATA_MESSAGE_2)))
             }
         }
     }
 
     @Test
-    @Disabled
     fun `Calling 'send' on an invalid session fails and reports the exception to user code`() {
         given {
             startFloww(this)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
+                .suspendsWith(FlowIORequest.Receive(setOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName))))
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 2)
+
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1)
                 .suspendsWith(FlowIORequest.Send(
                     mapOf(
                         SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
                     )))
+                .suspendsWith(FlowIORequest.Receive(setOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName))))
+
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                hasPendingUserException()
-                singleOutputEvent()
+                noPendingUserException()
+                noOutputEvent()
             }
-        }
 
-        then {
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWithError<CordaRuntimeException>()
                 noPendingUserException()
@@ -143,9 +152,9 @@ class SendAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1)
 
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1)
                 .suspendsWith(FlowIORequest.Send(
                     mapOf(
                         SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_3,

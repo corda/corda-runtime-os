@@ -31,15 +31,15 @@ class SessionsAcceptanceTest : FlowServiceTestBase() {
                 Arguments.of(
                     SessionData::class.simpleName,
                     { dsl: StepSetup ->
-                        dsl.sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, byteArrayOf(1), sequenceNum = 1, receivedSequenceNum = 1)
+                        dsl.sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, byteArrayOf(1), sequenceNum = 1)
                     }),
                 Arguments.of(
                     SessionClose::class.simpleName,
-                    { dsl: StepSetup -> dsl.sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1) }
+                    { dsl: StepSetup -> dsl.sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1) }
                 ),
                 Arguments.of(
                     SessionError::class.simpleName,
-                    { dsl: StepSetup -> dsl.sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1) }
+                    { dsl: StepSetup -> dsl.sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1) }
                 ),
             )
         }

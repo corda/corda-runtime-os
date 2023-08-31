@@ -297,9 +297,7 @@ class FlowServiceTestContext @Activate constructor(
         flowId: String,
         sessionId: String,
         data: ByteArray,
-        sequenceNum: Int,
-        receivedSequenceNum: Int,
-        outOfOrderSeqNums: List<Int>
+        sequenceNum: Int
     ): FlowIoRequestSetup {
         return createAndAddSessionEvent(
             flowId,
@@ -316,7 +314,6 @@ class FlowServiceTestContext @Activate constructor(
         flowId: String,
         sessionId: String,
         sequenceNum: Int,
-        receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?
     ): FlowIoRequestSetup {
@@ -334,7 +331,6 @@ class FlowServiceTestContext @Activate constructor(
     override fun sessionErrorEventReceived(
         flowId: String,
         sessionId: String,
-        receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?
     ): FlowIoRequestSetup {
