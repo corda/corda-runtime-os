@@ -90,27 +90,28 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
             }
         }
     }
-        @Test
-        fun `Receiving a session error event resumes the flow with an error`() {
-            given {
-                startFlow(this)
-                    .suspendsWith(
-                        FlowIORequest.Receive(
-                            setOf(
-                                SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
-                            )
+
+    @Test
+    fun `Receiving a session error event resumes the flow with an error`() {
+        given {
+            startFlow(this)
+                .suspendsWith(
+                    FlowIORequest.Receive(
+                        setOf(
+                            SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
                         )
                     )
-            }
+                )
+        }
 
-            `when` {
-                sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1)
-            }
+        `when` {
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1)
+        }
 
-            then {
-                expectOutputForFlow(FLOW_ID1) {
-                    flowResumedWithError<CordaRuntimeException>()
-                }
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowResumedWithError<CordaRuntimeException>()
             }
         }
+    }
 }
