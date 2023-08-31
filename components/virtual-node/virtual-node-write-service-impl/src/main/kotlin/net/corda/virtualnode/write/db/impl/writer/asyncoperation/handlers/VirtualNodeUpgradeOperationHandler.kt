@@ -214,21 +214,20 @@ internal class VirtualNodeUpgradeOperationHandler(
             registrationRequestsCheck is MembershipQueryResult.Success
             && registrationRequestsCheck.payload.isNotEmpty()
         ) {
-            val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
-            val x500Name = membershipGroupReader.owningMember
+            val x500Name = membershipGroupReaderProvider.getGroupReader(holdingIdentity).owningMember
             val registrationRequest = membershipQueryClient
                 .queryRegistrationRequests(holdingIdentity, x500Name, listOf(APPROVED), 1)
             try {
                 val registrationRequestDetails = (registrationRequest as MembershipQueryResult.Success)
                     .payload
                     .first()
-                val previousSerial = (registrationRequestDetails.serial+1).toString()
+                val updatedSerial = (registrationRequestDetails.serial + 1).toString()
                 val registrationContext = registrationRequestDetails
                     .memberProvidedContext.data.array()
                     .deserializeContext(keyValuePairListDeserializer)
                     .toMutableMap()
 
-                registrationContext[MemberInfoExtension.SERIAL] = previousSerial
+                registrationContext[MemberInfoExtension.SERIAL] = updatedSerial
 
                 memberResourceClient.startRegistration(
                     holdingIdentity.shortHash,
