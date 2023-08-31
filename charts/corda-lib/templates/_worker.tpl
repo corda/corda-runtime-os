@@ -139,8 +139,6 @@ spec:
             memory: {{ default $.Values.resources.limits.memory .resources.limits.memory }}
           {{- end }}
         env:
-          - name: HOME
-            value: "/work"
           - name: K8S_NODE_NAME
             valueFrom:
               fieldRef:
