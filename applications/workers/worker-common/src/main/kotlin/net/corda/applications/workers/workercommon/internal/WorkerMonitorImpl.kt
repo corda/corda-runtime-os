@@ -14,7 +14,6 @@ import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics
 import io.micrometer.core.instrument.binder.system.FileDescriptorMetrics
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics
 import io.micrometer.core.instrument.binder.system.UptimeMetrics
-import io.micrometer.core.instrument.composite.CompositeMeterRegistry
 import io.micrometer.prometheus.PrometheusConfig
 import io.micrometer.prometheus.PrometheusMeterRegistry
 import net.corda.applications.workers.workercommon.WorkerMonitor
@@ -30,7 +29,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import software.amazon.awssdk.auth.credentials.WebIdentityTokenCredentialsProviderFactory
 import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
 import java.util.concurrent.ConcurrentHashMap
