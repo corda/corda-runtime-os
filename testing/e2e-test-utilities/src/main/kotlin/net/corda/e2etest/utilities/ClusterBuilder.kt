@@ -92,12 +92,11 @@ class ClusterBuilder {
             ?: throw FileNotFoundException("No such resource: '$resourceName'")
 
     fun importCertificate(resourceName: String, usage: String, alias: String) =
-        if (REST_API_VERSION_PATH == RestApiVersion.C5_0.versionPath) {
-            // Used to test RestApiVersion.C5_0 CertificateRestResource, remove after LTS
-            deprecatedImportCertificate(resourceName, usage, alias)
-        } else {
-            uploadCertificateResource("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage", resourceName, alias)
-        }
+            uploadCertificateResource(
+                "/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage",
+                resourceName,
+                alias,
+            )
 
     // Used to test RestApiVersion.C5_0 CertificateRestResource from 5.1 cluster, remove after LTS
     fun deprecatedImportCertificate(resourceName: String, usage: String, alias: String) =
@@ -105,19 +104,23 @@ class ClusterBuilder {
 
 
     fun importCertificate(file: File, usage: String, alias: String) =
-        if (REST_API_VERSION_PATH == RestApiVersion.C5_0.versionPath) {
-            // Used to test RestApiVersion.C5_0 CertificateRestResource, remove after LTS
-            uploadCertificateFile("/api/${RestApiVersion.C5_0.versionPath}/certificates/cluster/$usage", file, alias)
-        } else {
-            uploadCertificateFile("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage", file, alias)
-        }
+        uploadCertificateFile(
+            "/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage",
+            file,
+            alias,
+        )
 
     fun getCertificateChain(usage: String, alias: String) =
-        if (REST_API_VERSION_PATH == RestApiVersion.C5_0.versionPath) {
-            // Used to test RestApiVersion.C5_0 CertificateRestResource, remove after LTS
-            client!!.get("/api/${RestApiVersion.C5_0.versionPath}/certificates/cluster/$usage/$alias")
+        client!!.get("/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage/$alias")
+
+    /**
+     * Returns the correct path for certificate rest resource based on the rest api version we use.
+     */
+    private fun String.certificatePath(): String =
+        if (this == RestApiVersion.C5_0.versionPath) {
+            "certificates"
         } else {
-            client!!.get("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage/$alias")
+            "certificate"
         }
 
     /** Assumes the resource *is* a CPB */
@@ -349,12 +352,7 @@ class ClusterBuilder {
         )
 
     fun getKey(tenantId: String, keyId: String) =
-        if (REST_API_VERSION_PATH == RestApiVersion.C5_0.versionPath) {
-            // Used to test RestApiVersion.C5_0 CertificateRestResource, remove after LTS
-            get("/api/${RestApiVersion.C5_0.versionPath}/keys/$tenantId/$keyId")
-        } else {
-            get("/api/$REST_API_VERSION_PATH/key/$tenantId/$keyId")
-        }
+        get("/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.keyPath()}/$tenantId/$keyId")
 
     fun getKey(
         tenantId: String,
@@ -372,12 +370,18 @@ class ClusterBuilder {
         } else {
             queries.joinToString(prefix = "?", separator = "&")
         }
-        return if (REST_API_VERSION_PATH == RestApiVersion.C5_0.versionPath) {
-            return get("/api/${RestApiVersion.C5_0.versionPath}/keys/$tenantId$queryStr")
-        } else {
-            get("/api/$REST_API_VERSION_PATH/key/$tenantId$queryStr")
-        }
+        return get("/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.keyPath()}/$tenantId$queryStr")
     }
+
+    /**
+     * Returns the correct path for key rest resource based on the rest api version we use.
+     */
+    private fun String.keyPath(): String =
+        if (this == RestApiVersion.C5_0.versionPath) {
+            "keys"
+        } else {
+            "key"
+        }
 
     /** Get status of a flow */
     fun flowStatus(holdingIdentityShortHash: String, clientRequestId: String) =
