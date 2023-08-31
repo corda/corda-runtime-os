@@ -90,6 +90,9 @@ dependencies {
     systemPackages "software.amazon.awssdk:metrics-spi:$awssdkVersion"
     systemPackages "software.amazon.awssdk:json-utils:$awssdkVersion"
     systemPackages "software.amazon.awssdk:endpoints-spi:$awssdkVersion"
+    systemPackages "software.amazon.awssdk:sts:$awssdkVersion"
+    systemPackages "software.amazon.awssdk:profiles:$awssdkVersion"
+    systemPackages "software.amazon.awssdk:aws-query-protocol:$awssdkVersion"
 }
 
 TaskProvider<Jar> jarTask = tasks.named('jar', Jar) {
