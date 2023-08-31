@@ -162,9 +162,9 @@ spec:
           - name: ENABLE_CLOUDWATCH
             value:
               {{- if eq $.Values.serviceAccount.name "cloudwatch-writer" }}
-                true
+                "true"
               {{- else }}
-                false
+                "false"
               {{- end }}
           - name: JAVA_TOOL_OPTIONS
             value:
