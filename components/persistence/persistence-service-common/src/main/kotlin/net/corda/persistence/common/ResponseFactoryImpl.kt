@@ -20,7 +20,6 @@ import javax.persistence.PersistenceException
 
 @Component(service = [ResponseFactory::class])
 class ResponseFactoryImpl @VisibleForTesting internal constructor(
-    @Reference(service = ExternalEventResponseFactory::class)
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     private val persistenceExceptionCategorizer: PersistenceExceptionCategorizer
 ) : ResponseFactory {
