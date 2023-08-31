@@ -11,6 +11,9 @@ interface StepSetup {
 
     val initiatedIdentityMemberName: MemberX500Name
 
+    val initiatingIdentityMemberName: MemberX500Name
+
+
     fun virtualNode(
         cpiId: String,
         holdingId: HoldingIdentity,

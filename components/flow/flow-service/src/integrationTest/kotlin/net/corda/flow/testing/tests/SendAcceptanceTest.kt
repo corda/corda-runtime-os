@@ -3,12 +3,9 @@ package net.corda.flow.testing.tests
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
-import net.corda.flow.testing.context.flowResumedWithError
 import net.corda.flow.testing.context.startFlow
 import net.corda.flow.testing.context.startFloww
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -40,7 +37,6 @@ class SendAcceptanceTest : FlowServiceTestBase() {
             initiatingToInitiatedFlow(PROTOCOL, FAKE_FLOW_NAME, FAKE_FLOW_NAME)
         }
     }
-
     @Test
     fun `Calling 'send' multiple times on initiated sessions sends multiple session data events`() {
         given {
@@ -83,72 +79,65 @@ class SendAcceptanceTest : FlowServiceTestBase() {
                     mapOf(
                         SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
                     )))
+
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                noOutputEvent()
+            }
+
+            expectOutputForFlow(FLOW_ID1) {
+                hasPendingUserException()
+            }
+        }
+    }
+
+    @Test
+    fun `Calling 'send' multiple times on initiated sessions resumes the flow and sends a session data events each time`() {
+        given {
+            startFlow(this)
+                .suspendsWith(FlowIORequest.Receive(setOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName))))
+        }
+
+        `when` {
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, 1)
+                .suspendsWith(FlowIORequest.Send(
+                    mapOf(
+                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
+                        SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_2,
+                    )))
+                .suspendsWith(FlowIORequest.Send(
+                    mapOf(
+                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_3,
+                        SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_4,
+                    )))
+                .suspendsWith(FlowIORequest.Send(
+                    mapOf(
+                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_5,
+                        SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_6,
+                    )))
                 .suspendsWith(FlowIORequest.Receive(setOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName))))
 
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                noPendingUserException()
+                sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2, SESSION_ID_1 to DATA_MESSAGE_3,
+                    SESSION_ID_2 to DATA_MESSAGE_4, SESSION_ID_1 to DATA_MESSAGE_5, SESSION_ID_2 to DATA_MESSAGE_6)
                 noOutputEvent()
             }
-
-            expectOutputForFlow(FLOW_ID1) {
-                flowResumedWithError<CordaRuntimeException>()
-                noPendingUserException()
-            }
         }
     }
 
     @Test
-    @Disabled
-    fun `Calling 'send' multiple times on initiated sessions resumes the flow and sends a session data events each time`() {
-        given {
-            startFlow(this)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
-        }
-
-        `when` {
-           /* sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
-                .suspendsWith(FlowIORequest.Send(
-                    mapOf(
-                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
-                        SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_2,
-                    )))*/
-        }
-
-        then {
-            expectOutputForFlow(FLOW_ID1) {
-                sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2)
-                singleOutputEvent()
-            }
-
-            expectOutputForFlow(FLOW_ID1) {
-                flowResumedWith(Unit)
-                sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_3, SESSION_ID_2 to DATA_MESSAGE_4)
-                singleOutputEvent()
-            }
-
-            expectOutputForFlow(FLOW_ID1) {
-                flowResumedWith(Unit)
-                sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_5, SESSION_ID_2 to DATA_MESSAGE_6)
-                singleOutputEvent()
-            }
-        }
-    }
-
-    @Test
-    @Disabled
     fun `Given a flow resumes after receiving session data events calling 'send' on the sessions sends session data events and no session ack for the session that resumed the flow`() {
         given {
             startFlow(this)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
-
-           /* sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
                     SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
                     SessionInfo(SESSION_ID_2, initiatedIdentityMemberName)
-                )))*/
+                )))
         }
 
         `when` {
@@ -160,53 +149,20 @@ class SendAcceptanceTest : FlowServiceTestBase() {
                         SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_3,
                         SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_4,
                     )))
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    SessionInfo(SESSION_ID_1, initiatedIdentityMemberName)
+                )))
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
-                sessionAckEvents(SESSION_ID_1)
+                noOutputEvent()
             }
 
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWithData(mapOf(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2))
                 sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_3, SESSION_ID_2 to DATA_MESSAGE_4)
-                sessionAckEvents()
-            }
-        }
-    }
-
-    @Test
-    @Disabled
-    fun `Calling 'send' on a session that is confirmed sets a data message`() {
-        given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(
-                    FlowIORequest.Send(
-                        mapOf(
-                            SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0,
-                            SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_0
-                        ),
-                    )
-                )
-        }
-
-        `when` {
-            /*sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
-                .suspendsWith(
-                    FlowIORequest.Send(
-                        mapOf(
-                            SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_1
-                        )
-                    )
-                )*/
-        }
-
-        then {
-            expectOutputForFlow(FLOW_ID1) {
-                singleOutputEvent()
-                flowResumedWith(Unit)
-                sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_1)
             }
         }
     }
