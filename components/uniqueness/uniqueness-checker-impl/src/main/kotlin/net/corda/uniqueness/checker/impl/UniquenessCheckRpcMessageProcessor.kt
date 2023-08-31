@@ -13,7 +13,9 @@ import net.corda.uniqueness.checker.UniquenessChecker
  */
 class UniquenessCheckRpcMessageProcessor(
     private val uniquenessChecker: UniquenessChecker,
-    private val externalEventResponseFactory: ExternalEventResponseFactory
+    private val externalEventResponseFactory: ExternalEventResponseFactory,
+    override val reqClass: Class<UniquenessCheckRequestAvro>,
+    override val respClass: Class<FlowEvent>
 ) : HttpRPCProcessor<UniquenessCheckRequestAvro, FlowEvent> {
 
     override fun process(request: UniquenessCheckRequestAvro): FlowEvent {
@@ -33,9 +35,4 @@ class UniquenessCheckRpcMessageProcessor(
             }
         }.first().value!!
     }
-
-    override val reqClazz: Class<UniquenessCheckRequestAvro>
-        get() = UniquenessCheckRequestAvro::class.java
-    override val respClazz: Class<FlowEvent>
-        get() = FlowEvent::class.java
 }

@@ -2,6 +2,8 @@ package net.corda.uniqueness.checker.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.flow.event.FlowEvent
+import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
@@ -16,6 +18,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.subscription.config.HttpRPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
@@ -143,10 +146,13 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
     private fun initialiseRpcSubscription() {
         val processor = UniquenessCheckRpcMessageProcessor(
             this,
-            externalEventResponseFactory
+            externalEventResponseFactory,
+            UniquenessCheckRequestAvro::class.java,
+            FlowEvent::class.java
         )
         lifecycleCoordinator.createManagedResource(SUBSCRIPTION) {
-            subscriptionFactory.createHttpRPCSubscription(UNIQUENESS_CHECKER_ENDPOINT, processor).also {
+            val httpRPCConfig = HttpRPCConfig(UNIQUENESS_CHECKER_ENDPOINT)
+            subscriptionFactory.createHttpRPCSubscription(httpRPCConfig, processor).also {
                 it.start()
             }
         }

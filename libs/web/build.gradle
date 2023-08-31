@@ -10,6 +10,7 @@ dependencies {
     implementation project(':libs:utilities')
     implementation project(':libs:serialization:serialization-avro')
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(':libs:tracing')
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-base"
