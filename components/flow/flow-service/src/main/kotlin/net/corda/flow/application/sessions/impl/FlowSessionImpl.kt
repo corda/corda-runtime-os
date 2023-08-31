@@ -1,6 +1,5 @@
 package net.corda.flow.application.sessions.impl
 
-import net.corda.data.KeyValuePairList
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectException
 import net.corda.flow.application.serialization.SerializationServiceInternal
