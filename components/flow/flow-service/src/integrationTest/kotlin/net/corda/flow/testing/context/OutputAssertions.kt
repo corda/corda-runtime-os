@@ -55,9 +55,9 @@ interface OutputAssertions {
 
     fun <T : Throwable> flowResumedWithError(exceptionClass: Class<T>)
 
-    fun wakeUpEvent()
+    fun singleOutputEvent()
 
-    fun noWakeUpEvent()
+    fun noOutputEvent()
 
     fun hasPendingUserException()
 

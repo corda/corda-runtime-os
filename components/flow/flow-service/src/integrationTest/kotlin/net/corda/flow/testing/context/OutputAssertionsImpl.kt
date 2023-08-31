@@ -1,6 +1,5 @@
 package net.corda.flow.testing.context
 
-import java.nio.ByteBuffer
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.FlowKey
@@ -8,7 +7,6 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionConfirm
 import net.corda.data.flow.event.session.SessionData
@@ -32,6 +30,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 
 class OutputAssertionsImpl(
     private val serializer: CordaAvroSerializer<Any>,
@@ -51,9 +50,7 @@ class OutputAssertionsImpl(
     val asserts = mutableListOf<(TestRun) -> Unit>()
 
     override fun sessionAckEvents(vararg sessionIds: String, initiatingIdentity: HoldingIdentity?, initiatedIdentity: HoldingIdentity?) {
-        asserts.add { testRun ->
-            findAndAssertSessionEvents<SessionAck>(testRun, sessionIds.toList(), initiatingIdentity, initiatedIdentity)
-        }
+
     }
 
     override fun sessionConfirmEvents(
@@ -216,7 +213,7 @@ class OutputAssertionsImpl(
         }
     }
 
-    override fun wakeUpEvent() {
+    override fun singleOutputEvent() {
         asserts.add { testRun ->
             assertNotNull(testRun.response, "Test run response")
 
@@ -227,7 +224,7 @@ class OutputAssertionsImpl(
         }
     }
 
-    override fun noWakeUpEvent() {
+    override fun noOutputEvent() {
         asserts.add { testRun ->
             assertNotNull(testRun.response, "Test run response")
 

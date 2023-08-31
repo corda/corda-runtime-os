@@ -6,6 +6,7 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
@@ -24,8 +25,8 @@ import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
+import net.corda.flow.pipeline.handlers.waiting.WaitingForSessionInit
 import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
-import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
 import net.corda.flow.pipeline.runner.impl.FlowRunnerImpl
 import net.corda.flow.pipeline.runner.impl.remoteToLocalContextMapper
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
@@ -38,6 +39,7 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector
+import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.Flow
@@ -58,8 +60,9 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 class FlowRunnerImplTest {
 
@@ -94,6 +97,9 @@ class FlowRunnerImplTest {
     private val platformContext = KeyValueStore().apply {
         this["platform"] = "platform"
     }
+    private val sessionContext = KeyValueStore().apply {
+        this[FLOW_SESSION_REQUIRE_CLOSE] = "true"
+    }
 
     init {
         whenever(flowCheckpoint.flowId).thenReturn(FLOW_ID_1)
@@ -112,6 +118,7 @@ class FlowRunnerImplTest {
         whenever(cpiInfoReadService.get(any())).thenReturn(getMockCpiMetaData())
         whenever(flowCheckpoint.initialPlatformVersion).thenReturn(67890)
         whenever(platformInfoProvider.localWorkerSoftwareVersion).thenReturn("67890")
+        whenever(flowCheckpoint.waitingFor).thenReturn(WaitingFor(WaitingForSessionInit("foo")))
     }
 
     @BeforeEach
@@ -189,11 +196,37 @@ class FlowRunnerImplTest {
 
     @Test
     fun `initiate flow session event should create a new flow and execute it in a new fiber`() {
-        val flowContinuation = FlowContinuation.Run()
-        val sessionInit = SessionInit().apply {
+        val eventPayload = SessionInit().apply {
             contextPlatformProperties = platformContext.avro
             contextUserProperties = userContext.avro
         }
+
+        runInitiatedTest(eventPayload)
+    }
+
+    @Test
+    fun `First SessionData with Init Info should create a new flow and execute it in a new fiber`() {
+        val sessionInitPayload = SessionInit().apply {
+            contextPlatformProperties = platformContext.avro
+            contextUserProperties = userContext.avro
+        }
+
+        val sessionData = SessionData().apply {
+            payload = ByteBuffer.allocate(1)
+            sessionInit = sessionInitPayload
+        }
+        runInitiatedTest(sessionData)
+    }
+
+    private fun runInitiatedTest(eventPayload: Any) {
+        val sessionEvent = SessionEvent().apply {
+            sessionId = SESSION_ID_1
+            sequenceNum = 1
+            payload = eventPayload
+            contextSessionProperties = sessionContext.avro
+        }
+
+        val flowContinuation = FlowContinuation.Run()
 
         val flowStartContext = FlowStartContext().apply {
             statusKey = FlowKey().apply {
@@ -203,10 +236,6 @@ class FlowRunnerImplTest {
             initiatedBy = HoldingIdentity().apply {
                 x500Name = MemberX500Name("R3", "London", "GB").toString()
             }
-        }
-        whenever(flowCheckpoint.waitingFor).thenReturn(WaitingFor(WaitingForSessionInit("foo")))
-        val sessionEvent = SessionEvent().apply {
-            payload = sessionInit
         }
         val logicAndArgs = InitiatedFlow(initiatedFlow, mock())
 
@@ -223,8 +252,9 @@ class FlowRunnerImplTest {
         whenever(
             flowFactory.createInitiatedFlow(
                 flowStartContext,
+                true,
                 sandboxGroupContext,
-                localContextProperties.counterpartySessionProperties
+                localContextProperties.sessionProperties
             )
         ).thenReturn(logicAndArgs)
         whenever(
@@ -280,6 +310,36 @@ class FlowRunnerImplTest {
     fun `other event types resume existing flow`() {
         val flowContinuation = FlowContinuation.Run()
         val context = buildFlowEventContext<Any>(flowCheckpoint, net.corda.data.flow.event.external.ExternalEventResponse())
+
+        whenever(flowFiberFactory.createAndResumeFlowFiber(flowFiberExecutionContext, flowContinuation)).thenReturn(
+            fiberFuture
+        )
+
+        val result = flowRunner.runFlow(context, flowContinuation)
+
+        assertThat(result).isSameAs(fiberFuture)
+    }
+
+    @Test
+    fun `Second SessionData with Init Info should resume existing flow`() {
+        val sessionInitPayload = SessionInit().apply {
+            contextPlatformProperties = platformContext.avro
+            contextUserProperties = userContext.avro
+        }
+
+        val sessionData = SessionData().apply {
+            payload = ByteBuffer.allocate(1)
+            sessionInit = sessionInitPayload
+        }
+
+        val sessionEvent = SessionEvent().apply {
+            sequenceNum = 2
+            payload = sessionData
+            contextSessionProperties = sessionContext.avro
+        }
+
+        val flowContinuation = FlowContinuation.Run()
+        val context = buildFlowEventContext<Any>(flowCheckpoint, sessionEvent)
 
         whenever(flowFiberFactory.createAndResumeFlowFiber(flowFiberExecutionContext, flowContinuation)).thenReturn(
             fiberFuture

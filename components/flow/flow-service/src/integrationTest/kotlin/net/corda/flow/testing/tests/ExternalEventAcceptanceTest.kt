@@ -1,8 +1,6 @@
 package net.corda.flow.testing.tests
 
 import net.corda.data.KeyValuePairList
-import java.nio.ByteBuffer
-import java.util.stream.Stream
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.persistence.EntityRequest
@@ -18,7 +16,6 @@ import net.corda.schema.configuration.FlowConfig
 import net.corda.utilities.seconds
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -28,6 +25,8 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.service.component.annotations.Component
 import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.ByteBuffer
+import java.util.stream.Stream
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)

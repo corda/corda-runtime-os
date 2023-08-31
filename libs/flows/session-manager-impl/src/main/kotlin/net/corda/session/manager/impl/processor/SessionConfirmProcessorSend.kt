@@ -4,7 +4,6 @@ import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.session.manager.impl.SessionEventProcessor
-import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 
@@ -14,8 +13,7 @@ import org.slf4j.LoggerFactory
  * Hardcodes seqNum to be 1 as this will always be the first message sent from the Initiated party to the Initiating party.
  */
 class SessionConfirmProcessorSend(
-    private val key: Any,
-    private val sessionState: SessionState?,
+    private val sessionState: SessionState,
     private val sessionEvent: SessionEvent,
     private val instant: Instant
 ) : SessionEventProcessor {
@@ -25,12 +23,6 @@ class SessionConfirmProcessorSend(
     }
 
     override fun execute(): SessionState {
-        if (sessionState == null) {
-            val errorMessage = "Tried to send sessionConfirm for sessionState which was null. Key: $key, SessionEvent: $sessionEvent"
-            logger.warn(errorMessage)
-            return generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "sessionConfirm-NullSessionState", instant)
-        }
-
         val sessionId = sessionEvent.sessionId
         val seqNum = 1
 

@@ -2,8 +2,6 @@ package net.corda.flow.pipeline.handlers.requests
 
 import java.time.Instant
 import net.corda.data.flow.state.session.SessionStateType
-import net.corda.data.flow.state.waiting.SessionConfirmation
-import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
@@ -36,7 +34,7 @@ class SubFlowFinishedRequestHandler @Activate constructor(
         return if (sessionsToClose.isEmpty()) {
             WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
         } else {
-            WaitingFor(SessionConfirmation(sessionsToClose, SessionConfirmationType.CLOSE))
+            WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
         }
     }
 
@@ -49,6 +47,14 @@ class SubFlowFinishedRequestHandler @Activate constructor(
             val sessionsToClose = getSessionsToClose(checkpoint, request)
 
             checkpoint.putSessionStates(flowSessionManager.sendCloseMessages(checkpoint, sessionsToClose, Instant.now()))
+            val sessionStates = sessionsToClose.mapNotNull { sessionToClose ->
+                val sessionState = checkpoint.sessions.find {
+                    sessionToClose == it.sessionId
+                }
+                sessionState?.status = SessionStateType.CLOSED
+                sessionState
+            }
+            checkpoint.putSessionStates(sessionStates)
         } catch (e: FlowSessionStateException) {
             // TODO CORE-4850 Wakeup with error when session does not exist
             throw FlowFatalException(e.message, e)

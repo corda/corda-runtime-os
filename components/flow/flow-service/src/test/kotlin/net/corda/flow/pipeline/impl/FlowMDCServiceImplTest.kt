@@ -8,8 +8,8 @@ import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.StartFlow
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.external.ExternalEventResponse
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.FlowState
@@ -74,15 +74,16 @@ class FlowMDCServiceImplTest {
     }
 
     private fun buildSessionEvent(payload: Any) =
-        buildSessionEvent(MessageDirection.INBOUND,
+        buildSessionEvent(
+            MessageDirection.INBOUND,
             sessionId,
             1,
             payload,
-            0,
-            listOf(0),
             Instant.now(),
             aliceHoldingIdentity,
-            aliceHoldingIdentity)
+            aliceHoldingIdentity,
+            null
+        )
 
     @Test
     fun `Verify MDC from no checkpoint with startFlow`() {
@@ -128,7 +129,7 @@ class FlowMDCServiceImplTest {
 
     @Test
     fun `Verify MDC from checkpoint SessionEvent with ExternalEvent set`() {
-        val mdc = flowMDCService.getMDCLogging(buildCheckpoint(true), flowEvent(buildSessionEvent(SessionAck())), flowKey)
+        val mdc = flowMDCService.getMDCLogging(buildCheckpoint(true), flowEvent(buildSessionEvent(SessionData())), flowKey)
 
         assertThat(mdc.size).isEqualTo(5)
         assertThat(mdc[MDC_VNODE_ID]).isEqualTo(aliceShortHash)

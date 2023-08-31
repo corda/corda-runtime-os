@@ -2,7 +2,6 @@ package net.corda.flow.pipeline.impl
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import java.lang.IllegalArgumentException
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.StartFlow
@@ -16,8 +15,8 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.cache.FlowFiberCache
-import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
@@ -47,7 +46,6 @@ class FlowToBeKilledExceptionProcessingTest {
         const val SESSION_ID_3 = "s3"
         const val SESSION_ID_4 = "s4"
         const val SESSION_ID_5 = "s5"
-        const val SESSION_ID_6 = "s6"
         const val FLOW_ID = "flowId"
     }
 
@@ -66,19 +64,17 @@ class FlowToBeKilledExceptionProcessingTest {
     private val sessionState3 = createSessionState(SESSION_ID_3, true, SessionStateType.CLOSED)
     private val sessionState4 = createSessionState(SESSION_ID_4, false, SessionStateType.CONFIRMED)
     private val sessionState5 = createSessionState(SESSION_ID_5, false, SessionStateType.CREATED)
-    private val sessionState6 = createSessionState(SESSION_ID_6, false, SessionStateType.WAIT_FOR_FINAL_ACK)
 
     // session states which have had their state updated to ERROR
     private val erroredSessionState1 = createSessionState(SESSION_ID_1, false, SessionStateType.ERROR)
     private val erroredSessionState4 = createSessionState(SESSION_ID_4, false, SessionStateType.ERROR)
     private val erroredSessionState5 = createSessionState(SESSION_ID_5, false, SessionStateType.ERROR)
-    private val erroredSessionState6 = createSessionState(SESSION_ID_6, false, SessionStateType.ERROR)
 
-    private val allFlowSessions = listOf(sessionState1, sessionState2, sessionState3, sessionState4, sessionState5, sessionState6)
-    private val activeFlowSessionIds = listOf(SESSION_ID_1, SESSION_ID_4, SESSION_ID_5, SESSION_ID_6)
-    private val erroredFlowSessions = listOf(erroredSessionState1, erroredSessionState4, erroredSessionState5, erroredSessionState6)
+    private val allFlowSessions = listOf(sessionState1, sessionState2, sessionState3, sessionState4, sessionState5)
+    private val activeFlowSessionIds = listOf(SESSION_ID_1, SESSION_ID_4, SESSION_ID_5)
+    private val erroredFlowSessions = listOf(erroredSessionState1, erroredSessionState4, erroredSessionState5)
     private val allFlowSessionsAfterErrorsSent = listOf(
-        erroredSessionState1, sessionState2, sessionState3, erroredSessionState4, erroredSessionState5, erroredSessionState6
+        erroredSessionState1, sessionState2, sessionState3, erroredSessionState4, erroredSessionState5
     )
 
     private fun createSessionState(sessionId: String, hasScheduledCleanup: Boolean, status: SessionStateType): SessionState =
@@ -90,7 +86,6 @@ class FlowToBeKilledExceptionProcessingTest {
 
     private val scheduleCleanupRecord4 = Record("t", SESSION_ID_4, FlowMapperEvent(ScheduleCleanup(1000)))
     private val scheduleCleanupRecord5 = Record("t", SESSION_ID_5, FlowMapperEvent(ScheduleCleanup(1000)))
-    private val scheduleCleanupRecord6 = Record("t", SESSION_ID_6, FlowMapperEvent(ScheduleCleanup(1000)))
     private val flowKey = FlowKey("id", HoldingIdentity("x500", "grp1"))
     private val checkpoint = mock<FlowCheckpoint> {
         whenever(it.flowKey).thenReturn(flowKey)
@@ -139,7 +134,6 @@ class FlowToBeKilledExceptionProcessingTest {
         // we clean up all flow sessions that have not already been cleaned up
         whenever(flowRecordFactory.createFlowMapperEventRecord(eq(SESSION_ID_4), any())).thenReturn(scheduleCleanupRecord4)
         whenever(flowRecordFactory.createFlowMapperEventRecord(eq(SESSION_ID_5), any())).thenReturn(scheduleCleanupRecord5)
-        whenever(flowRecordFactory.createFlowMapperEventRecord(eq(SESSION_ID_6), any())).thenReturn(scheduleCleanupRecord6)
 
         // callouts to factories to create flow killed status record
         whenever(flowMessageFactory.createFlowKilledStatusMessage(any(), any())).thenReturn(flowKilledStatus)
@@ -157,7 +151,7 @@ class FlowToBeKilledExceptionProcessingTest {
         val killContext = contextCapture.firstValue
         assertThat(killContext.outputRecords)
             .withFailMessage("Output records should contain cleanup records for sessions that aren't already scheduled")
-            .contains(scheduleCleanupRecord4, scheduleCleanupRecord5, scheduleCleanupRecord6)
+            .contains(scheduleCleanupRecord4, scheduleCleanupRecord5)
 
         assertThat(killContext.outputRecords)
             .withFailMessage("Output records should contain the flow killed status record")
@@ -172,7 +166,6 @@ class FlowToBeKilledExceptionProcessingTest {
         assertThat(updatedFlowSessions[SESSION_ID_3]?.status).isEqualTo(SessionStateType.CLOSED)
         assertThat(updatedFlowSessions[SESSION_ID_4]?.status).isEqualTo(SessionStateType.ERROR)
         assertThat(updatedFlowSessions[SESSION_ID_5]?.status).isEqualTo(SessionStateType.ERROR)
-        assertThat(updatedFlowSessions[SESSION_ID_6]?.status).isEqualTo(SessionStateType.ERROR)
     }
 
     @Test

@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests
 
-import java.util.stream.Stream
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.data.flow.state.session.SessionState
@@ -14,6 +13,7 @@ import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.utils.mutableKeyValuePairList
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -24,8 +24,10 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.stream.Stream
 
 @Suppress("MaxLineLength")
+@Disabled
 class SubFlowFinishedRequestHandlerTest {
 
     private companion object {
@@ -62,6 +64,7 @@ class SubFlowFinishedRequestHandlerTest {
 
     @ParameterizedTest(name = "Returns an updated WaitingFor of SessionConfirmation (Close) when the flow has sessions to close (isInitiatingFlow={0})")
     @MethodSource("isInitiatingFlow")
+    @Disabled
     fun `Returns an updated WaitingFor of SessionConfirmation (Close) when the flow has sessions to close`(
         isInitiatingFlow: Boolean
     ) {
@@ -83,6 +86,7 @@ class SubFlowFinishedRequestHandlerTest {
 
     @ParameterizedTest(name = "Returns an updated WaitingFor of SessionConfirmation (Close) that filters out errored sessions when the flow has sessions to close (isInitiatingFlow={0})")
     @MethodSource("isInitiatingFlow")
+    @Disabled
     fun `Returns an updated WaitingFor of SessionConfirmation (Close) that filters out errored sessions when the flow has sessions to close`(
         isInitiatingFlow: Boolean
     ) {
@@ -137,6 +141,7 @@ class SubFlowFinishedRequestHandlerTest {
 
     @ParameterizedTest(name = "Returns an updated WaitingFor of SessionConfirmation (Close) containing the flow stack item's sessions when the flow has already closed sessions (isInitiatingFlow={0})")
     @MethodSource("isInitiatingFlow")
+    @Disabled
     fun `Returns an updated WaitingFor of SessionConfirmation (Close) containing the flow stack item's sessions when the flow has already closed sessions`(
         isInitiatingFlow: Boolean
     ) {

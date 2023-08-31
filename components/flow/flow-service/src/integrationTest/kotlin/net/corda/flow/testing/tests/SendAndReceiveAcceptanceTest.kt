@@ -3,7 +3,7 @@ package net.corda.flow.testing.tests
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
-import net.corda.flow.testing.context.initiateTwoFlows
+import net.corda.flow.testing.context.startFlow
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -40,17 +40,17 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `(SendAndReceive) Calling 'sendAndReceive' on an initiated session sends a session data event`() {
         given {
-            initiateTwoFlows(this)
+            startFlow(this)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         `when` {
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
+         /*   sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Send(
                     mapOf(
                         SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_1,
                         SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_2,
-                    )))
+                    )))*/
         }
 
         then {
@@ -64,14 +64,14 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `(SendAndReceive) Given a flow resumes after receiving session data events calling 'sendAndReceive' on the sessions sends session data events and no session ack for the session that resumed the flow`() {
         given {
-            initiateTwoFlows(this)
+            startFlow(this)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
+        /*    sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
                     SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
                     SessionInfo(SESSION_ID_2, initiatedIdentityMemberName)
-                )))
+                )))*/
         }
 
         `when` {

@@ -84,13 +84,12 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
+
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
+                singleOutputEvent()
             }
         }
     }
@@ -153,7 +152,6 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
         }
 
         then {

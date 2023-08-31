@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
-import java.time.Instant
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
@@ -45,8 +44,11 @@ class CloseSessionsRequestHandler @Activate constructor(
         val checkpoint = context.checkpoint
         try {
             val sessionsToClose = getSessionsToClose(checkpoint, request)
-
-            checkpoint.putSessionStates(flowSessionManager.sendCloseMessages(checkpoint, sessionsToClose, Instant.now()))
+            context.checkpoint.sessions.onEach {
+                if (sessionsToClose.contains(it.sessionId)) {
+                    it.status = SessionStateType.CLOSED
+                }
+            }
         } catch (e: FlowSessionStateException) {
             // TODO CORE-4850 Wakeup with error when session does not exist
             throw FlowFatalException(e.message, e)

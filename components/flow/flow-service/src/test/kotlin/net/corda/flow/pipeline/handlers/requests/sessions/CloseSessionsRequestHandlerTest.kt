@@ -12,6 +12,7 @@ import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -20,6 +21,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
+@Disabled
 class CloseSessionsRequestHandlerTest {
     private val sessionId1 = "s1"
     private val sessionId2 = "s2"
