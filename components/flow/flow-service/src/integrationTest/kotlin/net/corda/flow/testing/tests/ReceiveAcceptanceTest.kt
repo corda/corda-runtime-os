@@ -5,7 +5,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.flowResumedWithError
 import net.corda.flow.testing.context.startFlow
-import net.corda.flow.testing.context.startFloww
+
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
@@ -83,7 +83,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Receiving a session close event instead of a data resumes the flow with an error`() {
         given {
-            startFloww(this)
+            startFlow(this)
                 .suspendsWith(
                     FlowIORequest.Receive(
                         setOf(
@@ -392,7 +392,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given a session, if it receives an out of order close and then an ordered data event, the flow resumes`() {
         given {
-            startFloww(this)
+            startFlow(this)
                 .suspendsWith(FlowIORequest.Receive(setOf(
                     SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
                     SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),

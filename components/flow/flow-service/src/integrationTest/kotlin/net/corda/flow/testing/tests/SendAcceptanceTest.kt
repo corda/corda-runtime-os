@@ -4,7 +4,7 @@ import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.startFlow
-import net.corda.flow.testing.context.startFloww
+
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -67,7 +67,7 @@ class SendAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Calling 'send' on an invalid session fails and reports the exception to user code`() {
         given {
-            startFloww(this)
+            startFlow(this)
                 .suspendsWith(FlowIORequest.Receive(setOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName))))
         }
 

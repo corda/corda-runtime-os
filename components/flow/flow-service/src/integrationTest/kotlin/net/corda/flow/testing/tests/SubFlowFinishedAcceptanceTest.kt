@@ -8,7 +8,7 @@ import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.StepSetup
 import net.corda.flow.testing.context.flowResumedWithError
 import net.corda.flow.testing.context.startFlow
-import net.corda.flow.testing.context.startFloww
+
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
@@ -289,7 +289,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Receiving a session data event instead of a close resumes the flow with an error`() {
         given {
-            startFloww(this)
+            startFlow(this)
                 .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1)))
         }
 

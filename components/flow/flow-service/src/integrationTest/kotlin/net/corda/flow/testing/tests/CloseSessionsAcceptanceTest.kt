@@ -8,7 +8,6 @@ import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.StepSetup
 import net.corda.flow.testing.context.flowResumedWithError
 import net.corda.flow.testing.context.startFlow
-import net.corda.flow.testing.context.startFloww
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
@@ -213,7 +212,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Receiving an out-of-order session close events does not resume the flow and sends a session ack`() {
         given {
-            startFloww(this)
+            startFlow(this)
                 .suspendsWith(FlowIORequest.Receive(setOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName))))
 
         }
@@ -233,7 +232,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Receiving an ordered session close event when waiting to receive data errors the flow`() {
         given {
-            startFloww(this)
+            startFlow(this)
                 .suspendsWith(FlowIORequest.Receive(setOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName))))
         }
 
@@ -298,7 +297,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Receiving a session data event instead of a close resumes the flow with an error`() {
         given {
-            startFloww(this)
+            startFlow(this)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1)))
         }
 
@@ -543,7 +542,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         request: FlowIORequest<*>
     ) {
         given {
-            startFloww(this)
+            startFlow(this)
                 .suspendsWith(request)
         }
 
