@@ -66,7 +66,7 @@ class CryptoWorker @Activate constructor(
 
         JavaSerialisationFilter.install()
         val params = getParams(args, CryptoWorkerParams())
-        setupWebserver(webServer, params.defaultParams)
+        webServer.setupWebserver(params.defaultParams)
         if (printHelpOrVersion(params.defaultParams, CryptoWorker::class.java, shutDownService)) {
             return
         }

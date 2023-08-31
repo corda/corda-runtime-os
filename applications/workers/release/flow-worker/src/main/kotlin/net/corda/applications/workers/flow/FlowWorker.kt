@@ -69,7 +69,7 @@ class FlowWorker @Activate constructor(
 
         val params = getParams(args, FlowWorkerParams())
 
-        setupWebserver(webServer, params.defaultParams)
+        webServer.setupWebserver(params.defaultParams)
         if (printHelpOrVersion(params.defaultParams, FlowWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 

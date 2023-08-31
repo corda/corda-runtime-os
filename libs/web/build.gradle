@@ -10,12 +10,14 @@ dependencies {
     implementation project(':libs:utilities')
     implementation project(':libs:serialization:serialization-avro')
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:rest:rest")
     implementation project(':libs:tracing')
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "net.corda:corda-base"
 
     implementation "io.javalin:javalin-osgi:$javalinVersion"
+    implementation project(path: ':libs:rest:rest')
     constraints {
         implementation("org.eclipse.jetty:jetty-server:$jettyVersion") {
             because 'Javalin uses an older version of Jetty which is exposed to CVE-2023-26048 and CVE-2023-26049. ' +

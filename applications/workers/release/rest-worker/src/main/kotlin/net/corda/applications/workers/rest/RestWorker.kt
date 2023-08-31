@@ -67,7 +67,7 @@ class RestWorker @Activate constructor(
 
         val params = getParams(args, RestWorkerParams())
         params.validate()
-        setupWebserver(webServer, params.defaultParams)
+        webServer.setupWebserver(params.defaultParams)
         if (printHelpOrVersion(params.defaultParams, RestWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 

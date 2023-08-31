@@ -37,11 +37,11 @@ import org.slf4j.LoggerFactory
 @Suppress("LongParameterList")
 internal class HttpRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val rpcConfig: HttpRPCConfig,
-    val processor: HttpRPCProcessor<REQUEST, RESPONSE>,
-    val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    val webServer: WebServer,
-    val cordaAvroSerializer: CordaAvroSerializer<RESPONSE>,
-    val cordaAvroDeserializer: CordaAvroDeserializer<REQUEST>
+    private val processor: HttpRPCProcessor<REQUEST, RESPONSE>,
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    private val webServer: WebServer,
+    private val cordaAvroSerializer: CordaAvroSerializer<RESPONSE>,
+    private val cordaAvroDeserializer: CordaAvroDeserializer<REQUEST>
 ) : RPCSubscription<REQUEST, RESPONSE> {
 
     private lateinit var endpoint: Endpoint
@@ -87,13 +87,13 @@ internal class HttpRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     } else {
                         log.error("Response Payload was Null")
                         context.result("Response Payload was Null")
-                        context.status(ResponseCode.UNPROCESSABLE_CONTENT.statusCode)
+                        context.status(ResponseCode.BAD_REQUEST)
                         context
                     }
                 } else {
                     log.error("Request Payload was Null")
                     context.result("Request Payload was Null")
-                    context.status(ResponseCode.UNPROCESSABLE_CONTENT.statusCode)
+                    context.status(ResponseCode.INTERNAL_SERVER_ERROR)
                     return context
                 }
             }

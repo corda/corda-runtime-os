@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import kotlin.random.Random
 
 class HttpRPCSubscriptionImplTest {
 
@@ -28,7 +29,7 @@ class HttpRPCSubscriptionImplTest {
 
     private val webServer = JavalinServer(lifecycleCoordinatorFactory, JavalinFactory())
     private val TEST_ENDPOINT = "/test"
-    private val TEST_PORT = 7777
+    private val TEST_PORT = Random(System.nanoTime()).nextInt(8081, 9000)
     private val INPUT = "Request String"
 
     private lateinit var rpcSubscription: HttpRPCSubscriptionImpl<String, String>
