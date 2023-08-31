@@ -1,10 +1,12 @@
 package net.corda.flow.testing.tests
 
+import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.testing.context.ALICE_FLOW_KEY
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.startFlow
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -13,7 +15,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
-@Disabled
 class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
 
     @BeforeEach
@@ -34,34 +35,40 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Given a subFlow contains only initiated sessions when the subFlow fails a wakeup event is scheduled session error events are sent and session cleanup is scheduled`() {
+    fun `Given a subFlow contains osessions when the subFlow fails, session error events are sent and session cleanup is scheduled`() {
         `when` {
             startFlow(this)
+                .suspendsWith(FlowIORequest.Send(
+                    mapOf(
+                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
+                        SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_2,
+                    )))
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),
                         listOf(SESSION_ID_1, SESSION_ID_2)
                     )
                 )
+                .completedWithError(CordaRuntimeException("error"))
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionErrorEvents(SESSION_ID_1, SESSION_ID_2)
-                scheduleFlowMapperCleanupEvents(SESSION_ID_1, SESSION_ID_2)
+                scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY, SESSION_ID_1, SESSION_ID_2)
             }
         }
     }
-
     @Test
-    fun `Given a subFlow contains an initiated and closed session when the subFlow fails a wakeup event is scheduled a single session error event is sent to the initiated session and session cleanup is schedule`() {
-        given {
-            startFlow(this)
-                .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1)))
-        }
-
+    fun `Given a subFlow contains an initiated and closed session when the subFlow fails a single session error event is sent to the initiated session and session cleanup is schedule`() {
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1)
+            startFlow(this)
+                .suspendsWith(FlowIORequest.Send(
+                    mapOf(
+                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
+                        SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_2,
+                    )))
+                .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1)))
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),
@@ -80,16 +87,15 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Given a subFlow contains only closed sessions when the subFlow fails a wakeup event is scheduled and no session error events are sent`() {
-        given {
-            startFlow(this)
-                .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
-
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1)
-        }
-
+    fun `Given a subFlow contains only closed sessions when the subFlow fails no session error events are sent`() {
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1)
+            startFlow(this)
+                .suspendsWith(FlowIORequest.Send(
+                    mapOf(
+                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
+                        SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_2,
+                    )))
+                .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),
@@ -100,8 +106,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                sessionErrorEvents()
-                singleOutputEvent()
+                noFlowEvents()
             }
         }
     }
@@ -110,10 +115,12 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
     fun `Given a subFlow contains only errored sessions when the subFlow fails a wakeup event is scheduled and no session error events are sent`() {
         given {
             startFlow(this)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                    SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
+                )))
 
             sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         `when` {
@@ -128,28 +135,23 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                sessionErrorEvents()
-                singleOutputEvent()
+                noFlowEvents()
             }
         }
     }
 
     @Test
-    fun `Given a subFlow contains no sessions when the subFlow fails a wakeup event is scheduled`() {
-        given {
-            startFlow(this)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
-        }
-
+    fun `Given a subFlow contains no sessions when the subFlow fails and flow finishes, requestid is cleaned up and no session errors are sent`() {
         `when` {
-       /*     sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
-                .suspendsWith(FlowIORequest.SubFlowFailed(RuntimeException(), emptyList()))
-*/        }
+            startFlow(this)
+                     .suspendsWith(FlowIORequest.SubFlowFailed(RuntimeException(), emptyList()))
+                .completedWithError(CordaRuntimeException("Error"))
+        }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
+                scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY)
                 sessionErrorEvents()
-                singleOutputEvent()
             }
         }
     }
@@ -169,11 +171,11 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
                         listOf(INITIATED_SESSION_ID_1)
                     )
                 )
+                .completedWithError(CordaRuntimeException("Error"))
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                singleOutputEvent()
                 sessionErrorEvents(INITIATED_SESSION_ID_1)
                 scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
             }
@@ -181,29 +183,28 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Given an initiated top level flow with a closed session when it finishes and calls SubFlowFailed a wakeup event is scheduled and does not send a session error event`() {
+    fun `Given an initiated top level flow with a closed session when it finishes and calls SubFlowFailed, schedules cleanup and does not send a session error event`() {
         given {
             membershipGroupFor(BOB_HOLDING_IDENTITY)
             initiatingToInitiatedFlow(PROTOCOL_2, FLOW_NAME, FLOW_NAME_2)
-
-            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
-                .suspendsWith(FlowIORequest.CloseSessions(setOf(INITIATED_SESSION_ID_1)))
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, sequenceNum = 2)
+            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
+                .suspendsWith(FlowIORequest.CloseSessions(setOf(INITIATED_SESSION_ID_1)))
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),
                         listOf(INITIATED_SESSION_ID_1)
                     )
                 )
+                .completedWithError(CordaRuntimeException("Error"))
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionErrorEvents()
-                singleOutputEvent()
+                scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
             }
         }
     }
@@ -215,7 +216,9 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
             initiatingToInitiatedFlow(PROTOCOL_2, FLOW_NAME, FLOW_NAME_2)
 
             sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    SessionInfo(INITIATED_SESSION_ID_1, initiatedIdentityMemberName),
+                )))
         }
 
         `when` {
@@ -226,12 +229,13 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
                         listOf(INITIATED_SESSION_ID_1)
                     )
                 )
+                .completedWithError(CordaRuntimeException("Error"))
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionErrorEvents()
-                singleOutputEvent()
+                scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
             }
         }
     }
