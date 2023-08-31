@@ -4,6 +4,7 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.core.ShortHash
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.common.v2.RegistrationStatus.APPROVED
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
@@ -216,19 +217,18 @@ internal class VirtualNodeUpgradeOperationHandler(
             val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
             val x500Name = membershipGroupReader.owningMember
             val registrationRequest = membershipQueryClient
-                .queryRegistrationRequests(holdingIdentity, x500Name, limit = 1)
+                .queryRegistrationRequests(holdingIdentity, x500Name, listOf(APPROVED), 1)
             try {
-                val registrationContext = (registrationRequest as MembershipQueryResult.Success)
+                val registrationRequestDetails = (registrationRequest as MembershipQueryResult.Success)
                     .payload
                     .first()
+                val previousSerial = (registrationRequestDetails.serial+1).toString()
+                val registrationContext = registrationRequestDetails
                     .memberProvidedContext.data.array()
                     .deserializeContext(keyValuePairListDeserializer)
                     .toMutableMap()
 
-                if (registrationContext.containsKey(MemberInfoExtension.SERIAL)) {
-                    registrationContext[MemberInfoExtension.SERIAL] =
-                        membershipGroupReader.lookup(x500Name)?.serial.toString()
-                }
+                registrationContext[MemberInfoExtension.SERIAL] = previousSerial
 
                 memberResourceClient.startRegistration(
                     holdingIdentity.shortHash,
