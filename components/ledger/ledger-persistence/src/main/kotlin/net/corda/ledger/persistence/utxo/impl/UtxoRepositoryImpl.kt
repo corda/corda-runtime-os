@@ -240,8 +240,7 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created)
-            VALUES (:id, :privacySalt, :accountId, :createdAt)
-            ON CONFLICT DO NOTHING"""
+            VALUES (:id, :privacySalt, :accountId, :createdAt)"""
         )
             .setParameter("id", id)
             .setParameter("privacySalt", privacySalt)
@@ -249,6 +248,19 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("createdAt", timestamp)
             .executeUpdate()
             .logResult("transaction [$id]")
+
+        entityManager.createNativeQuery(
+            """
+            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created)
+            VALUES (:id, :privacySalt, :accountId, :createdAt)"""
+        )
+            .setParameter("id", id)
+            .setParameter("privacySalt", privacySalt)
+            .setParameter("accountId", account)
+            .setParameter("createdAt", timestamp)
+            .executeUpdate()
+            .logResult("transaction [$id]")
+
     }
 
     override fun persistTransactionComponentLeaf(
