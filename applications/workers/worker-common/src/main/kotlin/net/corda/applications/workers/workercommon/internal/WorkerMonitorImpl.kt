@@ -30,6 +30,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.auth.credentials.WebIdentityTokenCredentialsProviderFactory
+import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
 import java.util.concurrent.ConcurrentHashMap
 
@@ -63,7 +65,10 @@ internal class WorkerMonitorImpl @Activate constructor(
             return CORDA_NAMESPACE
         }
     }
-    private val cloudWatchRegistry = CloudWatchMeterRegistry(cloudwatchConfig, Clock.SYSTEM, CloudWatchAsyncClient.create())
+    private val cloudwatchClient = CloudWatchAsyncClient.builder()
+        .credentialsProvider(WebIdentityTokenFileCredentialsProvider.create())
+        .build()
+    private val cloudWatchRegistry = CloudWatchMeterRegistry(cloudwatchConfig, Clock.SYSTEM, cloudwatchClient)
     private val lastLogMessage = ConcurrentHashMap(mapOf(HTTP_HEALTH_ROUTE to "", HTTP_STATUS_ROUTE to ""))
 
     private fun setupMetrics(name: String) {
