@@ -48,6 +48,7 @@ internal class WorkerMonitorImpl @Activate constructor(
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val CORDA_NAMESPACE = "CORDA"
+        private const val K8S_NAMESPACE_KEY = "K8S_NAMESPACE"
     }
 
     // The use of Javalin is temporary, and will be replaced in the future.
@@ -55,12 +56,16 @@ internal class WorkerMonitorImpl @Activate constructor(
     private val objectMapper = ObjectMapper()
     private val prometheusRegistry: PrometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     private val cloudwatchConfig = object : CloudWatchConfig {
+
         override fun get(key: String): String? {
             return null
         }
 
         override fun namespace(): String {
-            return CORDA_NAMESPACE
+            val suffix = System.getenv(K8S_NAMESPACE_KEY)?.let {
+                "/$it"
+            } ?: ""
+            return "$CORDA_NAMESPACE$suffix"
         }
     }
     private val cloudwatchClient = CloudWatchAsyncClient.builder()
