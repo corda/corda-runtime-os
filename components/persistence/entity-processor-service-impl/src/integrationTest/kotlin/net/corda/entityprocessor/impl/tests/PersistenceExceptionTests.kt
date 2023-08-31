@@ -270,12 +270,12 @@ class PersistenceExceptionTests {
         val persistEntitiesRequest = createDogPersistRequest()
 
         val record1 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
-        assertExternalEventResponseWithoutError(record1.single())
+        assertEventResponseWithoutError(record1.single())
         // duplicate request
         val record2 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
         // The below should not contain a PK violation error as it should be identified it is the same persistence request
         // and therefore not executed
-        assertExternalEventResponseWithoutError(record2.single())
+        assertEventResponseWithoutError(record2.single())
     }
 
     @Test
@@ -284,10 +284,10 @@ class PersistenceExceptionTests {
         val persistEntitiesRequest = createDogPersistRequest()
 
         val record1 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
-        assertExternalEventResponseWithoutError(record1.single())
+        assertEventResponseWithoutError(record1.single())
         // duplicate request
         val record2 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
-        assertExternalEventResponseWithoutError(record2.single())
+        assertEventResponseWithoutError(record2.single())
 
         val dogDbCount = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId)
         // There shouldn't be a dog duplicate entry in the DB, i.e. dogs count in the DB should still be 1
@@ -343,17 +343,17 @@ class PersistenceExceptionTests {
         val persistEntitiesRequest = createDogPersistRequest(dogId)
 
         val record1 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
-        assertExternalEventResponseWithoutError(record1.single())
+        assertEventResponseWithoutError(record1.single())
         // duplicate request
         val record2 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
         // The below should not contain a PK violation error as it should be identified it is the same persistence request
         // and therefore not executed
-        assertExternalEventResponseWithoutError(record2.single())
+        assertEventResponseWithoutError(record2.single())
 
         val userDuplicatePersistEntitiesRequest = createDogPersistRequest(dogId)
         // the following should now throw as it is different request that violates PK
         val record3 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), userDuplicatePersistEntitiesRequest)))
-        assertExternalEventResponseWithError(record3.single())
+        assertEventResponseWithError(record3.single())
     }
 
     private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
@@ -455,10 +455,10 @@ class PersistenceExceptionTests {
             }
 }
 
-private fun assertExternalEventResponseWithoutError(record: Record<*, *>) {
+private fun assertEventResponseWithoutError(record: Record<*, *>) {
     assertNull(((record.value as FlowEvent).payload as ExternalEventResponse).error)
 }
 
-private fun assertExternalEventResponseWithError(record: Record<*, *>) {
+private fun assertEventResponseWithError(record: Record<*, *>) {
     assertNotNull(((record.value as FlowEvent).payload as ExternalEventResponse).error)
 }
