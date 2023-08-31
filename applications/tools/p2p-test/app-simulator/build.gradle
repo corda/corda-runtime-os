@@ -45,6 +45,7 @@ dependencies {
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(':libs:messaging:kafka-topic-admin-impl')
+    runtimeOnly project(":libs:web:web-impl")
 
     testImplementation project(':testing:e2e-test-utilities')
     testImplementation project(':libs:membership:membership-common')

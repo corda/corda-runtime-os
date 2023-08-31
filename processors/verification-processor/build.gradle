@@ -20,6 +20,7 @@ dependencies {
     implementation project(':components:ledger:ledger-verification')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:utilities')
+    runtimeOnly project(":libs:web:web-impl")
 
     runtimeOnly project(':components:configuration:configuration-read-service-impl')
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')

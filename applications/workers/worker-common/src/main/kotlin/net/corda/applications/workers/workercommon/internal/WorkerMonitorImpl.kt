@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap
 import net.corda.rest.ResponseCode
 import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
-import net.corda.web.api.WebContext
 import net.corda.web.api.WebHandler
 import net.corda.web.api.WebServer
 
@@ -65,52 +64,45 @@ internal class WorkerMonitorImpl @Activate constructor(
     override fun registerEndpoints(workerType: String) {
         setupMetrics(workerType)
 
-        val healthRouteHandler = object : WebHandler {
-            override fun handle(context: WebContext): WebContext {
-                val unhealthyComponents = componentWithStatus(setOf(LifecycleStatus.ERROR))
-                val status = if (unhealthyComponents.isEmpty()) {
-                    clearLastLogMessageForRoute(HTTP_HEALTH_ROUTE)
-                    ResponseCode.OK
-                } else {
-                    logIfDifferentFromLastMessage(
-                        HTTP_HEALTH_ROUTE,
-                        "Status is unhealthy. The status of $unhealthyComponents has error."
-                    )
-                    ResponseCode.SERVICE_UNAVAILABLE
-                }
-                context.status(status)
-                context.header(Header.CACHE_CONTROL, NO_CACHE)
-                return context
+        val healthRouteHandler = WebHandler { context ->
+            val unhealthyComponents = componentWithStatus(setOf(LifecycleStatus.ERROR))
+            val status = if (unhealthyComponents.isEmpty()) {
+                clearLastLogMessageForRoute(HTTP_HEALTH_ROUTE)
+                ResponseCode.OK
+            } else {
+                logIfDifferentFromLastMessage(
+                    HTTP_HEALTH_ROUTE,
+                    "Status is unhealthy. The status of $unhealthyComponents has error."
+                )
+                ResponseCode.SERVICE_UNAVAILABLE
             }
+            context.status(status)
+            context.header(Header.CACHE_CONTROL, NO_CACHE)
+            context
         }
 
-        val statusRouteHandler = object : WebHandler {
-            override fun handle(context: WebContext): WebContext {
-                val notReadyComponents = componentWithStatus(setOf(LifecycleStatus.DOWN, LifecycleStatus.ERROR))
-                val status = if (notReadyComponents.isEmpty()) {
-                    clearLastLogMessageForRoute(HTTP_STATUS_ROUTE)
-                    ResponseCode.OK
-                } else {
-                    logIfDifferentFromLastMessage(
-                        HTTP_STATUS_ROUTE,
-                        "There are components with error or down state: $notReadyComponents."
-                    )
-                    ResponseCode.SERVICE_UNAVAILABLE
-                }
-                context.status(status)
-                context.result(objectMapper.writeValueAsString(lifecycleRegistry.componentStatus()))
-                context.header(Header.CACHE_CONTROL, NO_CACHE)
-                return context
+        val statusRouteHandler = WebHandler { context ->
+            val notReadyComponents = componentWithStatus(setOf(LifecycleStatus.DOWN, LifecycleStatus.ERROR))
+            val status = if (notReadyComponents.isEmpty()) {
+                clearLastLogMessageForRoute(HTTP_STATUS_ROUTE)
+                ResponseCode.OK
+            } else {
+                logIfDifferentFromLastMessage(
+                    HTTP_STATUS_ROUTE,
+                    "There are components with error or down state: $notReadyComponents."
+                )
+                ResponseCode.SERVICE_UNAVAILABLE
             }
+            context.status(status)
+            context.result(objectMapper.writeValueAsString(lifecycleRegistry.componentStatus()))
+            context.header(Header.CACHE_CONTROL, NO_CACHE)
+            context
         }
 
-        val metricsRouteHandler = object : WebHandler {
-            override fun handle(context: WebContext): WebContext {
-                context.result(prometheusRegistry.scrape())
-                context.header(Header.CACHE_CONTROL, NO_CACHE)
-                return context
-            }
-
+        val metricsRouteHandler = WebHandler { context ->
+            context.result(prometheusRegistry.scrape())
+            context.header(Header.CACHE_CONTROL, NO_CACHE)
+            context
         }
 
         webServer.registerEndpoint(Endpoint(HTTPMethod.GET, HTTP_HEALTH_ROUTE, healthRouteHandler))

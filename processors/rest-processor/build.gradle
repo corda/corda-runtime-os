@@ -63,6 +63,7 @@ dependencies {
     runtimeOnly project(':libs:permissions:permission-management-cache-impl')
     runtimeOnly project(':libs:permissions:permission-validation-impl')
     runtimeOnly project(':libs:permissions:permission-validation-cache-impl')
+    runtimeOnly project(":libs:web:web-impl")
 
     runtimeOnly project(':libs:virtual-node:cpi-upload-manager-impl')
     runtimeOnly project(':components:virtual-node:cpi-upload-rest-service')
