@@ -5,7 +5,6 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.external.messaging.services.ExternalMessagingRoutingService
 import net.corda.flow.MINIMUM_SMART_CONFIG
-import net.corda.flow.scheduler.FlowWakeUpScheduler
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
@@ -37,7 +36,6 @@ class FlowServiceTest {
     }
 
     private val flowExecutor = mock<FlowExecutor>()
-    private val flowWakeUpScheduler = mock<FlowWakeUpScheduler>()
     private val externalMessagingRoutingService = mock<ExternalMessagingRoutingService>()
 
     private val exampleConfig = mapOf(
@@ -94,7 +92,6 @@ class FlowServiceTest {
             sendConfigUpdate<FlowService>(exampleConfig)
 
             verify(flowExecutor).onConfigChange(any())
-            verify(flowWakeUpScheduler).onConfigChange(any())
             verify(externalMessagingRoutingService).onConfigChange(any())
         }
     }
@@ -153,7 +150,6 @@ class FlowServiceTest {
                 coordinatorFactory,
                 configReadService,
                 flowExecutor,
-                flowWakeUpScheduler,
                 externalMessagingRoutingService
             )
         }

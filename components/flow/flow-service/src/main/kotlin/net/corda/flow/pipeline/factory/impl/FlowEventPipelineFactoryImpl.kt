@@ -14,6 +14,7 @@ import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.impl.FlowEventPipelineImpl
+import net.corda.flow.pipeline.impl.FlowExecutionPipelineStage
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.state.impl.FlowCheckpointFactory
 import net.corda.libs.configuration.SmartConfig
@@ -123,16 +124,20 @@ class FlowEventPipelineFactoryImpl(
             flowTraceContext = traceContext
         )
 
-        return FlowEventPipelineImpl(
-            flowEventHandlerMap,
+        val flowExecutionPipelineStage = FlowExecutionPipelineStage(
             flowWaitingForHandlerMap,
             flowRequestHandlerMap,
             flowRunner,
-            flowGlobalPostProcessor,
-            context,
-            virtualNodeInfoReadService,
             flowFiberCache,
             flowIORequestTypeConverter
+        )
+
+        return FlowEventPipelineImpl(
+            flowEventHandlerMap,
+            flowExecutionPipelineStage,
+            flowGlobalPostProcessor,
+            context,
+            virtualNodeInfoReadService
         )
     }
 }

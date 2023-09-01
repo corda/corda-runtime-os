@@ -74,6 +74,7 @@ class FlowEventProcessorImpl(
             return StateAndEventProcessor.Response(state, listOf())
         }
 
+
         val pipeline = try {
             log.trace { "Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}" }
             flowEventPipelineFactory.create(state, flowEvent, configs, mdcProperties,traceContext, event.timestamp)
@@ -91,10 +92,7 @@ class FlowEventProcessorImpl(
                 pipeline
                     .eventPreProcessing()
                     .virtualNodeFlowOperationalChecks()
-                    .runOrContinue(flowTimeout)
-                    .setCheckpointSuspendedOn()
-                    .setWaitingFor()
-                    .requestPostProcessing()
+                    .executeFlow(flowTimeout)
                     .globalPostProcessing()
                     .context
             )

@@ -75,6 +75,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
     integrationTestRuntimeOnly project(':libs:crypto:crypto-serialization-impl')
     integrationTestRuntimeOnly project(':libs:crypto:merkle-impl')
+    integrationTestRuntimeOnly project(':libs:membership:membership-impl')
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
         exclude group: 'org.osgi'

@@ -78,6 +78,21 @@ dependencies {
     systemPackages "org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:$jbossTransactionApiSpecVersion"
     systemPackages "org.slf4j:slf4j-api:$slf4jVersion"
     systemPackages project(':osgi-framework-api')
+    systemPackages "software.amazon.awssdk:cloudwatch:$awssdkVersion"
+    systemPackages "software.amazon.awssdk:protocol-core:$awssdkVersion"
+    systemPackages "software.amazon.awssdk:sdk-core:$awssdkVersion"
+    systemPackages "software.amazon.awssdk:auth:$awssdkVersion"
+    systemPackages "software.amazon.awssdk:http-client-spi:$awssdkVersion"
+    systemPackages "software.amazon.awssdk:regions:$awssdkVersion"
+    systemPackages "software.amazon.awssdk:annotations:$awssdkVersion"
+    systemPackages "software.amazon.awssdk:utils:$awssdkVersion"
+    systemPackages "software.amazon.awssdk:aws-core:$awssdkVersion"
+    systemPackages "software.amazon.awssdk:metrics-spi:$awssdkVersion"
+    systemPackages "software.amazon.awssdk:json-utils:$awssdkVersion"
+    systemPackages "software.amazon.awssdk:endpoints-spi:$awssdkVersion"
+    systemPackages "software.amazon.awssdk:sts:$awssdkVersion"
+    systemPackages "software.amazon.awssdk:profiles:$awssdkVersion"
+    systemPackages "software.amazon.awssdk:aws-query-protocol:$awssdkVersion"
 }
 
 TaskProvider<Jar> jarTask = tasks.named('jar', Jar) {
@@ -538,17 +553,19 @@ artifacts {
 pluginManager.withPlugin('maven-publish') {
     publishing {
         publications {
-            maven(MavenPublication) {
-                artifactId appJarBaseName
-                artifact appJar
+            if (!project.hasProperty('busImpl')) {
+                maven(MavenPublication) {
+                    artifactId appJarBaseName
+                    artifact appJar
 
-                afterEvaluate { proj ->
-                    groupId proj.group
-                    version proj.version
+                    afterEvaluate { proj ->
+                        groupId proj.group
+                        version proj.version
 
-                    try {
-                        artifact tasks.named('sourcesJar', Jar)
-                    } catch (UnknownTaskException ignored) {
+                        try {
+                            artifact tasks.named('sourcesJar', Jar)
+                        } catch (UnknownTaskException ignored) {
+                        }
                     }
                 }
             }

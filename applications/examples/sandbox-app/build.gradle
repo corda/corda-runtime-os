@@ -65,6 +65,7 @@ dependencies {
     runtimeOnly project(':libs:messaging:db-message-bus-impl')
     runtimeOnly project(':libs:serialization:serialization-checkpoint-api')
     runtimeOnly project(':libs:serialization:serialization-kryo')
+    runtimeOnly project(':testing:group-policy-test-common')
 
     // Add OSGi security support.
     implementation project(':components:security-manager')

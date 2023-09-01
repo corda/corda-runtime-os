@@ -35,14 +35,12 @@ class InitiateFlowRequestServiceTest {
     @BeforeEach
     fun setup() {
         whenever(
-            testContext.flowSessionManager.sendInitMessage(
+            testContext.flowSessionManager.generateSessionState(
                 eq(testContext.flowCheckpoint),
                 eq(sessionId1),
                 eq(ALICE_X500_NAME),
                 any(),
                 any(),
-                any(),
-                any()
             )
         ).thenReturn(sessionState1)
         whenever(testContext.flowSandboxService.get(any(), any())).thenReturn(sandboxGroupContext)
@@ -78,6 +76,7 @@ class InitiateFlowRequestServiceTest {
     fun `Session init event sent to session manager and checkpoint updated with session state`() {
         initiateFlowRequestService.initiateFlowsNotInitiated(testContext.flowEventContext, sessionInfo)
         verify(testContext.flowCheckpoint).putSessionStates(listOf(sessionState1))
+        verify(testContext.flowSessionManager).generateSessionState(any(), any(), any(), any(), any())
     }
 
     @Test

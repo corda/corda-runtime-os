@@ -43,13 +43,12 @@ class FlowMapperService @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = FlowMapperEventExecutorFactory::class)
-    private val flowMapperEventExecutorFactory: FlowMapperEventExecutorFactory,
+    private val flowMapperEventExecutorFactory: FlowMapperEventExecutorFactory
 ) : Lifecycle {
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val CONSUMER_GROUP = "FlowMapperConsumer"
-
         private const val SUBSCRIPTION = "SUBSCRIPTION"
         private const val CLEANUP_TASK = "TASK"
         private const val REGISTRATION = "REGISTRATION"

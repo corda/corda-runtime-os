@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
 
 /**
@@ -31,34 +30,13 @@ interface FlowEventPipeline {
     fun virtualNodeFlowOperationalChecks(): FlowEventPipeline
 
     /**
-     * Runs the pipeline's flow (starts or resumes) if required and waits for it to suspend.
-     * @param timeoutMilliseconds the maximum amount of time to wait for the pipeline's Flow to execute until it
-     * completes, fails or suspends.
+     * Runs the user code a number of times, and processes any output requests that the flow makes.
      *
-     * @return The updated pipeline instance.
+     * @param timeout Time in milliseconds to wait before timing out running the fiber. Note that this applies per
+     * fiber execution, so this function may block for longer than this if the fiber is run multiple times.
+     * @return The updated pipeline instance
      */
-    fun runOrContinue(timeoutMilliseconds: Long): FlowEventPipeline
-
-    /**
-     * Sets the pipeline's [Checkpoint]'s suspendedOn property.
-     *
-     * @return The updated pipeline instance.
-     */
-    fun setCheckpointSuspendedOn(): FlowEventPipeline
-
-    /**
-     * Sets the pipeline's [Checkpoint]'s waitingFor property.
-     *
-     * @return The updated pipeline instance.
-     */
-    fun setWaitingFor(): FlowEventPipeline
-
-    /**
-     * Performs [FlowIORequest] post-processing on the pipeline.
-     *
-     * @return The updated pipeline instance.
-     */
-    fun requestPostProcessing(): FlowEventPipeline
+    fun executeFlow(timeout: Long): FlowEventPipeline
 
     /**
      * Performs post-processing that should always execute.
