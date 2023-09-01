@@ -37,12 +37,20 @@ internal class PersistenceExceptionCategorizerImpl : PersistenceExceptionCategor
     private fun isTransient(exception: Exception): Boolean {
         return when (exception) {
             // [PersistenceException]s
-            is LockTimeoutException, is OptimisticLockException, is PessimisticLockException, is QueryTimeoutException, is RollbackException -> true
+            is LockTimeoutException,
+            is OptimisticLockException,
+            is PessimisticLockException,
+            is QueryTimeoutException,
+            is RollbackException,
             // [JDBCException]s
-            is org.hibernate.PessimisticLockException, is org.hibernate.QueryTimeoutException, is JDBCConnectionException, is LockAcquisitionException -> true
+            is org.hibernate.PessimisticLockException,
+            is org.hibernate.QueryTimeoutException,
+            is JDBCConnectionException,
+            is LockAcquisitionException,
             // [HibernateException]s
-            // [CacheException] not too sure.
-            is TransactionException, is CacheException -> true
+            is TransactionException,
+            is CacheException -> true
+            // Exception thrown by Hikari
             is SQLTransientConnectionException -> exception.message?.lowercase()?.contains("connection is not available") == true
             else -> false
         }

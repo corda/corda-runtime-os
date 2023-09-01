@@ -16,6 +16,7 @@ import java.io.NotSerializableException
 import java.sql.SQLException
 import javax.persistence.PersistenceException
 
+@Suppress("MaxLineLength")
 class ResponseFactoryImplTest {
 
     private companion object {
