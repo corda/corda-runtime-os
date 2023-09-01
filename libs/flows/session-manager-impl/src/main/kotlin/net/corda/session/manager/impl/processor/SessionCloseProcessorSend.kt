@@ -5,7 +5,6 @@ import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.utils.isInitiatedIdentity
-import net.corda.flow.utils.isInitiatingIdentity
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
@@ -106,19 +105,11 @@ class SessionCloseProcessorSend(
             }
         } else {
             val status = sessionState.status
-            val errorMessage: String = if (status in listOf(SessionStateType.ERROR, SessionStateType.CLOSED)) {
-                "Tried to send SessionClose when status is not correct for sending a close. " +
-                        "Key: $key sessionId: $sessionId, session status is " +
-                        "$status. Current SessionState: $sessionState."
-            } else if (isInitiatingIdentity(sessionId)) {
-                "Tried to send SessionClose as initiating party which is not allowed in the protocol. " +
-                        "Key: $key sessionId: $sessionId, session status is " +
-                        "$status. Current SessionState: $sessionState."
-            } else {
+            val errorMessage =
                 "Tried to send SessionClose. " +
-                        "Key: $key sessionId: $sessionId, session status is " +
-                        "$status. Current SessionState: $sessionState."
-            }
+                        "Check party is initiated: ${isInitiatedIdentity(sessionId)}" +
+                        "Check status is not ERROR or CLOSED, status is: $status." +
+                        "Key: $key SessionId: $sessionId current SessionState: $sessionState."
             logAndGenerateErrorResult(errorMessage, sessionState, "SessionClose-InvalidStatus")
         }
     }
