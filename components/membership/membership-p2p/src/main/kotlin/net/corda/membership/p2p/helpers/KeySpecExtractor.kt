@@ -46,12 +46,8 @@ class KeySpecExtractor(
                 SignatureSpecs.ECDSA_SHA512,
             )
                 .map { it.signatureName },
-            EDDSA_ED25519_CODE_NAME to listOf(SignatureSpecs.EDDSA_ED25519.signatureName),
-            GOST3410_GOST3411_CODE_NAME to listOf(SignatureSpecs.GOST3410_GOST3411.signatureName),
             RSA_CODE_NAME to listOf(SignatureSpecs.RSA_SHA256, SignatureSpecs.RSA_SHA384, SignatureSpecs.RSA_SHA512)
                 .map { it.signatureName },
-            SM2_CODE_NAME to listOf(SignatureSpecs.SM2_SM3.signatureName),
-            SPHINCS256_CODE_NAME to listOf(SignatureSpecs.SPHINCS256_SHA512.signatureName),
         )
 
         fun CryptoSigningKey.validateSpecName(specName: String) {
