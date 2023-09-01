@@ -305,7 +305,7 @@ class PersistenceExceptionTests {
     }
 
     @Test
-    fun `on duplicate persistence request don't execute it - statically updated field isn't getting updated in DB`() {
+    fun `on duplicate persistence request don't execute it - statically updated field isn't getting updated in DB and returned merged entities are equal`() {
         createVersionedDogDb()
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
         // create dog using dog-aware sandbox
