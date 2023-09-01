@@ -27,6 +27,8 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.osgi.framework.Bundle
 import java.io.InputStream
+import net.corda.web.api.Endpoint
+import net.corda.web.api.WebServer
 
 /**
  * Tests handling of command-line arguments for the [DBWorker].
@@ -52,6 +54,7 @@ class ConfigTests {
             mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
+            DummyWebServer(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
             applicationBanner,
@@ -95,6 +98,7 @@ class ConfigTests {
             mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
+            DummyWebServer(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
             applicationBanner,
@@ -128,6 +132,7 @@ class ConfigTests {
             mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
+            DummyWebServer(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
             applicationBanner,
@@ -159,6 +164,7 @@ class ConfigTests {
             mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
+            DummyWebServer(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
             applicationBanner,
@@ -184,6 +190,7 @@ class ConfigTests {
             mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
+            DummyWebServer(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
             applicationBanner,
@@ -218,9 +225,15 @@ class ConfigTests {
 
     /** A no-op [WorkerMonitor]. */
     private class DummyWorkerMonitor : WorkerMonitor {
-        override fun listen(port: Int, workerType: String) = Unit
+        override fun registerEndpoints(workerType: String) = Unit
+    }
+
+    private class DummyWebServer : WebServer {
         override fun stop() = throw NotImplementedError()
+        override fun registerEndpoint(endpoint: Endpoint) = Unit
+        override fun removeEndpoint(endpoint: Endpoint)  = Unit
         override val port = 7000
+        override fun start(port: Int) = Unit
     }
 
     private class DummyValidatorFactory : ConfigurationValidatorFactory {

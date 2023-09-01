@@ -39,6 +39,10 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.UUID
+import net.corda.messaging.api.processor.SyncRPCProcessor
+import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import net.corda.messaging.subscription.SyncRPCSubscriptionImpl
+import net.corda.web.api.WebServer
 
 /**
  * Kafka implementation of the Subscription Factory.
@@ -59,6 +63,8 @@ class CordaSubscriptionFactory @Activate constructor(
     private val stateAndEventBuilder: StateAndEventBuilder,
     @Reference(service = MessagingChunkFactory::class)
     private val messagingChunkFactory: MessagingChunkFactory,
+    @Reference(service = WebServer::class)
+    private val webServer: WebServer
 ) : SubscriptionFactory {
 
     override fun <K : Any, V : Any> createPubSubSubscription(
@@ -179,6 +185,19 @@ class CordaSubscriptionFactory @Activate constructor(
             lifecycleCoordinatorFactory
         )
     }
+
+    override fun <REQUEST : Any, RESPONSE : Any> createHttpRPCSubscription(
+        rpcConfig: SyncRPCConfig,
+        processor: SyncRPCProcessor<REQUEST, RESPONSE>
+    ): RPCSubscription<REQUEST, RESPONSE> {
+
+        val cordaAvroSerializer = cordaAvroSerializationFactory.createAvroSerializer<RESPONSE> { }
+        val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({ }, processor.requestClass)
+
+        return SyncRPCSubscriptionImpl(rpcConfig, processor,
+            lifecycleCoordinatorFactory, webServer, cordaAvroSerializer, cordaAvroDeserializer)
+    }
+
 
     private fun getConfig(
         subscriptionType: SubscriptionType,

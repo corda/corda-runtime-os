@@ -64,6 +64,7 @@ dependencies {
     implementation project(":components:virtual-node:cpi-info-read-service")
     implementation project(":libs:membership:membership-common")
     implementation project(":components:membership:membership-group-read")
+    runtimeOnly project(":libs:web:web-impl")
 
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:p2p:certificates")
