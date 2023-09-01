@@ -217,25 +217,28 @@ internal class VirtualNodeUpgradeOperationHandler(
             val x500Name = membershipGroupReaderProvider.getGroupReader(holdingIdentity).owningMember
             val registrationRequest = membershipQueryClient
                 .queryRegistrationRequests(holdingIdentity, x500Name, listOf(APPROVED), 1)
-            try {
-                val registrationRequestDetails = (registrationRequest as MembershipQueryResult.Success)
-                    .payload
-                    .first()
-                val updatedSerial = registrationRequestDetails.serial + 1
-                val registrationContext = registrationRequestDetails
-                    .memberProvidedContext.data.array()
-                    .deserializeContext(keyValuePairListDeserializer)
-                    .toMutableMap()
+            if (registrationRequest is MembershipQueryResult.Success) {
+                try {
+                    val registrationRequestDetails = registrationRequest.payload.first()
 
-                registrationContext[MemberInfoExtension.SERIAL] = updatedSerial.toString()
+                    val updatedSerial = registrationRequestDetails.serial + 1
+                    val registrationContext = registrationRequestDetails
+                        .memberProvidedContext.data.array()
+                        .deserializeContext(keyValuePairListDeserializer)
+                        .toMutableMap()
 
-                memberResourceClient.startRegistration(
-                    holdingIdentity.shortHash,
-                    registrationContext,
-                )
-            } catch (e: ContextDeserializationException) {
-                logger.warn("Could not deserialize previous registration context for ${holdingIdentity.shortHash}. " +
-                        "Re-registration won't be attempted.")
+                    registrationContext[MemberInfoExtension.SERIAL] = updatedSerial.toString()
+
+                    memberResourceClient.startRegistration(
+                        holdingIdentity.shortHash,
+                        registrationContext,
+                    )
+                } catch (e: ContextDeserializationException) {
+                    logger.warn(
+                        "Could not deserialize previous registration context for ${holdingIdentity.shortHash}. " +
+                                "Re-registration won't be attempted."
+                    )
+                }
             }
         }
     }
