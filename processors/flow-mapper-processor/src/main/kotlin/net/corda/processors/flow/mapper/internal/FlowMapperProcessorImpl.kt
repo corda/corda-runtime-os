@@ -13,6 +13,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -49,6 +50,8 @@ class FlowMapperProcessorImpl @Activate constructor(
     private val membershipQueryClient: MembershipQueryClient,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = LocallyHostedIdentitiesService::class)
+    private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService
 ) : FlowMapperProcessor {
 
     private companion object {
@@ -64,7 +67,8 @@ class FlowMapperProcessorImpl @Activate constructor(
         ::groupPolicyProvider,
         ::membershipGroupReaderProvider,
         ::membershipQueryClient,
-        ::virtualNodeInfoReadService
+        ::virtualNodeInfoReadService,
+        ::locallyHostedIdentitiesService
     )
 
     private val lifecycleCoordinator =

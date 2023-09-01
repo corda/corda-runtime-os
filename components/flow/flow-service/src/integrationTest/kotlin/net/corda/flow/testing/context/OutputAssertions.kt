@@ -29,6 +29,12 @@ interface OutputAssertions {
         initiatedIdentity: HoldingIdentity? = null
     )
 
+    fun multipleSessionDataEvents(
+        sessionToPayload: Map<String, List<ByteArray>>,
+        initiatingIdentity: HoldingIdentity? = null,
+        initiatedIdentity: HoldingIdentity? = null
+    )
+
     fun sessionCloseEvents(
         vararg sessionIds: String,
         initiatingIdentity: HoldingIdentity? = null,
@@ -55,9 +61,9 @@ interface OutputAssertions {
 
     fun <T : Throwable> flowResumedWithError(exceptionClass: Class<T>)
 
-    fun wakeUpEvent()
+    fun singleOutputEvent()
 
-    fun noWakeUpEvent()
+    fun noOutputEvent()
 
     fun hasPendingUserException()
 

@@ -1,6 +1,7 @@
 package net.corda.flow.testing.tests
 
 import net.corda.data.flow.output.FlowStates
+import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.virtualnode.OperationalStatus
@@ -70,11 +71,14 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.InitialCheckpoint)
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                )))
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
+                noOutputEvent()
                 flowStatus(FlowStates.RUNNING)
                 flowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
@@ -85,7 +89,7 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            wakeupEventReceived(FLOW_ID1)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1)
         }
 
         then {
@@ -96,5 +100,4 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
             }
         }
     }
-
 }

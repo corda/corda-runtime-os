@@ -1,7 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests
 
-import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.Wakeup as WakeupEvent
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.flow.state.waiting.Wakeup as WakeupState
 import net.corda.external.messaging.entities.VerifiedRoute
@@ -91,31 +89,25 @@ class SendExternalMessageRequestHandlerTest {
     @Test
     fun `Route inactive + ignore should return only wakeup event`() {
         val route = createVerifiedRoute(false, InactiveResponseType.IGNORE, true)
-        val wakeupRecord = Record("", "", FlowEvent("", ""))
-        whenever(testContext.flowRecordFactory.createFlowEventRecord(any(), any())).thenReturn(wakeupRecord)
         whenever(externalMessagingRoutingService.getRoute(holdingIdShortHash, flowChannelName)).thenReturn(route)
 
         val result = handler.postProcess(testContext.flowEventContext, ioRequest)
 
-        assertThat(result.outputRecords).containsOnly(wakeupRecord)
-        verify(testContext.flowRecordFactory).createFlowEventRecord(testContext.flowId, WakeupEvent())
+        assertThat(result.outputRecords).isEmpty()
     }
 
     @Test
     fun `Should return only wakeup event and external message `() {
         val verifiedRoute = createVerifiedRoute(true, InactiveResponseType.ERROR, true)
-        val wakeupRecord = Record("", "", FlowEvent("", ""))
         val messageRecord = Record("", "", "")
 
-        whenever(testContext.flowRecordFactory.createFlowEventRecord(any(), any())).thenReturn(wakeupRecord)
         whenever(externalMessagingRecordFactory.createSendRecord(any(), any(), any(), any())).thenReturn(messageRecord)
         whenever(externalMessagingRoutingService.getRoute(holdingIdShortHash, flowChannelName))
             .thenReturn(verifiedRoute)
 
         val result = handler.postProcess(testContext.flowEventContext, ioRequest)
 
-        assertThat(result.outputRecords).containsOnly(wakeupRecord, messageRecord)
-        verify(testContext.flowRecordFactory).createFlowEventRecord(testContext.flowId, WakeupEvent())
+        assertThat(result.outputRecords).containsOnly(messageRecord)
         verify(externalMessagingRecordFactory)
             .createSendRecord(
                 holdingIdShortHash,

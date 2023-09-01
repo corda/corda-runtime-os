@@ -11,6 +11,9 @@ interface StepSetup {
 
     val initiatedIdentityMemberName: MemberX500Name
 
+    val initiatingIdentityMemberName: MemberX500Name
+
+
     fun virtualNode(
         cpiId: String,
         holdingId: HoldingIdentity,
@@ -52,27 +55,17 @@ interface StepSetup {
         initiatedIdentity: HoldingIdentity? = null
     ): FlowIoRequestSetup
 
-    fun sessionAckEventReceived(
-        flowId: String,
-        sessionId: String,
-        receivedSequenceNum: Int,
-        outOfOrderSeqNums: List<Int> = emptyList()
-    ): FlowIoRequestSetup
-
     fun sessionDataEventReceived(
         flowId: String,
         sessionId: String,
         data: ByteArray,
-        sequenceNum: Int,
-        receivedSequenceNum: Int,
-        outOfOrderSeqNums: List<Int> = emptyList()
+        sequenceNum: Int
     ): FlowIoRequestSetup
 
     fun sessionCloseEventReceived(
         flowId: String,
         sessionId: String,
         sequenceNum: Int,
-        receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity? = null,
         initiatedIdentity: HoldingIdentity? = null
     ): FlowIoRequestSetup
@@ -80,12 +73,9 @@ interface StepSetup {
     fun sessionErrorEventReceived(
         flowId: String,
         sessionId: String,
-        receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity? = null,
         initiatedIdentity: HoldingIdentity? = null
     ): FlowIoRequestSetup
-
-    fun wakeupEventReceived(flowId: String): FlowIoRequestSetup
 
     fun externalEventReceived(flowId: String, requestId: String, payload: Any): FlowIoRequestSetup
 

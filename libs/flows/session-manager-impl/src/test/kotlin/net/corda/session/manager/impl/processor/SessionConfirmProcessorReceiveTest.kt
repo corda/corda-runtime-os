@@ -1,18 +1,18 @@
 package net.corda.session.manager.impl.processor
 
-import java.time.Instant
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionConfirm
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.utils.KeyValueStore
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSION_USED
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-
+import java.time.Instant
 class SessionConfirmProcessorReceiveTest {
 
     private val sessionProps = KeyValueStore().apply {
@@ -26,21 +26,32 @@ class SessionConfirmProcessorReceiveTest {
             SessionStateType.CONFIRMED, 0, mutableListOf(), 1, mutableListOf()
         )
 
-        val event = buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionConfirm(sessionProps), 1)
+        val event = buildSessionEvent(
+            MessageDirection.INBOUND,
+            "sessionId",
+            1,
+            SessionConfirm(),
+            contextSessionProps = sessionProps
+        )
         val sessionConfirmProcessorReceived =
-            SessionConfirmProcessorReceive("key", inputState, event, SessionConfirm(sessionProps), Instant.now())
+            SessionConfirmProcessorReceive("key", inputState, event, Instant.now())
         val sessionState = sessionConfirmProcessorReceived.execute()
 
         val messagesToSend = sessionState.receivedEventsState.undeliveredMessages
         assertThat(messagesToSend).isEmpty()
-        assertThat(sessionState.counterpartySessionProperties).isEqualTo(sessionProps)
+        assertThat(sessionState.sessionProperties).isEqualTo(sessionProps)
     }
 
     @Test
     fun `test null state generates a new error state and queues an error to send`() {
-        val event = buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionConfirm(sessionProps), 1)
-        val sessionConfirmProcessorReceived = SessionConfirmProcessorReceive("key", null, event, SessionConfirm(sessionProps), Instant
-            .now())
+        val event = buildSessionEvent(
+            MessageDirection.OUTBOUND,
+            "sessionId",
+            1,
+            SessionConfirm(),
+            contextSessionProps = emptyKeyValuePairList()
+        )
+        val sessionConfirmProcessorReceived = SessionConfirmProcessorReceive("key", null, event,  Instant.now())
         val sessionState = sessionConfirmProcessorReceived.execute()
 
         val messagesToSend = sessionState.sendEventsState.undeliveredMessages

@@ -33,7 +33,6 @@ class FlowExecutorImpl constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val subscriptionFactory: SubscriptionFactory,
     private val flowEventProcessorFactory: FlowEventProcessorFactory,
-    private val flowExecutorRebalanceListener: FlowExecutorRebalanceListener,
     private val toMessagingConfig: (Map<String, SmartConfig>) -> SmartConfig
 ) : FlowExecutor {
 
@@ -44,14 +43,11 @@ class FlowExecutorImpl constructor(
         @Reference(service = SubscriptionFactory::class)
         subscriptionFactory: SubscriptionFactory,
         @Reference(service = FlowEventProcessorFactory::class)
-        flowEventProcessorFactory: FlowEventProcessorFactory,
-        @Reference(service = FlowExecutorRebalanceListener::class)
-        flowExecutorRebalanceListener: FlowExecutorRebalanceListener
+        flowEventProcessorFactory: FlowEventProcessorFactory
     ) : this(
         coordinatorFactory,
         subscriptionFactory,
         flowEventProcessorFactory,
-        flowExecutorRebalanceListener,
         { cfg -> cfg.getConfig(MESSAGING_CONFIG) }
     )
 
@@ -78,8 +74,7 @@ class FlowExecutorImpl constructor(
             subscription = subscriptionFactory.createStateAndEventSubscription(
                 SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC),
                 flowEventProcessorFactory.create(flowConfig),
-                messagingConfig,
-                flowExecutorRebalanceListener
+                messagingConfig
             )
 
             subscriptionRegistrationHandle = coordinator.followStatusChangesByName(
