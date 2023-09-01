@@ -269,6 +269,7 @@ class PersistenceServiceInternalTests {
             )
         )
         lbm.updateDb(myDbConnectionManager.getDataSource(animalDbConnection.first).connection, cl)
+        lbm.updateDb(myDbConnectionManager.getDataSource(calcDbConnection.first).connection, cl)
 
         // create dog using dog-aware sandbox
         val dog = sandboxOne.createDog("Stray", owner = "Not Known")
