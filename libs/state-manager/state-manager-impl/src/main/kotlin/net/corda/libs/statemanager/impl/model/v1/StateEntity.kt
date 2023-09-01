@@ -7,24 +7,74 @@ import javax.persistence.Id
 import javax.persistence.Table
 import javax.persistence.Version
 import net.corda.db.schema.DbSchema
+import javax.persistence.NamedNativeQuery
+import javax.persistence.NamedQuery
+
+const val CREATE_STATE_QUERY_NAME = "StateEntity.create"
+const val UPDATE_STATE_QUERY_NAME = "StateEntity.update"
+const val QUERY_STATES_BY_KEY_QUERY_NAME = "StateEntity.queryByKey"
+const val DELETE_STATES_BY_KEY_QUERY_NAME = "StateEntity.deleteByKey"
+const val QUERY_STATES_BY_UPDATED_TIMESTAMP_NAME = "StateEntity.queryByTimestamp"
+
+const val KEY_ID = "key"
+const val STATE_ID = "state"
+const val VERSION_ID = "version"
+const val METADATA_ID = "metadata"
+const val STAR_TIMESTAMP = "startTime"
+const val FINISH_TIMESTAMP = "finishTime"
+
+// TODO-[CORE-16663]: make the database provider pluggable.
+// Hibernate 5 does not support inserting a String to a jsonb column type out of the box. Native query with casting is also used
+// in the ledger. It means, however, this does not work with HSQLDB.
+@NamedNativeQuery(
+    name = CREATE_STATE_QUERY_NAME,
+    query = """
+        INSERT INTO ${DbSchema.STATE_MANAGER_TABLE}
+        VALUES (:$KEY_ID, :$STATE_ID, :$VERSION_ID, CAST(:$METADATA_ID as JSONB), CURRENT_TIMESTAMP)
+    """
+)
+
+@NamedNativeQuery(
+    name = UPDATE_STATE_QUERY_NAME,
+    query = """
+        UPDATE ${DbSchema.STATE_MANAGER_TABLE} SET
+        key = :$KEY_ID, state = :$STATE_ID, version = :$VERSION_ID, metadata = CAST(:$METADATA_ID as JSONB), modified_time = CURRENT_TIMESTAMP
+        WHERE key = :$KEY_ID
+    """
+)
+
+@NamedQuery(
+    name = QUERY_STATES_BY_KEY_QUERY_NAME,
+    query = "FROM StateEntity state WHERE state.key IN :$KEY_ID"
+)
+
+@NamedQuery(
+    name = QUERY_STATES_BY_UPDATED_TIMESTAMP_NAME,
+    query = "FROM StateEntity state WHERE state.modifiedTime BETWEEN :$STAR_TIMESTAMP AND :$FINISH_TIMESTAMP"
+)
+
+@NamedQuery(
+    name = DELETE_STATES_BY_KEY_QUERY_NAME,
+    query = "DELETE FROM StateEntity state WHERE state.key IN :$KEY_ID"
+)
 
 @Entity
 @Table(name = DbSchema.STATE_MANAGER_TABLE)
-internal class StateEntity(
+class StateEntity(
     @Id
-    @Column(name = "key", length = 255)
+    @Column(name = KEY_ID, length = 255)
     val key: String,
 
-    @Column(name = "state", columnDefinition = "BLOB", nullable = false)
+    @Column(name = STATE_ID, columnDefinition = "BLOB", nullable = false)
     val state: ByteArray,
 
-    @Version
-    @Column(name = "version")
-    var version: Int? = null,
-
     // TODO-[CORE-16663]: make the database provider pluggable.
-    @Column(name = "metadata", columnDefinition = "jsonb", nullable = false)
+    @Column(name = METADATA_ID, columnDefinition = "jsonb", nullable = false)
     var metadata: String,
+
+    @Version
+    @Column(name = VERSION_ID, nullable = false)
+    var version: Int = -1,
 
     @Column(name = "modified_time", insertable = false, updatable = false)
     var modifiedTime: Instant = Instant.MIN,
@@ -35,9 +85,7 @@ internal class StateEntity(
 
         other as StateEntity
 
-        if (key != other.key) return false
-
-        return true
+        return key == other.key
     }
 
     override fun hashCode(): Int {

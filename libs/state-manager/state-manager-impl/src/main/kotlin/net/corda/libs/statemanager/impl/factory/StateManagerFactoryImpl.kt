@@ -8,7 +8,7 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.libs.statemanager.impl.StateManagerImpl
 import net.corda.libs.statemanager.impl.model.v1.StateManagerEntities
-import net.corda.libs.statemanager.impl.repository.impl.StateManagerRepositoryImpl
+import net.corda.libs.statemanager.impl.repository.impl.StateRepositoryImpl
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.schema.configuration.StateManagerConfig
@@ -38,7 +38,7 @@ class StateManagerFactoryImpl @Activate constructor(
         )
 
         return StateManagerImpl(
-            StateManagerRepositoryImpl(),
+            StateRepositoryImpl(),
             entityManagerFactory,
             avroSerializationFactory
         )
