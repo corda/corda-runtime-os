@@ -77,12 +77,12 @@ class CloseSessionsRequestHandlerTest {
 
     @Test
     fun `Sends close events and updates the checkpoint with session state when sessions are not closed or errored`() {
-        whenever(testContext.closeSessionService.handleCloseForSessions(sessions, testContext.flowCheckpoint))
+        whenever(testContext.closeSessionService.handleCloseForSessions(testContext.flowCheckpoint, sessions))
             .thenReturn(sessions)
 
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
 
-        verify(testContext.closeSessionService).handleCloseForSessions(sessions, testContext.flowCheckpoint)
+        verify(testContext.closeSessionService).handleCloseForSessions(testContext.flowCheckpoint, sessions)
         assertThat(outputContext.outputRecords).hasSize(0)
     }
 
@@ -90,13 +90,13 @@ class CloseSessionsRequestHandlerTest {
     fun `Creates Wakeup record when all the sessions are closed`() {
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
 
-        verify(testContext.closeSessionService).handleCloseForSessions(sessions, testContext.flowCheckpoint)
+        verify(testContext.closeSessionService).handleCloseForSessions(testContext.flowCheckpoint, sessions)
         assertThat(outputContext.outputRecords).containsOnly(record)
     }
 
     @Test
     fun `Throws exception when session does not exist within checkpoint`() {
-        whenever(testContext.closeSessionService.handleCloseForSessions(sessions, testContext.flowCheckpoint)
+        whenever(testContext.closeSessionService.handleCloseForSessions(testContext.flowCheckpoint, sessions)
         ).thenThrow(FlowSessionStateException("Session does not exist"))
 
         assertThrows<FlowFatalException> { handler.postProcess(testContext.flowEventContext, ioRequest) }

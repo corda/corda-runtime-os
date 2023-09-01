@@ -113,13 +113,13 @@ class SubFlowFinishedRequestHandlerTest {
     fun `Sends session close messages to non-errored sessions and does not create a Wakeup record when the flow has sessions to close`(
         isInitiatingFlow: Boolean
     ) {
-        whenever(testContext.closeSessionService.handleCloseForSessions(SESSION_IDS, testContext.flowCheckpoint))
+        whenever(testContext.closeSessionService.handleCloseForSessions(testContext.flowCheckpoint, SESSION_IDS))
             .thenReturn(SESSION_IDS)
         val outputContext = handler.postProcess(
             testContext.flowEventContext,
             FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessions.map { it.sessionId })
         )
-        verify(testContext.closeSessionService).handleCloseForSessions(SESSION_IDS, testContext.flowCheckpoint)
+        verify(testContext.closeSessionService).handleCloseForSessions(testContext.flowCheckpoint, SESSION_IDS)
         verify(testContext.flowRecordFactory, never()).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         assertThat(outputContext.outputRecords).hasSize(0)
     }
@@ -147,14 +147,14 @@ class SubFlowFinishedRequestHandlerTest {
             FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessions.map { it.sessionId })
         )
 
-        verify(testContext.closeSessionService).handleCloseForSessions(SESSION_IDS, testContext.flowCheckpoint)
+        verify(testContext.closeSessionService).handleCloseForSessions(testContext.flowCheckpoint, SESSION_IDS)
         verify(testContext.flowRecordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         assertThat(outputContext.outputRecords).containsOnly(record)
     }
 
     @Test
     fun `Throws exception when session does not exist within checkpoint`() {
-        whenever(testContext.closeSessionService.handleCloseForSessions(SESSION_IDS, testContext.flowCheckpoint)
+        whenever(testContext.closeSessionService.handleCloseForSessions(testContext.flowCheckpoint, SESSION_IDS)
         ).thenThrow(FlowSessionStateException("Session does not exist"))
 
         assertThrows<FlowFatalException> {

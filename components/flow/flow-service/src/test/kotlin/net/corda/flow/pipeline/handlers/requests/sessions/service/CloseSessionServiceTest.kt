@@ -53,7 +53,7 @@ internal class CloseSessionServiceTest {
         whenever(testContext.flowSessionManager.updateStatus(any(), any(), any()))
             .thenReturn(listOf(sessionState1, sessionState2))
 
-        val sessionsToClose = handler.handleCloseForSessions(sessions, testContext.flowCheckpoint)
+        val sessionsToClose = handler.handleCloseForSessions(testContext.flowCheckpoint, sessions)
 
         verify(testContext.flowSessionManager).getInitiatingAndInitiatedSessions(any())
         verify(testContext.flowSessionManager).sendCloseMessages(any(), any(), any())

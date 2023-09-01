@@ -53,7 +53,7 @@ class CloseSessionsRequestHandler @Activate constructor(
     ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
         val sessionsNotTerminated = try {
-            closeSessionService.handleCloseForSessions(getSessionsToClose(request), checkpoint)
+            closeSessionService.handleCloseForSessions(checkpoint, getSessionsToClose(request))
         } catch (e: Exception) {
             // TODO CORE-4850 Wakeup with error when session does not exist
             val msg = e.message ?: "An error occurred in the platform - A session in ${request.sessions} was missing from the checkpoint"

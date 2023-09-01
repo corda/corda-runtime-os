@@ -36,7 +36,7 @@ class CloseSessionService @Activate constructor(
      * @param sessions List of sessions IDs.
      * @return List of sessions that are not CLOSED or ERROR
      */
-    fun handleCloseForSessions(sessions: List<String>, checkpoint: FlowCheckpoint): List<String> {
+    fun handleCloseForSessions(checkpoint: FlowCheckpoint, sessions: List<String>): List<String> {
         val (initiatingSessions, initiatedSessions) = flowSessionManager.getInitiatingAndInitiatedSessions(sessions)
         if (initiatedSessions.isNotEmpty()) {
             checkpoint.putSessionStates(flowSessionManager.sendCloseMessages(checkpoint, initiatedSessions, Instant.now()))

@@ -52,7 +52,7 @@ class SubFlowFinishedRequestHandler @Activate constructor(
         val checkpoint = context.checkpoint
 
         val sessionsNotTerminated = try {
-            closeSessionService.handleCloseForSessions(getSessionsToClose(request), checkpoint)
+            closeSessionService.handleCloseForSessions(checkpoint, getSessionsToClose(request))
         } catch (e: Exception) {
             // TODO CORE-4850 Wakeup with error when session does not exist
             val msg = e.message ?: "An error occurred in the platform - A session in ${request.sessionIds} was missing from the checkpoint"
