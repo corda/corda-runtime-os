@@ -103,7 +103,10 @@ class FlowExecutorImpl constructor(
         coordinator.stop()
     }
 
-    private fun updateConfigsWithFlowConfig(initialConfigs: Map<String, SmartConfig>, messagingConfig: SmartConfig): Map<String, SmartConfig> {
+    private fun updateConfigsWithFlowConfig(
+        initialConfigs: Map<String, SmartConfig>,
+        messagingConfig: SmartConfig
+    ): Map<String, SmartConfig> {
         val flowConfig = initialConfigs.getConfig(FLOW_CONFIG)
         val updatedFlowConfig = flowConfig
             .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(PROCESSOR_TIMEOUT)))
