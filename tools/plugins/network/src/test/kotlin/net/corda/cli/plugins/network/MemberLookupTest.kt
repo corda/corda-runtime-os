@@ -13,45 +13,46 @@ import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
 import net.corda.membership.lib.MemberInfoExtension
 import org.junit.jupiter.api.BeforeAll
 import picocli.CommandLine
+import net.corda.v5.base.types.MemberX500Name
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Order
 
 class MemberLookupTest {
-
     companion object {
         private lateinit var memberLookup: MemberLookup
-        private lateinit var onboardMgm: OnboardMgm
         private lateinit var outputStub: OutputStub
+        private lateinit var onboardMgm: OnboardMgm
 
         private val CLI_PARAMS = arrayOf(
             "--target=${DEFAULT_CLUSTER.rest.uri}",
             "--user=${DEFAULT_CLUSTER.rest.user}",
             "--password=${DEFAULT_CLUSTER.rest.password}",
-            "--insecure=${true}"
+            "--insecure=true"
         )
 
-        private val X500 = arrayOf(
-            "CN=Alice",
-            "OU=R3 Test",
-            "O=Mgm",
-            "L=London",
-            "ST=Tottenham",
-            "C=GB"
-            )
+        private val x500 = MemberX500Name.parse(
+            "CN=Alice, OU=R3 Test, O=Mgm, L=London, ST=Tottenham, C=GB"
+        )
 
         @BeforeAll
         @JvmStatic
         fun setup() {
-            outputStub = OutputStub()
             onboardMgm = OnboardMgm()
-            memberLookup = MemberLookup(outputStub)
-
             CommandLine(onboardMgm).execute(
-                X500.joinToString(separator = ", "),
+                x500.toString(),
                 *CLI_PARAMS
             )
         }
     }
 
+    @BeforeEach
+    fun beforeEach() {
+        outputStub = OutputStub()
+        memberLookup = MemberLookup(outputStub)
+    }
+
     @Test
+    @Order(1)
     fun `test member lookup command with status filter with ACTIVE`() {
         CommandLine(memberLookup).execute(
             "--status=${ACTIVE}",
@@ -64,10 +65,11 @@ class MemberLookupTest {
         )
 
         val mgmContext = outputStub.printedOutput?.get(0)?.get("mgmContext")
-        assertEquals(ACTIVE.value, mgmContext?.get(MemberInfoExtension.STATUS)?.asText() ?: "")
+        assertEquals(ACTIVE.value, mgmContext?.get(MemberInfoExtension.STATUS)?.asText())
     }
 
     @Test
+    @Order(2)
     fun `test member lookup command with status filter with SUSPENDED`() {
         CommandLine(memberLookup).execute(
             "--status=${SUSPENDED}",
@@ -83,9 +85,10 @@ class MemberLookupTest {
     }
 
     @Test
+    @Order(3)
     fun `test member lookup command with Common Name (CN)`() {
         CommandLine(memberLookup).execute(
-            "-cn=${X500[0].split("=")[1]}",
+            "-cn=${x500.commonName}",
             "-h=${HoldingIdentityUtils.getHoldingIdentity(
                 null,
                 onboardMgm.name,
@@ -94,14 +97,14 @@ class MemberLookupTest {
             *CLI_PARAMS
         )
 
-        val memberContext = outputStub.printedOutput?.get(0)?.get("memberContext")
-        assertEquals(onboardMgm.name, memberContext?.get(MemberInfoExtension.PARTY_NAME)?.asText() ?: "")
+        assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
     }
 
     @Test
+    @Order(4)
     fun `test member lookup command with Organisation Unit (OU)`() {
         CommandLine(memberLookup).execute(
-            "-ou=${X500[1].split("=")[1]}",
+            "-ou=${x500.organizationUnit}",
             "-h=${HoldingIdentityUtils.getHoldingIdentity(
                 null,
                 onboardMgm.name,
@@ -110,14 +113,14 @@ class MemberLookupTest {
             *CLI_PARAMS
         )
 
-        val memberContext = outputStub.printedOutput?.get(0)?.get("memberContext")
-        assertEquals(onboardMgm.name, memberContext?.get(MemberInfoExtension.PARTY_NAME)?.asText() ?: "")
+        assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
     }
 
     @Test
+    @Order(5)
     fun `test member lookup command with Locality (L)`() {
         CommandLine(memberLookup).execute(
-            "-l=${X500[3].split("=")[1]}",
+            "-l=${x500.locality}",
             "-h=${HoldingIdentityUtils.getHoldingIdentity(
                 null,
                 onboardMgm.name,
@@ -126,14 +129,14 @@ class MemberLookupTest {
             *CLI_PARAMS
         )
 
-        val memberContext = outputStub.printedOutput?.get(0)?.get("memberContext")
-        assertEquals(onboardMgm.name, memberContext?.get(MemberInfoExtension.PARTY_NAME)?.asText() ?: "")
+        assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
     }
 
     @Test
+    @Order(6)
     fun `test member lookup command with State (ST)`() {
         CommandLine(memberLookup).execute(
-            "-st=${X500[4].split("=")[1]}",
+            "-st=${x500.state}",
             "-h=${HoldingIdentityUtils.getHoldingIdentity(
                 null,
                 onboardMgm.name,
@@ -142,14 +145,14 @@ class MemberLookupTest {
             *CLI_PARAMS
         )
 
-        val memberContext = outputStub.printedOutput?.get(0)?.get("memberContext")
-        assertEquals(onboardMgm.name, memberContext?.get(MemberInfoExtension.PARTY_NAME)?.asText() ?: "")
+        assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
     }
 
     @Test
+    @Order(7)
     fun `test member lookup command with Country (C)`() {
         CommandLine(memberLookup).execute(
-            "-c=${X500[5].split("=")[1]}",
+            "-c=${x500.country}",
             "-h=${HoldingIdentityUtils.getHoldingIdentity(
                 null,
                 onboardMgm.name,
@@ -158,14 +161,14 @@ class MemberLookupTest {
             *CLI_PARAMS
         )
 
-        val memberContext = outputStub.printedOutput?.get(0)?.get("memberContext")
-        assertEquals(onboardMgm.name, memberContext?.get(MemberInfoExtension.PARTY_NAME)?.asText() ?: "")
+        assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
     }
 
     @Test
+    @Order(8)
     fun `test member lookup command with Organisation (O)`() {
         CommandLine(memberLookup).execute(
-            "-o=${X500[2].split("=")[1]}",
+            "-o=${x500.organization}",
             "-h=${HoldingIdentityUtils.getHoldingIdentity(
                 null,
                 onboardMgm.name,
@@ -174,22 +177,22 @@ class MemberLookupTest {
             *CLI_PARAMS
         )
 
-        val memberContext = outputStub.printedOutput?.get(0)?.get("memberContext")
-        assertEquals(onboardMgm.name, memberContext?.get(MemberInfoExtension.PARTY_NAME)?.asText() ?: "")
+        assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
     }
 
     @Test
+    @Order(9)
     fun `test member lookup command with X500 name with default groupId from file`() {
         CommandLine(memberLookup).execute(
             "--name=${onboardMgm.name}",
             *CLI_PARAMS
         )
 
-        val memberContext = outputStub.printedOutput?.get(0)?.get("memberContext")
-        assertEquals(onboardMgm.name, memberContext?.get(MemberInfoExtension.PARTY_NAME)?.asText() ?: "")
+        assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
     }
 
     @Test
+    @Order(10)
     fun `test member lookup command with holding identity short hash`() {
         CommandLine(memberLookup).execute(
             "-h=${HoldingIdentityUtils.getHoldingIdentity(
@@ -200,11 +203,14 @@ class MemberLookupTest {
             *CLI_PARAMS
         )
 
-        val memberContext = outputStub.printedOutput?.get(0)?.get("memberContext")
-        assertEquals(onboardMgm.name, memberContext?.get(MemberInfoExtension.PARTY_NAME)?.asText() ?: "")
+        assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
     }
 
-    private class OutputStub : Output {
+    private fun OutputStub.getFirstPartyName(): String? {
+        return printedOutput?.get(0)?.get("memberContext")?.get(MemberInfoExtension.PARTY_NAME)?.asText()
+    }
+
+    class OutputStub : Output {
         private val objectMapper = ObjectMapper()
         var printedOutput: JsonNode? = null
 
