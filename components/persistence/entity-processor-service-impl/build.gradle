@@ -50,6 +50,7 @@ dependencies {
     testImplementation project(':testing:db-testkit')
     testImplementation project(':testing:persistence-testkit')
 
+    testImplementation 'net.corda:corda-db-schema'
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
