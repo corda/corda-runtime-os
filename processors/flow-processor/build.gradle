@@ -56,7 +56,6 @@ dependencies {
     runtimeOnly project(":components:uniqueness:uniqueness-checker-client-service-impl")
     runtimeOnly project(":components:virtual-node:cpi-info-read-service-impl")
     runtimeOnly project(":components:virtual-node:cpk-read-service-impl")
-    runtimeOnly project(":components:flow:flow-mapper-impl")
     runtimeOnly project(":libs:application:application-impl")
     runtimeOnly project(":libs:flows:external-event-responses-impl")
     runtimeOnly project(":libs:flows:flow-api")
