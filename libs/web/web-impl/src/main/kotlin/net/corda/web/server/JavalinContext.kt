@@ -23,7 +23,7 @@ internal class JavalinContext(private val ctx: Context) : WebContext {
             is String -> ctx.result(result)
             is ByteArray -> ctx.result(result)
             is InputStream -> ctx.result(result)
-            else -> throw CordaRuntimeException("result of web handle must be String, ByteArray, or InputStream")
+            else -> throw CordaRuntimeException("Result of web handle must be String, ByteArray, or InputStream")
         }
     }
 

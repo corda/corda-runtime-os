@@ -16,6 +16,6 @@ interface SyncRPCProcessor<REQUEST, RESPONSE> {
      */
     fun process(request: REQUEST) : RESPONSE
 
-    val reqClass: Class<REQUEST>
-    val respClass: Class<RESPONSE>
+    val requestClass: Class<REQUEST>
+    val responseClass: Class<RESPONSE>
 }

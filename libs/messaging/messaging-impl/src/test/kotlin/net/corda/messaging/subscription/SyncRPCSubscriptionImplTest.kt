@@ -56,8 +56,8 @@ class SyncRPCSubscriptionImplTest {
                 return "input: '$request', has been handled"
             }
 
-            override val reqClass: Class<String> = String::class.java
-            override val respClass: Class<String> = String::class.java
+            override val requestClass: Class<String> = String::class.java
+            override val responseClass: Class<String> = String::class.java
         }
 
         webServer.start(TEST_PORT)
