@@ -128,6 +128,7 @@ class ConsensualLedgerMessageProcessorTests {
         val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
 
         val transaction = createTestTransaction(ctx)
+        // transaction.wireTransaction.componentGroupLists.mapIndexed { i, it -> it.mapIndexed { j, d -> println("   QQ Q   $i $j: ${d.decodeToString()}") } }
 
         // Serialise tx into bytebuffer and add to PersistTransaction payload
         val serializedTransaction = ctx.serialize(transaction)

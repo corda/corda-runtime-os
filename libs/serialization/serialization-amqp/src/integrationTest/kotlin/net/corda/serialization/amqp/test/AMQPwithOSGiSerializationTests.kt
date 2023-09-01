@@ -1,7 +1,7 @@
 package net.corda.serialization.amqp.test
 
 import net.corda.base.internal.OpaqueBytes
-import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
+import net.corda.internal.serialization.AMQP_P2P_CONTEXT
 import net.corda.internal.serialization.CordaSerializationEncoding.SNAPPY
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.IllegalCustomSerializerException
@@ -56,7 +56,7 @@ class AMQPwithOSGiSerializationTests {
         private const val TIMEOUT_MILLIS = 10000L
     }
 
-    private val testSerializationContext = AMQP_STORAGE_CONTEXT.withEncoding(SNAPPY)
+    private val testSerializationContext = AMQP_P2P_CONTEXT.withEncoding(SNAPPY)
 
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()

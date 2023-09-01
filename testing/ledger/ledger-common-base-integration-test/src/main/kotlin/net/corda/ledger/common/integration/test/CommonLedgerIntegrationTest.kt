@@ -3,7 +3,7 @@ package net.corda.ledger.common.integration.test
 import net.corda.common.json.validation.JsonValidator
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
-import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
+import net.corda.internal.serialization.AMQP_P2P_CONTEXT
 import net.corda.internal.serialization.SerializationServiceImpl
 import net.corda.internal.serialization.amqp.helper.createSerializerFactory
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -102,7 +102,7 @@ abstract class CommonLedgerIntegrationTest {
             // anything unintentionally
             outputFactory = sandboxGroupContext.createSerializerFactory(),
             inputFactory = sandboxGroupContext.createSerializerFactory(),
-            context = AMQP_STORAGE_CONTEXT.withSandboxGroup(sandboxGroupContext.sandboxGroup)
+            context = AMQP_P2P_CONTEXT.withSandboxGroup(sandboxGroupContext.sandboxGroup)
         )
 
         wireTransaction = wireTransactionFactory.createExample(jsonMarshallingService, jsonValidator)

@@ -785,8 +785,7 @@ class SerializationOutputTests {
         assertSame(parentContainer.left, parentContainer.right)
 
         val parentCopy = serdes(parentContainer)
-        // todo revert to assertSame in CORE-12472
-        assertNotSame(parentCopy.left, parentCopy.right)
+        assertSame(parentCopy.left, parentCopy.right)
     }
 
     @CordaSerializable
@@ -816,8 +815,7 @@ class SerializationOutputTests {
         val factory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
         val factory2 = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
         val objCopy = serdes(obj, factory, factory2)
-        // todo revert to assertSame in CORE-12472
-        assertNotSame(objCopy.a, objCopy.b)
+        assertSame(objCopy.a, objCopy.b)
     }
 
     class Spike private constructor(val a: String) {
