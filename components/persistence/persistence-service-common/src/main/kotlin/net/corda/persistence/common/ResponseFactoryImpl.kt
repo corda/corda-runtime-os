@@ -8,6 +8,7 @@ import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.exceptions.KafkaMessageSizeException
+import net.corda.persistence.common.exceptions.MissingAccountContextPropertyException
 import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.v5.base.annotations.VisibleForTesting
 import org.osgi.service.component.annotations.Activate
@@ -45,10 +46,10 @@ class ResponseFactoryImpl @VisibleForTesting internal constructor(
         is CpkNotAvailableException, is VirtualNodeException -> {
             transientErrorResponse(externalEventContext, exception)
         }
-        is NotSerializableException -> {
+        is NotSerializableException, is NullParameterException -> {
             platformErrorResponse(externalEventContext, exception)
         }
-        is KafkaMessageSizeException, is NullParameterException -> {
+        is KafkaMessageSizeException, is MissingAccountContextPropertyException -> {
             fatalErrorResponse(externalEventContext, exception)
         }
         is PersistenceException, is SQLException -> {

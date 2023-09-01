@@ -7,6 +7,7 @@ import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.exceptions.KafkaMessageSizeException
+import net.corda.persistence.common.exceptions.MissingAccountContextPropertyException
 import net.corda.persistence.common.exceptions.NullParameterException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -57,16 +58,22 @@ class ResponseFactoryImplTest {
     }
 
     @Test
+    fun `errorResponse creates and returns a platform error response when the input exception is NullParameterException`() {
+        val exception = NullParameterException("")
+        whenever(externalEventResponseFactory.platformError(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).thenReturn(RECORD)
+        assertThat(responseFactory.errorResponse(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).isEqualTo(RECORD)
+    }
+
+    @Test
     fun `errorResponse creates and returns a fatal error response when the input exception is KafkaMessageSizeException`() {
         val exception = KafkaMessageSizeException("")
         whenever(externalEventResponseFactory.fatalError(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).thenReturn(RECORD)
         assertThat(responseFactory.errorResponse(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).isEqualTo(RECORD)
     }
 
-    // I think this is wrong and should be platform, review this!!
     @Test
-    fun `errorResponse creates and returns a fatal error response when the input exception is NullParameterException`() {
-        val exception = NullParameterException("")
+    fun `errorResponse creates and returns a fatal error response when the input exception is MissingAccountContextPropertyException`() {
+        val exception = MissingAccountContextPropertyException()
         whenever(externalEventResponseFactory.fatalError(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).thenReturn(RECORD)
         assertThat(responseFactory.errorResponse(FLOW_EXTERNAL_EVENT_CONTEXT, exception)).isEqualTo(RECORD)
     }
