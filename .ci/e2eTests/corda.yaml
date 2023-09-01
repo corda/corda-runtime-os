@@ -73,6 +73,26 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "flow"
+  flowMapper:
+    kafka:
+      sasl:
+        username:
+          value: "flowMapper"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-credentials"
+              key: "flowMapper"
+  verification:
+    kafka:
+      sasl:
+        username:
+          value: "verification"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-credentials"
+              key: "verification"
   membership:
     kafka:
       sasl:
@@ -103,6 +123,16 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "p2pLinkManager"
+  persistence:
+    kafka:
+      sasl:
+        username:
+          value: "persistence"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-credentials"
+              key: "persistence"
   rest:
     kafka:
       sasl:

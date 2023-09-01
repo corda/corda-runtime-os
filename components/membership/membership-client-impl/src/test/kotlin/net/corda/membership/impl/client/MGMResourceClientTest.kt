@@ -44,7 +44,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.client.CouldNotFindMemberException
+import net.corda.membership.client.CouldNotFindEntityException
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.lib.EndpointInfoFactory
@@ -506,7 +506,7 @@ class MGMResourceClientTest {
             )
         )
 
-        assertThrows<CouldNotFindMemberException> {
+        assertThrows<CouldNotFindEntityException> {
             mgmResourceClient.generateGroupPolicy(ShortHash.of("000000000000"))
         }
         mgmResourceClient.stop()
@@ -522,7 +522,7 @@ class MGMResourceClientTest {
         )
         whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-        assertThrows<CouldNotFindMemberException> {
+        assertThrows<CouldNotFindEntityException> {
             mgmResourceClient.generateGroupPolicy(shortHash)
         }
         mgmResourceClient.stop()
@@ -584,7 +584,7 @@ class MGMResourceClientTest {
             mgmResourceClient.start()
             setUpRpcSender(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.addApprovalRule(
                     ShortHash.of("000000000000"),
                     ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
@@ -599,7 +599,7 @@ class MGMResourceClientTest {
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.addApprovalRule(
                     shortHash, ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
                 )
@@ -661,7 +661,7 @@ class MGMResourceClientTest {
             mgmResourceClient.start()
             setUpRpcSender(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.deleteApprovalRule(
                     ShortHash.of("000000000000"), RULE_ID, RULE_TYPE
                 )
@@ -675,7 +675,7 @@ class MGMResourceClientTest {
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.deleteApprovalRule(
                     shortHash, RULE_ID, RULE_TYPE
                 )
@@ -734,7 +734,7 @@ class MGMResourceClientTest {
             mgmResourceClient.start()
             setUpRpcSender(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.getApprovalRules(
                     ShortHash.of("000000000000"), ApprovalRuleType.STANDARD
                 )
@@ -748,7 +748,7 @@ class MGMResourceClientTest {
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.getApprovalRules(
                     shortHash, ApprovalRuleType.STANDARD
                 )
@@ -810,7 +810,7 @@ class MGMResourceClientTest {
             mgmResourceClient.start()
             setUpRpcSender(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.viewRegistrationRequests(
                     ShortHash.of("000000000000"), memberName, true
                 )
@@ -824,7 +824,7 @@ class MGMResourceClientTest {
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.viewRegistrationRequests(
                     shortHash, memberName, true
                 )
@@ -974,7 +974,7 @@ class MGMResourceClientTest {
             mgmResourceClient.start()
             setUpRpcSender(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.reviewRegistrationRequest(
                     ShortHash.of("000000000000"),
                     REQUEST_ID.uuid(),
@@ -990,7 +990,7 @@ class MGMResourceClientTest {
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.reviewRegistrationRequest(
                     shortHash,
                     REQUEST_ID.uuid(),
@@ -1170,7 +1170,7 @@ class MGMResourceClientTest {
             mgmResourceClient.start()
             setUpRpcSender(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.forceDeclineRegistrationRequest(
                     ShortHash.of("000000000000"),
                     REQUEST_ID.uuid(),
@@ -1185,7 +1185,7 @@ class MGMResourceClientTest {
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.forceDeclineRegistrationRequest(
                     shortHash,
                     REQUEST_ID.uuid(),
@@ -1814,7 +1814,7 @@ class MGMResourceClientTest {
         fun `suspendMember should fail if the member cannot be found`() {
             setUpRpcSender(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.suspendMember(
                     ShortHash.of("000000000000"),
                     memberName
@@ -1827,7 +1827,7 @@ class MGMResourceClientTest {
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.suspendMember(shortHash, memberName)
             }
         }
@@ -2016,7 +2016,7 @@ class MGMResourceClientTest {
         fun `activateMember should fail if the member cannot be found`() {
             setUpRpcSender(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.activateMember(
                     ShortHash.of("000000000000"),
                     memberName
@@ -2029,7 +2029,7 @@ class MGMResourceClientTest {
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.activateMember(shortHash, memberName)
             }
         }
@@ -2158,7 +2158,7 @@ class MGMResourceClientTest {
         fun `updateGroupParameters should fail if the member cannot be found`() {
             setUpRpcSender(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.updateGroupParameters(
                     ShortHash.of("000000000000"),
                     mockUpdate
@@ -2171,7 +2171,7 @@ class MGMResourceClientTest {
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.updateGroupParameters(shortHash, mockUpdate)
             }
         }

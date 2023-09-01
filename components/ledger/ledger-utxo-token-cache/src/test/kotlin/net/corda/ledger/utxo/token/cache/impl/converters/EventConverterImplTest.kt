@@ -10,6 +10,7 @@ import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
 import net.corda.ledger.utxo.token.cache.entities.ClaimRelease
 import net.corda.ledger.utxo.token.cache.entities.LedgerChange
 import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
+import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIllegalStateException
 import org.junit.jupiter.api.BeforeEach
@@ -18,14 +19,13 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.math.BigDecimal
-import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY_DTO
 
 class EventConverterImplTest {
 
     private val entityConverter = mock<EntityConverter>()
-    private val claimQuery = ClaimQuery("","", BigDecimal(0), "", "", POOL_CACHE_KEY_DTO)
-    private val claimRelease = ClaimRelease("","", "", setOf(), POOL_CACHE_KEY_DTO)
-    private val ledgerChange = LedgerChange(POOL_CACHE_KEY_DTO,"","", listOf(), listOf())
+    private val claimQuery = ClaimQuery("","", BigDecimal(0), "", "", POOL_KEY)
+    private val claimRelease = ClaimRelease("","", "", setOf(), POOL_KEY)
+    private val ledgerChange = LedgerChange(POOL_KEY,"","", listOf(), listOf())
 
     @BeforeEach
     fun setup() {
