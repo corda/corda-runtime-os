@@ -257,7 +257,13 @@ class PersistenceServiceInternalTests {
         val cl = ClassloaderChangeLog(
             linkedSetOf(
                 ClassloaderChangeLog.ChangeLogResourceFiles(
-                    dogClass.packageName, listOf("migration/db.changelog-master.xml"),
+                    DbSchema::class.java.packageName,
+                    listOf("net/corda/db/schema/vnode-vault/db.changelog-master.xml"),
+                    DbSchema::class.java.classLoader
+                ),
+                ClassloaderChangeLog.ChangeLogResourceFiles(
+                    dogClass.packageName,
+                    listOf("migration/db.changelog-master.xml"),
                     classLoader = dogClass.classLoader
                 ),
             )
@@ -277,6 +283,7 @@ class PersistenceServiceInternalTests {
                 contextProperties = cpkFileHashesTwo.toKeyValuePairList(CPK_FILE_CHECKSUM)
             }
         )
+
         val processor = EntityMessageProcessor(
             currentSandboxGroupContext,
             myEntitySandboxService,
