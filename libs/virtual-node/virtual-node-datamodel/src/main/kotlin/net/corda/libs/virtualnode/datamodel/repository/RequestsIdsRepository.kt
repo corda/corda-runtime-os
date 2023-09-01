@@ -1,6 +1,6 @@
 package net.corda.libs.virtualnode.datamodel.repository
 
-import net.corda.libs.virtualnode.datamodel.standaloneentities.PersistenceRequestIdEntity
+import net.corda.db.schema.DbSchema.VNODE_PERSISTENCE_REQUEST_ID_TABLE
 import java.util.UUID
 import javax.persistence.EntityManager
 
@@ -10,10 +10,12 @@ interface RequestsIdsRepository {
 
 class RequestsIdsRepositoryImpl : RequestsIdsRepository {
     override fun persist(requestId: UUID, em: EntityManager) {
-        em.persist(
-            PersistenceRequestIdEntity(
-                requestId.toString()
-            )
-        )
+        em.createNativeQuery(
+            """
+            INSERT INTO {h-schema}$VNODE_PERSISTENCE_REQUEST_ID_TABLE(request_id)
+            VALUES (:requestId)
+        """.trimIndent()
+        ).setParameter("requestId", requestId.toString())
+            .executeUpdate()
     }
 }
