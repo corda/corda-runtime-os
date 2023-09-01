@@ -1,11 +1,9 @@
 package com.r3.corda.demo.utxo.token.selection
 
-import java.math.BigDecimal
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -14,8 +12,9 @@ import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 import net.corda.v5.ledger.utxo.token.selection.TokenBalanceCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection
 import net.corda.v5.membership.NotaryInfo
+import java.math.BigDecimal
 
-@InitiatingFlow(protocol = "token-balance-query-flow-protocol")
+@Suppress("Unused")
 class TokenBalanceQueryFlow : ClientStartableFlow {
 
     @CordaInject
@@ -85,3 +84,4 @@ class TokenBalanceQueryFlow : ClientStartableFlow {
         val totalBalance: BigDecimal
     )
 }
+

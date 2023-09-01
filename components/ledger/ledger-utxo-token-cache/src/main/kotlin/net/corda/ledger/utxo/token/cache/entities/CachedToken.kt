@@ -16,9 +16,9 @@ interface CachedToken {
 
     val amount: BigDecimal
 
-    val tag: String
+    val tag: String?
 
-    val ownerHash: String
+    val ownerHash: String?
 
     /**
      * Creates an Avro representation of the token.
