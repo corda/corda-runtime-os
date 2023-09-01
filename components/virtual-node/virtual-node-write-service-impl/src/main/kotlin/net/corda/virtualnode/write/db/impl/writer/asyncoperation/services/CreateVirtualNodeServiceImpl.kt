@@ -138,7 +138,7 @@ internal class CreateVirtualNodeServiceImpl(
                     cryptoDdlConnectionId = persistConnection(em, vNodeDbs, CRYPTO, DDL, updateActor),
                     cryptoDmlConnectionId = persistConnection(em, vNodeDbs, CRYPTO, DML, updateActor)!!,
                     uniquenessDdlConnectionId = persistConnection(em, vNodeDbs, UNIQUENESS, DDL, updateActor),
-                    uniquenessDmlConnectionId = persistConnection(em, vNodeDbs, UNIQUENESS, DML, updateActor)!!
+                    uniquenessDmlConnectionId = persistConnection(em, vNodeDbs, UNIQUENESS, DML, updateActor)
                 )
 
                 holdingIdentityRepository.put(em, holdingIdentity)

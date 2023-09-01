@@ -41,6 +41,18 @@ workers:
         username:
           value: "alice"
 
+  flowMapper:
+    kafka:
+      sasl:
+        username:
+          value: "alice"
+
+  verification:
+    kafka:
+      sasl:
+        username:
+          value: "alice"
+
   membership:
     kafka:
       sasl:
@@ -75,6 +87,15 @@ workers:
         password:
           valueFrom:
             secretKeyRef:
+              key: "kafka-sasl-password"
+
+  persistence:
+    kafka:
+      sasl:
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-sasl"
               key: "kafka-sasl-password"
 
   uniqueness:
