@@ -42,7 +42,7 @@ class SessionUtilsTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = SessionStateType::class, names = ["CREATED", "CONFIRMED", "CLOSING", "WAIT_FOR_FINAL_ACK"])
+    @EnumSource(value = SessionStateType::class, names = ["CREATED", "CONFIRMED", "CLOSING"])
     fun `verifySessionStatusNotErrorOrClose doesnt throw on all types`(sessionStateType: SessionStateType) {
         whenever(sessionState.status).thenReturn(sessionStateType)
         assertDoesNotThrow {

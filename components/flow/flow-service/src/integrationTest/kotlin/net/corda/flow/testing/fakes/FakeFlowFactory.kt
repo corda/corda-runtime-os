@@ -25,6 +25,7 @@ class FakeFlowFactory : FlowFactory {
 
     override fun createInitiatedFlow(
         flowStartContext: FlowStartContext,
+        requireClose: Boolean,
         sandboxGroupContext: SandboxGroupContext,
         contextProperties: Map<String, String>
     ): FlowLogicAndArgs {

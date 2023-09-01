@@ -1,16 +1,15 @@
 package net.corda.session.manager.impl.factory
 
-import java.time.Instant
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
+import net.corda.data.flow.state.session.SessionState
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.session.manager.SessionManagerException
-import net.corda.session.manager.impl.processor.SessionAckProcessorReceive
 import net.corda.session.manager.impl.processor.SessionCloseProcessorReceive
 import net.corda.session.manager.impl.processor.SessionCloseProcessorSend
 import net.corda.session.manager.impl.processor.SessionDataProcessorReceive
@@ -28,6 +27,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Instant
 
 class SessionEventProcessorFactoryTest {
 
@@ -38,14 +38,16 @@ class SessionEventProcessorFactoryTest {
 
     private companion object {
         val maxMsgSize = 1000000L
+        val sessionState = SessionState()
     }
 
     @Test
     fun testCreateEventReceivedProcessorOutboundMessage() {
         assertThrows<SessionManagerException> {
             sessionEventProcessorFactory.createEventReceivedProcessor(
-                "key", buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionData()),
-                null, Instant.now()
+                "key", buildSessionEvent(
+                    MessageDirection.OUTBOUND, "sessionId", 1, SessionData(), contextSessionProps = emptyKeyValuePairList()
+                ), null, Instant.now()
             )
         }
     }
@@ -54,7 +56,11 @@ class SessionEventProcessorFactoryTest {
     fun testCreateEventToSendProcessorInboundMessage() {
         assertThrows<SessionManagerException> {
             sessionEventProcessorFactory.createEventToSendProcessor(
-                "key", buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionData()), null, Instant.now(), maxMsgSize
+                "key",
+                buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionData(), contextSessionProps = emptyKeyValuePairList()),
+                sessionState,
+                Instant.now(),
+                maxMsgSize
             )
         }
     }
@@ -62,7 +68,11 @@ class SessionEventProcessorFactoryTest {
     @Test
     fun testOutboundDataMessage() {
         val processor = sessionEventProcessorFactory.createEventToSendProcessor(
-            "key", buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionData()), null, Instant.now(), maxMsgSize
+            "key",
+            buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionData(), contextSessionProps = emptyKeyValuePairList()),
+            sessionState,
+            Instant.now(),
+            maxMsgSize
         )
 
         verify(messagingChunkFactory, times(1)).createChunkSerializerService(any())
@@ -72,7 +82,10 @@ class SessionEventProcessorFactoryTest {
     @Test
     fun testInboundDataMessage() {
         val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
-            "key", buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionData()), null, Instant.now()
+            "key",
+            buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionData(), contextSessionProps = emptyKeyValuePairList()),
+            null,
+            Instant.now()
         )
 
         assertThat(processor::class.java).isEqualTo(SessionDataProcessorReceive::class.java)
@@ -82,7 +95,7 @@ class SessionEventProcessorFactoryTest {
     fun testInboundErrorMessage() {
         val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
             "key", buildSessionEvent(
-                MessageDirection.INBOUND, "sessionId", 1, SessionError(ExceptionEnvelope())
+                MessageDirection.INBOUND, "sessionId", 1, SessionError(ExceptionEnvelope()), contextSessionProps = emptyKeyValuePairList()
             ), null, Instant.now()
         )
 
@@ -92,11 +105,9 @@ class SessionEventProcessorFactoryTest {
     @Test
     fun testOutboundErrorMessage() {
         val processor = sessionEventProcessorFactory.createEventToSendProcessor(
-            "key",
-            buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionError(ExceptionEnvelope())),
-            null,
-            Instant.now(),
-            maxMsgSize
+            "key", buildSessionEvent(
+                MessageDirection.OUTBOUND, "sessionId", 1, SessionError(ExceptionEnvelope()), contextSessionProps = emptyKeyValuePairList()
+            ), sessionState, Instant.now(), maxMsgSize
         )
 
         assertThat(processor::class.java).isEqualTo(SessionErrorProcessorSend::class.java)
@@ -105,7 +116,10 @@ class SessionEventProcessorFactoryTest {
     @Test
     fun testInboundInitMessage() {
         val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
-            "key", buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionInit()), null, Instant.now()
+            "key",
+            buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionInit(), contextSessionProps = emptyKeyValuePairList()),
+            null,
+            Instant.now()
         )
 
         assertThat(processor::class.java).isEqualTo(SessionInitProcessorReceive::class.java)
@@ -114,34 +128,23 @@ class SessionEventProcessorFactoryTest {
     @Test
     fun testOutboundInitMessage() {
         val processor = sessionEventProcessorFactory.createEventToSendProcessor(
-            "key", buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionInit()), null, Instant.now(), maxMsgSize
+            "key",
+            buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionInit(), contextSessionProps = emptyKeyValuePairList()),
+            sessionState,
+            Instant.now(),
+            maxMsgSize
         )
 
         assertThat(processor::class.java).isEqualTo(SessionInitProcessorSend::class.java)
     }
 
     @Test
-    fun testInboundAckMessage() {
-        val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
-            "key", buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionAck()), null, Instant.now()
-        )
-
-        assertThat(processor::class.java).isEqualTo(SessionAckProcessorReceive::class.java)
-    }
-
-    @Test
-    fun testOutboundAckMessage() {
-        assertThrows<NotImplementedError> {
-            sessionEventProcessorFactory.createEventToSendProcessor(
-                "key", buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionAck()), null, Instant.now(), maxMsgSize
-            )
-        }
-    }
-
-    @Test
     fun testInboundCloseMessage() {
         val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
-            "key", buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionClose()), null, Instant.now()
+            "key",
+            buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionClose(), contextSessionProps = emptyKeyValuePairList()),
+            null,
+            Instant.now()
         )
 
         assertThat(processor::class.java).isEqualTo(SessionCloseProcessorReceive::class.java)
@@ -150,7 +153,11 @@ class SessionEventProcessorFactoryTest {
     @Test
     fun testOutboundCloseMessage() {
         val processor = sessionEventProcessorFactory.createEventToSendProcessor(
-            "key", buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionClose()), null, Instant.now(), maxMsgSize
+            "key",
+            buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionClose(), contextSessionProps = emptyKeyValuePairList()),
+            sessionState,
+            Instant.now(),
+            maxMsgSize
         )
 
         assertThat(processor::class.java).isEqualTo(SessionCloseProcessorSend::class.java)
