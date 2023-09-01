@@ -45,7 +45,6 @@ import java.time.Instant
 class NonValidatingNotaryServerFlowImplTest {
 
     private companion object {
-        const val NOTARY_KEYS = "corda.notary.keys"
         const val NOTARY_SERVICE_NAME = "corda.notary.service.name"
 
         /* Cache for storing response from server */
@@ -334,7 +333,6 @@ class NonValidatingNotaryServerFlowImplTest {
         whenever(mockMemberLookup.myInfo()).thenReturn(notaryInfo)
         whenever(mockMemberLookup.myInfo().memberProvidedContext).thenReturn(memberProvidedContext)
         whenever(memberProvidedContext.parse(NOTARY_SERVICE_NAME, MemberX500Name::class.java)).thenReturn(notaryServiceName)
-        whenever(memberProvidedContext.parseList(NOTARY_KEYS, PublicKey::class.java)).thenReturn(listOf(notaryServiceKey))
 
         // 3. Check if any filtered transaction data should be overwritten
         val filteredTx = mock<UtxoFilteredTransaction> {

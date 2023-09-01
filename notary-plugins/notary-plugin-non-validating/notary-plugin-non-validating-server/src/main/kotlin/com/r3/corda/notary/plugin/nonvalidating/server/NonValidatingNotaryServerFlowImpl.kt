@@ -21,7 +21,6 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.security.PublicKey
 
 /**
  * The server-side implementation of the non-validating notary logic.
@@ -34,7 +33,6 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     private companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        const val NOTARY_KEYS = "corda.notary.keys"
         const val NOTARY_SERVICE_NAME = "corda.notary.service.name"
     }
 
@@ -131,16 +129,11 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     private fun getCurrentNotaryAndValidateNotary(txDetails: NonValidatingNotaryTransactionDetails) {
         val currentNotaryMemberProvidedCtx = memberLookup.myInfo().memberProvidedContext
         val currentNotaryServiceName = currentNotaryMemberProvidedCtx.parse(NOTARY_SERVICE_NAME, MemberX500Name::class.java)
-        val currentNotaryKey = currentNotaryMemberProvidedCtx.parseList(NOTARY_KEYS, PublicKey::class.java).first()
 
         val payloadNotaryServiceName = txDetails.notaryName
-        val payloadNotaryKey = txDetails.notaryKey
 
         require(currentNotaryServiceName == payloadNotaryServiceName) {
             "Given notary service = $payloadNotaryServiceName is invalid"
-        }
-        require(currentNotaryKey == payloadNotaryKey) {
-            "Given notary key = $payloadNotaryKey is invalid"
         }
     }
 
