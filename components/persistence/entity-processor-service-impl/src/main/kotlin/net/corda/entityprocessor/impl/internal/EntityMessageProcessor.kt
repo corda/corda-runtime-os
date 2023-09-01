@@ -150,10 +150,14 @@ class EntityMessageProcessor(
                 val requestId = UUID.fromString(request.flowExternalEventContext.requestId)
                 val entityResponse = withDeduplicationCheck(
                     requestId,
-                    em
-                ) {
-                    persistenceServiceInternal.persist(serializationService, it, entityRequest)
-                }
+                    em,
+                    block = {
+                        persistenceServiceInternal.persist(serializationService, it, entityRequest)
+                    },
+                    onDuplication = {
+                        EntityResponse(emptyList(), KeyValuePairList(emptyList()))
+                    }
+                )
 
                 responseFactory.successResponse(
                     request.flowExternalEventContext,
@@ -183,10 +187,14 @@ class EntityMessageProcessor(
                 val requestId = UUID.fromString(request.flowExternalEventContext.requestId)
                 val entityResponse = withDeduplicationCheck(
                     requestId,
-                    em
-                ) {
-                    persistenceServiceInternal.merge(serializationService, it, entityRequest)
-                }
+                    em,
+                    block = {
+                        persistenceServiceInternal.merge(serializationService, it, entityRequest)
+                    },
+                    onDuplication = {
+                        EntityResponse(entityRequest.entities, KeyValuePairList(emptyList()))
+                    }
+                )
 
                 responseFactory.successResponse(
                     request.flowExternalEventContext,
@@ -230,7 +238,8 @@ class EntityMessageProcessor(
     private fun withDeduplicationCheck(
         requestId: UUID,
         em: EntityManager,
-        block: (EntityManager) -> EntityResponse
+        block: (EntityManager) -> EntityResponse,
+        onDuplication: () -> EntityResponse
     ): EntityResponse {
         return em.transaction {
             try {
@@ -240,7 +249,7 @@ class EntityMessageProcessor(
                 // A persistence exception thrown in the de-duplication check means we have already performed the operation and
                 // can therefore treat the request as successful
                 it.transaction.setRollbackOnly()
-                return@transaction EntityResponse(emptyList(), KeyValuePairList(emptyList()))
+                return@transaction onDuplication()
             }
             block(em)
         }

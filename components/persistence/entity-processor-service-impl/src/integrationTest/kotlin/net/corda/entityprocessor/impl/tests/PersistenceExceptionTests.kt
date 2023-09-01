@@ -1,5 +1,7 @@
 package net.corda.entityprocessor.impl.tests
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpk.read.CpkReadService
 import net.corda.data.ExceptionEnvelope
@@ -10,6 +12,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.persistence.EntityRequest
+import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
 import net.corda.db.admin.LiquibaseSchemaMigrator
@@ -115,6 +118,9 @@ class PersistenceExceptionTests {
     @InjectService
     lateinit var lbm: LiquibaseSchemaMigrator
 
+    private lateinit var deserializerFactory: CordaAvroSerializationFactory
+    private lateinit var deserializer: CordaAvroDeserializer<EntityResponse>
+
     private var dbCounter = 0
 
     @BeforeAll
@@ -163,6 +169,9 @@ class PersistenceExceptionTests {
                 responseFactory,
                 this::noOpPayloadCheck
             )
+
+            deserializerFactory = sandboxSetup.fetchService(timeout = 5000)
+            deserializer = deserializerFactory.createAvroDeserializer({}, EntityResponse::class.java)
         }
     }
 
@@ -297,43 +306,45 @@ class PersistenceExceptionTests {
     @Test
     fun `on duplicate persistence request don't execute it - statically updated field isn't getting updated in DB`() {
         createVersionedDogDb()
-        val persistEntitiesRequest = createVersionedDogPersistRequest()
+        val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
+        // create dog using dog-aware sandbox
+        val dog = sandbox.createVersionedDog("Stray", owner = "Not Known")
+        val serialisedDog = sandbox.getSerializationService().serialize(dog).bytes
 
+        val persistEntitiesRequest = createPersistEntitiesRequest(listOf(ByteBuffer.wrap(serialisedDog)))
         // persist request
         processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
 
-        val serialisedDog = (persistEntitiesRequest.request as PersistEntities).entities
-
-        val requestId = UUID.randomUUID().toString()
-        val mergeEntityRequest =
-            EntityRequest(
-                virtualNodeInfo.holdingIdentity.toAvro(),
-                MergeEntities(serialisedDog),
-                ExternalEventContext(
-                    requestId,
-                    "flow id",
-                    KeyValuePairList(
-                        cpkFileHashes.map { KeyValuePair(CPK_FILE_CHECKSUM, it.toString()) }
-                    )
-                )
-            )
+        val mergeEntityRequest = createMergeEntitiesRequest(listOf(ByteBuffer.wrap(serialisedDog)))
 
         // first update request
-        processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), mergeEntityRequest)))
+        val record1 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), mergeEntityRequest))).single()
         // check we update same dog
         val dogDbCount = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId, dogDBTable = "versioned_dog")
         assertEquals(1, dogDbCount)
         // check version 1
         val dogVersion1 = getDogDbVersion(virtualNodeInfo.vaultDmlConnectionId)
+        // check merged entity
+        val entityResponseBytes = (((record1.value as FlowEvent).payload as ExternalEventResponse).payload as ByteBuffer).array()
+        val entityResponse = deserializer.deserialize(entityResponseBytes)!!
+        val dogBytes = entityResponse.results.single()!!.array()
+        val mergedDog = sandbox.getSerializationService().deserialize(dogBytes, Any::class.java)
+        assertEquals(dog, mergedDog)
 
         // duplicate update request
-        processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), mergeEntityRequest)))
+        val record2 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), mergeEntityRequest))).single()
         // check we update same dog
         val dogDbCount2 = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId, dogDBTable = "versioned_dog")
         assertEquals(1, dogDbCount2)
         // check version 2
         val dogVersion2 = getDogDbVersion(virtualNodeInfo.vaultDmlConnectionId)
         assertEquals(dogVersion1, dogVersion2)
+        // check merged entity
+        val entityResponseBytes2 = (((record2.value as FlowEvent).payload as ExternalEventResponse).payload as ByteBuffer).array()
+        val entityResponse2 = deserializer.deserialize(entityResponseBytes2)!!
+        val dogBytes2 = entityResponse2.results.single()!!.array()
+        val mergedDog2 = sandbox.getSerializationService().deserialize(dogBytes2, Any::class.java)
+        assertEquals(dog, mergedDog2)
     }
 
     @Test
@@ -358,14 +369,6 @@ class PersistenceExceptionTests {
 
     private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
 
-    private fun createVersionedDogPersistRequest(): EntityRequest {
-        val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
-        // create dog using dog-aware sandbox
-        val dog = sandbox.createVersionedDog("Stray", owner = "Not Known")
-        val serialisedDog = sandbox.getSerializationService().serialize(dog).bytes
-        return createPersistEntitiesRequest(listOf(ByteBuffer.wrap(serialisedDog)))
-    }
-
     private fun createDogPersistRequest(dogId :UUID = UUID.randomUUID()): EntityRequest {
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
         // create dog using dog-aware sandbox
@@ -380,6 +383,21 @@ class PersistenceExceptionTests {
         return EntityRequest(
             virtualNodeInfo.holdingIdentity.toAvro(),
             PersistEntities(serializedEntities),
+            ExternalEventContext(
+                requestId,
+                "flow id",
+                KeyValuePairList(
+                    cpkFileHashes.map { KeyValuePair(CPK_FILE_CHECKSUM, it.toString()) }
+                )
+            )
+        )
+    }
+
+    private fun createMergeEntitiesRequest(serializedEntities: List<ByteBuffer>): EntityRequest {
+        val requestId = UUID.randomUUID().toString()
+        return EntityRequest(
+            virtualNodeInfo.holdingIdentity.toAvro(),
+            MergeEntities(serializedEntities),
             ExternalEventContext(
                 requestId,
                 "flow id",
