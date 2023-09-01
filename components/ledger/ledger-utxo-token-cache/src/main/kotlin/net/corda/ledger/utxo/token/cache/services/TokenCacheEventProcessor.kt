@@ -61,16 +61,20 @@ class TokenCacheEventProcessor constructor(
             sb.append(getTokenSummary(tokenCache, poolCacheState))
 
             val result = handler.handle(tokenCache, poolCacheState, tokenEvent)
-                ?: return StateAndEventProcessor.Response(poolCacheState.toAvro(), listOf())
 
             sb.appendLine("After Handler:")
             sb.append(getTokenSummary(tokenCache, poolCacheState))
             log.info(sb.toString())
 
-            return StateAndEventProcessor.Response(
-                poolCacheState.toAvro(),
-                listOf(result)
-            )
+            return if (result == null) {
+                StateAndEventProcessor.Response(poolCacheState.toAvro(), listOf())
+            } else {
+                StateAndEventProcessor.Response(
+                    poolCacheState.toAvro(),
+                    listOf(result)
+                )
+            }
+
         } catch (e: Exception) {
             log.error("Unexpected error while processing event '${event}'. The event will be sent to the DLQ.", e)
             return StateAndEventProcessor.Response(state, listOf(), markForDLQ = true)
@@ -88,10 +92,10 @@ class TokenCacheEventProcessor constructor(
         val tokenIndex = tokenCache.associateBy { it.stateRef }
 
         avroState.tokenClaims.forEach {
-            val claimedTokens = it.claimedTokenStateRefs.mapNotNull { ref-> tokenIndex[ref] }
+            val claimedTokens = it.claimedTokenStateRefs.mapNotNull { ref -> tokenIndex[ref] }
             val claimCount = claimedTokens.size
-            val claimBalance = claimedTokens.sumOf { token-> token.amount }
-            val tokens = claimedTokens.joinToString(" ") { token-> "(${token.amount})" }
+            val claimBalance = claimedTokens.sumOf { token -> token.amount }
+            val tokens = claimedTokens.joinToString(" ") { token -> "(${token.amount})" }
             sb.appendLine(
                 "Claim       : ${it.claimId} Token Count $claimCount Token Balance $claimBalance Tokens:${tokens}"
             )
