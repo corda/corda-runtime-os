@@ -80,7 +80,7 @@ class ConcurrentFlowMessaging(
         x500Name: MemberX500Name,
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder
     ): FlowSession {
-        return doInitiate(x500Name, true, flowContextPropertiesBuilder)
+        return initiateFlow(x500Name, true, flowContextPropertiesBuilder)
     }
 
     private fun doInitiate(
