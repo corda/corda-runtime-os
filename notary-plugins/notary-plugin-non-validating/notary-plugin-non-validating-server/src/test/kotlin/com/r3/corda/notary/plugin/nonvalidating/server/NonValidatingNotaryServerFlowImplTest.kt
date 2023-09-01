@@ -331,7 +331,7 @@ class NonValidatingNotaryServerFlowImplTest {
 
         // 2. Get current notary and parse its data
         whenever(mockMemberLookup.myInfo()).thenReturn(notaryInfo)
-        whenever(mockMemberLookup.myInfo().memberProvidedContext).thenReturn(memberProvidedContext)
+        whenever(notaryInfo.memberProvidedContext).thenReturn(memberProvidedContext)
         whenever(memberProvidedContext.parse(NOTARY_SERVICE_NAME, MemberX500Name::class.java)).thenReturn(notaryServiceName)
 
         // 3. Check if any filtered transaction data should be overwritten

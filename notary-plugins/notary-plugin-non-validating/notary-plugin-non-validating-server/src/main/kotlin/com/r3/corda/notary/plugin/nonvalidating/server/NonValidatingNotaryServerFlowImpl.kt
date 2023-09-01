@@ -78,7 +78,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
             val txDetails = validateRequest(requestPayload)
 
-            getCurrentNotaryAndValidateNotary(txDetails)
+            validateTransactionNotaryAgainstCurrentNotary(txDetails)
 
             if (logger.isTraceEnabled) {
                 logger.trace("Received notarization request for transaction {}", txDetails.id)
@@ -126,14 +126,15 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      * This function will validate selected notary is valid notary to notarize.
      * */
     @Suspendable
-    private fun getCurrentNotaryAndValidateNotary(txDetails: NonValidatingNotaryTransactionDetails) {
-        val currentNotaryMemberProvidedCtx = memberLookup.myInfo().memberProvidedContext
-        val currentNotaryServiceName = currentNotaryMemberProvidedCtx.parse(NOTARY_SERVICE_NAME, MemberX500Name::class.java)
+    private fun validateTransactionNotaryAgainstCurrentNotary(txDetails: NonValidatingNotaryTransactionDetails) {
+        val currentNotaryServiceName = memberLookup
+            .myInfo()
+            .memberProvidedContext
+            .parse(NOTARY_SERVICE_NAME, MemberX500Name::class.java)
 
-        val payloadNotaryServiceName = txDetails.notaryName
-
-        require(currentNotaryServiceName == payloadNotaryServiceName) {
-            "Given notary service = $payloadNotaryServiceName is invalid"
+        require(currentNotaryServiceName == txDetails.notaryName) {
+            "Notary service on the transaction ${txDetails.notaryName} does not match the notary service represented" +
+                    " by this notary virtual node (${currentNotaryServiceName})"
         }
     }
 
