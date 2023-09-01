@@ -50,6 +50,10 @@ class FlowMessagingImpl @Activate constructor(
         return doInitiateFlow(x500Name, requireClose, null)
     }
 
+    override fun initiateFlow(x500Name: MemberX500Name, flowContextPropertiesBuilder: FlowContextPropertiesBuilder): FlowSession {
+        return doInitiateFlow(x500Name, true, flowContextPropertiesBuilder)
+    }
+
     @Suspendable
     override fun initiateFlow(
         x500Name: MemberX500Name,
