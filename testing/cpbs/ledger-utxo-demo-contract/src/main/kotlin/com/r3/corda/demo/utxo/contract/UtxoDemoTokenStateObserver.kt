@@ -7,6 +7,12 @@ import net.corda.v5.ledger.utxo.observer.UtxoTokenFilterFields
 import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
 import java.math.BigDecimal
 
+const val TOKEN_ISSUER_HASH = "SHA-256:EC4F2DBB3B140095550C9AFBBB69B5D6FD9E814B9DA82FAD0B34E9FCBE56F1CB"
+const val TOKEN_SYMBOL = "USD"
+const val TOKEN_TYPE = "TestUtxoState"
+val TOKEN_AMOUNT = BigDecimal.TEN
+
+@Suppress("UNUSED")
 class UtxoDemoTokenStateObserver : UtxoLedgerTokenStateObserver<TestUtxoState> {
 
     override fun getStateType(): Class<TestUtxoState> {
@@ -16,13 +22,11 @@ class UtxoDemoTokenStateObserver : UtxoLedgerTokenStateObserver<TestUtxoState> {
     override fun onCommit(state: TestUtxoState, digestService: DigestService): UtxoToken {
         return UtxoToken(
             UtxoTokenPoolKey(
-                TestUtxoState::class.java.name,
-                digestService.parseSecureHash(
-                    "SHA-256:EC4F2DBB3B140095550C9AFBBB69B5D6FD9E814B9DA82FAD0B34E9FCBE56F1CB"
-                ),
-                state.testField
+                TOKEN_TYPE,
+                digestService.parseSecureHash(TOKEN_ISSUER_HASH),
+                TOKEN_SYMBOL
             ),
-            BigDecimal.TEN,
+            TOKEN_AMOUNT,
             UtxoTokenFilterFields()
         )
     }

@@ -1,5 +1,8 @@
 package net.corda.cli.plugins.preinstall
 
+import java.util.Properties
+import java.util.concurrent.Callable
+import java.util.concurrent.ExecutionException
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.Kafka
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.PluginContext
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.ReportEntry
@@ -9,9 +12,6 @@ import org.apache.kafka.common.Node
 import picocli.CommandLine
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
-import java.util.Properties
-import java.util.concurrent.Callable
-import java.util.concurrent.ExecutionException
 
 @CommandLine.Command(name = "check-kafka", description = ["Check that Kafka is up and that the credentials work."])
 class CheckKafka : Callable<Int>, PluginContext() {
@@ -193,10 +193,13 @@ class CheckKafka : Callable<Int>, PluginContext() {
         checkKafka(kafkaProperties, "crypto", yaml.kafka.sasl, yaml.workers?.crypto?.kafka?.sasl, replicas)
         checkKafka(kafkaProperties, "db", yaml.kafka.sasl, yaml.workers?.db?.kafka?.sasl, replicas)
         checkKafka(kafkaProperties, "flow", yaml.kafka.sasl, yaml.workers?.flow?.kafka?.sasl, replicas)
+        checkKafka(kafkaProperties, "flowMapper", yaml.kafka.sasl, yaml.workers?.flowMapper?.kafka?.sasl, replicas)
+        checkKafka(kafkaProperties, "verification", yaml.kafka.sasl, yaml.workers?.verification?.kafka?.sasl, replicas)
         checkKafka(kafkaProperties, "membership", yaml.kafka.sasl, yaml.workers?.membership?.kafka?.sasl, replicas)
         checkKafka(kafkaProperties, "rest", yaml.kafka.sasl, yaml.workers?.rest?.kafka?.sasl, replicas)
         checkKafka(kafkaProperties, "p2pGateway", yaml.kafka.sasl, yaml.workers?.p2pGateway?.kafka?.sasl, replicas)
         checkKafka(kafkaProperties, "p2pLinkManager", yaml.kafka.sasl, yaml.workers?.p2pLinkManager?.kafka?.sasl, replicas)
+        checkKafka(kafkaProperties, "persistence", yaml.kafka.sasl, yaml.workers?.persistence?.kafka?.sasl, replicas)
         checkKafka(kafkaProperties, "uniqueness", yaml.kafka.sasl, yaml.workers?.uniqueness?.kafka?.sasl, replicas)
 
         return if (report.testsPassed()) {
