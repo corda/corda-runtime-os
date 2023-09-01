@@ -5,7 +5,6 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.libs.packaging.core.CpkMetadata
-import net.corda.libs.virtualnode.datamodel.standaloneentities.PersistenceRequestIdEntity
 import net.corda.orm.JpaEntitiesSet
 import net.corda.persistence.common.EntityExtractor
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_EMF
@@ -145,14 +144,7 @@ class EntitySandboxServiceImpl @Activate constructor(
         // We now have the collection of class types, from the CPKs, with their *own* classloaders (i.e. osgi).
 
         // Create the JPA entity set to pass into the EMF
-        val persistenceRequestIdEntityClass =
-            PersistenceRequestIdEntity::class.java
-
-        val entitiesSet =
-            JpaEntitiesSet.create(
-                virtualNode.vaultDmlConnectionId.toString(),
-                entityClasses + persistenceRequestIdEntityClass
-            )
+        val entitiesSet = JpaEntitiesSet.create(virtualNode.vaultDmlConnectionId.toString(), entityClasses)
 
         logger.info("Creating EntityManagerFactory for DB Sandbox ({}) with {}: {}",
             virtualNode.holdingIdentity,
