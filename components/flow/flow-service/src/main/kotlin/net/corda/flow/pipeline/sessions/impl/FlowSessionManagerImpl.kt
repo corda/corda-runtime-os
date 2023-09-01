@@ -15,10 +15,10 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.pipeline.factory.FlowRecordFactory
-import net.corda.flow.pipeline.handlers.requests.helper.isInitiatingIdentity
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.isInitiatingIdentity
 import net.corda.flow.utils.keyValuePairListOf
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record

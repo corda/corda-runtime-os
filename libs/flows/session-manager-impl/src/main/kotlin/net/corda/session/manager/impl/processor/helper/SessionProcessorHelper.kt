@@ -8,7 +8,6 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
-import net.corda.session.manager.Constants
 import java.time.Instant
 
 /**
@@ -141,13 +140,4 @@ fun setErrorState(
             generateErrorEvent(sessionState, sessionEvent, errorMessage, errorType, instant)
         )
     }
-}
-
-/**
- * check if an event is sent by Initiated or Initiating identity
- * @param sessionEvent input session event to get identity info from
- * @return [Boolean] is this event sent by the Initiated identity
- */
-fun isInitiatedIdentity(sessionEvent: SessionEvent): Boolean {
-    return sessionEvent.sessionId.contains(Constants.INITIATED_SESSION_ID_SUFFIX)
 }

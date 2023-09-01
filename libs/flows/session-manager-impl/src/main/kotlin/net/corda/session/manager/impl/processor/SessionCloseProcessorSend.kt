@@ -4,10 +4,11 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.flow.utils.isInitiatedIdentity
+import net.corda.flow.utils.isInitiatingIdentity
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
-import net.corda.session.manager.impl.processor.helper.isInitiatedIdentity
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -86,7 +87,7 @@ class SessionCloseProcessorSend(
         nextSeqNum: Int,
     ) : SessionState {
         val requireClose = sessionState.requireClose
-        return if (isInitiatedIdentity(sessionEvent) && sessionState.status !in listOf(SessionStateType.ERROR, SessionStateType.CLOSED)) {
+        return if (isInitiatedIdentity(sessionId) && sessionState.status !in listOf(SessionStateType.ERROR, SessionStateType.CLOSED)) {
             if (requireClose) {
                 sessionState.apply {
                     logger.trace {
@@ -109,7 +110,7 @@ class SessionCloseProcessorSend(
                 "Tried to send SessionClose when status is not correct for sending a close. " +
                         "Key: $key sessionId: $sessionId, session status is " +
                         "$status. Current SessionState: $sessionState."
-            } else if (!isInitiatedIdentity(sessionEvent)) {
+            } else if (isInitiatingIdentity(sessionId)) {
                 "Tried to send SessionClose as initiating party which is not allowed in the protocol. " +
                         "Key: $key sessionId: $sessionId, session status is " +
                         "$status. Current SessionState: $sessionState."
