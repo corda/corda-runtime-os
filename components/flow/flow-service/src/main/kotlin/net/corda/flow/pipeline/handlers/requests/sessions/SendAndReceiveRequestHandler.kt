@@ -1,13 +1,11 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
 import java.time.Instant
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.waiting.SessionData
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
-import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.requests.sessions.service.InitiateFlowRequestService
 import net.corda.flow.pipeline.handlers.waiting.sessions.PROTOCOL_MISMATCH_HINT
@@ -21,8 +19,6 @@ import org.osgi.service.component.annotations.Reference
 class SendAndReceiveRequestHandler @Activate constructor(
     @Reference(service = FlowSessionManager::class)
     private val flowSessionManager: FlowSessionManager,
-    @Reference(service = FlowRecordFactory::class)
-    private val flowRecordFactory: FlowRecordFactory,
     @Reference(service = InitiateFlowRequestService::class)
     private val initiateFlowRequestService: InitiateFlowRequestService,
 ) : FlowRequestHandler<FlowIORequest.SendAndReceive> {
@@ -42,19 +38,12 @@ class SendAndReceiveRequestHandler @Activate constructor(
         //generate init messages for sessions which do not exist yet
         initiateFlowRequestService.initiateFlowsNotInitiated(context, request.sessionToInfo.keys)
 
-        val hasReceivedEvents = try {
-            val sessionIdToPayload = request.sessionToInfo.mapKeys { it.key.sessionId }
+        try {
             checkpoint.putSessionStates(flowSessionManager.sendDataMessages(checkpoint, request.sessionToInfo, Instant.now()))
-            flowSessionManager.hasReceivedEvents(checkpoint, sessionIdToPayload.keys.toList())
         } catch (e: FlowSessionStateException) {
             throw FlowPlatformException("Failed to send/receive: ${e.message}. $PROTOCOL_MISMATCH_HINT", e)
         }
 
-        return if (hasReceivedEvents) {
-            val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
-            context.copy(outputRecords = context.outputRecords + listOf(record))
-        } else {
-            context
-        }
+        return context
     }
 }

@@ -1,14 +1,11 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
-import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.session.SessionState
 import net.corda.flow.RequestHandlerTestContext
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
-import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -23,7 +20,6 @@ class SendAndReceiveRequestHandlerTest {
     private val sessionId2 = "s2"
     private val payload1 = byteArrayOf(1)
     private val payload2 = byteArrayOf(2)
-    private val record = Record("", "", FlowEvent())
     private val sessionState1 = SessionState().apply { this.sessionId = sessionId1 }
     private val sessionState2 = SessionState().apply { this.sessionId = sessionId2 }
     private val testContext = RequestHandlerTestContext(Any())
@@ -34,7 +30,7 @@ class SendAndReceiveRequestHandlerTest {
         )
     )
     private val handler =
-        SendAndReceiveRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory, testContext.initiateFlowReqService)
+        SendAndReceiveRequestHandler(testContext.flowSessionManager, testContext.initiateFlowReqService)
 
 
     @Suppress("Unused")
@@ -51,7 +47,6 @@ class SendAndReceiveRequestHandlerTest {
                 sessionState2
             )
         )
-        whenever(testContext.flowRecordFactory.createFlowEventRecord(eq(testContext.flowId), any())).thenReturn(record)
     }
 
     @Test
@@ -62,7 +57,7 @@ class SendAndReceiveRequestHandlerTest {
     }
 
     @Test
-    fun `Sends session data messages and creates a Wakeup record if all the sessions have already received events`() {
+    fun `Sends session data messages if all the sessions have already received events`() {
         whenever(
             testContext.flowSessionManager.hasReceivedEvents(
                 testContext.flowCheckpoint,
@@ -77,8 +72,7 @@ class SendAndReceiveRequestHandlerTest {
             any(),
             any()
         )
-        verify(testContext.flowRecordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
-        assertThat(outputContext.outputRecords).containsOnly(record)
+        assertThat(outputContext.outputRecords).isEmpty()
     }
 
     @Test

@@ -8,8 +8,8 @@ import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.StartFlow
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.FlowState
@@ -31,7 +31,7 @@ class FlowMDCServiceImplTest {
     private val startRequestId = "requestId"
     private val sessionId = "sessionId"
     private val externalRequestId = "externalRequestId"
-    private val wakeupPayload = Wakeup()
+    private val payload = ExternalEventResponse()
     private val aliceHoldingIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1")
     private val aliceShortHash = aliceHoldingIdentity.toCorda().shortHash.toString()
     private val startFlowEvent = StartFlow(
@@ -110,7 +110,7 @@ class FlowMDCServiceImplTest {
     @Test
     fun `Verify MDC from no checkpoint with Wakeup`() {
         val mdc =
-            flowMDCService.getMDCLogging(null, flowEvent(wakeupPayload), flowKey)
+            flowMDCService.getMDCLogging(null, flowEvent(payload), flowKey)
 
         assertThat(mdc.size).isEqualTo(1)
         assertThat(mdc[MDC_FLOW_ID]).isEqualTo(flowKey)
@@ -118,7 +118,7 @@ class FlowMDCServiceImplTest {
 
     @Test
     fun `Verify MDC from checkpoint Wakeup with ExternalEvent set`() {
-        val mdc = flowMDCService.getMDCLogging(buildCheckpoint(true), flowEvent(wakeupPayload), flowKey)
+        val mdc = flowMDCService.getMDCLogging(buildCheckpoint(true), flowEvent(payload), flowKey)
 
         assertThat(mdc.size).isEqualTo(4)
         assertThat(mdc[MDC_VNODE_ID]).isEqualTo(aliceShortHash)
@@ -141,7 +141,7 @@ class FlowMDCServiceImplTest {
 
     @Test
     fun `Verify MDC from checkpoint Wakeup with no ExternalEvent set`() {
-        val mdc = flowMDCService.getMDCLogging(buildCheckpoint(false), flowEvent(wakeupPayload), flowKey)
+        val mdc = flowMDCService.getMDCLogging(buildCheckpoint(false), flowEvent(payload), flowKey)
 
         assertThat(mdc.size).isEqualTo(3)
         assertThat(mdc[MDC_VNODE_ID]).isEqualTo(aliceShortHash)

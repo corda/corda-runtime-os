@@ -18,9 +18,7 @@ dependencies {
     implementation 'net.corda:corda-notary-plugin'
 
     implementation project(":components:configuration:configuration-read-service")
-    implementation project(":components:flow:flow-mapper-service")
     implementation project(":components:flow:flow-service")
-    implementation project(":components:flow:flow-p2p-filter-service")
     implementation project(':components:membership:group-policy')
     implementation project(':components:membership:locally-hosted-identities-service')
     implementation project(":components:membership:membership-group-read")
@@ -48,6 +46,7 @@ dependencies {
     runtimeOnly project(':libs:ledger:ledger-utxo-data')
     runtimeOnly project(":libs:crypto:crypto-serialization-impl")
     runtimeOnly project(':libs:crypto:merkle-impl')
+    runtimeOnly project(':libs:crypto:cipher-suite-impl')
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
     runtimeOnly project(":components:uniqueness:uniqueness-checker-client-service-impl")
     runtimeOnly project(":components:membership:membership-group-read-impl")
@@ -59,9 +58,6 @@ dependencies {
     runtimeOnly project(":components:virtual-node:cpk-read-service-impl")
     runtimeOnly project(":components:flow:flow-mapper-impl")
     runtimeOnly project(":libs:application:application-impl")
-    runtimeOnly project(':libs:crypto:cipher-suite-impl')
-    runtimeOnly project(":libs:crypto:crypto-serialization-impl")
-    runtimeOnly project(':libs:crypto:merkle-impl')
     runtimeOnly project(":libs:flows:external-event-responses-impl")
     runtimeOnly project(":libs:flows:flow-api")
     runtimeOnly project(":libs:flows:session-manager-impl")

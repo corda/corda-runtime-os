@@ -12,11 +12,11 @@ import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
-import net.corda.data.flow.state.waiting.Wakeup
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.pipeline.CheckpointInitializer
 import net.corda.flow.pipeline.exceptions.FlowEventException
+import net.corda.flow.pipeline.handlers.waiting.WaitingForSessionInit
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
@@ -80,7 +80,7 @@ class SessionEventHandlerTest {
     private val flowSessionManager = mock<FlowSessionManager>()
 
     private val holdingIdentity = ALICE_X500_HOLDING_IDENTITY
-    private val waitingFor = WaitingFor(Wakeup())
+    private val waitingFor = WaitingFor(WaitingForSessionInit(SESSION_ID))
     private val expectedCheckpoint = mock<FlowCheckpoint>()
 
     private val fakeCheckpointInitializerService = FakeCheckpointInitializerService(

@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline.handlers.requests
 
-import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.Wakeup
+import java.util.stream.Stream
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.data.flow.state.waiting.SessionConfirmation
@@ -11,11 +10,8 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.utils.mutableKeyValuePairList
-import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -26,7 +22,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.stream.Stream
 
 @Suppress("MaxLineLength")
 class SubFlowFinishedRequestHandlerTest {
@@ -46,6 +41,11 @@ class SubFlowFinishedRequestHandlerTest {
     }
 
     private val record = Record("", "", FlowEvent())
+    private val sessionState1 = SessionState().apply { this.sessionId = SESSION_ID_1 }
+    private val sessionState2 = SessionState().apply { this.sessionId = SESSION_ID_2 }
+    private val sessionState3 = SessionState().apply { this.sessionId = SESSION_ID_3 }
+    private val sessionStates = listOf(sessionState1, sessionState2, sessionState3)
+
     private val testContext = RequestHandlerTestContext(Any())
     private val handler = SubFlowFinishedRequestHandler(
         testContext.flowRecordFactory,
@@ -61,18 +61,8 @@ class SubFlowFinishedRequestHandlerTest {
             .setContextUserProperties(mutableKeyValuePairList())
             .build()
 
-    @BeforeEach
-    fun setup() {
-        whenever(
-            testContext
-                .flowRecordFactory
-                .createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
-        ).thenReturn(record)
-    }
-
     @ParameterizedTest(name = "Returns an updated WaitingFor of SessionConfirmation (Close) when the flow has sessions to close (isInitiatingFlow={0})")
     @MethodSource("isInitiatingFlow")
-    @Disabled
     fun `Returns an updated WaitingFor of SessionConfirmation (Close) when the flow has sessions to close`(
         isInitiatingFlow: Boolean
     ) {

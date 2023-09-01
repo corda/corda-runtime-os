@@ -8,7 +8,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
-import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.FlowState
@@ -48,7 +48,7 @@ import java.time.Instant
 
 class FlowEventProcessorImplTest {
 
-    private val wakeupPayload = Wakeup()
+    private val payload = ExternalEventResponse()
     private val aliceHoldingIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1")
     private val bobHoldingIdentity = HoldingIdentity("CN=Bob, O=Alice Corp, L=LDN, C=GB", "1")
     private val startFlowEvent = StartFlow(
@@ -88,7 +88,7 @@ class FlowEventProcessorImplTest {
     private val outputRecords = listOf(Record(FLOW_EVENT_TOPIC, "key", "value"))
     private val updatedContext = buildFlowEventContext<Any>(
         flowCheckpoint,
-        wakeupPayload,
+        payload,
         outputRecords = outputRecords
     )
     private val flowKilledStatusRecords = listOf(Record(FLOW_STATUS_TOPIC, "key", flowState))
@@ -101,10 +101,8 @@ class FlowEventProcessorImplTest {
     private val flowEventPipeline = mock<FlowEventPipeline>().apply {
         whenever(eventPreProcessing()).thenReturn(this)
         whenever(virtualNodeFlowOperationalChecks()).thenReturn(this)
-        whenever(runOrContinue(any())).thenReturn(this)
-        whenever(setCheckpointSuspendedOn()).thenReturn(this)
-        whenever(setWaitingFor()).thenReturn(this)
-        whenever(requestPostProcessing()).thenReturn(this)
+
+        whenever(executeFlow(any())).thenReturn(this)
         whenever(globalPostProcessing()).thenReturn(this)
         whenever(context).thenReturn(updatedContext)
     }
@@ -159,7 +157,7 @@ class FlowEventProcessorImplTest {
 
     @Test
     fun `Returns a checkpoint and events to send`() {
-        val inputEvent = getFlowEventRecord(FlowEvent(flowKey, wakeupPayload))
+        val inputEvent = getFlowEventRecord(FlowEvent(flowKey, payload))
 
         val response = processor.onNext(checkpoint, inputEvent)
 
@@ -170,13 +168,11 @@ class FlowEventProcessorImplTest {
 
     @Test
     fun `Calls the pipeline steps in order`() {
-        processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
+        processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, payload)))
         inOrder(flowEventPipeline) {
             verify(flowEventPipeline).eventPreProcessing()
-            verify(flowEventPipeline).runOrContinue(any())
-            verify(flowEventPipeline).setCheckpointSuspendedOn()
-            verify(flowEventPipeline).setWaitingFor()
-            verify(flowEventPipeline).requestPostProcessing()
+            verify(flowEventPipeline).virtualNodeFlowOperationalChecks()
+            verify(flowEventPipeline).executeFlow(any())
             verify(flowEventPipeline).globalPostProcessing()
         }
     }
@@ -188,7 +184,7 @@ class FlowEventProcessorImplTest {
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
         whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(outputResponse)
 
-        val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
+        val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
         assertThat(response).isEqualTo(outputResponse)
     }
@@ -200,7 +196,7 @@ class FlowEventProcessorImplTest {
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
         whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(outputResponse)
 
-        val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
+        val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
         assertThat(response).isEqualTo(outputResponse)
     }
@@ -212,7 +208,7 @@ class FlowEventProcessorImplTest {
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
         whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(outputResponse)
 
-        val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
+        val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
         assertThat(response).isEqualTo(outputResponse)
     }
@@ -224,7 +220,7 @@ class FlowEventProcessorImplTest {
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
         whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(outputResponse)
 
-        val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
+        val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
         assertThat(response).isEqualTo(outputResponse)
     }
@@ -236,7 +232,7 @@ class FlowEventProcessorImplTest {
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
         whenever(flowEventExceptionProcessor.process(error)).thenReturn(outputResponse)
 
-        val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
+        val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
         assertThat(response).isEqualTo(outputResponse)
     }
@@ -249,7 +245,7 @@ class FlowEventProcessorImplTest {
         val killedFlowResponse = StateAndEventProcessor.Response(checkpoint, flowKilledStatusRecords)
         whenever(flowEventExceptionProcessor.process(error, updatedContext)).thenReturn(killedFlowResponse)
 
-        val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, wakeupPayload)))
+        val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
         assertThat(response).isEqualTo(killedFlowResponse)
     }

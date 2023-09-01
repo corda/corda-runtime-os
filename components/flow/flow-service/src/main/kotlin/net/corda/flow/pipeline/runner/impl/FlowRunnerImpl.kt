@@ -16,6 +16,8 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
+import net.corda.flow.pipeline.handlers.waiting.WaitingForSessionInit
+import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
@@ -56,11 +58,18 @@ class FlowRunnerImpl @Activate constructor(
                     "${platformInfoProvider.localWorkerPlatformVersion}.  The flow must be restarted.")
         }
 
+        val waitingFor = context.checkpoint.waitingFor?.value
         return when (val receivedEvent = context.inputEvent.payload) {
-            is StartFlow -> startFlow(context, receivedEvent)
+            is StartFlow -> {
+                if (waitingFor is WaitingForStartFlow) {
+                    startFlow(context, receivedEvent)
+                } else {
+                    resumeFlow(context, flowContinuation)
+                }
+            }
             is SessionEvent -> {
                 val sessionInit = getInitPayload(receivedEvent)
-                if (sessionInit != null) {
+                if (sessionInit != null && waitingFor is WaitingForSessionInit) {
                     startInitiatedFlow(context, sessionInit, receivedEvent)
                 } else {
                     resumeFlow(context, flowContinuation)
@@ -103,7 +112,7 @@ class FlowRunnerImpl @Activate constructor(
         sessionEvent: SessionEvent
     ): FiberFuture {
         val flowStartContext = context.checkpoint.flowStartContext
-        val sessionId = flowStartContext.statusKey.id
+        val sessionId = sessionEvent.sessionId
 
         val localContext = remoteToLocalContextMapper(
             remoteUserContextProperties = sessionInitEvent.contextUserProperties,

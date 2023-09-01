@@ -9,6 +9,7 @@ import net.corda.e2etest.utilities.lookup
 import net.corda.e2etest.utilities.onboardMember
 import net.corda.e2etest.utilities.onboardMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.test.util.eventually
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -120,6 +121,7 @@ class LargeNetworkTest {
         }
     }
     private class Cluster(override val id: String) : ClusterInfo() {
+        override val restApiVersion = RestApiVersion.C5_1
         override val p2p: P2PEndpointInfo by lazy {
             P2PEndpointInfo(
                 host = "corda-p2p-gateway-worker.$id",

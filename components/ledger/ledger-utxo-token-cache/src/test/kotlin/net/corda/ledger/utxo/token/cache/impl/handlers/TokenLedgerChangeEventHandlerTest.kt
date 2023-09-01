@@ -8,7 +8,9 @@ import net.corda.ledger.utxo.token.cache.handlers.TokenLedgerChangeEventHandler
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -18,18 +20,17 @@ class TokenLedgerChangeEventHandlerTest {
     private val poolCacheState = mock<PoolCacheState>()
 
     @Test
-    fun `produced tokens are added to the cache`() {
+    fun `produced tokens are not added to the cache`() {
         val token1 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
-        val token2 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s2") }
 
-        val ledgerChange = LedgerChange(POOL_KEY,"","", listOf(), listOf(token1, token2))
+        val ledgerChange = LedgerChange(POOL_KEY,"","", listOf(), listOf(token1))
 
         val target = TokenLedgerChangeEventHandler()
         val result = target.handle(tokenCache, poolCacheState, ledgerChange)
 
         assertThat(result).isNull()
 
-        verify(tokenCache).add(listOf(token1, token2))
+        verify(tokenCache, never()).add(any())
     }
 
     @Test

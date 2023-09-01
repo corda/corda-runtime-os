@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
@@ -9,7 +8,6 @@ import net.corda.flow.RequestHandlerTestContext
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
-import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
@@ -25,11 +23,9 @@ class CloseSessionsRequestHandlerTest {
     private val sessions = listOf(sessionId1, sessionId2)
     private val sessionState1 = SessionState().apply { this.sessionId = sessionId1 }
     private val sessionState2 = SessionState().apply { this.sessionId = sessionId2 }
-    private val record = Record("", "", FlowEvent())
     private val testContext = RequestHandlerTestContext(Any())
     private val ioRequest = FlowIORequest.CloseSessions(sessions.toSet())
     private val handler = CloseSessionsRequestHandler(
-        testContext.flowRecordFactory,
         testContext.closeSessionService
     )
 
@@ -40,13 +36,6 @@ class CloseSessionsRequestHandlerTest {
 
         whenever(flowCheckpoint.getSessionState(sessionId1)).thenReturn(sessionState1)
         whenever(flowCheckpoint.getSessionState(sessionId2)).thenReturn(sessionState2)
-
-        whenever(
-            testContext.flowRecordFactory.createFlowEventRecord(
-                any(),
-                any())
-        ).thenReturn(record)
-    }
 
     @Test
     fun `Returns an updated WaitingFor of SessionsConfirmation (Close) when there are sessions to close`() {
@@ -87,11 +76,34 @@ class CloseSessionsRequestHandlerTest {
     }
 
     @Test
+    fun `Creates Wakeup record when all the sessions are errored`() {
+        whenever(
+            testContext.flowSessionManager.doAllSessionsHaveStatus(
+                testContext.flowCheckpoint,
+                sessions,
+                SessionStateType.CLOSED
+            )
+        ).thenReturn(false)
+
+        whenever(
+            testContext.flowSessionManager.getSessionsWithStatus(
+                testContext.flowCheckpoint,
+                sessions,
+                SessionStateType.ERROR
+            )
+        ).thenReturn(listOf(sessionState1, sessionState2))
+
+        val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
+
+        assertThat(outputContext.outputRecords).isEmpty()
+    }
+
+    @Test
     fun `Creates Wakeup record when all the sessions are closed`() {
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
 
         verify(testContext.closeSessionService).handleCloseForSessions(testContext.flowCheckpoint, sessions)
-        assertThat(outputContext.outputRecords).containsOnly(record)
+        assertThat(outputContext.outputRecords).isEmpty()
     }
 
     @Test
