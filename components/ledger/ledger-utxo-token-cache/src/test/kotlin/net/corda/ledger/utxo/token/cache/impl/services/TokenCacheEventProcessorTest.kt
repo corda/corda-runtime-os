@@ -7,6 +7,7 @@ import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.messaging.api.records.Record
 import net.corda.ledger.utxo.token.cache.converters.EntityConverter
 import net.corda.ledger.utxo.token.cache.converters.EventConverter
+import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
@@ -28,7 +29,10 @@ class TokenCacheEventProcessorTest {
     private val mockHandler = mock<TokenEventHandler<FakeTokenEvent>>()
     private val tokenCacheEventHandlerMap = mutableMapOf<Class<*>, TokenEventHandler<in TokenEvent>>()
     private val event = FakeTokenEvent()
-    private val tokenCache = mock<TokenCache>()
+    private val tokenCache = mock<TokenCache>().apply {
+        whenever(iterator()).thenReturn(listOf<CachedToken>().iterator())
+    }
+
     private val cachePoolState = mock<PoolCacheState>()
     private val stateIn = TokenPoolCacheState()
     private val tokenPoolCacheEvent = TokenPoolCacheEvent(POOL_CACHE_KEY, null)
@@ -86,7 +90,7 @@ class TokenCacheEventProcessorTest {
     fun `forward an event to its handler and return the response`() {
         tokenPoolCacheEvent.payload = "message"
 
-        val outputState = TokenPoolCacheState()
+        val outputState = TokenPoolCacheState().apply { tokenClaims = listOf() }
         val handlerResponse = Record<String, FlowEvent>("", "", null)
 
         whenever(entityConverter.toTokenCache(stateIn)).thenReturn(tokenCache)
@@ -109,7 +113,7 @@ class TokenCacheEventProcessorTest {
     fun `null state will be defaulted to an empty state before processing`() {
         tokenPoolCacheEvent.payload = "message"
 
-        val outputState = TokenPoolCacheState()
+        val outputState = TokenPoolCacheState().apply { tokenClaims = listOf() }
         val handlerResponse = Record<String, FlowEvent>("", "", null)
 
         whenever(entityConverter.toTokenCache(any())).thenReturn(tokenCache)
