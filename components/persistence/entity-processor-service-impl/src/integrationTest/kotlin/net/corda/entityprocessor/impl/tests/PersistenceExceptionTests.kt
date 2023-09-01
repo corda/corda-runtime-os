@@ -43,6 +43,7 @@ import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
@@ -322,29 +323,21 @@ class PersistenceExceptionTests {
         // check we update same dog
         val dogDbCount = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId, dogDBTable = "versioned_dog")
         assertEquals(1, dogDbCount)
-        // check version 1
         val dogVersion1 = getDogDbVersion(virtualNodeInfo.vaultDmlConnectionId)
-        // check merged entity
-        val entityResponseBytes = (((record1.value as FlowEvent).payload as ExternalEventResponse).payload as ByteBuffer).array()
-        val entityResponse = deserializer.deserialize(entityResponseBytes)!!
-        val dogBytes = entityResponse.results.single()!!.array()
-        val mergedDog = sandbox.getSerializationService().deserialize(dogBytes, Any::class.java)
-        assertEquals(dog, mergedDog)
 
         // duplicate update request
         val record2 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), mergeEntityRequest))).single()
         // check we update same dog
         val dogDbCount2 = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId, dogDBTable = "versioned_dog")
         assertEquals(1, dogDbCount2)
-        // check version 2
         val dogVersion2 = getDogDbVersion(virtualNodeInfo.vaultDmlConnectionId)
+
+        // check idempotent in terms of DB state (i.e. the DB state must remain unchanged on duplicate request)
         assertEquals(dogVersion1, dogVersion2)
-        // check merged entity
-        val entityResponseBytes2 = (((record2.value as FlowEvent).payload as ExternalEventResponse).payload as ByteBuffer).array()
-        val entityResponse2 = deserializer.deserialize(entityResponseBytes2)!!
-        val dogBytes2 = entityResponse2.results.single()!!.array()
-        val mergedDog2 = sandbox.getSerializationService().deserialize(dogBytes2, Any::class.java)
-        assertEquals(dog, mergedDog2)
+        // check idempotent in terms of returned merged entity (i.e. on duplicate
+        // the returned merged entities must be same with original call)
+        assertReturnedMergedDogIsEqualTo(record1, sandbox.getSerializationService(), dog)
+        assertReturnedMergedDogIsEqualTo(record2, sandbox.getSerializationService(), dog)
     }
 
     @Test
@@ -471,6 +464,19 @@ class PersistenceExceptionTests {
                     }
                 }
             }
+
+    private fun assertReturnedMergedDogIsEqualTo(
+        record: Record<*, *>,
+        serializationService: SerializationService,
+        dog: Any
+    ) {
+        val entityResponseBytes =
+            (((record.value as FlowEvent).payload as ExternalEventResponse).payload as ByteBuffer).array()
+        val entityResponse = deserializer.deserialize(entityResponseBytes)!!
+        val dogBytes = entityResponse.results.single()!!.array()
+        val mergedDog = serializationService.deserialize(dogBytes, Any::class.java)
+        assertEquals(dog, mergedDog)
+    }
 }
 
 private fun assertEventResponseWithoutError(record: Record<*, *>) {
