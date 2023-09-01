@@ -17,12 +17,16 @@ import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRpcFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.MethodOrderer
+import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
+import org.junit.jupiter.api.TestMethodOrder
 
 @TestInstance(PER_CLASS)
-class TokenBalanceQueryTests {
+@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
+class TokenSelectionTests {
 
     private companion object {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"
@@ -105,9 +109,14 @@ class TokenBalanceQueryTests {
         registerStaticMember(aliceHoldingId)
         registerStaticMember(bobHoldingId)
         registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
+
+        println("Alice: $aliceX500 - $aliceHoldingId")
+        println("Alice: $bobX500 - $bobHoldingId")
+        println("Alice: $notaryX500 - $notaryHoldingId")
     }
 
     @Test
+    @Order(1)
     fun `ensure it is possible to send a balance query request and receive a response`() {
         // Start the flow that will send the request and receive the response
         val tokenBalanceQuery = runTokenBalanceQueryFlow()
@@ -115,6 +124,32 @@ class TokenBalanceQueryTests {
         // Check that the balance of the token cache is zero since no token has been created
         assertThat(tokenBalanceQuery.availableBalance).isEqualTo(BigDecimal.ZERO)
         assertThat(tokenBalanceQuery.totalBalance).isEqualTo(BigDecimal.ZERO)
+    }
+
+    @Test
+    @Order(2)
+    fun `create a token then select it`(){
+        // Create a simple UTXO transaction
+        val input = "token test input"
+        val utxoFlowRequestId = startRpcFlow(
+            aliceHoldingId,
+            mapOf("input" to input, "members" to listOf(bobX500), "notary" to NOTARY_SERVICE_X500),
+            "com.r3.corda.demo.utxo.UtxoDemoFlow"
+        )
+        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
+        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(utxoFlowResult.flowError).isNull()
+
+        // Attempt to select the token created by the transaction
+        val tokenSelectionFlowId = startRpcFlow(
+            bobHoldingId,
+            mapOf(),
+            "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow"
+        )
+        val tokenSelectionResult = awaitRpcFlowFinished(bobHoldingId, tokenSelectionFlowId)
+        assertThat(tokenSelectionResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(tokenSelectionResult.flowError).isNull()
+        assertThat(tokenSelectionResult.flowResult).isEqualTo("1")
     }
 }
 
