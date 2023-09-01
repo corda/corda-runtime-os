@@ -17,7 +17,8 @@ import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.membership.client.CouldNotFindMemberException
+import net.corda.membership.client.CouldNotFindEntityException
+import net.corda.membership.client.Entity
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.ContextDeserializationException
@@ -117,6 +118,9 @@ class MGMRestResourceTest {
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
     }
+    private val couldNotFindEntityException = mock<CouldNotFindEntityException> {
+        on { entity } doReturn Entity.VIRTUAL_NODE
+    }
 
     private val mgmRestResource = MGMRestResourceImpl(
         cordaAvroSerializationFactory,
@@ -166,7 +170,7 @@ class MGMRestResourceTest {
         @Test
         fun `generateGroupPolicy throws resource not found for invalid member`() {
             startService()
-            whenever(mgmResourceClient.generateGroupPolicy(any())).doThrow(mock<CouldNotFindMemberException>())
+            whenever(mgmResourceClient.generateGroupPolicy(any())).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.generateGroupPolicy(HOLDING_IDENTITY_ID)
@@ -212,7 +216,7 @@ class MGMRestResourceTest {
         @Test
         fun `addGroupApprovalRule throws resource not found for invalid member`() {
             startService()
-            whenever(mgmResourceClient.addApprovalRule(any(), any())).doThrow(mock<CouldNotFindMemberException>())
+            whenever(mgmResourceClient.addApprovalRule(any(), any())).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleRequestParams(RULE_REGEX, RULE_LABEL))
@@ -287,7 +291,7 @@ class MGMRestResourceTest {
         @Test
         fun `deleteGroupApprovalRule throws resource not found for invalid member`() {
             startService()
-            whenever(mgmResourceClient.deleteApprovalRule(any(), any(), eq(STANDARD))).doThrow(mock<CouldNotFindMemberException>())
+            whenever(mgmResourceClient.deleteApprovalRule(any(), any(), eq(STANDARD))).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.deleteGroupApprovalRule(HOLDING_IDENTITY_ID, RULE_ID)
@@ -347,7 +351,7 @@ class MGMRestResourceTest {
         @Test
         fun `getGroupApprovalRules throws resource not found for invalid member`() {
             startService()
-            whenever(mgmResourceClient.getApprovalRules(any(), any())).doThrow(mock<CouldNotFindMemberException>())
+            whenever(mgmResourceClient.getApprovalRules(any(), any())).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.getGroupApprovalRules(HOLDING_IDENTITY_ID)
@@ -397,7 +401,7 @@ class MGMRestResourceTest {
 
         @Test
         fun `viewRegistrationRequests throws resource not found for invalid member`() {
-            whenever(mgmResourceClient.viewRegistrationRequests(any(), eq(null), eq(false))).doThrow(mock<CouldNotFindMemberException>())
+            whenever(mgmResourceClient.viewRegistrationRequests(any(), eq(null), eq(false))).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.viewRegistrationRequests(HOLDING_IDENTITY_ID)
@@ -467,7 +471,7 @@ class MGMRestResourceTest {
         fun `approveRegistrationRequest throws resource not found for invalid member`() {
             whenever(mgmResourceClient.reviewRegistrationRequest(
                 ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), true
-            )).doThrow(mock<CouldNotFindMemberException>())
+            )).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.approveRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID)
@@ -536,7 +540,7 @@ class MGMRestResourceTest {
         fun `declineRegistrationRequest throws resource not found for invalid member`() {
             whenever(mgmResourceClient.reviewRegistrationRequest(
                 ShortHash.of(HOLDING_IDENTITY_ID), REQUEST_ID.uuid(), false, manualDeclinationReason
-            )).doThrow(mock<CouldNotFindMemberException>())
+            )).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.declineRegistrationRequest(HOLDING_IDENTITY_ID, REQUEST_ID, manualDeclinationReason)
@@ -805,7 +809,7 @@ class MGMRestResourceTest {
 
         @Test
         fun `it throws resource not found for invalid member`() {
-            onCallingClientService().doThrow(mock<CouldNotFindMemberException>())
+            onCallingClientService().doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 callFunctionUnderTest(
@@ -916,7 +920,7 @@ class MGMRestResourceTest {
 
         @Test
         fun `it throws resource not found for invalid member`() {
-            onCallingClientService().doThrow(mock<CouldNotFindMemberException>())
+            onCallingClientService().doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 callFunctionUnderTest()
@@ -977,7 +981,7 @@ class MGMRestResourceTest {
 
         @Test
         fun `deleteGroupApprovalRule throws resource not found for invalid member`() {
-            whenCallingClientService().doThrow(mock<CouldNotFindMemberException>())
+            whenCallingClientService().doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 callFunctionUnderTest(HOLDING_IDENTITY_ID, RULE_ID)
@@ -1032,7 +1036,7 @@ class MGMRestResourceTest {
             startService()
             whenever(
                 mgmResourceClient.generatePreAuthToken(any(), any(), anyOrNull(), anyOrNull())
-            ).doThrow(CouldNotFindMemberException(ShortHash.of(HOLDING_IDENTITY_ID)))
+            ).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.generatePreAuthToken(HOLDING_IDENTITY_ID, PreAuthTokenRequest(subject, Duration.ofDays(5)))
@@ -1103,7 +1107,7 @@ class MGMRestResourceTest {
             startService()
             whenever(
                 mgmResourceClient.getPreAuthTokens(any(), anyOrNull(), anyOrNull(), any())
-            ).doThrow(CouldNotFindMemberException(ShortHash.of(HOLDING_IDENTITY_ID)))
+            ).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.getPreAuthTokens(HOLDING_IDENTITY_ID, null, null, false)
@@ -1166,7 +1170,7 @@ class MGMRestResourceTest {
             startService()
             whenever(
                 mgmResourceClient.revokePreAuthToken(any(), any(), anyOrNull())
-            ).doThrow(CouldNotFindMemberException(ShortHash.of(HOLDING_IDENTITY_ID)))
+            ).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.revokePreAuthToken(HOLDING_IDENTITY_ID, tokenId.toString())
@@ -1238,7 +1242,7 @@ class MGMRestResourceTest {
         fun `suspendMember throws resource not found for invalid member`() {
             whenever(mgmResourceClient.suspendMember(
                 ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject), SERIAL, REASON
-            )).doThrow(mock<CouldNotFindMemberException>())
+            )).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.suspendMember(HOLDING_IDENTITY_ID, suspensionActivationParameters)
@@ -1380,7 +1384,7 @@ class MGMRestResourceTest {
         fun `activateMember throws resource not found for invalid member`() {
             whenever(mgmResourceClient.activateMember(
                 ShortHash.of(HOLDING_IDENTITY_ID), MemberX500Name.parse(subject), SERIAL, REASON
-            )).doThrow(mock<CouldNotFindMemberException>())
+            )).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.activateMember(HOLDING_IDENTITY_ID, suspensionActivationParameters)
@@ -1517,7 +1521,7 @@ class MGMRestResourceTest {
         fun `updateGroupParameters throws resource not found for invalid member`() {
             whenever(mgmResourceClient.updateGroupParameters(
                 ShortHash.of(HOLDING_IDENTITY_ID), mockUpdate.parameters
-            )).doThrow(mock<CouldNotFindMemberException>())
+            )).doThrow(couldNotFindEntityException)
 
             assertThrows<ResourceNotFoundException> {
                 mgmRestResource.updateGroupParameters(HOLDING_IDENTITY_ID, mockUpdate)

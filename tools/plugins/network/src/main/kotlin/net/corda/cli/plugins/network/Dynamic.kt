@@ -7,7 +7,6 @@ import picocli.CommandLine.Command
     subcommands = [
         OnboardMgm::class,
         OnBoardMember::class,
-        AllowClientCertificate::class,
     ],
     description = ["For Onboarding Member and MGM"]
 )

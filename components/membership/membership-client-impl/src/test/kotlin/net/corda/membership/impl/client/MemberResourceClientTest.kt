@@ -26,7 +26,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.client.CouldNotFindMemberException
+import net.corda.membership.client.CouldNotFindEntityException
 import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.client.ServiceNotReadyException
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
@@ -436,7 +436,7 @@ class MemberResourceClientTest {
         memberOpsClient.start()
         setUpConfig()
 
-        assertThrows<CouldNotFindMemberException> {
+        assertThrows<CouldNotFindEntityException> {
             memberOpsClient.checkRegistrationProgress(holdingIdentityId)
         }
     }
@@ -540,7 +540,7 @@ class MemberResourceClientTest {
         memberOpsClient.start()
         setUpConfig()
 
-        assertThrows<CouldNotFindMemberException> {
+        assertThrows<CouldNotFindEntityException> {
             memberOpsClient.checkSpecificRegistrationProgress(holdingIdentityId, "registration id")
         }
     }
@@ -643,7 +643,7 @@ class MemberResourceClientTest {
         memberOpsClient.start()
         setUpConfig()
 
-        assertThrows<CouldNotFindMemberException> {
+        assertThrows<CouldNotFindEntityException> {
             memberOpsClient.startRegistration(holdingIdentityId, context)
         }
     }

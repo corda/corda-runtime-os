@@ -3,10 +3,10 @@ package net.corda.ledger.utxo.token.cache.impl.handlers
 import net.corda.data.flow.event.FlowEvent
 import net.corda.ledger.utxo.token.cache.entities.ClaimRelease
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
-import net.corda.ledger.utxo.token.cache.handlers.TokenClaimReleaseEventHandler
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
-import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY_DTO
+import net.corda.ledger.utxo.token.cache.handlers.TokenClaimReleaseEventHandler
+import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
@@ -75,6 +75,6 @@ class TokenClaimReleaseEventHandlerTest {
     }
 
     private fun createClaimRelease(): ClaimRelease {
-        return ClaimRelease(claimId, externalEventRequestId,flowId, setOf(tokenRef1), POOL_CACHE_KEY_DTO)
+        return ClaimRelease(claimId, externalEventRequestId,flowId, setOf(tokenRef1), POOL_KEY)
     }
 }

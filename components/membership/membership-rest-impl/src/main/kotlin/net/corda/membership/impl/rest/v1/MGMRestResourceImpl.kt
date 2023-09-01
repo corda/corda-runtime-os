@@ -21,7 +21,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.membership.client.CouldNotFindMemberException
+import net.corda.membership.client.CouldNotFindEntityException
 import net.corda.membership.client.MGMResourceClient
 import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.rest.v1.MGMRestResource
@@ -719,9 +719,6 @@ class MGMRestResourceImpl internal constructor(
             throw ResourceNotFoundException("${e.message}")
         }
 
-        private fun holdingIdentityNotFound(holdingIdentityShortHash: String): Nothing =
-            throw ResourceNotFoundException("Holding Identity", holdingIdentityShortHash)
-
         private fun notAnMgmError(holdingIdentityShortHash: String): Nothing =
             throw InvalidInputDataException(
                 details = mapOf("holdingIdentityShortHash" to holdingIdentityShortHash),
@@ -792,8 +789,8 @@ class MGMRestResourceImpl internal constructor(
         ): T {
             return try {
                 func.invoke(ShortHash.parseOrThrow(holdingIdentityShortHash))
-            } catch (e: CouldNotFindMemberException) {
-                holdingIdentityNotFound(holdingIdentityShortHash)
+            } catch (e: CouldNotFindEntityException) {
+                throw ResourceNotFoundException(e.entity, holdingIdentityShortHash)
             } catch (e: MemberNotAnMgmException) {
                 notAnMgmError(holdingIdentityShortHash)
             } catch (e: CordaRPCAPIPartitionException) {

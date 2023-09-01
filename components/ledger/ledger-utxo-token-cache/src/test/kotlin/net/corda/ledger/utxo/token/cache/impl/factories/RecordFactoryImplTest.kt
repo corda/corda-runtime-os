@@ -9,12 +9,11 @@ import net.corda.data.ledger.utxo.token.selection.data.TokenBalanceQueryResult
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQueryResult
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimResultStatus
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.ledger.utxo.token.cache.converters.EntityConverter
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.TokenBalance
 import net.corda.ledger.utxo.token.cache.factories.RecordFactoryImpl
 import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
-import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY_DTO
+import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -26,9 +25,6 @@ import org.mockito.kotlin.whenever
 class RecordFactoryImplTest {
 
     private val externalEventResponseFactory = mock<ExternalEventResponseFactory>()
-    private val entityConverter = mock<EntityConverter>().apply{
-        whenever(toTokenPoolCacheKey(any())).thenReturn(POOL_CACHE_KEY)
-    }
     private val externalEventRequestId = "r1"
     private val flowId = "f1"
 
@@ -48,11 +44,11 @@ class RecordFactoryImplTest {
 
         whenever(externalEventResponseFactory.success(any(), any(), any())).thenReturn(response)
 
-        val target = RecordFactoryImpl(externalEventResponseFactory, entityConverter)
+        val target = RecordFactoryImpl(externalEventResponseFactory)
         val result = target.getSuccessfulClaimResponse(
             flowId,
             externalEventRequestId,
-            POOL_CACHE_KEY_DTO,
+            POOL_KEY,
             listOf(token1, token2)
         )
 
@@ -72,8 +68,8 @@ class RecordFactoryImplTest {
 
         whenever(externalEventResponseFactory.success(any(), any(), any())).thenReturn(response)
 
-        val target = RecordFactoryImpl(externalEventResponseFactory, entityConverter)
-        val result = target.getFailedClaimResponse(flowId, externalEventRequestId, POOL_CACHE_KEY_DTO)
+        val target = RecordFactoryImpl(externalEventResponseFactory)
+        val result = target.getFailedClaimResponse(flowId, externalEventRequestId, POOL_KEY)
 
         assertThat(result).isSameAs(response)
         verify(externalEventResponseFactory).success(externalEventRequestId, flowId, expectedResponse)
@@ -92,11 +88,11 @@ class RecordFactoryImplTest {
 
         whenever(externalEventResponseFactory.success(any(), any(), any())).thenReturn(response)
 
-        val target = RecordFactoryImpl(externalEventResponseFactory, entityConverter)
+        val target = RecordFactoryImpl(externalEventResponseFactory)
         val result = target.getBalanceResponse(
             flowId,
             externalEventRequestId,
-            POOL_CACHE_KEY_DTO,
+            POOL_KEY,
             TokenBalance(BigDecimal(1.0), BigDecimal(2.0))
         )
 

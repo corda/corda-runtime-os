@@ -13,8 +13,6 @@ class TokenLedgerChangeEventHandler : TokenEventHandler<LedgerChange> {
         state: PoolCacheState,
         event: LedgerChange
     ): Record<String, FlowEvent>? {
-        tokenCache.add(event.producedTokens)
-
         val consumedStateRefs = event.consumedTokens.map { it.stateRef }.toSet()
 
         tokenCache.removeAll(consumedStateRefs)

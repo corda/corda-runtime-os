@@ -16,6 +16,7 @@ dependencies {
 
     api project(":libs:tracing")
     implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:membership:membership-common")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:metrics")
     implementation project(":libs:serialization:serialization-checkpoint-api")
