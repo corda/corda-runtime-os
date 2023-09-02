@@ -95,7 +95,7 @@ class GenerateSessionService @Activate constructor(
                     Instant.now()
                 )
 
-                if (sendInit && newSessionState.sendEventsState.undeliveredMessages.isEmpty()) {
+                if (sendInit) {
                     newSessionState = flowSessionManager.sendInitMessage(
                         context.checkpoint,
                         it.sessionId,
