@@ -222,7 +222,7 @@ class VaultNamedQueryExecutorImpl(
         }
     }
 
-    data class FilterResult(
+    private data class FilterResult(
         val results: List<StateAndRef<ContractState>>,
         val numberOfRowsFromQuery: Int
     )
