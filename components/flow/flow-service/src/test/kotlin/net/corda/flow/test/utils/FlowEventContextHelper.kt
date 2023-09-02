@@ -10,6 +10,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.records.Record
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.FlowConfig
 import org.mockito.kotlin.mock
 
@@ -34,6 +35,7 @@ fun <T> buildFlowEventContext(
         checkpoint,
         FlowEvent(flowId, inputEventPayload),
         inputEventPayload,
+        mapOf(ConfigKeys.FLOW_CONFIG to configWithRequired),
         configWithRequired,
         isRetryEvent,
         outputRecords,
@@ -57,6 +59,7 @@ fun <T> buildFlowEventContext(
         mock(),
         FlowEvent(flowId, inputEventPayload),
         inputEventPayload,
+        emptyMap(),
         config,
         isRetryEvent,
         outputRecords,

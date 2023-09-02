@@ -63,9 +63,7 @@ class FlowExecutorImpl constructor(
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
             val messagingConfig = toMessagingConfig(config)
-            val flowConfig = config.getConfig(FLOW_CONFIG)
-                .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(PROCESSOR_TIMEOUT)))
-                .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)))
+            val updatedConfigs = updateConfigsWithFlowConfig(config, messagingConfig)
 
             // close the lifecycle registration first to prevent down being signaled
             subscriptionRegistrationHandle?.close()
@@ -73,7 +71,7 @@ class FlowExecutorImpl constructor(
 
             subscription = subscriptionFactory.createStateAndEventSubscription(
                 SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC),
-                flowEventProcessorFactory.create(flowConfig),
+                flowEventProcessorFactory.create(updatedConfigs),
                 messagingConfig
             )
 
@@ -98,6 +96,24 @@ class FlowExecutorImpl constructor(
 
     override fun stop() {
         coordinator.stop()
+    }
+
+    private fun updateConfigsWithFlowConfig(
+        initialConfigs: Map<String, SmartConfig>,
+        messagingConfig: SmartConfig
+    ): Map<String, SmartConfig> {
+        val flowConfig = initialConfigs.getConfig(FLOW_CONFIG)
+        val updatedFlowConfig = flowConfig
+            .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(PROCESSOR_TIMEOUT)))
+            .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)))
+
+        return initialConfigs.mapValues {
+            if (it.key == FLOW_CONFIG) {
+                updatedFlowConfig
+            } else {
+                it.value
+            }
+        }
     }
 
     private fun eventHandler(event: LifecycleEvent) {

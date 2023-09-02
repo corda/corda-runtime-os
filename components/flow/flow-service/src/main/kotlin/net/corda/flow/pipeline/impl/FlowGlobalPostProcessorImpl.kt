@@ -69,7 +69,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                 sessionManager.getMessagesToSend(
                     sessionState,
                     now,
-                    context.config,
+                    context.flowConfig,
                     checkpoint.flowKey.identity
                 )
             }
@@ -124,7 +124,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         context: FlowEventContext<Any>,
         now: Instant,
     ): List<Record<*, FlowMapperEvent>> {
-        val flowCleanupTime = context.config.getLong(SESSION_FLOW_CLEANUP_TIME)
+        val flowCleanupTime = context.flowConfig.getLong(SESSION_FLOW_CLEANUP_TIME)
         val expiryTime = now.plusMillis(flowCleanupTime).toEpochMilli()
         return context.checkpoint.sessions
             .filterNot { sessionState -> sessionState.hasScheduledCleanup }
@@ -150,7 +150,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
      * Check to see if any external events needs to be sent or resent due to no response being received within a given time period.
      */
     private fun getExternalEvent(context: FlowEventContext<Any>, now: Instant): List<Record<*, *>> {
-        val config = context.config
+        val config = context.flowConfig
         val externalEventState = context.checkpoint.externalEventState
         return if (externalEventState == null) {
             listOf()
