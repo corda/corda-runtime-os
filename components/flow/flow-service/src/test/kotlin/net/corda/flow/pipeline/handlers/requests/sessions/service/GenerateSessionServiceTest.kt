@@ -20,14 +20,14 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-class InitiateFlowRequestServiceTest {
+class GenerateSessionServiceTest {
 
     private val sessionId1 = "s1"
     private val sessionState1 = SessionState().apply { this.sessionId = sessionId1 }
     private val testContext = RequestHandlerTestContext(Any())
 
     private val sessionInfo = setOf(SessionInfo(sessionId1, ALICE_X500_NAME))
-    private val initiateFlowRequestService = InitiateFlowRequestService(testContext.flowSessionManager, testContext.flowSandboxService)
+    private val generateSessionService = GenerateSessionService(testContext.flowSessionManager, testContext.flowSandboxService)
     private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
     private val protocolStore = mock<FlowProtocolStore>()
 
@@ -61,20 +61,20 @@ class InitiateFlowRequestServiceTest {
     @Test
     fun `Verify no sessions required to be initiated`() {
         whenever(testContext.flowCheckpoint.getSessionState(sessionId1)).thenReturn(sessionState1)
-        val sessions = initiateFlowRequestService.getSessionsNotInitiated(testContext.flowEventContext, sessionInfo)
+        val sessions = generateSessionService.getSessionsNotGenerated(testContext.flowEventContext, sessionInfo)
         assertThat(sessions).isEmpty()
     }
 
     @Test
     fun `Verify sessions found to be initiated`() {
-        val sessions = initiateFlowRequestService.getSessionsNotInitiated(testContext.flowEventContext, sessionInfo)
+        val sessions = generateSessionService.getSessionsNotGenerated(testContext.flowEventContext, sessionInfo)
         assertThat(sessions.size).isEqualTo(1)
         assertThat(sessions.first()).isEqualTo(sessionInfo.first())
     }
 
     @Test
     fun `Session init event sent to session manager and checkpoint updated with session state`() {
-        initiateFlowRequestService.initiateFlowsNotInitiated(testContext.flowEventContext, sessionInfo)
+        generateSessionService.generateSessionsNotCreated(testContext.flowEventContext, sessionInfo)
         verify(testContext.flowCheckpoint).putSessionStates(listOf(sessionState1))
         verify(testContext.flowSessionManager).generateSessionState(any(), any(), any(), any(), any())
     }
@@ -83,7 +83,7 @@ class InitiateFlowRequestServiceTest {
     fun `No initiating flow in the subflow stack throws platform exception`() {
         whenever(testContext.flowStack.nearestFirst(any())).thenReturn(null)
         assertThrows<FlowPlatformException> {
-            initiateFlowRequestService.initiateFlowsNotInitiated(testContext.flowEventContext, sessionInfo)
+            generateSessionService.generateSessionsNotCreated(testContext.flowEventContext, sessionInfo)
         }
     }
 
@@ -91,13 +91,13 @@ class InitiateFlowRequestServiceTest {
     fun `No flows in the subflow stack throws fatal exception`() {
         whenever(testContext.flowStack.isEmpty()).thenReturn(true)
         assertThrows<FlowFatalException> {
-            initiateFlowRequestService.initiateFlowsNotInitiated(testContext.flowEventContext, sessionInfo)
+            generateSessionService.generateSessionsNotCreated(testContext.flowEventContext, sessionInfo)
         }
     }
 
     @Test
     fun `Does not add an output record`() {
-        initiateFlowRequestService.initiateFlowsNotInitiated(testContext.flowEventContext, sessionInfo)
+        generateSessionService.generateSessionsNotCreated(testContext.flowEventContext, sessionInfo)
         assertThat(testContext.flowEventContext.outputRecords).hasSize(0)
     }
 }

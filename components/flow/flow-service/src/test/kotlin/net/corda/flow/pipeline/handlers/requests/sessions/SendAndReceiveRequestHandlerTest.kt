@@ -65,7 +65,7 @@ class SendAndReceiveRequestHandlerTest {
             )
         ).thenReturn(true)
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
-        verify(testContext.initiateFlowReqService).initiateFlowsNotInitiated(any(), any())
+        verify(testContext.initiateFlowReqService).generateSessionsNotCreated(any(), any())
         verify(testContext.flowCheckpoint).putSessionStates(listOf(sessionState1, sessionState2))
         verify(testContext.flowSessionManager).sendDataMessages(
             eq(testContext.flowCheckpoint),

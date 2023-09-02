@@ -8,6 +8,7 @@ import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.utils.KeyValueStore
+import net.corda.flow.utils.keyValuePairListOf
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPPORTED
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
@@ -18,8 +19,8 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
-@Component(service = [InitiateFlowRequestService::class])
-class InitiateFlowRequestService @Activate constructor(
+@Component(service = [GenerateSessionService::class])
+class GenerateSessionService @Activate constructor(
     @Reference(service = FlowSessionManager::class)
     private val flowSessionManager: FlowSessionManager,
     @Reference(service = FlowSandboxService::class)
@@ -30,7 +31,7 @@ class InitiateFlowRequestService @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    fun getSessionsNotInitiated(
+    fun getSessionsNotGenerated(
         context: FlowEventContext<Any>,
         sessionToInfo: Set<SessionInfo>
     ): Set<SessionInfo> {
@@ -38,20 +39,22 @@ class InitiateFlowRequestService @Activate constructor(
         return sessionToInfo.filter { checkpoint.getSessionState(it.sessionId) == null }.toSet()
     }
 
-    fun initiateFlowsNotInitiated(
+    fun generateSessionsNotCreated(
         context: FlowEventContext<Any>,
         sessionToInfo: Set<SessionInfo>,
+        sendInit: Boolean = false
     ) {
-        val sessionsNotInitiated = getSessionsNotInitiated(context, sessionToInfo)
+        val sessionsNotInitiated = getSessionsNotGenerated(context, sessionToInfo)
         if (sessionsNotInitiated.isNotEmpty()) {
-            generateSessionStates(context, sessionsNotInitiated)
+            generateSessionStates(context, sessionsNotInitiated, sendInit)
         }
     }
 
     @Suppress("ThrowsCount")
     private fun generateSessionStates(
         context: FlowEventContext<Any>,
-        sessionsNotInitiated: Set<SessionInfo>
+        sessionsNotInitiated: Set<SessionInfo>,
+        sendInit: Boolean = false
     ) {
         val checkpoint = context.checkpoint
 
@@ -84,13 +87,26 @@ class InitiateFlowRequestService @Activate constructor(
 
         checkpoint.putSessionStates(
             sessionsNotInitiated.map {
-                flowSessionManager.generateSessionState(
+                var newSessionState = flowSessionManager.generateSessionState(
                     checkpoint,
                     it.sessionId,
                     it.counterparty,
                     sessionProperties = sessionContext.apply { put(FLOW_SESSION_REQUIRE_CLOSE, it.requireClose.toString()) }.avro,
                     Instant.now()
                 )
+
+                if (sendInit) {
+                    newSessionState = flowSessionManager.sendInitMessage(
+                        context.checkpoint,
+                        it.sessionId,
+                        keyValuePairListOf(it.contextUserProperties),
+                        keyValuePairListOf(it.contextPlatformProperties),
+                        it.counterparty,
+                        Instant.now()
+                    )
+                }
+
+                newSessionState
             }
         )
 

@@ -117,7 +117,8 @@ class FlowSessionManagerImpl @Activate constructor(
             checkpoint,
             sessionId,
             payload = SessionConfirm(),
-            instant
+            instant,
+            contextSessionProperties = contextSessionProperties
         )
     }
 
@@ -295,7 +296,8 @@ class FlowSessionManagerImpl @Activate constructor(
         checkpoint: FlowCheckpoint,
         sessionId: String,
         payload: Any,
-        instant: Instant
+        instant: Instant,
+        contextSessionProperties: KeyValuePairList? = null
     ): SessionState {
         val sessionState = getAndRequireSession(checkpoint, sessionId)
         val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(
@@ -313,7 +315,7 @@ class FlowSessionManagerImpl @Activate constructor(
                 .setInitiatedIdentity(initiatedIdentity)
                 .setSequenceNum(null)
                 .setPayload(payload)
-                .setContextSessionProperties(null)
+                .setContextSessionProperties(contextSessionProperties)
                 .build(),
             instant = instant,
             maxMsgSize = checkpoint.maxMessageSize
