@@ -35,7 +35,7 @@ import net.corda.web.api.WebServer
 /**
  * An implementation of [WorkerMonitor].
  *
- * @property server The server that serves worker health and readiness.
+ * @property webServer The server that serves worker health and readiness.
  */
 @Component(service = [WorkerMonitor::class])
 @Suppress("Unused")
@@ -68,10 +68,6 @@ internal class WorkerMonitorImpl @Activate constructor(
             return "$CORDA_NAMESPACE$suffix"
         }
     }
-    private val cloudwatchClient = CloudWatchAsyncClient.builder()
-        .credentialsProvider(WebIdentityTokenFileCredentialsProvider.create())
-        .build()
-    private val cloudWatchRegistry = CloudWatchMeterRegistry(cloudwatchConfig, Clock.SYSTEM, cloudwatchClient)
     private val lastLogMessage = ConcurrentHashMap(mapOf(HTTP_HEALTH_ROUTE to "", HTTP_STATUS_ROUTE to ""))
 
     private fun setupMetrics(name: String) {
@@ -79,7 +75,10 @@ internal class WorkerMonitorImpl @Activate constructor(
         CordaMetrics.configure(name, prometheusRegistry)
         if (System.getenv(CLOUDWATCH_ENABLED_KEY) == "true") {
             logger.info("Enabling the cloudwatch metrics registry")
-            CordaMetrics.configure(name, cloudWatchRegistry)
+            val cloudwatchClient = CloudWatchAsyncClient.builder()
+                .credentialsProvider(WebIdentityTokenFileCredentialsProvider.create())
+                .build()
+            CordaMetrics.configure(name, CloudWatchMeterRegistry(cloudwatchConfig, Clock.SYSTEM, cloudwatchClient))
         }
 
         ClassLoaderMetrics().bindTo(CordaMetrics.registry)
