@@ -6,12 +6,13 @@ import net.corda.v5.application.interop.facade.FacadeId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.util.UUID
 
 
 class InteropIdentityRegistryViewImplTest {
     companion object {
         private val VIEW_OWNER_SHORT_HASH = ShortHash.parse("0123456789AB")
-        private const val INTEROP_GROUP_ID = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
+        private val INTEROP_GROUP_ID = UUID.fromString("3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08")
     }
 
     private val testView = InteropIdentityRegistryViewImpl(VIEW_OWNER_SHORT_HASH)

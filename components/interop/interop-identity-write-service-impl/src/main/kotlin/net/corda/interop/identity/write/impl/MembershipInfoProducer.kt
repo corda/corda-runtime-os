@@ -48,7 +48,7 @@ class MembershipInfoProducer(private val publisher: AtomicReference<Publisher?>)
             ).sorted()
 
             val viewOwningMemberHoldingIdentity = HoldingIdentity(
-                MemberX500Name.parse(ownedInteropIdentity.x500Name), ownedInteropIdentity.groupId)
+                MemberX500Name.parse(ownedInteropIdentity.x500Name), ownedInteropIdentity.groupId.toString())
 
             //todo CORE-16385 Remove hardcoded values
             return newInteropIdentities.map { identityToPublish ->
@@ -59,7 +59,7 @@ class MembershipInfoProducer(private val publisher: AtomicReference<Publisher?>)
                     KeyValuePair(String.format(MemberInfoExtension.PROTOCOL_VERSION, "0"), identityToPublish.endpointProtocol),
                     KeyValuePair(String.format(MemberInfoExtension.PARTY_SESSION_KEYS, 0), DUMMY_CERTIFICATE),
                     KeyValuePair(MemberInfoExtension.SESSION_KEYS_HASH.format(0), sessionKeyHash),
-                    KeyValuePair(MemberInfoExtension.GROUP_ID, ownedInteropIdentity.groupId),
+                    KeyValuePair(MemberInfoExtension.GROUP_ID, ownedInteropIdentity.groupId.toString()),
                     KeyValuePair(MemberInfoExtension.LEDGER_KEYS_KEY.format(0), DUMMY_PUBLIC_SESSION_KEY),
                     KeyValuePair(MemberInfoExtension.LEDGER_KEY_HASHES_KEY.format(0), ledgerKeyHashesKey),
                     KeyValuePair(MemberInfoExtension.LEDGER_KEY_SIGNATURE_SPEC.format(0), "SHA256withECDSA"),
@@ -81,7 +81,7 @@ class MembershipInfoProducer(private val publisher: AtomicReference<Publisher?>)
                     Schemas.Membership.MEMBER_LIST_TOPIC,
                     "${ownedInteropIdentity.shortHash}-${identityToPublish.shortHash}",
                     PersistentMemberInfo(
-                        viewOwningMemberHoldingIdentity.copy(groupId = ownedInteropIdentity.groupId).toAvro(),
+                        viewOwningMemberHoldingIdentity.copy(groupId = ownedInteropIdentity.groupId.toString()).toAvro(),
                         KeyValuePairList(memberContext),
                         KeyValuePairList(mgmContext)
                     )

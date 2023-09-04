@@ -6,6 +6,7 @@ import net.corda.interop.identity.registry.InteropIdentityRegistryService
 import net.corda.interop.identity.registry.InteropIdentityRegistryView
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
+import java.util.*
 
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [InteropIdentityRegistryService::class, FakeInteropIdentityRegistryService::class])
@@ -31,7 +32,7 @@ class FakeInteropIdentityRegistryService : InteropIdentityRegistryService {
             TODO("Not yet implemented")
         }
 
-        override fun getIdentitiesByGroupId(): Map<String, Set<InteropIdentity>> {
+        override fun getIdentitiesByGroupId(): Map<UUID, Set<InteropIdentity>> {
             TODO("Not yet implemented")
         }
 
@@ -51,7 +52,7 @@ class FakeInteropIdentityRegistryService : InteropIdentityRegistryService {
             TODO("Not yet implemented")
         }
 
-        override fun getOwnedIdentities(): Map<String, InteropIdentity> {
+        override fun getOwnedIdentities(): Map<UUID, InteropIdentity> {
             TODO("Not yet implemented")
         }
     }

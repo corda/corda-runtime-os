@@ -70,7 +70,7 @@ internal class InteropRestResourceImpl @Activate constructor(
         private val requiredKeys = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.REST_CONFIG)
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
-        private val mapper =  jacksonObjectMapper()
+        private val mapper = jacksonObjectMapper()
     }
 
     /**
@@ -89,7 +89,7 @@ internal class InteropRestResourceImpl @Activate constructor(
         val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(validHoldingIdentityShortHash)
         val cacheView = interopIdentityRegistryService.getVirtualNodeRegistryView(vNodeInfo.getVNodeShortHash())
         return cacheView.getOwnedIdentities().keys.associate {
-            Pair(UUID.fromString(it), interopGroupPolicyReadService.getGroupPolicy(it) ?: "")
+            Pair(it, interopGroupPolicyReadService.getGroupPolicy(it.toString()) ?: "")
         }
     }
 
@@ -147,7 +147,8 @@ internal class InteropRestResourceImpl @Activate constructor(
         if (interopIdentityRegistryService
                 .getVirtualNodeRegistryView(validHoldingIdentityShortHash)
                 .getIdentitiesByApplicationName()
-                .keys.contains(createInteropIdentityRestRequest.applicationName)) {
+                .keys.contains(createInteropIdentityRestRequest.applicationName)
+        ) {
             throw InvalidInputDataException(
                 "Interop identity already present with application name '${createInteropIdentityRestRequest.applicationName}'."
             )
@@ -191,9 +192,11 @@ internal class InteropRestResourceImpl @Activate constructor(
             }
         }
 
-        val interopGroupId = interopIdentityWriteService.publishGroupPolicy(
-            groupIdField,
-            json
+        val interopGroupId = UUID.fromString(
+            interopIdentityWriteService.publishGroupPolicy(
+                groupIdField,
+                json
+            )
         )
 
         val groupReader = membershipGroupReaderProvider.getGroupReader(vNodeInfo.holdingIdentity)
@@ -268,7 +271,7 @@ internal class InteropRestResourceImpl @Activate constructor(
         return interopIdentities.map { interopIdentity ->
             InteropIdentityResponse(
                 interopIdentity.x500Name,
-                UUID.fromString(interopIdentity.groupId),
+                interopIdentity.groupId,
                 interopIdentity.owningVirtualNodeShortHash.toString(),
                 interopIdentity.facadeIds,
                 MemberX500Name.parse(interopIdentity.x500Name).organization,
@@ -303,9 +306,10 @@ internal class InteropRestResourceImpl @Activate constructor(
                         "& yours is $vNodeShortHash"
             )
         }
-        val groupPolicy = checkNotNull(interopGroupPolicyReadService.getGroupPolicy(interopIdentityToExport.groupId)) {
-            "Could not find group policy info for interop identity $validInteropIdentityShortHash"
-        }
+        val groupPolicy =
+            checkNotNull(interopGroupPolicyReadService.getGroupPolicy(interopIdentityToExport.groupId.toString())) {
+                "Could not find group policy info for interop identity $validInteropIdentityShortHash"
+            }
         val node = mapper.readTree(groupPolicy)
         logger.info("The contents of the json node are: $node")
         check(node.has("p2pParameters")) { "Field 'p2pParameters' missing from response." }
@@ -359,7 +363,7 @@ internal class InteropRestResourceImpl @Activate constructor(
 
         val json = mapper.writeValueAsString(importInteropIdentityRestRequest.groupPolicy)
 
-        val interopGroupId = try {
+        val interopGroupId = UUID.fromString(try {
             val groupIdField = getGroupIdFieldFromGroupPolicy(json)
             validateUUID(groupIdField) {
                 "Malformed group policy, groupId is not a valid UUID string."
@@ -368,9 +372,10 @@ internal class InteropRestResourceImpl @Activate constructor(
         } catch (e: Exception) {
             throw InvalidInputDataException(e.message!!)
         }
+        )
 
         interopIdentityWriteService.publishGroupPolicy(
-            interopGroupId,
+            interopGroupId.toString(),
             json
         )
 

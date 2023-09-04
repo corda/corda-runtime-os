@@ -2,6 +2,7 @@ package net.corda.interop.identity.registry
 
 import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
+import java.util.*
 
 
 /**
@@ -20,7 +21,7 @@ interface InteropIdentityRegistryView {
      *
      * @return Map of group ID strings to sets of [InteropIdentity] objects.
      */
-    fun getIdentitiesByGroupId(): Map<String, Set<InteropIdentity>>
+    fun getIdentitiesByGroupId(): Map<UUID, Set<InteropIdentity>>
 
     /**
      * Get identities within the view as a map with the virtual node short hash as a key.
@@ -57,5 +58,5 @@ interface InteropIdentityRegistryView {
      *
      * @return Map of group IDs to [InteropIdentity] objects.
      */
-    fun getOwnedIdentities(): Map<String, InteropIdentity>
+    fun getOwnedIdentities(): Map<UUID, InteropIdentity>
 }

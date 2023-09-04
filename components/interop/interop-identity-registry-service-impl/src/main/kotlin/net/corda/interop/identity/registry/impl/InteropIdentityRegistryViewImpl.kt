@@ -10,14 +10,14 @@ import java.util.*
 class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: ShortHash): InteropIdentityRegistryView {
     private val interopIdentities = HashSet<InteropIdentity>()
 
-    private val byGroupId = HashMap<String, HashSet<InteropIdentity>>()
+    private val byGroupId: HashMap<UUID, HashSet<InteropIdentity>> = HashMap<UUID, HashSet<InteropIdentity>>()
     private val byVirtualNodeShortHash = HashMap<ShortHash, HashSet<InteropIdentity>>()
     private val byShortHash = HashMap<ShortHash, InteropIdentity>()
-    private val myIdentities = HashMap<String, InteropIdentity>()
+    private val myIdentities = HashMap<UUID, InteropIdentity>()
     private val byApplicationName = HashMap<String, InteropIdentity>()
     private val byFacadeId = HashMap<String, HashSet<InteropIdentity>>()
 
-    private fun getOrCreateByGroupIdEntry(groupId: String): HashSet<InteropIdentity> {
+    private fun getOrCreateByGroupIdEntry(groupId: UUID): HashSet<InteropIdentity> {
         return byGroupId.computeIfAbsent(groupId) {
             HashSet()
         }
@@ -102,7 +102,7 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: ShortHas
 
     override fun getIdentities(): Set<InteropIdentity> = interopIdentities
 
-    override fun getIdentitiesByGroupId(): Map<String, Set<InteropIdentity>> =
+    override fun getIdentitiesByGroupId(): Map<UUID, Set<InteropIdentity>> =
         Collections.unmodifiableMap(byGroupId)
 
     override fun getIdentitiesByVirtualNode(): Map<ShortHash, Set<InteropIdentity>> =
@@ -117,6 +117,6 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: ShortHas
     override fun getIdentitiesByFacadeId(): Map<String, Set<InteropIdentity>> =
         Collections.unmodifiableMap(byFacadeId)
 
-    override fun getOwnedIdentities(): Map<String, InteropIdentity> =
+    override fun getOwnedIdentities(): Map<UUID, InteropIdentity> =
         Collections.unmodifiableMap(myIdentities)
 }

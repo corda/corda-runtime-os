@@ -46,7 +46,7 @@ class HostedIdentityProducer(private val publisher: AtomicReference<Publisher?>)
         val interopIdentityShortHash = computeShortHash(interopIdentity.x500Name, interopIdentity.groupId)
 
         val hostedIdentity = HostedIdentityEntry(
-            HoldingIdentity(interopIdentity.x500Name, interopIdentity.groupId),
+            HoldingIdentity(interopIdentity.x500Name, interopIdentity.groupId.toString()),
             interopIdentityShortHash.toString(),
             //TODO CORE-15168
             listOf(DUMMY_CERTIFICATE),
