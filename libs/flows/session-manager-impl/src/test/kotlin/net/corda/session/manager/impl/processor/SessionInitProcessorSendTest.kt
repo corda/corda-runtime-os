@@ -1,6 +1,5 @@
 package net.corda.session.manager.impl.processor
 
-import java.time.Instant
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionStateType
@@ -9,29 +8,11 @@ import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-
+import java.time.Instant
 class SessionInitProcessorSendTest {
 
     private fun createSessionInit() =
-        SessionInit("flow", "flowId1", emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList(), null)
-
-    @Test
-    fun `Send init when state is not null`() {
-        val sessionInit = buildSessionEvent(
-            MessageDirection.OUTBOUND,
-            "sessionId",
-            1,
-            createSessionInit()
-        )
-
-        val sessionState = buildSessionState(SessionStateType.CREATED, 0, listOf(), 1, listOf(sessionInit))
-        val sessionInitProcessor = SessionInitProcessorSend("key", sessionState, sessionInit, Instant.now())
-
-        val updatedState = sessionInitProcessor.execute()
-
-        assertThat(updatedState).isNotNull
-        assertThat(updatedState.status).isEqualTo(SessionStateType.ERROR)
-    }
+        SessionInit("flow", "flowId1", emptyKeyValuePairList(),  emptyKeyValuePairList())
 
     @Test
     fun `Send session Init`() {
@@ -39,16 +20,19 @@ class SessionInitProcessorSendTest {
             MessageDirection.OUTBOUND,
             "sessionId",
             1,
-            createSessionInit()
+            createSessionInit(),
+            contextSessionProps = emptyKeyValuePairList()
         )
-        val sessionInitProcessor = SessionInitProcessorSend("key", null, sessionInitEvent, Instant.now())
 
-        val sessionState = sessionInitProcessor.execute()
+        val sessionState = buildSessionState(SessionStateType.CREATED, 0, emptyList(), 0 , emptyList())
+        val sessionInitProcessor = SessionInitProcessorSend(sessionState, sessionInitEvent, Instant.now())
 
-        assertThat(sessionState).isNotNull
-        assertThat(sessionState.status).isEqualTo(SessionStateType.CREATED)
+        val updatedSessionState = sessionInitProcessor.execute()
 
-        val sendEvents = sessionState.sendEventsState
+        assertThat(updatedSessionState).isNotNull
+        assertThat(updatedSessionState.status).isEqualTo(SessionStateType.CREATED)
+
+        val sendEvents = updatedSessionState.sendEventsState
         assertThat(sendEvents.undeliveredMessages.size).isEqualTo(1)
         assertThat(sendEvents.undeliveredMessages.first()).isEqualTo(sessionInitEvent)
     }

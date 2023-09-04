@@ -78,8 +78,6 @@ class TransactionBackchainSenderFlowV2Test {
 
         flow.call()
 
-        verify(session).send(listOf(transaction1))
-        verify(session).send(listOf(transaction2))
-        verify(session).send(listOf(transaction3))
+        verify(session).send(listOf(transaction1, transaction2, transaction3))
     }
 }

@@ -12,9 +12,8 @@ import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURAT
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_DELAY
 import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
-import net.corda.schema.configuration.FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW
-import net.corda.schema.configuration.FlowConfig.SESSION_MESSAGE_RESEND_WINDOW
 import net.corda.schema.configuration.FlowConfig.SESSION_P2P_TTL
+import net.corda.schema.configuration.FlowConfig.SESSION_TIMEOUT_WINDOW
 import net.corda.schema.configuration.LedgerConfig.UTXO_TOKEN_CACHED_TOKEN_PAGE_SIZE
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
@@ -32,14 +31,13 @@ class SmartConfigProvider {
             .withValue(EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(5000L))
             .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(Int.MAX_VALUE))
             .withValue(PROCESSING_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(5000L))
-            .withValue(PROCESSING_MAX_RETRY_ATTEMPTS, ConfigValueFactory.fromAnyRef(5))
+            .withValue(PROCESSING_MAX_RETRY_ATTEMPTS, ConfigValueFactory.fromAnyRef(0))
             .withValue(PROCESSING_MAX_RETRY_DELAY, ConfigValueFactory.fromAnyRef(5000L))
             .withValue(PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(5000L))
-            .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(600000L))
-            .withValue(SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
-            .withValue(SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
+            .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(Int.MAX_VALUE))
             .withValue(SESSION_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(5000L))
-            .withValue(SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(5000L))
+            .withValue(SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(Int.MAX_VALUE))
+            .withValue(SESSION_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(Int.MAX_VALUE))
             .withValue(UTXO_TOKEN_CACHED_TOKEN_PAGE_SIZE, ConfigValueFactory.fromAnyRef(100))
             .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
         smartConfig = configFactory.create(config)

@@ -1,6 +1,5 @@
 package net.corda.session.manager.impl.processor
 
-import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
@@ -11,6 +10,7 @@ import net.corda.session.manager.impl.processor.helper.generateErrorSessionState
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 /**
  * Handle send of a [SessionClose] event.
@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory
  */
 class SessionCloseProcessorSend(
     private val key: Any,
-    private val sessionState: SessionState?,
+    private val sessionState: SessionState,
     private val sessionEvent: SessionEvent,
     private val instant: Instant
 ) : SessionEventProcessor {
@@ -34,12 +34,9 @@ class SessionCloseProcessorSend(
 
     override fun execute(): SessionState {
         val sessionId = sessionEvent.sessionId
-        val currentStatus = sessionState?.status
+        val currentStatus = sessionState.status
         return when {
-            sessionState == null -> {
-                handleNullSession(sessionId)
-            }
-            currentStatus == SessionStateType.CLOSED || currentStatus == SessionStateType.WAIT_FOR_FINAL_ACK -> {
+            currentStatus == SessionStateType.CLOSED -> {
                 sessionState
             }
             currentStatus == SessionStateType.ERROR -> {
@@ -58,12 +55,6 @@ class SessionCloseProcessorSend(
                 getResultByCurrentState(sessionState, sessionId, nextSeqNum)
             }
         }
-    }
-
-    private fun handleNullSession(sessionId: String): SessionState {
-        val errorMessage = "Tried to send SessionClose with flow key $key and sessionId $sessionId  with null state"
-        logger.warn(errorMessage)
-        return generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionCLose-StateNull", instant)
     }
 
     private fun hasUnprocessedReceivedDataEvents(sessionState: SessionState): Boolean {
@@ -118,7 +109,6 @@ class SessionCloseProcessorSend(
                     "${sessionEvent.sequenceNum}, $sessionId" }
             // Doesn't go to closed until ack received
             sessionState.apply {
-                status = SessionStateType.WAIT_FOR_FINAL_ACK
                 sendEventsState.lastProcessedSequenceNum = nextSeqNum
                 sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(sessionEvent)
             }

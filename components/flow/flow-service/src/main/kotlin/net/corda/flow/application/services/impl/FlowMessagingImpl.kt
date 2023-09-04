@@ -7,6 +7,7 @@ import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.sessions.FlowSessionInternal
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
+import net.corda.flow.application.sessions.utils.SessionUtils.verifySessionStatusNotErrorOrClose
 import net.corda.flow.application.versioning.impl.sessions.VersionReceivingFlowSession
 import net.corda.flow.application.versioning.impl.sessions.VersionSendingFlowSession
 import net.corda.flow.fiber.FlowFiber
@@ -25,7 +26,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.util.UUID
-import net.corda.flow.application.sessions.utils.SessionUtils.verifySessionStatusNotErrorOrClose
 
 @Suppress("TooManyFunctions")
 @Component(service = [FlowMessaging::class, UsedByFlow::class], scope = PROTOTYPE)
@@ -42,15 +42,26 @@ class FlowMessagingImpl @Activate constructor(
 
     @Suspendable
     override fun initiateFlow(x500Name: MemberX500Name): FlowSession {
-        return doInitiateFlow(x500Name, null)
+        return initiateFlow(x500Name, true)
+    }
+
+    @Suspendable
+    override fun initiateFlow(x500Name: MemberX500Name, requireClose: Boolean): FlowSession {
+        return doInitiateFlow(x500Name, requireClose, null)
+    }
+
+    @Suspendable
+    override fun initiateFlow(x500Name: MemberX500Name, flowContextPropertiesBuilder: FlowContextPropertiesBuilder): FlowSession {
+        return doInitiateFlow(x500Name, true, flowContextPropertiesBuilder)
     }
 
     @Suspendable
     override fun initiateFlow(
         x500Name: MemberX500Name,
+        requireClose: Boolean,
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder
     ): FlowSession {
-        return doInitiateFlow(x500Name, flowContextPropertiesBuilder)
+        return doInitiateFlow(x500Name, requireClose, flowContextPropertiesBuilder)
     }
 
     @Suspendable
@@ -162,14 +173,16 @@ class FlowMessagingImpl @Activate constructor(
     }
 
     @Suspendable
+    @Suppress("unused_parameter")
     private fun doInitiateFlow(
         x500Name: MemberX500Name,
+        requireClose: Boolean,
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder?
     ): FlowSession {
         val sessionId = UUID.randomUUID().toString()
         checkFlowCanBeInitiated()
         addSessionIdToFlowStackItem(sessionId)
-        return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, flowContextPropertiesBuilder)
+        return flowSessionFactory.createInitiatingFlowSession(sessionId, requireClose, x500Name, flowContextPropertiesBuilder)
     }
 
     private fun checkFlowCanBeInitiated() {

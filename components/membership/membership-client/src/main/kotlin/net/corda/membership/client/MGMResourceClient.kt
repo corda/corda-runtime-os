@@ -28,10 +28,10 @@ interface MGMResourceClient : Lifecycle {
      *
      * @return [String] Generated Group Policy Response.
      *
-     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindEntityException] If there is no member or virtual node with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      */
-    @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class)
+    @Throws(CouldNotFindEntityException::class, MemberNotAnMgmException::class)
     fun generateGroupPolicy(holdingIdentityShortHash: ShortHash): String
 
     fun mutualTlsAllowClientCertificate(
@@ -98,11 +98,11 @@ interface MGMResourceClient : Lifecycle {
      *
      * @return Details of the newly persisted approval rule.
      *
-     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindEntityException] If there is no member or virtual node with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      * @throws [MembershipPersistenceException] If an identical rule already exists.
      */
-    @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class, MembershipPersistenceException::class)
+    @Throws(CouldNotFindEntityException::class, MemberNotAnMgmException::class, MembershipPersistenceException::class)
     fun addApprovalRule(
         holdingIdentityShortHash: ShortHash,
         ruleParams: ApprovalRuleParams
@@ -117,10 +117,10 @@ interface MGMResourceClient : Lifecycle {
      * @return Approval rules as a collection of [ApprovalRuleDetails], or an empty collection if no rules have been
      * added.
      *
-     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindEntityException] If there is no member or virtual node with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      */
-    @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class)
+    @Throws(CouldNotFindEntityException::class, MemberNotAnMgmException::class)
     fun getApprovalRules(holdingIdentityShortHash: ShortHash, ruleType: ApprovalRuleType): Collection<ApprovalRuleDetails>
 
     /**
@@ -130,11 +130,11 @@ interface MGMResourceClient : Lifecycle {
      * @param ruleId ID of the group approval rule to be deleted.
      * @param ruleType The approval rule type for this rule. See [ApprovalRuleType] for the available types.
      *
-     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindEntityException] If there is no member or virtual node with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      * @throws [MembershipPersistenceException] If the specified rule does not exist.
      */
-    @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class, MembershipPersistenceException::class)
+    @Throws(CouldNotFindEntityException::class, MemberNotAnMgmException::class, MembershipPersistenceException::class)
     fun deleteApprovalRule(holdingIdentityShortHash: ShortHash, ruleId: String, ruleType: ApprovalRuleType)
 
     /**
@@ -148,10 +148,10 @@ interface MGMResourceClient : Lifecycle {
      *
      * @return Registration requests as a collection of [RegistrationRequestDetails].
      *
-     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindEntityException] If there is no member or virtual node with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      */
-    @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class)
+    @Throws(CouldNotFindEntityException::class, MemberNotAnMgmException::class)
     fun viewRegistrationRequests(
         holdingIdentityShortHash: ShortHash,
         requestSubjectX500Name: MemberX500Name?,
@@ -167,13 +167,13 @@ interface MGMResourceClient : Lifecycle {
      * @param approve Set to 'true' if request is approved, 'false' if declined.
      * @param reason Reason if registration request is declined.
      *
-     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindEntityException] If there is no member or virtual node with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      * @throws [IllegalArgumentException] If request is not found, if request is not pending review, or if member name
      * is missing from the context.
      * @throws [ContextDeserializationException] If request cannot be deserialized.
      */
-    @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class, IllegalArgumentException::class)
+    @Throws(CouldNotFindEntityException::class, MemberNotAnMgmException::class, IllegalArgumentException::class)
     fun reviewRegistrationRequest(
         holdingIdentityShortHash: ShortHash,
         requestId: UUID,
@@ -188,11 +188,11 @@ interface MGMResourceClient : Lifecycle {
      * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
      * @param requestId ID of the registration request.
      *
-     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindEntityException] If there is no member or virtual node with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      * @throws [IllegalArgumentException] If the request is not found, or has already been approved/declined.
      */
-    @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class, IllegalArgumentException::class)
+    @Throws(CouldNotFindEntityException::class, MemberNotAnMgmException::class, IllegalArgumentException::class)
     fun forceDeclineRegistrationRequest(
         holdingIdentityShortHash: ShortHash,
         requestId: UUID,
@@ -206,13 +206,13 @@ interface MGMResourceClient : Lifecycle {
      * @param serialNumber Optional. Serial number of the member's [MemberInfo].
      * @param reason Optional. Reason for suspension.
      *
-     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindEntityException] If there is no member or virtual node with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      * @throws [IllegalArgumentException] If the member to be suspended is the MGM itself.
      * @throws [NoSuchElementException] If the member to be suspended is not found.
      */
     @Throws(
-        CouldNotFindMemberException::class,
+        CouldNotFindEntityException::class,
         MemberNotAnMgmException::class,
         IllegalArgumentException::class,
         NoSuchElementException::class
@@ -232,13 +232,13 @@ interface MGMResourceClient : Lifecycle {
      * @param serialNumber Optional. Serial number of the member's [MemberInfo].
      * @param reason Optional. Reason for activation.
      *
-     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindEntityException] If there is no member or virtual node with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      * @throws [IllegalArgumentException] If the member to be activated is the MGM itself.
      * @throws [NoSuchElementException] If the member to be activated is not found.
      */
     @Throws(
-        CouldNotFindMemberException::class,
+        CouldNotFindEntityException::class,
         MemberNotAnMgmException::class,
         IllegalArgumentException::class,
         NoSuchElementException::class
@@ -256,11 +256,11 @@ interface MGMResourceClient : Lifecycle {
      * @param holdingIdentityShortHash The holding identity ID of the MGM of the membership group.
      * @param newGroupParameters Updated version of the group parameters.
      *
-     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindEntityException] If there is no member or virtual node with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member identified by [holdingIdentityShortHash] is not an MGM.
      */
     @Throws(
-        CouldNotFindMemberException::class,
+        CouldNotFindEntityException::class,
         MemberNotAnMgmException::class,
     )
     fun updateGroupParameters(

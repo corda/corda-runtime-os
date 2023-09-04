@@ -15,6 +15,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messagebus.api.admin.builder.AdminBuilder
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
@@ -27,6 +28,7 @@ import net.corda.testing.driver.sandbox.VirtualNodeLoader.Companion.VNODE_LOADER
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
+import net.corda.web.api.WebServer
 import org.osgi.framework.Bundle
 import org.osgi.framework.Constants.FRAMEWORK_STORAGE
 import org.osgi.framework.wiring.BundleRevision.PACKAGE_NAMESPACE
@@ -98,9 +100,11 @@ class EmbeddedNodeServiceImpl @Activate constructor(
             DatabaseTypeProvider::class.java,
             DbConnectionManager::class.java,
             GroupPolicyProvider::class.java,
+            LocallyHostedIdentitiesService::class.java,
             MembershipGroupReaderProvider::class.java,
             SandboxGroupContextComponent::class.java,
             VirtualNodeInfoReadService::class.java,
+            WebServer::class.java,
             WrappingRepository::class.java
         ))
     }

@@ -36,6 +36,7 @@ import net.corda.schema.Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC
 import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
 import net.corda.schema.Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC
 import net.corda.schema.Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC
+import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.session.mapper.service.executor.FlowMapperMessageProcessor
 import net.corda.testing.driver.config.SmartConfigProvider
 import net.corda.testing.driver.node.FlowErrorException
@@ -113,8 +114,11 @@ class RunFlowImpl @Activate constructor(
         }
     }
 
-    private val smartConfig = smartConfigProvider.smartConfig
-    private val flowMapperMessageProcessor = FlowMapperMessageProcessor(flowMapperEventExecutorFactory, smartConfig)
+    private val smartConfigs = mapOf(FLOW_CONFIG to smartConfigProvider.smartConfig)
+    private val flowMapperMessageProcessor = FlowMapperMessageProcessor(
+        flowMapperEventExecutorFactory,
+        flowConfig = smartConfigProvider.smartConfig
+    )
     private val flowP2PFilterProcessor = FlowP2PFilterProcessor(cordaAvroSerializationFactory)
     private val clientId = generateRandomId()
 
@@ -159,7 +163,7 @@ class RunFlowImpl @Activate constructor(
     override fun runFlow(virtualNodeInfo: VirtualNodeInfo, flowClassName: String, flowStartArgs: String): String? {
         return try {
             val initialResponse = startFlow(createRPCStartFlow(virtualNodeInfo, flowClassName, flowStartArgs))
-            flowEventProcessorFactory.create(smartConfig).let { processor ->
+            flowEventProcessorFactory.create(smartConfigs).let { processor ->
                 val flowMapperStates = mutableMapOf<String, FlowMapperState>()
                 val checkpoints = mutableMapOf<String, Checkpoint>()
                 val responseEvents = LinkedList<Record<*, *>>()
@@ -178,7 +182,7 @@ class RunFlowImpl @Activate constructor(
                     // Check whether the flow is either COMPLETED, FAILED or KILLED.
                     responseEvents.extractAll { evt ->
                         evt.topic == FLOW_STATUS_TOPIC
-                    }.singleOrNull()?.also { statusEvent ->
+                    }.forEach { statusEvent ->
                         val flowStatus = requireNotNull(statusEvent.value as? FlowStatus) {
                             "FlowStatus missing for $statusEvent"
                         }
