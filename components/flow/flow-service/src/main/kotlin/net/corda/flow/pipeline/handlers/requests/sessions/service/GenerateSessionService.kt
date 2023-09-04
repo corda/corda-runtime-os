@@ -31,6 +31,12 @@ class GenerateSessionService @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    /**
+     * For the given sessions in [sessionToInfo], return all the ones which do not have session states in the checkpoint yet.
+     * @param context flow pipeline context
+     * @param sessionToInfo sessions to check
+     * @return sessions which have not been created in the checkpoint yet
+     */
     fun getSessionsNotGenerated(
         context: FlowEventContext<Any>,
         sessionToInfo: Set<SessionInfo>
@@ -39,6 +45,12 @@ class GenerateSessionService @Activate constructor(
         return sessionToInfo.filter { checkpoint.getSessionState(it.sessionId) == null }.toSet()
     }
 
+    /**
+     * For the given sessions in [sessionToInfo], generate session states and save them to the checkpoint.
+     * @param context flow pipeline context
+     * @param sessionToInfo sessions to create
+     * @param sendInit True if a SessionInit should be scheduled as part of creating the session state.
+     */
     fun generateSessionsNotCreated(
         context: FlowEventContext<Any>,
         sessionToInfo: Set<SessionInfo>,
