@@ -22,7 +22,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.uniqueness.backingstore.BackingStoreLifecycle
 import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.uniqueness.checker.UniquenessCheckerLifecycle
@@ -109,17 +109,17 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
                     coordinator.createManagedResource(CONFIG_HANDLE) {
                         configurationReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(ConfigKeys.MESSAGING_CONFIG)
+                            setOf(MESSAGING_CONFIG)
                         )
                     }
-                }  else {
+                } else {
                     coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
                 }
                 coordinator.updateStatus(event.status)
             }
             is ConfigChangedEvent -> {
                 log.info("Received configuration change event, (re)initialising subscription")
-                initialiseSubscription(event.config.getConfig(ConfigKeys.MESSAGING_CONFIG))
+                initialiseSubscription(event.config.getConfig(MESSAGING_CONFIG))
                 initialiseRpcSubscription()
             }
             else -> {
