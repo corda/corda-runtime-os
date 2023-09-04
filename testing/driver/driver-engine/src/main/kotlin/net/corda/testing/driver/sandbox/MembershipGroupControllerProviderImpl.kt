@@ -56,6 +56,7 @@ import net.corda.membership.lib.toSortedMap
 import net.corda.membership.lib.toWire
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.read.NotaryVirtualNodeLookup
+import net.corda.testing.driver.node.EmbeddedNodeService.toNotaryWorkerName
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName.SHA2_256
 import net.corda.v5.crypto.SecureHash
@@ -119,7 +120,7 @@ class MembershipGroupControllerProviderImpl @Activate constructor(
     private val groupParameters = parseGroupParameters(properties)
     private val notaries = layeredPropertyMapFactory.createMap(groupParameters.toMap())
         .parseList("corda.notary.service.", NotaryInfo::class.java)
-        .associateBy(NotaryInfo::getName)
+        .associateBy { toNotaryWorkerName(it.name) }
 
     private val membershipInfo = ConcurrentHashMap<HoldingIdentity, MemberInfo>()
     private val groupControllers = ConcurrentHashMap<HoldingIdentity, MembershipGroupController>()

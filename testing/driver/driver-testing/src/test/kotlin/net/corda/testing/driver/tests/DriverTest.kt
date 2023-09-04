@@ -27,6 +27,7 @@ class DriverTest {
     private val alice = MemberX500Name.parse("CN=Alice, OU=Testing, O=R3, L=London, C=GB")
     private val bob = MemberX500Name.parse("CN=Bob, OU=Testing, O=R3, L=San Francisco, C=US")
     private val lucy = MemberX500Name.parse("CN=Lucy, OU=Testing, O=R3, L=Rome, C=IT")
+    private val lucyWorker = MemberX500Name.parse("CN=Lucy(Worker), OU=Testing, O=R3, L=Rome, C=IT")
     private val zaphod = MemberX500Name.parse("CN=Zaphod, OU=Testing, O=HGTTG, L=Sirius, C=BG")
     private val logger = LoggerFactory.getLogger(DriverTest::class.java)
 
@@ -56,17 +57,17 @@ class DriverTest {
         driver.run { dsl ->
             val bobNodes = dsl.startTestNodesFor(bob).onEach { (_, bobNode) ->
                 dsl.groupFor(bobNode) { group ->
-                    assertThat(group.members()).containsExactlyInAnyOrder(bob, lucy)
+                    assertThat(group.members()).containsExactlyInAnyOrder(bob, lucyWorker)
                 }
             }
 
             dsl.startTestNodesFor(alice).forEach { (_, aliceNode) ->
                 dsl.groupFor(aliceNode) { group ->
-                    assertThat(group.members()).containsExactlyInAnyOrder(alice, bob, lucy)
+                    assertThat(group.members()).containsExactlyInAnyOrder(alice, bob, lucyWorker)
 
                     // Suspend Lucy's notary.
-                    group.member(lucy) { notary ->
-                        assertEquals(lucy, notary.name)
+                    group.member(lucyWorker) { notary ->
+                        assertEquals(lucyWorker, notary.name)
                         assertEquals(ACTIVE, notary.status)
 
                         notary.status = SUSPENDED
@@ -80,7 +81,7 @@ class DriverTest {
                     }
 
                     // Group membership is unaffected by these status changes.
-                    assertThat(group.members()).containsExactlyInAnyOrder(alice, bob, lucy)
+                    assertThat(group.members()).containsExactlyInAnyOrder(alice, bob, lucyWorker)
                 }
             }
 
@@ -91,10 +92,10 @@ class DriverTest {
                 }
 
                 dsl.groupFor(bobNode) { group ->
-                    assertThat(group.members()).containsExactlyInAnyOrder(alice, bob, lucy)
+                    assertThat(group.members()).containsExactlyInAnyOrder(alice, bob, lucyWorker)
 
                     // Check Bob knows that Lucy's notary is also suspended.
-                    group.member(lucy) { notary ->
+                    group.member(lucyWorker) { notary ->
                         assertEquals(SUSPENDED, notary.status)
                     }
 
@@ -110,7 +111,7 @@ class DriverTest {
     private fun DriverDSL.assertGroupMemberStatus(groupName: String, expectedStatus: MemberStatus) {
         group(groupName) { group ->
             assertThat(group.name).isEqualTo(groupName)
-            assertThat(group.members()).containsExactlyInAnyOrder(alice, bob, lucy)
+            assertThat(group.members()).containsExactlyInAnyOrder(alice, bob, lucyWorker)
 
             group.members().forEach { x500 ->
                 group.member(x500) { member ->
@@ -123,7 +124,7 @@ class DriverTest {
     private fun DriverDSL.setGroupMemberStatus(groupName: String, newStatus: MemberStatus) {
         group(groupName) { group ->
             assertThat(group.name).isEqualTo(groupName)
-            assertThat(group.members()).containsExactlyInAnyOrder(alice, bob, lucy)
+            assertThat(group.members()).containsExactlyInAnyOrder(alice, bob, lucyWorker)
 
             group.members().forEach { x500 ->
                 group.member(x500) { member ->

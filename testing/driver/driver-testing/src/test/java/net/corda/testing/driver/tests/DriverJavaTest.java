@@ -24,6 +24,7 @@ class DriverJavaTest {
     private static final MemberX500Name ALICE = MemberX500Name.parse("CN=Alice, OU=Testing, O=R3, L=London, C=GB");
     private static final MemberX500Name BOB = MemberX500Name.parse("CN=Bob, OU=Testing, O=R3, L=San Francisco, C=US");
     private static final MemberX500Name LUCY = MemberX500Name.parse("CN=Lucy, OU=Testing, O=R3, L=Rome, C=IT");
+    private static final MemberX500Name LUCY_WORKER = MemberX500Name.parse("CN=Lucy(Worker), OU=Testing, O=R3, L=Rome, C=IT");
     private static final MemberX500Name ZAPHOD = MemberX500Name.parse("CN=Zaphod, OU=Testing, O=HGTTG, L=Sirius, C=BG");
 
     @SuppressWarnings("JUnitMalformedDeclaration")
@@ -44,11 +45,11 @@ class DriverJavaTest {
 
             assertThat(dsl.nodesFor("mandelbrot"))
                 .hasEntrySatisfying(ALICE, vNode -> assertThat(aliceNodes).contains(vNode))
-                .doesNotContainKeys(BOB, LUCY);
+                .doesNotContainKeys(BOB, LUCY, LUCY_WORKER);
 
             assertThat(dsl.nodesFor("extendable-cpb"))
                 .hasEntrySatisfying(ALICE, vNode -> assertThat(aliceNodes).contains(vNode))
-                .doesNotContainKeys(BOB, LUCY);
+                .doesNotContainKeys(BOB, LUCY, LUCY_WORKER);
 
             dsl.node("mandelbrot", ALICE, alice ->
                 assertThat(alice.getStatus()).isEqualTo(ACTIVE)
@@ -57,16 +58,18 @@ class DriverJavaTest {
                 assertThat(alice.getStatus()).isEqualTo(ACTIVE)
             );
 
-            dsl.group("mandelbrot", group ->
-                group.member(LUCY, lucy ->
-                    assertThat(lucy.getStatus()).isEqualTo(ACTIVE)
-                )
-            );
-            dsl.group("extendable-cpb", group ->
-                group.member(LUCY, lucy ->
-                    assertThat(lucy.getStatus()).isEqualTo(ACTIVE)
-                )
-            );
+            dsl.group("mandelbrot", group -> {
+                assertThat(group.members()).containsExactlyInAnyOrder(ALICE, LUCY_WORKER);
+                group.member(LUCY_WORKER, lucyWorker ->
+                    assertThat(lucyWorker.getStatus()).isEqualTo(ACTIVE)
+                );
+            });
+            dsl.group("extendable-cpb", group -> {
+                assertThat(group.members()).containsExactlyInAnyOrder(ALICE, LUCY_WORKER);
+                group.member(LUCY_WORKER, lucyWorker ->
+                    assertThat(lucyWorker.getStatus()).isEqualTo(ACTIVE)
+                );
+            });
         });
     }
 
