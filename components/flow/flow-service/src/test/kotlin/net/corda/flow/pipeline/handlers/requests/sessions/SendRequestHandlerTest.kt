@@ -10,6 +10,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
@@ -65,7 +66,7 @@ class SendRequestHandlerTest {
             any(),
             any()
         )
-        verify(testContext.initiateFlowReqService).initiateFlowsNotInitiated(any(), any())
+        verify(testContext.initiateFlowReqService).generateSessions(any(), any(), anyBoolean())
         assertThat(outputContext.outputRecords).isEmpty()
     }
 

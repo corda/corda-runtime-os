@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -26,7 +27,7 @@ class CounterPartyFlowInfoRequestHandlerTest {
         SessionInfo(sessionId1, testContext.counterparty)
     )
     private val handler =
-        CounterPartyFlowInfoRequestHandler(testContext.initiateFlowReqService, testContext.flowSessionManager)
+        CounterPartyFlowInfoRequestHandler(testContext.initiateFlowReqService)
 
 
     @Suppress("Unused")
@@ -45,13 +46,12 @@ class CounterPartyFlowInfoRequestHandlerTest {
     @Test
     fun `Initiates flows not initiated yet`() {
         handler.postProcess(testContext.flowEventContext, ioRequest)
-        verify(testContext.initiateFlowReqService).initiateFlowsNotInitiated(any(), any())
-        verify(testContext.flowSessionManager).sendInitMessage(any(), any(), any(), any(), any(), any())
+        verify(testContext.initiateFlowReqService).generateSessions(any(), any(), eq(true))
     }
 
     @Test
     fun `Throws exception when any of the sessions are invalid`() {
-        whenever(testContext.initiateFlowReqService.initiateFlowsNotInitiated(any(), any()))
+        whenever(testContext.initiateFlowReqService.generateSessions(any(), any(), eq(true)))
             .thenThrow(FlowSessionStateException(""))
 
         assertThrows<FlowPlatformException> { handler.postProcess(testContext.flowEventContext, ioRequest) }
