@@ -4,7 +4,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResultUnhandledExceptionAvro
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.messaging.api.processor.HttpRPCProcessor
+import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.uniqueness.checker.UniquenessChecker
 
 /**
@@ -14,9 +14,9 @@ import net.corda.uniqueness.checker.UniquenessChecker
 class UniquenessCheckRpcMessageProcessor(
     private val uniquenessChecker: UniquenessChecker,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
-    override val reqClass: Class<UniquenessCheckRequestAvro>,
-    override val respClass: Class<FlowEvent>
-) : HttpRPCProcessor<UniquenessCheckRequestAvro, FlowEvent> {
+    override val requestClass: Class<UniquenessCheckRequestAvro>,
+    override val responseClass: Class<FlowEvent>
+) : SyncRPCProcessor<UniquenessCheckRequestAvro, FlowEvent> {
 
     override fun process(request: UniquenessCheckRequestAvro): FlowEvent {
         val result = uniquenessChecker.processRequests(listOf(request))

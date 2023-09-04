@@ -18,8 +18,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.subscription.config.HttpRPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
@@ -151,8 +151,8 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
             FlowEvent::class.java
         )
         lifecycleCoordinator.createManagedResource(SUBSCRIPTION) {
-            val httpRPCConfig = HttpRPCConfig(UNIQUENESS_CHECKER_ENDPOINT)
-            subscriptionFactory.createHttpRPCSubscription(httpRPCConfig, processor).also {
+            val rpcConfig = SyncRPCConfig(UNIQUENESS_CHECKER_ENDPOINT)
+            subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor).also {
                 it.start()
             }
         }
