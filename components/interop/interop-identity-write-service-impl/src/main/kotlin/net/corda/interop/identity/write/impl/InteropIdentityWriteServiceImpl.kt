@@ -79,7 +79,7 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
         }
     }
 
-    override fun publishGroupPolicy(groupId: String, groupPolicy: String): String {
+    override fun publishGroupPolicy(groupId: UUID, groupPolicy: String): UUID {
         val json = ObjectMapper().readTree(groupPolicy) as ObjectNode
 
         require(json.hasNonNull("groupId")) {
@@ -104,7 +104,7 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
 
         interopGroupPolicyProducer.publishInteropGroupPolicy(finalGroupId.toString(), finalGroupPolicy)
         
-        return finalGroupId.toString()
+        return finalGroupId
     }
 
     private fun writeMemberInfoTopic(vNodeShortHash: ShortHash, identity: InteropIdentity) {

@@ -11,6 +11,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.*
 
 
 @Component(service = [InteropGroupPolicyReadService::class])
@@ -37,8 +38,8 @@ class InteropGroupPolicyReadServiceImpl @Activate constructor(
     private val coordinatorName = LifecycleCoordinatorName.forComponent<InteropGroupPolicyReadService>()
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, dependentComponents, lifecycleEventHandler)
 
-    override fun getGroupPolicy(groupId: String) : String? {
-        return lifecycleEventHandler.getGroupPolicy(groupId)
+    override fun getGroupPolicy(groupId: UUID) : String? {
+        return lifecycleEventHandler.getGroupPolicy(groupId.toString())
     }
 
     override val isRunning: Boolean

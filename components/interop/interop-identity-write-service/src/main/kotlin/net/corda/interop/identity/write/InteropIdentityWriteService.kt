@@ -3,6 +3,7 @@ package net.corda.interop.identity.write
 import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
 import net.corda.lifecycle.Lifecycle
+import java.util.*
 
 
 interface InteropIdentityWriteService : Lifecycle {
@@ -20,5 +21,5 @@ interface InteropIdentityWriteService : Lifecycle {
      * @param groupId groupId of the interop group.
      * @param groupPolicy group policy content.
      */
-    fun publishGroupPolicy(groupId: String, groupPolicy: String) : String
+    fun publishGroupPolicy(groupId: UUID, groupPolicy: String) : UUID
 }

@@ -89,7 +89,7 @@ internal class InteropRestResourceImpl @Activate constructor(
         val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(validHoldingIdentityShortHash)
         val cacheView = interopIdentityRegistryService.getVirtualNodeRegistryView(vNodeInfo.getVNodeShortHash())
         return cacheView.getOwnedIdentities().keys.associate {
-            Pair(it, interopGroupPolicyReadService.getGroupPolicy(it.toString()) ?: "")
+            Pair(it, interopGroupPolicyReadService.getGroupPolicy(it) ?: "")
         }
     }
 
@@ -192,11 +192,9 @@ internal class InteropRestResourceImpl @Activate constructor(
             }
         }
 
-        val interopGroupId = UUID.fromString(
-            interopIdentityWriteService.publishGroupPolicy(
-                groupIdField,
-                json
-            )
+        val interopGroupId = interopIdentityWriteService.publishGroupPolicy(
+            UUID.fromString(groupIdField),
+            json
         )
 
         val groupReader = membershipGroupReaderProvider.getGroupReader(vNodeInfo.holdingIdentity)
@@ -307,7 +305,7 @@ internal class InteropRestResourceImpl @Activate constructor(
             )
         }
         val groupPolicy =
-            checkNotNull(interopGroupPolicyReadService.getGroupPolicy(interopIdentityToExport.groupId.toString())) {
+            checkNotNull(interopGroupPolicyReadService.getGroupPolicy(interopIdentityToExport.groupId)) {
                 "Could not find group policy info for interop identity $validInteropIdentityShortHash"
             }
         val node = mapper.readTree(groupPolicy)
@@ -363,19 +361,20 @@ internal class InteropRestResourceImpl @Activate constructor(
 
         val json = mapper.writeValueAsString(importInteropIdentityRestRequest.groupPolicy)
 
-        val interopGroupId = UUID.fromString(try {
-            val groupIdField = getGroupIdFieldFromGroupPolicy(json)
-            validateUUID(groupIdField) {
-                "Malformed group policy, groupId is not a valid UUID string."
+        val interopGroupId = UUID.fromString(
+            try {
+                val groupIdField = getGroupIdFieldFromGroupPolicy(json)
+                validateUUID(groupIdField) {
+                    "Malformed group policy, groupId is not a valid UUID string."
+                }
+                groupIdField
+            } catch (e: Exception) {
+                throw InvalidInputDataException(e.message!!)
             }
-            groupIdField
-        } catch (e: Exception) {
-            throw InvalidInputDataException(e.message!!)
-        }
         )
 
         interopIdentityWriteService.publishGroupPolicy(
-            interopGroupId.toString(),
+            interopGroupId,
             json
         )
 

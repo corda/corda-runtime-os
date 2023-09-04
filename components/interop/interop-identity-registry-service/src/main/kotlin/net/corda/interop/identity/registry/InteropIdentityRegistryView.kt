@@ -19,7 +19,7 @@ interface InteropIdentityRegistryView {
     /**
      * Get identities within the view as a map with the group ID as a key.
      *
-     * @return Map of group ID strings to sets of [InteropIdentity] objects.
+     * @return Map of group UUIDs to sets of [InteropIdentity] objects.
      */
     fun getIdentitiesByGroupId(): Map<UUID, Set<InteropIdentity>>
 
@@ -56,7 +56,7 @@ interface InteropIdentityRegistryView {
     /**
      * Get interop identities owned by the owning virtual node of this view by group ID.
      *
-     * @return Map of group IDs to [InteropIdentity] objects.
+     * @return Map of group UUIDs to [InteropIdentity] objects.
      */
     fun getOwnedIdentities(): Map<UUID, InteropIdentity>
 }
