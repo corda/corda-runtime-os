@@ -7,8 +7,8 @@ import net.corda.flow.fiber.FlowIORequest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 
 class ReceiveRequestHandlerTest {
@@ -49,7 +49,7 @@ class ReceiveRequestHandlerTest {
                 )
             )
         )
-        verify(testContext.initiateFlowReqService).generateSessions(any(), any(), anyBoolean())
+        verify(testContext.initiateFlowReqService).generateSessions(any(), any(), equals(true))
 
         assertThat(outputContext.outputRecords).isEmpty()
     }
@@ -65,7 +65,7 @@ class ReceiveRequestHandlerTest {
                 )
             )
         )
-        verify(testContext.initiateFlowReqService).generateSessions(any(), any(), anyBoolean())
+        verify(testContext.initiateFlowReqService).generateSessions(any(), any(), eq(true))
         assertEquals(0, outputContext.outputRecords.size)
     }
 
@@ -80,7 +80,7 @@ class ReceiveRequestHandlerTest {
                 )
             )
         )
-        verify(testContext.initiateFlowReqService).generateSessions(any(), any(), anyBoolean())
+        verify(testContext.initiateFlowReqService).generateSessions(any(), any(), eq(true))
         assertEquals(flowEventContext, outputContext)
     }
 }

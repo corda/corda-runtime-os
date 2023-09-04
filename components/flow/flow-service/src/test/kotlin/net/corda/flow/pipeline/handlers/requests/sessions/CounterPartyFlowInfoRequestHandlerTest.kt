@@ -12,8 +12,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -46,12 +46,12 @@ class CounterPartyFlowInfoRequestHandlerTest {
     @Test
     fun `Initiates flows not initiated yet`() {
         handler.postProcess(testContext.flowEventContext, ioRequest)
-        verify(testContext.initiateFlowReqService).generateSessions(any(), any(), anyBoolean())
+        verify(testContext.initiateFlowReqService).generateSessions(any(), any(), eq(true))
     }
 
     @Test
     fun `Throws exception when any of the sessions are invalid`() {
-        whenever(testContext.initiateFlowReqService.generateSessions(any(), any(), anyBoolean()))
+        whenever(testContext.initiateFlowReqService.generateSessions(any(), any(), eq(true)))
             .thenThrow(FlowSessionStateException(""))
 
         assertThrows<FlowPlatformException> { handler.postProcess(testContext.flowEventContext, ioRequest) }
