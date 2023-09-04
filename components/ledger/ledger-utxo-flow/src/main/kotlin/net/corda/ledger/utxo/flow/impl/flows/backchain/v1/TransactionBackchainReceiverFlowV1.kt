@@ -41,7 +41,7 @@ class TransactionBackchainReceiverFlowV1(
 
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val BACKCHAIN_BATCH_CONFIG_PATH = "backchain.batchsize"
+        private const val BACKCHAIN_BATCH_CONFIG_PATH = "backchain.batchSize"
     }
 
     @CordaInject
