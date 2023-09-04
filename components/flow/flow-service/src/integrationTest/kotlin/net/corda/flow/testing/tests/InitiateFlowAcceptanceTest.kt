@@ -46,6 +46,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
             }
         }
     }
+
     @Test
     fun `Requesting counterparty info from the flow engine that has already sent a session init event does not send another SessionInit`() {
         given {
