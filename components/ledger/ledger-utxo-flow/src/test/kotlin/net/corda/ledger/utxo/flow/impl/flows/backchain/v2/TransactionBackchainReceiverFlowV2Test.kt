@@ -55,7 +55,7 @@ class TransactionBackchainReceiverFlowV2Test {
 
         val PACKAGE_SUMMARY = CordaPackageSummaryImpl("name", "version", "hash", "checksum")
 
-        const val BACKCHAIN_BATCH_CONFIG_PATH = "backchain.batchsize"
+        const val BACKCHAIN_BATCH_CONFIG_PATH = "backchain.batchSize"
         const val BACKCHAIN_BATCH_DEFAULT_SIZE = 1
     }
 
