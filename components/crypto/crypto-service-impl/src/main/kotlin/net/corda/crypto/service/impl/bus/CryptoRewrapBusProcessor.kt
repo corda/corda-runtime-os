@@ -19,7 +19,7 @@ class CryptoRewrapBusProcessor(
         events.forEach {
             val request = it.value
             if (request != null) {
-                cryptoService.rewrapWrappingKey(request.tenantId, request.targetAlias, request.newParentKeyAlias)
+                cryptoService.rewrapWrappingKey(request.tenantId, request.oldKeyAlias, request.newKeyAlias)
             }
         }
         // We need to return something else - this is published back as a response on the incoming events
