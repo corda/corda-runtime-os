@@ -10,6 +10,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
@@ -65,7 +66,7 @@ class SendAndReceiveRequestHandlerTest {
             )
         ).thenReturn(true)
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
-        verify(testContext.initiateFlowReqService).generateSessionsNotCreated(any(), any())
+        verify(testContext.initiateFlowReqService).generateSessionsNotCreated(any(), any(), anyBoolean())
         verify(testContext.flowCheckpoint).putSessionStates(listOf(sessionState1, sessionState2))
         verify(testContext.flowSessionManager).sendDataMessages(
             eq(testContext.flowCheckpoint),
