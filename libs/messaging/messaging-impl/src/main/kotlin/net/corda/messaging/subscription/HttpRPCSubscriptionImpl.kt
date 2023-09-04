@@ -10,9 +10,9 @@ import net.corda.messaging.api.processor.HttpRPCProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.HttpRPCConfig
 import net.corda.rest.ResponseCode
+import net.corda.tracing.trace
 import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
-import net.corda.web.api.WebContext
 import net.corda.web.api.WebHandler
 import net.corda.web.api.WebServer
 import org.slf4j.LoggerFactory
@@ -54,7 +54,7 @@ internal class HttpRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val coordinator = lifecycleCoordinatorFactory.createCoordinator(subscriptionName) { _, _ -> }
 
     override fun start() {
-        registerEndpoint(rpcConfig.endpoint, processor)
+        registerEndpoint(rpcConfig.name, rpcConfig.endpoint, processor)
         coordinator.start()
         coordinator.updateStatus(LifecycleStatus.UP)
     }
@@ -70,34 +70,35 @@ internal class HttpRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     }
 
     private fun registerEndpoint(
+        name: String,
         rpcEndpoint: String,
         processor: HttpRPCProcessor<REQUEST, RESPONSE>
     ) {
         val server = webServer
+        val operationName = "$name Request"
 
-        val webHandler = object : WebHandler {
-            override fun handle(context: WebContext): WebContext {
+        val webHandler = WebHandler { context ->
+            trace(operationName) {
                 val payload = cordaAvroDeserializer.deserialize(context.bodyAsBytes())
 
                 if (payload != null) {
                     val serializedResponse = cordaAvroSerializer.serialize(processor.process(payload))
-                    return if (serializedResponse != null) {
+                    if (serializedResponse != null) {
                         context.result(serializedResponse)
-                        context
                     } else {
                         log.error("Response Payload was Null")
                         context.result("Response Payload was Null")
                         context.status(ResponseCode.BAD_REQUEST)
-                        context
                     }
                 } else {
-                    log.error("Request Payload was Null")
+                    log.warn("Request Payload was Null")
                     context.result("Request Payload was Null")
                     context.status(ResponseCode.INTERNAL_SERVER_ERROR)
-                    return context
                 }
+                context
             }
         }
+
         val addedEndpoint = Endpoint(HTTPMethod.POST, rpcEndpoint, webHandler)
         server.registerEndpoint(addedEndpoint)
         endpoint = addedEndpoint

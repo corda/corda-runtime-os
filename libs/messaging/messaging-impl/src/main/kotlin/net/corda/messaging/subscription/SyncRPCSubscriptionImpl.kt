@@ -10,6 +10,7 @@ import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.rest.ResponseCode
+import net.corda.tracing.trace
 import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
 import net.corda.web.api.WebHandler
@@ -53,7 +54,7 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val coordinator = lifecycleCoordinatorFactory.createCoordinator(subscriptionName) { _, _ -> }
 
     override fun start() {
-        registerEndpoint(rpcConfig.endpoint, processor)
+        registerEndpoint(rpcConfig.name, rpcConfig.endpoint, processor)
         coordinator.start()
         coordinator.updateStatus(LifecycleStatus.UP)
     }
@@ -69,30 +70,32 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     }
 
     private fun registerEndpoint(
+        name: String,
         rpcEndpoint: String,
         processor: SyncRPCProcessor<REQUEST, RESPONSE>
     ) {
         val server = webServer
+        val operationName = "$name Request"
 
         val webHandler = WebHandler { context ->
-            val payload = cordaAvroDeserializer.deserialize(context.bodyAsBytes())
+            trace(operationName) {
+                val payload = cordaAvroDeserializer.deserialize(context.bodyAsBytes())
 
-            if (payload != null) {
-                val serializedResponse = cordaAvroSerializer.serialize(processor.process(payload))
-                return@WebHandler if (serializedResponse != null) {
-                    context.result(serializedResponse)
-                    context
+                if (payload != null) {
+                    val serializedResponse = cordaAvroSerializer.serialize(processor.process(payload))
+                    if (serializedResponse != null) {
+                        context.result(serializedResponse)
+                    } else {
+                        log.error("Response Payload was Null")
+                        context.result("Response Payload was Null")
+                        context.status(ResponseCode.BAD_REQUEST)
+                    }
                 } else {
-                    log.error("Response Payload was Null")
-                    context.result("Response Payload was Null")
-                    context.status(ResponseCode.BAD_REQUEST)
-                    context
+                    log.warn("Request Payload was Null")
+                    context.result("Request Payload was Null")
+                    context.status(ResponseCode.INTERNAL_SERVER_ERROR)
                 }
-            } else {
-                log.warn("Request Payload was Null")
-                context.result("Request Payload was Null")
-                context.status(ResponseCode.INTERNAL_SERVER_ERROR)
-                return@WebHandler context
+                context
             }
         }
 

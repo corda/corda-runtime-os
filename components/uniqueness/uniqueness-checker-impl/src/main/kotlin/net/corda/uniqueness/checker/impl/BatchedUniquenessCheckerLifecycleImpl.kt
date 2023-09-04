@@ -54,7 +54,8 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
     private companion object {
         const val GROUP_NAME = "uniqueness.checker"
         const val CONFIG_HANDLE = "CONFIG_HANDLE"
-        const val UNIQUENESS_CHECKER_ENDPOINT = "uniquenessChecker"
+        const val SUBSCRIPTION_NAME = "Uniqueness Check"
+        const val UNIQUENESS_CHECKER_ENDPOINT = "/uniquenessChecker"
         const val SUBSCRIPTION = "SUBSCRIPTION"
 
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -151,7 +152,7 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
             FlowEvent::class.java
         )
         lifecycleCoordinator.createManagedResource(SUBSCRIPTION) {
-            val rpcConfig = SyncRPCConfig(UNIQUENESS_CHECKER_ENDPOINT)
+            val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, UNIQUENESS_CHECKER_ENDPOINT)
             subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor).also {
                 it.start()
             }
