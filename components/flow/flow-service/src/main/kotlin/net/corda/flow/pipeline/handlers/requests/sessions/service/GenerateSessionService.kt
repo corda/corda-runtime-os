@@ -56,21 +56,21 @@ class GenerateSessionService @Activate constructor(
         sessionToInfo: Set<SessionInfo>,
         sendInit: Boolean = false
     ) {
-        val sessionsNotInitiated = getSessionsNotGenerated(context, sessionToInfo)
-        if (sessionsNotInitiated.isNotEmpty()) {
-            generateSessionStates(context, sessionsNotInitiated, sendInit)
+        val sessionsNotGenerated = getSessionsNotGenerated(context, sessionToInfo)
+        if (sessionsNotGenerated.isNotEmpty()) {
+            generateSessionStates(context, sessionsNotGenerated, sendInit)
         }
     }
 
     @Suppress("ThrowsCount")
     private fun generateSessionStates(
         context: FlowEventContext<Any>,
-        sessionsNotInitiated: Set<SessionInfo>,
+        sessionsNotGenerated: Set<SessionInfo>,
         sendInit: Boolean
     ) {
         val checkpoint = context.checkpoint
 
-        logger.trace { "Initiating flows with sessionIds ${sessionsNotInitiated.map { it.sessionId }}" }
+        logger.trace { "Initiating flows with sessionIds ${sessionsNotGenerated.map { it.sessionId }}" }
         // throw an error if the session already exists (shouldn't really get here for real, but for this class, it's not valid)
         val protocolStore = try {
             flowSandboxService.get(checkpoint.holdingIdentity, checkpoint.cpkFileHashes).protocolStore
@@ -97,7 +97,7 @@ class GenerateSessionService @Activate constructor(
             put(FLOW_PROTOCOL_VERSIONS_SUPPORTED, protocolVersions.joinToString())
         }
 
-        sessionsNotInitiated.map { sessionInfo ->
+        sessionsNotGenerated.map { sessionInfo ->
             flowSessionManager.generateSessionState(
                 checkpoint,
                 sessionInfo.sessionId,
@@ -118,7 +118,7 @@ class GenerateSessionService @Activate constructor(
             }
         }
 
-        val sessionsNotInitiatedIds = sessionsNotInitiated.map { it.sessionId }.toSet()
+        val sessionsNotInitiatedIds = sessionsNotGenerated.map { it.sessionId }.toSet()
         initiatingFlowStackItem.sessions
             .filter { it.sessionId in sessionsNotInitiatedIds }
             .forEach { it.initiated = true }
