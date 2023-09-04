@@ -380,7 +380,7 @@ class CryptoProcessorImpl @Activate constructor(
         logger.trace("Starting processing on $hsmRegGroupName ${Schemas.Crypto.RPC_HSM_REGISTRATION_MESSAGE_TOPIC}")
         coordinator.getManagedResource<SubscriptionBase>(HSM_REG_SUBSCRIPTION)!!.start()
 
-        val rewrapGroupName = "crypto.ops.rewrap"
+        val rewrapGroupName = "crypto.key.rotation.individual"
         coordinator.createManagedResource(REWRAP_SUBSCRIPTION) {
             subscriptionFactory.createDurableSubscription(
                 subscriptionConfig = SubscriptionConfig(
@@ -395,7 +395,7 @@ class CryptoProcessorImpl @Activate constructor(
         logger.trace("Starting processing on $rewrapGroupName ${Schemas.Crypto.REWRAP_MESSAGE_TOPIC}")
         coordinator.getManagedResource<SubscriptionBase>(REWRAP_SUBSCRIPTION)!!.start()
 
-        val rekeyGroupName = "crypto.ops.rekey"
+        val rekeyGroupName = "crypto.key.rotations.ops"
         coordinator.createManagedResource(REKEY_SUBSCRIPTION) {
             subscriptionFactory.createDurableSubscription(
                 subscriptionConfig = SubscriptionConfig(
