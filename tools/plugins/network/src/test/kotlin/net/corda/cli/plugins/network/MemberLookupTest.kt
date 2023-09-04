@@ -7,10 +7,10 @@ import org.junit.jupiter.api.Test
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
-import net.corda.cli.plugins.network.enums.MemberStatus.ACTIVE
-import net.corda.cli.plugins.network.enums.MemberStatus.SUSPENDED
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
 import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import org.junit.jupiter.api.BeforeAll
 import picocli.CommandLine
 import net.corda.v5.base.types.MemberX500Name
@@ -34,7 +34,7 @@ class MemberLookupTest {
             "CN=Alice, OU=R3 Test, O=Mgm, L=London, ST=Tottenham, C=GB"
         )
 
-        private var holdingIdentity = ""
+        private lateinit var holdingIdentity: String
 
         @BeforeAll
         @JvmStatic
@@ -61,19 +61,19 @@ class MemberLookupTest {
     @Test
     fun `test member lookup command with status filter with ACTIVE`() {
         CommandLine(memberLookup).execute(
-            "--status=${ACTIVE}",
+            "--status=${MEMBER_STATUS_ACTIVE}",
             "-h=${holdingIdentity}",
             *CLI_PARAMS
         )
 
         val mgmContext = outputStub.printedOutput?.get(0)?.get("mgmContext")
-        assertEquals(ACTIVE.value, mgmContext?.get(MemberInfoExtension.STATUS)?.asText())
+        assertEquals(MEMBER_STATUS_ACTIVE, mgmContext?.get(MemberInfoExtension.STATUS)?.asText())
     }
 
     @Test
     fun `test member lookup command with status filter with SUSPENDED`() {
         CommandLine(memberLookup).execute(
-            "--status=${SUSPENDED}",
+            "--status=${MEMBER_STATUS_SUSPENDED}",
             "-h=${holdingIdentity}",
             *CLI_PARAMS
         )
