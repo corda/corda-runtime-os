@@ -30,4 +30,4 @@ class CryptoRewrapBusProcessorTests {
         )
         verify(cryptoService, times(1)).rewrapWrappingKey(any(), any(), any())
     }
-}   
+}
