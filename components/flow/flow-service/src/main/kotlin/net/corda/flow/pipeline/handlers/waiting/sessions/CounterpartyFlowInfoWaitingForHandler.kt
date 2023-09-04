@@ -27,10 +27,14 @@ class CounterpartyFlowInfoWaitingForHandler : FlowWaitingForHandler<CounterParty
         val checkpoint = context.checkpoint
 
         val sessionId = waitingFor.sessionId
-        val sessionState = checkpoint.getSessionState(sessionId) ?: throw FlowPlatformException("Failed to get counterparty info " +
-                "as the session does not exist.")
+        val sessionState = checkpoint.getSessionState(sessionId)
 
-        return when(sessionState.status) {
+        return when(sessionState?.status) {
+            null -> FlowContinuation.Error(
+                CordaRuntimeException(
+                    "Failed to get counterparty info as the session does not exist."
+                )
+            )
             SessionStateType.CREATED -> FlowContinuation.Continue
             SessionStateType.ERROR -> {
                 FlowContinuation.Error(
