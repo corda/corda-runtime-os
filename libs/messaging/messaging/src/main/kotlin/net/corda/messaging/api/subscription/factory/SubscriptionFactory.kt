@@ -4,7 +4,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.EventLogProcessor
-import net.corda.messaging.api.processor.HttpRPCProcessor
+import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -12,7 +12,7 @@ import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
-import net.corda.messaging.api.subscription.config.HttpRPCConfig
+import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
@@ -167,7 +167,7 @@ interface SubscriptionFactory {
      * @param processor processor in charge of handling incoming requests
      */
     fun <REQUEST : Any, RESPONSE : Any> createHttpRPCSubscription(
-        rpcConfig: HttpRPCConfig,
-        processor: HttpRPCProcessor<REQUEST, RESPONSE>
+        rpcConfig: SyncRPCConfig,
+        processor: SyncRPCProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE>
 }

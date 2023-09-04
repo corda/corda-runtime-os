@@ -1,6 +1,7 @@
 package net.corda.processors.verification.internal
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.cpk.read.CpkReadService
 import net.corda.ledger.verification.LedgerVerificationComponent
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
@@ -12,6 +13,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.processors.verification.VerificationProcessor
+import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -27,6 +29,10 @@ class VerificationProcessorImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = LedgerVerificationComponent::class)
     private val ledgerVerificationComponent: LedgerVerificationComponent,
+    @Reference(service = SandboxGroupContextComponent::class)
+    private val sandboxGroupContextComponent: SandboxGroupContextComponent,
+    @Reference(service = CpkReadService::class)
+    private val cpkReadService: CpkReadService,
 ) : VerificationProcessor {
 
     companion object {
@@ -35,7 +41,9 @@ class VerificationProcessorImpl @Activate constructor(
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
-        ::ledgerVerificationComponent
+        ::ledgerVerificationComponent,
+        ::sandboxGroupContextComponent,
+        ::cpkReadService,
     )
 
     private val lifecycleCoordinator =

@@ -4,9 +4,6 @@ import co.paralleluniverse.concurrent.util.ScheduledSingleThreadExecutor
 import co.paralleluniverse.fibers.FiberExecutorScheduler
 import co.paralleluniverse.fibers.FiberScheduler
 import com.typesafe.config.ConfigFactory
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.UUID
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.cpiinfo.read.fake.CpiInfoReadServiceFake
 import net.corda.crypto.core.SecureHashImpl
@@ -18,11 +15,9 @@ import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.StartFlow
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseError
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
@@ -56,8 +51,8 @@ import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
@@ -74,6 +69,9 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.UUID
 
 @Suppress("Unused")
 @Component(service = [FlowServiceTestContext::class])
@@ -103,9 +101,7 @@ class FlowServiceTestContext @Activate constructor(
     private val testConfig = mutableMapOf<String, Any>(
         FlowConfig.EXTERNAL_EVENT_MAX_RETRIES to 2,
         FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW to 500000L,
-        FlowConfig.SESSION_MESSAGE_RESEND_WINDOW to 500000L,
-        FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW to 500000L,
-        FlowConfig.SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW to 300000L,
+        FlowConfig.SESSION_TIMEOUT_WINDOW to 500000L,
         FlowConfig.SESSION_FLOW_CLEANUP_TIME to 30000,
         FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS to 5,
         FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION to 60000,
@@ -141,6 +137,9 @@ class FlowServiceTestContext @Activate constructor(
 
     override val initiatedIdentityMemberName: MemberX500Name
         get() = MemberX500Name.parse(sessionInitiatedIdentity!!.x500Name)
+
+    override val initiatingIdentityMemberName: MemberX500Name
+        get() = MemberX500Name.parse(sessionInitiatingIdentity!!.x500Name)
 
     override fun virtualNode(
         cpiId: String,
@@ -283,13 +282,11 @@ class FlowServiceTestContext @Activate constructor(
             SessionInit.newBuilder()
                 .setFlowId(flowId)
                 .setCpiId(cpiId)
-                .setPayload(ByteBuffer.wrap(byteArrayOf()))
                 .setContextPlatformProperties(emptyKeyValuePairList())
                 .setContextUserProperties(emptyKeyValuePairList())
-                .setContextSessionProperties(getContextSessionProps(protocol))
                 .build(),
             sequenceNum = 0,
-            receivedSequenceNum = 1,
+            getContextSessionProps(protocol)
         )
     }
 
@@ -300,41 +297,20 @@ class FlowServiceTestContext @Activate constructor(
         }.avro
     }
 
-    override fun sessionAckEventReceived(
-        flowId: String,
-        sessionId: String,
-        receivedSequenceNum: Int,
-        outOfOrderSeqNums: List<Int>
-    ): FlowIoRequestSetup {
-        return createAndAddSessionEvent(
-            flowId,
-            sessionId,
-            null,
-            null,
-            SessionAck(),
-            sequenceNum = null,
-            receivedSequenceNum,
-            outOfOrderSeqNums
-        )
-    }
-
     override fun sessionDataEventReceived(
         flowId: String,
         sessionId: String,
         data: ByteArray,
-        sequenceNum: Int,
-        receivedSequenceNum: Int,
-        outOfOrderSeqNums: List<Int>
+        sequenceNum: Int
     ): FlowIoRequestSetup {
         return createAndAddSessionEvent(
             flowId,
             sessionId,
             null,
             null,
-            SessionData(ByteBuffer.wrap(data)),
+            SessionData(ByteBuffer.wrap(data), null),
             sequenceNum,
-            receivedSequenceNum,
-            outOfOrderSeqNums
+            null
         )
     }
 
@@ -342,7 +318,6 @@ class FlowServiceTestContext @Activate constructor(
         flowId: String,
         sessionId: String,
         sequenceNum: Int,
-        receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?
     ): FlowIoRequestSetup {
@@ -353,14 +328,13 @@ class FlowServiceTestContext @Activate constructor(
             initiatedIdentity,
             SessionClose(),
             sequenceNum,
-            receivedSequenceNum,
+            null,
         )
     }
 
     override fun sessionErrorEventReceived(
         flowId: String,
         sessionId: String,
-        receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?
     ): FlowIoRequestSetup {
@@ -371,12 +345,8 @@ class FlowServiceTestContext @Activate constructor(
             initiatedIdentity,
             SessionError(ExceptionEnvelope(RuntimeException::class.qualifiedName, "Something went wrong!")),
             null,
-            receivedSequenceNum,
+            null,
         )
-    }
-
-    override fun wakeupEventReceived(flowId: String): FlowIoRequestSetup {
-        return addTestRun(createFlowEventRecord(flowId, Wakeup()))
     }
 
     override fun externalEventReceived(flowId: String, requestId: String, payload: Any): FlowIoRequestSetup {
@@ -444,7 +414,7 @@ class FlowServiceTestContext @Activate constructor(
         testRuns.forEachIndexed { iteration, testRun ->
             log.info("Start test run for input/output set $iteration")
             flowFiberFactory.fiber.reset()
-            flowFiberFactory.fiber.ioToCompleteWith = testRun.ioRequest
+            flowFiberFactory.fiber.setIoRequests(testRun.ioRequests)
             val response = flowEventProcessor.onNext(lastPublishedState, testRun.event)
             testRun.flowContinuation = flowFiberFactory.fiber.flowContinuation
             testRun.response = response
@@ -485,19 +455,17 @@ class FlowServiceTestContext @Activate constructor(
         initiatedIdentity: HoldingIdentity?,
         payload: Any,
         sequenceNum: Int?,
-        receivedSequenceNum: Int?,
-        outOfOrderSeqNums: List<Int> = emptyList()
+        contextSessionProps: KeyValuePairList?
     ): FlowIoRequestSetup {
         val sessionEvent = buildSessionEvent(
             MessageDirection.INBOUND,
             sessionId,
             sequenceNum,
             payload,
-            receivedSequenceNum ?: sequenceNum ?: 0,
-            outOfOrderSeqNums,
             Instant.now(),
             initiatingIdentity ?: sessionInitiatingIdentity!!,
-            initiatedIdentity ?: sessionInitiatedIdentity!!
+            initiatedIdentity ?: sessionInitiatedIdentity!!,
+            contextSessionProps
         )
         return addTestRun(createFlowEventRecord(flowId, sessionEvent))
     }
@@ -505,8 +473,8 @@ class FlowServiceTestContext @Activate constructor(
     private fun getFlowEventProcessor(): StateAndEventProcessor<String, Checkpoint, FlowEvent> {
         val cfg = ConfigFactory.parseMap(testConfig)
         return eventProcessorFactory.create(
-            SmartConfigFactory.createWithoutSecurityServices()
-                .create(cfg)
+            mapOf(FLOW_CONFIG to SmartConfigFactory.createWithoutSecurityServices()
+                .create(cfg))
         )
     }
 
@@ -540,20 +508,25 @@ class FlowServiceTestContext @Activate constructor(
 
         return object : FlowIoRequestSetup {
 
-            override fun suspendsWith(flowIoRequest: FlowIORequest<*>) {
-                testRun.ioRequest = FlowIORequest.FlowSuspended(
-                    ByteBuffer.wrap(byteArrayOf()),
-                    flowIoRequest,
-                    FlowFiberImpl(UUID.randomUUID(), ClientStartedFlow(FakeFlow(), FakeClientRequestBody()), currentScheduler)
+            override fun suspendsWith(flowIoRequest: FlowIORequest<*>) : FlowIoRequestSetup {
+                testRun.ioRequests.add(
+                    FlowIORequest.FlowSuspended(
+                        ByteBuffer.wrap(byteArrayOf()),
+                        flowIoRequest,
+                        FlowFiberImpl(UUID.randomUUID(), ClientStartedFlow(FakeFlow(), FakeClientRequestBody()), currentScheduler)
+                    )
                 )
+                return this
             }
 
-            override fun completedSuccessfullyWith(result: String?) {
-                testRun.ioRequest = FlowIORequest.FlowFinished(result)
+            override fun completedSuccessfullyWith(result: String?) : FlowIoRequestSetup {
+                testRun.ioRequests.add(FlowIORequest.FlowFinished(result))
+                return this
             }
 
-            override fun completedWithError(exception: Exception) {
-                testRun.ioRequest = FlowIORequest.FlowFailed(exception)
+            override fun completedWithError(exception: Exception) : FlowIoRequestSetup {
+                testRun.ioRequests.add(FlowIORequest.FlowFailed(exception))
+                return this
             }
         }
     }

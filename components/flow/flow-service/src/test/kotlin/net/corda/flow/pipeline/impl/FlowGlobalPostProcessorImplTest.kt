@@ -25,6 +25,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.session.manager.SessionManager
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -124,13 +125,14 @@ class FlowGlobalPostProcessorImplTest {
     fun setup() {
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2))
         whenever(checkpoint.flowKey).thenReturn(FlowKey(FLOW_ID_1, ALICE_X500_HOLDING_IDENTITY))
+        whenever(checkpoint.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
         whenever(checkpoint.doesExist).thenReturn(true)
         whenever(checkpoint.pendingPlatformError).thenReturn(null)
         whenever(
             sessionManager.getMessagesToSend(
                 eq(sessionState1),
                 any(),
-                eq(testContext.config),
+                eq(testContext.flowConfig),
                 eq(ALICE_X500_HOLDING_IDENTITY)
             )
         ).thenReturn(sessionState1 to listOf(sessionEvent1, sessionEvent2))
@@ -138,7 +140,7 @@ class FlowGlobalPostProcessorImplTest {
             sessionManager.getMessagesToSend(
                 eq(sessionState2),
                 any(),
-                eq(testContext.config),
+                eq(testContext.flowConfig),
                 eq(ALICE_X500_HOLDING_IDENTITY)
             )
         ).thenReturn(sessionState2 to listOf(sessionEvent3))
@@ -147,7 +149,7 @@ class FlowGlobalPostProcessorImplTest {
             sessionManager.getMessagesToSend(
                 eq(sessionState3),
                 any(),
-                eq(testContext.config),
+                eq(testContext.flowConfig),
                 eq(ALICE_X500_HOLDING_IDENTITY)
             )
         ).thenReturn(sessionState3 to listOf(sessionEvent4))
@@ -239,7 +241,7 @@ class FlowGlobalPostProcessorImplTest {
 
     @Test
     fun `Adds no output records containing schedule cleanup events when there are no CLOSED or ERRORed or sessions`() {
-        sessionState1.status = SessionStateType.WAIT_FOR_FINAL_ACK
+        sessionState1.status = SessionStateType.CREATED
         sessionState2.status = SessionStateType.CONFIRMED
 
         val outputContext = flowGlobalPostProcessor.postProcess(testContext)
@@ -275,7 +277,7 @@ class FlowGlobalPostProcessorImplTest {
         val updatedExternalEventState = ExternalEventState().apply { REQUEST_ID_1 }
 
         whenever(checkpoint.externalEventState).thenReturn(externalEventState)
-        whenever(externalEventManager.getEventToSend(eq(externalEventState), any(), eq(testContext.config)))
+        whenever(externalEventManager.getEventToSend(eq(externalEventState), any(), eq(testContext.flowConfig)))
             .thenReturn(updatedExternalEventState to externalEventRecord)
 
         val outputContext = flowGlobalPostProcessor.postProcess(testContext)
@@ -290,7 +292,7 @@ class FlowGlobalPostProcessorImplTest {
         val updatedExternalEventState = ExternalEventState().apply { REQUEST_ID_1 }
 
         whenever(checkpoint.externalEventState).thenReturn(externalEventState)
-        whenever(externalEventManager.getEventToSend(eq(externalEventState), any(), eq(testContext.config)))
+        whenever(externalEventManager.getEventToSend(eq(externalEventState), any(), eq(testContext.flowConfig)))
             .thenReturn(updatedExternalEventState to null)
 
         val outputContext = flowGlobalPostProcessor.postProcess(testContext)
@@ -311,23 +313,7 @@ class FlowGlobalPostProcessorImplTest {
     }
 
     @Test
-    fun `Don't retrieve messages from sessions with unconfirmed counterparties`() {
-        whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2, sessionState3))
-        whenever(membershipGroupReader.lookup(ALICE_X500_NAME)).thenReturn(mock())
-
-        val result = flowGlobalPostProcessor.postProcess(testContext)
-        assertThat(result.outputRecords).contains(sessionRecord1)
-        assertThat(result.outputRecords).contains(sessionRecord2)
-        assertThat(result.outputRecords).doesNotContain(sessionRecord4)
-    }
-
-    @Test
-    fun `Raise a platform error if counterparties cannot be confirmed within timeout window`() {
-        sessionState3.apply {
-            sessionStartTime = Instant.now().minusSeconds(86400)
-            lastReceivedMessageTime = Instant.now().minusSeconds(86400)
-        }
-
+    fun `Raise a platform error if counterparties cannot be confirmed`() {
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2, sessionState3))
         whenever(checkpoint.holdingIdentity).thenReturn(HoldingIdentity(ALICE_X500_NAME, ""))
 
@@ -377,23 +363,5 @@ class FlowGlobalPostProcessorImplTest {
 
         verify(sessionManager, times(1)).errorSession(any())
         verify(checkpoint, times(0)).putSessionState(any())
-    }
-
-    @Test
-    fun `Don't raise a platform error if counterparty currently not available, but last message was received within timeout window`() {
-        sessionState3.apply {
-            sessionStartTime = Instant.now().minusSeconds(86400)
-            lastReceivedMessageTime = Instant.now()
-        }
-
-        whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2, sessionState3))
-        whenever(checkpoint.holdingIdentity).thenReturn(HoldingIdentity(ALICE_X500_NAME, ""))
-
-        assertDoesNotThrow {
-            flowGlobalPostProcessor.postProcess(testContext)
-        }
-
-        verify(sessionManager, never()).errorSession(any())
-        verify(checkpoint, times(2)).putSessionState(any())
     }
 }

@@ -30,10 +30,10 @@ class RemoteToLocalContextMapperTest {
 
         assertThat(localContextProperties.platformProperties.items.size).isEqualTo(4)
         assertThat(localContextProperties.userProperties.items.size).isEqualTo(2)
-        assertThat(localContextProperties.counterpartySessionProperties.size).isEqualTo(4)
+        assertThat(localContextProperties.sessionProperties.size).isEqualTo(4)
 
         assertThat(localContextProperties.platformProperties.toMap())
-            .isEqualTo(localContextProperties.counterpartySessionProperties)
+            .isEqualTo(localContextProperties.sessionProperties)
 
         assertThat(localContextProperties.userProperties.toMap()["corda.initiator.user"]).isEqualTo("user2")
         assertThat(localContextProperties.platformProperties.toMap()["corda.initiator.platform"]).isEqualTo("platform2")

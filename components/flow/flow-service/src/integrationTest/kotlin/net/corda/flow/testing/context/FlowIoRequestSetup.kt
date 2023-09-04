@@ -4,9 +4,9 @@ import net.corda.flow.fiber.FlowIORequest
 
 interface FlowIoRequestSetup {
 
-    fun suspendsWith(flowIoRequest: FlowIORequest<*>)
+    fun suspendsWith(flowIoRequest: FlowIORequest<*>) : FlowIoRequestSetup
 
-    fun completedSuccessfullyWith(result: String?)
+    fun completedSuccessfullyWith(result: String?) : FlowIoRequestSetup
 
-    fun completedWithError(exception: Exception)
+    fun completedWithError(exception: Exception) : FlowIoRequestSetup
 }

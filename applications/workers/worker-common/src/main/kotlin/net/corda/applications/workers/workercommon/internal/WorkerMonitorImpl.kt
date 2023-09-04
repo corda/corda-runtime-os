@@ -2,6 +2,9 @@ package net.corda.applications.workers.workercommon.internal
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.javalin.core.util.Header
+import io.micrometer.cloudwatch2.CloudWatchConfig
+import io.micrometer.cloudwatch2.CloudWatchMeterRegistry
+import io.micrometer.core.instrument.Clock
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmHeapPressureMetrics
@@ -20,11 +23,12 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
 import java.util.concurrent.ConcurrentHashMap
 import net.corda.rest.ResponseCode
 import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
-import net.corda.web.api.WebContext
 import net.corda.web.api.WebHandler
 import net.corda.web.api.WebServer
 
@@ -41,15 +45,42 @@ internal class WorkerMonitorImpl @Activate constructor(
     @Reference(service = WebServer::class)
     private val webServer: WebServer
 ) : WorkerMonitor {
-    private val logger = LoggerFactory.getLogger(this::class.java)
+
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val CORDA_NAMESPACE = "CORDA"
+        private const val K8S_NAMESPACE_KEY = "K8S_NAMESPACE"
+        private const val CLOUDWATCH_ENABLED_KEY = "ENABLE_CLOUDWATCH"
+    }
 
     private val objectMapper = ObjectMapper()
     private val prometheusRegistry: PrometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+    private val cloudwatchConfig = object : CloudWatchConfig {
+
+        override fun get(key: String): String? {
+            return null
+        }
+
+        override fun namespace(): String {
+            val suffix = System.getenv(K8S_NAMESPACE_KEY)?.let {
+                "/$it"
+            } ?: ""
+            return "$CORDA_NAMESPACE$suffix"
+        }
+    }
+    private val cloudwatchClient = CloudWatchAsyncClient.builder()
+        .credentialsProvider(WebIdentityTokenFileCredentialsProvider.create())
+        .build()
+    private val cloudWatchRegistry = CloudWatchMeterRegistry(cloudwatchConfig, Clock.SYSTEM, cloudwatchClient)
     private val lastLogMessage = ConcurrentHashMap(mapOf(HTTP_HEALTH_ROUTE to "", HTTP_STATUS_ROUTE to ""))
 
     private fun setupMetrics(name: String) {
         logger.info("Creating Prometheus metric registry")
         CordaMetrics.configure(name, prometheusRegistry)
+        if (System.getenv(CLOUDWATCH_ENABLED_KEY) == "true") {
+            logger.info("Enabling the cloudwatch metrics registry")
+            CordaMetrics.configure(name, cloudWatchRegistry)
+        }
 
         ClassLoaderMetrics().bindTo(CordaMetrics.registry)
         JvmMemoryMetrics().bindTo(CordaMetrics.registry)
@@ -65,52 +96,45 @@ internal class WorkerMonitorImpl @Activate constructor(
     override fun registerEndpoints(workerType: String) {
         setupMetrics(workerType)
 
-        val healthRouteHandler = object : WebHandler {
-            override fun handle(context: WebContext): WebContext {
-                val unhealthyComponents = componentWithStatus(setOf(LifecycleStatus.ERROR))
-                val status = if (unhealthyComponents.isEmpty()) {
-                    clearLastLogMessageForRoute(HTTP_HEALTH_ROUTE)
-                    ResponseCode.OK
-                } else {
-                    logIfDifferentFromLastMessage(
-                        HTTP_HEALTH_ROUTE,
-                        "Status is unhealthy. The status of $unhealthyComponents has error."
-                    )
-                    ResponseCode.SERVICE_UNAVAILABLE
-                }
-                context.status(status)
-                context.header(Header.CACHE_CONTROL, NO_CACHE)
-                return context
+        val healthRouteHandler = WebHandler { context ->
+            val unhealthyComponents = componentWithStatus(setOf(LifecycleStatus.ERROR))
+            val status = if (unhealthyComponents.isEmpty()) {
+                clearLastLogMessageForRoute(HTTP_HEALTH_ROUTE)
+                ResponseCode.OK
+            } else {
+                logIfDifferentFromLastMessage(
+                    HTTP_HEALTH_ROUTE,
+                    "Status is unhealthy. The status of $unhealthyComponents has error."
+                )
+                ResponseCode.SERVICE_UNAVAILABLE
             }
+            context.status(status)
+            context.header(Header.CACHE_CONTROL, NO_CACHE)
+            context
         }
 
-        val statusRouteHandler = object : WebHandler {
-            override fun handle(context: WebContext): WebContext {
-                val notReadyComponents = componentWithStatus(setOf(LifecycleStatus.DOWN, LifecycleStatus.ERROR))
-                val status = if (notReadyComponents.isEmpty()) {
-                    clearLastLogMessageForRoute(HTTP_STATUS_ROUTE)
-                    ResponseCode.OK
-                } else {
-                    logIfDifferentFromLastMessage(
-                        HTTP_STATUS_ROUTE,
-                        "There are components with error or down state: $notReadyComponents."
-                    )
-                    ResponseCode.SERVICE_UNAVAILABLE
-                }
-                context.status(status)
-                context.result(objectMapper.writeValueAsString(lifecycleRegistry.componentStatus()))
-                context.header(Header.CACHE_CONTROL, NO_CACHE)
-                return context
+        val statusRouteHandler = WebHandler { context ->
+            val notReadyComponents = componentWithStatus(setOf(LifecycleStatus.DOWN, LifecycleStatus.ERROR))
+            val status = if (notReadyComponents.isEmpty()) {
+                clearLastLogMessageForRoute(HTTP_STATUS_ROUTE)
+                ResponseCode.OK
+            } else {
+                logIfDifferentFromLastMessage(
+                    HTTP_STATUS_ROUTE,
+                    "There are components with error or down state: $notReadyComponents."
+                )
+                ResponseCode.SERVICE_UNAVAILABLE
             }
+            context.status(status)
+            context.result(objectMapper.writeValueAsString(lifecycleRegistry.componentStatus()))
+            context.header(Header.CACHE_CONTROL, NO_CACHE)
+            context
         }
 
-        val metricsRouteHandler = object : WebHandler {
-            override fun handle(context: WebContext): WebContext {
-                context.result(prometheusRegistry.scrape())
-                context.header(Header.CACHE_CONTROL, NO_CACHE)
-                return context
-            }
-
+        val metricsRouteHandler = WebHandler { context ->
+            context.result(prometheusRegistry.scrape())
+            context.header(Header.CACHE_CONTROL, NO_CACHE)
+            context
         }
 
         webServer.registerEndpoint(Endpoint(HTTPMethod.GET, HTTP_HEALTH_ROUTE, healthRouteHandler))

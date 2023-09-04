@@ -48,14 +48,21 @@ class FakeFlowFiberFactory : FlowFiberFactory {
         override val flowLogic: FlowLogicAndArgs
     ) : FlowFiber {
 
-        var ioToCompleteWith: FlowIORequest<*>? = null
+        private var ioToCompleteWith: List<FlowIORequest<*>> = emptyList()
         var startContext: FlowFiberExecutionContext? = null
         var flowContinuation: FlowContinuation? = null
+        private var ioRequestIterator = ioToCompleteWith.iterator()
 
         fun reset() {
-            ioToCompleteWith = null
+            ioToCompleteWith = emptyList()
             startContext = null
             flowContinuation = null
+            ioRequestIterator = ioToCompleteWith.iterator()
+        }
+
+        fun setIoRequests(requests: List<FlowIORequest<*>>) {
+            ioToCompleteWith = requests
+            ioRequestIterator = ioToCompleteWith.iterator()
         }
 
         override fun getExecutionContext(): FlowFiberExecutionContext {
@@ -89,8 +96,12 @@ class FakeFlowFiberFactory : FlowFiberFactory {
 
         private fun getCompletedFuture(): Future<FlowIORequest<*>> {
             val future = CompletableFuture<FlowIORequest<*>>()
-            future.complete(checkNotNull(ioToCompleteWith) { "No FlowIORequest associated with this test run" })
-            ioToCompleteWith = null
+            val ioRequest = try {
+                ioRequestIterator.next()
+            } catch (e: Exception) {
+                throw IllegalStateException("No FlowIORequest associated with this test run", e)
+            }
+            future.complete(ioRequest)
             return future
         }
     }
