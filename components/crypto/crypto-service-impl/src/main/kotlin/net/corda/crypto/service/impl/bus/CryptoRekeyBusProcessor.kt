@@ -2,7 +2,7 @@ package net.corda.crypto.service.impl.bus
 
 
 import net.corda.crypto.core.CryptoService
-import net.corda.data.crypto.wire.ops.rekey.CryptoRekeyRequest
+import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 
@@ -12,11 +12,11 @@ import net.corda.messaging.api.records.Record
  */
 class CryptoRekeyBusProcessor(
     val cryptoService: CryptoService
-) : DurableProcessor<String, CryptoRekeyRequest> {
+) : DurableProcessor<String, KeyRotationRequest> {
 
     override val keyClass: Class<String> = String::class.java
-    override val valueClass = CryptoRekeyRequest::class.java
-    override fun onNext(events: List<Record<String, CryptoRekeyRequest>>): List<Record<*, *>> {
+    override val valueClass = KeyRotationRequest::class.java
+    override fun onNext(events: List<Record<String, KeyRotationRequest>>): List<Record<*, *>> {
         events.forEach {
             // Query the database to find out what keys need re-wrapping. For each of them, post message to Kafka
             // with correct topic.

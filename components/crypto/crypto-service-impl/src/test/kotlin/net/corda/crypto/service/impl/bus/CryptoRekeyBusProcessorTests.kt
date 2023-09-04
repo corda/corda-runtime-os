@@ -12,7 +12,7 @@ class CryptoRekeyBusProcessorTests {
     }
 
     @Test
-    fun `do a mocked rekey`() {
+    fun `do a mocked key rotation`() {
         // to be implemented
     }
 }
