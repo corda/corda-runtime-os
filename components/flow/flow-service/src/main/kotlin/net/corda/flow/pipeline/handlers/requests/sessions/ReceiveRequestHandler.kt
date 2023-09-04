@@ -24,7 +24,7 @@ class ReceiveRequestHandler @Activate constructor(
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.Receive): FlowEventContext<Any> {
         //generate init messages for sessions which do not exist yet
-        generateSessionService.generateSessionsNotCreated(context, request.sessions)
+        generateSessionService.generateSessionsNotCreated(context, request.sessions, true)
         return context
     }
 }
