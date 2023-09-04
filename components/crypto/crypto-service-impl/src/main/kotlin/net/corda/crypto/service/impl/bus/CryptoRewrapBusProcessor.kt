@@ -23,6 +23,6 @@ class CryptoRewrapBusProcessor(
             }
         }
         // We need to return something else - this is published back as a response on the incoming events
-        return events
+        return listOf()
     }
 }
