@@ -1,8 +1,10 @@
 package net.corda.flow.pipeline.handlers.requests
 
+import net.corda.data.flow.event.FlowEvent
 import java.util.stream.Stream
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
+import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.flow.RequestHandlerTestContext
@@ -40,7 +42,6 @@ class SubFlowFinishedRequestHandlerTest {
         }
     }
 
-    private val record = Record("", "", FlowEvent())
     private val sessionState1 = SessionState().apply { this.sessionId = SESSION_ID_1 }
     private val sessionState2 = SessionState().apply { this.sessionId = SESSION_ID_2 }
     private val sessionState3 = SessionState().apply { this.sessionId = SESSION_ID_3 }
@@ -48,7 +49,6 @@ class SubFlowFinishedRequestHandlerTest {
 
     private val testContext = RequestHandlerTestContext(Any())
     private val handler = SubFlowFinishedRequestHandler(
-        testContext.flowRecordFactory,
         testContext.closeSessionService
     )
 
@@ -76,6 +76,7 @@ class SubFlowFinishedRequestHandlerTest {
         assertEquals(SessionConfirmation(SESSION_IDS, SessionConfirmationType.CLOSE), result.value)
     }
 
+    @ParameterizedTest
     @MethodSource("isInitiatingFlow")
     fun `Returns an updated WaitingFor of Wakeup when the flow  has no sessions to close`(isInitiatingFlow: Boolean) {
         val result = handler.getUpdatedWaitingFor(
@@ -110,7 +111,7 @@ class SubFlowFinishedRequestHandlerTest {
             FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessions.map { it.sessionId })
         )
         verify(testContext.closeSessionService).handleCloseForSessions(testContext.flowCheckpoint, SESSION_IDS)
-        verify(testContext.flowRecordFactory, never()).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
+        verify(testContext.flowRecordFactory, never()).createFlowEventRecord(eq(testContext.flowId), any())
         assertThat(outputContext.outputRecords).hasSize(0)
     }
 
@@ -123,7 +124,6 @@ class SubFlowFinishedRequestHandlerTest {
             testContext.flowEventContext,
             FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow, emptyList()).sessions.map { it.sessionId })
         )
-        verify(testContext.flowRecordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         assertThat(outputContext.outputRecords).containsOnly(record)
     }
 
@@ -138,8 +138,12 @@ class SubFlowFinishedRequestHandlerTest {
         )
 
         verify(testContext.closeSessionService).handleCloseForSessions(testContext.flowCheckpoint, SESSION_IDS)
-        verify(testContext.flowRecordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         assertThat(outputContext.outputRecords).containsOnly(record)
+        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
+        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState2)
+        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState3)
+        verify(testContext.flowSessionManager).sendCloseMessages(eq(testContext.flowCheckpoint), eq(emptyList()), any())
+        assertThat(outputContext.outputRecords).isEmpty()
     }
 
     @Test

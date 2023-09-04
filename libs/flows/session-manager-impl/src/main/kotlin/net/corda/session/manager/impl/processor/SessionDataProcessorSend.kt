@@ -6,7 +6,7 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
-import net.corda.flow.utils.isInitiatedParty
+import net.corda.flow.utils.isInitiatedIdentity
 import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
@@ -48,7 +48,7 @@ class SessionDataProcessorSend(
             }
             SessionStateType.CREATED, SessionStateType.CONFIRMED  -> {
                 if (currentStatus == SessionStateType.CREATED ||
-                    (isInitiatedParty && sessionState.sendEventsState.lastProcessedSequenceNum == 0)) {
+                    (isInitiatedIdentity && sessionState.sendEventsState.lastProcessedSequenceNum == 0)) {
                     //ensure first message to arrive to counterparty contains session props
                     sessionEvent.contextSessionProperties = sessionState.sessionProperties
                 }

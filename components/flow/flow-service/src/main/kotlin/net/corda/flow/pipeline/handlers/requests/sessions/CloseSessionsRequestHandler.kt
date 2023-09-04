@@ -47,7 +47,7 @@ class CloseSessionsRequestHandler @Activate constructor(
         request: FlowIORequest.CloseSessions
     ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
-        val sessionsNotTerminated = try {
+        try {
             closeSessionService.handleCloseForSessions(checkpoint, getSessionsToClose(request))
         } catch (e: Exception) {
             // TODO CORE-4850 Wakeup with error when session does not exist
