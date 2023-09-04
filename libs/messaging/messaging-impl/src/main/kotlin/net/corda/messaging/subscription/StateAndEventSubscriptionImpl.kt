@@ -1,5 +1,6 @@
 package net.corda.messaging.subscription
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -26,10 +27,16 @@ import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toRecord
 import net.corda.messaging.utils.tryGetResult
 import net.corda.metrics.CordaMetrics
+import net.corda.schema.Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC
 import net.corda.schema.Schemas.getDLQTopic
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.utilities.debug
+import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 import java.nio.ByteBuffer
 import java.time.Clock
 import java.util.UUID
@@ -43,6 +50,8 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val chunkSerializerService: ChunkSerializerService,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val clock: Clock = Clock.systemUTC(),
 ) : StateAndEventSubscription<K, S, E> {
 
@@ -87,6 +96,13 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .build()
+
+    private val httpClient: HttpClient = HttpClient.newBuilder()
+        .connectTimeout(java.time.Duration.ofSeconds(10))
+        .build()
+
+    private val avroSerializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
+    private val avroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
 
     /**
      * Is the subscription running.
@@ -245,6 +261,28 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
         commitTimer.recordCallable {
             producer.beginTransaction()
+
+            // TODO All changes in this file are for testing purposes only (needs to be reverted)
+            outputRecords.map { record ->
+                if (record.topic == UNIQUENESS_CHECK_TOPIC) {
+                    val payload = record.value?.run { avroSerializer.serialize(record.value!!) }
+                    val request = HttpRequest.newBuilder()
+                        .uri(URI.create("http://localhost:7000/uniquenessChecker"))
+                        .headers("Content-Type", "application/octet-stream")
+                        .POST(HttpRequest.BodyPublishers.ofByteArray(payload))
+                        .build()
+                    val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
+                    val responseBody: ByteArray = response.body()
+                    @Suppress("UNCHECKED_CAST")
+                    val responseEvent = avroDeserializer.deserialize(responseBody) as? E
+                    log.info("Got a response: $responseEvent")
+                    Record(record.topic, record.key, responseEvent)
+                } else {
+                    record
+                }
+            }
+
+
             producer.sendRecords(outputRecords.toCordaProducerRecords())
             if (deadLetterRecords.isNotEmpty()) {
                 producer.sendRecords(deadLetterRecords.map {
