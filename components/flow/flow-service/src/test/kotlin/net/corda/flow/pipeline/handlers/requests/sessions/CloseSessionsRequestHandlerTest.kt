@@ -36,6 +36,7 @@ class CloseSessionsRequestHandlerTest {
 
         whenever(flowCheckpoint.getSessionState(sessionId1)).thenReturn(sessionState1)
         whenever(flowCheckpoint.getSessionState(sessionId2)).thenReturn(sessionState2)
+    }
 
     @Test
     fun `Returns an updated WaitingFor of SessionsConfirmation (Close) when there are sessions to close`() {

@@ -1,7 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests
 
-import net.corda.data.flow.event.FlowEvent
-import java.util.stream.Stream
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowStackItemSession
 import net.corda.data.flow.state.session.SessionState
@@ -24,6 +22,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.stream.Stream
 
 @Suppress("MaxLineLength")
 class SubFlowFinishedRequestHandlerTest {
@@ -110,9 +109,12 @@ class SubFlowFinishedRequestHandlerTest {
             testContext.flowEventContext,
             FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessions.map { it.sessionId })
         )
-        verify(testContext.closeSessionService).handleCloseForSessions(testContext.flowCheckpoint, SESSION_IDS)
+
+        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
+        verify(testContext.flowCheckpoint).putSessionStates(listOf(sessionState2, sessionState3))
         verify(testContext.flowRecordFactory, never()).createFlowEventRecord(eq(testContext.flowId), any())
         assertThat(outputContext.outputRecords).hasSize(0)
+        verify(testContext.closeSessionService).handleCloseForSessions(testContext.flowCheckpoint, SESSION_IDS)
     }
 
     @ParameterizedTest(name = "Does not send session close messages and creates a Wakeup record when the flow has no sessions to close (isInitiatingFlow={0})")
@@ -124,8 +126,11 @@ class SubFlowFinishedRequestHandlerTest {
             testContext.flowEventContext,
             FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow, emptyList()).sessions.map { it.sessionId })
         )
-        assertThat(outputContext.outputRecords).containsOnly(record)
-    }
+        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
+        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState2)
+        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState3)
+        verify(testContext.flowSessionManager).sendCloseMessages(eq(testContext.flowCheckpoint), eq(emptyList()), any())
+        assertThat(outputContext.outputRecords).isEmpty()    }
 
     @ParameterizedTest(name = "Does not send session close messages and creates a Wakeup record when the flow has only closed sessions (isInitiatingFlow={0})")
     @MethodSource("isInitiatingFlow")
@@ -136,13 +141,8 @@ class SubFlowFinishedRequestHandlerTest {
             testContext.flowEventContext,
             FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessions.map { it.sessionId })
         )
-
+        verify(testContext.flowCheckpoint).putSessionStates(listOf(sessionState1, sessionState2, sessionState3))
         verify(testContext.closeSessionService).handleCloseForSessions(testContext.flowCheckpoint, SESSION_IDS)
-        assertThat(outputContext.outputRecords).containsOnly(record)
-        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
-        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState2)
-        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState3)
-        verify(testContext.flowSessionManager).sendCloseMessages(eq(testContext.flowCheckpoint), eq(emptyList()), any())
         assertThat(outputContext.outputRecords).isEmpty()
     }
 
