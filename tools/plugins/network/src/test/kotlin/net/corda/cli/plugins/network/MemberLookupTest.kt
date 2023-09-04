@@ -42,7 +42,10 @@ class MemberLookupTest {
             onboardMgm = OnboardMgm()
             CommandLine(onboardMgm).execute(
                 mgm.toString(),
-                *CLI_PARAMS
+                CLI_PARAMS[0],
+                CLI_PARAMS[1],
+                CLI_PARAMS[2],
+                CLI_PARAMS[3]
             )
             holdingIdentity = HoldingIdentityUtils.getHoldingIdentity(
                 null,
@@ -63,7 +66,10 @@ class MemberLookupTest {
         CommandLine(memberLookup).execute(
             "--status=${MEMBER_STATUS_ACTIVE}",
             "-h=${holdingIdentity}",
-            *CLI_PARAMS
+            CLI_PARAMS[0],
+            CLI_PARAMS[1],
+            CLI_PARAMS[2],
+            CLI_PARAMS[3]
         )
 
         val mgmContext = outputStub.printedOutput?.get(0)?.get("mgmContext")
@@ -75,7 +81,10 @@ class MemberLookupTest {
         CommandLine(memberLookup).execute(
             "--status=${MEMBER_STATUS_SUSPENDED}",
             "-h=${holdingIdentity}",
-            *CLI_PARAMS
+            CLI_PARAMS[0],
+            CLI_PARAMS[1],
+            CLI_PARAMS[2],
+            CLI_PARAMS[3]
         )
 
         assertEquals(JsonNodeFactory.instance.arrayNode(), outputStub.printedOutput)
@@ -86,7 +95,10 @@ class MemberLookupTest {
         CommandLine(memberLookup).execute(
             "-cn=${mgm.commonName}",
             "-h=${holdingIdentity}",
-            *CLI_PARAMS
+            CLI_PARAMS[0],
+            CLI_PARAMS[1],
+            CLI_PARAMS[2],
+            CLI_PARAMS[3]
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -97,7 +109,10 @@ class MemberLookupTest {
         CommandLine(memberLookup).execute(
             "-ou=${mgm.organizationUnit}",
             "-h=${holdingIdentity}",
-            *CLI_PARAMS
+            CLI_PARAMS[0],
+            CLI_PARAMS[1],
+            CLI_PARAMS[2],
+            CLI_PARAMS[3]
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -108,7 +123,10 @@ class MemberLookupTest {
         CommandLine(memberLookup).execute(
             "-l=${mgm.locality}",
             "-h=${holdingIdentity}",
-            *CLI_PARAMS
+            CLI_PARAMS[0],
+            CLI_PARAMS[1],
+            CLI_PARAMS[2],
+            CLI_PARAMS[3]
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -119,7 +137,10 @@ class MemberLookupTest {
         CommandLine(memberLookup).execute(
             "-st=${mgm.state}",
             "-h=${holdingIdentity}",
-            *CLI_PARAMS
+            CLI_PARAMS[0],
+            CLI_PARAMS[1],
+            CLI_PARAMS[2],
+            CLI_PARAMS[3]
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -130,7 +151,10 @@ class MemberLookupTest {
         CommandLine(memberLookup).execute(
             "-c=${mgm.country}",
             "-h=${holdingIdentity}",
-            *CLI_PARAMS
+            CLI_PARAMS[0],
+            CLI_PARAMS[1],
+            CLI_PARAMS[2],
+            CLI_PARAMS[3]
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -141,7 +165,10 @@ class MemberLookupTest {
         CommandLine(memberLookup).execute(
             "-o=${mgm.organization}",
             "-h=${holdingIdentity}",
-            *CLI_PARAMS
+            CLI_PARAMS[0],
+            CLI_PARAMS[1],
+            CLI_PARAMS[2],
+            CLI_PARAMS[3]
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -151,7 +178,10 @@ class MemberLookupTest {
     fun `test member lookup command with X500 name with default groupId from file`() {
         CommandLine(memberLookup).execute(
             "--name=${onboardMgm.name}",
-            *CLI_PARAMS
+            CLI_PARAMS[0],
+            CLI_PARAMS[1],
+            CLI_PARAMS[2],
+            CLI_PARAMS[3]
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -166,7 +196,10 @@ class MemberLookupTest {
         CommandLine(memberLookup).execute(
             "--name=${onboardMgm.name}",
             "--group=${group}",
-            *CLI_PARAMS
+            CLI_PARAMS[0],
+            CLI_PARAMS[1],
+            CLI_PARAMS[2],
+            CLI_PARAMS[3]
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -176,7 +209,10 @@ class MemberLookupTest {
     fun `test member lookup command with holding identity short hash`() {
         CommandLine(memberLookup).execute(
             "-h=${holdingIdentity}",
-            *CLI_PARAMS
+            CLI_PARAMS[0],
+            CLI_PARAMS[1],
+            CLI_PARAMS[2],
+            CLI_PARAMS[3]
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
