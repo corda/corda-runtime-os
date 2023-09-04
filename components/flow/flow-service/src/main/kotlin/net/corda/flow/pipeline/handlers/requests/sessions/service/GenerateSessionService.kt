@@ -54,7 +54,7 @@ class GenerateSessionService @Activate constructor(
     private fun generateSessionStates(
         context: FlowEventContext<Any>,
         sessionsNotInitiated: Set<SessionInfo>,
-        sendInit: Boolean = false
+        sendInit: Boolean
     ) {
         val checkpoint = context.checkpoint
 
