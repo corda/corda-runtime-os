@@ -5,6 +5,7 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
 import java.math.BigDecimal
 import java.time.Instant
@@ -12,6 +13,14 @@ import javax.persistence.EntityManager
 
 @Suppress("TooManyFunctions")
 interface UtxoRepository {
+
+    /**
+     * TODO KDocs
+     */
+    fun findExistingNotInvalidTransactionIds(
+        entityManager: EntityManager,
+        transactionIds: List<String>
+    ): List<SecureHash>
 
     /** Retrieves transaction by [id] */
     fun findTransaction(

@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedGroupParameters
@@ -18,6 +19,7 @@ import net.corda.utilities.debug
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -67,6 +69,24 @@ class UtxoRepositoryImpl @Activate constructor(
             wireTransaction,
             findTransactionSignatures(entityManager, id)
         )
+    }
+
+    override fun findExistingNotInvalidTransactionIds(
+        entityManager: EntityManager,
+        transactionIds: List<String>
+    ): List<SecureHash> {
+        return entityManager.createNativeQuery(
+            """
+                SELECT id,
+                FROM {h-schema}utxo_transaction
+                WHERE id IN (:transactionIds) 
+                AND status <> :invalid""",
+            Tuple::class.java
+        )
+            .setParameter("invalid", TransactionStatus.INVALID.value)
+            .setParameter("transactionIds", transactionIds)
+            .resultListAsTuples()
+            .map { r -> parseSecureHash(r.get(0) as String) }
     }
 
     private fun findTransactionPrivacySalt(

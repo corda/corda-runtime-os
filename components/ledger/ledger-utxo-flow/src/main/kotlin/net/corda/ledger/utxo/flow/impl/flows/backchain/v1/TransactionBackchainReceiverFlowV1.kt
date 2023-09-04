@@ -63,6 +63,11 @@ class TransactionBackchainReceiverFlowV1(
         val sortedTransactionIds = TopologicalSort()
 
         while (transactionsToRetrieve.isNotEmpty()) {
+            val existingTransactionsInDb = utxoLedgerPersistenceService.findExistingNotInvalidTransactionIds(
+                transactionsToRetrieve.toList()
+            )
+            transactionsToRetrieve.removeIf { existingTransactionsInDb.contains(it) }
+
             // For now, we'll assume a batch size of 1
             val batch = setOf(transactionsToRetrieve.first())
 

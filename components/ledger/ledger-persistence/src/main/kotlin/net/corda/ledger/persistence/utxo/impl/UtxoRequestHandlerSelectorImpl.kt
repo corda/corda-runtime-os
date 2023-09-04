@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.data.ledger.persistence.FindExistingNotInvalidTransactionIds
 import net.corda.data.ledger.persistence.FindSignedGroupParameters
 import net.corda.data.ledger.persistence.FindSignedLedgerTransaction
 import net.corda.data.ledger.persistence.FindTransaction
@@ -19,6 +20,7 @@ import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFacto
 import net.corda.ledger.persistence.query.execution.impl.VaultNamedQueryExecutorImpl
 import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoExecuteNamedQueryHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindNotInvalidTransactionIdsRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedGroupParametersRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedLedgerTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionRequestHandler
@@ -153,6 +155,15 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     externalEventContext,
                     externalEventResponseFactory,
                     persistenceService
+                )
+            }
+            is FindExistingNotInvalidTransactionIds -> {
+                UtxoFindNotInvalidTransactionIdsRequestHandler(
+                    req,
+                    externalEventContext,
+                    persistenceService,
+                    externalEventResponseFactory,
+                    serializationService
                 )
             }
             else -> {
