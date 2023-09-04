@@ -118,7 +118,7 @@ class FlowSessionManagerImpl @Activate constructor(
             sessionId,
             payload = SessionConfirm(),
             instant,
-            contextSessionProperties = contextSessionProperties
+            contextSessionProperties
         )
     }
 
