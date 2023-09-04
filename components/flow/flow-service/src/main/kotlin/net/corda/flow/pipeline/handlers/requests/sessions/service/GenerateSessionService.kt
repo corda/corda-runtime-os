@@ -51,7 +51,7 @@ class GenerateSessionService @Activate constructor(
      * @param sessionToInfo sessions to create
      * @param sendInit True if a SessionInit should be scheduled as part of creating the session state.
      */
-    fun generateSessionsNotCreated(
+    fun generateSessions(
         context: FlowEventContext<Any>,
         sessionToInfo: Set<SessionInfo>,
         sendInit: Boolean = false

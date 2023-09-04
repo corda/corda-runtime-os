@@ -46,12 +46,12 @@ class CounterPartyFlowInfoRequestHandlerTest {
     @Test
     fun `Initiates flows not initiated yet`() {
         handler.postProcess(testContext.flowEventContext, ioRequest)
-        verify(testContext.initiateFlowReqService).generateSessionsNotCreated(any(), any(), anyBoolean())
+        verify(testContext.initiateFlowReqService).generateSessions(any(), any(), anyBoolean())
     }
 
     @Test
     fun `Throws exception when any of the sessions are invalid`() {
-        whenever(testContext.initiateFlowReqService.generateSessionsNotCreated(any(), any(), anyBoolean()))
+        whenever(testContext.initiateFlowReqService.generateSessions(any(), any(), anyBoolean()))
             .thenThrow(FlowSessionStateException(""))
 
         assertThrows<FlowPlatformException> { handler.postProcess(testContext.flowEventContext, ioRequest) }

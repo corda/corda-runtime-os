@@ -36,7 +36,7 @@ class SendAndReceiveRequestHandler @Activate constructor(
         val checkpoint = context.checkpoint
 
         //generate init messages for sessions which do not exist yet
-        generateSessionService.generateSessionsNotCreated(context, request.sessionToInfo.keys)
+        generateSessionService.generateSessions(context, request.sessionToInfo.keys)
 
         try {
             checkpoint.putSessionStates(flowSessionManager.sendDataMessages(checkpoint, request.sessionToInfo, Instant.now()))

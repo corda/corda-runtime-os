@@ -49,7 +49,7 @@ class ReceiveRequestHandlerTest {
                 )
             )
         )
-        verify(testContext.initiateFlowReqService).generateSessionsNotCreated(any(), any(), anyBoolean())
+        verify(testContext.initiateFlowReqService).generateSessions(any(), any(), anyBoolean())
 
         assertThat(outputContext.outputRecords).isEmpty()
     }
@@ -65,7 +65,7 @@ class ReceiveRequestHandlerTest {
                 )
             )
         )
-        verify(testContext.initiateFlowReqService).generateSessionsNotCreated(any(), any(), anyBoolean())
+        verify(testContext.initiateFlowReqService).generateSessions(any(), any(), anyBoolean())
         assertEquals(0, outputContext.outputRecords.size)
     }
 
@@ -80,7 +80,7 @@ class ReceiveRequestHandlerTest {
                 )
             )
         )
-        verify(testContext.initiateFlowReqService).generateSessionsNotCreated(any(), any(), anyBoolean())
+        verify(testContext.initiateFlowReqService).generateSessions(any(), any(), anyBoolean())
         assertEquals(flowEventContext, outputContext)
     }
 }

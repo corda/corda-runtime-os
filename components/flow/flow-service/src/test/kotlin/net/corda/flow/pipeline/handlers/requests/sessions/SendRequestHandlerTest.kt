@@ -66,7 +66,7 @@ class SendRequestHandlerTest {
             any(),
             any()
         )
-        verify(testContext.initiateFlowReqService).generateSessionsNotCreated(any(), any(), anyBoolean())
+        verify(testContext.initiateFlowReqService).generateSessions(any(), any(), anyBoolean())
         assertThat(outputContext.outputRecords).isEmpty()
     }
 

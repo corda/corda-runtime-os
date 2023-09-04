@@ -32,7 +32,7 @@ class SendRequestHandler @Activate constructor(
         val checkpoint = context.checkpoint
         try {
             //generate session states for sessions which do not exist yet
-            generateSessionService.generateSessionsNotCreated(context, request.sessionPayloads.keys)
+            generateSessionService.generateSessions(context, request.sessionPayloads.keys)
             checkpoint.putSessionStates(flowSessionManager.sendDataMessages(checkpoint, request.sessionPayloads, Instant.now()))
         } catch (e: FlowSessionStateException) {
             throw FlowPlatformException("Failed to send: ${e.message}. $PROTOCOL_MISMATCH_HINT", e)

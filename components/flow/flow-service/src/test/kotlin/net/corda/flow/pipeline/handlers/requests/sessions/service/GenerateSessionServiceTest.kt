@@ -77,14 +77,14 @@ class GenerateSessionServiceTest {
 
     @Test
     fun `Session init event sent to session manager and checkpoint updated with session state`() {
-        generateSessionService.generateSessionsNotCreated(testContext.flowEventContext, sessionInfo, true)
+        generateSessionService.generateSessions(testContext.flowEventContext, sessionInfo, true)
         verify(testContext.flowCheckpoint, times(2)).putSessionState(any())
         verify(testContext.flowSessionManager).generateSessionState(any(), any(), any(), any(), any())
     }
 
     @Test
     fun `No Session init event sent to session manager and checkpoint updated with session state`() {
-        generateSessionService.generateSessionsNotCreated(testContext.flowEventContext, sessionInfo, false)
+        generateSessionService.generateSessions(testContext.flowEventContext, sessionInfo, false)
         verify(testContext.flowCheckpoint, times(1)).putSessionState(any())
         verify(testContext.flowSessionManager).generateSessionState(any(), any(), any(), any(), any())
     }
@@ -93,7 +93,7 @@ class GenerateSessionServiceTest {
     fun `No initiating flow in the subflow stack throws platform exception`() {
         whenever(testContext.flowStack.nearestFirst(any())).thenReturn(null)
         assertThrows<FlowPlatformException> {
-            generateSessionService.generateSessionsNotCreated(testContext.flowEventContext, sessionInfo)
+            generateSessionService.generateSessions(testContext.flowEventContext, sessionInfo)
         }
     }
 
@@ -101,13 +101,13 @@ class GenerateSessionServiceTest {
     fun `No flows in the subflow stack throws fatal exception`() {
         whenever(testContext.flowStack.isEmpty()).thenReturn(true)
         assertThrows<FlowFatalException> {
-            generateSessionService.generateSessionsNotCreated(testContext.flowEventContext, sessionInfo)
+            generateSessionService.generateSessions(testContext.flowEventContext, sessionInfo)
         }
     }
 
     @Test
     fun `Does not add an output record`() {
-        generateSessionService.generateSessionsNotCreated(testContext.flowEventContext, sessionInfo)
+        generateSessionService.generateSessions(testContext.flowEventContext, sessionInfo)
         assertThat(testContext.flowEventContext.outputRecords).hasSize(0)
     }
 }

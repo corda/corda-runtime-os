@@ -38,7 +38,7 @@ class CounterPartyFlowInfoRequestHandler @Activate constructor(
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.CounterPartyFlowInfo): FlowEventContext<Any> {
         try {
             val sessionInfo = request.sessionInfo
-            generateSessionService.generateSessionsNotCreated(context, setOf(sessionInfo), true)
+            generateSessionService.generateSessions(context, setOf(sessionInfo), true)
         } catch (e: FlowSessionStateException) {
             throw FlowPlatformException("Failed to send: ${e.message}. $PROTOCOL_MISMATCH_HINT", e)
         }
