@@ -1,7 +1,7 @@
 package net.corda.crypto.service.impl.bus
 
 import net.corda.crypto.core.CryptoService
-import net.corda.data.crypto.wire.ops.rewrap.CryptoRewrapRequest
+import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
 import net.corda.messaging.api.records.Record
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -24,7 +24,7 @@ class CryptoRewrapBusProcessorTests {
                 Record(
                     "TBC",
                     UUID.randomUUID().toString(),
-                    CryptoRewrapRequest(tenantId, "alias1", "root2")
+                    IndividualKeyRotationRequest(tenantId, "alias1", "root2")
                 )
             )
         )
