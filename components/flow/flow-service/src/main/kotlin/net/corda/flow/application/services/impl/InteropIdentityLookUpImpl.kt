@@ -13,6 +13,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import org.slf4j.LoggerFactory
+import java.util.*
 
 @Component(service = [InteropIdentityLookUp::class, UsedByFlow::class], scope = PROTOTYPE)
 class InteropIdentityLookUpImpl @Activate constructor(
@@ -49,7 +50,7 @@ data class InteropIdentityInfoImpl(
     private val applicationName: String,
     private val facadeIds: List<FacadeId>,
     private val x500Name: String,
-    private val groupId: String
+    private val groupId: UUID
 ) : InterOpIdentityInfo {
     override fun getApplicationName(): String {
         return applicationName
@@ -59,7 +60,7 @@ data class InteropIdentityInfoImpl(
         return facadeIds
     }
 
-    override fun getGroupId(): String {
+    override fun getGroupId(): UUID {
         return groupId
     }
 
