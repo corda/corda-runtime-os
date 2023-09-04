@@ -49,7 +49,7 @@ class ReceiveRequestHandlerTest {
                 )
             )
         )
-        verify(testContext.initiateFlowReqService).generateSessions(any(), any(), equals(true))
+        verify(testContext.initiateFlowReqService).generateSessions(any(), any(), eq(true))
 
         assertThat(outputContext.outputRecords).isEmpty()
     }
