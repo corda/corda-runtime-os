@@ -85,30 +85,26 @@ class GenerateSessionService @Activate constructor(
             put(FLOW_PROTOCOL_VERSIONS_SUPPORTED, protocolVersions.joinToString())
         }
 
-        checkpoint.putSessionStates(
-            sessionsNotInitiated.map {
-                var newSessionState = flowSessionManager.generateSessionState(
-                    checkpoint,
-                    it.sessionId,
-                    it.counterparty,
-                    sessionProperties = sessionContext.apply { put(FLOW_SESSION_REQUIRE_CLOSE, it.requireClose.toString()) }.avro,
+        sessionsNotInitiated.map { sessionInfo ->
+            flowSessionManager.generateSessionState(
+                checkpoint,
+                sessionInfo.sessionId,
+                sessionInfo.counterparty,
+                sessionProperties = sessionContext.apply { put(FLOW_SESSION_REQUIRE_CLOSE, sessionInfo.requireClose.toString()) }.avro,
+                Instant.now()
+            ).also { checkpoint.putSessionState(it) }
+
+            if (sendInit) {
+                checkpoint.putSessionState(flowSessionManager.sendInitMessage(
+                    context.checkpoint,
+                    sessionInfo.sessionId,
+                    keyValuePairListOf(sessionInfo.contextUserProperties),
+                    keyValuePairListOf(sessionInfo.contextPlatformProperties),
+                    sessionInfo.counterparty,
                     Instant.now()
-                )
-
-                if (sendInit) {
-                    newSessionState = flowSessionManager.sendInitMessage(
-                        context.checkpoint,
-                        it.sessionId,
-                        keyValuePairListOf(it.contextUserProperties),
-                        keyValuePairListOf(it.contextPlatformProperties),
-                        it.counterparty,
-                        Instant.now()
-                    )
-                }
-
-                newSessionState
+                ))
             }
-        )
+        }
 
         val sessionsNotInitiatedIds = sessionsNotInitiated.map { it.sessionId }.toSet()
         initiatingFlowStackItem.sessions

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -46,6 +47,8 @@ class GenerateSessionServiceTest {
         whenever(testContext.flowSandboxService.get(any(), any())).thenReturn(sandboxGroupContext)
         whenever(sandboxGroupContext.protocolStore).thenReturn(protocolStore)
         whenever(protocolStore.protocolsForInitiator(any(), any())).thenReturn(Pair("protocol", listOf(1)))
+        whenever(testContext.flowSessionManager.sendInitMessage(any(), any(), any(), any(), any(), any())).thenReturn(sessionState1)
+        whenever(testContext.flowCheckpoint.getSessionState(sessionId1)).thenReturn(null)
         whenever(testContext.flowCheckpoint.getSessionState(sessionId1)).thenReturn(null)
         whenever(testContext.flowStack.nearestFirst(any())).thenReturn(
             FlowStackItem(
@@ -74,8 +77,15 @@ class GenerateSessionServiceTest {
 
     @Test
     fun `Session init event sent to session manager and checkpoint updated with session state`() {
-        generateSessionService.generateSessionsNotCreated(testContext.flowEventContext, sessionInfo)
-        verify(testContext.flowCheckpoint).putSessionStates(listOf(sessionState1))
+        generateSessionService.generateSessionsNotCreated(testContext.flowEventContext, sessionInfo, true)
+        verify(testContext.flowCheckpoint, times(2)).putSessionState(any())
+        verify(testContext.flowSessionManager).generateSessionState(any(), any(), any(), any(), any())
+    }
+
+    @Test
+    fun `No Session init event sent to session manager and checkpoint updated with session state`() {
+        generateSessionService.generateSessionsNotCreated(testContext.flowEventContext, sessionInfo, false)
+        verify(testContext.flowCheckpoint, times(1)).putSessionState(any())
         verify(testContext.flowSessionManager).generateSessionState(any(), any(), any(), any(), any())
     }
 
