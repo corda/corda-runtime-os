@@ -1,0 +1,12 @@
+/**
+ * Apply this plugin to projects that must be implemented in pure Java.
+ * We cannot prevent such projects from applying the Kotlin Gradle plugin,
+ * but we can throw an exception if they try to compile any Kotlin classes.
+ */
+pluginManager.withPlugin('org.jetbrains.kotlin.jvm') {
+    tasks.named('compileKotlin') {
+        doFirst {
+            throw new InvalidUserCodeException("Module '${project.path}' should only contain Java classes")
+        }
+    }
+}
