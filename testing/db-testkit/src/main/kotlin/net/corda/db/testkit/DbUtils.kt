@@ -10,7 +10,9 @@ object DbUtils {
     private val isMSSQL = !System.getProperty("mssqlPort").isNullOrBlank()
 
     private val utilsHelper: DbUtilsHelper = when {
-        isMSSQL && isPostgres -> throw IllegalArgumentException("Both postgres and SQL server are set, please only set properties for one DB type")
+        isMSSQL && isPostgres -> throw IllegalArgumentException(
+            "Both postgres and SQL server are set, please only set properties for one DB type"
+        )
         isMSSQL -> SQLServerHelper()
         isPostgres -> PostgresHelper()
         else -> {
