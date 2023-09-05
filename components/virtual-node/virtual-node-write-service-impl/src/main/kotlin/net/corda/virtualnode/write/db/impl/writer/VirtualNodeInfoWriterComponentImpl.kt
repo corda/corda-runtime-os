@@ -29,6 +29,7 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.atomic.AtomicReference
 import net.corda.data.identity.HoldingIdentity as HoldingIdentityAvro
 import net.corda.data.virtualnode.VirtualNodeInfo as VirtualNodeInfoAvro
 
@@ -53,7 +54,7 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
     override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<VirtualNodeInfoWriteService>()
     private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::processEvent)
 
-    private var publisher: Publisher? = null
+    private var publisher: AtomicReference<Publisher?> = AtomicReference()
     private var registration: RegistrationHandle? = null
     private var configSubscription: AutoCloseable? = null
 
@@ -74,13 +75,13 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
     /** Synchronous publish */
     @Suppress("ForbiddenComment")
     private fun publish(records: List<Record<HoldingIdentityAvro, VirtualNodeInfoAvro>>) {
-        if (publisher == null) {
-            log.error("Publisher is null, not publishing")
+        if (publisher.get() == null) {
+            log.error("Cpi Info Writer publisher is null, not publishing, this error will addressed in a later PR")
             return
         }
 
         //TODO:  according the publish kdoc, we need to handle failure, retries, and possibly transactions.  Next PR.
-        val futures = publisher!!.publish(records)
+        val futures = publisher.get()!!.publish(records)
 
         // Wait for the future (there should only be one) to complete.
         futures.forEach { it.get() }
@@ -150,11 +151,11 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
     }
 
     private fun createPublisher(event: ConfigChangedEvent) {
-        publisher?.close()
-        publisher = publisherFactory.createPublisher(
+        publisher.get()?.close()
+        publisher.set(publisherFactory.createPublisher(
             PublisherConfig(CLIENT_ID),
             event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-        )
+        ))
     }
 
     @Deactivate
