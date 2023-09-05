@@ -51,6 +51,7 @@ Import-Package: \
    scala.util;resolution:=optional,\
    *
 Quasar-Ignore-Package: software.amazon.**,org.apache.http**
+-fixupmessages "Export [^,]++,\\\\s++has (\\\\d++),\\\\s++private references "; restrict:=warning; is:=error
 -includepackage: \
     software.amazon.awssdk.services.cloudwatch.*,\
     software.amazon.awssdk.services.sts.*,\
