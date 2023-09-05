@@ -14,7 +14,6 @@ import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.InputStream
 import java.lang.management.ManagementFactory
@@ -33,9 +32,14 @@ enum class BusType {
 /** Helpers used across multiple workers. */
 class WorkerHelpers {
     companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val BOOT_CONFIG_PATH = "net/corda/applications/workers/workercommon/boot/corda.boot.json"
-        private val SENSITIVE_ARGS = setOf("-ddatabase.pass", "-Sdatabase.pass", "-spassphrase", "-msasl.jaas.config")
+        private val SENSITIVE_ARGS = setOf(
+            "-ddatabase.pass",
+            "-Sdatabase.pass",
+            "--stateManager.database.pass",
+            "-spassphrase",
+            "-msasl.jaas.config"
+        )
 
         /**
          * Parses the [args] into the [params].

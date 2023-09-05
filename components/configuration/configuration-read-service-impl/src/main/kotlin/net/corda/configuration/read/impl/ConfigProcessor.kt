@@ -14,7 +14,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.reconciliation.VersionedRecord
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
@@ -98,11 +97,6 @@ internal class ConfigProcessor(
         val dbConfig = configMerger.getDbConfig(bootConfig, config[DB_CONFIG])
         if (!dbConfig.isEmpty) {
             config[DB_CONFIG] = dbConfig
-        }
-
-        val stateManagerConfig = configMerger.getStateManagerConfig(bootConfig, config[STATE_MANAGER_CONFIG])
-        if (!stateManagerConfig.isEmpty) {
-            config[STATE_MANAGER_CONFIG] = stateManagerConfig
         }
 
         // at this point config is fully populated and verified

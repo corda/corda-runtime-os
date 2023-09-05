@@ -1,6 +1,5 @@
 package net.corda.statemanager.service.internal
 
-import java.util.function.Supplier
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.statemanager.api.StateManager
@@ -17,10 +16,12 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.MessagingConfig.StateManager.STATE_MANAGER
 import net.corda.statemanager.service.StateManagerService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.function.Supplier
 
 @Component(service = [StateManagerService::class])
 class StateManagerServiceImpl @Activate constructor(
@@ -76,7 +77,8 @@ class StateManagerServiceImpl @Activate constructor(
     }
 
     private fun onConfigChangedEvent(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
-        val config = event.config[ConfigKeys.STATE_MANAGER_CONFIG] ?: return
+        val config = event.config[ConfigKeys.MESSAGING_CONFIG] ?: return
+        if (!config.hasPath(STATE_MANAGER)) return
         coordinator.updateStatus(LifecycleStatus.DOWN)
 
         _stateManager?.close()
@@ -88,7 +90,7 @@ class StateManagerServiceImpl @Activate constructor(
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent) {
         configSubscription = if (event.status == LifecycleStatus.UP) {
             configSubscription?.close()
-            configReadService.registerComponentForUpdates(coordinator, setOf(ConfigKeys.STATE_MANAGER_CONFIG))
+            configReadService.registerComponentForUpdates(coordinator, setOf(ConfigKeys.MESSAGING_CONFIG))
         } else {
             coordinator.updateStatus(event.status)
             configSubscription?.close()

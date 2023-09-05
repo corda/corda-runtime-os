@@ -6,7 +6,6 @@ import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.messagebus.api.configuration.BusConfigMerger
 import net.corda.messagebus.api.configuration.getConfigOrEmpty
 import net.corda.schema.configuration.BootConfig.BOOT_DB
-import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -27,12 +26,5 @@ class ConfigMergerImpl @Activate constructor(
         val updatedDbConfig = dbConfig?: SmartConfigImpl.empty()
         val bootDBParamsConfig = bootConfig.getConfigOrEmpty(BOOT_DB)
         return bootDBParamsConfig.withFallback(updatedDbConfig)
-    }
-
-    override fun getStateManagerConfig(bootConfig: SmartConfig, stateStorageConfig: SmartConfig?): SmartConfig {
-        val updatedConfig = stateStorageConfig?: SmartConfigImpl.empty()
-        val bootStateManagerConfig = bootConfig.getConfigOrEmpty(BOOT_STATE_MANAGER)
-
-        return bootStateManagerConfig.withFallback(updatedConfig)
     }
 }

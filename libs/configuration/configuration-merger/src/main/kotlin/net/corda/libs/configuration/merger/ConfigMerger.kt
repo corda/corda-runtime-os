@@ -24,13 +24,4 @@ interface ConfigMerger {
      * @return DB config with boot config values merged into it.
      */
     fun getDbConfig(bootConfig: SmartConfig, dbConfig: SmartConfig?): SmartConfig
-
-    /**
-     * Merge values from the [bootConfig] into the [stateStorageConfig] received from the config topic and return the resulting stateStorage
-     * config.
-     * @param bootConfig boot config created on startup
-     * @param stateStorageConfig stateStorage config taken from the topic
-     * @return stateStorage config with boot config values merged into it.
-     */
-    fun getStateManagerConfig(bootConfig: SmartConfig, stateStorageConfig: SmartConfig?): SmartConfig
 }

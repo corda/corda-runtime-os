@@ -283,6 +283,15 @@ spec:
           - "-Sdatabase.user=$(DB_CLUSTER_USERNAME)"
           - "-Sdatabase.pass=$(DB_CLUSTER_PASSWORD)"
           - "-Sdatabase.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" $.Values.db.cluster.host }}:{{ $.Values.db.cluster.port }}/{{ $.Values.db.cluster.database }}?currentSchema={{ $.Values.db.cluster.schema }}"
+          - "-Sdatabase.jdbc.directory=/opt/jdbc-driver"
+          - "-Sdatabase.pool.maxSize={{ .stateManagerDbConnectionPool.maxSize }}"
+          {{- if .stateManagerDbConnectionPool.minSize }}
+          - "-Sdatabase.pool.minSize={{ .stateManagerDbConnectionPool.minSize }}"
+          {{- end }}
+          - "-Sdatabase.pool.idleTimeoutSeconds={{ .stateManagerDbConnectionPool.idleTimeoutSeconds }}"
+          - "-Sdatabase.pool.maxLifetimeSeconds={{ .stateManagerDbConnectionPool.maxLifetimeSeconds }}"
+          - "-Sdatabase.pool.keepAliveTimeSeconds={{ .stateManagerDbConnectionPool.keepAliveTimeSeconds }}"
+          - "-Sdatabase.pool.validationTimeoutSeconds={{ .stateManagerDbConnectionPool.validationTimeoutSeconds }}"
           {{- end }}
           {{- if $.Values.tracing.endpoint }}
           - "--send-trace-to={{ $.Values.tracing.endpoint }}"

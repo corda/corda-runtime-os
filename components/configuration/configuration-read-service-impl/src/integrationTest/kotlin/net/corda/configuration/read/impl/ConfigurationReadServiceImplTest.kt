@@ -1,8 +1,6 @@
 package net.corda.configuration.read.impl
 
 import com.typesafe.config.ConfigFactory
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -18,15 +16,12 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
 import net.corda.schema.configuration.BootConfig.BOOT_JDBC_URL
 import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
-import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_TYPE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
-import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.schema.configuration.DatabaseConfig.JDBC_URL
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
-import net.corda.schema.configuration.StateManagerConfig
 import net.corda.test.util.eventually
 import net.corda.utilities.seconds
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -36,6 +31,8 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
@@ -43,21 +40,15 @@ class ConfigurationReadServiceImplTest {
 
     companion object {
         private const val JDBC_URL_DATA = "testDataToTriggerBootDBParamLogic"
-        private const val STATE_MANAGER_TYPE = "LOCAL_NON_EXISTING_DATABASE_TYPE"
         private const val BOOT_CONFIG_STRING = """
             $INSTANCE_ID = 1
             $BUS_TYPE = DATABASE
             $BOOT_JDBC_URL = $JDBC_URL_DATA
-            $BOOT_STATE_MANAGER_TYPE = $STATE_MANAGER_TYPE
             $BOOT_MAX_ALLOWED_MSG_SIZE = 1000000000
         """
 
         private const val DB_CONFIG_STRING = """
             $JDBC_URL = $JDBC_URL_DATA
-        """
-
-        private const val STATE_MANAGER_CONFIG_STRING = """
-            ${StateManagerConfig.TYPE} = $STATE_MANAGER_TYPE
         """
 
         private const val TIMEOUT = 10000L
@@ -116,14 +107,12 @@ class ConfigurationReadServiceImplTest {
 
         // Register a new client and verify everything gets delivered
         val expectedDBConfig = smartConfigFactory.create(ConfigFactory.parseString(DB_CONFIG_STRING))
-        val expectedStateManagerConfig = smartConfigFactory.create(ConfigFactory.parseString(STATE_MANAGER_CONFIG_STRING))
 
-        val expectedKeys = mutableSetOf(BOOT_CONFIG, FLOW_CONFIG, DB_CONFIG, STATE_MANAGER_CONFIG)
+        val expectedKeys = mutableSetOf(BOOT_CONFIG, FLOW_CONFIG, DB_CONFIG)
         val expectedConfig = mutableMapOf(
             BOOT_CONFIG to bootConfig,
             FLOW_CONFIG to flowConfig,
-            DB_CONFIG to expectedDBConfig,
-            STATE_MANAGER_CONFIG to expectedStateManagerConfig
+            DB_CONFIG to expectedDBConfig
         )
         val latch = CountDownLatch(1)
         val reg2 = configurationReadService.registerForUpdates { keys, config ->
@@ -136,7 +125,6 @@ class ConfigurationReadServiceImplTest {
         assertEquals(expectedConfig[BOOT_CONFIG], receivedConfig[BOOT_CONFIG], "Incorrect config for key $BOOT_CONFIG")
         assertEquals(expectedConfig[FLOW_CONFIG], receivedConfig[FLOW_CONFIG], "Incorrect config for key $FLOW_CONFIG")
         assertEquals(expectedConfig[DB_CONFIG], receivedConfig[DB_CONFIG], "Incorrect config for key $DB_CONFIG")
-        assertEquals(expectedConfig[STATE_MANAGER_CONFIG], receivedConfig[STATE_MANAGER_CONFIG], "Incorrect config for key $STATE_MANAGER_CONFIG")
 
         // Cleanup
         reg.close()
