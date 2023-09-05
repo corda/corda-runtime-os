@@ -28,7 +28,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-@Suppress("LongParameterList", "Unused", "ForbiddenComment")
+@Suppress("LongParameterList", "Unused")
 @Component(service = [FlowProcessor::class])
 class FlowProcessorImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
