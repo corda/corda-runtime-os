@@ -4,7 +4,7 @@ import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.startFlow
-
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -88,7 +88,7 @@ class SendAcceptanceTest : FlowServiceTestBase() {
             }
 
             expectOutputForFlow(FLOW_ID1) {
-                hasPendingUserException()
+                flowResumedWithError(CordaRuntimeException::class.java)
             }
         }
     }
