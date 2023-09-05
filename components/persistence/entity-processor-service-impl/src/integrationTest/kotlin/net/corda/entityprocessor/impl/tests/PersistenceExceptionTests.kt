@@ -13,7 +13,6 @@ import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
-import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
@@ -21,9 +20,7 @@ import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
-import net.corda.db.persistence.testkit.helpers.SandboxHelper.createVersionedDog
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
-import net.corda.db.persistence.testkit.helpers.SandboxHelper.getVersionedDogClass
 import net.corda.db.schema.DbSchema
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
@@ -43,7 +40,6 @@ import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
@@ -86,7 +82,6 @@ class PersistenceExceptionTests {
 
         const val DOGS_TABLE = "migration/db.changelog-master.xml"
         const val DOGS_TABLE_WITHOUT_PK = "dogs-without-pk.xml"
-        const val VERSIONED_DOGS_TABLE = "versioned-dogs.xml"
 
         private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
         fun generateHoldingIdentity() = createTestHoldingIdentity(X500_NAME, UUID.randomUUID().toString())
@@ -305,42 +300,6 @@ class PersistenceExceptionTests {
     }
 
     @Test
-    fun `on duplicate persistence request don't execute it - statically updated field isn't getting updated in DB and returned merged entities are equal`() {
-        createVersionedDogDb()
-        val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
-        // create dog using dog-aware sandbox
-        val dog = sandbox.createVersionedDog("Stray", owner = "Not Known")
-        val serialisedDog = sandbox.getSerializationService().serialize(dog).bytes
-
-        val persistEntitiesRequest = createPersistEntitiesRequest(listOf(ByteBuffer.wrap(serialisedDog)))
-        // persist request
-        processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
-
-        val mergeEntityRequest = createMergeEntitiesRequest(listOf(ByteBuffer.wrap(serialisedDog)))
-
-        // first update request
-        val record1 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), mergeEntityRequest))).single()
-        // check we update same dog
-        val dogDbCount = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId, dogDBTable = "versioned_dog")
-        assertEquals(1, dogDbCount)
-        val dogVersion1 = getDogDbVersion(virtualNodeInfo.vaultDmlConnectionId)
-
-        // duplicate update request
-        val record2 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), mergeEntityRequest))).single()
-        // check we update same dog
-        val dogDbCount2 = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId, dogDBTable = "versioned_dog")
-        assertEquals(1, dogDbCount2)
-        val dogVersion2 = getDogDbVersion(virtualNodeInfo.vaultDmlConnectionId)
-
-        // check idempotent in terms of DB state (i.e. the DB state must remain unchanged on duplicate request)
-        assertEquals(dogVersion1, dogVersion2)
-        // check idempotent in terms of returned merged entity (i.e. on duplicate
-        // the returned merged entities must be same with original call)
-        assertReturnedMergedDogIsEqualTo(record1, sandbox.getSerializationService(), dog)
-        assertReturnedMergedDogIsEqualTo(record2, sandbox.getSerializationService(), dog)
-    }
-
-    @Test
     fun `should distinguish duplicate persistence request from actual error in persistence request`() {
         createDogDb()
         val dogId = UUID.randomUUID()
@@ -386,31 +345,10 @@ class PersistenceExceptionTests {
         )
     }
 
-    private fun createMergeEntitiesRequest(serializedEntities: List<ByteBuffer>): EntityRequest {
-        val requestId = UUID.randomUUID().toString()
-        return EntityRequest(
-            virtualNodeInfo.holdingIdentity.toAvro(),
-            MergeEntities(serializedEntities),
-            ExternalEventContext(
-                requestId,
-                "flow id",
-                KeyValuePairList(
-                    cpkFileHashes.map { KeyValuePair(CPK_FILE_CHECKSUM, it.toString()) }
-                )
-            )
-        )
-    }
-
     private fun createDogDb(liquibaseScript: String = DOGS_TABLE) {
         val sandboxGroupContext = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
         val dogClass = sandboxGroupContext.sandboxGroup.getDogClass()
         createDb(liquibaseScript, dogClass)
-    }
-
-    private fun createVersionedDogDb() {
-        val sandboxGroupContext = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
-        val versionedDog = sandboxGroupContext.sandboxGroup.getVersionedDogClass()
-        createDb(VERSIONED_DOGS_TABLE, versionedDog)
     }
 
     private fun createDb(liquibaseScript: String, entityClass: Class<*>) {
@@ -446,37 +384,6 @@ class PersistenceExceptionTests {
                     }
                 }
             }
-
-    private fun getDogDbVersion(connectionId: UUID): Int =
-        dbConnectionManager
-            .getDataSource(connectionId).connection.use { connection ->
-                connection.prepareStatement("SELECT version FROM versioned_dog").use {
-                    it.executeQuery().use { rs ->
-                        if (!rs.next()) {
-                            throw IllegalStateException("Should be able to find at least 1 dog entry")
-                        }
-                        rs.getInt(1)
-                            .also {
-                                if (rs.next()) {
-                                    throw IllegalStateException("There should be at most 1 dog entry")
-                                }
-                            }
-                    }
-                }
-            }
-
-    private fun assertReturnedMergedDogIsEqualTo(
-        record: Record<*, *>,
-        serializationService: SerializationService,
-        dog: Any
-    ) {
-        val entityResponseBytes =
-            (((record.value as FlowEvent).payload as ExternalEventResponse).payload as ByteBuffer).array()
-        val entityResponse = deserializer.deserialize(entityResponseBytes)!!
-        val dogBytes = entityResponse.results.single()!!.array()
-        val mergedDog = serializationService.deserialize(dogBytes, Any::class.java)
-        assertEquals(dog, mergedDog)
-    }
 }
 
 private fun assertEventResponseWithoutError(record: Record<*, *>) {

@@ -183,18 +183,9 @@ class EntityMessageProcessor(
             }
 
             is MergeEntities -> {
-                val requestId = UUID.fromString(request.flowExternalEventContext.requestId)
-                val entityResponse = withDeduplicationCheck(
-                    requestId,
-                    em,
-                    block = {
-                        persistenceServiceInternal.merge(serializationService, it, entityRequest)
-                    },
-                    onDuplication = {
-                        EntityResponse(entityRequest.entities, KeyValuePairList(emptyList()))
-                    }
-                )
-
+                val entityResponse = em.transaction {
+                    persistenceServiceInternal.merge(serializationService, it, entityRequest)
+                }
                 responseFactory.successResponse(
                     request.flowExternalEventContext,
                     entityResponse
