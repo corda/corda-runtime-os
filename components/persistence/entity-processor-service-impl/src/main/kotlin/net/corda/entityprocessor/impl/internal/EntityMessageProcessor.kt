@@ -151,13 +151,12 @@ class EntityMessageProcessor(
                 val entityResponse = withDeduplicationCheck(
                     requestId,
                     em,
-                    block = {
-                        persistenceServiceInternal.persist(serializationService, it, entityRequest)
-                    },
                     onDuplication = {
                         EntityResponse(emptyList(), KeyValuePairList(emptyList()))
                     }
-                )
+                ) {
+                    persistenceServiceInternal.persist(serializationService, it, entityRequest)
+                }
 
                 responseFactory.successResponse(
                     request.flowExternalEventContext,
@@ -238,8 +237,8 @@ class EntityMessageProcessor(
     private fun withDeduplicationCheck(
         requestId: UUID,
         em: EntityManager,
+        onDuplication: () -> EntityResponse,
         block: (EntityManager) -> EntityResponse,
-        onDuplication: () -> EntityResponse
     ): EntityResponse {
         return em.transaction {
             try {
