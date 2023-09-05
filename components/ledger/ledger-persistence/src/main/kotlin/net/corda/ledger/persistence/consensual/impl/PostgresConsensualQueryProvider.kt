@@ -1,6 +1,5 @@
 package net.corda.ledger.persistence.consensual.impl
 
-import net.corda.ledger.persistence.consensual.impl.ConsensualQueryProvider.Companion.UNVERIFIED
 import net.corda.orm.DatabaseTypeProvider
 import net.corda.orm.DatabaseTypeProvider.Companion.POSTGRES_TYPE_FILTER
 import org.osgi.service.component.annotations.Activate
@@ -9,11 +8,11 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 
 @Suppress("unused")
-@Component
+@Component(service = [ ConsensualQueryProvider::class ])
 class PostgresConsensualQueryProvider @Activate constructor(
     @Reference(target = POSTGRES_TYPE_FILTER)
     databaseTypeProvider: DatabaseTypeProvider
-): ConsensualQueryProvider {
+): AbstractConsensualQueryProvider() {
     init {
         LoggerFactory.getLogger(this::class.java).info("Activated for {}", databaseTypeProvider.databaseType)
     }

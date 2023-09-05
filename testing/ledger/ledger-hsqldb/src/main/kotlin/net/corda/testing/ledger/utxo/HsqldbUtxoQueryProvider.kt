@@ -1,7 +1,7 @@
 package net.corda.testing.ledger.utxo
 
+import net.corda.ledger.persistence.utxo.impl.AbstractUtxoQueryProvider
 import net.corda.ledger.persistence.utxo.impl.UtxoQueryProvider
-import net.corda.ledger.persistence.utxo.impl.UtxoQueryProvider.Companion.UNVERIFIED
 import net.corda.orm.DatabaseTypeProvider
 import net.corda.orm.DatabaseTypeProvider.Companion.HSQLDB_TYPE_FILTER
 import org.osgi.service.component.annotations.Activate
@@ -10,11 +10,11 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 
 @Suppress("unused")
-@Component
+@Component(service = [ UtxoQueryProvider::class ])
 class HsqldbUtxoQueryProvider @Activate constructor(
     @Reference(target = HSQLDB_TYPE_FILTER)
     databaseTypeProvider: DatabaseTypeProvider
-): UtxoQueryProvider {
+): AbstractUtxoQueryProvider() {
     init {
         LoggerFactory.getLogger(this::class.java).info("Activated for {}", databaseTypeProvider.databaseType)
     }

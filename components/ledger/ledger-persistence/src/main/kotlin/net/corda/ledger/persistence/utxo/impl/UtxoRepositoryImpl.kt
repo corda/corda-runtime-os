@@ -10,7 +10,6 @@ import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
-import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
@@ -74,13 +73,7 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager: EntityManager,
         transactionId: String
     ): PrivacySaltImpl? {
-        return entityManager.createNativeQuery(
-            """
-                SELECT privacy_salt
-                FROM {h-schema}utxo_transaction
-                WHERE id = :transactionId""",
-            Tuple::class.java
-        )
+        return entityManager.createNativeQuery(queryProvider.findTransactionPrivacySalt, Tuple::class.java)
             .setParameter("transactionId", transactionId)
             .resultListAsTuples()
             .map { r -> PrivacySaltImpl(r.get(0) as ByteArray) }
@@ -91,14 +84,7 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager: EntityManager,
         transactionId: String
     ): Map<Int, List<ByteArray>> {
-        return entityManager.createNativeQuery(
-            """
-                SELECT group_idx, leaf_idx, data
-                FROM {h-schema}utxo_transaction_component
-                WHERE transaction_id = :transactionId
-                ORDER BY group_idx, leaf_idx""",
-            Tuple::class.java
-        )
+        return entityManager.createNativeQuery(queryProvider.findTransactionComponentLeafs, Tuple::class.java)
             .setParameter("transactionId", transactionId)
             .resultListAsTuples()
             .mapToComponentGroups(UtxoComponentGroupMapper(transactionId))
@@ -107,29 +93,7 @@ class UtxoRepositoryImpl @Activate constructor(
     override fun findUnconsumedVisibleStatesByType(
         entityManager: EntityManager
     ): List<UtxoTransactionOutputDto> {
-        return entityManager.createNativeQuery(
-            """
-                SELECT tc_output.transaction_id, 
-			    tc_output.leaf_idx, 
-			    tc_output_info.data as output_info_data,
-                tc_output.data AS output_data 
-                FROM {h-schema}utxo_visible_transaction_state AS rts
-                JOIN {h-schema}utxo_transaction_component AS tc_output_info
-                    ON tc_output_info.transaction_id = rts.transaction_id
-                    AND tc_output_info.leaf_idx = rts.leaf_idx
-                    AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
-                JOIN {h-schema}utxo_transaction_component AS tc_output
-                	ON tc_output.transaction_id = tc_output_info.transaction_id
-                    AND tc_output.leaf_idx = tc_output_info.leaf_idx
-                    AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
-                JOIN {h-schema}utxo_transaction_status AS ts
-                    ON ts.transaction_id = tc_output.transaction_id
-                AND rts.consumed IS NULL
-                AND ts.status = :verified
-                ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx
-            """,
-            Tuple::class.java
-        )
+        return entityManager.createNativeQuery(queryProvider.findUnconsumedVisibleStatesByType, Tuple::class.java)
             .setParameter("verified", TransactionStatus.VERIFIED.value)
             .resultListAsTuples()
             .map { t ->
@@ -146,27 +110,7 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager: EntityManager,
         stateRefs: List<StateRef>
     ): List<UtxoTransactionOutputDto> {
-        return entityManager.createNativeQuery(
-            """
-                SELECT tc_output.transaction_id, 
-				tc_output.leaf_idx, 
-				tc_output_info.data as output_info_data,
-                tc_output.data AS output_data 
-                FROM {h-schema}utxo_transaction_component AS tc_output_info  
-                JOIN {h-schema}utxo_transaction_component AS tc_output
-                	ON tc_output.transaction_id = tc_output_info.transaction_id
-                    AND tc_output.leaf_idx = tc_output_info.leaf_idx
-                    AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
-                JOIN {h-schema}utxo_transaction_status AS ts
-                    ON ts.transaction_id = tc_output.transaction_id
-                AND tc_output.transaction_id in (:transactionIds)
-                AND (tc_output.transaction_id||':'|| tc_output.leaf_idx) in (:stateRefs)
-                AND ts.status = :verified
-                AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
-                ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx
-            """,
-            Tuple::class.java
-        )
+        return entityManager.createNativeQuery(queryProvider.resolveStateRefs, Tuple::class.java)
             .setParameter("transactionIds", stateRefs.map { it.transactionId.toString() })
             .setParameter("stateRefs", stateRefs.map { it.toString() })
             .setParameter("verified", TransactionStatus.VERIFIED.value)
@@ -185,28 +129,14 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager: EntityManager,
         transactionId: String
     ): List<DigitalSignatureAndMetadata> {
-        return entityManager.createNativeQuery(
-            """
-                SELECT signature
-                FROM {h-schema}utxo_transaction_signature
-                WHERE transaction_id = :transactionId
-                ORDER BY signature_idx""",
-            Tuple::class.java
-        )
+        return entityManager.createNativeQuery(queryProvider.findTransactionSignatures, Tuple::class.java)
             .setParameter("transactionId", transactionId)
             .resultListAsTuples()
             .map { r -> serializationService.deserialize(r.get(0) as ByteArray) }
     }
 
     override fun findTransactionStatus(entityManager: EntityManager, id: String): String? {
-        return entityManager.createNativeQuery(
-            """
-                SELECT status
-                FROM {h-schema}utxo_transaction_status
-                WHERE transaction_id = :transactionId
-                """,
-            Tuple::class.java
-        )
+        return entityManager.createNativeQuery(queryProvider.findTransactionStatus, Tuple::class.java)
             .setParameter("transactionId", id)
             .resultListAsTuples()
             .map { r -> r.get(0) as String }
@@ -218,13 +148,7 @@ class UtxoRepositoryImpl @Activate constructor(
         stateRefs: List<StateRef>,
         timestamp: Instant
     ) {
-        entityManager.createNativeQuery(
-        """
-            UPDATE {h-schema}utxo_visible_transaction_state
-            SET consumed = :consumed
-            WHERE transaction_id in (:transactionIds)
-            AND (transaction_id || ':' || leaf_idx) IN (:stateRefs)"""
-        )
+        entityManager.createNativeQuery(queryProvider.markTransactionVisibleStatesConsumed)
             .setParameter("consumed", timestamp)
             .setParameter("transactionIds", stateRefs.map { it.transactionId.toString() })
             .setParameter("stateRefs", stateRefs.map(StateRef::toString))
@@ -392,17 +316,7 @@ class UtxoRepositoryImpl @Activate constructor(
     }
 
     override fun findSignedGroupParameters(entityManager: EntityManager, hash: String): SignedGroupParameters? {
-        return entityManager.createNativeQuery(
-            """
-                SELECT
-                    parameters,
-                    signature_public_key,
-                    signature_content,
-                    signature_spec
-                FROM {h-schema}utxo_group_parameters
-                WHERE hash = :hash""",
-            Tuple::class.java
-        )
+        return entityManager.createNativeQuery(queryProvider.findSignedGroupParameters, Tuple::class.java)
             .setParameter("hash", hash)
             .resultListAsTuples()
             .map { r ->
