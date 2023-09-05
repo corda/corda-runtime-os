@@ -9,9 +9,10 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
-import net.corda.flow.pipeline.events.FlowEventContext
+import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
@@ -27,15 +28,14 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
+import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.time.Instant
-import net.corda.flow.fiber.cache.FlowFiberCache
-import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION
 import java.time.Duration
+import java.time.Instant
 
 @Suppress("Unused" , "TooManyFunctions")
 @Component(service = [FlowEventExceptionProcessor::class])
@@ -83,11 +83,10 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
             /** If the retry window has expired then we escalate this to a fatal exception and DLQ the flow */
             if (flowCheckpoint.firstFailureTimestamp != null && isRetryWindowExpired(flowCheckpoint.firstFailureTimestamp)) {
-                val durationSinceFirstFailure = Duration.between(flowCheckpoint.firstFailureTimestamp, Instant.now())
                 return@withEscalation process(
                     FlowFatalException(
-                        "Execution failed with \"${exception.message}\" after duration ${durationSinceFirstFailure.seconds} and " +
-                                "${flowCheckpoint.currentRetryCount} retry attempts.",
+                        "Execution failed with \"${exception.message}\" after " +
+                                "${flowCheckpoint.currentRetryCount} retry attempts in a retry window of $maxRetryWindowDuration.",
                         exception
                     ), context
                 )

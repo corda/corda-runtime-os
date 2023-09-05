@@ -54,7 +54,7 @@ class FlowToBeKilledExceptionProcessingTest {
     private val flowEventContextConverter = mock<FlowEventContextConverter>()
     private val flowSessionManager = mock<FlowSessionManager>()
     private val flowConfig = ConfigFactory.empty().withValue(
-        FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS, ConfigValueFactory.fromAnyRef(2)
+        FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION, ConfigValueFactory.fromAnyRef(20000L)
     )
     private val smartFlowConfig = SmartConfigFactory.createWithoutSecurityServices().create(flowConfig)
 
