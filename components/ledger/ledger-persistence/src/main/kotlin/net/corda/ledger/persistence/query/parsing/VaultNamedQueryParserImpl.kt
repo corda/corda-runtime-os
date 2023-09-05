@@ -24,11 +24,10 @@ class VaultNamedQueryParserImpl(
 
     override fun parseWhereJson(query: String): String {
         val expression = expressionParser.parse(query)
-        expressionValidator.validateWhereJson(query, expression)
-        val output = StringBuilder()
-        converter.convert(output, expression)
-        return output.toString()
-            .replace("  ", " ")
-            .trim()
+        val whereClause = expressionValidator.validateWhereJson(query, expression)
+        return StringBuilder().let { output ->
+            converter.convert(output, whereClause)
+            output.toString()
+        }.replace("  ", " ").trim()
     }
 }

@@ -48,16 +48,7 @@ class ConsensualRepositoryImpl @Activate constructor(
     }
 
     override fun findTransaction(entityManager: EntityManager, id: String): SignedTransactionContainer? {
-        val rows = entityManager.createNativeQuery(
-            """
-                SELECT tx.id, tx.privacy_salt, tx.account_id, tx.created, txc.group_idx, txc.leaf_idx, txc.data
-                FROM {h-schema}consensual_transaction AS tx
-                JOIN {h-schema}consensual_transaction_component AS txc ON tx.id = txc.transaction_id
-                WHERE tx.id = :id
-                ORDER BY txc.group_idx, txc.leaf_idx
-                """,
-            Tuple::class.java
-        )
+        val rows = entityManager.createNativeQuery(queryProvider.findTransaction, Tuple::class.java)
             .setParameter("id", id)
             .resultListAsTuples()
 
@@ -78,13 +69,7 @@ class ConsensualRepositoryImpl @Activate constructor(
         entityManager: EntityManager,
         cpkMetadata: List<CordaPackageSummary>
     ): Set<String> {
-        return entityManager.createNativeQuery(
-            """
-            SELECT file_checksum
-            FROM {h-schema}consensual_transaction_cpk
-            WHERE file_checksum in (:fileChecksums)""",
-            Tuple::class.java
-        )
+        return entityManager.createNativeQuery(queryProvider.findTransactionCpkChecksums, Tuple::class.java)
             .setParameter("fileChecksums", cpkMetadata.map { it.fileChecksum })
             .resultListAsTuples()
             .mapTo(HashSet()) { r -> r.get(0) as String }
@@ -94,14 +79,7 @@ class ConsensualRepositoryImpl @Activate constructor(
         entityManager: EntityManager,
         transactionId: String
     ): List<DigitalSignatureAndMetadata> {
-        return entityManager.createNativeQuery(
-            """
-                SELECT signature
-                FROM {h-schema}consensual_transaction_signature
-                WHERE transaction_id = :transactionId
-                ORDER BY signature_idx""",
-            Tuple::class.java
-        )
+        return entityManager.createNativeQuery(queryProvider.findTransactionSignatures, Tuple::class.java)
             .setParameter("transactionId", transactionId)
             .resultListAsTuples()
             .map { r -> serializationService.deserialize(r.get(0) as ByteArray) }

@@ -123,7 +123,6 @@ class PersistenceExceptionTests {
             cpkReadService = sandboxSetup.fetchService(timeout = 5000)
             virtualNodeInfoReadService = sandboxSetup.fetchService(timeout = 5000)
             responseFactory = sandboxSetup.fetchService(timeout = 5000)
-            currentSandboxGroupContext = sandboxSetup.fetchService(timeout = 5000)
         }
 
         virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)

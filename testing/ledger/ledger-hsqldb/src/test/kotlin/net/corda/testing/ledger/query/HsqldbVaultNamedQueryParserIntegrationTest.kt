@@ -21,68 +21,68 @@ class HsqldbVaultNamedQueryParserIntegrationTest {
         @JvmStatic
         fun inputsToOutputs(): Stream<Arguments> {
             return Stream.of(
-                Arguments.of("WHERE non_json_column = 'some_value'", "WHERE non_json_column = 'some_value'"),
-                Arguments.of("WHERE field ->> property = 'some_value'", "WHERE JsonFieldAsText( ${cast("field")}, 'property') = 'some_value'"),
-                Arguments.of("WHERE field ->> property = :value", "WHERE JsonFieldAsText( ${cast("field")}, 'property') = :value"),
+                Arguments.of("WHERE non_json_column = 'some_value'", "non_json_column = 'some_value'"),
+                Arguments.of("WHERE field ->> property = 'some_value'", "JsonFieldAsText( ${cast("field")}, 'property') = 'some_value'"),
+                Arguments.of("WHERE field ->> property = :value", "JsonFieldAsText( ${cast("field")}, 'property') = :value"),
                 Arguments.of(
                     "WHERE \"field name\" ->> \"json property\" = 'some_value'",
-                    "WHERE JsonFieldAsText(\"field name\", \"json property\") = 'some_value'"
+                    "JsonFieldAsText(\"field name\", \"json property\") = 'some_value'"
                 ),
                 Arguments.of(
                     "WHERE \"field name\" -> \"json property\" ->> \"nested\" = 'some_value'",
-                    "WHERE JsonFieldAsText( JsonFieldAsObject(\"field name\", \"json property\"), \"nested\") = 'some_value'"
+                    "JsonFieldAsText( JsonFieldAsObject(\"field name\", \"json property\"), \"nested\") = 'some_value'"
                 ),
                 Arguments.of(
                     "WHERE \"field name\" -> \"json property\" -> \"nested\" ->> \"nested_more\" = 'some_value'",
-                    "WHERE JsonFieldAsText( JsonFieldAsObject( JsonFieldAsObject(\"field name\", \"json property\"), \"nested\"), \"nested_more\") = 'some_value'"
+                    "JsonFieldAsText( JsonFieldAsObject( JsonFieldAsObject(\"field name\", \"json property\"), \"nested\"), \"nested_more\") = 'some_value'"
                 ),
-                Arguments.of("WHERE (field ->> property)::int = 5", "WHERE CAST(( JsonFieldAsText( ${cast("field")}, 'property')) AS int) = 5"),
-                Arguments.of("WHERE (field ->> property)::int != 5", "WHERE CAST(( JsonFieldAsText( ${cast("field")}, 'property')) AS int) != 5"),
-                Arguments.of("WHERE (field ->> property)::int < 5", "WHERE CAST(( JsonFieldAsText( ${cast("field")}, 'property')) AS int) < 5"),
-                Arguments.of("WHERE (field ->> property)::int <= 5", "WHERE CAST(( JsonFieldAsText( ${cast("field")}, 'property')) AS int) <= 5"),
-                Arguments.of("WHERE (field ->> property)::int > 5", "WHERE CAST(( JsonFieldAsText( ${cast("field")}, 'property')) AS int) > 5"),
-                Arguments.of("WHERE (field ->> property)::int >= 5", "WHERE CAST(( JsonFieldAsText( ${cast("field")}, 'property')) AS int) >= 5"),
-                Arguments.of("WHERE (field ->> property)::int <= :value", "WHERE CAST(( JsonFieldAsText( ${cast("field")}, 'property')) AS int) <= :value"),
-                Arguments.of("WHERE (field ->> property)::int = 1234.5678900", "WHERE CAST(( JsonFieldAsText( ${cast("field")}, 'property')) AS int) = 1234.5678900"),
+                Arguments.of("WHERE (field ->> property)::int = 5", "CAST(( JsonFieldAsText( ${cast("field")}, 'property')) AS int) = 5"),
+                Arguments.of("WHERE (field ->> property)::int != 5", "CAST(( JsonFieldAsText( ${cast("field")}, 'property')) AS int) != 5"),
+                Arguments.of("WHERE (field ->> property)::int < 5", "CAST(( JsonFieldAsText( ${cast("field")}, 'property')) AS int) < 5"),
+                Arguments.of("WHERE (field ->> property)::int <= 5", "CAST(( JsonFieldAsText( ${cast("field")}, 'property')) AS int) <= 5"),
+                Arguments.of("WHERE (field ->> property)::int > 5", "CAST(( JsonFieldAsText( ${cast("field")}, 'property')) AS int) > 5"),
+                Arguments.of("WHERE (field ->> property)::int >= 5", "CAST(( JsonFieldAsText( ${cast("field")}, 'property')) AS int) >= 5"),
+                Arguments.of("WHERE (field ->> property)::int <= :value", "CAST(( JsonFieldAsText( ${cast("field")}, 'property')) AS int) <= :value"),
+                Arguments.of("WHERE (field ->> property)::int = 1234.5678900", "CAST(( JsonFieldAsText( ${cast("field")}, 'property')) AS int) = 1234.5678900"),
                 Arguments.of(
                     "WHERE field ->> property = 'some_value' AND field ->> property2 = 'another value?'",
-                    "WHERE JsonFieldAsText( ${cast("field")}, 'property') = 'some_value' AND JsonFieldAsText( ${cast("field")}, 'property2') = 'another value?'"
+                    "JsonFieldAsText( ${cast("field")}, 'property') = 'some_value' AND JsonFieldAsText( ${cast("field")}, 'property2') = 'another value?'"
                 ),
                 Arguments.of(
                     "WHERE field ->> property = 'some_value' OR field ->> property2 = 'another value'",
-                    "WHERE JsonFieldAsText( ${cast("field")}, 'property') = 'some_value' OR JsonFieldAsText( ${cast("field")}, 'property2') = 'another value'"
+                    "JsonFieldAsText( ${cast("field")}, 'property') = 'some_value' OR JsonFieldAsText( ${cast("field")}, 'property2') = 'another value'"
                 ),
                 Arguments.of(
                     "WHERE field ->> property = 'some_value' AND field ->> property2 = 'another value' OR field ->> property3 = 'third property?'",
-                    "WHERE JsonFieldAsText( ${cast("field")}, 'property') = 'some_value' AND JsonFieldAsText( ${cast("field")}, 'property2') = 'another value' OR JsonFieldAsText( ${cast("field")}, 'property3') = 'third property?'"
+                    "JsonFieldAsText( ${cast("field")}, 'property') = 'some_value' AND JsonFieldAsText( ${cast("field")}, 'property2') = 'another value' OR JsonFieldAsText( ${cast("field")}, 'property3') = 'third property?'"
                 ),
                 Arguments.of(
                     "WHERE (field ->> property = 'some_value' AND field ->> property2 = 'another value') OR field ->> property3 = 'third property?'",
-                    "WHERE ( JsonFieldAsText( ${cast("field")}, 'property') = 'some_value' AND JsonFieldAsText( ${cast("field")}, 'property2') = 'another value') OR JsonFieldAsText( ${cast("field")}, 'property3') = 'third property?'"
+                    "( JsonFieldAsText( ${cast("field")}, 'property') = 'some_value' AND JsonFieldAsText( ${cast("field")}, 'property2') = 'another value') OR JsonFieldAsText( ${cast("field")}, 'property3') = 'third property?'"
                 ),
                 Arguments.of(
-                    "WHERE field ->> property = 'some_value' AND (field ->> property2 = 'another value') OR field ->> property3 = 'third property')",
-                    "WHERE JsonFieldAsText( ${cast("field")}, 'property') = 'some_value' AND ( JsonFieldAsText( ${cast("field")}, 'property2') = 'another value') OR JsonFieldAsText( ${cast("field")}, 'property3') = 'third property')"
+                    "WHERE field ->> property = 'some_value' AND (field ->> property2 = 'another value') OR field ->> property3 = 'third property'",
+                    "JsonFieldAsText( ${cast("field")}, 'property') = 'some_value' AND ( JsonFieldAsText( ${cast("field")}, 'property2') = 'another value') OR JsonFieldAsText( ${cast("field")}, 'property3') = 'third property'"
                 ),
                 Arguments.of(
-                    "WHERE (field ->> property = 'some_value' AND (field ->> property2 = 'another value') OR field ->> property3 = 'third property'))",
-                    "WHERE ( JsonFieldAsText( ${cast("field")}, 'property') = 'some_value' AND ( JsonFieldAsText( ${cast("field")}, 'property2') = 'another value') OR JsonFieldAsText( ${cast("field")}, 'property3') = 'third property'))"
+                    "WHERE (field ->> property = 'some_value' AND (field ->> property2 = 'another value') OR field ->> property3 = 'third property')",
+                    "( JsonFieldAsText( ${cast("field")}, 'property') = 'some_value' AND ( JsonFieldAsText( ${cast("field")}, 'property2') = 'another value') OR JsonFieldAsText( ${cast("field")}, 'property3') = 'third property')"
                 ),
-                Arguments.of("WHERE field ->> property IS NULL", "WHERE JsonFieldAsText( ${cast("field")}, 'property') IS NULL"),
-                Arguments.of("WHERE field ->> property IS NOT NULL", "WHERE JsonFieldAsText( ${cast("field")}, 'property') IS NOT NULL"),
+                Arguments.of("WHERE field ->> property IS NULL", "JsonFieldAsText( ${cast("field")}, 'property') IS NULL"),
+                Arguments.of("WHERE field ->> property IS NOT NULL", "JsonFieldAsText( ${cast("field")}, 'property') IS NOT NULL"),
                 Arguments.of(
                     "WHERE field ->> property IN ('asd', 'fields value', 'asd')",
-                    "WHERE JsonFieldAsText( ${cast("field")}, 'property') IN ('asd', 'fields value', 'asd')"
+                    "JsonFieldAsText( ${cast("field")}, 'property') IN ('asd', 'fields value', 'asd')"
                 ),
                 Arguments.of(
                     "WHERE (field ->> property IN ('asd', 'fields value', 'asd') AND field ->> property2 = 'another value')",
-                    "WHERE ( JsonFieldAsText( ${cast("field")}, 'property') IN ('asd', 'fields value', 'asd') AND JsonFieldAsText( ${cast("field")}, 'property2') = 'another value')"
+                    "( JsonFieldAsText( ${cast("field")}, 'property') IN ('asd', 'fields value', 'asd') AND JsonFieldAsText( ${cast("field")}, 'property2') = 'another value')"
                 ),
                 Arguments.of(
                     "WHERE (field ->> property LIKE '%hello there%')",
-                    "WHERE ( JsonFieldAsText( ${cast("field")}, 'property') LIKE '%hello there%')"
+                    "( JsonFieldAsText( ${cast("field")}, 'property') LIKE '%hello there%')"
                 ),
-                Arguments.of("WHERE field ? property", "WHERE HasJsonKey( ${cast("field")}, 'property')"),
+                Arguments.of("WHERE field ? property", "HasJsonKey( ${cast("field")}, 'property')"),
                 Arguments.of(
                     """
                         where
@@ -90,14 +90,14 @@ class HsqldbVaultNamedQueryParserIntegrationTest {
                             and (custom ->> 'salary')::int>9.00000000
                             or custom ->> 'field with space' is null)
                     """,
-                    "WHERE ( JsonFieldAsText( ${cast("\"custom\"")}, 'salary') = '10' AND CAST(( JsonFieldAsText( ${cast("custom")}, 'salary')) AS int) > 9.00000000 OR JsonFieldAsText( ${cast("custom")}, 'field with space') IS NULL)"
+                    "( JsonFieldAsText( ${cast("\"custom\"")}, 'salary') = '10' AND CAST(( JsonFieldAsText( ${cast("custom")}, 'salary')) AS int) > 9.00000000 OR JsonFieldAsText( ${cast("custom")}, 'field with space') IS NULL)"
                 ),
                 Arguments.of(
                     """WHERE custom -> 'TestUtxoState' ->> 'testField' = :testField
                         |AND custom -> 'Corda' ->> 'participants' IN :participants
                         |AND custom?:contractStateType
                         |AND created > :created""".trimMargin(),
-                    "WHERE JsonFieldAsText( JsonFieldAsObject( ${cast("custom")}, 'TestUtxoState'), 'testField') = :testField AND JsonFieldAsText( JsonFieldAsObject( ${cast("custom")}, 'Corda'), 'participants') IN :participants AND HasJsonKey( ${cast("custom")}, :contractStateType) AND created > :created"
+                    "JsonFieldAsText( JsonFieldAsObject( ${cast("custom")}, 'TestUtxoState'), 'testField') = :testField AND JsonFieldAsText( JsonFieldAsObject( ${cast("custom")}, 'Corda'), 'participants') IN (:participants) AND HasJsonKey( ${cast("custom")}, :contractStateType) AND created > :created"
                 )
             )
         }
@@ -122,39 +122,39 @@ class HsqldbVaultNamedQueryParserIntegrationTest {
     @Test
     fun `with json fields inside brackets`() {
         assertThat(vaultNamedQueryParser.parseWhereJson("WHERE :value = (a)->>(b)")).isEqualTo(
-            "WHERE :value = JsonFieldAsText( ${cast("a")}, ('b'))"
+            ":value = JsonFieldAsText( ${cast("a")}, 'b')"
         )
     }
 
     @Test
     fun `cast json field to int`() {
         assertThat(vaultNamedQueryParser.parseWhereJson("WHERE a->b->>c::int = 0")).isEqualTo(
-            "WHERE CAST( JsonFieldAsText( JsonFieldAsObject( ${cast("a")}, 'b'), 'c') AS int) = 0"
+            "CAST( JsonFieldAsText( JsonFieldAsObject( ${cast("a")}, 'b'), 'c') AS int) = 0"
         )
     }
 
     @Test
     fun `json array index as parameter`() {
         assertThat(vaultNamedQueryParser.parseWhereJson("WHERE (a)->(b)->>(:index) = :value")).isEqualTo(
-            "WHERE JsonFieldAsText( JsonFieldAsObject( ${cast("a")}, ('b')), (:index)) = :value"
+            "JsonFieldAsText( JsonFieldAsObject( ${cast("a")}, 'b'), :index) = :value"
         )
     }
 
     @Test
     fun `cast parameter as int`() {
-        assertThat(vaultNamedQueryParser.parseWhereJson(":index::int")).isEqualTo(
+        assertThat(vaultNamedQueryParser.parseWhereJson("WHERE :index::int")).isEqualTo(
             "CAST(:index AS int)"
         )
 
-        assertThat(vaultNamedQueryParser.parseWhereJson("((:index)::int)")).isEqualTo(
+        assertThat(vaultNamedQueryParser.parseWhereJson("WHERE ((:index)::int)")).isEqualTo(
             "( CAST(:index AS int))"
         )
 
-        assertThat(vaultNamedQueryParser.parseWhereJson("(a)->>(:index::int)")).isEqualTo(
+        assertThat(vaultNamedQueryParser.parseWhereJson("WHERE (a)->>(:index::int)")).isEqualTo(
             "JsonFieldAsText( ${cast("a")}, ( CAST(:index AS int)))"
         )
 
-        assertThat(vaultNamedQueryParser.parseWhereJson("(a)->>((:index)::int)")).isEqualTo(
+        assertThat(vaultNamedQueryParser.parseWhereJson("WHERE (a)->>((:index)::int)")).isEqualTo(
             "JsonFieldAsText( ${cast("a")}, ( CAST(:index AS int)))"
         )
     }
