@@ -1638,7 +1638,7 @@
                                         "maxSize": {
                                             "type": "integer",
                                             "default": 5,
-                                            "title": "persistence worker maximum JDBC connection pool size for cluster DB",
+                                            "title": "Flow worker JDBC connection pool size for State Manager DB",
                                             "examples": [
                                                 5
                                             ]
@@ -1654,7 +1654,7 @@
                                                 }
                                             ],
                                             "default": null,
-                                            "title": "persistence worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value"
+                                            "title": "Flow worker minimum JDBC connection pool size for State Manager DB; null value means pool's min size will default to pool's max size value"
                                         },
                                         "idleTimeoutSeconds": {
                                             "type": "integer",
