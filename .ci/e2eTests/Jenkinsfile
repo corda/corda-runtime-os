@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.1-pre-breaking-changes') _
+@Library('corda-shared-build-pipeline-steps@5.1') _
 
 endToEndPipeline(
     assembleAndCompile: false,

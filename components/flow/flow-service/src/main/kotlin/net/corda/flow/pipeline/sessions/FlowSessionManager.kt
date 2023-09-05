@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.sessions
 
-import java.time.Instant
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
@@ -10,15 +9,18 @@ import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name
+import java.time.Instant
 
 /**
  * [FlowSessionManager] encapsulates the logic of [SessionManager] with a specific focus on its usage within the flow event pipeline.
  */
+@Suppress("TooManyFunctions")
 interface FlowSessionManager {
 
     /**
@@ -31,8 +33,23 @@ interface FlowSessionManager {
     fun getSessionErrorEventRecords(checkpoint: FlowCheckpoint, flowConfig: SmartConfig, instant: Instant): List<Record<*, FlowMapperEvent>>
 
     /**
-     * Create a new [SessionState] and queue a [SessionInit] message to send.
-     *
+     * Generate a new session state
+     * @param checkpoint The flow's [FlowCheckpoint].
+     * @param sessionId The session id of the new [SessionState].
+     * @param x500Name The [MemberX500Name] that the [SessionInit] is addressed to.
+     * @param sessionProperties The session context properties
+     * @param instant The [Instant] used within the created [SessionEvent].
+     */
+    fun generateSessionState(
+        checkpoint: FlowCheckpoint,
+        sessionId: String,
+        x500Name: MemberX500Name,
+        sessionProperties: KeyValuePairList,
+        instant: Instant
+    ): SessionState
+
+    /**
+     * Generate a new session state
      * @param checkpoint The flow's [FlowCheckpoint].
      * @param sessionId The session id of the new [SessionState].
      * @param x500Name The [MemberX500Name] that the [SessionInit] is addressed to.
@@ -40,17 +57,14 @@ interface FlowSessionManager {
      * @param contextPlatformProperties The platform context properties
      * @param sessionProperties The session context properties
      * @param instant The [Instant] used within the created [SessionEvent].
-     *
-     * @return A new [SessionState] containing a [SessionInit] message to send.
      */
     @Suppress("LongParameterList")
     fun sendInitMessage(
         checkpoint: FlowCheckpoint,
         sessionId: String,
-        x500Name: MemberX500Name,
         contextUserProperties: KeyValuePairList,
         contextPlatformProperties: KeyValuePairList,
-        sessionProperties: KeyValuePairList,
+        x500Name: MemberX500Name,
         instant: Instant
     ): SessionState
 
@@ -88,7 +102,7 @@ interface FlowSessionManager {
      */
     fun sendDataMessages(
         checkpoint: FlowCheckpoint,
-        sessionToPayload: Map<String, ByteArray>,
+        sessionToPayload: Map<SessionInfo, ByteArray>,
         instant: Instant
     ): List<SessionState>
 

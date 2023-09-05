@@ -14,6 +14,7 @@ import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import net.corda.tracing.TraceContext
 import net.corda.tracing.traceStateAndEventExecution
@@ -27,7 +28,7 @@ class FlowEventProcessorImpl(
     private val flowEventPipelineFactory: FlowEventPipelineFactory,
     private val flowEventExceptionProcessor: FlowEventExceptionProcessor,
     private val flowEventContextConverter: FlowEventContextConverter,
-    private val config: SmartConfig,
+    private val configs: Map<String, SmartConfig>,
     private val flowMDCService: FlowMDCService
 ) : StateAndEventProcessor<String, Checkpoint, FlowEvent> {
 
@@ -39,10 +40,12 @@ class FlowEventProcessorImpl(
     override val stateValueClass = Checkpoint::class.java
     override val eventValueClass = FlowEvent::class.java
 
+    private val flowConfig = configs[FLOW_CONFIG] ?: throw IllegalArgumentException("Flow config could not be found.")
+
     init {
         // This works for now, but we should consider introducing a provider we could then inject it into
         // the classes that need it rather than passing it through all the layers.
-        flowEventExceptionProcessor.configure(config)
+        flowEventExceptionProcessor.configure(flowConfig)
     }
 
     override fun onNext(
@@ -71,9 +74,10 @@ class FlowEventProcessorImpl(
             return StateAndEventProcessor.Response(state, listOf())
         }
 
+
         val pipeline = try {
             log.trace { "Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}" }
-            flowEventPipelineFactory.create(state, flowEvent, config, mdcProperties,traceContext, event.timestamp)
+            flowEventPipelineFactory.create(state, flowEvent, configs, mdcProperties,traceContext, event.timestamp)
         } catch (t: Throwable) {
             traceContext.error(CordaRuntimeException(t.message, t))
             // Without a pipeline there's a limit to what can be processed.
@@ -82,16 +86,13 @@ class FlowEventProcessorImpl(
 
         // flow result timeout must be lower than the processor timeout as the processor thread will be killed by the subscription consumer
         // thread after this period and so this timeout would never be reached and given a chance to return otherwise.
-        val flowTimeout = (config.getLong(PROCESSOR_TIMEOUT) * 0.75).toLong()
+        val flowTimeout = (flowConfig.getLong(PROCESSOR_TIMEOUT) * 0.75).toLong()
         return try {
             flowEventContextConverter.convert(
                 pipeline
                     .eventPreProcessing()
                     .virtualNodeFlowOperationalChecks()
-                    .runOrContinue(flowTimeout)
-                    .setCheckpointSuspendedOn()
-                    .setWaitingFor()
-                    .requestPostProcessing()
+                    .executeFlow(flowTimeout)
                     .globalPostProcessing()
                     .context
             )

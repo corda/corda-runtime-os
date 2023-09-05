@@ -1,5 +1,6 @@
 package net.corda.cli.plugins.preinstall
 
+import java.util.concurrent.Callable
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.Configurations
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.PluginContext
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.ReportEntry
@@ -7,7 +8,6 @@ import net.corda.cli.plugins.preinstall.PreInstallPlugin.ResourceConfig
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.ResourceValues
 import picocli.CommandLine
 import picocli.CommandLine.Parameters
-import java.util.concurrent.Callable
 
 @CommandLine.Command(name = "check-limits", description = ["Check the resource limits have been assigned correctly."])
 class CheckLimits : Callable<Int>, PluginContext() {
@@ -162,10 +162,13 @@ class CheckLimits : Callable<Int>, PluginContext() {
         checkResources(yaml.bootstrap?.resources, "bootstrap")
         checkResources(yaml.workers?.db?.resources, "DB")
         checkResources(yaml.workers?.flow?.resources, "flow")
+        checkResources(yaml.workers?.flowMapper?.resources, "flowMapper")
+        checkResources(yaml.workers?.verification?.resources, "verification")
         checkResources(yaml.workers?.membership?.resources, "membership")
         checkResources(yaml.workers?.rest?.resources, "rest")
         checkResources(yaml.workers?.p2pLinkManager?.resources, "P2P link manager")
         checkResources(yaml.workers?.p2pGateway?.resources, "P2P gateway")
+        checkResources(yaml.workers?.persistence?.resources, "persistence")
         checkResources(yaml.workers?.uniqueness?.resources, "uniqueness")
 
         return if (report.testsPassed()) {

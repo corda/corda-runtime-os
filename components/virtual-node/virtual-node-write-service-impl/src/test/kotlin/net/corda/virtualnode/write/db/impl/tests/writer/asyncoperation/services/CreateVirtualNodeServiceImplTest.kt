@@ -68,10 +68,23 @@ class CreateVirtualNodeServiceImplTest {
         uniquenessDmlDbConnectionDetails
     )
 
+    private val uniquenessPlatformManagedVirtualNodeDbNullUniqueness = getVNodeDb(
+        UNIQUENESS,
+        true,
+        null,
+        null
+    )
+
     private val virtualNodeDbs = mapOf(
         VAULT to vaultPlatformManagedVirtualNodeDb,
         CRYPTO to cryptoUserManagedVirtualNodeDb,
         UNIQUENESS to uniquenessPlatformManagedVirtualNodeDb,
+    )
+
+    private val virtualNodeDbsNullUniqueness = mapOf(
+        VAULT to vaultPlatformManagedVirtualNodeDb,
+        CRYPTO to cryptoUserManagedVirtualNodeDb,
+        UNIQUENESS to uniquenessPlatformManagedVirtualNodeDbNullUniqueness,
     )
 
     private val entityManager = mock<EntityManager>().apply {
@@ -245,6 +258,91 @@ class CreateVirtualNodeServiceImplTest {
             updateActor,
             externalMessagingRouteConfig = null
         )
+    }
+
+    @Suppress("LongMethod")
+    @Test
+    fun `persist virtual node db meta data, no uniqueness db`() {
+        val updateActor = "ua"
+
+        val vaultDdlDbConnectionDetailsId = UUID.randomUUID()
+        val vaultDmlDbConnectionDetailsId = UUID.randomUUID()
+        val cryptoDdlDbConnectionDetailsId = UUID.randomUUID()
+        val cryptoDmlDbConnectionDetailsId = UUID.randomUUID()
+
+        whenever(
+            dbConnectionManager.putConnection(
+                entityManager,
+                vaultDdlDbConnectionDetails.name,
+                DDL,
+                vaultDdlDbConnectionDetails.config,
+                vaultDdlDbConnectionDetails.description,
+                updateActor
+            )
+        ).thenReturn(vaultDdlDbConnectionDetailsId)
+
+        whenever(
+            dbConnectionManager.putConnection(
+                entityManager,
+                vaultDmlDbConnectionDetails.name,
+                DML,
+                vaultDmlDbConnectionDetails.config,
+                vaultDmlDbConnectionDetails.description,
+                updateActor
+            )
+        ).thenReturn(vaultDmlDbConnectionDetailsId)
+
+        whenever(
+            dbConnectionManager.putConnection(
+                entityManager,
+                cryptoDdlDbConnectionDetails.name,
+                DDL,
+                cryptoDdlDbConnectionDetails.config,
+                cryptoDdlDbConnectionDetails.description,
+                updateActor
+            )
+        ).thenReturn(cryptoDdlDbConnectionDetailsId)
+
+        whenever(
+            dbConnectionManager.putConnection(
+                entityManager,
+                cryptoDmlDbConnectionDetails.name,
+                DML,
+                cryptoDmlDbConnectionDetails.config,
+                cryptoDmlDbConnectionDetails.description,
+                updateActor
+            )
+        ).thenReturn(cryptoDmlDbConnectionDetailsId)
+
+        whenever(
+            dbConnectionManager.putConnection(
+                entityManager,
+                uniquenessDdlDbConnectionDetails.name,
+                DDL,
+                uniquenessDdlDbConnectionDetails.config,
+                uniquenessDdlDbConnectionDetails.description,
+                updateActor
+            )
+        ).thenReturn(null)
+
+        whenever(
+            dbConnectionManager.putConnection(
+                entityManager,
+                uniquenessDmlDbConnectionDetails.name,
+                DML,
+                uniquenessDmlDbConnectionDetails.config,
+                uniquenessDmlDbConnectionDetails.description,
+                updateActor
+            )
+        ).thenReturn(null)
+
+        target.persistHoldingIdAndVirtualNode(
+            ALICE_HOLDING_ID1,
+            virtualNodeDbsNullUniqueness,
+            CPI_IDENTIFIER1,
+            updateActor,
+            externalMessagingRouteConfig = null
+        )
 
         verify(holdingIdentityRepository).put(entityManager, ALICE_HOLDING_ID1)
 
@@ -256,8 +354,8 @@ class CreateVirtualNodeServiceImplTest {
             vaultDmlDbConnectionDetailsId,
             cryptoDdlDbConnectionDetailsId,
             cryptoDmlDbConnectionDetailsId,
-            uniquenessDdlDbConnectionDetailsId,
-            uniquenessDmlDbConnectionDetailsId,
+            null,
+            null,
             externalMessagingRouteConfig = null
         )
     }

@@ -24,7 +24,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
-
 class FlowMapperMessageProcessorTest {
 
     private val flowMapperEventExecutor: FlowMapperEventExecutor = mock<FlowMapperEventExecutor>().apply {
@@ -52,7 +51,14 @@ class FlowMapperMessageProcessorTest {
     }
 
     private fun buildSessionEvent(timestamp: Instant = Instant.now().plusSeconds(600) ) : SessionEvent {
-        return buildSessionEvent(MessageDirection.INBOUND, "sessionId", null, SessionInit(), 0, listOf(), timestamp)
+        return buildSessionEvent(
+            MessageDirection.INBOUND,
+            "sessionId",
+            null,
+            SessionInit(),
+            timestamp,
+            contextSessionProps = null
+        )
     }
 
     @Test
