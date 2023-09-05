@@ -100,9 +100,8 @@ sealed class QuerySetup {
 class PersistenceServiceInternalTests {
     private companion object {
         const val TOPIC = "pretend-topic"
-        private const val TIMEOUT_MILLIS = 10000L
-        private val EXTERNAL_EVENT_CONTEXT = ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val EXTERNAL_EVENT_CONTEXT = ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     @InjectService
@@ -126,13 +125,11 @@ class PersistenceServiceInternalTests {
     private lateinit var catClass: Class<*>
     private lateinit var schemaName: String
     private lateinit var dbConnectionManager: FakeDbConnectionManager
-
-    @InjectService(timeout = TIMEOUT_MILLIS)
-    lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
+    private lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
     @BeforeAll
     fun setup(
-        @InjectService(timeout = TIMEOUT_MILLIS)
+        @InjectService(timeout = 5000)
         sandboxSetup: SandboxSetup,
         @InjectBundleContext
         bundleContext: BundleContext,
@@ -142,13 +139,14 @@ class PersistenceServiceInternalTests {
         logger.info("Setup test (test Directory: $testDirectory)")
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            virtualNode = setup.fetchService(TIMEOUT_MILLIS)
-            cpiInfoReadService = setup.fetchService(TIMEOUT_MILLIS)
-            cpkReadService = setup.fetchService(TIMEOUT_MILLIS)
-            virtualNodeInfoReadService = setup.fetchService(TIMEOUT_MILLIS)
-            responseFactory = setup.fetchService(TIMEOUT_MILLIS)
-            deserializer = setup.fetchService<CordaAvroSerializationFactory>(TIMEOUT_MILLIS)
+            virtualNode = setup.fetchService(timeout = 10000)
+            cpiInfoReadService = setup.fetchService(timeout = 10000)
+            cpkReadService = setup.fetchService(timeout = 10000)
+            virtualNodeInfoReadService = setup.fetchService(timeout = 10000)
+            responseFactory = setup.fetchService(timeout = 10000)
+            deserializer = setup.fetchService<CordaAvroSerializationFactory>(timeout = 10000)
                 .createAvroDeserializer({}, EntityResponse::class.java)
+            currentSandboxGroupContext = setup.fetchService(timeout = 5000)
         }
     }
 

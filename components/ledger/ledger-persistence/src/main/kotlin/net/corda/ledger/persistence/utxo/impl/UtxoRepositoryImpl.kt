@@ -10,6 +10,7 @@ import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
+import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
@@ -46,11 +47,10 @@ class UtxoRepositoryImpl @Activate constructor(
     @Reference
     private val serializationService: SerializationService,
     @Reference
-    private val wireTransactionFactory: WireTransactionFactory,
-    @Reference
-    private val queryProvider: UtxoQueryProvider
+    private val wireTransactionFactory: WireTransactionFactory
 ) : UtxoRepository, UsedByPersistence {
     private companion object {
+        private val UNVERIFIED = TransactionStatus.UNVERIFIED.value
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
@@ -73,7 +73,13 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager: EntityManager,
         transactionId: String
     ): PrivacySaltImpl? {
-        return entityManager.createNativeQuery(queryProvider.findTransactionPrivacySalt, Tuple::class.java)
+        return entityManager.createNativeQuery(
+            """
+                SELECT privacy_salt
+                FROM {h-schema}utxo_transaction
+                WHERE id = :transactionId""",
+            Tuple::class.java
+        )
             .setParameter("transactionId", transactionId)
             .resultListAsTuples()
             .map { r -> PrivacySaltImpl(r.get(0) as ByteArray) }
@@ -84,7 +90,14 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager: EntityManager,
         transactionId: String
     ): Map<Int, List<ByteArray>> {
-        return entityManager.createNativeQuery(queryProvider.findTransactionComponentLeafs, Tuple::class.java)
+        return entityManager.createNativeQuery(
+            """
+                SELECT group_idx, leaf_idx, data
+                FROM {h-schema}utxo_transaction_component
+                WHERE transaction_id = :transactionId
+                ORDER BY group_idx, leaf_idx""",
+            Tuple::class.java
+        )
             .setParameter("transactionId", transactionId)
             .resultListAsTuples()
             .mapToComponentGroups(UtxoComponentGroupMapper(transactionId))
@@ -93,7 +106,29 @@ class UtxoRepositoryImpl @Activate constructor(
     override fun findUnconsumedVisibleStatesByType(
         entityManager: EntityManager
     ): List<UtxoTransactionOutputDto> {
-        return entityManager.createNativeQuery(queryProvider.findUnconsumedVisibleStatesByType, Tuple::class.java)
+        return entityManager.createNativeQuery(
+            """
+                SELECT tc_output.transaction_id, 
+			    tc_output.leaf_idx, 
+			    tc_output_info.data as output_info_data,
+                tc_output.data AS output_data 
+                FROM {h-schema}utxo_visible_transaction_state AS rts
+                JOIN {h-schema}utxo_transaction_component AS tc_output_info
+                    ON tc_output_info.transaction_id = rts.transaction_id
+                    AND tc_output_info.leaf_idx = rts.leaf_idx
+                    AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
+                JOIN {h-schema}utxo_transaction_component AS tc_output
+                	ON tc_output.transaction_id = tc_output_info.transaction_id
+                    AND tc_output.leaf_idx = tc_output_info.leaf_idx
+                    AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
+                JOIN {h-schema}utxo_transaction_status AS ts
+                    ON ts.transaction_id = tc_output.transaction_id
+                AND rts.consumed IS NULL
+                AND ts.status = :verified
+                ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx
+            """,
+            Tuple::class.java
+        )
             .setParameter("verified", TransactionStatus.VERIFIED.value)
             .resultListAsTuples()
             .map { t ->
@@ -110,7 +145,27 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager: EntityManager,
         stateRefs: List<StateRef>
     ): List<UtxoTransactionOutputDto> {
-        return entityManager.createNativeQuery(queryProvider.resolveStateRefs, Tuple::class.java)
+        return entityManager.createNativeQuery(
+            """
+                SELECT tc_output.transaction_id, 
+				tc_output.leaf_idx, 
+				tc_output_info.data as output_info_data,
+                tc_output.data AS output_data 
+                FROM {h-schema}utxo_transaction_component AS tc_output_info  
+                JOIN {h-schema}utxo_transaction_component AS tc_output
+                	ON tc_output.transaction_id = tc_output_info.transaction_id
+                    AND tc_output.leaf_idx = tc_output_info.leaf_idx
+                    AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
+                JOIN {h-schema}utxo_transaction_status AS ts
+                    ON ts.transaction_id = tc_output.transaction_id
+                AND tc_output.transaction_id in (:transactionIds)
+                AND (tc_output.transaction_id||':'|| tc_output.leaf_idx) in (:stateRefs)
+                AND ts.status = :verified
+                AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
+                ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx
+            """,
+            Tuple::class.java
+        )
             .setParameter("transactionIds", stateRefs.map { it.transactionId.toString() })
             .setParameter("stateRefs", stateRefs.map { it.toString() })
             .setParameter("verified", TransactionStatus.VERIFIED.value)
@@ -129,14 +184,28 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager: EntityManager,
         transactionId: String
     ): List<DigitalSignatureAndMetadata> {
-        return entityManager.createNativeQuery(queryProvider.findTransactionSignatures, Tuple::class.java)
+        return entityManager.createNativeQuery(
+            """
+                SELECT signature
+                FROM {h-schema}utxo_transaction_signature
+                WHERE transaction_id = :transactionId
+                ORDER BY signature_idx""",
+            Tuple::class.java
+        )
             .setParameter("transactionId", transactionId)
             .resultListAsTuples()
             .map { r -> serializationService.deserialize(r.get(0) as ByteArray) }
     }
 
     override fun findTransactionStatus(entityManager: EntityManager, id: String): String? {
-        return entityManager.createNativeQuery(queryProvider.findTransactionStatus, Tuple::class.java)
+        return entityManager.createNativeQuery(
+            """
+                SELECT status
+                FROM {h-schema}utxo_transaction_status
+                WHERE transaction_id = :transactionId
+                """,
+            Tuple::class.java
+        )
             .setParameter("transactionId", id)
             .resultListAsTuples()
             .map { r -> r.get(0) as String }
@@ -148,10 +217,16 @@ class UtxoRepositoryImpl @Activate constructor(
         stateRefs: List<StateRef>,
         timestamp: Instant
     ) {
-        entityManager.createNativeQuery(queryProvider.markTransactionVisibleStatesConsumed)
+        entityManager.createNativeQuery(
+        """
+            UPDATE {h-schema}utxo_visible_transaction_state
+            SET consumed = :consumed
+            WHERE transaction_id in (:transactionIds)
+            AND (transaction_id || ':' || leaf_idx) IN (:stateRefs)"""
+        )
             .setParameter("consumed", timestamp)
             .setParameter("transactionIds", stateRefs.map { it.transactionId.toString() })
-            .setParameter("stateRefs", stateRefs.map(StateRef::toString))
+            .setParameter("stateRefs", stateRefs.map { it.toString() })
             .executeUpdate()
     }
 
@@ -162,7 +237,12 @@ class UtxoRepositoryImpl @Activate constructor(
         account: String,
         timestamp: Instant
     ) {
-        entityManager.createNativeQuery(queryProvider.persistTransaction)
+        entityManager.createNativeQuery(
+            """
+            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created)
+            VALUES (:id, :privacySalt, :accountId, :createdAt)
+            ON CONFLICT DO NOTHING"""
+        )
             .setParameter("id", id)
             .setParameter("privacySalt", privacySalt)
             .setParameter("accountId", account)
@@ -180,7 +260,12 @@ class UtxoRepositoryImpl @Activate constructor(
         hash: String,
         timestamp: Instant
     ) {
-        entityManager.createNativeQuery(queryProvider.persistTransactionComponentLeaf)
+        entityManager.createNativeQuery(
+            """
+            INSERT INTO {h-schema}utxo_transaction_component(transaction_id, group_idx, leaf_idx, data, hash, created)
+            VALUES(:transactionId, :groupIndex, :leafIndex, :data, :hash, :createdAt)
+            ON CONFLICT DO NOTHING"""
+        )
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
@@ -196,7 +281,14 @@ class UtxoRepositoryImpl @Activate constructor(
         transactionId: String,
         fileChecksums: Collection<String>
     ) {
-        entityManager.createNativeQuery(queryProvider.persistTransactionCpk)
+        entityManager.createNativeQuery(
+            """
+            INSERT INTO {h-schema}utxo_transaction_cpk
+            SELECT :transactionId, file_checksum
+            FROM {h-schema}utxo_cpk
+            WHERE file_checksum in (:fileChecksums)
+            ON CONFLICT DO NOTHING"""
+        )
             .setParameter("transactionId", transactionId)
             .setParameter("fileChecksums", fileChecksums)
             .executeUpdate()
@@ -217,7 +309,16 @@ class UtxoRepositoryImpl @Activate constructor(
         tokenAmount: BigDecimal?,
         timestamp: Instant
     ) {
-        entityManager.createNativeQuery(queryProvider.persistTransactionOutput)
+        entityManager.createNativeQuery(
+            """
+            INSERT INTO {h-schema}utxo_transaction_output(
+                transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash,
+                token_symbol, token_tag, token_owner_hash, token_amount, created)
+            VALUES(
+                :transactionId, :groupIndex, :leafIndex, :type, :tokenType, :tokenIssuerHash,
+                :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, :createdAt)
+            ON CONFLICT DO NOTHING"""
+        )
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
@@ -245,7 +346,21 @@ class UtxoRepositoryImpl @Activate constructor(
         customRepresentation: CustomRepresentation,
         timestamp: Instant,
     ) {
-        entityManager.createNativeQuery(queryProvider.persistTransactionVisibleStates(consumed))
+        entityManager.createNativeQuery(
+            """
+            INSERT INTO {h-schema}utxo_visible_transaction_state(
+                transaction_id, group_idx, leaf_idx, custom_representation, created, consumed
+            )
+            VALUES(
+                :transactionId, 
+                :groupIndex, 
+                :leafIndex, 
+                CAST(:custom_representation as JSONB), 
+                :createdAt, 
+                ${if (consumed) ":consumedAt" else "null"}
+            )
+            ON CONFLICT DO NOTHING"""
+        )
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
@@ -263,7 +378,14 @@ class UtxoRepositoryImpl @Activate constructor(
         signature: DigitalSignatureAndMetadata,
         timestamp: Instant
     ) {
-        entityManager.createNativeQuery(queryProvider.persistTransactionSignature)
+        entityManager.createNativeQuery(
+            """
+            INSERT INTO {h-schema}utxo_transaction_signature(
+                transaction_id, signature_idx, signature, pub_key_hash, created)
+            VALUES (
+                :transactionId, :signatureIdx, :signature, :publicKeyHash, :createdAt)
+            ON CONFLICT DO NOTHING"""
+        )
             .setParameter("transactionId", transactionId)
             .setParameter("signatureIdx", index)
             .setParameter("signature", serializationService.serialize(signature).bytes)
@@ -283,7 +405,14 @@ class UtxoRepositoryImpl @Activate constructor(
         isRefInput: Boolean,
         timestamp: Instant
     ) {
-        entityManager.createNativeQuery(queryProvider.persistTransactionSource)
+        entityManager.createNativeQuery(
+            """
+            INSERT INTO {h-schema}utxo_transaction_sources(
+                transaction_id, group_idx, leaf_idx, ref_transaction_id, ref_leaf_idx, is_ref_input, created)
+            VALUES(
+                :transactionId, :groupIndex, :leafIndex, :refTransactionId, :refLeafIndex, :isRefInput, :createdAt)
+            ON CONFLICT DO NOTHING"""
+        )
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
@@ -302,7 +431,14 @@ class UtxoRepositoryImpl @Activate constructor(
         timestamp: Instant
     ) {
         // Insert/update status. Update ignored unless: UNVERIFIED -> * | VERIFIED -> VERIFIED | INVALID -> INVALID
-        val rowsUpdated = entityManager.createNativeQuery(queryProvider.persistTransactionStatus)
+        val rowsUpdated = entityManager.createNativeQuery(
+            """
+            INSERT INTO {h-schema}utxo_transaction_status(transaction_id, status, updated)
+            VALUES (:transactionId, :status, :updatedAt)
+            ON CONFLICT(transaction_id) DO
+                UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
+                WHERE utxo_transaction_status.status = EXCLUDED.status OR utxo_transaction_status.status = '$UNVERIFIED'"""
+        )
             .setParameter("transactionId", transactionId)
             .setParameter("status", transactionStatus.value)
             .setParameter("updatedAt", timestamp)
@@ -316,7 +452,17 @@ class UtxoRepositoryImpl @Activate constructor(
     }
 
     override fun findSignedGroupParameters(entityManager: EntityManager, hash: String): SignedGroupParameters? {
-        return entityManager.createNativeQuery(queryProvider.findSignedGroupParameters, Tuple::class.java)
+        return entityManager.createNativeQuery(
+            """
+                SELECT
+                    parameters,
+                    signature_public_key,
+                    signature_content,
+                    signature_spec
+                FROM {h-schema}utxo_group_parameters
+                WHERE hash = :hash""",
+            Tuple::class.java
+        )
             .setParameter("hash", hash)
             .resultListAsTuples()
             .map { r ->
@@ -338,7 +484,14 @@ class UtxoRepositoryImpl @Activate constructor(
         signedGroupParameters: SignedGroupParameters,
         timestamp: Instant
     ) {
-        entityManager.createNativeQuery(queryProvider.persistSignedGroupParameters)
+        entityManager.createNativeQuery(
+            """
+            INSERT INTO {h-schema}utxo_group_parameters(
+                hash, parameters, signature_public_key, signature_content, signature_spec, created)
+            VALUES (
+                :hash, :parameters, :signature_public_key, :signature_content, :signature_spec, :createdAt)
+            ON CONFLICT DO NOTHING"""
+        )
             .setParameter("hash", hash)
             .setParameter("parameters", signedGroupParameters.groupParameters.array())
             .setParameter("signature_public_key", signedGroupParameters.mgmSignature.publicKey.array())

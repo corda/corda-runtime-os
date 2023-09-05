@@ -5,7 +5,6 @@ import net.corda.ledger.persistence.query.parsing.expressions.VaultNamedQueryExp
 import net.corda.ledger.persistence.query.parsing.expressions.VaultNamedQueryExpressionValidator
 import net.corda.ledger.persistence.query.parsing.PathReference
 import net.corda.ledger.persistence.query.parsing.VaultNamedQueryParserImpl
-import net.corda.ledger.persistence.query.parsing.Where
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -26,25 +25,23 @@ class VaultNamedQueryParserImplTest {
     private val expressionValidator = mock<VaultNamedQueryExpressionValidator>()
     private val converter = mock<VaultNamedQueryConverter>()
     private val stringBuilderCaptor = argumentCaptor<StringBuilder>()
-    private val vaultNamedQueryParser = VaultNamedQueryParserImpl(expressionParser, expressionValidator, converter)
+    private val postgresVaultNamedQueryParser = VaultNamedQueryParserImpl(expressionParser, expressionValidator, converter)
 
     @Test
     fun `parses query and validates it`() {
-        val condition = listOf(PATH_REFERENCE)
-        val expression = listOf(Where(condition))
+        val expression = listOf(PATH_REFERENCE)
         val output = "output"
         whenever(expressionParser.parse(QUERY)).thenReturn(expression)
-        whenever(expressionValidator.validateWhereJson(QUERY, expression)).thenReturn(condition)
         whenever(
             converter.convert(
                 stringBuilderCaptor.capture(),
                 any()
             )
         ).then { stringBuilderCaptor.firstValue.append(output) }
-        assertThat(vaultNamedQueryParser.parseWhereJson(QUERY)).isEqualTo(output)
+        assertThat(postgresVaultNamedQueryParser.parseWhereJson(QUERY)).isEqualTo(output)
         verify(expressionParser).parse(QUERY)
         verify(expressionValidator).validateWhereJson(QUERY, expression)
-        verify(converter).convert(any(), eq(condition))
+        verify(converter).convert(any(), eq(expression))
     }
 
     @Test
@@ -56,6 +53,6 @@ class VaultNamedQueryParserImplTest {
                 any()
             )
         ).then { stringBuilderCaptor.firstValue.append(" SELECT  FROM  WHERE  IS NOT NULL ") }
-        assertThat(vaultNamedQueryParser.parseWhereJson(QUERY)).isEqualTo("SELECT FROM WHERE IS NOT NULL")
+        assertThat(postgresVaultNamedQueryParser.parseWhereJson(QUERY)).isEqualTo("SELECT FROM WHERE IS NOT NULL")
     }
 }

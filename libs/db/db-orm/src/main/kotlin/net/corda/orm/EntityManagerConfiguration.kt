@@ -22,6 +22,4 @@ interface EntityManagerConfiguration {
         get() = DdlManage.NONE
     val jdbcTimezone: String
         get() = "UTC"
-    val extraProperties: Map<String, Any>
-        get() = emptyMap()
 }

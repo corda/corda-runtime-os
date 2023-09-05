@@ -186,7 +186,7 @@ class VaultNamedQueryExecutorImpl(
                              ON tc_output_info.transaction_id = tc_output.transaction_id
                              AND tc_output_info.leaf_idx = tc_output.leaf_idx
                              AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
-                        WHERE ($whereJson)
+                        $whereJson
                         AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME
                         ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx
                 """,
