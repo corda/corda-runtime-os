@@ -1,33 +1,17 @@
+@file:ServiceConsumer(TracingServiceFactory::class, resolution = OPTIONAL)
 @file:Suppress("TooManyFunctions")
 
 package net.corda.tracing
 
-import io.javalin.core.JavalinConfig
+import aQute.bnd.annotation.Resolution.OPTIONAL
+import aQute.bnd.annotation.spi.ServiceConsumer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
-import net.corda.tracing.impl.BraveTracingService
-import net.corda.tracing.impl.PerSecond
-import net.corda.tracing.impl.SampleRate
 import net.corda.tracing.impl.TracingState
-import net.corda.tracing.impl.Unlimited
-import net.corda.v5.base.exceptions.CordaRuntimeException
-import org.eclipse.jetty.servlet.FilterHolder
-import java.util.EnumSet
+import java.util.ServiceLoader
 import java.util.concurrent.ExecutorService
-import javax.servlet.DispatcherType
-
-private fun parseUnsignedIntWithErrorHandling(string: String) = try {
-    Integer.parseUnsignedInt(string)
-} catch (e: NumberFormatException) {
-    throw CordaRuntimeException("Invalid --trace-samples-per-second, failed to parse \"$string\" as unsigned int", e)
-}
-private fun readSampleRateString(samplesPerSecond: String?): SampleRate = when {
-    samplesPerSecond.isNullOrEmpty() -> PerSecond(1)
-    samplesPerSecond.lowercase() == "unlimited" -> Unlimited
-    else -> PerSecond(parseUnsignedIntWithErrorHandling(samplesPerSecond))
-}
 
 /**
  * Configures the tracing for a given Corda worker.
@@ -39,10 +23,9 @@ private fun readSampleRateString(samplesPerSecond: String?): SampleRate = when {
  *
  */
 fun configureTracing(serviceName: String, zipkinHost: String?, samplesPerSecond: String?) {
-
-    val sampleRate = readSampleRateString(samplesPerSecond)
-
-    TracingState.currentTraceService = BraveTracingService(serviceName, zipkinHost, sampleRate)
+    ServiceLoader.load(TracingServiceFactory::class.java, TracingService::class.java.classLoader).single().also {
+        TracingState.currentTraceService = it.create(serviceName, zipkinHost, samplesPerSecond)
+    }
 }
 
 fun wrapWithTracingExecutor(executor: ExecutorService): ExecutorService {
@@ -141,12 +124,6 @@ fun shutdownTracing() {
 /**
  * Configure Javalin to read trace IDs from requests or generate new ones if missing.
  */
-fun configureJavalinForTracing(config: JavalinConfig) {
-    config.configureServletContextHandler { sch ->
-        sch.addFilter(
-            FilterHolder(TracingState.currentTraceService.getTracedServletFilter()),
-            "/*",
-            EnumSet.of(DispatcherType.INCLUDE, DispatcherType.REQUEST)
-        )
-    }
+fun configureJavalinForTracing(config: Any) {
+    TracingState.currentTraceService.configureJavalin(config)
 }
