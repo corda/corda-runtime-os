@@ -3,9 +3,8 @@ package net.corda.db.testkit
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.db.core.BaseDataSourceFactory
+import net.corda.db.core.DBBaseDataSourceFactory
 import net.corda.db.core.CloseableDataSource
-import net.corda.db.core.HikariDataSourceFactory
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerConfiguration
@@ -17,7 +16,7 @@ import java.sql.Connection
 
 interface DbUtilsHelper {
 
-    val isInMemory: Boolean
+    fun isInMemory(): Boolean
     fun getDatabase(): String
     fun getAdminUser(): String
     fun getAdminPassword(): String
@@ -53,15 +52,15 @@ class PostgresHelper : DbUtilsHelper{
         private const val POSTGRES_HOST_PROPERTY = "postgresHost"
     }
 
-    override val isInMemory = System.getProperty(POSTGRES_PORT_PROPERTY).isNullOrBlank()
+    override fun isInMemory() = false
 
     private val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
     override fun getDatabase() = getPropertyNonBlank("postgresDb","postgres")
 
-    override fun getAdminUser() = if (isInMemory) "sa" else getPropertyNonBlank("postgresUser","postgres")
+    override fun getAdminUser() = if (isInMemory()) "sa" else getPropertyNonBlank("postgresUser","postgres")
 
-    override fun getAdminPassword() = if (isInMemory) "" else getPropertyNonBlank("postgresPassword", "password")
+    override fun getAdminPassword() = if (isInMemory()) "" else getPropertyNonBlank("postgresPassword", "password")
 
     override fun getEntityManagerConfiguration(
         inMemoryDbName: String,
@@ -72,18 +71,9 @@ class PostgresHelper : DbUtilsHelper{
         showSql: Boolean,
         rewriteBatchedInserts: Boolean
     ): EntityManagerConfiguration {
-        val port = System.getProperty(POSTGRES_PORT_PROPERTY)
-        return if (!port.isNullOrBlank()){
-            val ds = createDataSource(dbUser,dbPassword, schemaName, createSchema, rewriteBatchedInserts)
-            DbEntityManagerConfiguration(ds,showSql,true,DdlManage.NONE)
-        } else {
-            logger.info("Using in-memory (HSQL) DB".emphasise())
-            TestInMemoryEntityManagerConfiguration(inMemoryDbName, showSql).also {
-                if (createSchema) {
-                    it.dataSource.connection.createSchema(schemaName)
-                }
-            }
-        }
+        val ds = createDataSource(dbUser,dbPassword, schemaName, createSchema, rewriteBatchedInserts)
+        return DbEntityManagerConfiguration(ds,showSql,true,DdlManage.NONE)
+
     }
 
     override fun createDataSource(
@@ -98,7 +88,7 @@ class PostgresHelper : DbUtilsHelper{
         val host = getPropertyNonBlank(POSTGRES_HOST_PROPERTY,"localhost")
         var jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb"
 
-        val factory = BaseDataSourceFactory(HikariDataSourceFactory())
+        val factory = DBBaseDataSourceFactory()
 
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
@@ -127,24 +117,16 @@ class PostgresHelper : DbUtilsHelper{
         val port = System.getProperty(POSTGRES_PORT_PROPERTY)
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
-        if (!port.isNullOrBlank()) {
-            val postgresDb = getDatabase()
-            val host = getPropertyNonBlank(POSTGRES_HOST_PROPERTY, "localhost")
-            var jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb"
-            if (!schemaName.isNullOrBlank()) {
-                jdbcUrl = "$jdbcUrl?currentSchema=$schemaName"
-            }
-            return ConfigFactory.empty()
-                .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
-                .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(user))
-                .withValue(DatabaseConfig.DB_PASS, ConfigValueFactory.fromAnyRef(password))
-        } else {
-            return ConfigFactory.empty()
-                .withValue(DatabaseConfig.JDBC_DRIVER, ConfigValueFactory.fromAnyRef("org.hsqldb.jdbc.JDBCDriver"))
-                .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef("jdbc:hsqldb:mem:$inMemoryDbName"))
-                .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(user))
-                .withValue(DatabaseConfig.DB_PASS, ConfigValueFactory.fromAnyRef(password))
+        val postgresDb = getDatabase()
+        val host = getPropertyNonBlank(POSTGRES_HOST_PROPERTY, "localhost")
+        var jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb"
+        if (!schemaName.isNullOrBlank()) {
+            jdbcUrl = "$jdbcUrl?currentSchema=$schemaName"
         }
+        return ConfigFactory.empty()
+            .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
+            .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(user))
+            .withValue(DatabaseConfig.DB_PASS, ConfigValueFactory.fromAnyRef(password))
     }
 }
 
@@ -154,13 +136,13 @@ class SQLServerHelper : DbUtilsHelper {
         private const val MSSQL_PORT_PROPERTY = "mssqlPort"
     }
 
-    override val isInMemory = System.getProperty(MSSQL_PORT_PROPERTY).isNullOrBlank()
+    override fun isInMemory() = false
 
     override fun getDatabase() = getPropertyNonBlank("sqlDb", "sql")
 
-    override fun getAdminUser() = if (isInMemory) "sa" else getPropertyNonBlank("mssqlUser", "sa")
+    override fun getAdminUser() = if (isInMemory()) "sa" else getPropertyNonBlank("mssqlUser", "sa")
 
-    override fun getAdminPassword() = if (isInMemory) "" else getPropertyNonBlank("mssqlPassword", "password")
+    override fun getAdminPassword() = if (isInMemory()) "" else getPropertyNonBlank("mssqlPassword", "password")
 
     private val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
@@ -188,7 +170,7 @@ class SQLServerHelper : DbUtilsHelper {
         val host = getPropertyNonBlank(MSSQL_HOST_PROPERTY, "localhost")
         var jdbcUrl = "jdbc:sqlserver://$host:$port;encrypt=true;trustServerCertificate=true;"
 
-        val factory = BaseDataSourceFactory(HikariDataSourceFactory())
+        val factory = DBBaseDataSourceFactory()
 
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
@@ -238,19 +220,78 @@ class SQLServerHelper : DbUtilsHelper {
     }
 }
 
-object DbUtils {
+class HSQLHelper : DbUtilsHelper {
+    override fun isInMemory(): Boolean = true
 
-    val isNotMSSQL = System.getProperty("mssqlPort").isNullOrBlank()
+    override fun getDatabase(): String = ""
 
-    private val utilsHelper: DbUtilsHelper by lazy {
-        if (!isNotMSSQL) {
-            SQLServerHelper()
-        } else {
-            PostgresHelper()
+    override fun getAdminUser() = if (isInMemory()) "sa" else getPropertyNonBlank("postgresUser","postgres")
+
+    override fun getAdminPassword() = if (isInMemory()) "" else getPropertyNonBlank("postgresPassword", "password")
+
+    private val logger: Logger = LoggerFactory.getLogger(this::class.java)
+    override fun getEntityManagerConfiguration(
+        inMemoryDbName: String,
+        dbUser: String?,
+        dbPassword: String?,
+        schemaName: String?,
+        createSchema: Boolean,
+        showSql: Boolean,
+        rewriteBatchedInserts: Boolean
+    ): EntityManagerConfiguration {
+        logger.info("Using in-memory (HSQL) DB".emphasise())
+        return TestInMemoryEntityManagerConfiguration(inMemoryDbName, showSql).also {
+            if (createSchema) {
+                it.dataSource.connection.createSchema(schemaName)
+            }
         }
     }
 
-    val isInMemory = utilsHelper.isInMemory
+    override fun createDataSource(
+        dbUser: String?,
+        dbPassword: String?,
+        schemaName: String?,
+        createSchema: Boolean,
+        rewriteBatchedInserts: Boolean
+    ): CloseableDataSource {
+        val factory = DBBaseDataSourceFactory()
+        val user = dbUser ?: getAdminUser()
+        val password = dbPassword ?: getAdminPassword()
+        return factory.create("org.hsqldb.jdbc.JDBCDriver","", user, password)
+    }
+
+    override fun createConfig(
+        inMemoryDbName: String,
+        dbUser: String?,
+        dbPassword: String?,
+        schemaName: String?
+    ): Config {
+        val user = dbUser ?: getAdminUser()
+        val password = dbPassword ?: getAdminPassword()
+
+        return ConfigFactory.empty()
+            .withValue(DatabaseConfig.JDBC_DRIVER, ConfigValueFactory.fromAnyRef("org.hsqldb.jdbc.JDBCDriver"))
+            .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef("jdbc:hsqldb:mem:$inMemoryDbName"))
+            .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(user))
+            .withValue(DatabaseConfig.DB_PASS, ConfigValueFactory.fromAnyRef(password))
+    }
+
+}
+
+object DbUtils {
+
+    val isNotPostgres = System.getProperty("postgresPort").isNullOrBlank()
+    val isNotMSSQL = System.getProperty("mssqlPort").isNullOrBlank()
+
+    var utilsHelper: DbUtilsHelper = when {
+        !isNotMSSQL -> SQLServerHelper()
+        !isNotPostgres -> PostgresHelper()
+        else -> {
+            HSQLHelper()
+        }
+    }
+
+    val isInMemory = utilsHelper.isInMemory()
 
     fun getDatabase() = utilsHelper.getDatabase()
 

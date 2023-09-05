@@ -1,5 +1,5 @@
+import net.corda.db.core.DBBaseDataSourceFactory
 import net.corda.db.core.DataSourceFactory
-import net.corda.db.core.PostgresDataSourceFactory
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
@@ -14,7 +14,8 @@ class PostgresEntityManagerConfigurationTest {
             on { create(any(), any(), any(), any(), any(), any(),any(), any(), any(), any(), any(), any()) } doReturn (mock())
         }
 
-        PostgresDataSourceFactory(dataSourceFactory).create(
+            DBBaseDataSourceFactory(dataSourceFactory).create(
+                "org.postgresql.Driver",
             "jdbcUrl",
             "user",
             "pass",

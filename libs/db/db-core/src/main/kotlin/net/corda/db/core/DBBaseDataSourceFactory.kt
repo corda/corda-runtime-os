@@ -2,8 +2,8 @@ package net.corda.db.core
 
 import java.time.Duration
 
-class BaseDataSourceFactory(
-    private val datasourceFactory: DataSourceFactory
+class DBBaseDataSourceFactory(
+    private val datasourceFactory: DataSourceFactory = HikariDataSourceFactory()
 ){
 
     fun create(
