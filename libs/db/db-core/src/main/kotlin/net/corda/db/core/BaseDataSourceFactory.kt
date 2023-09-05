@@ -2,13 +2,12 @@ package net.corda.db.core
 
 import java.time.Duration
 
-abstract class BaseDataSourceFactory(
+class BaseDataSourceFactory(
     private val datasourceFactory: DataSourceFactory
 ){
 
-    abstract val driverClass: String
-
     fun create(
+        driverClass: String,
         jdbcUrl: String,
         username: String,
         password: String,

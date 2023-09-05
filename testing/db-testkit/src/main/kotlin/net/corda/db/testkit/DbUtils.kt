@@ -3,9 +3,9 @@ package net.corda.db.testkit
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.db.core.BaseDataSourceFactory
 import net.corda.db.core.CloseableDataSource
-import net.corda.db.core.PostgresDataSourceFactory
-import net.corda.db.core.SQLDataSourceFactory
+import net.corda.db.core.HikariDataSourceFactory
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerConfiguration
@@ -98,7 +98,7 @@ class PostgresHelper : DbUtilsHelper{
         val host = getPropertyNonBlank(POSTGRES_HOST_PROPERTY,"localhost")
         var jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb"
 
-        val factory = PostgresDataSourceFactory()
+        val factory = BaseDataSourceFactory(HikariDataSourceFactory())
 
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
@@ -106,7 +106,7 @@ class PostgresHelper : DbUtilsHelper{
         if (!schemaName.isNullOrBlank()) {
             if (createSchema) {
                 logger.info("Creating schema: $schemaName".emphasise())
-                factory.create(jdbcUrl, user, password, maximumPoolSize = 1).connection.createSchema(schemaName)
+                factory.create("org.postgresql.Driver",jdbcUrl, user, password, maximumPoolSize = 1).connection.createSchema(schemaName)
             }
             jdbcUrl = if (rewriteBatchedInserts) {
                 "$jdbcUrl?currentSchema=$schemaName&reWriteBatchedInserts=true"
@@ -115,7 +115,7 @@ class PostgresHelper : DbUtilsHelper{
             }
         }
         logger.info("Using Postgres URL $jdbcUrl".emphasise())
-        return factory.create(jdbcUrl, user, password)
+        return factory.create("org.postgresql.Driver",jdbcUrl, user, password)
     }
 
     override fun createConfig(
@@ -148,7 +148,7 @@ class PostgresHelper : DbUtilsHelper{
     }
 }
 
-class SQLServerHelper() : DbUtilsHelper {
+class SQLServerHelper : DbUtilsHelper {
     companion object {
         private const val MSSQL_HOST_PROPERTY = "mssqlHost"
         private const val MSSQL_PORT_PROPERTY = "mssqlPort"
@@ -188,7 +188,7 @@ class SQLServerHelper() : DbUtilsHelper {
         val host = getPropertyNonBlank(MSSQL_HOST_PROPERTY, "localhost")
         var jdbcUrl = "jdbc:sqlserver://$host:$port;encrypt=true;trustServerCertificate=true;"
 
-        val factory = SQLDataSourceFactory()
+        val factory = BaseDataSourceFactory(HikariDataSourceFactory())
 
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
@@ -196,7 +196,8 @@ class SQLServerHelper() : DbUtilsHelper {
         if (!schemaName.isNullOrBlank()) {
             if (createSchema) {
                 logger.info("Creating schema: $schemaName".emphasise())
-                factory.create(jdbcUrl, user, password, maximumPoolSize = 1).connection.createSchema(schemaName)
+                factory.create("com.microsoft.sqlserver.jdbc.SQLServerDriver", jdbcUrl, user, password, maximumPoolSize = 1)
+                    .connection.createSchema(schemaName)
             }
             jdbcUrl = if (rewriteBatchedInserts) {
                 "$jdbcUrl?currentSchema=$schemaName&reWriteBatchedInserts=true"
@@ -205,7 +206,7 @@ class SQLServerHelper() : DbUtilsHelper {
             }
         }
         logger.info("Using SQL Server URL $jdbcUrl".emphasise())
-        return factory.create(jdbcUrl, user, password)
+        return factory.create("com.microsoft.sqlserver.jdbc.SQLServerDriver",jdbcUrl, user, password)
     }
 
     override fun createConfig(
@@ -253,6 +254,7 @@ object DbUtils {
 
     fun getDatabase() = utilsHelper.getDatabase()
 
+    @Suppress("LongParameterList")
     fun getEntityManagerConfiguration(
         inMemoryDbName: String = "",
         dbUser: String? = null,
