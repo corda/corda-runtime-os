@@ -6,7 +6,6 @@ import net.corda.crypto.core.parseSecureHash
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
-import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.data.KeyValuePair
@@ -44,7 +43,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.KeySchemeCodes
 import net.corda.v5.ledger.utxo.BelongsToContract
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.Contract
@@ -83,8 +81,6 @@ class VerificationRequestProcessorTest {
         const val TEST_CPB = "/META-INF/ledger-utxo-demo-app.cpb"
         const val VERIFICATION_ERROR_MESSAGE = "Output state has invalid field value"
         const val TIMEOUT_MILLIS = 10000L
-        const val CATEGORY = "SESSION_INIT"
-        const val SCHEME = KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 
         val NOTARY_X500_NAME = MemberX500Name.parse("O=ExampleNotaryService, L=London, C=GB")
         val PUBLIC_KEY: PublicKey = KeyPairGenerator.getInstance("RSA")
@@ -103,19 +99,28 @@ class VerificationRequestProcessorTest {
         )
     }
 
+    @Suppress("JUnitMalformedDeclaration")
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
     private lateinit var virtualNodeService: VirtualNodeService
     private lateinit var cpiInfoReadService: CpiInfoReadService
-    private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
     private lateinit var deserializer: CordaAvroDeserializer<TransactionVerificationResponse>
     private lateinit var wireTransactionFactory: WireTransactionFactory
     private lateinit var jsonMarshallingService: JsonMarshallingService
     private lateinit var jsonValidator: JsonValidator
-    private lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
-    private lateinit var groupParametersFactory: GroupParametersFactory
     private lateinit var keyValueSerializer: CordaAvroSerializer<KeyValuePairList>
-    private lateinit var keyEncodingService: KeyEncodingService
+
+    @InjectService(timeout = TIMEOUT_MILLIS)
+    lateinit var externalEventResponseFactory: ExternalEventResponseFactory
+
+    @InjectService(timeout = TIMEOUT_MILLIS)
+    lateinit var groupParametersFactory: GroupParametersFactory
+
+    @InjectService(timeout = TIMEOUT_MILLIS)
+    lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
+
+    @InjectService(timeout = TIMEOUT_MILLIS)
+    lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
     @BeforeAll
     fun setup(
@@ -128,20 +133,14 @@ class VerificationRequestProcessorTest {
     ) {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            externalEventResponseFactory = setup.fetchService(TIMEOUT_MILLIS)
             cpiInfoReadService = setup.fetchService(TIMEOUT_MILLIS)
             virtualNodeService = setup.fetchService(TIMEOUT_MILLIS)
-            deserializer = setup.fetchService<CordaAvroSerializationFactory>(TIMEOUT_MILLIS)
-                .createAvroDeserializer({}, TransactionVerificationResponse::class.java)
             wireTransactionFactory = setup.fetchService(TIMEOUT_MILLIS)
             jsonMarshallingService = setup.fetchService(TIMEOUT_MILLIS)
             jsonValidator = setup.fetchService(TIMEOUT_MILLIS)
-            currentSandboxGroupContext = setup.fetchService(TIMEOUT_MILLIS)
-            groupParametersFactory = setup.fetchService(TIMEOUT_MILLIS)
-            keyValueSerializer = setup.fetchService<CordaAvroSerializationFactory>(TIMEOUT_MILLIS)
-                .createAvroSerializer { }
-            keyEncodingService = setup.fetchService(TIMEOUT_MILLIS)
         }
+        deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, TransactionVerificationResponse::class.java)
+        keyValueSerializer = cordaAvroSerializationFactory.createAvroSerializer { }
     }
 
     @Test

@@ -2,232 +2,336 @@ package net.corda.ledger.persistence.query.parsing
 
 interface Keyword : Token
 
-class NotEquals : Keyword {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
-
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
+@Suppress("unused")
+enum class Associativity {
+    Left,
+    Right
 }
 
-class And : Keyword {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
-
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
+/**
+ * Operator precedence:
+ * 1. <, <=, >, >=, AS, IS NULL, IS NOT NULL, IN, NOT IN, LIKE, NOT LIKE, ->, ->>, ?, ::
+ * 1. =, !=
+ * 1. AND
+ * 1. OR
+ */
+interface Operator : Keyword {
+    val associativity: Associativity
+    val precedence: Int
 }
 
-class Or : Keyword {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
+interface UnaryKeyword : Keyword {
+    val op: List<Token>
 
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
+    fun create(ops: List<Token>): UnaryKeyword
 }
 
-class IsNull : Keyword {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
+interface TopLevelKeyword : UnaryKeyword
 
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
+interface BinaryKeyword : Keyword {
+    val op1: List<Token>
+    val op2: List<Token>
+
+    fun create(o1: List<Token>, o2: List<Token>): BinaryKeyword
 }
 
-class IsNotNull : Keyword {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
+class From(override val op: List<Token>) : TopLevelKeyword {
+    constructor() : this(emptyList())
 
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
+    override fun create(ops: List<Token>) = From(ops)
 }
 
-class GreaterThan : Keyword {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
+class Select(override val op: List<Token>) : TopLevelKeyword {
+    constructor() : this(emptyList())
 
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
+    override fun create(ops: List<Token>) = Select(ops)
 }
 
-class GreaterThanEquals : Keyword {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
+class Where(override val op: List<Token>) : TopLevelKeyword {
+    constructor() : this(emptyList())
 
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
+    override fun create(ops: List<Token>) = Where(ops)
 }
 
-class LessThan : Keyword {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
+class Equals(
+    override val op1: List<Token>,
+    override val op2: List<Token>
+) : BinaryKeyword, Operator {
+    constructor() : this(emptyList(), emptyList())
 
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
+    override val associativity: Associativity
+        get() = Associativity.Left
+
+    override val precedence: Int
+        get() = 2
+
+    override fun create(o1: List<Token>, o2: List<Token>) = Equals(o1, o2)
 }
 
-class LessThanEquals : Keyword {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
+class NotEquals(
+    override val op1: List<Token>,
+    override val op2: List<Token>
+) : BinaryKeyword, Operator {
+    constructor() : this(emptyList(), emptyList())
 
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
+    override val associativity: Associativity
+        get() = Associativity.Left
+
+    override val precedence: Int
+        get() = 2
+
+    override fun create(o1: List<Token>, o2: List<Token>) = NotEquals(o1, o2)
 }
 
-class JsonField : Keyword {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
+class And(
+    override val op1: List<Token>,
+    override val op2: List<Token>
+) : BinaryKeyword, Operator {
+    constructor() : this(emptyList(), emptyList())
 
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
+    override val associativity: Associativity
+        get() = Associativity.Left
+
+    override val precedence: Int
+        get() = 3
+
+    override fun create(o1: List<Token>, o2: List<Token>) = And(o1, o2)
 }
 
-class JsonArrayOrObjectAsText : Keyword {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
+class Or(
+    override val op1: List<Token>,
+    override val op2: List<Token>
+) : BinaryKeyword, Operator {
+    constructor() : this(emptyList(), emptyList())
 
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
+    override val associativity: Associativity
+        get() = Associativity.Left
+
+    override val precedence: Int
+        get() = 4
+
+    override fun create(o1: List<Token>, o2: List<Token>) = Or(o1, o2)
 }
 
-class As : Keyword {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
+class IsNull(
+    override val op: List<Token>
+) : UnaryKeyword, Operator {
+    constructor() : this(emptyList())
 
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
+    override val associativity: Associativity
+        get() = Associativity.Left
+
+    override val precedence: Int
+        get() = 1
+
+    override fun create(ops: List<Token>) = IsNull(ops)
 }
 
-class From : Keyword {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
+class IsNotNull(
+    override val op: List<Token>
+) : UnaryKeyword, Operator {
+    constructor() : this(emptyList())
 
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
+    override val associativity: Associativity
+        get() = Associativity.Left
+
+    override val precedence: Int
+        get() = 1
+
+    override fun create(ops: List<Token>) = IsNotNull(ops)
 }
 
-class Select : Keyword {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
+class GreaterThan(
+    override val op1: List<Token>,
+    override val op2: List<Token>
+) : BinaryKeyword, Operator {
+    constructor() : this(emptyList(), emptyList())
 
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
+    override val associativity: Associativity
+        get() = Associativity.Left
+
+    override val precedence: Int
+        get() = 1
+
+    override fun create(o1: List<Token>, o2: List<Token>) = GreaterThan(o1, o2)
 }
 
-class Where : Keyword {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
+class GreaterThanEquals(
+    override val op1: List<Token>,
+    override val op2: List<Token>
+) : BinaryKeyword, Operator {
+    constructor() : this(emptyList(), emptyList())
 
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
+    override val associativity: Associativity
+        get() = Associativity.Left
+
+    override val precedence: Int
+        get() = 1
+
+    override fun create(o1: List<Token>, o2: List<Token>) = GreaterThanEquals(o1, o2)
 }
 
-class Equals : Keyword {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
+class LessThan(
+    override val op1: List<Token>,
+    override val op2: List<Token>
+) : BinaryKeyword, Operator {
+    constructor() : this(emptyList(), emptyList())
 
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
+    override val associativity: Associativity
+        get() = Associativity.Left
+
+    override val precedence: Int
+        get() = 1
+
+    override fun create(o1: List<Token>, o2: List<Token>) = LessThan(o1, o2)
 }
 
-class In : Keyword {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
+class LessThanEquals(
+    override val op1: List<Token>,
+    override val op2: List<Token>
+) : BinaryKeyword, Operator {
+    constructor() : this(emptyList(), emptyList())
 
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
+    override val associativity: Associativity
+        get() = Associativity.Left
+
+    override val precedence: Int
+        get() = 1
+
+    override fun create(o1: List<Token>, o2: List<Token>) = LessThanEquals(o1, o2)
 }
 
-class JsonKeyExists : Keyword {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
+class JsonField(
+    override val op1: List<Token>,
+    override val op2: List<Token>
+) : BinaryKeyword, Operator {
+    constructor() : this(emptyList(), emptyList())
 
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
+    override val associativity: Associativity
+        get() = Associativity.Left
+
+    override val precedence: Int
+        get() = 1
+
+    override fun create(o1: List<Token>, o2: List<Token>) = JsonField(o1, o2)
 }
 
-class Like : Keyword {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
+class JsonArrayOrObjectAsText(
+    override val op1: List<Token>,
+    override val op2: List<Token>
+) : BinaryKeyword, Operator {
+    constructor() : this(emptyList(), emptyList())
 
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
+    override val associativity: Associativity
+        get() = Associativity.Left
+
+    override val precedence: Int
+        get() = 1
+
+    override fun create(o1: List<Token>, o2: List<Token>) = JsonArrayOrObjectAsText(o1, o2)
 }
 
-data class JsonCast(val value: String) : Keyword
+class As(
+    override val op1: List<Token>,
+    override val op2: List<Token>
+) : BinaryKeyword, Operator {
+    constructor() : this(emptyList(), emptyList())
+
+    override val associativity: Associativity
+        get() = Associativity.Left
+
+    override val precedence: Int
+        get() = 1
+
+    override fun create(o1: List<Token>, o2: List<Token>) = As(o1, o2)
+}
+
+class In(
+    override val op1: List<Token>,
+    override val op2: List<Token>
+) : BinaryKeyword, Operator {
+    constructor() : this(emptyList(), emptyList())
+
+    override val associativity: Associativity
+        get() = Associativity.Left
+
+    override val precedence: Int
+        get() = 1
+
+    override fun create(o1: List<Token>, o2: List<Token>) = In(o1, o2)
+}
+
+class NotIn(
+    override val op1: List<Token>,
+    override val op2: List<Token>
+) : BinaryKeyword, Operator {
+    constructor() : this(emptyList(), emptyList())
+
+    override val associativity: Associativity
+        get() = Associativity.Left
+
+    override val precedence: Int
+        get() = 1
+
+    override fun create(o1: List<Token>, o2: List<Token>) = NotIn(o1, o2)
+}
+
+class JsonKeyExists(
+    override val op1: List<Token>,
+    override val op2: List<Token>
+) : BinaryKeyword, Operator {
+    constructor() : this(emptyList(), emptyList())
+
+    override val associativity: Associativity
+        get() = Associativity.Left
+
+    override val precedence: Int
+        get() = 1
+
+    override fun create(o1: List<Token>, o2: List<Token>) = JsonKeyExists(o1, o2)
+}
+
+class Like(
+    override val op1: List<Token>,
+    override val op2: List<Token>
+) : BinaryKeyword, Operator {
+    constructor() : this(emptyList(), emptyList())
+
+    override val associativity: Associativity
+        get() = Associativity.Left
+
+    override val precedence: Int
+        get() = 1
+
+    override fun create(o1: List<Token>, o2: List<Token>) = Like(o1, o2)
+}
+
+class NotLike(
+    override val op1: List<Token>,
+    override val op2: List<Token>
+) : BinaryKeyword, Operator {
+    constructor() : this(emptyList(), emptyList())
+
+    override val associativity: Associativity
+        get() = Associativity.Left
+
+    override val precedence: Int
+        get() = 1
+
+    override fun create(o1: List<Token>, o2: List<Token>) = NotLike(o1, o2)
+}
+
+class JsonCast(
+    override val op1: List<Token>,
+    override val op2: List<Token>
+) : BinaryKeyword, Operator {
+    constructor() : this(emptyList(), emptyList())
+
+    override val associativity: Associativity
+        get() = Associativity.Left
+
+    override val precedence: Int
+        get() = 1
+
+    override fun create(o1: List<Token>, o2: List<Token>) = JsonCast(o1, o2)
+}

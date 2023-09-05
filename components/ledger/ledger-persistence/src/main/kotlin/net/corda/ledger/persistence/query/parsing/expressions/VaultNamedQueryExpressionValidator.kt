@@ -13,5 +13,5 @@ interface VaultNamedQueryExpressionValidator {
      * @param query The original query before it was parsed.
      * @param expression The parsed expression to validate.
      */
-    fun validateWhereJson(query: String, expression: List<Token>)
+    fun validateWhereJson(query: String, expression: List<Token>): List<Token>
 }

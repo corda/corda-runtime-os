@@ -16,7 +16,7 @@ fun interface ResultSetExecutor<R> : Serializable {
      * @param serializedParameters The serialized parameters of the [ResultSet].
      * @param offset The current offset of the [ResultSet].
      *
-     * @return A [Results] containing the serialized results and the number of rows the database retrieved from its query.
+     * @return A [Results] containing the serialized results, the number of rows the database retrieved from its query.
      */
     @Suspendable
     fun execute(serializedParameters: Map<String, ByteBuffer>, offset: Int): Results
