@@ -12,6 +12,7 @@ import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
+import java.time.Instant
 
 /**
  * The FlowCheckpoint provides an API for managing the checkpoint during the processing of a flow.
@@ -42,6 +43,8 @@ interface FlowCheckpoint : NonSerializable {
     val doesExist: Boolean
 
     val currentRetryCount: Int
+
+    val firstFailureTimestamp: Instant?
 
     val inRetryState: Boolean
 

@@ -106,6 +106,9 @@ class FlowCheckpointImpl(
     override val currentRetryCount: Int
         get() = pipelineStateManager.retryCount
 
+    override val firstFailureTimestamp: Instant?
+        get() = pipelineStateManager.firstFailureTimestamp
+
     override val inRetryState: Boolean
         get() = pipelineStateManager.retryState != null
 

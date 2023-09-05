@@ -614,16 +614,18 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `retry - creating a checkpoint with a retry state set should allow retry information to be retrieved`() {
+        val firstFailure = Instant.now()
         val flowEvent = FlowEvent("F1", Wakeup())
         val checkpoint = setupAvroCheckpoint(retryState = RetryState().apply {
             retryCount = 1
             failedEvent = flowEvent
+            firstFailureTimestamp = firstFailure
         })
 
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
         assertThat(flowCheckpoint.inRetryState).isTrue
         assertThat(flowCheckpoint.retryEvent).isEqualTo(flowEvent)
-        assertThat(flowCheckpoint.currentRetryCount).isEqualTo(1)
+        assertThat(flowCheckpoint.firstFailureTimestamp).isEqualTo(firstFailure)
     }
 
     @Test

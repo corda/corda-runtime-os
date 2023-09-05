@@ -27,7 +27,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
-import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -35,6 +34,8 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import net.corda.flow.fiber.cache.FlowFiberCache
+import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION
+import java.time.Duration
 
 @Suppress("Unused" , "TooManyFunctions")
 @Component(service = [FlowEventExceptionProcessor::class])
@@ -55,10 +56,10 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private var maxRetryAttempts = 0
+    private var maxRetryWindowDuration = Duration.ZERO
 
     override fun configure(config: SmartConfig) {
-        maxRetryAttempts = config.getInt(PROCESSING_MAX_RETRY_ATTEMPTS)
+        maxRetryWindowDuration = Duration.ofMillis(config.getLong(PROCESSING_MAX_RETRY_WINDOW_DURATION))
     }
 
     override fun process(throwable: Throwable): StateAndEventProcessor.Response<Checkpoint> {
@@ -77,13 +78,16 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         return withEscalation {
             val flowCheckpoint = context.checkpoint
 
-            /** If we have reached the maximum number of retries then we escalate this to a fatal
-             * exception and DLQ the flow
-             */
-            if (flowCheckpoint.currentRetryCount >= maxRetryAttempts) {
+            fun isRetryWindowExpired(firstFailureTimestamp: Instant?) =
+                Duration.between(firstFailureTimestamp, Instant.now()) >= maxRetryWindowDuration
+
+            /** If the retry window has expired then we escalate this to a fatal exception and DLQ the flow */
+            if (flowCheckpoint.firstFailureTimestamp != null && isRetryWindowExpired(flowCheckpoint.firstFailureTimestamp)) {
+                val durationSinceFirstFailure = Duration.between(flowCheckpoint.firstFailureTimestamp, Instant.now())
                 return@withEscalation process(
                     FlowFatalException(
-                        "Execution failed with \"${exception.message}\" after $maxRetryAttempts retry attempts.",
+                        "Execution failed with \"${exception.message}\" after duration ${durationSinceFirstFailure.seconds} and " +
+                                "${flowCheckpoint.currentRetryCount} retry attempts.",
                         exception
                     ), context
                 )
