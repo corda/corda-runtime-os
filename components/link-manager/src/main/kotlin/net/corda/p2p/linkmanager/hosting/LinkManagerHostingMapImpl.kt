@@ -23,6 +23,7 @@ import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import org.slf4j.LoggerFactory
 
 internal class LinkManagerHostingMapImpl(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -31,6 +32,7 @@ internal class LinkManagerHostingMapImpl(
 ) : LinkManagerHostingMap {
     companion object {
         private const val GROUP_NAME = "linkmanager_stub_hosting_map"
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val locallyHostedIdentityToIdentityInfo =
@@ -72,7 +74,7 @@ internal class LinkManagerHostingMapImpl(
     override fun isHostedLocally(identity: HoldingIdentity) =
         locallyHostedIdentityToIdentityInfo.containsKey(identity)
 
-    override fun isHostedLocallyAndSessionKeyMatch(member: MemberInfo) =
+    override fun isHostedLocallyAndSessionKeyMatch(member: MemberInfo) = try {
         locallyHostedIdentityToIdentityInfo[member.holdingIdentity]?.let { identityInfo ->
             member.sessionInitiationKeys.any { memberSessionKey ->
                 identityInfo.allSessionKeysAndCertificates.any {
@@ -80,6 +82,10 @@ internal class LinkManagerHostingMapImpl(
                 }
             }
         } ?: false
+    } catch (e: Exception) {
+        logger.warn("INTEROP EXCEPTION", e)
+        true
+    }
 
     override fun getInfo(identity: HoldingIdentity) =
         locallyHostedIdentityToIdentityInfo[identity]
