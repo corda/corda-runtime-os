@@ -4,179 +4,141 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.db.core.CloseableDataSource
+import net.corda.db.core.PostgresDataSourceFactory
+import net.corda.db.core.SQLDataSourceFactory
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerConfiguration
+import net.corda.schema.configuration.DatabaseConfig
 import net.corda.test.util.LoggingUtils.emphasise
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.sql.Connection
-import net.corda.db.core.PostgresDataSourceFactory
-import net.corda.db.core.SQLDataSourceFactory
-import net.corda.schema.configuration.DatabaseConfig
 
+interface DbUtilsHelper {
 
-object DbUtils {
+    val isInMemory: Boolean
+    fun getDatabase(): String
+    fun getAdminUser(): String
+    fun getAdminPassword(): String
 
-    private const val POSTGRES_HOST_PROPERTY = "postgresHost"
-    private const val POSTGRES_PORT_PROPERTY = "postgresPort"
-    private const val MSSQL_HOST_PROPERTY = "mssqlHost"
-    private const val MSSQL_PORT_PROPERTY = "mssqlPort"
-
-    val isPostgres = System.getProperty(POSTGRES_PORT_PROPERTY).isNullOrBlank()
-    val isMSSQL = System.getProperty(MSSQL_PORT_PROPERTY).isNullOrBlank()
-
-    val isInMemory = System.getProperty(POSTGRES_PORT_PROPERTY).isNullOrBlank() && System.getProperty(
-        MSSQL_PORT_PROPERTY).isNullOrBlank()
-
-    private val logger: Logger = LoggerFactory.getLogger(this::class.java)
-
-    fun getDatabase() =
-        if (!isPostgres){
-            getPropertyNonBlank("postgresDb", "postgres")
-        }
-        else if (!isMSSQL){
-            getPropertyNonBlank("sqlDb", "sql")
-        }
-        else {
-            ""
-        }
-
-    fun getAdminUser() =
-        if(!isPostgres){
-            getPropertyNonBlank("postgresUser","postgres")
-        }
-        else if(!isMSSQL){
-            getPropertyNonBlank("mssqlUser", "sa")
-        }
-        else{
-            "sa"
-        }
-
-    fun getAdminPassword() =
-        if(!isPostgres){
-            getPropertyNonBlank("postgresPassword", "password")
-        }
-        else if(!isMSSQL){
-            getPropertyNonBlank("mssqlPassword", "password")
-        }
-        else{
-            ""
-        }
     @Suppress("LongParameterList")
     fun getEntityManagerConfiguration(
-        inMemoryDbName : String,
+        inMemoryDbName : String = "",
         dbUser: String? = null,
         dbPassword: String? = null,
         schemaName: String? = null,
         createSchema: Boolean = false,
         showSql: Boolean = true,
         rewriteBatchedInserts: Boolean = false
-    ):EntityManagerConfiguration{
-        println(System.getProperty(MSSQL_PORT_PROPERTY))
-        return if(!isPostgres || !isMSSQL) {
-            val ds =
-                createDataSource(dbUser, dbPassword, schemaName, createSchema, rewriteBatchedInserts)
-            DbEntityManagerConfiguration(ds, showSql, true, DdlManage.NONE)
-        } else {
-            logger.info("Using in-memory (HSQL) DB".emphasise())
-            TestInMemoryEntityManagerConfiguration(inMemoryDbName,showSql).also{
-                if(createSchema){
-                    it.dataSource.connection.createSchema(schemaName)
-                }
-            }
-        }
-    }
-
-
+    ): EntityManagerConfiguration
     fun createDataSource(
         dbUser:String? = null,
         dbPassword: String? = null,
         schemaName: String? = null,
         createSchema: Boolean = false,
         rewriteBatchedInserts: Boolean = false
-    ): CloseableDataSource {
-        val user = dbUser ?: getAdminUser()
-        val password = dbPassword ?: getAdminPassword()
-        if (!isPostgres){
-            val port = System.getProperty(POSTGRES_PORT_PROPERTY)
-            val host = getPropertyNonBlank(POSTGRES_HOST_PROPERTY,"localhost")
-            val factory = PostgresDataSourceFactory()
-            val db = getDatabase()
-            var jdbcurl = "jdbc:postgresql://$host:$port/$db"
-            if (!schemaName.isNullOrBlank()) {
-                if (createSchema) {
-                    logger.info("Creating schema: $schemaName".emphasise())
-                    factory.create(jdbcurl, user, password, maximumPoolSize = 1).connection.createSchema(schemaName)
-                }
-                jdbcurl= if (rewriteBatchedInserts) {
-                    "$jdbcurl?currentSchema=$schemaName&reWriteBatchedInserts=true"
-                } else {
-                    "$jdbcurl?currentSchema=$schemaName"
-                }
-                logger.info("Using Postgres URL $jdbcurl".emphasise())
-                return factory.create(jdbcurl,user,password)
-            }
-            logger.info("Using Postgres URL $jdbcurl".emphasise())
-            return factory.create(jdbcurl, user, password)
-        }
-        else{
-            val port = System.getProperty(MSSQL_PORT_PROPERTY)
-            val host = getPropertyNonBlank(MSSQL_HOST_PROPERTY,"localhost")
-            val factory = SQLDataSourceFactory()
-            var jdbcurl = "jdbc:sqlserver://$host:$port;encrypt=true;trustServerCertificate=true;"
-            if(!schemaName.isNullOrBlank()){
-                if(createSchema){
-                    logger.info("Creating schema: $schemaName".emphasise())
-                    factory.create(jdbcurl, user, password, maximumPoolSize = 1).connection.createSchema(schemaName)
-                }
-                jdbcurl = if (rewriteBatchedInserts) {
-                    "$jdbcurl?currentSchema=$schemaName&reWriteBatchedInserts=true"
-                } else {
-                    "$jdbcurl?currentSchema=$schemaName"
-                }
-                logger.info("Using SQL server URL $jdbcurl".emphasise())
-                return factory.create(jdbcurl,user,password)
-            }
-            logger.info("Using SQL server URL $jdbcurl".emphasise())
-            return factory.create(jdbcurl, user, password)
-            }
-    }
-
+    ): CloseableDataSource
     fun createConfig(
-        inMemoryDbName: String,
+        inMemoryDbName: String = "",
         dbUser: String? = null,
         dbPassword: String? = null,
         schemaName: String? = null
-    ): Config {
+    ): Config
+}
+
+class PostgresHelper : DbUtilsHelper{
+    companion object {
+        private const val POSTGRES_PORT_PROPERTY = "postgresPort"
+        private const val POSTGRES_HOST_PROPERTY = "postgresHost"
+    }
+
+    override val isInMemory = System.getProperty(POSTGRES_PORT_PROPERTY).isNullOrBlank()
+
+    private val logger: Logger = LoggerFactory.getLogger(this::class.java)
+
+    override fun getDatabase() = getPropertyNonBlank("postgresDb","postgres")
+
+    override fun getAdminUser() = if (isInMemory) "sa" else getPropertyNonBlank("postgresUser","postgres")
+
+    override fun getAdminPassword() = if (isInMemory) "" else getPropertyNonBlank("postgresPassword", "password")
+
+    override fun getEntityManagerConfiguration(
+        inMemoryDbName: String,
+        dbUser: String?,
+        dbPassword: String?,
+        schemaName: String?,
+        createSchema: Boolean,
+        showSql: Boolean,
+        rewriteBatchedInserts: Boolean
+    ): EntityManagerConfiguration {
+        val port = System.getProperty(POSTGRES_PORT_PROPERTY)
+        return if (!port.isNullOrBlank()){
+            val ds = createDataSource(dbUser,dbPassword, schemaName, createSchema, rewriteBatchedInserts)
+            DbEntityManagerConfiguration(ds,showSql,true,DdlManage.NONE)
+        } else {
+            logger.info("Using in-memory (HSQL) DB".emphasise())
+            TestInMemoryEntityManagerConfiguration(inMemoryDbName, showSql).also {
+                if (createSchema) {
+                    it.dataSource.connection.createSchema(schemaName)
+                }
+            }
+        }
+    }
+
+    override fun createDataSource(
+        dbUser: String?,
+        dbPassword: String?,
+        schemaName: String?,
+        createSchema: Boolean,
+        rewriteBatchedInserts: Boolean
+    ): CloseableDataSource {
+        val port = System.getProperty(POSTGRES_PORT_PROPERTY)
+        val postgresDb = getDatabase()
+        val host = getPropertyNonBlank(POSTGRES_HOST_PROPERTY,"localhost")
+        var jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb"
+
+        val factory = PostgresDataSourceFactory()
+
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
-        if(!isPostgres){
-            val port = System.getProperty(POSTGRES_PORT_PROPERTY)
-            val host = getPropertyNonBlank(POSTGRES_HOST_PROPERTY,"localhost")
-            val db = getDatabase()
-            var jdbcurl = "jdbc:postgresql://$host:$port/$db"
+
+        if (!schemaName.isNullOrBlank()) {
+            if (createSchema) {
+                logger.info("Creating schema: $schemaName".emphasise())
+                factory.create(jdbcUrl, user, password, maximumPoolSize = 1).connection.createSchema(schemaName)
+            }
+            jdbcUrl = if (rewriteBatchedInserts) {
+                "$jdbcUrl?currentSchema=$schemaName&reWriteBatchedInserts=true"
+            } else {
+                "$jdbcUrl?currentSchema=$schemaName"
+            }
+        }
+        logger.info("Using Postgres URL $jdbcUrl".emphasise())
+        return factory.create(jdbcUrl, user, password)
+    }
+
+    override fun createConfig(
+        inMemoryDbName: String,
+        dbUser: String?,
+        dbPassword: String?,
+        schemaName: String?
+    ): Config {
+        val port = System.getProperty(POSTGRES_PORT_PROPERTY)
+        val user = dbUser ?: getAdminUser()
+        val password = dbPassword ?: getAdminPassword()
+        if (!port.isNullOrBlank()) {
+            val postgresDb = getDatabase()
+            val host = getPropertyNonBlank(POSTGRES_HOST_PROPERTY, "localhost")
+            var jdbcUrl = "jdbc:postgresql://$host:$port/$postgresDb"
             if (!schemaName.isNullOrBlank()) {
-                jdbcurl = "$jdbcurl?currentSchema=$schemaName"
+                jdbcUrl = "$jdbcUrl?currentSchema=$schemaName"
             }
             return ConfigFactory.empty()
-                .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcurl))
+                .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
                 .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(user))
                 .withValue(DatabaseConfig.DB_PASS, ConfigValueFactory.fromAnyRef(password))
-        }
-        else if(!isMSSQL){
-            val port = System.getProperty(MSSQL_PORT_PROPERTY)
-            val host = getPropertyNonBlank(MSSQL_HOST_PROPERTY,"localhost")
-            var jdbcurl = "jdbc:sqlserver://$host:$port;encrypt=true;trustServerCertificate=true;"
-            if(!schemaName.isNullOrBlank()){
-               jdbcurl = "$jdbcurl?currentSchema=$schemaName"
-            }
-            return ConfigFactory.empty()
-                .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcurl))
-                .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(user))
-                .withValue(DatabaseConfig.DB_PASS, ConfigValueFactory.fromAnyRef(password))
-        }
-        else{
+        } else {
             return ConfigFactory.empty()
                 .withValue(DatabaseConfig.JDBC_DRIVER, ConfigValueFactory.fromAnyRef("org.hsqldb.jdbc.JDBCDriver"))
                 .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef("jdbc:hsqldb:mem:$inMemoryDbName"))
@@ -184,6 +146,143 @@ object DbUtils {
                 .withValue(DatabaseConfig.DB_PASS, ConfigValueFactory.fromAnyRef(password))
         }
     }
+}
+
+class SQLServerHelper() : DbUtilsHelper {
+    companion object {
+        private const val MSSQL_HOST_PROPERTY = "mssqlHost"
+        private const val MSSQL_PORT_PROPERTY = "mssqlPort"
+    }
+
+    override val isInMemory = System.getProperty(MSSQL_PORT_PROPERTY).isNullOrBlank()
+
+    override fun getDatabase() = getPropertyNonBlank("sqlDb", "sql")
+
+    override fun getAdminUser() = if (isInMemory) "sa" else getPropertyNonBlank("mssqlUser", "sa")
+
+    override fun getAdminPassword() = if (isInMemory) "" else getPropertyNonBlank("mssqlPassword", "password")
+
+    private val logger: Logger = LoggerFactory.getLogger(this::class.java)
+
+    override fun getEntityManagerConfiguration(
+        inMemoryDbName: String,
+        dbUser: String?,
+        dbPassword: String?,
+        schemaName: String?,
+        createSchema: Boolean,
+        showSql: Boolean,
+        rewriteBatchedInserts: Boolean
+    ): EntityManagerConfiguration {
+        val ds = createDataSource(dbUser, dbPassword, schemaName, createSchema, rewriteBatchedInserts)
+        return (DbEntityManagerConfiguration(ds, showSql, true, DdlManage.NONE))
+    }
+
+    override fun createDataSource(
+        dbUser: String?,
+        dbPassword: String?,
+        schemaName: String?,
+        createSchema: Boolean,
+        rewriteBatchedInserts: Boolean
+    ): CloseableDataSource {
+        val port = System.getProperty(MSSQL_PORT_PROPERTY)
+        val host = getPropertyNonBlank(MSSQL_HOST_PROPERTY, "localhost")
+        var jdbcUrl = "jdbc:sqlserver://$host:$port;encrypt=true;trustServerCertificate=true;"
+
+        val factory = SQLDataSourceFactory()
+
+        val user = dbUser ?: getAdminUser()
+        val password = dbPassword ?: getAdminPassword()
+
+        if (!schemaName.isNullOrBlank()) {
+            if (createSchema) {
+                logger.info("Creating schema: $schemaName".emphasise())
+                factory.create(jdbcUrl, user, password, maximumPoolSize = 1).connection.createSchema(schemaName)
+            }
+            jdbcUrl = if (rewriteBatchedInserts) {
+                "$jdbcUrl?currentSchema=$schemaName&reWriteBatchedInserts=true"
+            } else {
+                "$jdbcUrl?currentSchema=$schemaName"
+            }
+        }
+        logger.info("Using SQL Server URL $jdbcUrl".emphasise())
+        return factory.create(jdbcUrl, user, password)
+    }
+
+    override fun createConfig(
+        inMemoryDbName: String,
+        dbUser: String?,
+        dbPassword: String?,
+        schemaName: String?
+    ): Config {
+        val port = System.getProperty(MSSQL_PORT_PROPERTY)
+        val user = dbUser ?: getAdminUser()
+        val password = dbPassword ?: getAdminPassword()
+        if (!port.isNullOrBlank()) {
+            val host = getPropertyNonBlank(MSSQL_HOST_PROPERTY, "localhost")
+            var jdbcUrl = "jdbc:sqlserver://$host:$port;encrypt=true;trustServerCertificate=true;"
+            if (!schemaName.isNullOrBlank()) {
+                jdbcUrl = "$jdbcUrl?currentSchema=$schemaName"
+            }
+            return ConfigFactory.empty()
+                .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
+                .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(user))
+                .withValue(DatabaseConfig.DB_PASS, ConfigValueFactory.fromAnyRef(password))
+        } else {
+            return ConfigFactory.empty()
+                .withValue(DatabaseConfig.JDBC_DRIVER, ConfigValueFactory.fromAnyRef("org.hsqldb.jdbc.JDBCDriver"))
+                .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef("jdbc:hsqldb:mem:$inMemoryDbName"))
+                .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(user))
+                .withValue(DatabaseConfig.DB_PASS, ConfigValueFactory.fromAnyRef(password))
+        }
+    }
+}
+
+object DbUtils {
+
+    val isNotMSSQL = System.getProperty("mssqlPort").isNullOrBlank()
+
+    private val utilsHelper: DbUtilsHelper by lazy {
+        if (!isNotMSSQL) {
+            SQLServerHelper()
+        } else {
+            PostgresHelper()
+        }
+    }
+
+    val isInMemory = utilsHelper.isInMemory
+
+    fun getDatabase() = utilsHelper.getDatabase()
+
+    fun getEntityManagerConfiguration(
+        inMemoryDbName: String = "",
+        dbUser: String? = null,
+        dbPassword: String? = null,
+        schemaName: String? = null,
+        createSchema: Boolean = false,
+        showSql: Boolean = true,
+        rewriteBatchedInserts: Boolean = false
+    ): EntityManagerConfiguration = utilsHelper.getEntityManagerConfiguration(
+        inMemoryDbName, dbUser, dbPassword, schemaName, createSchema, showSql, rewriteBatchedInserts
+    )
+
+    fun createDataSource(
+        dbUser: String? = null,
+        dbPassword: String? = null,
+        schemaName: String? = null,
+        createSchema: Boolean = false,
+        rewriteBatchedInserts: Boolean = false
+    ): CloseableDataSource = utilsHelper.createDataSource(
+        dbUser, dbPassword, schemaName, createSchema, rewriteBatchedInserts
+    )
+
+    fun createConfig(
+        inMemoryDbName: String = "",
+        dbUser: String? = null,
+        dbPassword: String? = null,
+        schemaName: String? = null
+    ): Config = utilsHelper.createConfig(
+        inMemoryDbName, dbUser, dbPassword, schemaName
+    )
 }
 
 private fun getPropertyNonBlank(key: String, defaultValue: String): String {
