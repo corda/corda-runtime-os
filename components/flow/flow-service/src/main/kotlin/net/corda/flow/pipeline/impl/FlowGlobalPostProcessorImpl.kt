@@ -10,7 +10,6 @@ import net.corda.flow.external.events.impl.ExternalEventManager
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.membership.read.MembershipGroupReaderProvider

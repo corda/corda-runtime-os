@@ -16,7 +16,6 @@ import net.corda.flow.FLOW_ID_1
 import net.corda.flow.REQUEST_ID_1
 import net.corda.flow.external.events.impl.ExternalEventManager
 import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.state.FlowCheckpoint
