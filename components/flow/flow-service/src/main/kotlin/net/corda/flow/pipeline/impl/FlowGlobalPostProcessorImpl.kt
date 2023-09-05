@@ -9,6 +9,7 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.external.events.impl.ExternalEventManager
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.events.FlowEventContext
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
@@ -109,7 +110,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             if (doesCheckpointExist) {
                 log.debug { "$msg. Throwing FlowPlatformException" }
                 checkpoint.putSessionState(sessionState)
-                throw FlowPlatformException(msg)
+                throw FlowFatalException(msg)
             } else {
                 log.debug { "$msg. Checkpoint is already marked for deletion." }
             }
