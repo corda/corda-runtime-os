@@ -22,8 +22,6 @@ object DbUtils {
 
     val isInMemory = utilsHelper.isInMemory()
 
-    fun getDatabase() = utilsHelper.getDatabase()
-
     @Suppress("LongParameterList")
     fun getEntityManagerConfiguration(
         inMemoryDbName: String = "",
