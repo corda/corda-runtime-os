@@ -40,7 +40,6 @@ class PostgresHelper : DbUtilsHelper{
     ): EntityManagerConfiguration {
         val ds = createDataSource(dbUser,dbPassword, schemaName, createSchema, rewriteBatchedInserts)
         return DbEntityManagerConfiguration(ds,showSql,true, DdlManage.NONE)
-
     }
 
     override fun createDataSource(
