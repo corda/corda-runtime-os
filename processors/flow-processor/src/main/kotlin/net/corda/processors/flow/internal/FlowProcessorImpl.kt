@@ -53,7 +53,6 @@ class FlowProcessorImpl @Activate constructor(
     private val groupPolicyProvider: GroupPolicyProvider,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
-    // TODO: move to the correct components within the new Corda Topology Design.
     @Reference(service = StateManagerService::class)
     private val stateManagerService: StateManagerService,
 ) : FlowProcessor {

@@ -4,6 +4,7 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.db.core.HikariDataSourceFactory
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.getIntOrDefault
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.libs.statemanager.impl.StateManagerImpl
@@ -38,11 +39,7 @@ class StateManagerFactoryImpl @Activate constructor(
         val pass = config.getString(JDBC_PASS)
         val jdbcUrl = config.getString(JDBC_URL)
         val maxPoolSize = config.getInt(JDBC_POOL_MAX_SIZE)
-        val minPoolSize = if (config.hasPath(JDBC_POOL_MIN_SIZE)) {
-            config.getInt(JDBC_POOL_MIN_SIZE)
-        } else {
-            null
-        }
+        val minPoolSize = config.getIntOrDefault(JDBC_POOL_MIN_SIZE, maxPoolSize)
         val idleTimeout = config.getInt(JDBC_POOL_IDLE_TIMEOUT_SECONDS).toLong().run(Duration::ofSeconds)
         val maxLifetime = config.getInt(JDBC_POOL_MAX_LIFETIME_SECONDS).toLong().run(Duration::ofSeconds)
         val keepAliveTime = config.getInt(JDBC_POOL_KEEP_ALIVE_TIME_SECONDS).toLong().run(Duration::ofSeconds)
