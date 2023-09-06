@@ -70,7 +70,7 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
     testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
 
-    smokeTestImplementation project(':testing:test-utilities')
+    smokeTestImplementation project(':testing:e2e-test-utilities')
 }
 
 cliPlugin {
