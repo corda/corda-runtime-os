@@ -14,9 +14,8 @@ import javax.persistence.EntityManager
 @Suppress("TooManyFunctions")
 interface UtxoRepository {
 
-    /**
-     * TODO KDocs
-     */
+    /** Retrieves transaction IDs that are either Verified or Unverified
+     * but not Invalid and are in the [transactionIds] list. */
     fun findExistingNotInvalidTransactionIds(
         entityManager: EntityManager,
         transactionIds: List<String>
