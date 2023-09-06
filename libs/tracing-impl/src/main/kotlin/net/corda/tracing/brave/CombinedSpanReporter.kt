@@ -1,4 +1,4 @@
-package net.corda.tracing.impl
+package net.corda.tracing.brave
 
 
 import zipkin2.Span
