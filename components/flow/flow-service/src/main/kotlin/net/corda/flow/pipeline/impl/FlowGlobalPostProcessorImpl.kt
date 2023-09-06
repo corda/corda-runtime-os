@@ -107,7 +107,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                     "[${counterparty}] as the recipient doesn't exist in the network."
             sessionManager.errorSession(sessionState)
             if (doesCheckpointExist) {
-                log.debug { "$msg. Throwing FlowPlatformException" }
+                log.debug { "$msg. Throwing FlowFatalException" }
                 checkpoint.putSessionState(sessionState)
                 throw FlowFatalException(msg)
             } else {
