@@ -4,7 +4,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.db.core.CloseableDataSource
-import net.corda.db.core.DBBaseDataSourceFactory
+import net.corda.db.core.createDataSource
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.schema.configuration.DatabaseConfig
 import net.corda.test.util.LoggingUtils.emphasise
@@ -49,10 +49,9 @@ class HSQLHelper : DbUtilsHelper {
         createSchema: Boolean,
         rewriteBatchedInserts: Boolean
     ): CloseableDataSource {
-        val factory = DBBaseDataSourceFactory()
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
-        return factory.create("org.hsqldb.jdbc.JDBCDriver","", user, password)
+        return createDataSource("org.hsqldb.jdbc.JDBCDriver","", user, password)
     }
 
     override fun createConfig(
