@@ -3,6 +3,7 @@ package net.corda.cli.plugins.topicconfig
 import org.apache.kafka.clients.admin.Admin
 import org.apache.kafka.clients.admin.AlterConfigOp
 import org.apache.kafka.clients.admin.ConfigEntry
+import org.apache.kafka.clients.admin.CreateTopicsOptions
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.common.acl.AccessControlEntry
 import org.apache.kafka.common.acl.AclBinding
@@ -95,7 +96,8 @@ class CreateConnect : Runnable {
 
     private fun createTopics(client: Admin, topics: MutableMap<String, NewTopic>) {
         val errors = mutableSetOf<ExecutionException>()
-        client.createTopics(topics.values).values().forEach { (topic, future) ->
+        val createOptions = CreateTopicsOptions().timeoutMs((wait * 1000).toInt())
+        client.createTopics(topics.values, createOptions).values().forEach { (topic, future) ->
             try {
                 future.get(wait, TimeUnit.SECONDS)
                 println("Created topic $topic")
