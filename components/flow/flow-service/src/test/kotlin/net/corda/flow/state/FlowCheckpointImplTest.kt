@@ -37,9 +37,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import java.time.temporal.ChronoUnit
-import java.time.temporal.Temporal
-import java.time.temporal.TemporalUnit
-import java.util.concurrent.TimeUnit
 
 class FlowCheckpointImplTest {
     private val flowConfig = ConfigFactory.empty()
