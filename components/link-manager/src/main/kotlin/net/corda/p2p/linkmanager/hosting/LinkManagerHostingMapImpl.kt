@@ -1,5 +1,7 @@
 package net.corda.p2p.linkmanager.hosting
 
+import java.io.PrintWriter
+import java.io.StringWriter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.BlockingDominoTile
@@ -83,7 +85,10 @@ internal class LinkManagerHostingMapImpl(
             }
         } ?: false
     } catch (e: Exception) {
-        logger.warn("INTEROP EXCEPTION", e)
+        val sw = StringWriter()
+        val pw = PrintWriter(sw)
+        e.printStackTrace(pw)
+        logger.warn("INTEROP_CAUGHT_EXCEPTION\n$sw")
         true
     }
 
