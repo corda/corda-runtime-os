@@ -78,11 +78,8 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         return withEscalation {
             val flowCheckpoint = context.checkpoint
 
-            fun isRetryWindowExpired(firstFailureTimestamp: Instant?) =
-                Duration.between(firstFailureTimestamp, Instant.now()) >= maxRetryWindowDuration
-
             /** If the retry window has expired then we escalate this to a fatal exception and DLQ the flow */
-            if (flowCheckpoint.firstFailureTimestamp != null && isRetryWindowExpired(flowCheckpoint.firstFailureTimestamp)) {
+            if (retryWindowExpired(flowCheckpoint.firstFailureTimestamp)) {
                 return@withEscalation process(
                     FlowFatalException(
                         "Execution failed with \"${exception.message}\" after " +
@@ -124,6 +121,11 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
             flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + records))
         }
+    }
+
+    private fun retryWindowExpired(firstFailureTimestamp: Instant?): Boolean {
+        return firstFailureTimestamp != null &&
+                Duration.between(firstFailureTimestamp, Instant.now()) >= maxRetryWindowDuration
     }
 
     override fun process(
