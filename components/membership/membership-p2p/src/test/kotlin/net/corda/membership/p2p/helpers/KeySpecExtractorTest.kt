@@ -69,7 +69,7 @@ class KeySpecExtractorTest {
         val exception = assertThrows<IllegalArgumentException> {
             key.validateSpecName(SignatureSpecs.EDDSA_ED25519.signatureName, KeySpecExtractor.KeySpecType.SESSION)
         }
-        assertThat(exception).hasMessageContaining("Invalid key scheme is used for session key")
+        assertThat(exception).hasMessageContaining("Invalid key scheme")
     }
 
     @Test

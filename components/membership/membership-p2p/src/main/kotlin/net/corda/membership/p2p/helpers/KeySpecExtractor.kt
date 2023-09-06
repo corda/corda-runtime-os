@@ -59,9 +59,8 @@ class KeySpecExtractor(
         fun CryptoSigningKey.validateSpecName(specName: String, type: KeySpecType = KeySpecType.OTHER) {
             val validSpecs = if (type == KeySpecType.SESSION) {
                 requireNotNull(validSpecsNamesForSessionKeys[this.schemeCodeName]) {
-                    "Invalid key scheme is used for session key or " +
-                            "could not identify spec for key scheme ${this.schemeCodeName}. The following " +
-                            "schemes should be used when generating session keys: ${validSpecsNamesForSessionKeys.keys}"
+                    "Invalid key scheme ${this.schemeCodeName}. The following " +
+                            "schemes could be used when generating session keys: ${validSpecsNamesForSessionKeys.keys}"
                 }
             } else {
                 requireNotNull(validSpecsNames[this.schemeCodeName]) {

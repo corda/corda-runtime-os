@@ -1265,7 +1265,7 @@ class DynamicMemberRegistrationServiceTest {
             val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, context.toMap())
             }
-            assertThat(exception).hasMessageContaining("Invalid key scheme is used for session key")
+            assertThat(exception).hasMessageContaining("Invalid key scheme")
         }
 
         @Test
