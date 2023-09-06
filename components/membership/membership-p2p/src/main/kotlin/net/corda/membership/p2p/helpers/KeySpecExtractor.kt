@@ -68,9 +68,7 @@ class KeySpecExtractor(
                 }
             }
             require(validSpecs.contains(specName)) {
-                throw IllegalArgumentException(
-                    "Invalid key spec $specName. Valid specs for key scheme ${this.schemeCodeName} are $validSpecs."
-                )
+                "Invalid key spec $specName. Valid specs for key scheme ${this.schemeCodeName} are $validSpecs."
             }
         }
     }
