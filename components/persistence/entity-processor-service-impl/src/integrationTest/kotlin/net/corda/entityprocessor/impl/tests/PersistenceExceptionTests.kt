@@ -141,29 +141,29 @@ class PersistenceExceptionTests {
                     .also {
                         it.resizeCaches(2)
                     }
-        }
 
-        virtualNodeInfo = virtualNodeLoader.loadVirtualNode(Resources.EXTENDABLE_CPB, generateHoldingIdentity())
-        cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
+            virtualNodeInfo = virtualNodeLoader.loadVirtualNode(Resources.EXTENDABLE_CPB, generateHoldingIdentity())
+            cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
 
-        dbConnectionManager = FakeDbConnectionManager(
-            listOf(Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node")),
-            "PersistenceExceptionTests${dbCounter++}"
-        )
-
-        entitySandboxService =
-            EntitySandboxServiceFactory().create(
-                sandboxGroupContextComponent,
-                cpkReadService,
-                virtualNodeInfoReadService,
-                dbConnectionManager
+            dbConnectionManager = FakeDbConnectionManager(
+                listOf(Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node")),
+                "PersistenceExceptionTests${dbCounter++}"
             )
-        processor = EntityMessageProcessor(
-            currentSandboxGroupContext,
-            entitySandboxService,
-            responseFactory,
-            this::noOpPayloadCheck
-        )
+
+            entitySandboxService =
+                EntitySandboxServiceFactory().create(
+                    sandboxGroupContextComponent,
+                    cpkReadService,
+                    virtualNodeInfoReadService,
+                    dbConnectionManager
+                )
+            processor = EntityMessageProcessor(
+                currentSandboxGroupContext,
+                entitySandboxService,
+                responseFactory,
+                this::noOpPayloadCheck
+            )
+        }
 
         deserializerFactory = sandboxSetup.fetchService(timeout = 5000)
         deserializer = deserializerFactory.createAvroDeserializer({}, EntityResponse::class.java)
