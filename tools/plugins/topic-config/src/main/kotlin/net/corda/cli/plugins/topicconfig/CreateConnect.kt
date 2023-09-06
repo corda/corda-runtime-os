@@ -29,7 +29,7 @@ class CreateConnect : Runnable {
         names = ["-w", "--wait"],
         description = ["Time to wait for Kafka operations to complete in seconds"]
     )
-    var wait: Long = 60
+    var wait: Long = 300
 
     @CommandLine.Option(
         names = ["-d", "--delete"],
