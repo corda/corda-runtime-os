@@ -36,6 +36,10 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
+import java.time.temporal.ChronoUnit
+import java.time.temporal.Temporal
+import java.time.temporal.TemporalUnit
+import java.util.concurrent.TimeUnit
 
 class FlowCheckpointImplTest {
     private val flowConfig = ConfigFactory.empty()
@@ -614,7 +618,7 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `retry - creating a checkpoint with a retry state set should allow retry information to be retrieved`() {
-        val firstFailure = Instant.now()
+        val firstFailure = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val flowEvent = FlowEvent("F1", Wakeup())
         val checkpoint = setupAvroCheckpoint(retryState = RetryState().apply {
             retryCount = 1
@@ -625,7 +629,7 @@ class FlowCheckpointImplTest {
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
         assertThat(flowCheckpoint.inRetryState).isTrue
         assertThat(flowCheckpoint.retryEvent).isEqualTo(flowEvent)
-        assertThat(flowCheckpoint.firstFailureTimestamp).isEqualTo(firstFailure)
+        assertThat(flowCheckpoint.firstFailureTimestamp?.truncatedTo(ChronoUnit.MILLIS)).isEqualTo(firstFailure)
     }
 
     @Test
