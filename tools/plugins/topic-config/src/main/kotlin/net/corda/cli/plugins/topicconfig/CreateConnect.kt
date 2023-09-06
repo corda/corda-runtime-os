@@ -1,9 +1,9 @@
 package net.corda.cli.plugins.topicconfig
 
 import org.apache.kafka.clients.admin.Admin
+import org.apache.kafka.clients.admin.AdminClientConfig
 import org.apache.kafka.clients.admin.AlterConfigOp
 import org.apache.kafka.clients.admin.ConfigEntry
-import org.apache.kafka.clients.admin.CreateTopicsOptions
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.common.acl.AccessControlEntry
 import org.apache.kafka.common.acl.AclBinding
@@ -43,7 +43,11 @@ class CreateConnect : Runnable {
         val contextCL = Thread.currentThread().contextClassLoader
         Thread.currentThread().contextClassLoader = this::class.java.classLoader
 
-        val client = Admin.create(create!!.topic!!.getKafkaProperties())
+        val kafkaProperties = create!!.topic!!.getKafkaProperties()
+        kafkaProperties[AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG] = (wait * 1000).toInt()
+        kafkaProperties[AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG] = (wait * 1000).toInt()
+
+        val client = Admin.create(kafkaProperties)
         val topicConfigs = create!!.getTopicConfigs().map { it.copy(name = create!!.getTopicName(it)) }
 
         try {
@@ -96,8 +100,7 @@ class CreateConnect : Runnable {
 
     private fun createTopics(client: Admin, topics: MutableMap<String, NewTopic>) {
         val errors = mutableSetOf<ExecutionException>()
-        val createOptions = CreateTopicsOptions().timeoutMs((wait * 1000).toInt())
-        client.createTopics(topics.values, createOptions).values().forEach { (topic, future) ->
+        client.createTopics(topics.values).values().forEach { (topic, future) ->
             try {
                 future.get(wait, TimeUnit.SECONDS)
                 println("Created topic $topic")
