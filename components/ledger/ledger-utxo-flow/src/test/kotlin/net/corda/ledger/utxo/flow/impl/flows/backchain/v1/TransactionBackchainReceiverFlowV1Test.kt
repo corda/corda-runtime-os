@@ -74,6 +74,11 @@ class TransactionBackchainReceiverFlowV1Test {
             .thenReturn(emptyList())
     }
 
+    /**
+     * This test is simulating a scenario where we want to fetch 2 transactions but we already have one of them
+     * in our database. In that case it will be removed from the `transactionsToRetrieve` list and will not be
+     * requested.
+     */
     @Test
     fun `transaction will not be requested if it is present in the database`() {
         whenever(utxoLedgerPersistenceService.findExistingNotInvalidTransactionIds(any()))
@@ -91,6 +96,8 @@ class TransactionBackchainReceiverFlowV1Test {
             .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
 
         whenever(retrievedTransaction2.id).thenReturn(TX_ID_2)
+
+        // No need for dependencies to test this scenario
         whenever(retrievedTransaction2.inputStateRefs).thenReturn(emptyList())
         whenever(retrievedTransaction2.referenceStateRefs).thenReturn(emptyList())
 

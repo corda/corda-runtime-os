@@ -84,6 +84,49 @@ class TransactionBackchainReceiverFlowV2Test {
             on { getInt(BACKCHAIN_BATCH_CONFIG_PATH) } doReturn BACKCHAIN_BATCH_DEFAULT_SIZE
         }
         whenever(flowConfigService.getConfig(ConfigKeys.UTXO_LEDGER_CONFIG)).thenReturn(utxoConfig)
+        whenever(utxoLedgerPersistenceService.findExistingNotInvalidTransactionIds(any()))
+            .thenReturn(emptyList())
+    }
+
+    /**
+     * This test is simulating a scenario where we want to fetch 2 transactions but we already have one of them
+     * in our database. In that case it will be removed from the `transactionsToRetrieve` list and will not be
+     * requested.
+     */
+    @Test
+    fun `transaction will not be requested if it is present in the database`() {
+        whenever(utxoLedgerPersistenceService.findExistingNotInvalidTransactionIds(any()))
+            .thenReturn(listOf(TX_ID_1))
+
+        whenever(session.sendAndReceive(eq(List::class.java), any())).thenReturn(
+            emptyList<UtxoSignedTransaction>()
+        )
+
+        whenever(session.sendAndReceive(eq(List::class.java), eq(TransactionBackchainRequestV1.Get(setOf(
+            TX_ID_2
+        ))))).thenReturn(
+            listOf(retrievedTransaction2)
+        )
+        whenever(session.sendAndReceive(eq(SignedGroupParameters::class.java), any())).thenReturn(
+            groupParameters
+        )
+        whenever(groupParameters.hash).thenReturn(groupParametersHash1)
+        whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+
+        whenever(retrievedTransaction2.id).thenReturn(TX_ID_2)
+        whenever(retrievedTransaction2.metadata).thenReturn(tx1Metadata)
+        whenever(tx1Metadata.getMembershipGroupParametersHash()).thenReturn(groupParametersHash1.toString())
+
+        // No need for dependencies to test this scenario
+        whenever(retrievedTransaction2.inputStateRefs).thenReturn(emptyList())
+        whenever(retrievedTransaction2.referenceStateRefs).thenReturn(emptyList())
+
+        assertThat(callTransactionBackchainReceiverFlow(setOf(
+            TX_ID_1,
+            TX_ID_2
+        )).complete())
+            .isEqualTo(listOf(TX_ID_2)) // TX_ID_1 is already present in the DB so should not be retrieved
     }
 
     @Test
