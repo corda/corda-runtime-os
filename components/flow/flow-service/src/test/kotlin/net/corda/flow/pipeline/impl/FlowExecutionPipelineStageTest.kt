@@ -13,6 +13,7 @@ import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.metrics.FlowIORequestTypeConverter
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.metrics.FlowMetrics
@@ -306,6 +307,39 @@ class FlowExecutionPipelineStageTest {
         }
     }
 
+    @Test
+    fun `when the request handler throws a platform exception, this is reported back to the fiber`() {
+        val waitingForHandlers = createWaitingForHandlerMap(
+            mapOf(
+                WaitingFor(SessionConfirmation()) to FlowContinuation.Run(),
+                WaitingFor(ExternalEventResponse()) to FlowContinuation.Run()
+            )
+        )
+        val checkpoint = mock<FlowCheckpoint>()
+        val secondContext = createContext(waitingFor = WaitingFor(null))
+        val requestHandlers = createRequestHandlerMap(
+            mapOf(
+                FlowIORequest.FlowFinished("bar") to Pair(WaitingFor(null), secondContext)
+            ),
+            mapOf(
+                fiberOutput to Pair(WaitingFor(ExternalEventResponse()), FlowPlatformException("foo"))
+            )
+        )
+        val fiberOutputs = listOf(flowSuspended, FlowIORequest.FlowFinished("bar"))
+        val flowRunner = createFlowRunner(fiberOutputs)
+        val stage = FlowExecutionPipelineStage(
+            waitingForHandlers,
+            requestHandlers,
+            flowRunner,
+            fiberCache,
+            ioRequestTypeConverter
+        )
+
+        val context = createContext(checkpoint = checkpoint)
+        val outputContext = stage.runFlow(context, TIMEOUT)
+        assertEquals(secondContext, outputContext)
+    }
+
     private fun verifyInteractions(
         fiberOutputs: List<FlowIORequest<Any?>>
     ) {
@@ -334,14 +368,22 @@ class FlowExecutionPipelineStageTest {
     }
 
     private fun createRequestHandlerMap(
-        requiredHandlers: Map<FlowIORequest<*>, Pair<WaitingFor, FlowEventContext<Any>>>
+        requiredHandlers: Map<FlowIORequest<*>, Pair<WaitingFor, FlowEventContext<Any>>>,
+        failedHandlers: Map<FlowIORequest<*>, Pair<WaitingFor, Exception>> = mapOf()
     ): Map<Class<out FlowIORequest<*>>, FlowRequestHandler<out FlowIORequest<*>>> {
-        return requiredHandlers.map {
+        val working = requiredHandlers.map {
             val handler = mock<FlowRequestHandler<FlowIORequest<*>>>()
             whenever(handler.getUpdatedWaitingFor(any(), any())).thenReturn(it.value.first)
             whenever(handler.postProcess(any(), any())).thenReturn(it.value.second)
             it.key::class.java to handler
         }.toMap()
+        val failing = failedHandlers.map {
+            val handler = mock<FlowRequestHandler<FlowIORequest<*>>>()
+            whenever(handler.getUpdatedWaitingFor(any(), any())).thenReturn(it.value.first)
+            whenever(handler.postProcess(any(), any())).thenThrow(it.value.second)
+            it.key::class.java to handler
+        }
+        return working + failing
     }
 
     private fun createContext(
