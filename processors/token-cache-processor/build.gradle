@@ -20,4 +20,5 @@ dependencies {
     implementation project(':libs:utilities')
 
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
+    runtimeOnly project(":libs:web:web-impl")
 }

@@ -7,13 +7,7 @@ import net.corda.tracing.BatchRecordTracer
 import net.corda.tracing.TraceContext
 import net.corda.tracing.TracingService
 import java.util.concurrent.ExecutorService
-import javax.servlet.Filter
-import javax.servlet.FilterChain
-import javax.servlet.FilterConfig
-import javax.servlet.ServletRequest
-import javax.servlet.ServletResponse
 
-@Suppress("UNUSED_PARAMETER")
 class NoopTracingService : TracingService {
 
     class NoopTraceContext : TraceContext {
@@ -50,18 +44,6 @@ class NoopTracingService : TracingService {
 
         override fun completeSpanFor(correlationId: String, outputRecord: Record<*, *>): Record<*, *> {
             return outputRecord
-        }
-    }
-
-    class NoopServletTraceFilter : Filter {
-        override fun init(filterConfig: FilterConfig?) {
-        }
-
-        override fun doFilter(request: ServletRequest?, response: ServletResponse?, chain: FilterChain?) {
-            chain?.doFilter(request, response)
-        }
-
-        override fun destroy() {
         }
     }
 
@@ -111,8 +93,7 @@ class NoopTracingService : TracingService {
         return executor
     }
 
-    override fun getTracedServletFilter(): Filter {
-        return NoopServletTraceFilter()
+    override fun configureJavalin(config: Any) {
     }
 
     override fun traceBatch(operationName: String): BatchRecordTracer {

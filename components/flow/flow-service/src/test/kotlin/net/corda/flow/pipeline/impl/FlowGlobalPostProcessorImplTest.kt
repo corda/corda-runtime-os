@@ -15,7 +15,7 @@ import net.corda.flow.BOB_X500_NAME
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.REQUEST_ID_1
 import net.corda.flow.external.events.impl.ExternalEventManager
-import net.corda.flow.pipeline.exceptions.FlowPlatformException
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.state.FlowCheckpoint
@@ -100,7 +100,6 @@ class FlowGlobalPostProcessorImplTest {
     private val sessionRecord1 = Record("t", SESSION_ID_1, FlowMapperEvent(sessionEvent1))
     private val sessionRecord2 = Record("t", SESSION_ID_1, FlowMapperEvent(sessionEvent2))
     private val sessionRecord3 = Record("t", SESSION_ID_2, FlowMapperEvent(sessionEvent3))
-    private val sessionRecord4 = Record("t", SESSION_ID_3, FlowMapperEvent(sessionEvent4))
     private val scheduleCleanupRecord1 = Record("t", SESSION_ID_1, FlowMapperEvent(ScheduleCleanup(1000)))
     private val scheduleCleanupRecord2 = Record("t", SESSION_ID_2, FlowMapperEvent(ScheduleCleanup(1000)))
     private val externalEventRecord = Record("t", "key", byteArrayOf(1, 2, 3))
@@ -132,7 +131,7 @@ class FlowGlobalPostProcessorImplTest {
             sessionManager.getMessagesToSend(
                 eq(sessionState1),
                 any(),
-                eq(testContext.config),
+                eq(testContext.flowConfig),
                 eq(ALICE_X500_HOLDING_IDENTITY)
             )
         ).thenReturn(sessionState1 to listOf(sessionEvent1, sessionEvent2))
@@ -140,7 +139,7 @@ class FlowGlobalPostProcessorImplTest {
             sessionManager.getMessagesToSend(
                 eq(sessionState2),
                 any(),
-                eq(testContext.config),
+                eq(testContext.flowConfig),
                 eq(ALICE_X500_HOLDING_IDENTITY)
             )
         ).thenReturn(sessionState2 to listOf(sessionEvent3))
@@ -149,7 +148,7 @@ class FlowGlobalPostProcessorImplTest {
             sessionManager.getMessagesToSend(
                 eq(sessionState3),
                 any(),
-                eq(testContext.config),
+                eq(testContext.flowConfig),
                 eq(ALICE_X500_HOLDING_IDENTITY)
             )
         ).thenReturn(sessionState3 to listOf(sessionEvent4))
@@ -277,7 +276,7 @@ class FlowGlobalPostProcessorImplTest {
         val updatedExternalEventState = ExternalEventState().apply { REQUEST_ID_1 }
 
         whenever(checkpoint.externalEventState).thenReturn(externalEventState)
-        whenever(externalEventManager.getEventToSend(eq(externalEventState), any(), eq(testContext.config)))
+        whenever(externalEventManager.getEventToSend(eq(externalEventState), any(), eq(testContext.flowConfig)))
             .thenReturn(updatedExternalEventState to externalEventRecord)
 
         val outputContext = flowGlobalPostProcessor.postProcess(testContext)
@@ -292,7 +291,7 @@ class FlowGlobalPostProcessorImplTest {
         val updatedExternalEventState = ExternalEventState().apply { REQUEST_ID_1 }
 
         whenever(checkpoint.externalEventState).thenReturn(externalEventState)
-        whenever(externalEventManager.getEventToSend(eq(externalEventState), any(), eq(testContext.config)))
+        whenever(externalEventManager.getEventToSend(eq(externalEventState), any(), eq(testContext.flowConfig)))
             .thenReturn(updatedExternalEventState to null)
 
         val outputContext = flowGlobalPostProcessor.postProcess(testContext)
@@ -313,11 +312,11 @@ class FlowGlobalPostProcessorImplTest {
     }
 
     @Test
-    fun `Raise a platform error if counterparties cannot be confirmed`() {
+    fun `Raise a fatal error if counterparties cannot be confirmed`() {
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2, sessionState3))
         whenever(checkpoint.holdingIdentity).thenReturn(HoldingIdentity(ALICE_X500_NAME, ""))
 
-        assertThrows(FlowPlatformException::class.java) {
+        assertThrows(FlowFatalException::class.java) {
             flowGlobalPostProcessor.postProcess(testContext)
         }
         verify(sessionManager, times(1)).errorSession(any())

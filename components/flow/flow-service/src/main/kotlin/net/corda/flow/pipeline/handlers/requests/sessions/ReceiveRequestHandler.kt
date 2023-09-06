@@ -5,15 +5,15 @@ import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
-import net.corda.flow.pipeline.handlers.requests.sessions.service.InitiateFlowRequestService
+import net.corda.flow.pipeline.handlers.requests.sessions.service.GenerateSessionService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [FlowRequestHandler::class])
 class ReceiveRequestHandler @Activate constructor(
-    @Reference(service = InitiateFlowRequestService::class)
-    private val initiateFlowRequestService: InitiateFlowRequestService,
+    @Reference(service = GenerateSessionService::class)
+    private val generateSessionService: GenerateSessionService,
 ) : FlowRequestHandler<FlowIORequest.Receive> {
 
     override val type = FlowIORequest.Receive::class.java
@@ -24,7 +24,7 @@ class ReceiveRequestHandler @Activate constructor(
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.Receive): FlowEventContext<Any> {
         //generate init messages for sessions which do not exist yet
-        initiateFlowRequestService.initiateFlowsNotInitiated(context, request.sessions)
+        generateSessionService.generateSessions(context, request.sessions, true)
         return context
     }
 }

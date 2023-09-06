@@ -100,6 +100,7 @@ dependencies {
     runtimeOnly project(':libs:permissions:permission-storage-writer-impl')
     runtimeOnly project(":libs:sandbox-internal")
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
+    runtimeOnly project(":libs:web:web-impl")
 
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
