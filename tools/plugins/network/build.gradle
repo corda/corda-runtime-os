@@ -10,7 +10,21 @@ ext {
     releasable = false
 }
 
-group 'net.corda.cli.deployment'
+sourceSets {
+    smokeTest {
+        java {
+            srcDirs += [ 'src/smokeTest/java' ]
+        }
+        kotlin {
+            srcDirs += [ 'src/smokeTest/kotlin' ]
+        }
+        resources {
+            srcDirs = [ 'src/smokeTest/resources' ]
+        }
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
 
 kotlin {
     target {
@@ -27,6 +41,8 @@ kotlin {
         }
     }
 }
+
+group 'net.corda.cli.deployment'
 
 dependencies {
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
@@ -54,11 +70,7 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
     testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
 
-    smokeTestImplementation "net.corda.cli.host:api:$pluginHostVersion"
-    smokeTestImplementation "org.pf4j:pf4j:${pf4jVersion}"
-    smokeTestImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
-    smokeTestImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
-    smokeTestImplementation project(':testing:e2e-test-utilities')
+    smokeTestImplementation project(':testing:test-utilities')
 }
 
 cliPlugin {
@@ -80,21 +92,5 @@ publishing {
             groupId project.group
             artifact cliPluginTask
         }
-    }
-}
-
-sourceSets {
-    smokeTest {
-        java {
-            srcDirs += [ 'src/smokeTest/java' ]
-        }
-        kotlin {
-            srcDirs += [ 'src/smokeTest/kotlin' ]
-        }
-        resources {
-            srcDirs = [ 'src/smokeTest/resources' ]
-        }
-        compileClasspath += main.output + test.output
-        runtimeClasspath += main.output + test.output
     }
 }
