@@ -18,7 +18,6 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -44,7 +43,6 @@ class SubFlowFinishedRequestHandlerTest {
     private val sessionState1 = SessionState().apply { this.sessionId = SESSION_ID_1 }
     private val sessionState2 = SessionState().apply { this.sessionId = SESSION_ID_2 }
     private val sessionState3 = SessionState().apply { this.sessionId = SESSION_ID_3 }
-    private val sessionStates = listOf(sessionState1, sessionState2, sessionState3)
 
     private val testContext = RequestHandlerTestContext(Any())
     private val handler = SubFlowFinishedRequestHandler(
@@ -105,43 +103,38 @@ class SubFlowFinishedRequestHandlerTest {
     ) {
         whenever(testContext.closeSessionService.handleCloseForSessions(testContext.flowCheckpoint, SESSION_IDS))
             .thenReturn(SESSION_IDS)
-        val outputContext = handler.postProcess(
-            testContext.flowEventContext,
-            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessions.map { it.sessionId })
+
+        val outputContext = handler.postProcess(testContext.flowEventContext, FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessions.map { it.sessionId })
         )
 
-        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
-        verify(testContext.flowCheckpoint).putSessionStates(listOf(sessionState2, sessionState3))
-        verify(testContext.flowRecordFactory, never()).createFlowEventRecord(eq(testContext.flowId), any())
-        assertThat(outputContext.outputRecords).hasSize(0)
         verify(testContext.closeSessionService).handleCloseForSessions(testContext.flowCheckpoint, SESSION_IDS)
+        assertThat(outputContext.outputRecords).hasSize(0)
     }
 
     @ParameterizedTest(name = "Does not send session close messages and creates a Wakeup record when the flow has no sessions to close (isInitiatingFlow={0})")
     @MethodSource("isInitiatingFlow")
-    fun `Does not send session close messages and creates a Wakeup record when the flow has no sessions to close`(
+    fun `Does not send session close messages when the flow has no sessions to close`(
         isInitiatingFlow: Boolean
     ) {
         val outputContext = handler.postProcess(
             testContext.flowEventContext,
             FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow, emptyList()).sessions.map { it.sessionId })
         )
+        assertThat(outputContext.outputRecords).isEmpty()
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState2)
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState3)
-        verify(testContext.flowSessionManager).sendCloseMessages(eq(testContext.flowCheckpoint), eq(emptyList()), any())
-        assertThat(outputContext.outputRecords).isEmpty()    }
+        verify(testContext.flowSessionManager, never()).sendCloseMessages(any(), any(), any())
+    }
 
     @ParameterizedTest(name = "Does not send session close messages and creates a Wakeup record when the flow has only closed sessions (isInitiatingFlow={0})")
     @MethodSource("isInitiatingFlow")
     fun `Does not send session close messages and creates a Wakeup record when the flow has only closed sessions`(
         isInitiatingFlow: Boolean
     ) {
-        val outputContext = handler.postProcess(
-            testContext.flowEventContext,
+        val outputContext = handler.postProcess(testContext.flowEventContext,
             FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessions.map { it.sessionId })
         )
-        verify(testContext.flowCheckpoint).putSessionStates(listOf(sessionState1, sessionState2, sessionState3))
         verify(testContext.closeSessionService).handleCloseForSessions(testContext.flowCheckpoint, SESSION_IDS)
         assertThat(outputContext.outputRecords).isEmpty()
     }
