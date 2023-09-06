@@ -32,7 +32,7 @@ class CreateSignatureExternalEventFactory @Activate constructor(
             encodedPublicKeyBytes = parameters.encodedPublicKeyBytes,
             signatureSpec = parameters.signatureSpec,
             data = parameters.bytes,
-            context = emptyMap(),
+            context = parameters.context,
             flowExternalEventContext = flowExternalEventContext
         )
         return ExternalEventRecord(topic = Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC, payload = flowOpsRequest)
@@ -43,4 +43,4 @@ class CreateSignatureExternalEventFactory @Activate constructor(
     }
 }
 
-data class SignParameters(val bytes: ByteArray, val encodedPublicKeyBytes: ByteArray, val signatureSpec: SignatureSpec)
+data class SignParameters(val bytes: ByteArray, val encodedPublicKeyBytes: ByteArray, val signatureSpec: SignatureSpec, val context: Map<String, String>)

@@ -33,6 +33,10 @@ class SimWithJsonSigningService(private val keyStore: SimKeyStore) : SigningServ
      * with which the data was "signed".
      */
     override fun sign(bytes: ByteArray, publicKey: PublicKey, signatureSpec: SignatureSpec): DigitalSignature.WithKeyId {
+        return sign(bytes, publicKey, signatureSpec, emptyMap())
+    }
+
+    fun sign(bytes: ByteArray, publicKey: PublicKey, signatureSpec: SignatureSpec, context: Map<String, String>): DigitalSignature.WithKeyId {
         log.info("Simulating signing of bytes: $bytes")
         val keyParameters = checkNotNull(keyStore.getParameters(publicKey)) {
             "Attempted signing, but key has not been generated on the given node. Bytes being signed were" +
