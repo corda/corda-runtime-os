@@ -62,10 +62,10 @@ class SchedulerProcessorImpl @Activate constructor(
         coordinatorFactory.createCoordinator<SchedulerProcessorImpl>(dependentComponents, ::eventHandler)
 
     // now just hardcoding schedulers here until CORE-16331 is picked up, when we should take this from config
-    private val schedules = listOf(
-        // example schedule, delete when we have a real one
-        Schedule("say-hello", 60, "telephone"),
-        Schedule("say-goodbye", 600, "telephone"),
+    private val schedules = listOf<Schedule>(
+        // example schedule, delete/replace when we have a real one, uncomment for testing
+//        Schedule("say-hello", 60, "telephone"),
+//        Schedule("say-goodbye", 600, "telephone"),
     )
     private var schedulers: Schedulers? = null
 
