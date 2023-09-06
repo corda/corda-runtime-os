@@ -1,8 +1,11 @@
 package net.corda.flow.state.impl
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import java.nio.ByteBuffer
 import java.time.Instant
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
@@ -25,6 +28,19 @@ class FlowCheckpointImpl(
     private val config: SmartConfig,
     instantProvider: () -> Instant
 ) : FlowCheckpoint {
+
+    init {
+        if (checkpoint.customState == null) {
+            val newCustomState = KeyValuePairList.newBuilder()
+                .setItems(listOf())
+                .build()
+            checkpoint.customState = newCustomState
+        }
+    }
+
+    private companion object {
+        val objectMapper = ObjectMapper()
+    }
 
     private val pipelineStateManager = PipelineStateManager(checkpoint.pipelineState, config, instantProvider)
     private var flowStateManager = checkpoint.flowState?.let(::FlowStateManager)
@@ -128,9 +144,6 @@ class FlowCheckpointImpl(
     override val initialPlatformVersion: Int
         get() = checkpoint.initialPlatformVersion
 
-    override val flowMetricsState: String
-        get() = checkpoint.flowMetricsState ?: "{}"
-
     override fun initFlowState(flowStartContext: FlowStartContext, cpkFileHashes: Set<SecureHash>) {
         if (flowStateManager != null) {
             val key = flowStartContext.statusKey
@@ -213,8 +226,25 @@ class FlowCheckpointImpl(
         pipelineStateManager.setPendingPlatformError(type, message)
     }
 
-    override fun setMetricsState(stateJson: String) {
-        checkpoint.flowMetricsState = stateJson
+    override fun writeCustomState(state: Any) {
+        val key = state.javaClass.name
+        val newState = KeyValuePair.newBuilder()
+            .setKey(key)
+            .setValue(objectMapper.writeValueAsString(state))
+            .build()
+
+        checkpoint.customState = KeyValuePairList
+            .newBuilder()
+            .setItems(checkpoint.customState.items.filterNot { it.key == key } + newState)
+            .build()
+    }
+
+    override fun <T> readCustomState(clazz: Class<T>): T? {
+        return checkpoint.customState.items
+            .firstOrNull { it.key == clazz.name }
+            ?.let {
+                objectMapper.readValue(it.value, clazz)
+            }
     }
 
     override fun toAvro(): Checkpoint? {

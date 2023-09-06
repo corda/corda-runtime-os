@@ -16,6 +16,7 @@ import net.corda.virtualnode.HoldingIdentity
 /**
  * The FlowCheckpoint provides an API for managing the checkpoint during the processing of a flow.
  */
+@Suppress("TooManyFunctions")
 interface FlowCheckpoint : NonSerializable {
     val cpkFileHashes: Set<SecureHash>
 
@@ -55,8 +56,6 @@ interface FlowCheckpoint : NonSerializable {
 
     val initialPlatformVersion: Int
 
-    val flowMetricsState: String
-
     fun initFlowState(flowStartContext: FlowStartContext, cpkFileHashes: Set<SecureHash>)
 
     fun getSessionState(sessionId: String): SessionState?
@@ -79,7 +78,9 @@ interface FlowCheckpoint : NonSerializable {
 
     fun setPendingPlatformError(type: String, message: String)
 
-    fun setMetricsState(stateJson :String)
+    fun <T> readCustomState(clazz:Class<T>): T?
+
+    fun writeCustomState(state:Any)
 
     fun toAvro(): Checkpoint?
 }
