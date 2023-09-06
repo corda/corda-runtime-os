@@ -75,8 +75,6 @@ dependencies {
     implementation project(':processors:crypto-processor')
     implementation project(':processors:db-processor')
     implementation project(':processors:flow-processor')
-    implementation project(':processors:gateway-processor')
-    implementation project(':processors:link-manager-processor')
     implementation project(':processors:flow-mapper-processor')
     implementation project(':processors:member-processor')
     implementation project(':processors:persistence-processor')
