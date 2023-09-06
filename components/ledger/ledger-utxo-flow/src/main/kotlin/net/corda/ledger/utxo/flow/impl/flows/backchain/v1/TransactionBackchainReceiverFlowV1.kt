@@ -72,10 +72,15 @@ class TransactionBackchainReceiverFlowV1(
 
         val batchSize = ledgerConfig.getInt(BACKCHAIN_BATCH_CONFIG_PATH)
 
+        val existingTransactionsInDb = mutableSetOf<SecureHash>()
+
         while (transactionsToRetrieve.isNotEmpty()) {
-            val existingTransactionsInDb = utxoLedgerPersistenceService.findExistingNotInvalidTransactionIds(
-                transactionsToRetrieve.toList()
-            )
+            existingTransactionsInDb.addAll(utxoLedgerPersistenceService.findExistingNotInvalidTransactionIds(
+                // Make sure we don't fetch the same transaction multiple times
+                (transactionsToRetrieve - existingTransactionsInDb)
+            ))
+
+            // Remove the transaction from the "to retrieve" set if they are in our DB
             transactionsToRetrieve.removeIf { existingTransactionsInDb.contains(it) }
             val batch = transactionsToRetrieve.take(batchSize)
 

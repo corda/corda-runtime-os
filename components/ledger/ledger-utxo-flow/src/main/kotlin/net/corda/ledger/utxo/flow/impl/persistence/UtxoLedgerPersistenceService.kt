@@ -28,10 +28,14 @@ interface UtxoLedgerPersistenceService {
     fun findSignedTransaction(id: SecureHash, transactionStatus: TransactionStatus = TransactionStatus.VERIFIED): UtxoSignedTransaction?
 
     /**
-     * TODO KDOCS
+     * Find transactions with the given [ids] that are present in the persistence context.
+     *
+     * @param ids IDs of transactions to find.
+     *
+     * @return A list of the transaction IDs found.
      */
     @Suspendable
-    fun findExistingNotInvalidTransactionIds(ids: List<SecureHash>): List<SecureHash>
+    fun findExistingNotInvalidTransactionIds(ids: Collection<SecureHash>): List<SecureHash>
 
     /**
      * Find a verified [UtxoSignedLedgerTransaction] in the persistence context given it's [id]. This involves resolving its input and

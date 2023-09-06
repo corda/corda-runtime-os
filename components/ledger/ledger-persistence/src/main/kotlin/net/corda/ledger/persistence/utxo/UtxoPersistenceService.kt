@@ -27,7 +27,11 @@ interface UtxoPersistenceService {
     fun findSignedTransaction(id: String, transactionStatus: TransactionStatus): Pair<SignedTransactionContainer?, String?>
 
     /**
-     * TODO KDocs
+     * Find transactions with the given [transactionIds] that are present in the persistence context.
+     *
+     * @param transactionIds IDs of transactions to find.
+     *
+     * @return A list of the transaction IDs found.
      */
     fun findExistingNotInvalidTransactionIds(transactionIds: List<String>): List<SecureHash>
 

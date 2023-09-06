@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
 import io.micrometer.core.instrument.Timer
-import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.parseSecureHash
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.metrics.recordSuspendable
@@ -88,7 +87,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun findExistingNotInvalidTransactionIds(ids: List<SecureHash>): List<SecureHash> {
+    override fun findExistingNotInvalidTransactionIds(ids: Collection<SecureHash>): List<SecureHash> {
         return recordSuspendable({ ledgerPersistenceFlowTimer(FindTransactionWithStatus) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
