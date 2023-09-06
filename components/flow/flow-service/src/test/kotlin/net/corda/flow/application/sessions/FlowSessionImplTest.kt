@@ -185,8 +185,7 @@ class FlowSessionImplTest {
                 SessionState()
             } else {
                 SessionState().apply {
-                    counterpartySessionProperties =
-                        testSessionProps()
+                    sessionProperties = testSessionProps()
                 }
             }
         }
@@ -203,7 +202,7 @@ class FlowSessionImplTest {
     @Test
     fun `Get counterparty info retrieves data when it is available in the fiber`() {
         val checkpoint = mockFlowFiberService.flowCheckpoint
-        whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(SessionState().apply { counterpartySessionProperties =
+        whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(SessionState().apply { sessionProperties =
             testSessionProps() })
         val session = createInitiatingSession()
 
@@ -244,7 +243,8 @@ class FlowSessionImplTest {
         mockFlowFiberService,
         serializationService,
         flowContext,
-        FlowSessionImpl.Direction.INITIATED_SIDE
+        FlowSessionImpl.Direction.INITIATED_SIDE,
+        true
     )
 
     private fun createInitiatingSession() = FlowSessionImpl(
@@ -253,7 +253,8 @@ class FlowSessionImplTest {
         mockFlowFiberService,
         serializationService,
         flowContext,
-        FlowSessionImpl.Direction.INITIATING_SIDE
+        FlowSessionImpl.Direction.INITIATING_SIDE,
+        true
     )
 
 }

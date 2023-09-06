@@ -14,8 +14,6 @@ import net.corda.cpk.read.CpkReadService
 import net.corda.cpk.write.CpkWriteService
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
-import net.corda.entityprocessor.FlowPersistenceService
-import net.corda.ledger.persistence.LedgerPersistenceService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.cpi.datamodel.CpiEntities
@@ -44,9 +42,9 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.service.MembershipPersistenceService
 import net.corda.membership.read.GroupParametersReaderService
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.permissions.model.RbacEntities
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
@@ -78,8 +76,6 @@ class DBProcessorImpl @Activate constructor(
     private val configWriteService: ConfigWriteService,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = LedgerPersistenceService::class)
-    private val consensualLedgerPersistenceService: LedgerPersistenceService,
     @Reference(service = PermissionStorageReaderService::class)
     private val permissionStorageReaderService: PermissionStorageReaderService,
     @Reference(service = PermissionStorageWriterService::class)
@@ -92,8 +88,6 @@ class DBProcessorImpl @Activate constructor(
     private val cpkWriteService: CpkWriteService,
     @Reference(service = CpkReadService::class)
     private val cpkReadService: CpkReadService,
-    @Reference(service = FlowPersistenceService::class)
-    private val flowPersistenceService: FlowPersistenceService,
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService,
     @Reference(service = CpiInfoWriteService::class)
@@ -169,14 +163,11 @@ class DBProcessorImpl @Activate constructor(
         ::dbConnectionManager,
         ::configWriteService,
         ::configurationReadService,
-        ::consensualLedgerPersistenceService,
         ::permissionStorageReaderService,
         ::permissionStorageWriterService,
         ::virtualNodeWriteService,
         ::chunkReadService,
         ::cpkWriteService,
-        ::cpkReadService,
-        ::flowPersistenceService,
         ::cpkReadService,
         ::cpiInfoReadService,
         ::cpiInfoWriteService,

@@ -27,7 +27,7 @@ fun remoteToLocalContextMapper(
     return LocalContext(
         userProperties = renameInitiatorProps(remoteUserContextProperties, emptyMap()),
         platformProperties = initiatorPlatformContextProperties,
-        counterpartySessionProperties = initiatorPlatformContextProperties.toMap()
+        sessionProperties = initiatorPlatformContextProperties.toMap()
     )
 }
 
@@ -65,5 +65,5 @@ fun renameInitiatorProps(keyValuePairList: KeyValuePairList, localCounterpartyCo
 data class LocalContext(
     val userProperties: KeyValuePairList,
     val platformProperties: KeyValuePairList,
-    val counterpartySessionProperties: Map<String, String>
+    val sessionProperties: Map<String, String>
 )

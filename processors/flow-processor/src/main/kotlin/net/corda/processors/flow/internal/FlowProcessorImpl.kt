@@ -3,7 +3,6 @@ package net.corda.processors.flow.internal
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpk.read.CpkReadService
-import net.corda.flow.p2p.filter.FlowP2PFilterService
 import net.corda.flow.service.FlowService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
@@ -20,7 +19,6 @@ import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.processors.flow.FlowProcessor
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
-import net.corda.session.mapper.service.FlowMapperService
 import net.corda.utilities.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -38,10 +36,6 @@ class FlowProcessorImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = FlowService::class)
     private val flowService: FlowService,
-    @Reference(service = FlowMapperService::class)
-    private val flowMapperService: FlowMapperService,
-    @Reference(service = FlowP2PFilterService::class)
-    private val flowP2PFilterService: FlowP2PFilterService,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = CpiInfoReadService::class)
@@ -57,7 +51,7 @@ class FlowProcessorImpl @Activate constructor(
     @Reference(service = GroupPolicyProvider::class)
     private val groupPolicyProvider: GroupPolicyProvider,
     @Reference(service = MembershipQueryClient::class)
-    private val membershipQueryClient: MembershipQueryClient
+    private val membershipQueryClient: MembershipQueryClient,
 ) : FlowProcessor {
 
     private companion object {
@@ -67,8 +61,6 @@ class FlowProcessorImpl @Activate constructor(
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::flowService,
-        ::flowMapperService,
-        ::flowP2PFilterService,
         ::virtualNodeInfoReadService,
         ::cpiInfoReadService,
         ::sandboxGroupContextComponent,
@@ -76,7 +68,7 @@ class FlowProcessorImpl @Activate constructor(
         ::groupParametersReaderService,
         ::cpkReadService,
         ::groupPolicyProvider,
-        ::membershipQueryClient
+        ::membershipQueryClient,
     )
 
     private val lifecycleCoordinator =

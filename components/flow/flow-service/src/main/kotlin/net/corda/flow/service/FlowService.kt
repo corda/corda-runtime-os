@@ -4,7 +4,6 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.external.messaging.services.ExternalMessagingRoutingService
-import net.corda.flow.scheduler.FlowWakeUpScheduler
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -20,6 +19,7 @@ import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.UTXO_LEDGER_CONFIG
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -35,15 +35,13 @@ class FlowService @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = FlowExecutor::class)
     private val flowExecutor: FlowExecutor,
-    @Reference(service = FlowWakeUpScheduler::class)
-    private val flowWakeUpScheduler: FlowWakeUpScheduler,
     @Reference(service = ExternalMessagingRoutingService::class)
     private val externalMessagingRoutingService: ExternalMessagingRoutingService,
     ) : Lifecycle {
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private val configSections = setOf(BOOT_CONFIG, MESSAGING_CONFIG, FLOW_CONFIG)
+        private val configSections = setOf(BOOT_CONFIG, MESSAGING_CONFIG, FLOW_CONFIG, UTXO_LEDGER_CONFIG)
     }
 
     private var registration: RegistrationHandle? = null
@@ -87,7 +85,6 @@ class FlowService @Activate constructor(
                  * is configured before we configure the executor to prevent a race between receiving the first
                  * state events and scheduler creating a publisher.
                  */
-                flowWakeUpScheduler.onConfigChange(config)
                 flowExecutor.onConfigChange(config)
                 externalMessagingRoutingService.onConfigChange(config)
                 coordinator.updateStatus(LifecycleStatus.UP)

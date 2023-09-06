@@ -8,6 +8,7 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getPa
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupWebserver
 import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
@@ -15,9 +16,9 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.flow.FlowProcessor
-import net.corda.processors.verification.VerificationProcessor
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
+import net.corda.web.api.WebServer
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -30,12 +31,12 @@ import picocli.CommandLine.Mixin
 class FlowWorker @Activate constructor(
     @Reference(service = FlowProcessor::class)
     private val flowProcessor: FlowProcessor,
-    @Reference(service = VerificationProcessor::class)
-    private val verificationProcessor: VerificationProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = WorkerMonitor::class)
     private val workerMonitor: WorkerMonitor,
+    @Reference(service = WebServer::class)
+    private val webServer: WebServer,
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = PlatformInfoProvider::class)
@@ -50,7 +51,7 @@ class FlowWorker @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    /** Parses the arguments, then initialises and starts the [flowProcessor] and [verificationProcessor]. */
+    /** Parses the arguments, then initialises and starts the [flowProcessor]. */
     override fun startup(args: Array<String>) {
         logger.info("Flow worker starting.")
         logger.loggerStartupInfo(platformInfoProvider)
@@ -64,6 +65,8 @@ class FlowWorker @Activate constructor(
         JavaSerialisationFilter.install()
 
         val params = getParams(args, FlowWorkerParams())
+
+        webServer.setupWebserver(params.defaultParams)
         if (printHelpOrVersion(params.defaultParams, FlowWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
@@ -75,14 +78,12 @@ class FlowWorker @Activate constructor(
             configurationValidatorFactory.createConfigValidator())
 
         flowProcessor.start(config)
-        verificationProcessor.start(config)
     }
 
     override fun shutdown() {
         logger.info("Flow worker stopping.")
         flowProcessor.stop()
-        verificationProcessor.stop()
-        workerMonitor.stop()
+        webServer.stop()
         shutdownTracing()
     }
 }

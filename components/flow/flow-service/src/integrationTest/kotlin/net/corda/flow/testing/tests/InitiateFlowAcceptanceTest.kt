@@ -5,6 +5,7 @@ import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.flowResumedWithError
+import net.corda.flow.testing.context.startFlow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -27,21 +28,8 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
 
             sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
             sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
-        }
-    }
+            initiatingToInitiatedFlow(PROTOCOL, FAKE_FLOW_NAME, FAKE_FLOW_NAME)
 
-    @Test
-    fun `Initiating a flow with a peer sends a session init event`() {
-        `when` {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.Send(mapOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
-        }
-
-        then {
-            expectOutputForFlow(FLOW_ID1) {
-                sessionInitEvents(SESSION_ID_1)
-                flowFiberCacheContainsKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
-            }
         }
     }
 
@@ -60,40 +48,15 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Requesting counterparty info from the flow engine that has already sent a session init event does not send another SessionInit`
-                () {
+    fun `Requesting counterparty info from the flow engine that has already sent a session init event does not send another SessionInit`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.Send(mapOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
-        }
-
-        `when` {
-            wakeupEventReceived(FLOW_ID1)
-                .suspendsWith(FlowIORequest.CounterPartyFlowInfo(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName)))
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 noFlowEvents()
-            }
-        }
-    }
-
-    @Test
-    fun `Receiving a session ack resumes the initiating flow`() {
-        given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.Send(mapOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
-        }
-
-        `when` {
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
-        }
-
-        then {
-            expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
             }
         }
     }
@@ -109,14 +72,21 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         `when` {
             sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL)
                 .suspendsWith(FlowIORequest.InitialCheckpoint)
+                .suspendsWith(
+                    FlowIORequest.Receive(
+                        setOf(
+                            SessionInfo(INITIATED_SESSION_ID_1, initiatingIdentityMemberName),
+                        )
+                    )
+                )
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                flowResumedWith(Unit)
                 flowStatus(FlowStates.RUNNING)
                 sessionConfirmEvents(INITIATED_SESSION_ID_1)
                 flowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, INITIATED_SESSION_ID_1)
+                flowResumedWith(Unit)
             }
         }
     }
@@ -124,45 +94,23 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Receiving a session error event resumes the flow with an error`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.Send(mapOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
+            startFlow(this)
+                .suspendsWith(
+                    FlowIORequest.Receive(
+                        setOf(
+                            SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                        )
+                    )
+                )
         }
 
         `when` {
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1)
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWithError<CordaRuntimeException>()
-            }
-        }
-    }
-
-    @Test
-    fun `Open multiple sessions, receiving ack for only one session does not resume or set output events`() {
-        given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(
-                    FlowIORequest.Send(
-                        mapOf(
-                            SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0,
-                            SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_0
-                        ),
-                    )
-                )
-
-        }
-
-        `when` {
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
-        }
-
-        then {
-            expectOutputForFlow(FLOW_ID1) {
-                noFlowEvents()
-                flowDidNotResume()
             }
         }
     }

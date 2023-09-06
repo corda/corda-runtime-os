@@ -40,9 +40,9 @@ class FlowEngineImplTest {
     private val subFlow = mock<SubFlow<String>>()
     private val result = "result"
     private val errorSessionState =
-        SessionState("s", mock(), mock(), mock(), null, false, null, null, SessionStateType.ERROR, false, null)
+        SessionState("s", mock(), mock(), null, false, null, null, SessionStateType.ERROR, false, null)
     private val closedSessionState =
-        SessionState("s", mock(), mock(), mock(), null, false, null, null, SessionStateType.CLOSED, false, null)
+        SessionState("s", mock(), mock(), null, false, null, null, SessionStateType.CLOSED, false, null)
 
 
     private val flowEngine = FlowEngineImpl(flowFiberService)

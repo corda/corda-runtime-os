@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.requests
 
-import net.corda.data.flow.event.Wakeup as WakeupEvent
 import net.corda.data.flow.state.waiting.Wakeup as WakeupState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.external.messaging.services.ExternalMessagingRecordFactory
@@ -79,16 +78,10 @@ class SendExternalMessageRequestHandler @Activate constructor(
         context: FlowEventContext<Any>,
         externalMessage: Record<String, String>? = null
     ): FlowEventContext<Any> {
-
-        val records = mutableListOf<Record<*, *>>(
-            flowRecordFactory.createFlowEventRecord(
-                context.checkpoint.flowId,
-                WakeupEvent()
-            )
-        )
-
-        if (externalMessage != null) {
-            records.add(externalMessage)
+        val records = if (externalMessage != null) {
+            listOf(externalMessage)
+        } else {
+            emptyList()
         }
 
         return context.copy(outputRecords = context.outputRecords + records)
