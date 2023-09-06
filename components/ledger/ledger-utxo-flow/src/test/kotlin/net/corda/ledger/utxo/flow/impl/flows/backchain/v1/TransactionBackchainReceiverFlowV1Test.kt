@@ -79,16 +79,20 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(utxoLedgerPersistenceService.findExistingNotInvalidTransactionIds(any()))
             .thenReturn(listOf(TX_ID_1))
 
-        whenever(session.sendAndReceive(eq(List::class.java), eq(listOf(TX_ID_2)))).thenReturn(
+        whenever(session.sendAndReceive(eq(List::class.java), any())).thenReturn(
+            emptyList<UtxoSignedTransaction>()
+        )
+
+        whenever(session.sendAndReceive(eq(List::class.java), eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_2))))).thenReturn(
             listOf(retrievedTransaction2)
         )
 
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
             .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
 
-        whenever(retrievedTransaction2.id).thenReturn(TX_ID_1)
-        whenever(retrievedTransaction2.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1))
-        whenever(retrievedTransaction2.referenceStateRefs).thenReturn(listOf(TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_1))
+        whenever(retrievedTransaction2.id).thenReturn(TX_ID_2)
+        whenever(retrievedTransaction2.inputStateRefs).thenReturn(emptyList())
+        whenever(retrievedTransaction2.referenceStateRefs).thenReturn(emptyList())
 
         assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_1, TX_ID_2)).complete())
             .isEqualTo(listOf(TX_ID_2)) // TX_ID_1 is already present in the DB so should not be retrieved
