@@ -180,7 +180,7 @@ class PersistRegistrationRequestHandlerTest {
         verify(entityManagerFactory).createEntityManager()
         verify(entityManager).transaction
         verify(jpaEntitiesRegistry).get(eq(CordaDb.Vault.persistenceUnitName))
-        verify(memberInfoFactory, never()).create(any())
+        verify(memberInfoFactory, never()).createMemberInfo(any())
         with(mergedEntity.firstValue) {
             assertThat(this).isInstanceOf(RegistrationRequestEntity::class.java)
             val entity = this as RegistrationRequestEntity

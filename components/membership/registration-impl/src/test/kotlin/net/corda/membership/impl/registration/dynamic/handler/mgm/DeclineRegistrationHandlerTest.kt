@@ -14,8 +14,10 @@ import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.membership.impl.registration.dynamic.handler.TestUtils.mockMemberInfo
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.lib.MemberInfoExtension.Companion.status
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.VersionedMessageBuilder
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -44,11 +46,18 @@ class DeclineRegistrationHandlerTest {
         const val GROUP_ID = "ABC123"
         const val REGISTRATION_ID = "REG-01"
         const val TOPIC = "dummyTopic"
+        const val PLATFORM_VERSION = 50100
     }
 
     private val mgm = createTestHoldingIdentity("C=GB, L=London, O=MGM", GROUP_ID).toAvro()
     private val member = createTestHoldingIdentity("C=GB, L=London, O=Alice", GROUP_ID).toAvro()
-    private val memberInfo = mockMemberInfo(holdingIdentity = member.toCorda(), status = MEMBER_STATUS_PENDING)
+    private val memberInfo = mock<SelfSignedMemberInfo> {
+        on { name } doReturn member.toCorda().x500Name
+        on { memberProvidedContext } doReturn mock()
+        on { mgmProvidedContext } doReturn mock()
+        on { status } doReturn MEMBER_STATUS_PENDING
+        on { platformVersion } doReturn PLATFORM_VERSION
+    }
     private val command = DeclineRegistration()
     private val state = RegistrationState(
         REGISTRATION_ID,
@@ -96,7 +105,9 @@ class DeclineRegistrationHandlerTest {
         } doReturn record
     }
     private val membershipQueryClient = mock<MembershipQueryClient> {
-        on { queryMemberInfo(eq(mgm.toCorda()), eq(listOf(member.toCorda()))) } doReturn MembershipQueryResult.Success(listOf(memberInfo))
+        on {
+            queryMemberInfo(eq(mgm.toCorda()), eq(listOf(member.toCorda())), any())
+        } doReturn MembershipQueryResult.Success(listOf(memberInfo))
     }
 
     private val handler = DeclineRegistrationHandler(
@@ -165,8 +176,14 @@ class DeclineRegistrationHandlerTest {
 
     @Test
     fun `update registration status message is not sent when member's pending information cannot be found`() {
-        val activeInfo = mockMemberInfo(holdingIdentity = member.toCorda())
-        whenever(membershipQueryClient.queryMemberInfo(any(), any()))
+        val activeInfo = mock<SelfSignedMemberInfo> {
+            on { name } doReturn member.toCorda().x500Name
+            on { memberProvidedContext } doReturn mock()
+            on { mgmProvidedContext } doReturn mock()
+            on { status } doReturn MEMBER_STATUS_ACTIVE
+            on { platformVersion } doReturn PLATFORM_VERSION
+        }
+        whenever(membershipQueryClient.queryMemberInfo(any(), any(), any()))
             .thenReturn(MembershipQueryResult.Success(listOf(activeInfo)))
         handler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
         verify(p2pRecordsFactory, never())

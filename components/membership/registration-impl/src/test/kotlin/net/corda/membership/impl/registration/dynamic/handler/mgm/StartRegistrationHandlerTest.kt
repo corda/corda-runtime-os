@@ -1,11 +1,15 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
@@ -26,15 +30,22 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.VersionedMessageBuilder
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
@@ -76,7 +87,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.SortedMap
 import java.util.UUID
 
 class StartRegistrationHandlerTest {
@@ -96,6 +106,7 @@ class StartRegistrationHandlerTest {
 
         const val testTopic = "topic"
         const val testTopicKey = "key"
+        const val TEST_KEY_ID = "CCC123456789"
 
         val memberContext = KeyValuePairList(
             listOf(
@@ -104,10 +115,10 @@ class StartRegistrationHandlerTest {
                 KeyValuePair("apple", "pear"),
             )
         )
-        val registrationContext = mock<KeyValuePairList> {
-            on { items } doReturn emptyList()
-            on { toByteBuffer() } doReturn ByteBuffer.wrap(byteArrayOf(1))
-        }
+        val registrationContext = KeyValuePairList(emptyList())
+        val emptyMemberContextBytes = "empty-member-context".toByteArray()
+        val memberContextBytes = "non-empty-member-context".toByteArray()
+        val registrationContextBytes = "registration-context".toByteArray()
 
         val startRegistrationCommand = RegistrationCommand(StartRegistration())
 
@@ -125,7 +136,16 @@ class StartRegistrationHandlerTest {
     lateinit var membershipPersistenceClient: MembershipPersistenceClient
     private lateinit var membershipQueryClient: MembershipQueryClient
 
-    private val memberContextEntries = mapOf("$ROLES_PREFIX.0" to "notary", "$CUSTOM_KEY_PREFIX.0" to "test")
+    private val memberContextEntries = mapOf(
+        "$ROLES_PREFIX.0" to "notary",
+        "$CUSTOM_KEY_PREFIX.0" to "test",
+        NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+        NOTARY_KEYS_ID.format(0) to "ABC123456789",
+        PARTY_SESSION_KEYS_ID.format(0) to "BBC123456789",
+        LEDGER_KEYS_ID.format(0) to "CBC123456789",
+        URL_KEY.format(0) to "https://localhost:1080",
+        PROTOCOL_VERSION.format(0) to "1",
+    )
     private val memberMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
         on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
@@ -140,7 +160,7 @@ class StartRegistrationHandlerTest {
         on { entries } doReturn emptySet()
         on { parse(eq(STATUS), eq(String::class.java)) } doReturn MEMBER_STATUS_PENDING
     }
-    private val pendingMemberInfo: MemberInfo = mock {
+    private val pendingMemberInfo: SelfSignedMemberInfo = mock {
         on { name } doReturn aliceX500Name
         on { isActive } doReturn true
         on { memberProvidedContext } doReturn memberMemberContext
@@ -149,7 +169,7 @@ class StartRegistrationHandlerTest {
         on { serial } doReturn 1L
         on { platformVersion } doReturn 50100
     }
-    private val activeMemberInfo: MemberInfo = mock {
+    private val activeMemberInfo: SelfSignedMemberInfo = mock {
         on { name } doReturn aliceX500Name
         on { isActive } doReturn true
         on { memberProvidedContext } doReturn memberMemberContext
@@ -178,6 +198,7 @@ class StartRegistrationHandlerTest {
     private val persistRegistrationRequestOperation = mock<MembershipPersistenceOperation<Unit>> {
         on { execute() } doReturn MembershipPersistenceResult.success()
     }
+    private val persistentMemberInfo: PersistentMemberInfo = mock()
 
     private val memberTypeChecker = mock<MemberTypeChecker> {
         on { getMgmMemberInfo(mgmHoldingIdentity.toCorda()) } doReturn mgmMemberInfo
@@ -197,9 +218,22 @@ class StartRegistrationHandlerTest {
 
     private val registrationRequest = createRegistrationRequest()
 
+    private val serializer: CordaAvroSerializer<KeyValuePairList> = mock {
+        on { serialize(any()) } doReturn "serialized-bytes".toByteArray()
+    }
+    private val deserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
+        on { deserialize(eq(emptyMemberContextBytes)) } doReturn KeyValuePairList(emptyList())
+        on { deserialize(eq(memberContextBytes)) } doReturn memberContext
+        on { deserialize(eq(registrationContextBytes)) } doReturn registrationContext
+    }
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
+        on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
+    }
+
     private fun createRegistrationRequest(
         registeringMember: HoldingIdentity = aliceHoldingIdentity,
-        context: KeyValuePairList = memberContext,
+        serializedContext: ByteArray = memberContextBytes,
         serial: Long? = 0L
     ) = RegistrationRequestDetails(
         clock.instant(),
@@ -208,18 +242,22 @@ class StartRegistrationHandlerTest {
         registrationId,
         registeringMember.toCorda().shortHash.value,
         1,
-        context,
-        CryptoSignatureWithKey(
-            ByteBuffer.wrap("456".toByteArray()),
-            ByteBuffer.wrap("789".toByteArray())
+        SignedData(
+            ByteBuffer.wrap(serializedContext),
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap("456".toByteArray()),
+                ByteBuffer.wrap("789".toByteArray())
+            ),
+            CryptoSignatureSpec("", null, null),
         ),
-        CryptoSignatureSpec("", null, null),
-        registrationContext,
-        CryptoSignatureWithKey(
-            ByteBuffer.wrap("456".toByteArray()),
-            ByteBuffer.wrap("789".toByteArray())
+        SignedData(
+            ByteBuffer.wrap(registrationContextBytes),
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap("456".toByteArray()),
+                ByteBuffer.wrap("789".toByteArray())
+            ),
+            CryptoSignatureSpec("", null, null),
         ),
-        CryptoSignatureSpec("", null, null),
         "",
         serial,
     )
@@ -227,7 +265,13 @@ class StartRegistrationHandlerTest {
     @BeforeEach
     fun setUp() {
         memberInfoFactory = mock {
-            on { create(any<SortedMap<String, String?>>(), any()) } doReturn pendingMemberInfo
+            on { createSelfSignedMemberInfo(any(), any(), any(), any()) } doReturn pendingMemberInfo
+            on {
+                createPersistentMemberInfo(
+                    eq(mgmHoldingIdentity),
+                    eq(pendingMemberInfo),
+                )
+            } doReturn persistentMemberInfo
         }
         membershipPersistenceClient = mock {
             on {
@@ -240,7 +284,8 @@ class StartRegistrationHandlerTest {
             on {
                 queryMemberInfo(
                     eq(mgmHoldingIdentity.toCorda()),
-                    any()
+                    any(),
+                    any(),
                 )
             } doReturn MembershipQueryResult.Success(emptyList())
             on {
@@ -249,6 +294,7 @@ class StartRegistrationHandlerTest {
         }
 
         handler = StartRegistrationHandler(
+            cordaAvroSerializationFactory,
             clock,
             memberInfoFactory,
             memberTypeChecker,
@@ -274,7 +320,7 @@ class StartRegistrationHandlerTest {
 
             val pendingMemberRecord = outputStates.firstNotNullOf { it.value as? PersistentMemberInfo }
             assertThat(pendingMemberRecord).isNotNull
-            assertThat(pendingMemberRecord.viewOwningMember).isEqualTo(mgmHoldingIdentity)
+            assertThat(pendingMemberRecord).isEqualTo(persistentMemberInfo)
         }
         verifyServices(
             updateRegistrationRequest = true,
@@ -307,10 +353,10 @@ class StartRegistrationHandlerTest {
     fun `serial is increased when building pending member info`() {
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .thenReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 10L)))
-        val mgmContextCaptor = argumentCaptor<SortedMap<String, String?>>()
+        val mgmContextCaptor = argumentCaptor<KeyValuePairList>()
         handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
-        verify(memberInfoFactory).create(any(), mgmContextCaptor.capture())
-        assertThat(mgmContextCaptor.firstValue[SERIAL]).isEqualTo("11")
+        verify(serializer).serialize(mgmContextCaptor.capture())
+        assertThat(mgmContextCaptor.firstValue.toMap()[SERIAL]).isEqualTo("11")
     }
 
     @Test
@@ -414,7 +460,7 @@ class StartRegistrationHandlerTest {
     @Test
     fun `declined if member context is empty`() {
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
-            .thenReturn(MembershipQueryResult.Success(createRegistrationRequest(context = KeyValuePairList(emptyList()))))
+            .thenReturn(MembershipQueryResult.Success(createRegistrationRequest(serializedContext = emptyMemberContextBytes)))
         with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
@@ -428,7 +474,6 @@ class StartRegistrationHandlerTest {
             queryRegistrationRequest = true,
         )
     }
-
 
     @Test
     fun `declined if customs fields in member fail validation`() {
@@ -474,7 +519,7 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if member already exists`() {
-        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
             .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
         with(
             handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
@@ -498,7 +543,7 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `not declined if member already exists in a pending state`() {
-        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
             .doReturn(MembershipQueryResult.Success(listOf(pendingMemberInfo)))
         with(
             handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
@@ -522,7 +567,7 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if member's current serial is larger than the serial in the request`() {
-        val activeMemberInfo: MemberInfo = mock {
+        val activeSignedMemberInfo: SelfSignedMemberInfo = mock {
             on { name } doReturn aliceX500Name
             on { isActive } doReturn true
             on { memberProvidedContext } doReturn memberMemberContext
@@ -530,8 +575,8 @@ class StartRegistrationHandlerTest {
             on { status } doReturn MEMBER_STATUS_ACTIVE
             on { serial } doReturn 2L
         }
-        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
-            .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
+            .doReturn(MembershipQueryResult.Success(listOf(activeSignedMemberInfo)))
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .thenReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 1L)))
         with(handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))) {
@@ -723,14 +768,14 @@ class StartRegistrationHandlerTest {
             listOf(1),
             listOf(mock())
         )
-        val bobInfo: MemberInfo = mock {
+        val bobInfo: SelfSignedMemberInfo = mock {
             on { name } doReturn bobX500Name
             on { isActive } doReturn true
             on { memberProvidedContext } doReturn memberMemberContext
             on { mgmProvidedContext } doReturn memberMgmContext
         }
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
-        whenever(memberInfoFactory.create(any<SortedMap<String, String?>>(), any())).thenReturn(bobInfo)
+        whenever(memberInfoFactory.createSelfSignedMemberInfo(any(), any(), any(), any())).thenReturn(bobInfo)
         whenever(
             membershipQueryClient.queryMemberInfo(
                 mgmHoldingIdentity.toCorda(),
@@ -766,14 +811,51 @@ class StartRegistrationHandlerTest {
     }
 
     @Test
-    fun `declined if non-custom, non-platform or non-cpi related properties are added during re-registration`() {
+    fun `declined if notary related properties are added during re-registration`() {
         val contextWithUpdates = mock<MemberContext> {
             on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
-            on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
-            on { entries } doReturn (memberContextEntries + mapOf("$ROLES_PREFIX.1" to "added")).entries
+            on { entries } doReturn (memberContextEntries + mapOf(
+                "$ROLES_PREFIX.1" to "added",
+                NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                NOTARY_KEYS_ID.format(1) to TEST_KEY_ID
+            )).entries
         }
         whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
-        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
+            .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+        result.assertDeclinedRegistration()
+    }
+
+    @Test
+    fun `declined if ledger key related properties are added during re-registration`() {
+        val contextWithUpdates = mock<MemberContext> {
+            on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
+            on { entries } doReturn (memberContextEntries + mapOf(
+                LEDGER_KEYS_ID.format(1) to TEST_KEY_ID
+            )).entries
+        }
+        whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
+            .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+        result.assertDeclinedRegistration()
+    }
+
+    @Test
+    fun `declined if session key related properties are added during re-registration`() {
+        val contextWithUpdates = mock<MemberContext> {
+            on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
+            on { entries } doReturn (memberContextEntries + mapOf(
+                PARTY_SESSION_KEYS_ID.format(1) to TEST_KEY_ID
+            )).entries
+        }
+        whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
             .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
@@ -785,11 +867,10 @@ class StartRegistrationHandlerTest {
     fun `declined if non-custom, non-platform or non-cpi related properties are removed during re-registration`() {
         val contextWithUpdates = mock<MemberContext> {
             on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
-            on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
             on { entries } doReturn emptySet()
         }
         whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
-        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
             .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
@@ -798,22 +879,138 @@ class StartRegistrationHandlerTest {
     }
 
     @Test
-    fun `declined if non-custom, non-platform or non-cpi related properties are updated during re-registration`() {
+    fun `declined if notary related properties are updated during re-registration`() {
         val newContextEntries = memberContextEntries.toMutableMap().apply {
             put("${ROLES_PREFIX}.0", "changed")
+            put(NOTARY_SERVICE_NAME, "O=ChangedNotaryService, L=London, C=GB")
+            put(NOTARY_KEYS_ID.format(0), TEST_KEY_ID)
         }.entries
         val contextWithUpdates = mock<MemberContext> {
             on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
-            on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
             on { entries } doReturn newContextEntries
         }
         whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
-        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
             .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
         val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
         result.assertDeclinedRegistration()
+    }
+
+    @Test
+    fun `declined if ledger key related properties are updated during re-registration`() {
+        val newContextEntries = memberContextEntries.toMutableMap().apply {
+            put(LEDGER_KEYS_ID.format(0), TEST_KEY_ID)
+        }.entries
+        val contextWithUpdates = mock<MemberContext> {
+            on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
+            on { entries } doReturn newContextEntries
+        }
+        whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
+            .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+        result.assertDeclinedRegistration()
+    }
+
+    @Test
+    fun `declined if session key related properties are updated during re-registration`() {
+        val newContextEntries = memberContextEntries.toMutableMap().apply {
+            put(PARTY_SESSION_KEYS_ID.format(0), TEST_KEY_ID)
+        }.entries
+        val contextWithUpdates = mock<MemberContext> {
+            on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
+            on { entries } doReturn newContextEntries
+        }
+        whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
+            .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+        result.assertDeclinedRegistration()
+    }
+
+    @Test
+    fun `allows endpoints to be added during re-registration`() {
+        val newUrl = "https://localhost:8888"
+        val newProtocolVersion = 2
+        val newEndpoint = mock<EndpointInfo> {
+            on { url } doReturn newUrl
+            on { protocolVersion } doReturn newProtocolVersion
+        }
+        val newContextEntries = memberContextEntries.toMutableMap().apply {
+            put(URL_KEY.format(1), newUrl)
+            put(PROTOCOL_VERSION.format(1), newProtocolVersion.toString())
+        }.entries
+        val contextWithUpdates = mock<MemberContext> {
+            on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
+            on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(newEndpoint)
+            on { entries } doReturn newContextEntries
+        }
+        whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
+        whenever(membershipQueryClient.queryMemberInfo(
+            eq(mgmHoldingIdentity.toCorda()), any(), anyOrNull())).doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+        result.assertRegistrationStarted()
+    }
+
+    @Test
+    fun `allows endpoints to be updated during re-registration`() {
+        val changedUrl = "https://localhost:8888"
+        val changedProtocolVersion = 2
+        val changedEndpoint = mock<EndpointInfo> {
+            on { url } doReturn changedUrl
+            on { protocolVersion } doReturn changedProtocolVersion
+        }
+        val newContextEntries = memberContextEntries.toMutableMap().apply {
+            put(URL_KEY.format(0), changedUrl)
+            put(PROTOCOL_VERSION.format(0), changedProtocolVersion.toString())
+        }.entries
+        val contextWithUpdates = mock<MemberContext> {
+            on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
+            on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(changedEndpoint)
+            on { entries } doReturn newContextEntries
+        }
+        whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
+            .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+        result.assertRegistrationStarted()
+    }
+
+    @Test
+    fun `allows endpoints to be removed during re-registration`() {
+        val endpointUrl = "https://localhost:8888"
+        val endpointProtocolVersion = 2
+        val changedEndpoint = mock<EndpointInfo> {
+            on { url } doReturn endpointUrl
+            on { protocolVersion } doReturn endpointProtocolVersion
+        }
+        val previousContextEntries = memberContextEntries.toMutableMap().apply {
+            put(URL_KEY.format(1), endpointUrl)
+            put(PROTOCOL_VERSION.format(1), endpointProtocolVersion.toString())
+        }.entries
+        whenever(memberMemberContext.entries).doReturn(previousContextEntries)
+        val contextWithUpdates = mock<MemberContext> {
+            on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
+            on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(changedEndpoint)
+            on { entries } doReturn memberContextEntries.entries
+        }
+        whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
+            .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+            .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+        result.assertRegistrationStarted()
     }
 
     @Test
@@ -824,7 +1021,7 @@ class StartRegistrationHandlerTest {
             on { entries } doReturn (memberContextEntries + mapOf("$CUSTOM_KEY_PREFIX.1" to "added")).entries
         }
         whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
-        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
             .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
@@ -840,7 +1037,7 @@ class StartRegistrationHandlerTest {
             on { entries } doReturn memberContextEntries.filterNot { it.key == "$CUSTOM_KEY_PREFIX.0" }.entries
         }
         whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
-        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
             .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
@@ -859,7 +1056,7 @@ class StartRegistrationHandlerTest {
             on { entries } doReturn newContextEntries
         }
         whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
-        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
             .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
@@ -896,8 +1093,8 @@ class StartRegistrationHandlerTest {
     inner class PreAuthTokenTest {
         @Test
         fun `Invalid UUID for preauth token results in declined registration`() {
-            whenever(registrationContext.items).doReturn(
-                listOf(KeyValuePair(PRE_AUTH_TOKEN, "bad-token"))
+            whenever(deserializer.deserialize(registrationContextBytes)).doReturn(
+                KeyValuePairList(listOf(KeyValuePair(PRE_AUTH_TOKEN, "bad-token")))
             )
 
             val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
@@ -909,8 +1106,8 @@ class StartRegistrationHandlerTest {
         @Test
         fun `Exception while querying for pre-auth tokens causes a declined registration`() {
             val token = UUID(0, 1)
-            whenever(registrationContext.items).doReturn(
-                listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString()))
+            whenever(deserializer.deserialize(registrationContextBytes)).doReturn(
+                KeyValuePairList(listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString())))
             )
             whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
                 MembershipQueryResult.Failure("failed-query")
@@ -926,8 +1123,8 @@ class StartRegistrationHandlerTest {
         fun `No matching pre-auth token results in declined registration`() {
             val token = UUID(0, 1)
 
-            whenever(registrationContext.items).doReturn(
-                listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString()))
+            whenever(deserializer.deserialize(registrationContextBytes)).doReturn(
+                KeyValuePairList(listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString())))
             )
             whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
                 MembershipQueryResult.Success(emptyList())
@@ -943,8 +1140,8 @@ class StartRegistrationHandlerTest {
         fun `Matching pre-auth token found results in started registration`() {
             val token = UUID(0, 1)
             val persistedToken: PreAuthToken = mock()
-            whenever(registrationContext.items).doReturn(
-                listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString()))
+            whenever(deserializer.deserialize(registrationContextBytes)).doReturn(
+                KeyValuePairList(listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString())))
             )
             whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
                 MembershipQueryResult.Success(listOf(persistedToken))
@@ -961,8 +1158,8 @@ class StartRegistrationHandlerTest {
             val persistedToken: PreAuthToken = mock {
                 on { ttl } doReturn null
             }
-            whenever(registrationContext.items).doReturn(
-                listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString()))
+            whenever(deserializer.deserialize(registrationContextBytes)).doReturn(
+                KeyValuePairList(listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString())))
             )
             whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
                 MembershipQueryResult.Success(listOf(persistedToken))
@@ -979,8 +1176,8 @@ class StartRegistrationHandlerTest {
             val persistedToken: PreAuthToken = mock {
                 on { ttl } doReturn clock.instant().plusSeconds(600)
             }
-            whenever(registrationContext.items).doReturn(
-                listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString()))
+            whenever(deserializer.deserialize(registrationContextBytes)).doReturn(
+                KeyValuePairList(listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString())))
             )
             whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
                 MembershipQueryResult.Success(listOf(persistedToken))
@@ -997,8 +1194,8 @@ class StartRegistrationHandlerTest {
             val persistedToken: PreAuthToken = mock {
                 on { ttl } doReturn clock.instant().minusSeconds(600)
             }
-            whenever(registrationContext.items).doReturn(
-                listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString()))
+            whenever(deserializer.deserialize(registrationContextBytes)).doReturn(
+                KeyValuePairList(listOf(KeyValuePair(PRE_AUTH_TOKEN, token.toString())))
             )
             whenever(membershipQueryClient.queryPreAuthTokens(any(), any(), eq(token), any())).doReturn(
                 MembershipQueryResult.Success(listOf(persistedToken))
@@ -1044,7 +1241,7 @@ class StartRegistrationHandlerTest {
             )
 
         verify(membershipQueryClient, getVerificationMode(queryMemberInfo))
-            .queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any())
+            .queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any())
 
         verify(membershipPersistenceClient, getVerificationMode(persistMemberInfo))
             .persistMemberInfo(eq(mgmHoldingIdentity.toCorda()), any())

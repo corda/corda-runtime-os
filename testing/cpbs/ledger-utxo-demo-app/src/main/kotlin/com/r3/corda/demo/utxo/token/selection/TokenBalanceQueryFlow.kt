@@ -14,14 +14,9 @@ import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 import net.corda.v5.ledger.utxo.token.selection.TokenBalanceCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection
 import net.corda.v5.membership.NotaryInfo
-import org.slf4j.LoggerFactory
 
 @InitiatingFlow(protocol = "token-balance-query-flow-protocol")
 class TokenBalanceQueryFlow : ClientStartableFlow {
-
-    private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
 
     @CordaInject
     lateinit var tokenSelection: TokenSelection
@@ -55,15 +50,35 @@ class TokenBalanceQueryFlow : ClientStartableFlow {
     private fun TokenBalanceQueryResponseMsg.toJsonStr() =
         marshallingService.format(this)
 
-    private fun genTokenBalanceQueryCriteria(tokenBalanceQueryMsg: TokenBalanceQueryMsg, notary: NotaryInfo) =
-        TokenBalanceCriteria(
+    private fun genTokenBalanceQueryCriteria(
+        tokenBalanceQueryMsg: TokenBalanceQueryMsg,
+        notary: NotaryInfo
+    ): TokenBalanceCriteria {
+        val queryCriteria = TokenBalanceCriteria(
             tokenBalanceQueryMsg.tokenType,
             digestService.hash(tokenBalanceQueryMsg.issuerBankX500.toByteArray(), DigestAlgorithmName.SHA2_256),
             notary.name,
             tokenBalanceQueryMsg.currency
         )
 
-    private data class TokenBalanceQueryMsg(val tokenType: String, val issuerBankX500: String, val currency: String)
+        if (tokenBalanceQueryMsg.ownerHash != null) {
+            queryCriteria.ownerHash = digestService.parseSecureHash(tokenBalanceQueryMsg.ownerHash)
+        }
+
+        if (tokenBalanceQueryMsg.regexTag != null) {
+            queryCriteria.tagRegex = tokenBalanceQueryMsg.regexTag
+        }
+
+        return queryCriteria
+    }
+
+    private data class TokenBalanceQueryMsg(
+        val tokenType: String,
+        val issuerBankX500: String,
+        val currency: String,
+        val ownerHash: String?,
+        val regexTag: String?
+    )
 
     private data class TokenBalanceQueryResponseMsg(
         val availableBalance: BigDecimal,

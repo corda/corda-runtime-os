@@ -49,7 +49,7 @@ class HostedIdentityProducer(private val publisher: AtomicReference<Publisher?>)
             HoldingIdentity(interopIdentity.x500Name, interopIdentity.groupId),
             interopIdentityShortHash.toString(),
             //TODO CORE-15168
-            listOf(DUMMY_CERTIFICATE),
+            emptyList(),
             HostedIdentitySessionKeyAndCert(DUMMY_PUBLIC_SESSION_KEY, null),
             emptyList()
         )

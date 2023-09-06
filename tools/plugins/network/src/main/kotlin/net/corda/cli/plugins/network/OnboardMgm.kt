@@ -4,9 +4,9 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
+import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.membership.rest.v1.MGMRestResource
-import picocli.CommandLine.Parameters
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.ByteArrayOutputStream
@@ -17,17 +17,9 @@ import java.util.UUID
     name = "onboard-mgm",
     description = [
         "Onboard MGM member.",
-        "This sub command should only be used in for internal development",
     ]
 )
 class OnboardMgm : Runnable, BaseOnboard() {
-    @Parameters(
-        description = ["The X500 name of the MGM. Default to a random name"],
-        paramLabel = "--x500-name",
-        arity = "0..1",
-    )
-    override var x500Name: String = "O=Mgm, L=London, C=GB, OU=${UUID.randomUUID()}"
-
     @Option(
         names = ["--cpi-hash"],
         description = ["The CPI hash of a previously uploaded CPI. " +
@@ -179,26 +171,28 @@ class OnboardMgm : Runnable, BaseOnboard() {
     }
 
     override fun run() {
-        println("This sub command should only be used in for internal development")
-        println("On-boarding MGM member $x500Name")
+        verifyAndPrintError {
+            println("On-boarding MGM member $name")
 
-        configureGateway()
+            configureGateway()
 
-        createTlsKeyIdNeeded()
+            createTlsKeyIdNeeded()
 
-        register()
+            register()
 
-        setupNetwork()
+            setupNetwork()
 
-        println("MGM Member $x500Name was onboarded")
+            println("MGM Member $name was onboarded")
 
-        saveGroupPolicy()
+            saveGroupPolicy()
 
-        if (mtls) {
-            println(
-                "To onboard members to this group on other clusters, please add those members' " +
-                        "client certificates subjects to this MGM's allow list. You can do that using the allowClientCertificate command."
-            )
+            if (mtls) {
+                println(
+                    "To onboard members to this group on other clusters, please add those members' " +
+                            "client certificates subjects to this MGM's allow list. " +
+                            "You can do that using the allowClientCertificate command."
+                )
+            }
         }
     }
 }

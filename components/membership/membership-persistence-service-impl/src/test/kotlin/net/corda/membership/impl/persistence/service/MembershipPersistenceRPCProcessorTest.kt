@@ -443,7 +443,7 @@ class MembershipPersistenceRPCProcessorTest {
     fun `persist member info returns success`() {
         val rq = MembershipPersistenceRequest(
             rqContext,
-            PersistMemberInfo(emptyList())
+            PersistMemberInfo(emptyList(), emptyList())
         )
 
         processor.onNext(rq, responseFuture)
@@ -466,13 +466,25 @@ class MembershipPersistenceRPCProcessorTest {
      */
     @Test
     fun `query member info returns success`() {
-        val memberInfoQuery = mock<TypedQuery<MemberInfoEntity>>()
-        whenever(entityManager.createQuery(any(), eq(MemberInfoEntity::class.java))).thenReturn(memberInfoQuery)
-        whenever(memberInfoQuery.resultList).thenReturn(emptyList())
+        val actualQuery = mock<TypedQuery<MemberInfoEntity>>()
+        val isDeletedPath = mock<Path<Boolean>>()
+        val equalsDeleted = mock<Predicate>()
+        val root = mock<Root<MemberInfoEntity>> {
+            on { get<Boolean>("isDeleted") } doReturn isDeletedPath
+        }
+        val query = mock<CriteriaQuery<MemberInfoEntity>> {
+            on { from(eq(MemberInfoEntity::class.java)) } doReturn root
+            on { select(root) } doReturn mock
+            on { where(any()) } doReturn mock
+        }
+        whenever(criteriaBuilder.createQuery(MemberInfoEntity::class.java)).thenReturn(query)
+        whenever(criteriaBuilder.equal(isDeletedPath, false)).thenReturn(equalsDeleted)
+        whenever(entityManager.createQuery(query)).thenReturn(actualQuery)
+        whenever(actualQuery.resultList).thenReturn(emptyList())
 
         val rq = MembershipPersistenceRequest(
             rqContext,
-            QueryMemberInfo(emptyList())
+            QueryMemberInfo(emptyList(), emptyList())
         )
 
         processor.onNext(rq, responseFuture)
@@ -788,7 +800,8 @@ class MembershipPersistenceRPCProcessorTest {
             on { memberProvidedContext } doReturn mock()
             on { mgmProvidedContext } doReturn mock()
         }
-        whenever(memberInfoFactory.create(any())).thenReturn(memberInfo)
+        whenever(memberInfoFactory.createMemberInfo(any())).thenReturn(memberInfo)
+        whenever(memberInfoFactory.createPersistentMemberInfo(any(), any(), any(), any(), any(), any())).thenReturn(mock())
         whenever(keyValuePairListDeserializer.deserialize(any())).thenReturn(KeyValuePairList(listOf(mock())))
         val rq = MembershipPersistenceRequest(
             rqContext,
@@ -818,7 +831,8 @@ class MembershipPersistenceRPCProcessorTest {
             on { memberProvidedContext } doReturn mock()
             on { mgmProvidedContext } doReturn mock()
         }
-        whenever(memberInfoFactory.create(any())).thenReturn(memberInfo)
+        whenever(memberInfoFactory.createMemberInfo(any())).thenReturn(memberInfo)
+        whenever(memberInfoFactory.createPersistentMemberInfo(any(), any(), any(), any(), any(), any())).thenReturn(mock())
         whenever(keyValuePairListDeserializer.deserialize(any())).thenReturn(KeyValuePairList(listOf(mock())))
         val rq = MembershipPersistenceRequest(
             rqContext,

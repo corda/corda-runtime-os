@@ -13,6 +13,7 @@ import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.TokenBalance
 import net.corda.ledger.utxo.token.cache.factories.RecordFactoryImpl
 import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
+import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -47,7 +48,7 @@ class RecordFactoryImplTest {
         val result = target.getSuccessfulClaimResponse(
             flowId,
             externalEventRequestId,
-            POOL_CACHE_KEY,
+            POOL_KEY,
             listOf(token1, token2)
         )
 
@@ -68,7 +69,7 @@ class RecordFactoryImplTest {
         whenever(externalEventResponseFactory.success(any(), any(), any())).thenReturn(response)
 
         val target = RecordFactoryImpl(externalEventResponseFactory)
-        val result = target.getFailedClaimResponse(flowId, externalEventRequestId, POOL_CACHE_KEY)
+        val result = target.getFailedClaimResponse(flowId, externalEventRequestId, POOL_KEY)
 
         assertThat(result).isSameAs(response)
         verify(externalEventResponseFactory).success(externalEventRequestId, flowId, expectedResponse)
@@ -91,7 +92,7 @@ class RecordFactoryImplTest {
         val result = target.getBalanceResponse(
             flowId,
             externalEventRequestId,
-            POOL_CACHE_KEY,
+            POOL_KEY,
             TokenBalance(BigDecimal(1.0), BigDecimal(2.0))
         )
 

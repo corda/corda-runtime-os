@@ -69,7 +69,7 @@ class Create(
         "gateway" to listOf("p2pGateway", "combined"),
         "link-manager" to listOf("p2pLinkManager", "combined"),
         "rest" to listOf("rest", "combined"),
-        "uniqueness" to listOf("db", "combined"),
+        "uniqueness" to listOf("uniqueness", "combined"),
         "interop" to listOf("flow", "combined")
     )
 
