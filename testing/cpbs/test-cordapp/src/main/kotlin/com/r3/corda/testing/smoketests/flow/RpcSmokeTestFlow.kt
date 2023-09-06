@@ -57,6 +57,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         "persistence_findall" to { persistenceFindAllDogs() },
         "persistence_query" to { persistenceQueryDogs() },
         "crypto_sign_and_verify" to this::signAndVerify,
+        "crypto_sign_with_key_category" to this::signWithKeyCategory,
         "crypto_verify_invalid_signature" to this::verifyInvalidSignature,
         "crypto_get_default_signature_spec" to this::getDefaultSignatureSpec,
         "crypto_get_compatible_signature_specs" to this::getCompatibleSignatureSpecs,
@@ -261,6 +262,31 @@ class RpcSmokeTestFlow : ClientStartableFlow {
             signatureSpecService.defaultSignatureSpec(publicKey)
                 ?: throw IllegalStateException("Default signature spec not found for key")
         val signedBytes = signingService.sign(bytesToSign, publicKey, signatureSpec)
+        log.info("Crypto - Signature $signedBytes received")
+        digitalSignatureVerificationService.verify(
+            bytesToSign,
+            signedBytes.bytes,
+            publicKey,
+            signatureSpec
+        )
+        log.info("Crypto - Verified $signedBytes as the signature of $bytesToSign")
+        return true.toString()
+    }
+
+    @Suspendable
+    private fun signWithKeyCategory(input: RpcSmokeTestInput): String {
+        val x500Name = input.getValue("memberX500")
+        val keyCategory = input.getValue("keyCategory")
+        val context = mapOf("category" to keyCategory)
+        val member = memberLookup.lookup(MemberX500Name.parse(x500Name))
+        checkNotNull(member) { "Member $x500Name could not be looked up" }
+        val publicKey = member.ledgerKeys[0]
+        val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
+        log.info("Crypto - Signing bytes $bytesToSign with public key '$publicKey'")
+        val signatureSpec =
+            signatureSpecService.defaultSignatureSpec(publicKey)
+                ?: throw IllegalStateException("Default signature spec not found for key")
+        val signedBytes = signingService.sign(bytesToSign, publicKey, signatureSpec, context)
         log.info("Crypto - Signature $signedBytes received")
         digitalSignatureVerificationService.verify(
             bytesToSign,

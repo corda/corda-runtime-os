@@ -566,6 +566,24 @@ class FlowTests {
     }
 
     @Test
+    fun `Crypto - Sign bytes with key type`() {
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "crypto_sign_and_verify"
+            data = mapOf("memberX500" to bobX500)
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
+
+        assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowResult.json).isNotNull
+        assertThat(flowResult.flowError).isNull()
+        assertThat(flowResult.json.command).isEqualTo("crypto_sign_and_verify")
+        assertThat(flowResult.json.result).isEqualTo(true.toString())
+    }
+
+    @Test
     fun `Notary - Non-validating plugin executes successfully when using issuance transaction`() {
         issueStatesAndValidateResult(3) { issuanceResult ->
             // 1. Make sure the states were issued
