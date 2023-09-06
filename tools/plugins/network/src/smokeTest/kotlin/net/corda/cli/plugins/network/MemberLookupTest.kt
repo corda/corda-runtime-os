@@ -65,7 +65,7 @@ class MemberLookupTest {
     fun `test member lookup command with status filter with ACTIVE`() {
         CommandLine(memberLookup).execute(
             "--status=${MEMBER_STATUS_ACTIVE}",
-            "-h=${holdingIdentity}",
+            "-h=$holdingIdentity",
             CLI_PARAMS[0],
             CLI_PARAMS[1],
             CLI_PARAMS[2],
@@ -80,7 +80,7 @@ class MemberLookupTest {
     fun `test member lookup command with status filter with SUSPENDED`() {
         CommandLine(memberLookup).execute(
             "--status=${MEMBER_STATUS_SUSPENDED}",
-            "-h=${holdingIdentity}",
+            "-h=$holdingIdentity",
             CLI_PARAMS[0],
             CLI_PARAMS[1],
             CLI_PARAMS[2],
@@ -94,7 +94,7 @@ class MemberLookupTest {
     fun `test member lookup command with Common Name (CN)`() {
         CommandLine(memberLookup).execute(
             "-cn=${mgm.commonName}",
-            "-h=${holdingIdentity}",
+            "-h=$holdingIdentity",
             CLI_PARAMS[0],
             CLI_PARAMS[1],
             CLI_PARAMS[2],
@@ -108,7 +108,7 @@ class MemberLookupTest {
     fun `test member lookup command with Organisation Unit (OU)`() {
         CommandLine(memberLookup).execute(
             "-ou=${mgm.organizationUnit}",
-            "-h=${holdingIdentity}",
+            "-h=$holdingIdentity",
             CLI_PARAMS[0],
             CLI_PARAMS[1],
             CLI_PARAMS[2],
@@ -122,7 +122,7 @@ class MemberLookupTest {
     fun `test member lookup command with Locality (L)`() {
         CommandLine(memberLookup).execute(
             "-l=${mgm.locality}",
-            "-h=${holdingIdentity}",
+            "-h=$holdingIdentity",
             CLI_PARAMS[0],
             CLI_PARAMS[1],
             CLI_PARAMS[2],
@@ -136,7 +136,7 @@ class MemberLookupTest {
     fun `test member lookup command with State (ST)`() {
         CommandLine(memberLookup).execute(
             "-st=${mgm.state}",
-            "-h=${holdingIdentity}",
+            "-h=$holdingIdentity",
             CLI_PARAMS[0],
             CLI_PARAMS[1],
             CLI_PARAMS[2],
@@ -150,7 +150,7 @@ class MemberLookupTest {
     fun `test member lookup command with Country (C)`() {
         CommandLine(memberLookup).execute(
             "-c=${mgm.country}",
-            "-h=${holdingIdentity}",
+            "-h=$holdingIdentity",
             CLI_PARAMS[0],
             CLI_PARAMS[1],
             CLI_PARAMS[2],
@@ -164,7 +164,7 @@ class MemberLookupTest {
     fun `test member lookup command with Organisation (O)`() {
         CommandLine(memberLookup).execute(
             "-o=${mgm.organization}",
-            "-h=${holdingIdentity}",
+            "-h=$holdingIdentity",
             CLI_PARAMS[0],
             CLI_PARAMS[1],
             CLI_PARAMS[2],
@@ -208,7 +208,7 @@ class MemberLookupTest {
     @Test
     fun `test member lookup command with holding identity short hash`() {
         CommandLine(memberLookup).execute(
-            "-h=${holdingIdentity}",
+            "-h=$holdingIdentity",
             CLI_PARAMS[0],
             CLI_PARAMS[1],
             CLI_PARAMS[2],
