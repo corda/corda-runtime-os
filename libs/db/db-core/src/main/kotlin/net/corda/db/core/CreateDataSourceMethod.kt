@@ -2,6 +2,7 @@ package net.corda.db.core
 
 import java.time.Duration
 
+@Suppress("LongParameterList")
 fun createDataSource(
     driverClass: String,
     jdbcUrl: String,
