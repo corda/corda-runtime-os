@@ -362,6 +362,8 @@ bootstrap:
     partitions: 10
     # -- Kafka topic replicas
     replicas: 3
+    # -- Maximum time (in seconds) to wait for Kafka to finish the creation of topics (might vary depending on the amount of partitions and replicas configured)
+    timeoutSeconds: 300
     # if kafka.sasl.enabled, the credentials to connect to Kafka with for bootstrap
     sasl:
       # bootstrap SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
