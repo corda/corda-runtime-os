@@ -248,9 +248,9 @@ spec:
             {{- end }}
             '-r', '{{ .Values.bootstrap.kafka.replicas }}',
             '-p', '{{ .Values.bootstrap.kafka.partitions }}',
-            '-w', '{{ .Values.bootstrap.kafka.timeoutSeconds }}',
             'connect'{{- if .Values.bootstrap.kafka.cleanup }},
-            '-d'
+            '-d',
+            '-w', '{{ .Values.bootstrap.kafka.timeoutSeconds }}'
             {{- end }}
           ]
           volumeMounts:
