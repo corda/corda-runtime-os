@@ -16,6 +16,7 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
@@ -54,6 +55,32 @@ class TransactionBackchainReceiverFlowV1Test {
     private val retrievedTransaction1 = mock<UtxoSignedTransaction>()
     private val retrievedTransaction2 = mock<UtxoSignedTransaction>()
     private val retrievedTransaction3 = mock<UtxoSignedTransaction>()
+
+    @BeforeEach
+    fun setup() {
+        whenever(utxoLedgerPersistenceService.findExistingNotInvalidTransactionIds(any()))
+            .thenReturn(emptyList())
+    }
+
+    @Test
+    fun `transaction will not be requested if it is present in the database`() {
+        whenever(utxoLedgerPersistenceService.findExistingNotInvalidTransactionIds(any()))
+            .thenReturn(listOf(TX_ID_1))
+
+        whenever(session.sendAndReceive(eq(List::class.java), eq(listOf(TX_ID_2)))).thenReturn(
+            listOf(retrievedTransaction2)
+        )
+
+        whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+
+        whenever(retrievedTransaction2.id).thenReturn(TX_ID_1)
+        whenever(retrievedTransaction2.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1))
+        whenever(retrievedTransaction2.referenceStateRefs).thenReturn(listOf(TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_1))
+
+        assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_1, TX_ID_2)).complete())
+            .isEqualTo(listOf(TX_ID_2)) // TX_ID_1 is already present in the DB so should not be retrieved
+    }
 
     @Test
     fun `a resolved transaction has its dependencies retrieved from its peer and persisted`() {
