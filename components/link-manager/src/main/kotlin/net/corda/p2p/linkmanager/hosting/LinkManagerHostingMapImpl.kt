@@ -19,6 +19,7 @@ import net.corda.p2p.linkmanager.common.GroupIdWithPublicKeyHash
 import net.corda.p2p.linkmanager.common.KeyHasher
 import net.corda.p2p.linkmanager.common.PublicKeyReader
 import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
+import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
@@ -84,11 +85,11 @@ internal class LinkManagerHostingMapImpl(
                 }
             }
         } ?: false
-    } catch (e: Exception) {
+    } catch (e: ValueNotFoundException) {
         val sw = StringWriter()
         val pw = PrintWriter(sw)
         e.printStackTrace(pw)
-        logger.warn("INTEROP_CAUGHT_EXCEPTION\n$sw")
+        logger.warn("INTEROP_EXCEPTION\n$sw")
         true
     }
 
