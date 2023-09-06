@@ -71,7 +71,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 
 @Suppress("Unused")
 @Component(service = [FlowServiceTestContext::class])
@@ -103,7 +103,6 @@ class FlowServiceTestContext @Activate constructor(
         FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW to 500000L,
         FlowConfig.SESSION_TIMEOUT_WINDOW to 500000L,
         FlowConfig.SESSION_FLOW_CLEANUP_TIME to 30000,
-        FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS to 5,
         FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION to 60000,
         FlowConfig.PROCESSING_MAX_RETRY_DELAY to 16000,
         FlowConfig.PROCESSING_FLOW_CLEANUP_TIME to 30000,

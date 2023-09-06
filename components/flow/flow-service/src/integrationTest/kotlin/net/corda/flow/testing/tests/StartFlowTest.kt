@@ -3,7 +3,6 @@ package net.corda.flow.testing.tests
 import net.corda.data.flow.output.FlowStates
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
-import net.corda.schema.configuration.FlowConfig
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Test
@@ -87,7 +86,6 @@ class StartFlowTest : FlowServiceTestBase() {
             cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
             sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(BOB_HOLDING_IDENTITY)
-            flowConfiguration(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS, 3)
         }
 
         `when` {
@@ -127,7 +125,6 @@ class StartFlowTest : FlowServiceTestBase() {
             cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
             sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(BOB_HOLDING_IDENTITY)
-            flowConfiguration(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS, 1)
         }
 
         `when` {
