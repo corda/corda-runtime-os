@@ -24,7 +24,7 @@ class SessionInitProcessorSend(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val isInteropSession = sessionEvent.contextSessionProperties?.let { properties ->
+    private val isInteropSessionInit = sessionEvent.contextSessionProperties?.let { properties ->
         KeyValueStore(properties)[FLOW_SESSION_IS_INTEROP]?.equals("true")
     } ?: false
 
@@ -38,7 +38,7 @@ class SessionInitProcessorSend(
         }
 
         sessionState.apply {
-            isInteropSession = isInteropSession
+            isInteropSession = isInteropSessionInit
             sendEventsState.lastProcessedSequenceNum = seqNum
             sendEventsState.undeliveredMessages = sendEventsState.undeliveredMessages.plus(sessionEvent)
         }

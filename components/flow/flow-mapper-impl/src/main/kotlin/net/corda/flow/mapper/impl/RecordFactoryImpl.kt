@@ -104,7 +104,9 @@ class RecordFactoryImpl @Activate constructor(
         }
     }
 
-    override fun getSessionEventOutputTopic(sessionEvent: SessionEvent, messageDirection: MessageDirection, isInteropSession: Boolean): String {
+    override fun getSessionEventOutputTopic(
+        sessionEvent: SessionEvent, messageDirection: MessageDirection, isInteropSession: Boolean
+    ): String {
         return when (messageDirection) {
             MessageDirection.INBOUND -> Schemas.Flow.FLOW_EVENT_TOPIC
             MessageDirection.OUTBOUND -> {

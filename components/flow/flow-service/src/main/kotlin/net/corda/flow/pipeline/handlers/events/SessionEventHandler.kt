@@ -143,7 +143,7 @@ class SessionEventHandler @Activate constructor(
         }
     }
 
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "ThrowsCount")
     private fun initializeCheckpointAndGetResult(
         context: FlowEventContext<*>,
         sessionEvent: SessionEvent,

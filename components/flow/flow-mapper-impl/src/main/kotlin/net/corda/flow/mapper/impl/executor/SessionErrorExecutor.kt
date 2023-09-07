@@ -71,11 +71,13 @@ class SessionErrorExecutor(
                         ),
                         instant,
                         flowConfig,
-                        messageDirection
+                        messageDirection,
+                        flowMapperState.isInteropSession
                     )
                     FlowMapperResult(flowMapperState, listOf(outputRecord))
                 } else {
-                    val outputTopic = recordFactory.getSessionEventOutputTopic(sessionEvent, messageDirection)
+                    val outputTopic = recordFactory.getSessionEventOutputTopic(
+                        sessionEvent, messageDirection, flowMapperState.isInteropSession)
                     val outputRecord = Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
                     FlowMapperResult(flowMapperState, listOf(outputRecord))
                 }

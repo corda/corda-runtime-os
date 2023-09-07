@@ -26,6 +26,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
+import org.mockito.ArgumentMatchers.anyBoolean
 
 class SessionEventExecutorTest {
 
@@ -34,9 +35,9 @@ class SessionEventExecutorTest {
     private val sessionEventSerializer = mock<CordaAvroSerializer<SessionEvent>>()
     private val record = Record("Topic", "Key", "Value")
     private val recordFactory = mock<RecordFactory>{
-        on { forwardError(any(), any(), any(), any(), any()) } doReturn record
-        on { forwardEvent(any(), any(), any(), any()) } doReturn record
-        on { getSessionEventOutputTopic(any(), any()) } doReturn "Topic"
+        on { forwardError(any(), any(), any(), any(), any(), anyBoolean()) } doReturn record
+        on { forwardEvent(any(), any(), any(), any(), anyBoolean()) } doReturn record
+        on { getSessionEventOutputTopic(any(), any(), anyBoolean()) } doReturn "Topic"
     }
     private val sessionInitProcessor = mock<SessionInitProcessor>()
 
@@ -62,7 +63,7 @@ class SessionEventExecutorTest {
             recordFactory,
             Instant.now(),
             sessionInitProcessor
-            ).execute()
+        ).execute()
 
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
@@ -89,7 +90,7 @@ class SessionEventExecutorTest {
             recordFactory,
             Instant.now(),
             sessionInitProcessor
-            ).execute()
+        ).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
 
@@ -113,7 +114,7 @@ class SessionEventExecutorTest {
             recordFactory,
             Instant.now(),
             sessionInitProcessor
-            ).execute()
+        ).execute()
 
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
@@ -138,7 +139,7 @@ class SessionEventExecutorTest {
             recordFactory,
             Instant.now(),
             sessionInitProcessor
-            ).execute()
+        ).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
 
@@ -159,7 +160,7 @@ class SessionEventExecutorTest {
             recordFactory,
             Instant.now(),
             sessionInitProcessor
-            ).execute()
+        ).execute()
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
 

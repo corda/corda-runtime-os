@@ -155,7 +155,7 @@ class FlowMessagingImplTest {
         }
 
         flowMessaging.initiateFlow(ALICE_X500_NAME, false, builder)
-        verify(flowSessionFactory).createInitiatingFlowSession(any(), any(), eq(ALICE_X500_NAME), eq(builder))
+        verify(flowSessionFactory).createInitiatingFlowSession(any(), any(), eq(ALICE_X500_NAME), eq(builder), eq(false))
     }
 
     @Test

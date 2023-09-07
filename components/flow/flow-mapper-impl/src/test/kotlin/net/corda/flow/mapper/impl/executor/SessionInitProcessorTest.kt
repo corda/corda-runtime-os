@@ -23,7 +23,7 @@ import java.time.Instant
 class SessionInitProcessorTest {
 
     private val recordFactory = mock<RecordFactory>().apply {
-        whenever(this.forwardEvent(any(), any(), any(), any())).thenReturn(Record(Schemas.P2P.P2P_OUT_TOPIC, "sessionId", ""))
+        whenever(this.forwardEvent(any(), any(), any(), any(), any())).thenReturn(Record(Schemas.P2P.P2P_OUT_TOPIC, "sessionId", ""))
     }
     private val flowConfig = SmartConfigImpl.empty().withValue(FlowConfig.SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
     private val sessionInitProcessor = SessionInitProcessor(recordFactory)
@@ -73,6 +73,6 @@ class SessionInitProcessorTest {
         Assertions.assertThat(state?.expiryTime).isEqualTo(null)
 
         Assertions.assertThat(outboundEvents.size).isEqualTo(1)
-        verify(recordFactory).forwardEvent(any(), any(), any(), any())
+        verify(recordFactory).forwardEvent(any(), any(), any(), any(), any())
     }
 }

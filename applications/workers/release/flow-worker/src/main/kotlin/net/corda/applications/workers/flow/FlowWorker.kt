@@ -81,7 +81,7 @@ class FlowWorker @Activate constructor(
             configurationValidatorFactory.createConfigValidator())
 
         flowProcessor.start(config)
-        interopProcessor.start(config)`
+        interopProcessor.start(config)
     }
 
     override fun shutdown() {

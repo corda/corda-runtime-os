@@ -72,7 +72,8 @@ internal class RecordFactoryImplTest {
             "Received SessionError with sessionId 1"),
             Instant.now(),
             flowConfig,
-            sessionEvent.messageDirection
+            sessionEvent.messageDirection,
+            false
         )
         Assertions.assertThat(record).isNotNull
         Assertions.assertThat(record.topic).isEqualTo("flow.mapper.event")
@@ -94,7 +95,8 @@ internal class RecordFactoryImplTest {
             sessionEvent,
             Instant.now(),
             flowConfig,
-            sessionEvent.messageDirection
+            sessionEvent.messageDirection,
+            false
         )
         Assertions.assertThat(record).isNotNull
         Assertions.assertThat(record.topic).isEqualTo("flow.mapper.event")
@@ -124,7 +126,8 @@ internal class RecordFactoryImplTest {
                 "Received SessionError with sessionId 1"),
             Instant.now(),
             flowConfig,
-            sessionEvent.messageDirection
+            sessionEvent.messageDirection,
+            false
         )
         Assertions.assertThat(record).isNotNull
         Assertions.assertThat(record.topic).isEqualTo("p2p.out")
@@ -147,7 +150,8 @@ internal class RecordFactoryImplTest {
             sessionEvent,
             Instant.now(),
             flowConfig,
-            sessionEvent.messageDirection
+            sessionEvent.messageDirection,
+            false
         )
         Assertions.assertThat(record).isNotNull
         Assertions.assertThat(record.topic).isEqualTo("p2p.out")
@@ -167,7 +171,8 @@ internal class RecordFactoryImplTest {
 
         val topic = recordFactoryImplSameCluster.getSessionEventOutputTopic(
             sessionEvent,
-            sessionEvent.messageDirection
+            sessionEvent.messageDirection,
+            false
         )
         Assertions.assertThat(topic).isNotNull
         Assertions.assertThat(topic).isEqualTo("flow.mapper.event")
@@ -186,7 +191,8 @@ internal class RecordFactoryImplTest {
 
         val topic = recordFactoryImplDifferentCluster.getSessionEventOutputTopic(
             sessionEvent,
-            sessionEvent.messageDirection
+            sessionEvent.messageDirection,
+            false
         )
         Assertions.assertThat(topic).isNotNull
         Assertions.assertThat(topic).isEqualTo("p2p.out")

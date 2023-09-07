@@ -17,15 +17,16 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.time.Instant
+import org.mockito.ArgumentMatchers.anyBoolean
 
 class SessionErrorExecutorTest {
 
     private val sessionId = "sessionId"
     private val flowConfig = SmartConfigImpl.empty().withValue(FlowConfig.SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
     private val record = Record("Topic", "Key", "Value")
-    private val recordFactory = mock<RecordFactory>(){
-        on { forwardError(any(), any(), any(), any(), any()) } doReturn record
-        on {getSessionEventOutputTopic(any(), any())} doReturn "Topic"
+    private val recordFactory = mock<RecordFactory> {
+        on { forwardError(any(), any(), any(), any(), any(), anyBoolean()) } doReturn record
+        on { getSessionEventOutputTopic(any(), any(), anyBoolean()) } doReturn "Topic"
     }
 
     @Test
@@ -38,7 +39,7 @@ class SessionErrorExecutorTest {
             flowConfig,
             recordFactory,
             Instant.now(),
-            ).execute()
+        ).execute()
 
         val state = result.flowMapperState
         val outboundEvents = result.outputEvents
@@ -99,7 +100,7 @@ class SessionErrorExecutorTest {
             flowConfig,
             recordFactory,
             Instant.now()
-            ).execute()
+        ).execute()
         val outboundEvents = result.outputEvents
         val state = result.flowMapperState
         Assertions.assertThat(state?.status).isEqualTo(FlowMapperStateType.ERROR)

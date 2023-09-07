@@ -20,6 +20,7 @@ interface RecordFactory {
      * Forward [Record] of [SessionEvent] using:
      * @return A record of SessionEvent
      */
+    @Suppress("LongParameterList")
     fun forwardEvent(
         sessionEvent: SessionEvent,
         instant: Instant,
@@ -32,6 +33,7 @@ interface RecordFactory {
      * Forward [Record] of [SessionError]
      * @return A record of SessionError
      */
+    @Suppress("LongParameterList")
     fun forwardError(
         sessionEvent: SessionEvent,
         exceptionEnvelope: ExceptionEnvelope,

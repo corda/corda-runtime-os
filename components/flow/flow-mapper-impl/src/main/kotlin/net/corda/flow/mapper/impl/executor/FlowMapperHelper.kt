@@ -16,6 +16,7 @@ import net.corda.session.manager.Constants.Companion.FLOW_SESSION_SUBSYSTEM
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
+import net.corda.schema.Schemas
 
 /**
  * Generate and return random ID for flowId

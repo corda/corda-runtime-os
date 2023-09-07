@@ -207,7 +207,7 @@ class FlowMessagingImpl @Activate constructor(
     private fun createInteropFlowSession(x500Name: MemberX500Name, groupId: String, facadeId: String, methodName: String): FlowSession {
         val sessionId = UUID.randomUUID().toString()
         addSessionIdToFlowStackItem(sessionId)
-        return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, { flowContextProperties ->
+        return flowSessionFactory.createInitiatingFlowSession(sessionId, true, x500Name, { flowContextProperties ->
             flowContextProperties.put(INTEROP_GROUP_ID, groupId)
             flowContextProperties.put(INTEROP_FACADE_ID, facadeId)
             flowContextProperties.put(INTEROP_FACADE_METHOD, methodName)
