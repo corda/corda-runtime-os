@@ -210,6 +210,7 @@ class CombinedWorker @Activate constructor(
         restProcessor.stop()
         linkManagerProcessor.stop()
         gatewayProcessor.stop()
+        schedulerProcessor.stop()
 
         webServer.stop()
         shutdownTracing()

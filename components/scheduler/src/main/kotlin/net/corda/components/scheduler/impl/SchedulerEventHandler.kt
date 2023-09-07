@@ -57,7 +57,6 @@ class SchedulerEventHandler(
             coordinator.updateStatus(LifecycleStatus.UP)
             triggerAndScheduleNext(coordinator)
         } else {
-            // TODO Revise below actions in case of an error from sub services (DOWN vs ERROR)
             coordinator.updateStatus(event.status)
             coordinator.cancelTimer(name)
         }
