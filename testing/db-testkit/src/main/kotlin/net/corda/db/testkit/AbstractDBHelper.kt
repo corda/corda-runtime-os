@@ -61,11 +61,13 @@ abstract class AbstractDBHelper : DbUtilsHelper{
                 createDataSource(driverClass,jdbcUrl,user,password, maximumPoolSize = 1)
                     .connection.createSchema(schemaName)
             }
-            jdbcUrl = if (rewriteBatchedInserts) {
+            val jdbcUrlCopy = if (rewriteBatchedInserts) {
                 "$jdbcUrl?currentSchema=$schemaName&reWriteBatchedInserts=true"
             } else {
                 "$jdbcUrl?currentSchema=$schemaName"
             }
+            logger.info("Using URL $jdbcUrlCopy".emphasise())
+            return createDataSource(driverClass,jdbcUrlCopy, user, password)
         }
         logger.info("Using URL $jdbcUrl".emphasise())
         return createDataSource(driverClass,jdbcUrl, user, password)
