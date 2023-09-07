@@ -88,30 +88,29 @@ internal class VirtualNodeDbFactoryImpl(
         ddlConfig: String?,
         dmlConfig: String?
     ): VirtualNodeDb {
-        val connectionsProvided = !dmlConfig.isNullOrBlank()
+        val usingClusterDb = dmlConfig.isNullOrBlank()
+
         val dbConnections =
-            if (connectionsProvided) {
+            if (usingClusterDb) {
+                mapOf(
+                    Pair(DDL, createClusterConnection(dbType, holdingIdentityShortHash, DDL)),
+                    Pair(DML, createClusterConnection(dbType, holdingIdentityShortHash, DML))
+                )
+            } else {
                 if (dbType == UNIQUENESS && dmlConfig == "none") {
                     mapOf(
                         Pair(DDL, null),
                         Pair(DML, null)
                     )
-                } else {
-                    mapOf(
-                        Pair(
-                            DDL,
-                            ddlConfig?.let { createConnection(dbType, holdingIdentityShortHash, DDL, ddlConfig) }),
-                        Pair(DML, dmlConfig?.let { createConnection(dbType, holdingIdentityShortHash, DML, dmlConfig) })
-                    )
-                }
-            } else {
-                mapOf(
-                    Pair(DDL, createClusterConnection(dbType, holdingIdentityShortHash, DDL)),
-                    Pair(DML, createClusterConnection(dbType, holdingIdentityShortHash, DML))
+                } else mapOf(
+                    Pair(DDL, ddlConfig?.let { createConnection(dbType, holdingIdentityShortHash, DDL, ddlConfig) }),
+                    Pair(DML, dmlConfig?.let { createConnection(dbType, holdingIdentityShortHash, DML, dmlConfig) })
                 )
             }
+
+        val ddlProvided = ddlConfig?.isNotBlank() == true
         return VirtualNodeDbImpl(
-            !connectionsProvided,
+            usingClusterDb || ddlProvided,
             dbConnections,
             dbType,
             holdingIdentityShortHash,
