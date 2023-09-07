@@ -17,7 +17,7 @@ const val DELETE_STATES_BY_KEY_QUERY_NAME = "StateEntity.deleteByKey"
 const val QUERY_STATES_BY_UPDATED_TIMESTAMP_NAME = "StateEntity.queryByTimestamp"
 
 const val KEY_ID = "key"
-const val STATE_ID = "state"
+const val VALUE_ID = "value"
 const val VERSION_ID = "version"
 const val METADATA_ID = "metadata"
 const val START_TIMESTAMP = "startTime"
@@ -30,7 +30,7 @@ const val FINISH_TIMESTAMP = "finishTime"
     name = CREATE_STATE_QUERY_NAME,
     query = """
         INSERT INTO ${DbSchema.STATE_MANAGER_TABLE}
-        VALUES (:$KEY_ID, :$STATE_ID, :$VERSION_ID, CAST(:$METADATA_ID as JSONB), CURRENT_TIMESTAMP)
+        VALUES (:$KEY_ID, :$VALUE_ID, :$VERSION_ID, CAST(:$METADATA_ID as JSONB), CURRENT_TIMESTAMP)
     """
 )
 
@@ -38,7 +38,7 @@ const val FINISH_TIMESTAMP = "finishTime"
     name = UPDATE_STATE_QUERY_NAME,
     query = """
         UPDATE ${DbSchema.STATE_MANAGER_TABLE} SET
-        key = :$KEY_ID, state = :$STATE_ID, version = :$VERSION_ID, metadata = CAST(:$METADATA_ID as JSONB), modified_time = CURRENT_TIMESTAMP
+        key = :$KEY_ID, value = :$VALUE_ID, version = :$VERSION_ID, metadata = CAST(:$METADATA_ID as JSONB), modified_time = CURRENT_TIMESTAMP
         WHERE key = :$KEY_ID
     """
 )
@@ -65,8 +65,8 @@ class StateEntity(
     @Column(name = KEY_ID, length = 255)
     val key: String,
 
-    @Column(name = STATE_ID, columnDefinition = "BLOB", nullable = false)
-    val state: ByteArray,
+    @Column(name = VALUE_ID, columnDefinition = "BLOB", nullable = false)
+    val value: ByteArray,
 
     // TODO-[CORE-16663]: make the database provider pluggable.
     @Column(name = METADATA_ID, columnDefinition = "jsonb", nullable = false)

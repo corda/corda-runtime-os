@@ -19,11 +19,7 @@ class Metadata<V : Any>(
     )
 
     private fun isPrimitiveOrBoxedValue(value: V): Boolean {
-        return when {
-            value::class.java.isPrimitive -> true
-            supportedBoxedPrimitives.contains(value::class.java) -> true
-            else -> false
-        }
+        return supportedBoxedPrimitives.any { it.isAssignableFrom(value::class.java) }
     }
 
     override fun put(key: String, value: V): V? {

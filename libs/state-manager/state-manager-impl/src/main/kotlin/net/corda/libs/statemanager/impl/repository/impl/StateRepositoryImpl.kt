@@ -8,7 +8,7 @@ import net.corda.libs.statemanager.impl.model.v1.METADATA_ID
 import net.corda.libs.statemanager.impl.model.v1.QUERY_STATES_BY_KEY_QUERY_NAME
 import net.corda.libs.statemanager.impl.model.v1.QUERY_STATES_BY_UPDATED_TIMESTAMP_NAME
 import net.corda.libs.statemanager.impl.model.v1.START_TIMESTAMP
-import net.corda.libs.statemanager.impl.model.v1.STATE_ID
+import net.corda.libs.statemanager.impl.model.v1.VALUE_ID
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.model.v1.UPDATE_STATE_QUERY_NAME
 import net.corda.libs.statemanager.impl.model.v1.VERSION_ID
@@ -27,7 +27,7 @@ class StateRepositoryImpl : StateRepository {
         entityManager
             .createNamedQuery(CREATE_STATE_QUERY_NAME.trimIndent())
             .setParameter(KEY_ID, state.key)
-            .setParameter(STATE_ID, state.state)
+            .setParameter(VALUE_ID, state.value)
             .setParameter(VERSION_ID, state.version)
             .setParameter(METADATA_ID, state.metadata)
             .executeUpdate()
@@ -57,7 +57,7 @@ class StateRepositoryImpl : StateRepository {
                 entityManager
                     .createNamedQuery(UPDATE_STATE_QUERY_NAME.trimIndent())
                     .setParameter(KEY_ID, it.key)
-                    .setParameter(STATE_ID, it.state)
+                    .setParameter(VALUE_ID, it.value)
                     .setParameter(VERSION_ID, it.version)
                     .setParameter(METADATA_ID, it.metadata)
                     .executeUpdate()

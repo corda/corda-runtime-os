@@ -28,7 +28,7 @@ class StateManagerImplTest {
 
     private val now = Instant.now()
     private val stateDtoA = mock<StateEntity>().apply {
-        whenever(state).thenReturn("a".toByteArray())
+        whenever(value).thenReturn("a".toByteArray())
         whenever(key).thenReturn("a")
         whenever(version).thenReturn(1)
         whenever(modifiedTime).thenReturn(now)

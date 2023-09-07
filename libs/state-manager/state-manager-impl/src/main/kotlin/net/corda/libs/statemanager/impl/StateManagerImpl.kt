@@ -48,7 +48,7 @@ class StateManagerImpl(
     private fun <R : Any> State<R>.toEntity(serializer: CordaAvroSerializer<R>): StateEntity {
         return StateEntity(
             key,
-            serializer.serialize(state)!!,
+            serializer.serialize(value)!!,
             objectMapper.writeValueAsString(metadata),
             version,
             modifiedTime
@@ -57,7 +57,7 @@ class StateManagerImpl(
 
     private fun <S : Any> StateEntity.fromEntity(deserializer: CordaAvroDeserializer<S>) =
         State(
-            deserializer.deserialize(state)!!,
+            deserializer.deserialize(value)!!,
             key,
             metadata.toMetadataMap(),
             version,

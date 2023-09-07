@@ -9,7 +9,7 @@ data class State<S>(
     /**
      * The typed state itself.
      */
-    val state: S,
+    val value: S,
 
     /**
      * Identifier for the state.
@@ -17,8 +17,7 @@ data class State<S>(
     val key: String,
 
     /**
-     * Arbitrary Map of primitive types that can be used to store and query extra data associated with the state
-     * that must generally not be part of the state itself.
+     * Arbitrary Map of primitive types that can be used to store and query data associated with the state.
      */
     val metadata: Metadata<Any> = Metadata(),
 

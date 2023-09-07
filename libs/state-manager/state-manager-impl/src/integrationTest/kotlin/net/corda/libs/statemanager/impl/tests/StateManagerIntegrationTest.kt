@@ -17,7 +17,7 @@ import net.corda.libs.statemanager.impl.StateManagerImpl
 import net.corda.libs.statemanager.impl.model.v1.CREATE_STATE_QUERY_NAME
 import net.corda.libs.statemanager.impl.model.v1.KEY_ID
 import net.corda.libs.statemanager.impl.model.v1.METADATA_ID
-import net.corda.libs.statemanager.impl.model.v1.STATE_ID
+import net.corda.libs.statemanager.impl.model.v1.VALUE_ID
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.model.v1.StateManagerEntities
 import net.corda.libs.statemanager.impl.model.v1.VERSION_ID
@@ -100,6 +100,51 @@ class StateManagerIntegrationTest {
 
     private fun testKey(index: Int, uniqueId: UUID) = "key_$index-$uniqueId"
 
+    private fun persistStateEntities(
+        uniqueId: UUID,
+        indexRange: IntRange,
+        version: (index: Int, key: String) -> Int = { _, _ -> -1 },
+        stateContent: (index: Int, key: String) -> String,
+        metadataContent: (index: Int, key: String) -> String,
+    ) = indexRange.forEach { i ->
+        entityManagerFactoryFactory.createEntityManager().transaction {
+            val key = testKey(i, uniqueId)
+            val stateEntity =
+                StateEntity(key, stateContent(i, key).toByteArray(), metadataContent(i, key), version(i, key))
+
+            it.createNamedQuery(CREATE_STATE_QUERY_NAME.trimIndent())
+                .setParameter(KEY_ID, stateEntity.key)
+                .setParameter(VALUE_ID, stateEntity.value)
+                .setParameter(VERSION_ID, stateEntity.version)
+                .setParameter(METADATA_ID, stateEntity.metadata)
+                .executeUpdate()
+
+            it.flush()
+        }
+    }
+
+    private fun softlyAssertPersistedStateEntities(
+        uniqueId: UUID,
+        indexRange: IntRange,
+        version: (index: Int, key: String) -> Int,
+        stateContent: (index: Int, key: String) -> String,
+        metadataContent: (index: Int, key: String) -> Metadata<Any>,
+    ) = entityManagerFactoryFactory.createEntityManager().use { em ->
+        indexRange.forEach { i ->
+            val key = testKey(i, uniqueId)
+            val loadedEntity = em.find(StateEntity::class.java, key)
+
+            assertSoftly {
+                it.assertThat(loadedEntity.key).isEqualTo(key)
+                it.assertThat(loadedEntity.modifiedTime).isNotNull
+                it.assertThat(loadedEntity.version).isEqualTo(version(i, key))
+                it.assertThat(stringDeserializer.deserialize(loadedEntity.value)).isEqualTo((stateContent(i, key)))
+                it.assertThat(objectMapper.toMetadata(loadedEntity.metadata))
+                    .containsExactlyInAnyOrderEntriesOf(metadataContent(i, key))
+            }
+        }
+    }
+
     @ParameterizedTest
     @ValueSource(ints = [1, 10])
     fun canCreateBasicStates(stateCount: Int) {
@@ -108,23 +153,15 @@ class StateManagerIntegrationTest {
         for (i in 1..stateCount) {
             states.add(State("simpleState_$i", testKey(i, uniqueId)))
         }
+
         assertThat(stateManager.create(String::class.java, states)).isEmpty()
-
-        entityManagerFactoryFactory.createEntityManager().use { em ->
-            for (i in 1..stateCount) {
-                val key = testKey(i, uniqueId)
-                val loadedEntity = em.find(StateEntity::class.java, key)
-
-                assertSoftly {
-                    it.assertThat(loadedEntity.modifiedTime).isNotNull
-                    it.assertThat(loadedEntity.key).isEqualTo(key)
-                    it.assertThat(loadedEntity.version).isEqualTo(-1)
-                    it.assertThat(stringDeserializer.deserialize(loadedEntity.state)).isEqualTo("simpleState_$i")
-                    it.assertThat(objectMapper.toMetadata(loadedEntity.metadata))
-                        .containsExactlyInAnyOrderEntriesOf(emptyMap())
-                }
-            }
-        }
+        softlyAssertPersistedStateEntities(
+            uniqueId,
+            (1..stateCount),
+            { _, _ -> -1 },
+            { i, _ -> "simpleState_$i" },
+            { _, _ -> metadata() }
+        )
     }
 
     @ParameterizedTest
@@ -135,23 +172,15 @@ class StateManagerIntegrationTest {
         for (i in 1..stateCount) {
             states.add(State("customState_$i", testKey(i, uniqueId), metadata("key1" to "value$i", "key2" to i)))
         }
+
         assertThat(stateManager.create(String::class.java, states)).isEmpty()
-
-        entityManagerFactoryFactory.createEntityManager().use { em ->
-            for (i in 1..stateCount) {
-                val key = testKey(i, uniqueId)
-                val loadedEntity = em.find(StateEntity::class.java, key)
-
-                assertSoftly {
-                    it.assertThat(loadedEntity.modifiedTime).isNotNull
-                    it.assertThat(loadedEntity.key).isEqualTo(key)
-                    it.assertThat(loadedEntity.version).isEqualTo(-1)
-                    it.assertThat(stringDeserializer.deserialize(loadedEntity.state)).isEqualTo("customState_$i")
-                    it.assertThat(objectMapper.toMetadata(loadedEntity.metadata))
-                        .containsExactlyInAnyOrderEntriesOf(mapOf("key1" to "value$i", "key2" to i))
-                }
-            }
-        }
+        softlyAssertPersistedStateEntities(
+            uniqueId,
+            (1..stateCount),
+            { _, _ -> -1 },
+            { i, _ -> "customState_$i" },
+            { i, _ -> metadata("key1" to "value$i", "key2" to i) }
+        )
     }
 
     @Test
@@ -159,26 +188,16 @@ class StateManagerIntegrationTest {
         val failedSates = 5
         val totalStates = 15
         val uniqueId = UUID.randomUUID()
-
-        entityManagerFactoryFactory.createEntityManager().transaction {
-            for (i in 1..failedSates) {
-                val stateEntity =
-                    StateEntity(testKey(i, uniqueId), "state_$i".toByteArray(), """{"k1": "v$i", "k2": $i}""")
-
-                it.createNamedQuery(CREATE_STATE_QUERY_NAME.trimIndent())
-                    .setParameter(KEY_ID, stateEntity.key)
-                    .setParameter(STATE_ID, stateEntity.state)
-                    .setParameter(VERSION_ID, stateEntity.version)
-                    .setParameter(METADATA_ID, stateEntity.metadata)
-                    .executeUpdate()
-            }
-
-            it.flush()
-        }
-
+        persistStateEntities(
+            uniqueId,
+            (1..failedSates),
+            { _, _ -> -1 },
+            { i, _ -> "existingState_$i" },
+            { i, _ -> """{"k1": "v$i", "k2": $i}""" }
+        )
         val states = mutableSetOf<State<String>>()
         for (i in 1..totalStates) {
-            states.add(State("simpleState_$i", testKey(i, uniqueId)))
+            states.add(State("newState_$i", testKey(i, uniqueId)))
         }
 
         val failures = stateManager.create(String::class.java, states)
@@ -186,47 +205,29 @@ class StateManagerIntegrationTest {
         for (i in 1..failedSates) {
             assertThat(failures[testKey(i, uniqueId)]).isInstanceOf(PersistenceException::class.java)
         }
-
-        entityManagerFactoryFactory.createEntityManager().use { em ->
-            for (i in failedSates + 1..totalStates) {
-                val key = testKey(i, uniqueId)
-                val loadedEntity = em.find(StateEntity::class.java, key)
-
-                assertSoftly {
-                    it.assertThat(loadedEntity.modifiedTime).isNotNull
-                    it.assertThat(loadedEntity.key).isEqualTo(key)
-                    it.assertThat(loadedEntity.version).isEqualTo(-1)
-                    it.assertThat(stringDeserializer.deserialize(loadedEntity.state)).isEqualTo("simpleState_$i")
-                    it.assertThat(objectMapper.toMetadata(loadedEntity.metadata))
-                        .containsExactlyInAnyOrderEntriesOf(emptyMap())
-                }
-            }
-        }
+        softlyAssertPersistedStateEntities(
+            uniqueId,
+            (failedSates + 1..totalStates),
+            { _, _ -> -1 },
+            { i, _ -> "newState_$i" },
+            { _, _ -> metadata() }
+        )
     }
 
     @ParameterizedTest
     @ValueSource(ints = [1, 10])
     fun canRetrieveStatesByKey(stateCount: Int) {
         val uniqueId = UUID.randomUUID()
-        entityManagerFactoryFactory.createEntityManager().transaction {
-            for (i in 1..stateCount) {
-                val stateEntity =
-                    StateEntity(testKey(i, uniqueId), "state_$i".toByteArray(), """{"k1": "v$i", "k2": $i}""")
-
-                it.createNamedQuery(CREATE_STATE_QUERY_NAME.trimIndent())
-                    .setParameter(KEY_ID, stateEntity.key)
-                    .setParameter(STATE_ID, stateEntity.state)
-                    .setParameter(VERSION_ID, stateEntity.version)
-                    .setParameter(METADATA_ID, stateEntity.metadata)
-                    .executeUpdate()
-            }
-
-            it.flush()
-        }
+        persistStateEntities(
+            uniqueId,
+            (1..stateCount),
+            { _, _ -> -1 },
+            { i, _ -> "existingState_$i" },
+            { i, _ -> """{"k1": "v$i", "k2": $i}""" }
+        )
 
         val states = stateManager.get(String::class.java, (1..stateCount).map { testKey(it, uniqueId) }.toSet())
         assertThat(states.size).isEqualTo(stateCount)
-
         for (i in 1..stateCount) {
             val key = testKey(i, uniqueId)
             val loadedState = states[key]
@@ -235,7 +236,7 @@ class StateManagerIntegrationTest {
 
             assertSoftly {
                 it.assertThat(loadedState.modifiedTime).isNotNull
-                it.assertThat(loadedState.state).isEqualTo("state_$i")
+                it.assertThat(loadedState.value).isEqualTo("existingState_$i")
                 it.assertThat(loadedState.key).isEqualTo(key)
                 it.assertThat(loadedState.version).isEqualTo(-1)
                 it.assertThat(loadedState.metadata)
@@ -248,67 +249,42 @@ class StateManagerIntegrationTest {
     @ValueSource(ints = [1, 10])
     fun canUpdateExistingStates(stateCount: Int) {
         val uniqueId = UUID.randomUUID()
-        entityManagerFactoryFactory.createEntityManager().transaction {
-            for (i in 1..stateCount) {
-                val stateEntity =
-                    StateEntity(testKey(i, uniqueId), "state_$i".toByteArray(), """{"k1": "v$i", "k2": $i}""")
-
-                it.createNamedQuery(CREATE_STATE_QUERY_NAME.trimIndent())
-                    .setParameter(KEY_ID, stateEntity.key)
-                    .setParameter(STATE_ID, stateEntity.state)
-                    .setParameter(VERSION_ID, stateEntity.version)
-                    .setParameter(METADATA_ID, stateEntity.metadata)
-                    .executeUpdate()
-            }
-
-            it.flush()
-        }
-
+        persistStateEntities(
+            uniqueId,
+            (1..stateCount),
+            { _, _ -> -1 },
+            { i, _ -> "existingState_$i" },
+            { i, _ -> """{"k1": "v$i", "k2": $i}""" }
+        )
         val updatedStates = mutableSetOf<State<String>>()
         for (i in 1..stateCount) {
             updatedStates.add(
                 State("state_$i$i", testKey(i, uniqueId), metadata("1yek" to "1eulav"))
             )
         }
-        stateManager.update(String::class.java, updatedStates)
 
-        val states = stateManager.get(String::class.java, (1..stateCount).map { testKey(it, uniqueId) }.toSet())
-        assertThat(states.size).isEqualTo(stateCount)
-
-        for (i in 1..stateCount) {
-            val key = testKey(i, uniqueId)
-            val loadedState = states[key]
-            assertThat(loadedState).isNotNull
-            loadedState!!
-
-            assertSoftly {
-                it.assertThat(loadedState.modifiedTime).isNotNull
-                it.assertThat(loadedState.state).isEqualTo("state_$i$i")
-                it.assertThat(loadedState.key).isEqualTo(key)
-                it.assertThat(loadedState.metadata).containsExactlyInAnyOrderEntriesOf(mutableMapOf("1yek" to "1eulav"))
-            }
-        }
+        val failedUpdates = stateManager.update(String::class.java, updatedStates)
+        assertThat(failedUpdates).isEmpty()
+        softlyAssertPersistedStateEntities(
+            uniqueId,
+            (1..stateCount),
+            { _, _ -> -1 },
+            { i, _ -> "state_$i$i" },
+            { _, _ -> metadata("1yek" to "1eulav") }
+        )
     }
 
     @ParameterizedTest
     @ValueSource(ints = [1, 10])
     fun canDeleteExistingStates(stateCount: Int) {
         val uniqueId = UUID.randomUUID()
-        entityManagerFactoryFactory.createEntityManager().transaction {
-            for (i in 1..stateCount) {
-                val stateEntity =
-                    StateEntity(testKey(i, uniqueId), "state_$i".toByteArray(), """{"k1": "v$i", "k2": $i}""")
-
-                it.createNamedQuery(CREATE_STATE_QUERY_NAME.trimIndent())
-                    .setParameter(KEY_ID, stateEntity.key)
-                    .setParameter(STATE_ID, stateEntity.state)
-                    .setParameter(VERSION_ID, stateEntity.version)
-                    .setParameter(METADATA_ID, stateEntity.metadata)
-                    .executeUpdate()
-            }
-
-            it.flush()
-        }
+        persistStateEntities(
+            uniqueId,
+            (1..stateCount),
+            { _, _ -> -1 },
+            { i, _ -> "stateToDelete_$i" },
+            { i, _ -> """{"k1": "v$i", "k2": $i}""" }
+        )
 
         val keys = (1..stateCount).map { testKey(it, uniqueId) }.toSet()
         assertThat(stateManager.get(String::class.java, keys)).hasSize(stateCount)
@@ -320,20 +296,13 @@ class StateManagerIntegrationTest {
     fun canQueryStatesByLastModifiedTime() {
         val count = 10
         val uniqueId = UUID.randomUUID()
-
-        // Different transactions to get different timestamps
-        for (i in 1..count) {
-            val stateEntity =
-                StateEntity(testKey(i, uniqueId), "state_$i".toByteArray(), "{}")
-            entityManagerFactoryFactory.createEntityManager().transaction {
-                it.createNamedQuery(CREATE_STATE_QUERY_NAME.trimIndent())
-                    .setParameter(KEY_ID, stateEntity.key)
-                    .setParameter(STATE_ID, stateEntity.state)
-                    .setParameter(VERSION_ID, stateEntity.version)
-                    .setParameter(METADATA_ID, stateEntity.metadata)
-                    .executeUpdate()
-            }
-        }
+        persistStateEntities(
+            uniqueId,
+            (1..count),
+            { _, _ -> -1 },
+            { i, _ -> "state_$i" },
+            { _, _ -> "{}" }
+        )
 
         // Timestamps are generated on the database and timezones might differ, so use the values from the first and last created states
         val startKey = testKey(1, uniqueId)
@@ -354,7 +323,7 @@ class StateManagerIntegrationTest {
 
             assertSoftly {
                 it.assertThat(loadedState.modifiedTime).isNotNull
-                it.assertThat(loadedState.state).isEqualTo("state_$i")
+                it.assertThat(loadedState.value).isEqualTo("state_$i")
                 it.assertThat(loadedState.key).isEqualTo(key)
                 it.assertThat(loadedState.version).isEqualTo(-1)
                 it.assertThat(loadedState.metadata).containsExactlyInAnyOrderEntriesOf(emptyMap())
