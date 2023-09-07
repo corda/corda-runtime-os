@@ -5,11 +5,16 @@
   ( dict "clusterDbAccess" true )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.flow "flow" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.flowMapper "flowMapper" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.verification "verification" ) }}
 {{- include "corda.worker" ( list $ .Values.workers.membership "membership" ) }}
 {{- include "corda.worker" ( list $ .Values.workers.p2pGateway "p2pGateway"
   ( dict "httpPort" 8080 )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.p2pLinkManager "p2pLinkManager" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.persistence "persistence"
+    ( dict "clusterDbAccess" true )
+  ) }}
 {{- include "corda.worker" ( list $ .Values.workers.rest "rest"
   ( dict "httpPort" 8888 "tlsSecretName" ( include "corda.restTlsSecretName" $ ) "additionalWorkerArgs" ( list "-rtls.crt.path=/tls/tls.crt" "-rtls.key.path=/tls/tls.key" "-rtls.ca.crt.path=/tls/ca.crt"  ) )
 ) }}

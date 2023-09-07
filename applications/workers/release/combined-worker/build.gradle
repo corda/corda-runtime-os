@@ -70,11 +70,14 @@ dependencies {
     implementation project(':libs:crypto:crypto-impl')
     implementation project(':libs:platform-info')
     implementation project(':libs:tracing')
+    implementation project(':libs:web:web')
     // Processor list must be kept in sync with workersForProcessor in net.corda.cli.plugins.topicconfig.Create
     implementation project(':processors:crypto-processor')
     implementation project(':processors:db-processor')
     implementation project(':processors:flow-processor')
+    implementation project(':processors:flow-mapper-processor')
     implementation project(':processors:member-processor')
+    implementation project(':processors:persistence-processor')
     implementation project(':processors:rest-processor')
     implementation project(':processors:uniqueness-processor')
     implementation project(':processors:token-cache-processor')
@@ -89,6 +92,7 @@ dependencies {
 
     implementation 'net.corda:corda-config-schema'
 
+    runtimeOnly project(':libs:tracing-impl')
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     runtimeOnly "net.corda:corda-application"
     runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"

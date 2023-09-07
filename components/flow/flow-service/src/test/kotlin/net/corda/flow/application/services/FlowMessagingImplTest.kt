@@ -71,7 +71,7 @@ class FlowMessagingImplTest {
     private val serializationService = mock<SerializationServiceInternal>()
 
     private val flowSessionFactory = mock<FlowSessionFactory>().apply {
-        whenever(createInitiatingFlowSession(any(), eq(ALICE_X500_NAME), any(), eq(false))).thenReturn(flowSession)
+        whenever(createInitiatingFlowSession(any(), any(), eq(ALICE_X500_NAME), any(), eq(false))).thenReturn(flowSession)
     }
 
     private val normalSessionOne = mock<FlowSessionInternal>()
@@ -135,7 +135,7 @@ class FlowMessagingImplTest {
             )
         )
         flowMessaging.initiateFlow(ALICE_X500_NAME)
-        verify(flowSessionFactory).createInitiatingFlowSession(any(), eq(ALICE_X500_NAME), eq(null), eq(false))
+        verify(flowSessionFactory).createInitiatingFlowSession(any(), any(), eq(ALICE_X500_NAME), eq(null), eq(false))
     }
 
     @Test
@@ -154,8 +154,8 @@ class FlowMessagingImplTest {
             // do nothing
         }
 
-        flowMessaging.initiateFlow(ALICE_X500_NAME, builder)
-        verify(flowSessionFactory).createInitiatingFlowSession(any(), eq(ALICE_X500_NAME), eq(builder), eq(false))
+        flowMessaging.initiateFlow(ALICE_X500_NAME, false, builder)
+        verify(flowSessionFactory).createInitiatingFlowSession(any(), any(), eq(ALICE_X500_NAME), eq(builder))
     }
 
     @Test

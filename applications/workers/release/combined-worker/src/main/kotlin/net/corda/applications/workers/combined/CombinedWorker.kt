@@ -11,6 +11,7 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getPa
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupWebserver
 import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
@@ -22,9 +23,11 @@ import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.db.DBProcessor
 import net.corda.processors.flow.FlowProcessor
+import net.corda.processors.flow.mapper.FlowMapperProcessor
 import net.corda.processors.member.MemberProcessor
 import net.corda.processors.p2p.gateway.GatewayProcessor
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
+import net.corda.processors.persistence.PersistenceProcessor
 import net.corda.processors.rest.RestProcessor
 import net.corda.processors.token.cache.TokenCacheProcessor
 import net.corda.processors.uniqueness.UniquenessProcessor
@@ -34,6 +37,7 @@ import net.corda.schema.configuration.DatabaseConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
+import net.corda.web.api.WebServer
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -55,12 +59,16 @@ class CombinedWorker @Activate constructor(
     private val cryptoProcessor: CryptoProcessor,
     @Reference(service = DBProcessor::class)
     private val dbProcessor: DBProcessor,
+    @Reference(service = PersistenceProcessor::class)
+    private val persistenceProcessor: PersistenceProcessor,
     @Reference(service = UniquenessProcessor::class)
     private val uniquenessProcessor: UniquenessProcessor,
     @Reference(service = TokenCacheProcessor::class)
     private val tokenCacheProcessor: TokenCacheProcessor,
     @Reference(service = FlowProcessor::class)
     private val flowProcessor: FlowProcessor,
+    @Reference(service = FlowMapperProcessor::class)
+    private val flowMapperProcessor: FlowMapperProcessor,
     @Reference(service = VerificationProcessor::class)
     private val verificationProcessor: VerificationProcessor,
     @Reference(service = RestProcessor::class)
@@ -75,6 +83,8 @@ class CombinedWorker @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = WorkerMonitor::class)
     private val workerMonitor: WorkerMonitor,
+    @Reference(service = WebServer::class)
+    private val webServer: WebServer,
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = PlatformInfoProvider::class)
@@ -158,6 +168,7 @@ class CombinedWorker @Activate constructor(
             config.factory,
         ).run()
 
+        webServer.setupWebserver(params.defaultParams)
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
         configureTracing("Combined Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
@@ -168,9 +179,11 @@ class CombinedWorker @Activate constructor(
 
         cryptoProcessor.start(config)
         dbProcessor.start(config)
+        persistenceProcessor.start(config)
         uniquenessProcessor.start(config)
         tokenCacheProcessor.start(config)
         flowProcessor.start(config)
+        flowMapperProcessor.start(config)
         verificationProcessor.start(config)
         memberProcessor.start(config)
         restProcessor.start(config)
@@ -184,15 +197,17 @@ class CombinedWorker @Activate constructor(
         cryptoProcessor.stop()
         uniquenessProcessor.stop()
         tokenCacheProcessor.stop()
+        persistenceProcessor.stop()
         dbProcessor.stop()
         flowProcessor.stop()
+        flowMapperProcessor.stop()
         verificationProcessor.stop()
         memberProcessor.stop()
         restProcessor.stop()
         linkManagerProcessor.stop()
         gatewayProcessor.stop()
 
-        workerMonitor.stop()
+        webServer.stop()
         shutdownTracing()
     }
 }

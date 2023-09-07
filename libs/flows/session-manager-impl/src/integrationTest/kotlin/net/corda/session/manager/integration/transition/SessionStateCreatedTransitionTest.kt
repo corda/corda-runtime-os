@@ -1,6 +1,5 @@
 package net.corda.session.manager.integration.transition
 
-import java.time.Instant
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
@@ -15,6 +14,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.time.Instant
 
 class SessionStateCreatedTransitionTest {
 
@@ -32,7 +32,7 @@ class SessionStateCreatedTransitionTest {
 
         val sessionEvent = generateMessage(SessionMessageType.INIT, instant)
         val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant, maxMsgSize)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
+        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CREATED)
     }
 
     @Test
@@ -70,7 +70,7 @@ class SessionStateCreatedTransitionTest {
         val sessionEvent = generateMessage(SessionMessageType.DATA, instant, MessageDirection.INBOUND)
         sessionEvent.sequenceNum = 1
         val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CREATED)
+        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CONFIRMED)
     }
 
     @Test
@@ -81,16 +81,6 @@ class SessionStateCreatedTransitionTest {
         sessionEvent.sequenceNum = 1
         val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSING)
-    }
-
-    @Test
-    fun `Session Initiator receives ack back`() {
-        val sessionState = buildCreatedState()
-        val sessionEvent = generateMessage(SessionMessageType.ACK, instant, MessageDirection.INBOUND)
-        sessionEvent.receivedSequenceNum = 1
-
-        val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CONFIRMED)
     }
 
     private fun buildCreatedState(): SessionState {

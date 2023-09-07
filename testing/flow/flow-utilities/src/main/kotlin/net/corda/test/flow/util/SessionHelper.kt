@@ -1,6 +1,5 @@
 package net.corda.test.flow.util
 
-import java.time.Instant
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -8,6 +7,7 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
+import java.time.Instant
 
 @Suppress("LongParameterList")
 fun buildSessionState(
@@ -17,7 +17,6 @@ fun buildSessionState(
     lastSentSeqNum: Int,
     eventsToSend: List<SessionEvent>,
     sessionStartTime: Instant = Instant.now(),
-    sendAck: Boolean = false,
     sessionId: String = "sessionId",
     counterpartyIdentity: HoldingIdentity = HoldingIdentity("Alice", "group1")
 ): SessionState {
@@ -25,14 +24,13 @@ fun buildSessionState(
         .setSessionId(sessionId)
         .setSessionStartTime(sessionStartTime)
         .setLastReceivedMessageTime(sessionStartTime)
-        .setLastSentMessageTime(sessionStartTime)
         .setCounterpartyIdentity(counterpartyIdentity)
-        .setSendAck(sendAck)
         .setReceivedEventsState(SessionProcessState(lastReceivedSeqNum, receivedEvents))
         .setSendEventsState(SessionProcessState(lastSentSeqNum, eventsToSend))
         .setStatus(status)
         .setHasScheduledCleanup(false)
-        .setCounterpartySessionProperties(KeyValuePairList())
+        .setSessionProperties(null)
+        .setRequireClose(false)
         .build()
 }
 
@@ -42,11 +40,10 @@ fun buildSessionEvent(
     sessionId: String,
     sequenceNum: Int?,
     payload: Any? = null,
-    receivedSequenceNum: Int = 0,
-    outOfOrderSeqNums: List<Int> = listOf(0),
     timestamp: Instant = Instant.now(),
-    initiatingIdentity: HoldingIdentity = HoldingIdentity("alice", "group1"),
-    initiatedIdentity: HoldingIdentity = HoldingIdentity("bob", "group1"),
+    initiatingIdentity: HoldingIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group1"),
+    initiatedIdentity: HoldingIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group1"),
+    contextSessionProps: KeyValuePairList? = null
 ): SessionEvent {
     return SessionEvent.newBuilder()
         .setSessionId(sessionId)
@@ -56,7 +53,6 @@ fun buildSessionEvent(
         .setInitiatedIdentity(initiatedIdentity)
         .setPayload(payload)
         .setTimestamp(timestamp)
-        .setReceivedSequenceNum(receivedSequenceNum)
-        .setOutOfOrderSequenceNums(outOfOrderSeqNums)
+        .setContextSessionProperties(contextSessionProps)
         .build()
 }

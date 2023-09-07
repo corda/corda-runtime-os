@@ -18,7 +18,7 @@ interface MemberResourceClient : Lifecycle {
      * @param registrationContext The member's or MGM's registration context required for on-boarding within a group,
      *   which will be later part of the member provided context of the [MemberInfo]. In case of MGM registration some
      *   parts of the context will be used for building the [GroupPolicy] as well.
-     * @throws CouldNotFindMemberException if the member in `holdingIdentityShortHash` can not be found.
+     * @throws CouldNotFindEntityException If there is no virtual node with [holdingIdentityShortHash].
      * @return [RegistrationRequestProgressDto] to indicate the status of the request at time of submission.
      */
     fun startRegistration(

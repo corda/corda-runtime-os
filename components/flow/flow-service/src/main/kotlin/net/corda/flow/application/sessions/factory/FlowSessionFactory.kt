@@ -12,6 +12,7 @@ interface FlowSessionFactory {
      * Creates a [FlowSession] which represents a session created in a flow by user code.
      *
      * @param sessionId The session id of the [FlowSession].
+     * @param requireClose True if the initiated party sends a close message when a session is closed.
      * @param x500Name The X500 name of the counterparty the [FlowSession] interacts with.
      * @param flowContextPropertiesBuilder An optional builder of context properties
      * @param isInteropSession Optional flag to process the session as an interop session.
@@ -20,6 +21,7 @@ interface FlowSessionFactory {
      */
     fun createInitiatingFlowSession(
         sessionId: String,
+        requireClose: Boolean,
         x500Name: MemberX500Name,
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder?,
         isInteropSession: Boolean = false
@@ -29,6 +31,7 @@ interface FlowSessionFactory {
      * Creates a [FlowSession] which represents a session passed to an initiated flow.
      *
      * @param sessionId The session id of the [FlowSession].
+     * @param requireClose True if the initiated party sends a close message when a session is closed.
      * @param x500Name The X500 name of the counterparty the [FlowSession] interacts with.
      * @param contextProperties The context properties that should be attached to this flow session.
      * @param isInteropSession Optional flag to process the session as an interop session.
@@ -37,6 +40,7 @@ interface FlowSessionFactory {
      */
     fun createInitiatedFlowSession(
         sessionId: String,
+        requireClose: Boolean,
         x500Name: MemberX500Name,
         contextProperties: Map<String, String>,
         isInteropSession: Boolean = false

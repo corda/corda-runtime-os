@@ -1,65 +1,70 @@
 package net.corda.ledger.utxo.token.cache.impl.services
 
-import java.math.BigDecimal
-import org.junit.jupiter.api.Test
-import javax.persistence.Tuple
-import javax.persistence.TupleElement
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.utxo.token.cache.services.UtxoTokenMapper
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.utxo.StateRef
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
+import java.math.BigDecimal
+import javax.persistence.Tuple
 
 class UtxoTokenMapperTest {
+    private val transactionId = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "transaction_id".toByteArray())
+    private val leafId = 0
+    private val tokenAmount = BigDecimal(1)
 
-    private class TupleImpl(private val container: List<Any>) : Tuple {
+    @Test
+    fun `Map tuple fields to token`() {
+        val mapper = UtxoTokenMapper()
 
-        override fun <X : Any?> get(tupleElement: TupleElement<X>?): X {
-            TODO("Not yet implemented")
-        }
+        val tuple = getTuple("tag", "owner_hash")
 
-        override fun <X : Any?> get(alias: String?, type: Class<X>?): X {
-            TODO("Not yet implemented")
-        }
+        val cachedToken = mapper.map(listOf(tuple)).single()
 
-        override fun get(alias: String?): Any {
-            TODO("Not yet implemented")
-        }
-
-        override fun <X : Any?> get(i: Int, type: Class<X>?): X {
-            TODO("Not yet implemented")
-        }
-
-        override fun get(i: Int): Any {
-            return container[i]
-        }
-
-        override fun toArray(): Array<Any> {
-            TODO("Not yet implemented")
-        }
-
-        override fun getElements(): MutableList<TupleElement<*>> {
-            TODO("Not yet implemented")
-        }
+        assertThat(cachedToken.stateRef).isEqualTo(StateRef(transactionId, leafId).toString())
+        assertThat(cachedToken.tag).isEqualTo("tag")
+        assertThat(cachedToken.ownerHash).isEqualTo("owner_hash")
+        assertThat(cachedToken.amount).isEqualTo(tokenAmount)
     }
 
     @Test
-    fun `Total balance must match available balance when there is not claimed tokens`() {
-        val transactionId = SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "transaction_id".toByteArray())
-        val leafId = 0
-        val tag = "tag"
-        val ownerHash =
-            SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "owner_hash".toByteArray())
-        val tokenAmount = BigDecimal(1)
+    fun `Map tuple fields to token - with null tag`() {
         val mapper = UtxoTokenMapper()
-        val tuples =
-            listOf(TupleImpl(listOf(transactionId.toString(), leafId, tag, ownerHash.toString(), tokenAmount)))
 
-        val cachedToken = mapper.map(tuples)
+        val tuple = getTuple(null, "owner_hash")
 
-        assertThat(cachedToken.first().stateRef).isEqualTo(StateRef(transactionId, leafId).toString())
-        assertThat(cachedToken.first().tag).isEqualTo(tag)
-        assertThat(cachedToken.first().ownerHash).isEqualTo(ownerHash.toString())
-        assertThat(cachedToken.first().amount).isEqualTo(tokenAmount)
+        val cachedToken = mapper.map(listOf(tuple)).single()
+
+        assertThat(cachedToken.stateRef).isEqualTo(StateRef(transactionId, leafId).toString())
+        assertThat(cachedToken.tag).isNull()
+        assertThat(cachedToken.ownerHash).isEqualTo("owner_hash")
+        assertThat(cachedToken.amount).isEqualTo(tokenAmount)
+    }
+
+    @Test
+    fun `Map tuple fields to token - with null owner`() {
+        val mapper = UtxoTokenMapper()
+
+        val tuple = getTuple("tag",null)
+
+        val cachedToken = mapper.map(listOf(tuple)).single()
+
+        assertThat(cachedToken.stateRef).isEqualTo(StateRef(transactionId, leafId).toString())
+        assertThat(cachedToken.tag).isEqualTo("tag")
+        assertThat(cachedToken.ownerHash).isNull()
+        assertThat(cachedToken.amount).isEqualTo(tokenAmount)
+    }
+
+    private fun getTuple(tag:String?,ownerHash:String?):Tuple{
+        return mock<Tuple>().apply {
+            whenever(get(0)).thenReturn(transactionId.toString())
+            whenever(get(1)).thenReturn(leafId)
+            whenever(get(2)).thenReturn(tag)
+            whenever(get(3)).thenReturn(ownerHash)
+            whenever(get(4)).thenReturn(tokenAmount)
+        }
     }
 }
