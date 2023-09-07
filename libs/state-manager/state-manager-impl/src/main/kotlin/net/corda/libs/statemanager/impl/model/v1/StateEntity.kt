@@ -20,7 +20,7 @@ const val KEY_ID = "key"
 const val STATE_ID = "state"
 const val VERSION_ID = "version"
 const val METADATA_ID = "metadata"
-const val STAR_TIMESTAMP = "startTime"
+const val START_TIMESTAMP = "startTime"
 const val FINISH_TIMESTAMP = "finishTime"
 
 // TODO-[CORE-16663]: make the database provider pluggable.
@@ -50,7 +50,7 @@ const val FINISH_TIMESTAMP = "finishTime"
 
 @NamedQuery(
     name = QUERY_STATES_BY_UPDATED_TIMESTAMP_NAME,
-    query = "FROM StateEntity state WHERE state.modifiedTime BETWEEN :$STAR_TIMESTAMP AND :$FINISH_TIMESTAMP"
+    query = "FROM StateEntity state WHERE state.modifiedTime BETWEEN :$START_TIMESTAMP AND :$FINISH_TIMESTAMP"
 )
 
 @NamedQuery(

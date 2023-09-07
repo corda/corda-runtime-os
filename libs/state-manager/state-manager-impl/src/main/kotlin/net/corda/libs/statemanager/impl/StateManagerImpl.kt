@@ -11,6 +11,7 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import net.corda.orm.utils.transaction
+import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import javax.persistence.EntityManagerFactory
@@ -26,6 +27,10 @@ class StateManagerImpl(
 
     private val objectMapper = ObjectMapper()
 
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
     @Suppress("UNCHECKED_CAST")
     private fun <S : Any> getOrCreateDeserializer(clazz: Class<S>): CordaAvroDeserializer<S> {
         return deserializers.computeIfAbsent(clazz) {
@@ -40,7 +45,17 @@ class StateManagerImpl(
         } as CordaAvroSerializer<S>
     }
 
-    private fun <S : Any> StateEntity.toState(deserializer: CordaAvroDeserializer<S>) =
+    private fun <R : Any> State<R>.toEntity(serializer: CordaAvroSerializer<R>): StateEntity {
+        return StateEntity(
+            key,
+            serializer.serialize(state)!!,
+            objectMapper.writeValueAsString(metadata),
+            version,
+            modifiedTime
+        )
+    }
+
+    private fun <S : Any> StateEntity.fromEntity(deserializer: CordaAvroDeserializer<S>) =
         State(
             deserializer.deserialize(state)!!,
             key,
@@ -52,37 +67,41 @@ class StateManagerImpl(
     private fun String.toMetadataMap() =
         objectMapper.readValue(this, object : TypeReference<Metadata<Any>>() {})
 
-    private fun <R : Any> State<R>.toDto(serializer: CordaAvroSerializer<R>): StateEntity {
-        return StateEntity(
-            key,
-            serializer.serialize(state)!!,
-            objectMapper.writeValueAsString(metadata),
-            version,
-            modifiedTime
-        )
-    }
+    override fun <S : Any> create(clazz: Class<S>, states: Collection<State<S>>): Map<String, Exception> {
+        val failures = mutableMapOf<String, Exception>()
 
-    override fun <S : Any> create(clazz: Class<S>, states: Set<State<S>>) {
-        val dtoInstances = states.map { it.toDto(getOrCreateSerializer(clazz)) }
-        entityManagerFactory.transaction { em ->
-            stateRepository.create(em, dtoInstances)
+        states.map {
+            it.toEntity(getOrCreateSerializer(clazz))
+        }.forEach {
+            try {
+                entityManagerFactory.transaction { em ->
+                    stateRepository.create(em, it)
+                }
+            } catch (e: Exception) {
+                logger.warn("Failed to create state with id ${it.key}", e)
+                failures[it.key] = e
+            }
         }
+
+        return failures
     }
 
-    override fun <S : Any> get(clazz: Class<S>, keys: Set<String>): Map<String, State<S>> {
+    override fun <S : Any> get(clazz: Class<S>, keys: Collection<String>): Map<String, State<S>> {
         val deserializer = getOrCreateDeserializer(clazz)
 
         return entityManagerFactory.transaction { em ->
             stateRepository.get(em, keys)
+        }.map {
+            it.fromEntity(deserializer)
+        }.associateBy {
+            it.key
         }
-            .map { it.toState(deserializer) }
-            .associateBy { it.key }
     }
 
-    override fun <S : Any> update(clazz: Class<S>, states: Set<State<S>>): Map<String, State<S>> {
+    override fun <S : Any> update(clazz: Class<S>, states: Collection<State<S>>): Map<String, State<S>> {
         // TODO: return states that failed the optimistic locking check
         val mismatchVersions = mutableMapOf<String, State<S>>()
-        val dtoInstances = states.map { it.toDto(getOrCreateSerializer(clazz)) }
+        val dtoInstances = states.map { it.toEntity(getOrCreateSerializer(clazz)) }
 
         entityManagerFactory.transaction { em ->
             stateRepository.update(em, dtoInstances)
@@ -91,7 +110,7 @@ class StateManagerImpl(
         return mismatchVersions
     }
 
-    override fun <S : Any> delete(clazz: Class<S>, keys: Set<String>): Map<String, State<S>> {
+    override fun <S : Any> delete(clazz: Class<S>, keys: Collection<String>): Map<String, State<S>> {
         // TODO: return states that failed the optimistic locking check
         val mismatchVersions = mutableMapOf<String, State<S>>()
 
@@ -108,7 +127,7 @@ class StateManagerImpl(
         return entityManagerFactory.transaction { em ->
             stateRepository.findUpdatedBetween(em, start, finish)
         }
-            .map { it.toState(deserializer) }
+            .map { it.fromEntity(deserializer) }
             .associateBy { it.key }
     }
 

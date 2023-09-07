@@ -10,6 +10,15 @@ import java.time.Instant
 interface StateRepository {
 
     /**
+     * Create state into the persistence context.
+     * Transaction should be controlled by the caller.
+     *
+     * @param entityManager used to interact with the state manager persistence context.
+     * @param state JPA state entity to persist.
+     */
+    fun create(entityManager: EntityManager, state: StateEntity)
+
+    /**
      * Get entities with the given keys.
      *
      * Transaction should be controlled by the caller.
@@ -19,16 +28,6 @@ interface StateRepository {
      * @return list of states found
      */
     fun get(entityManager: EntityManager, keys: Collection<String>): Collection<StateEntity>
-
-    /**
-     * Create states into the persistence context.
-     *
-     * Transaction should be controlled by the caller.
-     *
-     * @param entityManager used to interact with the state manager persistence context.
-     * @param states collection of states to be persisted.
-     */
-    fun create(entityManager: EntityManager, states: Collection<StateEntity>)
 
     /**
      * Update states within the persistence context.
