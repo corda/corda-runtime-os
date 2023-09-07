@@ -216,3 +216,56 @@ To look up group parameters visible to `C=GB, L=London, O=Member1` from group `b
 ```shell
 ./corda-cli.sh network lookup group-parameters -n "C=GB, L=London, O=Member1" -g "b0a0f381-e0d6-49d2-abba-6094992cef02" --user=admin --password=admin --target=https://localhost:8888 --insecure
 ```
+
+## Get Registrations
+
+This is a sub-command under the `network` plugin for checking the status of registration requests.
+
+To check the status of a specific registration request, use the following command:
+
+```shell 
+./corda-cli.sh network get-registrations --group=<group-id> --request-id=<request-id>
+
+./corda-cli.sh network get-registrations --name=<x500-name> --group=<group-id> --request-id=<request-id>
+
+./corda-cli.sh network get-registrations --request-id=<request-id>
+```
+
+To check the status of all registration requests visible to a holding identity, use the following command:
+
+```shell
+./corda-cli.sh network get-registrations --holding-identity-short-hash=<short-hash>
+```
+
+
+## Operate
+
+This is a sub-command under the `network` plugin for MGM operations and managing application networks.
+
+### Allow Client Certificate
+
+This is a sub-command under the `operate` command for allowing a client certificate for a specific member.
+
+To allow a client certificate for a member, use the following command:
+
+```shell 
+./corda-cli.sh network operate allow-client-certificate <short-hash> <certificate-subject>
+```
+
+### Export Group Policy
+
+This is a sub-command under the `operate` command for exporting the group policy file.
+
+To export the group policy file, use the following command:
+
+```shell 
+./corda-cli.sh network operate export-group-policy --holding-identity-short-hash=<short-hash>
+
+./corda-cli.sh network operate export-group-policy --holding-identity-short-hash=<short-hash>  --save=<group-policy-file-path>
+```
+
+
+### Other Sub-Commands
+
+The `operate` command also includes other sub-commands for managing application networks. Use the `--help` option with the `operate` command to view all available sub-commands and their descriptions.
+
