@@ -38,7 +38,6 @@ class StateManagerImplTest {
     private val stateManager = StateManagerImpl(
         stateRepository = stateRepository,
         entityManagerFactory = entityManagerFactory,
-        serializerFactory = serializerFactory,
     )
 
     @Test
@@ -52,7 +51,7 @@ class StateManagerImplTest {
         whenever(stateRepository.get(eq(entityManager), eq(keys))).thenReturn(stateDtos)
         whenever(cordaAvroDeserializer.deserialize(any())).thenReturn(Any())
 
-        val result = stateManager.get(Any::class.java, keys)
+        val result = stateManager.get(keys)
 
         assertThat(result.keys).isEqualTo(keys)
         val metadata = result[key]!!.metadata

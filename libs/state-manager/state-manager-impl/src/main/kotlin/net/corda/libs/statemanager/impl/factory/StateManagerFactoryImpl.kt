@@ -1,6 +1,5 @@
 package net.corda.libs.statemanager.impl.factory
 
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.db.core.HikariDataSourceFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.getIntOrDefault
@@ -31,8 +30,6 @@ import java.time.Duration
 class StateManagerFactoryImpl @Activate constructor(
     @Reference(service = EntityManagerFactoryFactory::class)
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
-    @Reference(service = CordaAvroSerializationFactory::class)
-    private val avroSerializationFactory: CordaAvroSerializationFactory,
 ) : StateManagerFactory {
 
     override fun create(config: SmartConfig): StateManager {
@@ -69,8 +66,7 @@ class StateManagerFactoryImpl @Activate constructor(
 
         return StateManagerImpl(
             StateRepositoryImpl(),
-            entityManagerFactory,
-            avroSerializationFactory
+            entityManagerFactory
         )
     }
 }

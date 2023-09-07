@@ -2,9 +2,6 @@ package net.corda.libs.statemanager.impl.tests
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.avro.serialization.CordaAvroDeserializer
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
@@ -17,9 +14,9 @@ import net.corda.libs.statemanager.impl.StateManagerImpl
 import net.corda.libs.statemanager.impl.model.v1.CREATE_STATE_QUERY_NAME
 import net.corda.libs.statemanager.impl.model.v1.KEY_ID
 import net.corda.libs.statemanager.impl.model.v1.METADATA_ID
-import net.corda.libs.statemanager.impl.model.v1.VALUE_ID
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.model.v1.StateManagerEntities
+import net.corda.libs.statemanager.impl.model.v1.VALUE_ID
 import net.corda.libs.statemanager.impl.model.v1.VERSION_ID
 import net.corda.libs.statemanager.impl.repository.impl.StateRepositoryImpl
 import net.corda.orm.EntityManagerConfiguration
@@ -35,10 +32,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
 import java.util.UUID
 import javax.persistence.PersistenceException
 
@@ -50,19 +43,6 @@ class StateManagerIntegrationTest {
     private fun ObjectMapper.toMetadata(metadata: String) =
         this.readValue(metadata, object : TypeReference<Metadata<Any>>() {})
 
-    private val stringSerializer = object : CordaAvroSerializer<String> {
-        override fun serialize(data: String): ByteArray = data.toByteArray()
-    }
-
-    private val stringDeserializer = object : CordaAvroDeserializer<String> {
-        override fun deserialize(data: ByteArray): String = String(data)
-    }
-
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroSerializer<String>() } doReturn stringSerializer
-        on { createAvroDeserializer(any(), eq(String::class.java)) } doReturn stringDeserializer
-    }
-
     private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("state_manager_db")
 
     private val entityManagerFactoryFactory = EntityManagerFactoryFactoryImpl().create(
@@ -71,11 +51,7 @@ class StateManagerIntegrationTest {
         dbConfig
     )
 
-    private val stateManager: StateManager = StateManagerImpl(
-        StateRepositoryImpl(),
-        entityManagerFactoryFactory,
-        cordaAvroSerializationFactory
-    )
+    private val stateManager: StateManager = StateManagerImpl(StateRepositoryImpl(), entityManagerFactoryFactory)
 
     init {
         val dbChange = ClassloaderChangeLog(
@@ -103,7 +79,7 @@ class StateManagerIntegrationTest {
     private fun persistStateEntities(
         uniqueId: UUID,
         indexRange: IntRange,
-        version: (index: Int, key: String) -> Int = { _, _ -> -1 },
+        version: (index: Int, key: String) -> Int,
         stateContent: (index: Int, key: String) -> String,
         metadataContent: (index: Int, key: String) -> String,
     ) = indexRange.forEach { i ->
@@ -138,7 +114,7 @@ class StateManagerIntegrationTest {
                 it.assertThat(loadedEntity.key).isEqualTo(key)
                 it.assertThat(loadedEntity.modifiedTime).isNotNull
                 it.assertThat(loadedEntity.version).isEqualTo(version(i, key))
-                it.assertThat(stringDeserializer.deserialize(loadedEntity.value)).isEqualTo((stateContent(i, key)))
+                it.assertThat(loadedEntity.value).isEqualTo((stateContent(i, key).toByteArray()))
                 it.assertThat(objectMapper.toMetadata(loadedEntity.metadata))
                     .containsExactlyInAnyOrderEntriesOf(metadataContent(i, key))
             }
@@ -149,12 +125,12 @@ class StateManagerIntegrationTest {
     @ValueSource(ints = [1, 10])
     fun canCreateBasicStates(stateCount: Int) {
         val uniqueId = UUID.randomUUID()
-        val states = mutableSetOf<State<String>>()
+        val states = mutableSetOf<State>()
         for (i in 1..stateCount) {
-            states.add(State("simpleState_$i", testKey(i, uniqueId)))
+            states.add(State(testKey(i, uniqueId), "simpleState_$i".toByteArray()))
         }
 
-        assertThat(stateManager.create(String::class.java, states)).isEmpty()
+        assertThat(stateManager.create(states)).isEmpty()
         softlyAssertPersistedStateEntities(
             uniqueId,
             (1..stateCount),
@@ -168,12 +144,18 @@ class StateManagerIntegrationTest {
     @ValueSource(ints = [1, 10])
     fun canCreateStatesWithCustomMetadata(stateCount: Int) {
         val uniqueId = UUID.randomUUID()
-        val states = mutableSetOf<State<String>>()
+        val states = mutableSetOf<State>()
         for (i in 1..stateCount) {
-            states.add(State("customState_$i", testKey(i, uniqueId), metadata("key1" to "value$i", "key2" to i)))
+            states.add(
+                State(
+                    testKey(i, uniqueId),
+                    "customState_$i".toByteArray(),
+                    metadata = metadata("key1" to "value$i", "key2" to i)
+                )
+            )
         }
 
-        assertThat(stateManager.create(String::class.java, states)).isEmpty()
+        assertThat(stateManager.create(states)).isEmpty()
         softlyAssertPersistedStateEntities(
             uniqueId,
             (1..stateCount),
@@ -195,12 +177,12 @@ class StateManagerIntegrationTest {
             { i, _ -> "existingState_$i" },
             { i, _ -> """{"k1": "v$i", "k2": $i}""" }
         )
-        val states = mutableSetOf<State<String>>()
+        val states = mutableSetOf<State>()
         for (i in 1..totalStates) {
-            states.add(State("newState_$i", testKey(i, uniqueId)))
+            states.add(State(testKey(i, uniqueId), "newState_$i".toByteArray()))
         }
 
-        val failures = stateManager.create(String::class.java, states)
+        val failures = stateManager.create(states)
         assertThat(failures).hasSize(failedSates)
         for (i in 1..failedSates) {
             assertThat(failures[testKey(i, uniqueId)]).isInstanceOf(PersistenceException::class.java)
@@ -226,7 +208,7 @@ class StateManagerIntegrationTest {
             { i, _ -> """{"k1": "v$i", "k2": $i}""" }
         )
 
-        val states = stateManager.get(String::class.java, (1..stateCount).map { testKey(it, uniqueId) }.toSet())
+        val states = stateManager.get((1..stateCount).map { testKey(it, uniqueId) }.toSet())
         assertThat(states.size).isEqualTo(stateCount)
         for (i in 1..stateCount) {
             val key = testKey(i, uniqueId)
@@ -236,7 +218,7 @@ class StateManagerIntegrationTest {
 
             assertSoftly {
                 it.assertThat(loadedState.modifiedTime).isNotNull
-                it.assertThat(loadedState.value).isEqualTo("existingState_$i")
+                it.assertThat(loadedState.value).isEqualTo("existingState_$i".toByteArray())
                 it.assertThat(loadedState.key).isEqualTo(key)
                 it.assertThat(loadedState.version).isEqualTo(-1)
                 it.assertThat(loadedState.metadata)
@@ -256,14 +238,14 @@ class StateManagerIntegrationTest {
             { i, _ -> "existingState_$i" },
             { i, _ -> """{"k1": "v$i", "k2": $i}""" }
         )
-        val updatedStates = mutableSetOf<State<String>>()
+        val updatedStates = mutableSetOf<State>()
         for (i in 1..stateCount) {
             updatedStates.add(
-                State("state_$i$i", testKey(i, uniqueId), metadata("1yek" to "1eulav"))
+                State(testKey(i, uniqueId), "state_$i$i".toByteArray(), metadata = metadata("1yek" to "1eulav"))
             )
         }
 
-        val failedUpdates = stateManager.update(String::class.java, updatedStates)
+        val failedUpdates = stateManager.update(updatedStates)
         assertThat(failedUpdates).isEmpty()
         softlyAssertPersistedStateEntities(
             uniqueId,
@@ -287,9 +269,9 @@ class StateManagerIntegrationTest {
         )
 
         val keys = (1..stateCount).map { testKey(it, uniqueId) }.toSet()
-        assertThat(stateManager.get(String::class.java, keys)).hasSize(stateCount)
-        stateManager.delete(String::class.java, keys)
-        assertThat(stateManager.get(String::class.java, keys)).isEmpty()
+        assertThat(stateManager.get(keys)).hasSize(stateCount)
+        stateManager.delete(keys)
+        assertThat(stateManager.get(keys)).isEmpty()
     }
 
     @Test
@@ -307,9 +289,8 @@ class StateManagerIntegrationTest {
         // Timestamps are generated on the database and timezones might differ, so use the values from the first and last created states
         val startKey = testKey(1, uniqueId)
         val finishKey = testKey(count, uniqueId)
-        val times = stateManager.get(String::class.java, setOf(startKey, finishKey))
+        val times = stateManager.get(setOf(startKey, finishKey))
         val retrievedStates = stateManager.getUpdatedBetween(
-            String::class.java,
             times[startKey]!!.modifiedTime,
             times[finishKey]!!.modifiedTime
         )
@@ -323,7 +304,7 @@ class StateManagerIntegrationTest {
 
             assertSoftly {
                 it.assertThat(loadedState.modifiedTime).isNotNull
-                it.assertThat(loadedState.value).isEqualTo("state_$i")
+                it.assertThat(loadedState.value).isEqualTo("state_$i".toByteArray())
                 it.assertThat(loadedState.key).isEqualTo(key)
                 it.assertThat(loadedState.version).isEqualTo(-1)
                 it.assertThat(loadedState.metadata).containsExactlyInAnyOrderEntriesOf(emptyMap())

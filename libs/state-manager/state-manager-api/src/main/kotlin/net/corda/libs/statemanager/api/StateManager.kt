@@ -12,22 +12,20 @@ interface StateManager : AutoCloseable {
      * Control is only returned to the caller once all [states] have been updated and replicas of the underlying
      * persistent storage, if any, are synced.
      *
-     * @param clazz the type of the state to be persisted.
      * @param states collection of states to be persisted.
      * @return states that could not be created on the persistent storage, along with the actual reason for the failures.
      */
-    fun <S : Any> create(clazz: Class<S>, states: Collection<State<S>>): Map<String, Exception>
+    fun create(states: Collection<State>): Map<String, Exception>
 
     /**
      * Get all states referenced by [keys].
      * Only states that have been successfully committed and distributed within the underlying persistent
      * storage are returned.
      *
-     * @param clazz the type of the state to be retrieved.
      * @param keys collection of state keys to use when querying the persistent storage.
      * @return states found in the underlying persistent storage.
      */
-    fun <S : Any> get(clazz: Class<S>, keys: Collection<String>): Map<String, State<S>>
+    fun get(keys: Collection<String>): Map<String, State>
 
     /**
      * Update [states] within the underlying storage.
@@ -36,7 +34,7 @@ interface StateManager : AutoCloseable {
      *
      * @return states that could not be updated due to mismatch versions.
      */
-    fun <S : Any> update(clazz: Class<S>, states: Collection<State<S>>): Map<String, State<S>>
+    fun update(states: Collection<State>): Map<String, State>
 
     /**
      * Delete all states referenced by [keys] from the underlying storage.
@@ -45,12 +43,12 @@ interface StateManager : AutoCloseable {
      *
      * @return states that could not be deleted due to mismatch versions.
      */
-    fun <S : Any> delete(clazz: Class<S>, keys: Collection<String>): Map<String, State<S>>
+    fun delete(keys: Collection<String>): Map<String, State>
 
     /**
      * Retrieve all states that were last updated between [start] and [finish] times.
      *
      * @return states that were last updated between [start] and [finish] times.
      */
-    fun <S : Any> getUpdatedBetween(clazz: Class<S>, start: Instant, finish: Instant): Map<String, State<S>>
+    fun getUpdatedBetween(start: Instant, finish: Instant): Map<String, State>
 }
