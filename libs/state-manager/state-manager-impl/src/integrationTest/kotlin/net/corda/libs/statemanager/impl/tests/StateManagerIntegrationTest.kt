@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import java.time.Instant
 import java.util.UUID
 import javax.persistence.PersistenceException
 
@@ -275,9 +276,10 @@ class StateManagerIntegrationTest {
     }
 
     @Test
-    fun canQueryStatesByLastModifiedTime() {
+    fun canFilterStatesByLastUpdatedTime() {
         val count = 10
         val uniqueId = UUID.randomUUID()
+        val startTime = Instant.now()
         persistStateEntities(
             uniqueId,
             (1..count),
@@ -285,20 +287,14 @@ class StateManagerIntegrationTest {
             { i, _ -> "state_$i" },
             { _, _ -> "{}" }
         )
+        val finishTime = Instant.now()
 
-        // Timestamps are generated on the database and timezones might differ, so use the values from the first and last created states
-        val startKey = testKey(1, uniqueId)
-        val finishKey = testKey(count, uniqueId)
-        val times = stateManager.get(setOf(startKey, finishKey))
-        val retrievedStates = stateManager.getUpdatedBetween(
-            times[startKey]!!.modifiedTime,
-            times[finishKey]!!.modifiedTime
-        )
-        assertThat(retrievedStates).hasSize(count)
+        val filteredStates = stateManager.getUpdatedBetween(startTime, finishTime)
+        assertThat(filteredStates).hasSize(count)
 
         for (i in 1..count) {
             val key = testKey(i, uniqueId)
-            val loadedState = retrievedStates[key]
+            val loadedState = filteredStates[key]
             assertThat(loadedState).isNotNull
             loadedState!!
 

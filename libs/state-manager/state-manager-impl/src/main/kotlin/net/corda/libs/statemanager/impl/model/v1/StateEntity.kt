@@ -24,13 +24,13 @@ const val START_TIMESTAMP = "startTime"
 const val FINISH_TIMESTAMP = "finishTime"
 
 // TODO-[CORE-16663]: make the database provider pluggable.
-// Hibernate 5 does not support inserting a String to a jsonb column type out of the box. Native query with casting is also used
-// in the ledger. It means, however, this does not work with HSQLDB.
+// Hibernate 5 does not support inserting a String to a jsonb column type out of the box, so we use
+// native queries with casting here (also used in the ledger).
 @NamedNativeQuery(
     name = CREATE_STATE_QUERY_NAME,
     query = """
         INSERT INTO ${DbSchema.STATE_MANAGER_TABLE}
-        VALUES (:$KEY_ID, :$VALUE_ID, :$VERSION_ID, CAST(:$METADATA_ID as JSONB), CURRENT_TIMESTAMP)
+        VALUES (:$KEY_ID, :$VALUE_ID, :$VERSION_ID, CAST(:$METADATA_ID as JSONB), CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
     """
 )
 
@@ -38,7 +38,7 @@ const val FINISH_TIMESTAMP = "finishTime"
     name = UPDATE_STATE_QUERY_NAME,
     query = """
         UPDATE ${DbSchema.STATE_MANAGER_TABLE} SET
-        key = :$KEY_ID, value = :$VALUE_ID, version = :$VERSION_ID, metadata = CAST(:$METADATA_ID as JSONB), modified_time = CURRENT_TIMESTAMP
+        key = :$KEY_ID, value = :$VALUE_ID, version = :$VERSION_ID, metadata = CAST(:$METADATA_ID as JSONB), modified_time = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
         WHERE key = :$KEY_ID
     """
 )
