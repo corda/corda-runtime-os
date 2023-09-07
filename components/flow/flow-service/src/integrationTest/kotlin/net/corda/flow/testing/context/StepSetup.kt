@@ -52,7 +52,8 @@ interface StepSetup {
         cpiId: String,
         protocol: String,
         initiatingIdentity: HoldingIdentity? = null,
-        initiatedIdentity: HoldingIdentity? = null
+        initiatedIdentity: HoldingIdentity? = null,
+        requireClose: Boolean = true
     ): FlowIoRequestSetup
 
     fun sessionDataEventReceived(

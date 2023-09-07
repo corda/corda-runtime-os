@@ -51,7 +51,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Given a subFlow contains a closed session when the subFlow finishes flow completes and schedules cleanup`() {
+    fun `when an initiating session subFlow with requireClose set to true closes a session and then the subFlow finishes, the flow completes and schedules cleanup`() {
 
         `when` {
             startFlow(this)
@@ -69,16 +69,41 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionDataEvents(Pair(SESSION_ID_1, DATA_MESSAGE_1))
+                sessionCloseEvents()
             }
 
             expectOutputForFlow(FLOW_ID1) {
                 scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY, SESSION_ID_1)
+                sessionCloseEvents()
             }
         }
     }
 
     @Test
-    fun `Given an initiated top level flow with a closed session when it finishes and calls SubFlowFinished completes flow and schedules cleanup`() {
+    fun `when an initiating session subFlow with requireClose set to false closes a session and then the subFlow finishes, the flow completes and schedules cleanup`() {
+
+        `when` {
+            startFlow(this)
+                .suspendsWith(FlowIORequest.Send(
+                    mapOf(
+                        SessionInfo(SESSION_ID_1, initiatedIdentityMemberName, requireClose = false) to  DATA_MESSAGE_1,
+                    )))
+                .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1)))
+                .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1)))
+                .completedSuccessfullyWith("hello")
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                sessionDataEvents(Pair(SESSION_ID_1, DATA_MESSAGE_1))
+                scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY, SESSION_ID_1)
+                sessionCloseEvents()
+            }
+        }
+    }
+
+    @Test
+    fun `Given an initiated top level flow with requireClose set to true, when it finishes and calls SubFlowFinished completes flow, sends a close, and schedules cleanup`() {
         given {
             membershipGroupFor(BOB_HOLDING_IDENTITY)
             initiatingToInitiatedFlow(PROTOCOL_2, FLOW_NAME, FLOW_NAME_2)
@@ -96,6 +121,31 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
+                sessionCloseEvents(INITIATED_SESSION_ID_1)
+            }
+        }
+    }
+
+    @Test
+    fun `Given an initiated top level flow with requireClose set to false, when it finishes and calls SubFlowFinished completes flow and schedules cleanup`() {
+        given {
+            membershipGroupFor(BOB_HOLDING_IDENTITY)
+            initiatingToInitiatedFlow(PROTOCOL_2, FLOW_NAME, FLOW_NAME_2)
+        }
+
+        `when` {
+            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2, requireClose = false)
+                .suspendsWith(FlowIORequest.CloseSessions(setOf(INITIATED_SESSION_ID_1)))
+                .suspendsWith(
+                    FlowIORequest.SubFlowFinished(listOf(INITIATED_SESSION_ID_1))
+                )
+                .completedSuccessfullyWith("hello")
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
+                sessionCloseEvents()
             }
         }
     }
@@ -121,6 +171,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
+                sessionCloseEvents()
             }
         }
     }

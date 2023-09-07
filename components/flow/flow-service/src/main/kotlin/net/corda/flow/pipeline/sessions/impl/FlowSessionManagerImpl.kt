@@ -136,7 +136,8 @@ class FlowSessionManagerImpl @Activate constructor(
                 checkpoint,
                 sessionId,
                 payload = getSessionData(payload, checkpoint, sessionState, sessionInfo),
-                instant
+                instant,
+                sessionState.sessionProperties
             )
         }
     }
