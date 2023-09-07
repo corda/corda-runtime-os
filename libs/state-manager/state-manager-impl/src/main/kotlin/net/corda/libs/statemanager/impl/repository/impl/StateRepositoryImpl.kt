@@ -13,7 +13,6 @@ import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.model.v1.UPDATE_STATE_QUERY_NAME
 import net.corda.libs.statemanager.impl.model.v1.VERSION_ID
 import net.corda.libs.statemanager.impl.repository.StateRepository
-import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import javax.persistence.EntityManager
