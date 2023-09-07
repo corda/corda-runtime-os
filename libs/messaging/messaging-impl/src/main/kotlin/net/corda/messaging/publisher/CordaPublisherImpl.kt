@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -41,7 +42,7 @@ internal class CordaPublisherImpl(
         private const val QUEUE_SIZE = 200
     }
 
-    private var cordaProducer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
+    private val cordaProducer: AtomicReference<CordaProducer?> = AtomicReference(cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig))
 
     private data class Batch(val records: List<Record<*, *>>, val future: CompletableFuture<Unit>)
     private val queue = ArrayBlockingQueue<Batch>(QUEUE_SIZE)
@@ -118,7 +119,7 @@ internal class CordaPublisherImpl(
         records.toCordaProducerRecords().forEach {
             val fut = CompletableFuture<Unit>()
             futures.add(fut)
-            cordaProducer.send(it) { ex ->
+            cordaProducer.get()?.send(it) { ex ->
                 setFutureFromResponse(ex, fut, it.topic)
             }
         }
@@ -134,7 +135,7 @@ internal class CordaPublisherImpl(
         recordsWithPartitions.forEach { (partition, record) ->
             val fut = CompletableFuture<Unit>()
             futures.add(fut)
-            cordaProducer.send(record, partition) { ex ->
+            cordaProducer.get()?.send(record, partition) { ex ->
                 setFutureFromResponse(ex, fut, record.topic)
             }
         }
@@ -187,9 +188,9 @@ internal class CordaPublisherImpl(
         val future = CompletableFuture<Unit>()
         try {
             tryWithSingleRecoveryAttempt {
-                cordaProducer.beginTransaction()
-                block(cordaProducer)
-                cordaProducer.commitTransaction()
+                cordaProducer.get()?.beginTransaction()
+                block(cordaProducer.get()!!)
+                cordaProducer.get()?.commitTransaction()
                 future.complete(Unit)
             }
         } catch (ex: Exception) {
@@ -282,7 +283,7 @@ internal class CordaPublisherImpl(
      */
     private fun resetProducer() {
         closeProducerAndSuppressExceptions()
-        cordaProducer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
+        cordaProducer.set(cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig))
     }
 
     /**
@@ -290,7 +291,8 @@ internal class CordaPublisherImpl(
      */
     private fun closeProducerAndSuppressExceptions() {
         try {
-            cordaProducer.close()
+            cordaProducer.get()?.close()
+            cordaProducer.set(null)
         } catch (ex: Exception) {
 
             log.warn("CordaPublisherImpl failed to close producer safely. ClientId: ${config.clientId}", ex)
