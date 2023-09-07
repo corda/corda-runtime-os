@@ -70,7 +70,7 @@ Example Command
 ./corda-cli.sh network dynamic onboard-mgm 'O=MGM, L=London, C=GB' --save-group-policy-as /tmp/groupPolicy.json --user=admin --password=admin --target=https://localhost:8888 --insecure
 ```
 
-2. Onboard standard members:
+2. Onboard a member:
    - Run the `network onboard-member` command with the necessary parameters to onboard standard members to the existing group.
    - Specify the member's details, such as name, CPB file, user, password, target URL, etc.
    - Optionally, use the `--wait` parameter to wait until the request gets approved/declined.
