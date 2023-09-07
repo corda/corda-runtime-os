@@ -233,4 +233,29 @@ class VirtualNodeDbFactoryImplTest {
         assertAll(dbs.map { (dbType, db) -> { assertTrue(db.isPlatformManagedDb, dbType.name) } })
     }
 
+
+    @Test
+    fun `createVNodeDbs sets isPlatformManagedDb to false when uniqueness is none`() {
+        val request = VirtualNodeCreateRequest(
+            /* holdingId = */ mock(),
+            /* cpiFileChecksum = */ "",
+            /* vaultDdlConnection = */ "{}",
+            /* vaultDmlConnection = */ "{}",
+            /* cryptoDdlConnection = */ "{}",
+            /* cryptoDmlConnection = */ "{}",
+            /* uniquenessDdlConnection = */ "none",
+            /* uniquenessDmlConnection = */ "none",
+            /* updateActor = */ ""
+        )
+
+        val dbs = impl.createVNodeDbs(ShortHash.of("1234123412341234"), request)
+
+        // Uniqueness is set to false
+        assertAll(dbs.filter { (dbType, _) -> dbType == VirtualNodeDbType.UNIQUENESS }
+            .map { (dbType, db) -> { assertFalse(db.isPlatformManagedDb, dbType.name) } })
+        // Other types are set to true
+        assertAll(dbs.filter { (dbType, _) -> dbType != VirtualNodeDbType.UNIQUENESS }
+            .map { (dbType, db) -> { assertTrue(db.isPlatformManagedDb, dbType.name) } })
+    }
+
 }
