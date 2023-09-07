@@ -25,6 +25,7 @@ import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.getLongOrDefault
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
@@ -53,13 +54,16 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 ) : FlowEventExceptionProcessor {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val DEFAULT_MAX_RETRY_WINDOW_DURATION_MS = 0L
     }
 
     private var maxRetryWindowDuration = Duration.ZERO
 
     override fun configure(config: SmartConfig) {
-        maxRetryWindowDuration = Duration.ofMillis(config.getLong(PROCESSING_MAX_RETRY_WINDOW_DURATION))
+        maxRetryWindowDuration = Duration.ofMillis(
+            config.getLongOrDefault(PROCESSING_MAX_RETRY_WINDOW_DURATION, DEFAULT_MAX_RETRY_WINDOW_DURATION_MS)
+        )
     }
 
     override fun process(throwable: Throwable): StateAndEventProcessor.Response<Checkpoint> {
