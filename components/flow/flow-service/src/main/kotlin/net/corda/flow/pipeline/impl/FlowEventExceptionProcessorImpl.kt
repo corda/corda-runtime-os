@@ -55,7 +55,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val DEFAULT_MAX_RETRY_WINDOW_DURATION_MS = 0L
+        private const val DEFAULT_MAX_RETRY_WINDOW_DURATION_MS = 30000L
     }
 
     private var maxRetryWindowDuration = Duration.ZERO
