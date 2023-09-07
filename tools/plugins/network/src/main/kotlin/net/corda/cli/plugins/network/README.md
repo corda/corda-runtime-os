@@ -96,14 +96,13 @@ members:
 ```
 
 # Onboard a member to an existing Corda cluster
-This command should only be used for internal development.
 
 This is a sub-command under the `network` plugin for on-boarding a member (MGM or standard member) into a running Corda cluster.
 
 To run the network either use the app simulator `deploy.sh` script ([see here](../../../../../../../../../../../applications/tools/p2p-test/app-simulator/scripts/README.md)) or run a combined worker locally ([see here](../../../../../../../../../../../applications/workers/release/combined-worker/README.md)).
 
 ## Onboard an MGM member to an existing Corda cluster
-This command should only be used for internal development. See the [wiki](https://github.com/corda/corda-runtime-os/wiki/MGM-Onboarding) for more details.
+See the [wiki](https://github.com/corda/corda-runtime-os/wiki/MGM-Onboarding) for more details.
 
 This is a sub-command under the `dynamic` sub-command to onboard a new MGM member (and create a new group). By default, the command will save the group policy file into `~/.corda/gp/groupPolicy.json` (and will overwrite any
 existing group policy file there).
@@ -128,8 +127,7 @@ See [here](https://github.com/corda/corda-runtime-os/wiki/MGM-Onboarding) for de
 
 ## Onboard a standard member to an existing cluster
 
-This command should only be used for internal development. See
-the [wiki](https://github.com/corda/corda-runtime-os/wiki/Member-Onboarding-(Dynamic-Networks)) for more details.
+See the [wiki](https://github.com/corda/corda-runtime-os/wiki/Member-Onboarding-(Dynamic-Networks)) for more details.
 
 This is a sub-command under the `dynamic` sub-command to onboard a new member to an existing group.
 
@@ -146,8 +144,11 @@ need to manually approve (or decline) your submitted registration to be fully on
 Few examples of on-boarding a member can be:
 ```shell
 ./corda-cli.sh network dynamic onboard-member 'O=Alice, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb --user=admin --password=admin --target=https://localhost:8888 --insecure
+
 ./corda-cli.sh network dynamic onboard-member 'O=Alice, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb --wait --user=admin --password=admin --target=https://localhost:8888 --insecure
+
 ./corda-cli.sh network dynamic onboard-member 'O=Alice, L=London, C=GB' --cpi-hash 8CBD8A9C6318 --wait --user=admin --password=admin --target=https://localhost:8888 --insecure -r "notary" -s "corda.notary.service.name"="C=GB, L=London, O=Arish"
+
 ./corda-cli.sh network dynamic onboard-member 'O=Alice, L=London, C=GB' --cpi-hash 200E86176EF2 --user=admin --password=admin --target=https://localhost:8888 --insecure
 ```
 Use the `--help` to view all the other options and defaults.
