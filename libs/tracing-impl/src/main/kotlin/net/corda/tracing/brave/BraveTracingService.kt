@@ -1,4 +1,4 @@
-package net.corda.tracing.impl
+package net.corda.tracing.brave
 
 import brave.Tracer
 import brave.Tracing
@@ -18,23 +18,26 @@ import brave.sampler.RateLimitingSampler
 import brave.sampler.Sampler
 import brave.sampler.SamplerFunction
 import brave.servlet.TracingFilter
+import io.javalin.core.JavalinConfig
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.tracing.BatchPublishTracing
 import net.corda.tracing.BatchRecordTracer
 import net.corda.tracing.TraceContext
 import net.corda.tracing.TracingService
+import org.eclipse.jetty.servlet.FilterHolder
 import org.slf4j.LoggerFactory
 import zipkin2.Span
 import zipkin2.reporter.AsyncReporter
 import zipkin2.reporter.Reporter
 import zipkin2.reporter.brave.ZipkinSpanHandler
 import zipkin2.reporter.urlconnection.URLConnectionSender
+import java.util.EnumSet
 import java.util.Stack
 import java.util.concurrent.ExecutorService
 import java.util.logging.Level
 import java.util.logging.Logger
-import javax.servlet.Filter
+import javax.servlet.DispatcherType
 
 internal sealed interface SampleRate
 internal object Unlimited : SampleRate
@@ -187,8 +190,14 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
         return tracing.currentTraceContext().executorService(executor)
     }
 
-    override fun getTracedServletFilter(): Filter {
-        return TracingFilter.create(httpTracing)
+    override fun configureJavalin(config: Any) {
+        (config as JavalinConfig).configureServletContextHandler { sch ->
+            sch.addFilter(
+                FilterHolder(TracingFilter.create(httpTracing)),
+                "/*",
+                EnumSet.of(DispatcherType.INCLUDE, DispatcherType.REQUEST)
+            )
+        }
     }
 
     override fun close() {
