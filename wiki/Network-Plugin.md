@@ -29,7 +29,7 @@ To set up an application network using the Corda Network Plugin, follow these st
 
 # Setting up an Application Network
 
-This guide provides step-by-step instructions on how to set up an application network using the Corda Network Plugin. The application network consists of an MGM member, standard members, and a notary.
+This guide provides step-by-step instructions on how to set up an application network using the Corda Network Plugin. The application network consists of an MGM, standard members, and a notary.
 
 ## Prerequisites
 
