@@ -6,6 +6,7 @@ import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.MessageProducer
 import net.corda.messagebus.kafka.config.ResolvedProducerConfig
 import net.corda.messagebus.kafka.utils.toKafkaRecord
+import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
@@ -32,7 +33,7 @@ import org.slf4j.LoggerFactory
 class KafkaMessageProducerImpl(
     private val config: ResolvedProducerConfig,
     private val producer: Producer<Any, Any>,
-//    private val chunkSerializerService: ChunkSerializerService,
+    private val chunkSerializerService: ChunkSerializerService,
     private val producerMetricsBinder: MeterBinder,
 ) : MessageProducer {
     private val topicPrefix = config.topicPrefix
@@ -44,7 +45,7 @@ class KafkaMessageProducerImpl(
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-//        const val asyncChunkErrorMessage = "Tried to send record which requires chunking using an asynchronous producer"
+        const val asyncChunkErrorMessage = "Tried to send record which requires chunking using an asynchronous producer"
 
         val fatalExceptions: Set<Class<out Throwable>> = setOf(
             AuthorizationException::class.java,
@@ -114,33 +115,33 @@ class KafkaMessageProducerImpl(
         partition: Int? = null,
         callback: MessageProducer.Callback? = null
     ) {
-        // TODO: Support message chunking
-        sendWholeMessage(message, partition, callback)
+        val record = message.toCordaProducerRecord()
+        val chunkedRecords = chunkSerializerService.generateChunkedRecords(record)
+
+        if (chunkedRecords.isNotEmpty()) {
+            sendChunkedMessage(chunkedRecords, partition, callback)
+        } else {
+            sendWholeMessage(record, partition, callback)
+        }
     }
 
     private fun sendChunkedMessage(
-        messages: List<CordaMessage<*>>,
+        messages: List<CordaProducerRecord<*, *>>,
         partition: Int? = null,
         callback: MessageProducer.Callback? = null
     ) {
-        TODO("Not yet implemented")
+        // TODO: Chunking is not supported for non-transactional calls; this needs to be figured out
+        val ex = CordaMessageAPIFatalException(asyncChunkErrorMessage)
+        callback?.onCompletion(null, ex)
+        throw ex
     }
 
     private fun sendWholeMessage(
-        message: CordaMessage<*>,
+        record: CordaProducerRecord<*, *>,
         partition: Int? = null,
         callback: MessageProducer.Callback? = null
     ) {
-        val headers = message.getProperty<Headers>("headers")
-
-        val record = CordaProducerRecord(
-            topic = message.getProperty<String>("topic"),
-            key = message.getProperty("key"),
-            value = message.payload,
-            headers = headers
-        )
-
-        val traceContext = traceSend(headers, "send $clientId")
+        val traceContext = traceSend(record.headers, "send $clientId")
         traceContext.markInScope().use {
             try {
                 producer.send(
@@ -208,6 +209,15 @@ class KafkaMessageProducerImpl(
             (producerMetricsBinder as? AutoCloseable)?.close()
         }
     }
+}
+
+fun CordaMessage<*>.toCordaProducerRecord() : CordaProducerRecord<*, *> {
+    return CordaProducerRecord(
+        topic = this.getProperty<String>("topic"),
+        key = this.getProperty("key"),
+        value = this.payload,
+        headers = this.getProperty<Headers>("headers")
+    )
 }
 
 private typealias Headers = List<Pair<String, String>>
