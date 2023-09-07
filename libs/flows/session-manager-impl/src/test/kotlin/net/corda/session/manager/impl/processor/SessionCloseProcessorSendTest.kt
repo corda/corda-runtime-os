@@ -16,7 +16,6 @@ import java.time.Instant
 
 class SessionCloseProcessorSendTest {
 
-
     @Test
     fun `Send close when status is ERROR`() {
         val sessionEvent = buildSessionEvent(
@@ -63,7 +62,7 @@ class SessionCloseProcessorSendTest {
     fun `Send close when status is CONFIRMED`() {
         val sessionEvent = buildSessionEvent(
             MessageDirection.OUTBOUND,
-            "sessionId",
+            "sessionId-$INITIATED_SESSION_ID_SUFFIX",
             1,
             SessionClose(),
             contextSessionProps = emptyKeyValuePairList()
@@ -76,13 +75,10 @@ class SessionCloseProcessorSendTest {
             0,
             mutableListOf(),
             sessionStartTime = Instant.now(),
-            sessionId = "sessionId",
+            sessionId = "sessionId-$INITIATED_SESSION_ID_SUFFIX",
             counterpartyIdentity = HoldingIdentity("Alice", "group1"),
-            requireClose = false
+            requireClose = true
         )
-
-        inputState.requireClose = true
-        sessionEvent.sessionId += INITIATED_SESSION_ID_SUFFIX
 
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
         assertThat(result).isNotNull
