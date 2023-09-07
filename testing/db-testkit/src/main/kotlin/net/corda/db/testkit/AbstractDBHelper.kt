@@ -81,15 +81,13 @@ abstract class AbstractDBHelper : DbUtilsHelper{
     ): Config {
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
-        if(!schemaName.isNullOrBlank()){
-            val jdbcUrlCopy = "$jdbcUrl?currentSchema=$schemaName"
-            return ConfigFactory.empty()
-                .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrlCopy))
-                .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(user))
-                .withValue(DatabaseConfig.DB_PASS, ConfigValueFactory.fromAnyRef(password))
+        val currentJdbcUrl = if(!schemaName.isNullOrBlank()){
+            "$jdbcUrl?currentSchema=$schemaName"
+        }else{
+            jdbcUrl
         }
         return ConfigFactory.empty()
-            .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
+            .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(currentJdbcUrl))
             .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(user))
             .withValue(DatabaseConfig.DB_PASS, ConfigValueFactory.fromAnyRef(password))
     }
