@@ -1,6 +1,6 @@
 # Corda Network Plugin
 
-The Corda Network Plugin is a powerful tool that extends the functionality of the Corda CLI plugin host for managing membership operations and setting up application networks. It provides a set of commands to interact with the Corda network, onboard new members, manage group policies, and perform various network-related operations.
+The Corda Network Plugin is a powerful tool that extends the functionality of the Corda CLI plugin host for managing membership operations and setting up application networks. It provides a set of commands to interact with an application network, onboard new members, manage group policies, and perform various network-related operations.
 
 ## Before you start
 
