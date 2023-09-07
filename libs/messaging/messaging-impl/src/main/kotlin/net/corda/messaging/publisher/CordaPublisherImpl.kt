@@ -42,7 +42,8 @@ internal class CordaPublisherImpl(
         private const val QUEUE_SIZE = 200
     }
 
-    private val cordaProducer: AtomicReference<CordaProducer?> = AtomicReference(cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig))
+    private val cordaProducer: AtomicReference<CordaProducer?> = AtomicReference(cordaProducerBuilder
+        .createProducer(producerConfig, config.messageBusConfig))
 
     private data class Batch(val records: List<Record<*, *>>, val future: CompletableFuture<Unit>)
     private val queue = ArrayBlockingQueue<Batch>(QUEUE_SIZE)
