@@ -55,6 +55,7 @@ class SessionCloseProcessorReceive(
                 sessionState
             } else {
                 sessionState.receivedEventsState.apply {
+                    undeliveredMessages = undeliveredMessages.plus(sessionEvent).distinctBy { it.sequenceNum }.sortedBy { it.sequenceNum }
                     lastProcessedSequenceNum = recalcHighWatermark(undeliveredMessages, lastProcessedSeqNum)
                 }
 

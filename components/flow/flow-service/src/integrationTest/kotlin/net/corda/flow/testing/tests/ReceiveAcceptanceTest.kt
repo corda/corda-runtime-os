@@ -39,7 +39,6 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             initiatingToInitiatedFlow(PROTOCOL, FAKE_FLOW_NAME, FAKE_FLOW_NAME)
         }
     }
-
     @Test
     fun `Receiving an out-of-order session data events does not resume the flow and sends a session ack`() {
         given {
@@ -352,7 +351,6 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             }
         }
     }
-
     @Test
     fun `Given two sessions receiving a session data and then close event for one session and a session data event for the other resumes the flow`() {
         given {
