@@ -63,7 +63,7 @@ class CloseSessionService @Activate constructor(
         }
 
         if (requireCloseFalse.isNotEmpty()) {
-            flowSessionManager.updateStatus(checkpoint, requireCloseFalse, SessionStateType.CLOSED)
+            checkpoint.putSessionStates(flowSessionManager.updateStatus(checkpoint, requireCloseFalse, SessionStateType.CLOSED))
         }
     }
 
@@ -77,7 +77,7 @@ class CloseSessionService @Activate constructor(
     private fun putSessionsInClosing(checkpoint: FlowCheckpoint, sessions: List<String>, statuses: Set<SessionStateType>) {
         val statesToClose = flowSessionManager.getSessionsWithStatuses(checkpoint, sessions, statuses)
         val sessionsToClose = statesToClose.map { it.sessionId }
-        flowSessionManager.updateStatus(checkpoint, sessionsToClose, SessionStateType.CLOSING)
+        checkpoint.putSessionStates(flowSessionManager.updateStatus(checkpoint, sessionsToClose, SessionStateType.CLOSING))
     }
 
     /**
@@ -89,6 +89,6 @@ class CloseSessionService @Activate constructor(
     private fun closeSessionsAlreadyInClosing(checkpoint: FlowCheckpoint, sessions: List<String>) {
         val statesAlreadyInClosing = flowSessionManager.getSessionsWithStatus(checkpoint, sessions, SessionStateType.CLOSING)
         val sessionsAlreadyInClosing = statesAlreadyInClosing.map { it.sessionId }
-        flowSessionManager.updateStatus(checkpoint, sessionsAlreadyInClosing, SessionStateType.CLOSED)
+        checkpoint.putSessionStates(flowSessionManager.updateStatus(checkpoint, sessionsAlreadyInClosing, SessionStateType.CLOSED))
     }
 }

@@ -60,11 +60,17 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
                         SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
                     )))
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1)))
+
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, 1, ALICE_HOLDING_IDENTITY, BOB_HOLDING_IDENTITY)
                 .suspendsWith(FlowIORequest.SubFlowFinished(listOf(SESSION_ID_1)))
                 .completedSuccessfullyWith("hello")
         }
 
         then {
+            expectOutputForFlow(FLOW_ID1) {
+                sessionDataEvents(Pair(SESSION_ID_1, DATA_MESSAGE_1))
+            }
+
             expectOutputForFlow(FLOW_ID1) {
                 scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY, SESSION_ID_1)
             }
