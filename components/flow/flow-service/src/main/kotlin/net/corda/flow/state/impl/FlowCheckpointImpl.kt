@@ -154,6 +154,9 @@ class FlowCheckpointImpl(
     override val initialPlatformVersion: Int
         get() = checkpoint.initialPlatformVersion
 
+    override val isCompleted: Boolean
+        get() = deleted
+
     override fun initFlowState(flowStartContext: FlowStartContext, cpkFileHashes: Set<SecureHash>) {
         if (flowStateManager != null) {
             val key = flowStartContext.statusKey

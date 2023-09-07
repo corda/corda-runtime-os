@@ -326,6 +326,17 @@ class FlowCheckpointImplTest {
     }
 
     @Test
+    fun `mark delete sets isComplete to true`() {
+        val checkpoint = setupAvroCheckpoint()
+
+        val flowCheckpoint = createFlowCheckpoint(checkpoint)
+
+        assertThat(flowCheckpoint.isCompleted).isFalse
+        flowCheckpoint.markDeleted()
+        assertThat(flowCheckpoint.isCompleted).isTrue
+    }
+
+    @Test
     fun `flow stack - peek first throws if stack empty`() {
         val checkpoint = setupAvroCheckpoint()
         val flowCheckpoint = createFlowCheckpoint(checkpoint)

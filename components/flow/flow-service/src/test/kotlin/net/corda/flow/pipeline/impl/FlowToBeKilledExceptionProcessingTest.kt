@@ -16,7 +16,6 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
-import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
@@ -31,7 +30,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -103,7 +101,6 @@ class FlowToBeKilledExceptionProcessingTest {
     private val target = FlowEventExceptionProcessorImpl(
         flowMessageFactory,
         flowRecordFactory,
-        flowEventContextConverter,
         flowSessionManager,
         flowFiberCache
     )
@@ -118,7 +115,6 @@ class FlowToBeKilledExceptionProcessingTest {
     fun `processing MarkedForKillException sends error events to all sessions then schedules cleanup for any not yet scheduled`() {
         val testContext = buildFlowEventContext(checkpoint, Any())
         val exception = FlowMarkedForKillException("reasoning")
-        val contextCapture = argumentCaptor<FlowEventContext<*>>()
 
         whenever(checkpoint.doesExist).thenReturn(true)
 
@@ -139,25 +135,20 @@ class FlowToBeKilledExceptionProcessingTest {
         whenever(flowMessageFactory.createFlowKilledStatusMessage(any(), any())).thenReturn(flowKilledStatus)
         whenever(flowRecordFactory.createFlowStatusRecord(flowKilledStatus)).thenReturn(flowKilledStatusRecord)
 
-        whenever(flowEventContextConverter.convert(contextCapture.capture())).thenReturn(mockResponse)
-
         val response = target.process(exception, testContext)
 
         verify(checkpoint, times(1)).putSessionStates(erroredFlowSessions)
         verify(checkpoint, times(1)).markDeleted()
 
-        assertThat(response).isEqualTo(mockResponse)
-
-        val killContext = contextCapture.firstValue
-        assertThat(killContext.outputRecords)
+        assertThat(response.outputRecords)
             .withFailMessage("Output records should contain cleanup records for sessions that aren't already scheduled")
             .contains(scheduleCleanupRecord4, scheduleCleanupRecord5)
 
-        assertThat(killContext.outputRecords)
+        assertThat(response.outputRecords)
             .withFailMessage("Output records should contain the flow killed status record")
             .contains(flowKilledStatusRecord)
 
-        val updatedFlowSessions = killContext.checkpoint.sessions.associateBy { it.sessionId }
+        val updatedFlowSessions = response.checkpoint.sessions.associateBy { it.sessionId }
         assertThat(updatedFlowSessions.values.all { it.hasScheduledCleanup })
             .withFailMessage("All flow sessions should now be marked as scheduled for cleanup")
             .isTrue
@@ -178,7 +169,6 @@ class FlowToBeKilledExceptionProcessingTest {
 
         val testContext = buildFlowEventContext(checkpoint, Any())
         val exception = FlowMarkedForKillException("reasoning")
-        val contextCapture = argumentCaptor<FlowEventContext<*>>()
 
         whenever(checkpoint.sessions)
             .thenReturn(emptyList())
@@ -188,20 +178,15 @@ class FlowToBeKilledExceptionProcessingTest {
         whenever(flowMessageFactory.createFlowKilledStatusMessage(any(), any())).thenReturn(flowKilledStatus)
         whenever(flowRecordFactory.createFlowStatusRecord(flowKilledStatus)).thenReturn(flowKilledStatusRecord)
 
-        whenever(flowEventContextConverter.convert(contextCapture.capture())).thenReturn(mockResponse)
-
         val response = target.process(exception, testContext)
 
         verify(checkpoint, times(1)).markDeleted()
 
-        assertThat(response).isEqualTo(mockResponse)
-
-        val killContext = contextCapture.firstValue
-        assertThat(killContext.outputRecords)
+        assertThat(response.outputRecords)
             .withFailMessage("Output records should only have flow status record")
             .hasSize(1)
 
-        assertThat(killContext.outputRecords)
+        assertThat(response.outputRecords)
             .withFailMessage("Output records should contain the flow killed status record")
             .contains(flowKilledStatusRecord)
     }
@@ -214,22 +199,16 @@ class FlowToBeKilledExceptionProcessingTest {
 
         val testContext = buildFlowEventContext(checkpoint, inputEventPayload)
         val exception = FlowMarkedForKillException("reasoning")
-        val contextCapture = argumentCaptor<FlowEventContext<*>>()
 
         whenever(flowRecordFactory.createFlowStatusRecord(any())).thenReturn(flowKilledStatusRecord)
 
-        whenever(flowEventContextConverter.convert(contextCapture.capture())).thenReturn(mockResponse)
-
         val response = target.process(exception, testContext)
 
-        assertThat(response).isEqualTo(mockResponse)
-
-        val killContext = contextCapture.firstValue
-        assertThat(killContext.outputRecords)
+        assertThat(response.outputRecords)
             .withFailMessage("Output records should only have flow status record")
             .hasSize(1)
 
-        assertThat(killContext.outputRecords)
+        assertThat(response.outputRecords)
             .withFailMessage("Output records should contain the flow killed status record")
             .contains(flowKilledStatusRecord)
     }
@@ -238,9 +217,7 @@ class FlowToBeKilledExceptionProcessingTest {
     fun `error processing MarkedForKillException falls back to null state record, empty response events and marked for DLQ`() {
         val testContext = buildFlowEventContext(checkpoint, Any())
         val exception = FlowMarkedForKillException("reasoning")
-        val fallbackFailureResponse = StateAndEventProcessor.Response(
-            null, emptyList(), true
-        )
+
 
         whenever(checkpoint.doesExist).thenReturn(true)
 
@@ -255,6 +232,8 @@ class FlowToBeKilledExceptionProcessingTest {
 
         val response = target.process(exception, testContext)
 
-        assertThat(response).isEqualTo(fallbackFailureResponse)
+        verify(response.checkpoint).markDeleted()
+        assertThat(response.outputRecords).isEmpty()
+        assertThat(response.sendToDlq).isTrue
     }
 }

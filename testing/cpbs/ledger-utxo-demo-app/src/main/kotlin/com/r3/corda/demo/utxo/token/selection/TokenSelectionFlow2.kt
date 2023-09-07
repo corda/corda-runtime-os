@@ -8,14 +8,13 @@ import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection
 import org.slf4j.LoggerFactory
 
-class TokenSelectionFlow : ClientStartableFlow {
+class TokenSelectionFlow2 : ClientStartableFlow {
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -23,9 +22,6 @@ class TokenSelectionFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var tokenSelection: TokenSelection
-
-    @CordaInject
-    lateinit var jsonMarshallingService: JsonMarshallingService
 
     @CordaInject
     lateinit var digestService: DigestService
@@ -44,18 +40,26 @@ class TokenSelectionFlow : ClientStartableFlow {
                 TOKEN_AMOUNT,
             )
 
-            val claimResult = tokenSelection.tryClaim(queryCriteria)
+            val claimResult1 = tokenSelection.tryClaim(queryCriteria)
 
-            val response = if (claimResult == null) {
+            // We expect the first claim to succeed
+            if (claimResult1 == null) {
                 log.info("Token Selection result: 'None found' ")
-                "0"
-            } else {
-                log.info("Token Selection result: $ ${jsonMarshallingService.format(claimResult)}")
-                claimResult.claimedTokens.size.toString()
+                 return "FAIL"
             }
 
-            log.info("Completing Token Selection Flow with: $response")
-            return response
+            // Now let's try again, we expect this one to fail, confirming we locked up
+            // the only token
+            val claimResult2 = tokenSelection.tryClaim(queryCriteria)
+
+            // We expect the first claim to succeed
+            if (claimResult2 != null) {
+                log.info("Token Selection result: 'We found something, we did not expect to' ")
+                return "FAIL"
+            }
+
+            // Now we just exit and let the postprocessing handler clean up for us
+            return "SUCCESS"
 
         } catch (e: Exception) {
             log.error("Unexpected error while processing the flow", e)
@@ -63,4 +67,3 @@ class TokenSelectionFlow : ClientStartableFlow {
         }
     }
 }
-

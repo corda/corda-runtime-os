@@ -151,6 +151,43 @@ class TokenSelectionTests {
         assertThat(tokenSelectionResult.flowError).isNull()
         assertThat(tokenSelectionResult.flowResult).isEqualTo("1")
     }
+
+    @Test
+    @Order(3)
+    fun `create a token then select it but don't release the flow finishing it should release it`(){
+        // Create a simple UTXO transaction
+        val input = "token test input"
+        val utxoFlowRequestId = startRpcFlow(
+            aliceHoldingId,
+            mapOf("input" to input, "members" to listOf(bobX500), "notary" to NOTARY_SERVICE_X500),
+            "com.r3.corda.demo.utxo.UtxoDemoFlow"
+        )
+        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
+        assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(utxoFlowResult.flowError).isNull()
+
+        // Attempt to select the token created by the transaction
+        val tokenSelectionFlowId1 = startRpcFlow(
+            bobHoldingId,
+            mapOf(),
+            "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow2"
+        )
+        val tokenSelectionResult1 = awaitRpcFlowFinished(bobHoldingId, tokenSelectionFlowId1)
+        assertThat(tokenSelectionResult1.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(tokenSelectionResult1.flowError).isNull()
+        assertThat(tokenSelectionResult1.flowResult).isEqualTo("SUCCESS")
+
+        // Attempt to select the token created by the transaction
+        val tokenSelectionFlowId2 = startRpcFlow(
+            bobHoldingId,
+            mapOf(),
+            "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow2"
+        )
+        val tokenSelectionResult2 = awaitRpcFlowFinished(bobHoldingId, tokenSelectionFlowId2)
+        assertThat(tokenSelectionResult2.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(tokenSelectionResult2.flowError).isNull()
+        assertThat(tokenSelectionResult2.flowResult).isEqualTo("SUCCESS")
+    }
 }
 
 private data class TokenBalanceQueryResponseMsg(
