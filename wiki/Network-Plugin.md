@@ -14,7 +14,7 @@ The Corda Network Plugin provides the following basic commands:
 - `network onboard-mgm`: Onboards a new MGM member (and creates a new group) to an existing Corda cluster.
 - `network onboard-member`: Onboards a new standard member to an existing group in the Corda cluster.
 - `network lookup members`: Looks up members in an application network based on various filters.
-- `network lookup group-parameters`: Looks up group parameters in the Corda network based on various filters.
+- `network lookup group-parameters`: Looks up group parameters in an application network based on various filters.
 
 For more details on each command and its usage, refer to the command-specific documentation below.
 
