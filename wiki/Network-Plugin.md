@@ -77,7 +77,7 @@ Example Command
   
 Example Command
 ```bash
-./corda-cli.sh network dynamic onboard-member 'O=Alice, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb --user=admin --password=admin --target=https://localhost:8888 --insecure
+./corda-cli.sh network dynamic onboard-member 'O=Alice, L=London, C=GB' --cpb-file <path-to-your-CPB-file> --user=admin --password=admin --target=https://localhost:8888 --insecure
 ```
 
 - Use `./corda-cli.sh network dynamic onboard-mgm --help` to view the other options.
