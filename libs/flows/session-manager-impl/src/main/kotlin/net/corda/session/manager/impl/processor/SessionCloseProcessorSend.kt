@@ -47,7 +47,7 @@ class SessionCloseProcessorSend(
             else -> {
                 val nextSeqNum = sessionState.sendEventsState.lastProcessedSequenceNum + 1
                 sessionEvent.sequenceNum = nextSeqNum
-                getResultByCurrentState(sessionState, sessionId, nextSeqNum)
+                getResultByCurrentState(sessionState, nextSeqNum)
             }
         }
     }
@@ -82,9 +82,9 @@ class SessionCloseProcessorSend(
 
     private fun getResultByCurrentState(
         sessionState: SessionState,
-        sessionId: String,
         nextSeqNum: Int,
     ) : SessionState {
+        val sessionId = sessionState.sessionId
         val requireClose = sessionState.requireClose
         return if (isInitiatedIdentity(sessionId) && sessionState.status !in listOf(SessionStateType.ERROR, SessionStateType.CLOSED)) {
             if (requireClose) {

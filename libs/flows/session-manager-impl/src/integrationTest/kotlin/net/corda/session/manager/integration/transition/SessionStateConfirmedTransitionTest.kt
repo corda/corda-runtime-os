@@ -40,8 +40,8 @@ class SessionStateConfirmedTransitionTest {
     fun `Send close when in state confirmed`() {
         val sessionState = buildConfirmedState()
         sessionState.requireClose = true
+        sessionState.sessionId += INITIATED_SESSION_ID_SUFFIX
         val sessionEvent = generateMessage(SessionMessageType.CLOSE, instant)
-        sessionEvent.sessionId += INITIATED_SESSION_ID_SUFFIX
 
         val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant, maxMsgSize)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSED)
