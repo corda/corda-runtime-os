@@ -29,6 +29,13 @@ class FlowCheckpointImpl(
     instantProvider: () -> Instant
 ) : FlowCheckpoint {
 
+    /**
+     * It's important that we guard against null values for default fields added between versions of the Avro object.
+     * An edge condition exists where an existing checkpoint for a previous version can be loaded
+     * by the newer version. In these cases any new, default fields will be null. initFlowState() is only called when
+     * the checkpoint is first created, so it's important we check these fields each time we create an instance
+     * of FlowCheckpointImpl.
+     */
     init {
         if (checkpoint.customState == null) {
             val newCustomState = KeyValuePairList.newBuilder()
