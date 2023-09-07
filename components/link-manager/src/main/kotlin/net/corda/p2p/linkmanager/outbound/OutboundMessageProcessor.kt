@@ -24,6 +24,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.common.MessageConverter
+import net.corda.p2p.linkmanager.grouppolicy.networkType
 import net.corda.p2p.linkmanager.hosting.LinkManagerHostingMap
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
 import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
@@ -215,10 +216,10 @@ internal class OutboundMessageProcessor(
             return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(inboundMessage)))
         } else {
             val source = message.header.source.toCorda()
-            val groupPolicy = groupPolicyProvider.getGroupPolicy(source)
-            if (groupPolicy == null) {
+            val p2pParams = groupPolicyProvider.getP2PParameters(source)
+            if (p2pParams == null) {
                 logger.warn(
-                    "Could not find the group information in the GroupPolicyProvider for $source. " +
+                    "Could not find the p2p parameters in the GroupPolicyProvider for $source. " +
                     "The message ${message.header.messageId} was discarded."
                 )
                 return emptyList()
@@ -228,7 +229,7 @@ internal class OutboundMessageProcessor(
                 inboundMessage,
                 source,
                 destinationMemberInfo,
-                groupPolicy
+                p2pParams.networkType
             )
             return listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), linkOutMessage))
         }
