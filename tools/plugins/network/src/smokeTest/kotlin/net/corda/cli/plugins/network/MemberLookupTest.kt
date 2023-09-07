@@ -23,12 +23,10 @@ class MemberLookupTest {
         private lateinit var outputStub: OutputStub
         private lateinit var onboardMgm: OnboardMgm
 
-        private val CLI_PARAMS = arrayOf(
-            "--target=${DEFAULT_CLUSTER.rest.uri}",
-            "--user=${DEFAULT_CLUSTER.rest.user}",
-            "--password=${DEFAULT_CLUSTER.rest.password}",
-            "--insecure=true"
-        )
+        private val targetUrl = "--target=${DEFAULT_CLUSTER.rest.uri}"
+        private val user = "--user=${DEFAULT_CLUSTER.rest.user}"
+        private val password = "--password=${DEFAULT_CLUSTER.rest.password}"
+        private const val INSECURE = "--insecure=true"
 
         private val mgm = MemberX500Name.parse(
             "CN=Alice, OU=R3 Test, O=Mgm, L=London, ST=Tottenham, C=GB"
@@ -42,10 +40,10 @@ class MemberLookupTest {
             onboardMgm = OnboardMgm()
             CommandLine(onboardMgm).execute(
                 mgm.toString(),
-                CLI_PARAMS[0],
-                CLI_PARAMS[1],
-                CLI_PARAMS[2],
-                CLI_PARAMS[3]
+                targetUrl,
+                user,
+                password,
+                INSECURE
             )
             holdingIdentity = HoldingIdentityUtils.getHoldingIdentity(
                 null,
@@ -66,10 +64,10 @@ class MemberLookupTest {
         CommandLine(memberLookup).execute(
             "--status=${MEMBER_STATUS_ACTIVE}",
             "-h=$holdingIdentity",
-            CLI_PARAMS[0],
-            CLI_PARAMS[1],
-            CLI_PARAMS[2],
-            CLI_PARAMS[3]
+            targetUrl,
+            user,
+            password,
+            INSECURE
         )
 
         val mgmContext = outputStub.printedOutput?.get(0)?.get("mgmContext")
@@ -81,10 +79,10 @@ class MemberLookupTest {
         CommandLine(memberLookup).execute(
             "--status=${MEMBER_STATUS_SUSPENDED}",
             "-h=$holdingIdentity",
-            CLI_PARAMS[0],
-            CLI_PARAMS[1],
-            CLI_PARAMS[2],
-            CLI_PARAMS[3]
+            targetUrl,
+            user,
+            password,
+            INSECURE
         )
 
         assertEquals(JsonNodeFactory.instance.arrayNode(), outputStub.printedOutput)
@@ -95,10 +93,10 @@ class MemberLookupTest {
         CommandLine(memberLookup).execute(
             "-cn=${mgm.commonName}",
             "-h=$holdingIdentity",
-            CLI_PARAMS[0],
-            CLI_PARAMS[1],
-            CLI_PARAMS[2],
-            CLI_PARAMS[3]
+            targetUrl,
+            user,
+            password,
+            INSECURE
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -109,10 +107,10 @@ class MemberLookupTest {
         CommandLine(memberLookup).execute(
             "-ou=${mgm.organizationUnit}",
             "-h=$holdingIdentity",
-            CLI_PARAMS[0],
-            CLI_PARAMS[1],
-            CLI_PARAMS[2],
-            CLI_PARAMS[3]
+            targetUrl,
+            user,
+            password,
+            INSECURE
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -123,10 +121,10 @@ class MemberLookupTest {
         CommandLine(memberLookup).execute(
             "-l=${mgm.locality}",
             "-h=$holdingIdentity",
-            CLI_PARAMS[0],
-            CLI_PARAMS[1],
-            CLI_PARAMS[2],
-            CLI_PARAMS[3]
+            targetUrl,
+            user,
+            password,
+            INSECURE
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -137,10 +135,10 @@ class MemberLookupTest {
         CommandLine(memberLookup).execute(
             "-st=${mgm.state}",
             "-h=$holdingIdentity",
-            CLI_PARAMS[0],
-            CLI_PARAMS[1],
-            CLI_PARAMS[2],
-            CLI_PARAMS[3]
+            targetUrl,
+            user,
+            password,
+            INSECURE
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -151,10 +149,10 @@ class MemberLookupTest {
         CommandLine(memberLookup).execute(
             "-c=${mgm.country}",
             "-h=$holdingIdentity",
-            CLI_PARAMS[0],
-            CLI_PARAMS[1],
-            CLI_PARAMS[2],
-            CLI_PARAMS[3]
+            targetUrl,
+            user,
+            password,
+            INSECURE
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -165,10 +163,10 @@ class MemberLookupTest {
         CommandLine(memberLookup).execute(
             "-o=${mgm.organization}",
             "-h=$holdingIdentity",
-            CLI_PARAMS[0],
-            CLI_PARAMS[1],
-            CLI_PARAMS[2],
-            CLI_PARAMS[3]
+            targetUrl,
+            user,
+            password,
+            INSECURE
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -178,10 +176,10 @@ class MemberLookupTest {
     fun `test member lookup command with X500 name with default groupId from file`() {
         CommandLine(memberLookup).execute(
             "--name=${onboardMgm.name}",
-            CLI_PARAMS[0],
-            CLI_PARAMS[1],
-            CLI_PARAMS[2],
-            CLI_PARAMS[3]
+            targetUrl,
+            user,
+            password,
+            INSECURE
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -196,10 +194,10 @@ class MemberLookupTest {
         CommandLine(memberLookup).execute(
             "--name=${onboardMgm.name}",
             "--group=${group}",
-            CLI_PARAMS[0],
-            CLI_PARAMS[1],
-            CLI_PARAMS[2],
-            CLI_PARAMS[3]
+            targetUrl,
+            user,
+            password,
+            INSECURE
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
@@ -209,10 +207,10 @@ class MemberLookupTest {
     fun `test member lookup command with holding identity short hash`() {
         CommandLine(memberLookup).execute(
             "-h=$holdingIdentity",
-            CLI_PARAMS[0],
-            CLI_PARAMS[1],
-            CLI_PARAMS[2],
-            CLI_PARAMS[3]
+            targetUrl,
+            user,
+            password,
+            INSECURE
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
