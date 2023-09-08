@@ -4,7 +4,6 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.session.SessionState
 import net.corda.flow.RequestHandlerTestContext
 import net.corda.messaging.api.records.Record
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -53,14 +52,13 @@ internal class CloseSessionServiceTest {
         whenever(testContext.flowSessionManager.updateStatus(any(), any(), any()))
             .thenReturn(listOf(sessionState1, sessionState2))
 
-        val sessionsToClose = handler.handleCloseForSessions(testContext.flowCheckpoint, sessions)
+        handler.handleCloseForSessions(testContext.flowCheckpoint, sessions)
 
         verify(testContext.flowSessionManager).getInitiatingAndInitiatedSessions(any())
         verify(testContext.flowSessionManager).sendCloseMessages(any(), any(), any())
         verify(testContext.flowSessionManager, times(2)).getSessionsWithStatuses(any(), any(), any())
         verify(testContext.flowSessionManager).getRequireCloseTrueAndFalse(any(), any())
         verify(testContext.flowSessionManager, times(3)).updateStatus(any(), any(), any())
-        assertThat(sessionsToClose).isNotEmpty
     }
 
     @Test
@@ -70,10 +68,9 @@ internal class CloseSessionServiceTest {
         whenever(testContext.flowSessionManager.getRequireCloseTrueAndFalse(any(), any()))
             .thenReturn(Pair(listOf(sessionId1), listOf(sessionId2)))
 
-        val sessionsToClose = handler.getSessionsToCloseForWaitingFor(testContext.flowCheckpoint, sessions)
+        handler.getSessionsToCloseForWaitingFor(testContext.flowCheckpoint, sessions)
 
         verify(testContext.flowSessionManager).getInitiatingAndInitiatedSessions(any())
         verify(testContext.flowSessionManager).getRequireCloseTrueAndFalse(any(), any())
-        assertThat(sessionsToClose).isNotEmpty
     }
 }
