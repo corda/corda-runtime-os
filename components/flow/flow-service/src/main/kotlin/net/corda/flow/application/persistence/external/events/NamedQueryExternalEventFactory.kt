@@ -27,7 +27,7 @@ class NamedQueryExternalEventFactory : ExternalEventFactory<NamedQueryParameters
             topic = Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC,
             payload = EntityRequest.newBuilder()
                 .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
-                .setRequest(FindWithNamedQuery(parameters.queryName, parameters.parameters, parameters.offset, parameters.limit))
+                .setRequest(FindWithNamedQuery(parameters.queryName, parameters.parameters, parameters.offset, parameters.limit, null))
                 .setFlowExternalEventContext(flowExternalEventContext)
                 .build()
         )

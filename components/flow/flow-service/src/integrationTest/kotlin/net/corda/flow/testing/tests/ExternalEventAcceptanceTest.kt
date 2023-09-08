@@ -48,7 +48,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
             FindEntities("entity class name", listOf(BYTE_BUFFER)),
             ExternalEventContext(REQUEST_ID, FLOW_ID1, KeyValuePairList(emptyList()))
         )
-        val ANY_RESPONSE = EntityResponse(listOf(BYTE_BUFFER), KeyValuePairList(emptyList()))
+        val ANY_RESPONSE = EntityResponse(listOf(BYTE_BUFFER), KeyValuePairList(emptyList()), null)
         const val STRING_INPUT = "this is an input string"
         const val STRING_RESPONSE = "this is an response string"
         val BYTE_ARRAY_INPUT = "this is an input byte array".toByteArray()

@@ -6,6 +6,9 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import java.nio.ByteBuffer
 
+/**
+ * Captures results and paging data from a query that supports offset based pagination.
+ */
 data class OffsetResultSetImpl<R> internal constructor(
     private val serializationService: SerializationService,
     private var serializedParameters: Map<String, ByteBuffer>,

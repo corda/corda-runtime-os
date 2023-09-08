@@ -7,6 +7,9 @@ import net.corda.v5.base.annotations.Suspendable
 import java.lang.IllegalStateException
 import java.nio.ByteBuffer
 
+/**
+ * Captures results and paging data from a query that supports stable pagination.
+ */
 data class StableResultSetImpl<R> internal constructor(
     private val serializationService: SerializationService,
     private var serializedParameters: MutableMap<String, ByteBuffer>,
@@ -18,10 +21,6 @@ data class StableResultSetImpl<R> internal constructor(
     private var results: List<R> = emptyList()
     private var resumePoint: ByteBuffer? = null
     private var firstExecution = true
-
-    private companion object {
-        private const val RESUME_POINT_PARAM_NAME = "Corda_QueryResumePoint"
-    }
 
     override fun getResults(): List<R> {
         return results
@@ -37,31 +36,21 @@ data class StableResultSetImpl<R> internal constructor(
             throw NoSuchElementException("The result set has no more pages to query")
         }
 
-        if (resumePoint != null) {
-            serializedParameters[RESUME_POINT_PARAM_NAME] = resumePoint!!
-        } else {
-            serializedParameters.remove(RESUME_POINT_PARAM_NAME)
-        }
+        val (serializedResults, nextResumePoint) = resultSetExecutor.execute(
+            serializedParameters,
+            if (firstExecution) null else resumePoint
+        )
 
-        val serializedResults = resultSetExecutor.execute(serializedParameters).serializedResults
-
-        if (serializedResults.size > limit + 1) {
+        if (serializedResults.size > limit) {
             throw IllegalStateException("The query returned too many results")
         }
 
-        results = if (serializedResults.size <= limit) {
-            serializedResults
-        } else {
-            serializedResults.subList(0, limit)
-        }
-            .map { serializationService.deserialize(it.array(), resultClass) }
+        results = serializedResults.map { serializationService.deserialize(it.array(), resultClass) }
 
-        val newResumePoint = serializedResults.getOrNull(limit)
-
-        if (newResumePoint != null && newResumePoint == resumePoint) {
+        if (nextResumePoint != null && nextResumePoint == resumePoint) {
             throw IllegalStateException("Infinite query detected; resume point has not been updated")
         } else {
-            resumePoint = newResumePoint
+            resumePoint = nextResumePoint
         }
 
         firstExecution = false
