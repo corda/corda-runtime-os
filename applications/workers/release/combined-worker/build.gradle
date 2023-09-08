@@ -92,6 +92,7 @@ dependencies {
 
     implementation 'net.corda:corda-config-schema'
 
+    runtimeOnly project(':libs:tracing-impl')
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     runtimeOnly "net.corda:corda-application"
     runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
