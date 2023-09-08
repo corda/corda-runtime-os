@@ -1,6 +1,7 @@
 package net.corda.messagebus.kafka.producer
 
 import io.micrometer.core.instrument.binder.MeterBinder
+import kotlinx.coroutines.Deferred
 import net.corda.messagebus.api.producer.CordaMessage
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.MessageProducer
@@ -79,7 +80,7 @@ class KafkaMessageProducerImpl(
                 ctx.traceTag("send.offset", m.offset().toString())
                 ctx.traceTag("send.partition", m.partition().toString())
                 ctx.traceTag("send.topic", m.topic())
-                callback.onCompletion(null, ex)
+                callback.onCompletion(ex)
                 if (ex != null) {
                     ctx.errorAndFinish(ex)
                 } else {
@@ -89,25 +90,30 @@ class KafkaMessageProducerImpl(
         }
     }
 
-    override fun send(message: CordaMessage<*>, callback: MessageProducer.Callback?) {
+    override fun send(message: CordaMessage<*>, callback: MessageProducer.Callback?): Deferred<*>? {
         val headers = message.getProperty<Headers>("headers")
         val partition = message.getPropertyOrNull<Int>("partition")
+
         getOrCreateBatchPublishTracing(clientId).begin(listOf(headers))
         tryWithCleanupOnFailure("send single message") {
             sendMessage(message, partition, callback)
         }
+
+        return null
     }
 
-    override fun sendMessages(messages: List<CordaMessage<*>>) {
+    override fun sendMessages(messages: List<CordaMessage<*>>) : List<Deferred<*>>? {
         getOrCreateBatchPublishTracing(clientId).begin(messages.map {
             it.getProperty<Headers>("headers")
         })
         tryWithCleanupOnFailure("send multiple message") {
             messages.forEach { message ->
                 val partition = message.getPropertyOrNull<Int>("partition")
-                sendMessage(message, partition, callback = null)
+                sendMessage(message, partition)
             }
         }
+
+        return null
     }
 
     private fun sendMessage(
@@ -130,9 +136,8 @@ class KafkaMessageProducerImpl(
         partition: Int? = null,
         callback: MessageProducer.Callback? = null
     ) {
-        // TODO: Chunking is not supported for non-transactional calls; this needs to be figured out
+        // TODO: Producer-level is not supported for non-transactional calls.
         val ex = CordaMessageAPIFatalException(asyncChunkErrorMessage)
-        callback?.onCompletion(null, ex)
         throw ex
     }
 
@@ -146,7 +151,7 @@ class KafkaMessageProducerImpl(
             try {
                 producer.send(
                     addTraceContextToRecord(record).toKafkaRecord(topicPrefix, partition),
-                    toTraceKafkaCallback({res, ex-> callback?.onCompletion(res, ex)}, traceContext)
+                    toTraceKafkaCallback({ exception -> callback?.onCompletion(exception) }, traceContext)
                 )
             } catch (ex: CordaRuntimeException) {
                 traceContext.errorAndFinish(ex)
@@ -183,6 +188,7 @@ class KafkaMessageProducerImpl(
             in fatalExceptions -> throw CordaMessageAPIFatalException("FatalError occurred $errorString", ex)
             in transientExceptions -> throw CordaMessageAPIIntermittentException("Error occurred $errorString", ex)
             in apiExceptions -> throw ex
+            // TODO: Internally handle recoverable exceptions
             IllegalStateException::class.java -> {
                 // It's not clear whether the producer is ok to abort and continue or not in this case, so play it safe
                 // and let the client know to create a new one.
@@ -211,7 +217,7 @@ class KafkaMessageProducerImpl(
     }
 }
 
-fun CordaMessage<*>.toCordaProducerRecord() : CordaProducerRecord<*, *> {
+private fun CordaMessage<*>.toCordaProducerRecord() : CordaProducerRecord<*, *> {
     return CordaProducerRecord(
         topic = this.getProperty<String>("topic"),
         key = this.getProperty("key"),
