@@ -31,7 +31,7 @@ class HSQLHelper : DbUtilsHelper {
         showSql: Boolean,
         rewriteBatchedInserts: Boolean
     ): EntityManagerConfiguration {
-        if(inMemoryDbName.isBlank()){
+        if (inMemoryDbName.isBlank()) {
             throw IllegalArgumentException("Please specify inMemoryDbName when using HSQL")
         }
         logger.info("Using in-memory (HSQL) DB".emphasise())

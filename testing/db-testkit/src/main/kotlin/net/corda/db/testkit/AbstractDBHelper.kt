@@ -13,7 +13,22 @@ import net.corda.test.util.LoggingUtils.emphasise
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-abstract class AbstractDBHelper : DbUtilsHelper{
+/**
+ * An abstract class that provides common functionality for working with databases using JDBC.
+ *
+ * This class defines abstract methods for retrieving database-related information such as database name,
+ * admin user, admin password, port, host, JDBC URL, and driver class. It also provides implementations
+ * for creating a data source, configuring an entity manager, and creating a configuration for the database.
+ *
+ * The reason for this abstract class is to avoid a lot of code duplication that would've happened in the
+ * PostgresHelper and SQLServerHelper classes
+ *
+ * @property port The port on which the database server is running.
+ * @property host The hostname of the database server.
+ * @property jdbcUrl The JDBC URL used to connect to the database.
+ * @property driverClass The name of the JDBC driver to be used.
+ */
+abstract class AbstractDBHelper : DbUtilsHelper {
     abstract override fun isInMemory(): Boolean
 
     private val logger: Logger = LoggerFactory.getLogger(this::class.java)
@@ -55,8 +70,8 @@ abstract class AbstractDBHelper : DbUtilsHelper{
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
 
-        if(!schemaName.isNullOrBlank()){
-            if(createSchema){
+        if (!schemaName.isNullOrBlank()) {
+            if (createSchema) {
                 logger.info("Creating schema: $schemaName".emphasise())
                 createDataSource(driverClass,jdbcUrl,user,password, maximumPoolSize = 1)
                     .connection.createSchema(schemaName)
@@ -81,9 +96,9 @@ abstract class AbstractDBHelper : DbUtilsHelper{
     ): Config {
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
-        val currentJdbcUrl = if(!schemaName.isNullOrBlank()){
+        val currentJdbcUrl = if (!schemaName.isNullOrBlank()) {
             "$jdbcUrl?currentSchema=$schemaName"
-        }else{
+        } else {
             jdbcUrl
         }
         return ConfigFactory.empty()
