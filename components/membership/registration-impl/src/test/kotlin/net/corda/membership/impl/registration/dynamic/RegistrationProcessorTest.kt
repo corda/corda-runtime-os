@@ -38,7 +38,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
-import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
@@ -80,12 +80,12 @@ class  RegistrationProcessorTest {
         const val testTopicKey = "key"
         const val SERIAL = 0L
 
-        const val sessionKeyId = "BBC123456789"
+        const val encodedSessionKey = "BBC123456789"
         val memberContext = KeyValuePairList(
             listOf(
                 KeyValuePair("key", "value"),
                 KeyValuePair(PLATFORM_VERSION, "50100"),
-                KeyValuePair(MemberInfoExtension.PARTY_SESSION_KEYS_ID.format(0), sessionKeyId),
+                KeyValuePair(PARTY_SESSION_KEYS_PEM.format(0), encodedSessionKey),
             )
         )
         val registrationContext = KeyValuePairList(listOf(KeyValuePair("key-2", "value-2")))
@@ -258,7 +258,7 @@ class  RegistrationProcessorTest {
         }
         keyEncodingService = mock {
             on { decodePublicKey(serialisedSigningKey) } doReturn signingKey
-            on { decodePublicKey(sessionKeyId) } doReturn signingKey
+            on { decodePublicKey(encodedSessionKey) } doReturn signingKey
         }
 
         processor = RegistrationProcessor(

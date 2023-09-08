@@ -18,7 +18,7 @@ import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
@@ -60,8 +60,8 @@ class QueueRegistrationHandlerTest {
     private val mgmName = MemberX500Name("MGM", "London", "GB")
     private val member = HoldingIdentity(aliceName.toString(), groupId.toString())
     private val mgm = HoldingIdentity(mgmName.toString(), groupId.toString())
-    private val sessionKeyId1 = "BBC123456789"
-    private val sessionKeyId2 = "BBC123456786"
+    private val encodedSessionKey1 = "BBC123456789"
+    private val encodedSessionKey2 = "BBC123456786"
     private val sessionKey1 = mock<PublicKey>()
     private val sessionKey2 = mock<PublicKey>()
 
@@ -69,8 +69,8 @@ class QueueRegistrationHandlerTest {
     private val memberContextList = KeyValuePairList(
         listOf(
             KeyValuePair(PLATFORM_VERSION , "50100"),
-            KeyValuePair(PARTY_SESSION_KEYS_ID.format(0), sessionKeyId1),
-            KeyValuePair(PARTY_SESSION_KEYS_ID.format(1), sessionKeyId2),
+            KeyValuePair(PARTY_SESSION_KEYS_PEM.format(0), encodedSessionKey1),
+            KeyValuePair(PARTY_SESSION_KEYS_PEM.format(1), encodedSessionKey2),
         )
     )
     private val signature = mock<CryptoSignatureWithKey>()
@@ -113,8 +113,8 @@ class QueueRegistrationHandlerTest {
 
     private val signatureVerificationService = mock<SignatureVerificationService>()
     private val keyEncodingService = mock<KeyEncodingService> {
-        on { decodePublicKey(sessionKeyId1) } doReturn sessionKey1
-        on { decodePublicKey(sessionKeyId2) } doReturn sessionKey2
+        on { decodePublicKey(encodedSessionKey1) } doReturn sessionKey1
+        on { decodePublicKey(encodedSessionKey2) } doReturn sessionKey2
     }
 
     private val authenticatedMessageRecord = mock<Record<String, AppMessage>>()
