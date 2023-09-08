@@ -21,7 +21,6 @@ dependencies {
     implementation project(":components:db:db-connection-manager")
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:lifecycle:lifecycle')
-    implementation project(":libs:lifecycle:lifecycle-impl")
     implementation project(':libs:lifecycle:registry')
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:metrics')
@@ -31,4 +30,6 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    runtimeOnly project(":libs:lifecycle:lifecycle-impl")
 }
