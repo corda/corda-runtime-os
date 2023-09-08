@@ -1,5 +1,6 @@
 package net.corda.ledger.common.testkit
 
+import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.security.spec.ECGenParameterSpec
@@ -12,3 +13,5 @@ val publicKeyExample: PublicKey = kpg
 
 val anotherPublicKeyExample: PublicKey = kpg
     .generateKeyPair().public
+
+val keyPairExample: KeyPair = kpg.generateKeyPair()

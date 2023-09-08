@@ -83,7 +83,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         val wireTransaction = wireTransactionFactory.create(componentGroups)
 
         utxoLedgerTransactionVerificationService.verify(utxoLedgerTransactionFactory.create(wireTransaction))
-
+        //simon
         val signaturesWithMetadata =
             transactionSignatureService.sign(
                 wireTransaction,

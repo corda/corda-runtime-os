@@ -48,6 +48,7 @@ dependencies {
     implementation project(':libs:platform-info')
     implementation project(":libs:serialization:serialization-avro")
     implementation project(":libs:tracing")
+    implementation project(':libs:crypto:merkle-impl')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
