@@ -39,6 +39,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             initiatingToInitiatedFlow(PROTOCOL, FAKE_FLOW_NAME, FAKE_FLOW_NAME)
         }
     }
+
     @Test
     fun `Receiving an out-of-order session data events does not resume the flow and sends a session ack`() {
         given {
@@ -77,6 +78,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             }
         }
     }
+
     @Test
     fun `Receiving a session close event instead of a data resumes the flow with an error`() {
         given {
@@ -217,6 +219,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             }
         }
     }
+
     @Test
     fun `Given two sessions receiving a single session error event does not resume the flow and schedules session cleanup`() {
         given {
@@ -270,6 +273,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             }
         }
     }
+
     @Test
     fun `Given two sessions receiving a session error event first for one and a session data event for the other resumes the flow with an error and schedules session cleanup`() {
         given {
@@ -351,6 +355,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             }
         }
     }
+
     @Test
     fun `Given two sessions receiving a session data and then close event for one session and a session data event for the other resumes the flow`() {
         given {

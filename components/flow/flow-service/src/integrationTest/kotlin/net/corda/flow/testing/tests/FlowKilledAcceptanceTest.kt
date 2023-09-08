@@ -6,7 +6,6 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.virtualnode.OperationalStatus
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
@@ -50,7 +49,6 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    @Disabled
     fun `test init flow event killed due to inactive flow operational status`() {
         `when` {
             sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL)

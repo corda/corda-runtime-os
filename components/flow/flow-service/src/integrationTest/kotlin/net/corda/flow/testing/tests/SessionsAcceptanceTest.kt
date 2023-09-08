@@ -6,7 +6,6 @@ import net.corda.data.flow.event.session.SessionError
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.StepSetup
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
@@ -21,7 +20,7 @@ import java.util.stream.Stream
  */
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
-@Disabled//todo - CORE-15747
+
 class SessionsAcceptanceTest : FlowServiceTestBase() {
 
     private companion object {
