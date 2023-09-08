@@ -56,7 +56,7 @@ internal class CloseSessionServiceTest {
 
         verify(testContext.flowSessionManager).getInitiatingAndInitiatedSessions(any())
         verify(testContext.flowSessionManager).sendCloseMessages(any(), any(), any())
-        verify(testContext.flowSessionManager, times(2)).getSessionsWithStatuses(any(), any(), any())
+        verify(testContext.flowSessionManager, times(1)).getSessionsWithStatuses(any(), any(), any())
         verify(testContext.flowSessionManager).getRequireCloseTrueAndFalse(any(), any())
         verify(testContext.flowSessionManager, times(3)).updateStatus(any(), any(), any())
     }
