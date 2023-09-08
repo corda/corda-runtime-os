@@ -28,6 +28,7 @@ import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+@Suppress("LongParameterList")
 internal class QueueRegistrationHandler(
     private val clock: Clock,
     private val membershipPersistenceClient: MembershipPersistenceClient,
