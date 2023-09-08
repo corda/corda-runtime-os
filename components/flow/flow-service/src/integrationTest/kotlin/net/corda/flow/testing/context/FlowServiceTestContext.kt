@@ -101,13 +101,13 @@ class FlowServiceTestContext @Activate constructor(
 
     private val testConfig = mutableMapOf<String, Any>(
         FlowConfig.EXTERNAL_EVENT_MAX_RETRIES to 2,
-        FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW to 500000L,
-        FlowConfig.SESSION_TIMEOUT_WINDOW to 500000L,
+        FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW to 500000,
+        FlowConfig.SESSION_TIMEOUT_WINDOW to 500000,
         FlowConfig.SESSION_FLOW_CLEANUP_TIME to 30000,
-        FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS to 5,
         FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION to 60000,
         FlowConfig.PROCESSING_MAX_RETRY_DELAY to 16000,
         FlowConfig.PROCESSING_FLOW_CLEANUP_TIME to 30000,
+        FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION to 300000,
         MessagingConfig.Subscription.PROCESSOR_TIMEOUT to 60000,
         MessagingConfig.MAX_ALLOWED_MSG_SIZE to 972800
     )
