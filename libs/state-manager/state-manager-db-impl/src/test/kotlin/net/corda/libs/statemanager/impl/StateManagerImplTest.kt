@@ -3,14 +3,11 @@ package net.corda.libs.statemanager.impl
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
-import net.corda.avro.serialization.CordaAvroDeserializer
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
-import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 
@@ -22,9 +19,6 @@ class StateManagerImplTest {
         whenever(createEntityManager()).thenReturn(entityManager)
     }
     private val stateRepository: StateRepository = mock()
-    private val serializerFactory: CordaAvroSerializationFactory = mock()
-
-    private val cordaAvroDeserializer = mock<CordaAvroDeserializer<Any>>()
 
     private val now = Instant.now()
     private val stateDtoA = mock<StateEntity>().apply {
@@ -46,10 +40,8 @@ class StateManagerImplTest {
         val keys = setOf("a")
         val stateDtos = listOf(stateDtoA)
 
-        whenever(serializerFactory.createAvroDeserializer(any(), eq(Any::class.java))).thenReturn(cordaAvroDeserializer)
         whenever(entityManagerFactory.createEntityManager()).thenReturn(entityManager)
         whenever(stateRepository.get(eq(entityManager), eq(keys))).thenReturn(stateDtos)
-        whenever(cordaAvroDeserializer.deserialize(any())).thenReturn(Any())
 
         val result = stateManager.get(keys)
 
