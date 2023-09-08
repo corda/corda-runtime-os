@@ -7,6 +7,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
+import net.corda.flow.pipeline.handlers.requests.sessions.service.CloseSessionService
 import net.corda.flow.pipeline.handlers.requests.sessions.service.GenerateSessionService
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
@@ -29,6 +30,7 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
     val flowEvent = FlowEvent()
     val flowMessageFactory = mock<FlowMessageFactory>()
     val flowSessionManager = mock<FlowSessionManager>()
+    val closeSessionService = mock<CloseSessionService>()
     val flowRecordFactory = mock<FlowRecordFactory>()
     val recordList = mutableListOf<Record<*, *>>()
     val flowStack = mock<FlowStack>()

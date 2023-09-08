@@ -57,6 +57,7 @@ import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPPORTED
+import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
@@ -272,7 +273,8 @@ class FlowServiceTestContext @Activate constructor(
         cpiId: String,
         protocol: String,
         initiatingIdentity: HoldingIdentity?,
-        initiatedIdentity: HoldingIdentity?
+        initiatedIdentity: HoldingIdentity?,
+        requireClose: Boolean
     ): FlowIoRequestSetup {
         return createAndAddSessionEvent(
             flowId,
@@ -286,14 +288,15 @@ class FlowServiceTestContext @Activate constructor(
                 .setContextUserProperties(emptyKeyValuePairList())
                 .build(),
             sequenceNum = 0,
-            getContextSessionProps(protocol)
+            getContextSessionProps(protocol, requireClose)
         )
     }
 
-    private fun getContextSessionProps(protocol: String): KeyValuePairList {
+    private fun getContextSessionProps(protocol: String, requireClose: Boolean): KeyValuePairList {
         return KeyValueStore().apply {
             put(FLOW_PROTOCOL, protocol)
             put(FLOW_PROTOCOL_VERSIONS_SUPPORTED, "1")
+            put(FLOW_SESSION_REQUIRE_CLOSE, requireClose.toString())
         }.avro
     }
 

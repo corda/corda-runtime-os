@@ -18,6 +18,7 @@ import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.isInitiatingIdentity
 import net.corda.flow.utils.keyValuePairListOf
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
@@ -135,7 +136,8 @@ class FlowSessionManagerImpl @Activate constructor(
                 checkpoint,
                 sessionId,
                 payload = getSessionData(payload, checkpoint, sessionState, sessionInfo),
-                instant
+                instant,
+                sessionState.sessionProperties
             )
         }
     }
@@ -233,6 +235,36 @@ class FlowSessionManagerImpl @Activate constructor(
     ): List<SessionState> = sessionIds
             .map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
             .filter { sessionState -> sessionState.status == status }
+
+    override fun getRequireCloseTrueAndFalse(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>
+    ): Pair<List<String>, List<String>> {
+        val statePair = getSessionsWithStatuses(
+            checkpoint,
+            sessionIds,
+            setOf(SessionStateType.CREATED, SessionStateType.CONFIRMED, SessionStateType.CLOSING)
+        ).partition { sessionState -> sessionState.requireClose }
+        return Pair(statePair.first.map { it.sessionId }, statePair.second.map { it.sessionId })
+    }
+
+    override fun getInitiatingAndInitiatedSessions(
+        sessionIds: List<String>
+    ): Pair<List<String>, List<String>> {
+        return sessionIds.partition { isInitiatingIdentity(it) }
+    }
+
+    override fun updateStatus(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        status: SessionStateType
+    ): List<SessionState> {
+        return sessionIds
+            .map { sessionId -> getAndRequireSession(checkpoint, sessionId) }
+            .onEach {
+                it.status = status
+            }
+    }
 
     override fun getSessionsWithStatuses(
         checkpoint: FlowCheckpoint,
