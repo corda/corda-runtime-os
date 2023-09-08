@@ -117,8 +117,7 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun close() {
-        val flowCheckpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
-        val sessionState = flowCheckpoint.getSessionState(sourceSessionId)
+        val sessionState = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.getSessionState(sourceSessionId)
         if(sessionState?.status != SessionStateType.CLOSED) {
             fiber.suspend(FlowIORequest.CloseSessions(setOf(sourceSessionId)))
             log.trace { "Closing session: $sourceSessionId" }
