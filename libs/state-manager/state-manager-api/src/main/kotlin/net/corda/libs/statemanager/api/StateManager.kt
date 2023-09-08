@@ -31,19 +31,21 @@ interface StateManager : AutoCloseable {
      * Update [states] within the underlying storage.
      * Control is only returned to the caller once all [states] have been updated and replicas of the underlying
      * persistent storage, if any, are synced.
+     * The operation is transactional, either all [states] are updated or none is.
      *
      * @return states that could not be updated due to mismatch versions.
      */
     fun update(states: Collection<State>): Map<String, State>
 
     /**
-     * Delete all states referenced by [keys] from the underlying storage.
+     * Delete all [states] from the underlying storage.
      * Control is only returned to the caller once all states have been deleted and replicas of the underlying
      * persistent storage, if any, are synced.
+     * The operation is transactional, either all [states] are deleted or none is.
      *
      * @return states that could not be deleted due to mismatch versions.
      */
-    fun delete(keys: Collection<String>): Map<String, State>
+    fun delete(states: Collection<State>): Map<String, State>
 
     /**
      * Retrieve all states that were last updated between [start] and [finish] times.

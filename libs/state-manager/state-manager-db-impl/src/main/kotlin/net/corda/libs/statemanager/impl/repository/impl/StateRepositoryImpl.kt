@@ -58,7 +58,6 @@ class StateRepositoryImpl : StateRepository {
                     .createNamedQuery(UPDATE_STATE_QUERY_NAME.trimIndent())
                     .setParameter(KEY_ID, it.key)
                     .setParameter(VALUE_ID, it.value)
-                    .setParameter(VERSION_ID, it.version)
                     .setParameter(METADATA_ID, it.metadata)
                     .executeUpdate()
             }

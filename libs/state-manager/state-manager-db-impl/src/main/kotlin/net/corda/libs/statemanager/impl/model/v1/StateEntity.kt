@@ -23,6 +23,7 @@ const val METADATA_ID = "metadata"
 const val START_TIMESTAMP = "startTime"
 const val FINISH_TIMESTAMP = "finishTime"
 
+// TODO-[CORE-17025]: remove Hibernate
 // TODO-[CORE-16663]: make the database provider pluggable.
 // Hibernate 5 does not support inserting a String to a jsonb column type out of the box, so we use
 // native queries with casting here (also used in the ledger).
@@ -38,7 +39,7 @@ const val FINISH_TIMESTAMP = "finishTime"
     name = UPDATE_STATE_QUERY_NAME,
     query = """
         UPDATE ${DbSchema.STATE_MANAGER_TABLE} SET
-        key = :$KEY_ID, value = :$VALUE_ID, version = :$VERSION_ID, metadata = CAST(:$METADATA_ID as JSONB), modified_time = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+        key = :$KEY_ID, value = :$VALUE_ID, version = version + 1, metadata = CAST(:$METADATA_ID as JSONB), modified_time = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
         WHERE key = :$KEY_ID
     """
 )
@@ -74,7 +75,7 @@ class StateEntity(
 
     @Version
     @Column(name = VERSION_ID, nullable = false)
-    var version: Int = -1,
+    var version: Int = 0,
 
     @Column(name = "modified_time", insertable = false, updatable = false)
     var modifiedTime: Instant = Instant.MIN,

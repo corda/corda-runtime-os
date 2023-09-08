@@ -10,9 +10,11 @@ import net.corda.libs.statemanager.impl.repository.StateRepository
 import net.corda.orm.utils.transaction
 import org.slf4j.LoggerFactory
 import java.time.Instant
+import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
-@Suppress("ForbiddenComment")
+// TODO-[CORE-17025]: remove Hibernate
+// TODO-[CORE-16323]: remove current "hack" and implement proper optimistic locking
 class StateManagerImpl(
     private val stateRepository: StateRepository,
     private val entityManagerFactory: EntityManagerFactory,
@@ -28,10 +30,29 @@ class StateManagerImpl(
         StateEntity(key, value, objectMapper.writeValueAsString(metadata), version, modifiedTime)
 
     private fun StateEntity.fromPersistentEntity() =
-        State(key, value, version, metadata.toMetadataMap(), modifiedTime,)
+        State(key, value, version, metadata.toMetadataMap(), modifiedTime)
 
     private fun String.toMetadataMap() =
         objectMapper.readValue(this, object : TypeReference<Metadata<Any>>() {})
+
+    private fun checkVersionAndPrepareEntitiesForPersistence(
+        states: Collection<State>,
+        entityManager: EntityManager
+    ): Pair<List<StateEntity>, Map<String, State>> {
+        val persistedStates = stateRepository.get(entityManager, states.map { it.key })
+        val (matchVersion, mismatchVersion) = states.partition { st ->
+            st.version == persistedStates.find { it.key == st.key }?.version
+        }
+
+        return Pair(
+            matchVersion.map {
+                it.toPersistentEntity()
+            },
+            mismatchVersion.associateBy {
+                it.key
+            }
+        )
+    }
 
     override fun create(states: Collection<State>): Map<String, Exception> {
         val failures = mutableMapOf<String, Exception>()
@@ -63,29 +84,32 @@ class StateManagerImpl(
     }
 
     override fun update(states: Collection<State>): Map<String, State> {
-        // TODO: return states that failed the optimistic locking check
-        val mismatchVersions = mutableMapOf<String, State>()
-
         entityManagerFactory.transaction { em ->
-            stateRepository.update(em, states.map { it.toPersistentEntity() })
-        }
+            val (updatable, mismatchVersions) = checkVersionAndPrepareEntitiesForPersistence(states, em)
+            stateRepository.update(em, updatable)
 
-        return mismatchVersions
+            return mismatchVersions.also {
+                if (it.isNotEmpty()) {
+                    logger.warn("Optimistic locking check failed for States ${it.entries.joinToString()}")
+                }
+            }
+        }
     }
 
-    override fun delete(keys: Collection<String>): Map<String, State> {
-        // TODO: return states that failed the optimistic locking check
-        val mismatchVersions = mutableMapOf<String, State>()
-
+    override fun delete(states: Collection<State>): Map<String, State> {
         entityManagerFactory.transaction { em ->
-            stateRepository.delete(em, keys)
-        }
+            val (deletable, mismatchVersions) = checkVersionAndPrepareEntitiesForPersistence(states, em)
+            stateRepository.delete(em, deletable.map { it.key })
 
-        return mismatchVersions
+            return mismatchVersions.also {
+                if (it.isNotEmpty()) {
+                    logger.warn("Optimistic locking check failed for States ${it.entries.joinToString()}")
+                }
+            }
+        }
     }
 
     override fun getUpdatedBetween(start: Instant, finish: Instant): Map<String, State> {
-
         return entityManagerFactory.transaction { em ->
             stateRepository.findUpdatedBetween(em, start, finish)
         }

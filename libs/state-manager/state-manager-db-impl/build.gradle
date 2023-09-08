@@ -5,6 +5,7 @@ plugins {
 
 description 'Database as Persisent Storage Implementation of the State Manager '
 
+// TODO-[CORE-17025]: remove Hibernate
 dependencies {
     api project(":libs:state-manager:state-manager-api")
 
