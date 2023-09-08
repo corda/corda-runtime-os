@@ -67,9 +67,6 @@ class CloseSessionsRequestHandlerTest {
 
     @Test
     fun `Sends close events and updates the checkpoint with session state when sessions are not closed or errored`() {
-        whenever(testContext.closeSessionService.handleCloseForSessions(testContext.flowCheckpoint, sessions))
-            .thenReturn(sessions)
-
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
 
         verify(testContext.closeSessionService).handleCloseForSessions(testContext.flowCheckpoint, sessions)

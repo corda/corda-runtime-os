@@ -54,7 +54,6 @@ class CloseSessionsRequestHandler @Activate constructor(
             val msg = e.message ?: "An error occurred in the platform - A session in ${request.sessions} was missing from the checkpoint"
             throw FlowFatalException(msg, e)
         }
-
         return context
     }
 }

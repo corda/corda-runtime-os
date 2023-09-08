@@ -46,7 +46,6 @@ class SubFlowFinishedRequestHandler @Activate constructor(
         request: FlowIORequest.SubFlowFinished
     ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
-
         try {
             closeSessionService.handleCloseForSessions(checkpoint, getSessionsToClose(request))
         } catch (e: Exception) {
@@ -54,7 +53,6 @@ class SubFlowFinishedRequestHandler @Activate constructor(
             val msg = e.message ?: "An error occurred in the platform - A session in ${request.sessionIds} was missing from the checkpoint"
             throw FlowFatalException(msg, e)
         }
-
         return context
     }
 }
