@@ -34,7 +34,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         }
     }
     @Test
-    fun `Given a subFlow contains osessions when the subFlow fails, session error events are sent and session cleanup is scheduled`() {
+    fun `Given a subFlow contains sessions when the subFlow fails, session error events are sent and session cleanup is scheduled`() {
         `when` {
             startFlow(this)
                 .suspendsWith(FlowIORequest.Send(
@@ -59,7 +59,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         }
     }
 @Test
-fun `Given a subFlow contains an initiated and closed session when the subFlow fails a single session error event is sent to the initiated session and session cleanup is schedule`() {
+fun `Given a subFlow contains an initiated and closed session when the subFlow fails a single session error event is sent to the initiated session and session cleanup is scheduled`() {
     `when` {
         startFlow(this)
             .suspendsWith(FlowIORequest.Send(

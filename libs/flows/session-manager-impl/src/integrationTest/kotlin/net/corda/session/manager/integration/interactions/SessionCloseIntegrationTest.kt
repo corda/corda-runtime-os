@@ -28,9 +28,9 @@ class SessionCloseIntegrationTest {
     fun `Full session send and receive with standard close`() {
         val (alice, bob) = initiateNewSession(testSmartConfig)
 
-        //alice send data
+        //alice sends data
         alice.processNewOutgoingMessage(SessionMessageType.DATA, sendMessages = true)
-        //bob receive data
+        //bob receives data
         bob.processNextReceivedMessage()
 
         alice.assertAllMessagesDelivered()

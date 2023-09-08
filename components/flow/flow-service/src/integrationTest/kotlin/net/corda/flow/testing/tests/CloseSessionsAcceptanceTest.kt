@@ -55,7 +55,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Calling 'close' on a session is already in CLOSING when require close is set to true completes successfully`() {
+    fun `Calling 'close' on a session which is already in CLOSING when require close is set to true completes successfully`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.Receive(setOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName))))
@@ -105,7 +105,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Receiving an out-of-order session close events does not resume the flow`() {
+    fun `Receiving an out-of-order session close event does not resume the flow`() {
         given {
             startFlow(this)
                 .suspendsWith(FlowIORequest.Receive(setOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName))))

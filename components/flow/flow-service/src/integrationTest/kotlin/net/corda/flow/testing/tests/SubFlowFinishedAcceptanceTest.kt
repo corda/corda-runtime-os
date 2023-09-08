@@ -36,7 +36,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Given a subFlow contains no sessions when the subFlow finishes flow completes successfully`() {
+    fun `Given a subFlow that contains no sessions when the subFlow finishes flow completes successfully`() {
         `when` {
             startFlow(this)
                 .suspendsWith(FlowIORequest.SubFlowFinished(emptyList()))
@@ -103,7 +103,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Given an initiated top level flow with requireClose set to true, when it finishes and calls SubFlowFinished completes flow, sends a close, and schedules cleanup`() {
+    fun `Given an initiated top level flow with requireClose set to true, when it finishes and calls SubFlowFinished it completes flow, sends a close, and schedules cleanup`() {
         given {
             membershipGroupFor(BOB_HOLDING_IDENTITY)
             initiatingToInitiatedFlow(PROTOCOL_2, FLOW_NAME, FLOW_NAME_2)
@@ -127,7 +127,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Given an initiated top level flow with requireClose set to false, when it finishes and calls SubFlowFinished completes flow and schedules cleanup`() {
+    fun `Given an initiated top level flow with requireClose set to false, when it finishes and calls SubFlowFinished it completes flow and schedules cleanup`() {
         given {
             membershipGroupFor(BOB_HOLDING_IDENTITY)
             initiatingToInitiatedFlow(PROTOCOL_2, FLOW_NAME, FLOW_NAME_2)

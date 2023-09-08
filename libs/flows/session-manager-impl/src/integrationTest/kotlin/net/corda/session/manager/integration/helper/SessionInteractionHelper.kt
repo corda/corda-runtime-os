@@ -32,11 +32,11 @@ fun closeSession(
     partyA: SessionParty,
     partyB: SessionParty
 ) {
-    //partyB send close to partyA
+    //partyB sends close to partyA
     partyB.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
     partyB.assertStatus(SessionStateType.CLOSED)
 
-    //partyA receive close
+    //partyA receives close
     partyA.processNextReceivedMessage()
     partyA.assertStatus(SessionStateType.CLOSING)
 }
