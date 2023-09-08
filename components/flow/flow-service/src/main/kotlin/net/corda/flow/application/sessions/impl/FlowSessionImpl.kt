@@ -117,12 +117,16 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun close() {
-        val flowCheckpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
-        val sessionState = flowCheckpoint.getSessionState(sourceSessionId)
-        if(sessionState?.status != SessionStateType.CLOSED) {
+        if (canCloseSession()) {
             fiber.suspend(FlowIORequest.CloseSessions(setOf(sourceSessionId)))
             log.trace { "Closing session: $sourceSessionId" }
         }
+    }
+
+    private fun canCloseSession() : Boolean {
+        val flowCheckpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
+        val sessionState = flowCheckpoint.getSessionState(sourceSessionId)
+        return sessionState?.status != SessionStateType.CLOSED
     }
 
     private fun serialize(payload: Any): ByteArray {
