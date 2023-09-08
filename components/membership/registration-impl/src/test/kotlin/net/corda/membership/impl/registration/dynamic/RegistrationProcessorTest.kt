@@ -80,7 +80,7 @@ class  RegistrationProcessorTest {
         const val testTopicKey = "key"
         const val SERIAL = 0L
 
-        val sessionKeyId = "BBC123456789"
+        const val sessionKeyId = "BBC123456789"
         val memberContext = KeyValuePairList(
             listOf(
                 KeyValuePair("key", "value"),
