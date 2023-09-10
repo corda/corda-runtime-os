@@ -24,7 +24,7 @@ data class State(
     /**
      * Arbitrary Map of primitive types that can be used to store and query data associated with the state.
      */
-    val metadata: Metadata<Any> = Metadata(),
+    val metadata: Metadata = Metadata(),
 
     /**
      * Time when the state was last modified.

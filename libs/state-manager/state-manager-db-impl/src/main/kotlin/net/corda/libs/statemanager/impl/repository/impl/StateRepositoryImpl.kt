@@ -1,16 +1,18 @@
 package net.corda.libs.statemanager.impl.repository.impl
 
+import net.corda.db.schema.DbSchema
+import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.impl.model.v1.CREATE_STATE_QUERY_NAME
 import net.corda.libs.statemanager.impl.model.v1.DELETE_STATES_BY_KEY_QUERY_NAME
-import net.corda.libs.statemanager.impl.model.v1.FINISH_TIMESTAMP
+import net.corda.libs.statemanager.impl.model.v1.FILTER_STATES_BY_KEY_QUERY_NAME
+import net.corda.libs.statemanager.impl.model.v1.FILTER_STATES_BY_UPDATED_TIMESTAMP_QUERY_NAME
+import net.corda.libs.statemanager.impl.model.v1.FINISH_TIMESTAMP_ID
 import net.corda.libs.statemanager.impl.model.v1.KEY_ID
 import net.corda.libs.statemanager.impl.model.v1.METADATA_ID
-import net.corda.libs.statemanager.impl.model.v1.QUERY_STATES_BY_KEY_QUERY_NAME
-import net.corda.libs.statemanager.impl.model.v1.QUERY_STATES_BY_UPDATED_TIMESTAMP_NAME
-import net.corda.libs.statemanager.impl.model.v1.START_TIMESTAMP
-import net.corda.libs.statemanager.impl.model.v1.VALUE_ID
+import net.corda.libs.statemanager.impl.model.v1.START_TIMESTAMP_ID
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.model.v1.UPDATE_STATE_QUERY_NAME
+import net.corda.libs.statemanager.impl.model.v1.VALUE_ID
 import net.corda.libs.statemanager.impl.model.v1.VERSION_ID
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import org.slf4j.LoggerFactory
@@ -39,7 +41,7 @@ class StateRepositoryImpl : StateRepository {
     ): List<StateEntity> {
         val results = keys.chunked(50) { chunkedKeys ->
             entityManager
-                .createNamedQuery(QUERY_STATES_BY_KEY_QUERY_NAME.trimIndent(), StateEntity::class.java)
+                .createNamedQuery(FILTER_STATES_BY_KEY_QUERY_NAME.trimIndent(), StateEntity::class.java)
                 .setParameter(KEY_ID, chunkedKeys)
                 .resultList
         }
@@ -85,9 +87,46 @@ class StateRepositoryImpl : StateRepository {
         finish: Instant
     ): Collection<StateEntity> {
         return entityManager
-            .createNamedQuery(QUERY_STATES_BY_UPDATED_TIMESTAMP_NAME.trimIndent(), StateEntity::class.java)
-            .setParameter(START_TIMESTAMP, start)
-            .setParameter(FINISH_TIMESTAMP, finish)
+            .createNamedQuery(FILTER_STATES_BY_UPDATED_TIMESTAMP_QUERY_NAME.trimIndent(), StateEntity::class.java)
+            .setParameter(START_TIMESTAMP_ID, start)
+            .setParameter(FINISH_TIMESTAMP_ID, finish)
             .resultList
+    }
+
+    override fun filterByMetadata(
+        entityManager: EntityManager,
+        key: String,
+        operation: Operation,
+        value: Any
+    ): Collection<StateEntity> {
+        // Comparison operation to execute
+        val comparison = when (operation) {
+            Operation.Equals -> "="
+            Operation.NotEquals -> "<>"
+            Operation.LesserThan -> "<"
+            Operation.GreaterThan -> ">"
+        }
+
+        // Only primitive types are supported as part of the state metadata
+        val nativeType = when (value) {
+            is String -> "text"
+            is Number -> "numeric"
+            is Boolean -> "boolean"
+            else -> throw IllegalArgumentException("Unsupported Type: ${value::class.java.simpleName}")
+        }
+        val query = entityManager.createNativeQuery(
+            "SELECT * FROM ${DbSchema.STATE_MANAGER_TABLE} s WHERE (s.metadata->>'$key')::::$nativeType $comparison '$value'",
+            StateEntity::class.java
+        )
+
+//        Should we use this instead of casting to the specific type (::text, ::numeric, ::boolean)?
+//        val query = entityManager.createNativeQuery(
+//            "SELECT * FROM ${DbSchema.STATE_MANAGER_TABLE} s " +
+//                    "   WHERE s.metadata->'$key' $operation '$value'",
+//            StateEntity::class.java
+//        )
+
+        @Suppress("UNCHECKED_CAST")
+        return query.resultList as Collection<StateEntity>
     }
 }

@@ -2,6 +2,7 @@ package net.corda.libs.statemanager.impl
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
@@ -21,9 +22,8 @@ class StateManagerImpl(
     private val entityManagerFactory: EntityManagerFactory,
 ) : StateManager {
 
-    private val objectMapper = ObjectMapper()
-
     private companion object {
+        private val objectMapper = ObjectMapper()
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
@@ -34,7 +34,7 @@ class StateManagerImpl(
         State(key, value, version, metadata.toMetadataMap(), modifiedTime)
 
     private fun String.toMetadataMap() =
-        objectMapper.readValue(this, object : TypeReference<Metadata<Any>>() {})
+        objectMapper.readValue(this, object : TypeReference<Metadata>() {})
 
     @VisibleForTesting
     fun checkVersionAndPrepareEntitiesForPersistence(
@@ -117,6 +117,16 @@ class StateManagerImpl(
         }
             .map { it.fromPersistentEntity() }
             .associateBy { it.key }
+    }
+
+    override fun find(key: String, operation: Operation, value: Any): Map<String, State> {
+        return entityManagerFactory.transaction { em ->
+            stateRepository.filterByMetadata(em, key, operation, value)
+        }.map {
+            it.fromPersistentEntity()
+        }.associateBy {
+            it.key
+        }
     }
 
     override fun close() {

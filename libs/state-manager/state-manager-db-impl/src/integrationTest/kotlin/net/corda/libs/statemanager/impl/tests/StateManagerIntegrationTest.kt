@@ -6,6 +6,7 @@ import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
+import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
@@ -26,6 +27,7 @@ import net.corda.orm.utils.use
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,23 +40,11 @@ import java.util.concurrent.CountDownLatch
 import javax.persistence.PersistenceException
 import kotlin.concurrent.thread
 
+// TODO-[CORE-16663]: make database provider pluggable
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StateManagerIntegrationTest {
 
-    private val objectMapper = ObjectMapper()
-
-    private fun ObjectMapper.toMetadata(metadata: String) =
-        this.readValue(metadata, object : TypeReference<Metadata<Any>>() {})
-
     private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("state_manager_db")
-
-    private val entityManagerFactoryFactory = EntityManagerFactoryFactoryImpl().create(
-        "state_manager_test",
-        StateManagerEntities.classes.toList(),
-        dbConfig
-    )
-
-    private val stateManager: StateManager = StateManagerImpl(StateRepositoryImpl(), entityManagerFactoryFactory)
 
     init {
         val dbChange = ClassloaderChangeLog(
@@ -71,13 +61,30 @@ class StateManagerIntegrationTest {
         }
     }
 
-    @BeforeEach
-    fun setUp() {
-        // TODO-[CORE-16663]: make database provider pluggable
-        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+    private val uniqueId = UUID.randomUUID()
+    private val objectMapper = ObjectMapper()
+    private val entityManagerFactoryFactory = EntityManagerFactoryFactoryImpl().create(
+        "state_manager_test",
+        StateManagerEntities.classes.toList(),
+        dbConfig
+    )
+    private val stateManager: StateManager = StateManagerImpl(StateRepositoryImpl(), entityManagerFactoryFactory)
+
+    private fun ObjectMapper.toMetadata(metadata: String) =
+        this.readValue(metadata, object : TypeReference<Metadata>() {})
+
+    private fun cleanStates() = entityManagerFactoryFactory.createEntityManager().transaction {
+        it.createNativeQuery("DELETE FROM state s WHERE s.key LIKE '%$uniqueId%'").executeUpdate()
+        it.flush()
     }
 
-    private fun testKey(index: Int, uniqueId: UUID) = "key_$index-$uniqueId"
+    @BeforeEach
+    fun setUp() {
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+        cleanStates()
+    }
+
+    private fun buildStateKey(index: Int, uniqueId: UUID) = "key_$index-$uniqueId"
 
     private fun persistStateEntities(
         uniqueId: UUID,
@@ -87,7 +94,7 @@ class StateManagerIntegrationTest {
         metadataContent: (index: Int, key: String) -> String,
     ) = indexRange.forEach { i ->
         entityManagerFactoryFactory.createEntityManager().transaction {
-            val key = testKey(i, uniqueId)
+            val key = buildStateKey(i, uniqueId)
             val stateEntity =
                 StateEntity(key, stateContent(i, key).toByteArray(), metadataContent(i, key), version(i, key))
 
@@ -107,10 +114,10 @@ class StateManagerIntegrationTest {
         indexRange: IntProgression,
         version: (index: Int, key: String) -> Int,
         stateContent: (index: Int, key: String) -> String,
-        metadataContent: (index: Int, key: String) -> Metadata<Any>,
+        metadataContent: (index: Int, key: String) -> Metadata,
     ) = entityManagerFactoryFactory.createEntityManager().use { em ->
         indexRange.forEach { i ->
-            val key = testKey(i, uniqueId)
+            val key = buildStateKey(i, uniqueId)
             val loadedEntity = em.find(StateEntity::class.java, key)
 
             assertSoftly {
@@ -127,10 +134,9 @@ class StateManagerIntegrationTest {
     @ParameterizedTest
     @ValueSource(ints = [1, 10])
     fun canCreateBasicStates(stateCount: Int) {
-        val uniqueId = UUID.randomUUID()
         val states = mutableSetOf<State>()
         for (i in 1..stateCount) {
-            states.add(State(testKey(i, uniqueId), "simpleState_$i".toByteArray()))
+            states.add(State(buildStateKey(i, uniqueId), "simpleState_$i".toByteArray()))
         }
 
         assertThat(stateManager.create(states)).isEmpty()
@@ -146,12 +152,11 @@ class StateManagerIntegrationTest {
     @ParameterizedTest
     @ValueSource(ints = [1, 10])
     fun canCreateStatesWithCustomMetadata(stateCount: Int) {
-        val uniqueId = UUID.randomUUID()
         val states = mutableSetOf<State>()
         for (i in 1..stateCount) {
             states.add(
                 State(
-                    testKey(i, uniqueId),
+                    buildStateKey(i, uniqueId),
                     "customState_$i".toByteArray(),
                     metadata = metadata("key1" to "value$i", "key2" to i)
                 )
@@ -172,7 +177,6 @@ class StateManagerIntegrationTest {
     fun failuresWhenPersistingSomeStatesDoesNotHaltTheEntireBatch() {
         val failedSates = 5
         val totalStates = 15
-        val uniqueId = UUID.randomUUID()
         persistStateEntities(
             uniqueId,
             (1..failedSates),
@@ -182,13 +186,13 @@ class StateManagerIntegrationTest {
         )
         val states = mutableSetOf<State>()
         for (i in 1..totalStates) {
-            states.add(State(testKey(i, uniqueId), "newState_$i".toByteArray()))
+            states.add(State(buildStateKey(i, uniqueId), "newState_$i".toByteArray()))
         }
 
         val failures = stateManager.create(states)
         assertThat(failures).hasSize(failedSates)
         for (i in 1..failedSates) {
-            assertThat(failures[testKey(i, uniqueId)]).isInstanceOf(PersistenceException::class.java)
+            assertThat(failures[buildStateKey(i, uniqueId)]).isInstanceOf(PersistenceException::class.java)
         }
         softlyAssertPersistedStateEntities(
             uniqueId,
@@ -202,7 +206,6 @@ class StateManagerIntegrationTest {
     @ParameterizedTest
     @ValueSource(ints = [1, 10])
     fun canRetrieveStatesByKey(stateCount: Int) {
-        val uniqueId = UUID.randomUUID()
         persistStateEntities(
             uniqueId,
             (1..stateCount),
@@ -211,10 +214,10 @@ class StateManagerIntegrationTest {
             { i, _ -> """{"k1": "v$i", "k2": $i}""" }
         )
 
-        val states = stateManager.get((1..stateCount).map { testKey(it, uniqueId) }.toSet())
+        val states = stateManager.get((1..stateCount).map { buildStateKey(it, uniqueId) }.toSet())
         assertThat(states.size).isEqualTo(stateCount)
         for (i in 1..stateCount) {
-            val key = testKey(i, uniqueId)
+            val key = buildStateKey(i, uniqueId)
             val loadedState = states[key]
             assertThat(loadedState).isNotNull
             loadedState!!
@@ -233,7 +236,6 @@ class StateManagerIntegrationTest {
     @ParameterizedTest
     @ValueSource(ints = [1, 10])
     fun canUpdateExistingStates(stateCount: Int) {
-        val uniqueId = UUID.randomUUID()
         persistStateEntities(
             uniqueId,
             (1..stateCount),
@@ -244,7 +246,7 @@ class StateManagerIntegrationTest {
         val statesToUpdate = mutableSetOf<State>()
         for (i in 1..stateCount) {
             statesToUpdate.add(
-                State(testKey(i, uniqueId), "state_$i$i".toByteArray(), i, metadata("1yek" to "1eulav"))
+                State(buildStateKey(i, uniqueId), "state_$i$i".toByteArray(), i, metadata("1yek" to "1eulav"))
             )
         }
 
@@ -262,7 +264,6 @@ class StateManagerIntegrationTest {
     @Test
     fun optimisticLockingChecksForConcurrentUpdatesDoNotHaltTheEntireBatch() {
         val totalCount = 20
-        val uniqueId = UUID.randomUUID()
         persistStateEntities(
             uniqueId,
             (1..totalCount),
@@ -271,8 +272,8 @@ class StateManagerIntegrationTest {
             { i, _ -> """{"k1": "v$i", "k2": $i}""" }
         )
 
-        val allKeys = (1..totalCount).map { testKey(it, uniqueId) }
-        val conflictingKeys = (1..totalCount).filter { it % 2 == 0 }.map { testKey(it, uniqueId) }
+        val allKeys = (1..totalCount).map { buildStateKey(it, uniqueId) }
+        val conflictingKeys = (1..totalCount).filter { it % 2 == 0 }.map { buildStateKey(it, uniqueId) }
         val persistedStates = stateManager.get(allKeys)
 
         val latch = CountDownLatch(1)
@@ -321,7 +322,6 @@ class StateManagerIntegrationTest {
     @ParameterizedTest
     @ValueSource(ints = [1, 10])
     fun canDeleteExistingStates(stateCount: Int) {
-        val uniqueId = UUID.randomUUID()
         persistStateEntities(
             uniqueId,
             (1..stateCount),
@@ -332,7 +332,7 @@ class StateManagerIntegrationTest {
 
         val statesToDelete = mutableSetOf<State>()
         for (i in 1..stateCount) {
-            statesToDelete.add(State(testKey(i, uniqueId), "".toByteArray(), i))
+            statesToDelete.add(State(buildStateKey(i, uniqueId), "".toByteArray(), i))
         }
 
         assertThat(stateManager.get(statesToDelete.map { it.key })).hasSize(stateCount)
@@ -343,7 +343,6 @@ class StateManagerIntegrationTest {
     @Test
     fun optimisticLockingCheckForConcurrentDeletesDoesNotHaltTheEntireBatch() {
         val totalCount = 20
-        val uniqueId = UUID.randomUUID()
         persistStateEntities(
             uniqueId,
             (1..totalCount),
@@ -352,8 +351,8 @@ class StateManagerIntegrationTest {
             { i, _ -> """{"k1": "v$i", "k2": $i}""" }
         )
 
-        val allKeys = (1..totalCount).map { testKey(it, uniqueId) }
-        val conflictingKeys = (1..totalCount).filter { it % 2 == 0 }.map { testKey(it, uniqueId) }
+        val allKeys = (1..totalCount).map { buildStateKey(it, uniqueId) }
+        val conflictingKeys = (1..totalCount).filter { it % 2 == 0 }.map { buildStateKey(it, uniqueId) }
         val persistedStates = stateManager.get(allKeys)
 
         val latch = CountDownLatch(1)
@@ -400,7 +399,6 @@ class StateManagerIntegrationTest {
     @Test
     fun canFilterStatesByLastUpdatedTime() {
         val count = 10
-        val uniqueId = UUID.randomUUID()
         val startTime = Instant.now()
         persistStateEntities(
             uniqueId,
@@ -415,7 +413,7 @@ class StateManagerIntegrationTest {
         assertThat(filteredStates).hasSize(count)
 
         for (i in 1..count) {
-            val key = testKey(i, uniqueId)
+            val key = buildStateKey(i, uniqueId)
             val loadedState = filteredStates[key]
             assertThat(loadedState).isNotNull
             loadedState!!
@@ -428,6 +426,41 @@ class StateManagerIntegrationTest {
                 it.assertThat(loadedState.metadata).containsExactlyInAnyOrderEntriesOf(emptyMap())
             }
         }
+    }
+
+    @Test
+    fun canFilterStatesUsingSimpleComparisonsOnMetadataValues() {
+        val count = 20
+        persistStateEntities(
+            uniqueId,
+            (1..count),
+            { _, _ -> 0 },
+            { i, _ -> "state_$i" },
+            { i, _ -> """{ "number": $i, "boolean": ${i % 2 == 0}, "string": "random_$i" }""" }
+        )
+
+        // Numeric
+        assertThat(stateManager.find("number", Operation.Equals, count)).hasSize(1)
+        assertThat(stateManager.find("number", Operation.NotEquals, count)).hasSize(count - 1)
+        assertThat(stateManager.find("number", Operation.GreaterThan, count)).isEmpty()
+        assertThat(stateManager.find("number", Operation.LesserThan, count)).hasSize(count - 1)
+
+        // String
+        assertThat(stateManager.find("string", Operation.Equals, "random_$count")).hasSize(1)
+        assertThat(stateManager.find("string", Operation.NotEquals, "random")).hasSize(count)
+        assertThat(stateManager.find("string", Operation.GreaterThan, "random_1")).hasSize(count - 1)
+        assertThat(stateManager.find("string", Operation.LesserThan, "random_1")).isEmpty()
+
+        // Booleans
+        assertThat(stateManager.find("boolean", Operation.Equals, true)).hasSize(count / 2)
+        assertThat(stateManager.find("boolean", Operation.NotEquals, true)).hasSize(count / 2)
+        assertThat(stateManager.find("boolean", Operation.GreaterThan, false)).hasSize(count / 2)
+        assertThat(stateManager.find("boolean", Operation.LesserThan, false)).isEmpty()
+    }
+
+    @AfterEach
+    fun tearDown() {
+        cleanStates()
     }
 
     @AfterAll

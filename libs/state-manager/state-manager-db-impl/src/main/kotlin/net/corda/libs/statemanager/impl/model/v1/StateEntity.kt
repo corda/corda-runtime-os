@@ -12,19 +12,19 @@ import javax.persistence.NamedQuery
 
 const val CREATE_STATE_QUERY_NAME = "StateEntity.create"
 const val UPDATE_STATE_QUERY_NAME = "StateEntity.update"
-const val QUERY_STATES_BY_KEY_QUERY_NAME = "StateEntity.queryByKey"
+const val FILTER_STATES_BY_KEY_QUERY_NAME = "StateEntity.queryByKey"
 const val DELETE_STATES_BY_KEY_QUERY_NAME = "StateEntity.deleteByKey"
-const val QUERY_STATES_BY_UPDATED_TIMESTAMP_NAME = "StateEntity.queryByTimestamp"
+const val FILTER_STATES_BY_UPDATED_TIMESTAMP_QUERY_NAME = "StateEntity.queryByTimestamp"
 
 const val KEY_ID = "key"
 const val VALUE_ID = "value"
 const val VERSION_ID = "version"
 const val METADATA_ID = "metadata"
-const val START_TIMESTAMP = "startTime"
-const val FINISH_TIMESTAMP = "finishTime"
+const val START_TIMESTAMP_ID = "startTime"
+const val FINISH_TIMESTAMP_ID = "finishTime"
 
 // TODO-[CORE-17025]: remove Hibernate
-// TODO-[CORE-16663]: make the database provider pluggable.
+// TODO-[CORE-16663]: Make database provider pluggable.
 // Hibernate 5 does not support inserting a String to a jsonb column type out of the box, so we use
 // native queries with casting here (also used in the ledger).
 @NamedNativeQuery(
@@ -45,13 +45,13 @@ const val FINISH_TIMESTAMP = "finishTime"
 )
 
 @NamedQuery(
-    name = QUERY_STATES_BY_KEY_QUERY_NAME,
+    name = FILTER_STATES_BY_KEY_QUERY_NAME,
     query = "FROM StateEntity state WHERE state.key IN :$KEY_ID"
 )
 
 @NamedQuery(
-    name = QUERY_STATES_BY_UPDATED_TIMESTAMP_NAME,
-    query = "FROM StateEntity state WHERE state.modifiedTime BETWEEN :$START_TIMESTAMP AND :$FINISH_TIMESTAMP"
+    name = FILTER_STATES_BY_UPDATED_TIMESTAMP_QUERY_NAME,
+    query = "FROM StateEntity state WHERE state.modifiedTime BETWEEN :$START_TIMESTAMP_ID AND :$FINISH_TIMESTAMP_ID"
 )
 
 @NamedQuery(
@@ -69,7 +69,6 @@ class StateEntity(
     @Column(name = VALUE_ID, columnDefinition = "BLOB", nullable = false)
     val value: ByteArray,
 
-    // TODO-[CORE-16663]: make the database provider pluggable.
     @Column(name = METADATA_ID, columnDefinition = "jsonb", nullable = false)
     var metadata: String,
 
