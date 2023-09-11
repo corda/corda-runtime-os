@@ -58,7 +58,7 @@ class StateRepositoryImplTest {
         stateRepository.filterByMetadata(entityManager, key, operation.first, value)
         verify(entityManager).createNativeQuery(sqlCaptor.capture(), eq(StateEntity::class.java))
         assertThat(sqlCaptor.firstValue).isEqualToNormalizingWhitespace(
-            "SELECT * FROM ${DbSchema.STATE_MANAGER_TABLE} s WHERE (s.metadata->>'$key')::::text ${operation.second} '$value'"
+            "SELECT s.key, s.value, s.metadata, s.version, s.modified_time FROM ${DbSchema.STATE_MANAGER_TABLE} s WHERE (s.metadata->>'$key')::::text ${operation.second} '$value'"
         )
     }
 
@@ -70,7 +70,7 @@ class StateRepositoryImplTest {
         stateRepository.filterByMetadata(entityManager, key, Operation.Equals, type.first)
         verify(entityManager).createNativeQuery(sqlCaptor.capture(), eq(StateEntity::class.java))
         assertThat(sqlCaptor.firstValue).isEqualToNormalizingWhitespace(
-            "SELECT * FROM ${DbSchema.STATE_MANAGER_TABLE} s WHERE (s.metadata->>'$key')::::${type.second} = '${type.first}'"
+            "SELECT s.key, s.value, s.metadata, s.version, s.modified_time FROM ${DbSchema.STATE_MANAGER_TABLE} s WHERE (s.metadata->>'$key')::::${type.second} = '${type.first}'"
         )
     }
 }

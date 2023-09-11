@@ -63,17 +63,17 @@ const val FINISH_TIMESTAMP_ID = "finishTime"
 @Table(name = DbSchema.STATE_MANAGER_TABLE)
 class StateEntity(
     @Id
-    @Column(name = KEY_ID, length = 255)
+    @Column(name = "key", length = 255)
     val key: String,
 
-    @Column(name = VALUE_ID, columnDefinition = "BLOB", nullable = false)
+    @Column(name = "value", columnDefinition = "BLOB", nullable = false)
     val value: ByteArray,
 
-    @Column(name = METADATA_ID, columnDefinition = "jsonb", nullable = false)
+    @Column(name = "metadata", columnDefinition = "jsonb", nullable = false)
     var metadata: String,
 
     @Version
-    @Column(name = VERSION_ID, nullable = false)
+    @Column(name = "version", nullable = false)
     var version: Int = 0,
 
     @Column(name = "modified_time", insertable = false, updatable = false)
