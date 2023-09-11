@@ -92,19 +92,6 @@ internal class WorkerMonitorImpl @Activate constructor(
                 .credentialsProvider(WebIdentityTokenFileCredentialsProvider.create())
                 .build()
             val registry = CloudWatchMeterRegistry(cloudwatchConfig, Clock.SYSTEM, cloudwatchClient)
-            registry.config().meterFilter(object : MeterFilter {
-                override fun accept(id: Meter.Id): MeterFilterReply {
-                    @Suppress("ComplexCondition")
-                    return if (
-                        id.name.contains("http.server.request") ||
-                        id.name.contains("flow.execution.time")
-                    ) {
-                        MeterFilterReply.ACCEPT
-                    } else {
-                        MeterFilterReply.DENY
-                    }
-                }
-            })
             CordaMetrics.configure(name, registry)
         }
 

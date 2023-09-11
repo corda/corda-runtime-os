@@ -866,7 +866,6 @@ object CordaMetrics {
     fun configure(workerType: String, registry: MeterRegistry) {
         val deployment = System.getenv(K8S_NAMESPACE_KEY) ?: ""
         this.registry.add(registry).config()
-            .commonTags(Tag.WorkerType.value, workerType)
             .commonTags(Tag.Deployment.value, deployment)
             .meterFilter(object : MeterFilter {
                 override fun map(id: Meter.Id): Meter.Id {
@@ -881,6 +880,21 @@ object CordaMetrics {
                         id
                     } else {
                         id.withName("corda." + id.name)
+                    }
+                }
+            })
+            .meterFilter(object : MeterFilter {
+                override fun accept(id: Meter.Id): MeterFilterReply {
+                    @Suppress("ComplexCondition")
+                    return if (
+                        id.name.contains("http.server.request") ||
+                        id.name.contains("flow.execution.time") ||
+                        id.name.contains("http_server_request") ||
+                        id.name.contains("flow_execution_time")
+                    ) {
+                        MeterFilterReply.ACCEPT
+                    } else {
+                        MeterFilterReply.DENY
                     }
                 }
             })
