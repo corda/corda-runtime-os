@@ -686,6 +686,11 @@ object CordaMetrics {
         WorkerType("worker.type"),
 
         /**
+         * Source of metric.
+         */
+        Namespace("namespace"),
+
+        /**
          * Virtual Node for which the metric is applicable.
          */
         VirtualNode("virtualnode"),
@@ -848,6 +853,7 @@ object CordaMetrics {
      * but it still needs to be populated in order to avoid lost data points.
      */
     const val NOT_APPLICABLE_TAG_VALUE = "not_applicable"
+    const val K8S_NAMESPACE_KEY = "K8S_NAMESPACE"
 
     val registry: CompositeMeterRegistry = Metrics.globalRegistry
 
@@ -858,8 +864,10 @@ object CordaMetrics {
      * @param registry Registry instance
      */
     fun configure(workerType: String, registry: MeterRegistry) {
+        val namespace = System.getenv(K8S_NAMESPACE_KEY) ?: ""
         this.registry.add(registry).config()
             .commonTags(Tag.WorkerType.value, workerType)
+            .commonTags(Tag.Namespace.value, namespace)
             .meterFilter(object : MeterFilter {
                 override fun map(id: Meter.Id): Meter.Id {
                     // prefix all metrics with `corda`, except standard JVM and Process metrics
