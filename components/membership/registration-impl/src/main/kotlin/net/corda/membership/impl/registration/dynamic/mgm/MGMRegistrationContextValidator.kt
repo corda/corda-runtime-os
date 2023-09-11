@@ -33,7 +33,7 @@ internal class MGMRegistrationContextValidator(
     private val configurationGetService: ConfigurationGetService,
     private val clock: Clock
 ) {
-    
+
     private companion object {
         const val errorMessageTemplate = "No %s was provided."
 

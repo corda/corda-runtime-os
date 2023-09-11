@@ -14,8 +14,9 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
 import net.corda.ledger.utxo.token.cache.factories.TokenCacheEventProcessorFactory
 import net.corda.ledger.utxo.token.cache.impl.MINIMUM_SMART_CONFIG
+import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.ledger.utxo.token.cache.services.TokenCacheSubscriptionHandler
-import net.corda.ledger.utxo.token.cache.services.TokenCacheSubscriptionHandlerImpl
+import net.corda.ledger.utxo.token.cache.services.internal.TokenCacheSubscriptionHandlerImpl
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -24,7 +25,9 @@ import org.mockito.kotlin.whenever
 class TokenCacheSubscriptionHandlerImplTest {
     private val subscriptionFactory = mock<SubscriptionFactory>()
     private val tokenCacheEventProcessorFactory = mock<TokenCacheEventProcessorFactory>()
+    private val serviceConfiguration = mock<ServiceConfiguration>()
     private val toServiceConfig: (Map<String, SmartConfig>) -> SmartConfig = { _ -> MINIMUM_SMART_CONFIG }
+    private val toTokenConfig: (Map<String, SmartConfig>) -> SmartConfig = { _ -> MINIMUM_SMART_CONFIG }
 
     @Test
     fun `start should start the coordinator`() {
@@ -147,7 +150,9 @@ class TokenCacheSubscriptionHandlerImplTest {
                 coordinatorFactory,
                 subscriptionFactory,
                 tokenCacheEventProcessorFactory,
-                toServiceConfig
+                serviceConfiguration,
+                toServiceConfig,
+                toTokenConfig
             )
         }
     }

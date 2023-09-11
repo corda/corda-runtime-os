@@ -30,7 +30,7 @@ data class VirtualNodeInfo(
     /** Uniqueness DDL DB connection ID */
     val uniquenessDdlConnectionId: UUID? = null,
     /** Uniqueness DML DB connection ID */
-    val uniquenessDmlConnectionId: UUID,
+    val uniquenessDmlConnectionId: UUID? = null,
     /** HSM connection ID */
     val hsmConnectionId: UUID? = null,
     /** Current state of the virtual node instance */
@@ -70,7 +70,7 @@ fun VirtualNodeInfo.toAvro(): VirtualNodeInfoAvro =
             .setCryptoDdlConnectionId(cryptoDdlConnectionId?.let{ cryptoDdlConnectionId.toString() })
             .setCryptoDmlConnectionId(cryptoDmlConnectionId.toString())
             .setUniquenessDdlConnectionId(uniquenessDdlConnectionId?.let{ uniquenessDdlConnectionId.toString() })
-            .setUniquenessDmlConnectionId(uniquenessDmlConnectionId.toString())
+            .setUniquenessDmlConnectionId(uniquenessDmlConnectionId?.let{ uniquenessDmlConnectionId.toString() })
             .setHsmConnectionId(hsmConnectionId?.let { hsmConnectionId.toString() })
             .setFlowP2pOperationalStatus(flowP2pOperationalStatus.toAvro())
             .setFlowStartOperationalStatus(flowStartOperationalStatus.toAvro())
@@ -93,7 +93,7 @@ fun VirtualNodeInfoAvro.toCorda(): VirtualNodeInfo {
         cryptoDdlConnectionId?.let { UUID.fromString(cryptoDdlConnectionId) },
         UUID.fromString(cryptoDmlConnectionId),
         uniquenessDdlConnectionId?.let { UUID.fromString(uniquenessDdlConnectionId) },
-        UUID.fromString(uniquenessDmlConnectionId),
+        uniquenessDmlConnectionId?.let { UUID.fromString(uniquenessDmlConnectionId) },
         hsmConnectionId?.let { UUID.fromString(hsmConnectionId) },
         OperationalStatus.fromAvro(flowP2pOperationalStatus),
         OperationalStatus.fromAvro(flowStartOperationalStatus),

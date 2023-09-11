@@ -30,6 +30,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.UUID
+import net.corda.messaging.api.processor.SyncRPCProcessor
+import net.corda.messaging.api.subscription.config.SyncRPCConfig
 
 /**
  * In memory implementation of the Subscription Factory.
@@ -133,4 +135,9 @@ class InMemSubscriptionFactory @Activate constructor(
             UUID.randomUUID().toString()
         )
     }
+
+    override fun <REQUEST : Any, RESPONSE : Any> createHttpRPCSubscription(
+        rpcConfig: SyncRPCConfig,
+        processor: SyncRPCProcessor<REQUEST, RESPONSE>
+    ): RPCSubscription<REQUEST, RESPONSE> = throw NotImplementedError()
 }

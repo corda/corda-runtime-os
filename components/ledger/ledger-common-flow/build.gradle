@@ -32,6 +32,8 @@ dependencies {
     implementation project(':libs:platform-info')
     implementation project(':libs:virtual-node:sandbox-group-context')
 
+    runtimeOnly project(":libs:web:web-impl")
+
     testImplementation project(':libs:membership:membership-common')
     testImplementation project(':libs:serialization:serialization-kryo')
     testImplementation project(':testing:kryo-serialization-testkit')
@@ -42,6 +44,8 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     integrationTestImplementation project(':testing:ledger:ledger-common-base-integration-test')
+    integrationTestImplementation project(':testing:group-policy-test-common')
+
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')

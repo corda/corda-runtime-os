@@ -34,9 +34,11 @@ class NamedQueryExternalEventFactory : ExternalEventFactory<NamedQueryParameters
     }
 
     override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): ResultSetExecutor.Results {
+        val numberOfRowsFromQuery = response.metadata.items.single { it.key == "numberOfRowsFromQuery" }.value.toInt()
+
         return ResultSetExecutor.Results(
             serializedResults = response.results,
-            numberOfRowsFromQuery = response.metadata.items.single { it.key == "numberOfRowsFromQuery" }.value.toInt()
+            numberOfRowsFromQuery = numberOfRowsFromQuery
         )
     }
 }

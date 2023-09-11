@@ -1,21 +1,15 @@
 package net.corda.ledger.utxo.token.cache.impl.services
 
-import net.corda.data.ledger.utxo.token.selection.data.Token
-import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
-import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
-import net.corda.ledger.utxo.token.cache.converters.EntityConverterImpl
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
-import net.corda.ledger.utxo.token.cache.entities.TokenCacheImpl
-import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
+import net.corda.ledger.utxo.token.cache.entities.internal.TokenCacheImpl
+import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import net.corda.ledger.utxo.token.cache.services.SimpleTokenFilterStrategy
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.math.BigDecimal
-import java.nio.ByteBuffer
-import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY_DTO
 
 class SimpleTokenFilterStrategyTest {
 
@@ -31,27 +25,9 @@ class SimpleTokenFilterStrategyTest {
      */
     @Test
     fun `null tag and owner criteria should match all`() {
-        val bigDecimal = BigDecimal(123.456)
-        val targetAmount = TokenAmount().apply {
-            unscaledValue = ByteBuffer.wrap(bigDecimal.unscaledValue().toByteArray())
-            scale = bigDecimal.scale()
-        }
 
-        val t1 = Token().apply {
-            amount = targetAmount
-        }
-        val t2 = Token().apply {
-            amount = targetAmount
-        }
-        val t3 = Token().apply {
-            amount = targetAmount
-        }
-        val pool = TokenPoolCacheState().apply {
-            poolKey = POOL_CACHE_KEY
-            availableTokens = listOf(t1, t2, t3)
-        }
-        val tc = TokenCacheImpl(pool, EntityConverterImpl())
-        val query = ClaimQuery("r1", "f1", BigDecimal(1), null, null, POOL_CACHE_KEY_DTO)
+        val tc = TokenCacheImpl()
+        val query = ClaimQuery("r1", "f1", BigDecimal(1), null, null, POOL_KEY)
 
         val result = target.filterTokens(tc, query).toList()
         println(result)
@@ -59,21 +35,21 @@ class SimpleTokenFilterStrategyTest {
 
     @Test
     fun `tag regex should match token tag null owner matches anything`() {
-        val query = ClaimQuery("r1", "f1", BigDecimal(1), "(t1)", null, POOL_CACHE_KEY_DTO)
+        val query = ClaimQuery("r1", "f1", BigDecimal(1), "(t1)", null, POOL_KEY)
 
         assertThat(target.filterTokens(inputTokens, query)).containsOnly(token1, token2)
     }
 
     @Test
     fun `owner hash should match token owner hash null tag regex matches anything`() {
-        val query = ClaimQuery("r1", "f1", BigDecimal(1), null, "h1", POOL_CACHE_KEY_DTO)
+        val query = ClaimQuery("r1", "f1", BigDecimal(1), null, "h1", POOL_KEY)
 
         assertThat(target.filterTokens(inputTokens, query)).containsOnly(token1, token2)
     }
 
     @Test
     fun `owner hash and tag should match token owner hash and tag`() {
-        val query = ClaimQuery("r1", "f1", BigDecimal(1), "t2", "h1", POOL_CACHE_KEY_DTO)
+        val query = ClaimQuery("r1", "f1", BigDecimal(1), "t2", "h1", POOL_KEY)
 
         assertThat(target.filterTokens(inputTokens, query)).containsOnly(token2)
     }

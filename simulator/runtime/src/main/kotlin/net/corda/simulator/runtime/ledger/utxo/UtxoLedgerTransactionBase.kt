@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.ledger.utxo
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.simulator.runtime.ledger.consensual.SimTransactionMetadata
 import net.corda.simulator.runtime.serialization.BaseSerializationService
@@ -14,6 +15,7 @@ import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
+import net.corda.v5.membership.GroupParameters
 import java.security.MessageDigest
 import java.security.PublicKey
 import java.util.Objects
@@ -25,7 +27,7 @@ import java.util.Objects
 data class UtxoLedgerTransactionBase(
     val ledgerInfo: UtxoStateLedgerInfo,
     private val inputStateAndRefs: List<StateAndRef<*>>,
-    private val referenceStateAndRefs: List<StateAndRef<*>>,
+    private val referenceStateAndRefs: List<StateAndRef<*>>
 ) : UtxoLedgerTransaction {
 
     /**
@@ -151,6 +153,10 @@ data class UtxoLedgerTransactionBase(
         return emptyList() // TODO Not yet Implemented
     }
 
+    @JsonIgnore
+    override fun getGroupParameters(): GroupParameters {
+        TODO("Not implemented")
+    }
 }
 
 /**

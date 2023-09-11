@@ -7,10 +7,12 @@ import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPay
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -30,6 +32,8 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
 
     private companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        const val NOTARY_SERVICE_NAME = "corda.notary.service.name"
     }
 
     @CordaInject
@@ -38,16 +42,21 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     @CordaInject
     private lateinit var transactionSignatureService: TransactionSignatureService
 
+    @CordaInject
+    private lateinit var memberLookup: MemberLookup
+
     /**
      * Constructor used for testing to initialize the necessary services
      */
     @VisibleForTesting
     internal constructor(
         clientService: LedgerUniquenessCheckerClientService,
-        transactionSignatureService: TransactionSignatureService
+        transactionSignatureService: TransactionSignatureService,
+        memberLookup: MemberLookup
     ) : this() {
         this.clientService = clientService
         this.transactionSignatureService = transactionSignatureService
+        this.memberLookup = memberLookup
     }
 
     /**
@@ -68,6 +77,8 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             val requestPayload = session.receive(NonValidatingNotarizationPayload::class.java)
 
             val txDetails = validateRequest(requestPayload)
+
+            validateTransactionNotaryAgainstCurrentNotary(txDetails)
 
             if (logger.isTraceEnabled) {
                 logger.trace("Received notarization request for transaction {}", txDetails.id)
@@ -112,6 +123,22 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     }
 
     /**
+     * This function will validate selected notary is valid notary to notarize.
+     * */
+    @Suspendable
+    private fun validateTransactionNotaryAgainstCurrentNotary(txDetails: NonValidatingNotaryTransactionDetails) {
+        val currentNotaryServiceName = memberLookup
+            .myInfo()
+            .memberProvidedContext
+            .parse(NOTARY_SERVICE_NAME, MemberX500Name::class.java)
+
+        require(currentNotaryServiceName == txDetails.notaryName) {
+            "Notary service on the transaction ${txDetails.notaryName} does not match the notary service represented" +
+                    " by this notary virtual node (${currentNotaryServiceName})"
+        }
+    }
+
+    /**
      * This function will validate the request payload received from the notary client.
      *
      * @throws IllegalStateException if the request could not be validated.
@@ -137,6 +164,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     @Suspendable
     private fun extractParts(requestPayload: NonValidatingNotarizationPayload): NonValidatingNotaryTransactionDetails {
         val filteredTx = requestPayload.transaction as UtxoFilteredTransaction
+
         // The notary component is not needed by us but we validate that it is present just in case
         requireNotNull(filteredTx.notaryName) {
             "Notary name component could not be found on the transaction"
@@ -145,7 +173,6 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         requireNotNull(filteredTx.notaryKey) {
             "Notary key component could not be found on the transaction"
         }
-
 
         requireNotNull(filteredTx.metadata) {
             "Metadata component could not be found on the transaction"

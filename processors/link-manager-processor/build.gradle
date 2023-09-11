@@ -43,4 +43,5 @@ dependencies {
     runtimeOnly project(":libs:layered-property-map")
     runtimeOnly project(":libs:crypto:crypto-impl")
     runtimeOnly project(":components:membership:membership-group-read-impl")
+    runtimeOnly project(":libs:web:web-impl")
 }
