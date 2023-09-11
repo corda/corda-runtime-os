@@ -131,12 +131,13 @@ class KafkaMessageProducerImpl(
         }
     }
 
+    // TODO: Producer-level is not supported for non-transactional calls.
+    @Suppress("UNUSED_PARAMETER")
     private fun sendChunkedMessage(
         messages: List<CordaProducerRecord<*, *>>,
         partition: Int? = null,
         callback: MessageProducer.Callback? = null
     ) {
-        // TODO: Producer-level is not supported for non-transactional calls.
         val ex = CordaMessageAPIFatalException(asyncChunkErrorMessage)
         throw ex
     }

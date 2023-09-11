@@ -27,7 +27,7 @@ data class CordaMessage<T: Any>(
      * @throws NoSuchElementException if no property with the given key exists.
      */
     fun getProperty(key: String) : Any {
-        return getPropertyOrNull(key) ?: throw NoSuchElementException("")
+        return getPropertyOrNull(key) ?: throw NoSuchElementException("No property found with the key: '$key'")
     }
 
     /**
@@ -39,8 +39,9 @@ data class CordaMessage<T: Any>(
      * @throws ClassCastException if the property cannot be cast to the specified type.
      */
     @JvmName("getPropertyTyped")
-    fun <T> getProperty(key: String) : T {
-        return getPropertyOrNull<T>(key) ?: throw NoSuchElementException("")
+    inline fun <reified T> getProperty(key: String) : T {
+        return (getProperty(key) as? T)
+            ?: throw ClassCastException("Property '$key' could not be cast to type: '${T::class.java}'.")
     }
 
     /**
@@ -61,7 +62,10 @@ data class CordaMessage<T: Any>(
      * @throws ClassCastException if the property cannot be cast to the specified type.
      */
     @JvmName("getPropertyOrNullTyped")
-    fun <T> getPropertyOrNull(key: String) : T? {
-        return props[key] as? T ?: throw ClassCastException("")
+    inline fun <reified T> getPropertyOrNull(key: String) : T? {
+        return (props[key] as? T)
+            ?: throw ClassCastException(
+                "Property '$key' could not be cast to type: '${T::class.java}'. Ensure the property is not null."
+            )
     }
 }
