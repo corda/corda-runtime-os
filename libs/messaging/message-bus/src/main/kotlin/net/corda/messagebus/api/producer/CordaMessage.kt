@@ -63,9 +63,10 @@ data class CordaMessage<T: Any>(
      */
     @JvmName("getPropertyOrNullTyped")
     inline fun <reified T> getPropertyOrNull(key: String) : T? {
-        return (props[key] as? T)
+        val value = props[key] ?: return null
+        return (value as? T)
             ?: throw ClassCastException(
-                "Property '$key' could not be cast to type: '${T::class.java}'. Ensure the property is not null."
+                "Property '$key' could not be cast to type: '${T::class.java}'."
             )
     }
 }

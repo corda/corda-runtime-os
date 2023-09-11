@@ -139,6 +139,7 @@ class KafkaMessageProducerImpl(
         callback: MessageProducer.Callback? = null
     ) {
         val ex = CordaMessageAPIFatalException(asyncChunkErrorMessage)
+        callback?.onCompletion(ex)
         throw ex
     }
 

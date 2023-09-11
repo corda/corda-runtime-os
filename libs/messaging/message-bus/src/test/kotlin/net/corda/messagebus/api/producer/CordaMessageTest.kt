@@ -104,13 +104,8 @@ class CordaMessageTest {
 
     @Test
     fun `Test get nullable property that doesn't exist, typed`() {
-        val ex = assertThrows(ClassCastException::class.java) {
-            defaultMessage.getPropertyOrNull<String>("hello world")
-        }
-
-        assertEquals(ex.message, "Property 'hello world' could not be cast to type: 'class java.lang.String'. " +
-                "Ensure the property is not null."
-        )
+        val property = defaultMessage.getPropertyOrNull<String>("hello world")
+        assertNull(property)
     }
 
     @Test
@@ -119,8 +114,6 @@ class CordaMessageTest {
             defaultMessage.getPropertyOrNull<Long>(topicKey)
         }
 
-        assertEquals(ex.message, "Property 'topic' could not be cast to type: 'class java.lang.Long'. " +
-                "Ensure the property is not null."
-        )
+        assertEquals(ex.message, "Property 'topic' could not be cast to type: 'class java.lang.Long'.")
     }
 }
