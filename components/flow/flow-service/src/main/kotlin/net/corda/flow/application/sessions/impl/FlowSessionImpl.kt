@@ -1,5 +1,6 @@
 package net.corda.flow.application.sessions.impl
 
+import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectException
 import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.sessions.FlowSessionInternal
@@ -116,8 +117,16 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun close() {
-        fiber.suspend(FlowIORequest.CloseSessions(setOf(sourceSessionId)))
-        log.trace { "Closing session: $sourceSessionId" }
+        if (canCloseSession()) {
+            fiber.suspend(FlowIORequest.CloseSessions(setOf(sourceSessionId)))
+            log.trace { "Closing session: $sourceSessionId" }
+        }
+    }
+
+    private fun canCloseSession() : Boolean {
+        val flowCheckpoint = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint
+        val sessionState = flowCheckpoint.getSessionState(sourceSessionId)
+        return sessionState?.status != SessionStateType.CLOSED
     }
 
     private fun serialize(payload: Any): ByteArray {

@@ -1,6 +1,5 @@
 package net.corda.session.manager.impl.processor
 
-import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
@@ -12,6 +11,7 @@ import net.corda.session.manager.impl.processor.helper.recalcHighWatermark
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 
 /**
@@ -81,7 +81,6 @@ class SessionCloseProcessorReceive(
                     logger.trace { "Updating session state to ${SessionStateType.CLOSED} for session state $sessionState" }
                     status = SessionStateType.CLOSED
                 }
-
             }
         }
         else -> {

@@ -4,22 +4,21 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.flow.utils.isInitiatedIdentity
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
-import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
 /**
  * Handle send of a [SessionClose] event.
- * If the state is null, ERROR or CLOSED send an error response to the counterparty as this indicates a bug in client code or  a
+ * If the state is null or ERROR send an error response to the counterparty as this indicates a bug in client code or  a
  * session mismatch has occurred.
+ * If state is CLOSING or CLOSED, no update required.
  * If the client has not consumed all received events and it tries to send a close then trigger an error as this is a bug/session mismatch.
- * If the state is CONFIRMED then set the status to CLOSING
- * If the state is CLOSING and set the status to WAIT_FOR_FINAL_ACK. The session cannot be closed until all acks are received by the
- * counterparty.
+ * If the state is CONFIRMED then set the status to CLOSED
  */
 class SessionCloseProcessorSend(
     private val key: Any,
@@ -36,7 +35,7 @@ class SessionCloseProcessorSend(
         val sessionId = sessionEvent.sessionId
         val currentStatus = sessionState.status
         return when {
-            currentStatus == SessionStateType.CLOSED -> {
+            currentStatus in setOf(SessionStateType.CLOSED, SessionStateType.CLOSING) -> {
                 sessionState
             }
             currentStatus == SessionStateType.ERROR -> {
@@ -45,14 +44,10 @@ class SessionCloseProcessorSend(
             hasUnprocessedReceivedDataEvents(sessionState) -> {
                 handleUnprocessedReceivedDataEvents(sessionId, sessionState)
             }
-            isClosingWithClosesToSend(currentStatus, sessionState) -> {
-                logger.debug { "Already have a close to send, $sessionId" }
-                sessionState
-            }
             else -> {
                 val nextSeqNum = sessionState.sendEventsState.lastProcessedSequenceNum + 1
                 sessionEvent.sequenceNum = nextSeqNum
-                getResultByCurrentState(sessionState, sessionId, nextSeqNum)
+                getResultByCurrentState(sessionState, nextSeqNum)
             }
         }
     }
@@ -85,37 +80,36 @@ class SessionCloseProcessorSend(
         }
     }
 
-    private fun isClosingWithClosesToSend(currentStatus: SessionStateType?, sessionState: SessionState): Boolean {
-        return currentStatus == SessionStateType.CLOSING &&
-                sessionState.receivedEventsState.undeliveredMessages.none { it.payload is SessionClose }
-    }
-
     private fun getResultByCurrentState(
         sessionState: SessionState,
-        sessionId: String,
         nextSeqNum: Int,
-    ) = when (val currentState = sessionState.status) {
-        SessionStateType.CONFIRMED -> {
-            sessionState.apply {
-                logger.trace { "Currently in CONFIRMED. Changing to CLOSING. nextSeqNum: $nextSeqNum, adding this event to send " +
-                        "${sessionEvent.sequenceNum}, $sessionId" }
-                status = SessionStateType.CLOSING
-                sendEventsState.lastProcessedSequenceNum = nextSeqNum
-                sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(sessionEvent)
+    ) : SessionState {
+        val sessionId = sessionState.sessionId
+        val requireClose = sessionState.requireClose
+        return if (isInitiatedIdentity(sessionId) && sessionState.status !in listOf(SessionStateType.ERROR, SessionStateType.CLOSED)) {
+            if (requireClose) {
+                sessionState.apply {
+                    logger.trace {
+                        "Sending SessionClose and setting status to CLOSED. nextSeqNum: $nextSeqNum, adding this event to send " +
+                                "${sessionEvent.sequenceNum}, $sessionId"
+                    }
+                    status = SessionStateType.CLOSED
+                    sendEventsState.lastProcessedSequenceNum = nextSeqNum
+                    sessionEvent.sequenceNum = nextSeqNum
+                    sendEventsState.undeliveredMessages =
+                        sessionState.sendEventsState.undeliveredMessages.plus(sessionEvent)
+                }
+            } else {
+                sessionState.status = SessionStateType.CLOSED
+                sessionState
             }
-        }
-        SessionStateType.CLOSING -> {
-            logger.trace { "Currently in CLOSING. Changing to WAIT_FOR_FINAL_ACK. nextSeqNum: $nextSeqNum, adding this event to send " +
-                    "${sessionEvent.sequenceNum}, $sessionId" }
-            // Doesn't go to closed until ack received
-            sessionState.apply {
-                sendEventsState.lastProcessedSequenceNum = nextSeqNum
-                sendEventsState.undeliveredMessages = sessionState.sendEventsState.undeliveredMessages.plus(sessionEvent)
-            }
-        }
-        else -> {
-            val errorMessage = "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
-                    "$currentState. Current SessionState: $sessionState."
+        } else {
+            val status = sessionState.status
+            val errorMessage =
+                "Tried to send SessionClose. " +
+                        "Check party is initiated: ${isInitiatedIdentity(sessionId)}" +
+                        "Check status is not ERROR or CLOSED, status is: $status." +
+                        "Key: $key SessionId: $sessionId current SessionState: $sessionState."
             logAndGenerateErrorResult(errorMessage, sessionState, "SessionClose-InvalidStatus")
         }
     }
