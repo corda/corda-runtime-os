@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -72,7 +73,7 @@ class FlowEventPipelineImplTest {
     }
 
     private val mockFlowExecutionPipelineStage = mock<FlowExecutionPipelineStage>().apply {
-        whenever(runFlow(any(), any())).thenReturn(outputContext)
+        whenever(runFlow(any(), any(), any())).thenReturn(outputContext)
     }
 
     private val virtualNodeInfo = mock<VirtualNodeInfo>()
@@ -124,7 +125,7 @@ class FlowEventPipelineImplTest {
     fun `execute flow invokes the execute flow pipeline stage`() {
         val pipeline = buildPipeline()
         pipeline.executeFlow(RUN_OR_CONTINUE_TIMEOUT)
-        verify(mockFlowExecutionPipelineStage).runFlow(defaultinputContext, RUN_OR_CONTINUE_TIMEOUT)
+        verify(mockFlowExecutionPipelineStage).runFlow(eq(defaultinputContext), eq(RUN_OR_CONTINUE_TIMEOUT), any())
     }
 
     @Test
