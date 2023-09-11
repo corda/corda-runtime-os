@@ -208,7 +208,6 @@ class MemberGroupPolicyImpl(rootNode: JsonNode) : MemberGroupPolicy {
     internal inner class CipherSuiteImpl(
         map: Map<String, String>
     ) : GroupPolicy.CipherSuite, Map<String, String> by map
-
 }
 
 

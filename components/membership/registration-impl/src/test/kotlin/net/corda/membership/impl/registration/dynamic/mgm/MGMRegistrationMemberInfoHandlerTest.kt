@@ -247,7 +247,6 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         }
 
-        //verify(membershipPersistenceClient).persistMemberInfo(any(), any())
         verify(memberInfoFactory).createSelfSignedMemberInfo(memberContextBytes, mgmContextBytes, signature, signatureSpec)
         verify(platformInfoProvider).activePlatformVersion
         verify(platformInfoProvider).localWorkerSoftwareVersion
