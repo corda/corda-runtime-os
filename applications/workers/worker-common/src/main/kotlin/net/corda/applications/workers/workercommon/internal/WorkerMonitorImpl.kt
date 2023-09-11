@@ -88,7 +88,7 @@ internal class WorkerMonitorImpl @Activate constructor(
                 .credentialsProvider(WebIdentityTokenFileCredentialsProvider.create())
                 .build()
             val registry = CloudWatchMeterRegistry(cloudwatchConfig, Clock.SYSTEM, cloudwatchClient)
-            registry.meterFilter(object : MeterFilter {
+            registry.config().meterFilter(object : MeterFilter {
                 override fun accept(id: Meter.Id): MeterFilterReply {
                     @Suppress("ComplexCondition")
                     return if (
