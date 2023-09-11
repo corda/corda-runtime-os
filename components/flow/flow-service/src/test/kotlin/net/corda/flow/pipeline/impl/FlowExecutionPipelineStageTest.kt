@@ -79,8 +79,12 @@ class FlowExecutionPipelineStageTest {
             ioRequestTypeConverter
         )
 
+        var contextUpdateCount = 0
         val context = createContext(checkpoint = checkpoint)
-        val outputContext = stage.runFlow(context, TIMEOUT)
+        val outputContext = stage.runFlow(context, TIMEOUT) {
+            contextUpdateCount++
+        }
+        assertEquals(1, contextUpdateCount)
         assertEquals(newContext, outputContext)
         verifyInteractions(fiberOutputs)
         verify(checkpoint).waitingFor = WaitingFor(ExternalEventResponse())
@@ -116,8 +120,12 @@ class FlowExecutionPipelineStageTest {
         )
 
         val context = createContext(checkpoint = checkpoint)
-        val outputContext = stage.runFlow(context, TIMEOUT)
+        var contextUpdateCount = 0
+        val outputContext = stage.runFlow(context, TIMEOUT) {
+            contextUpdateCount++
+        }
         assertEquals(secondContext, outputContext)
+        assertEquals(2, contextUpdateCount)
         verifyInteractions(fiberOutputs)
         verify(checkpoint).waitingFor = WaitingFor(ExternalEventResponse())
         verify(checkpoint).suspendedOn = fiberOutput::class.qualifiedName
@@ -149,8 +157,12 @@ class FlowExecutionPipelineStageTest {
         )
 
         val context = createContext(checkpoint = checkpoint)
-        val outputContext = stage.runFlow(context, TIMEOUT)
+        var contextUpdateCount = 0
+        val outputContext = stage.runFlow(context, TIMEOUT) {
+            contextUpdateCount++
+        }
         assertEquals(context, outputContext)
+        assertEquals(0, contextUpdateCount)
         verifyInteractions(fiberOutputs)
         verify(checkpoint, never()).waitingFor = any()
         verify(checkpoint, never()).suspendedOn = any()
@@ -181,7 +193,7 @@ class FlowExecutionPipelineStageTest {
         )
 
         val context = createContext(checkpoint = checkpoint)
-        val outputContext = stage.runFlow(context, TIMEOUT)
+        val outputContext = stage.runFlow(context, TIMEOUT) {}
         assertEquals(newContext, outputContext)
         verifyInteractions(fiberOutputs)
         verify(checkpoint).waitingFor = WaitingFor(ExternalEventResponse())
@@ -211,7 +223,7 @@ class FlowExecutionPipelineStageTest {
         )
 
         val context = createContext(checkpoint = checkpoint)
-        val outputContext = stage.runFlow(context, TIMEOUT)
+        val outputContext = stage.runFlow(context, TIMEOUT) {}
         assertEquals(newContext, outputContext)
         verifyInteractions(fiberOutputs)
         verify(checkpoint).waitingFor = WaitingFor(null)
@@ -246,7 +258,7 @@ class FlowExecutionPipelineStageTest {
         )
 
         val context = createContext(checkpoint = checkpoint)
-        val outputContext = stage.runFlow(context, TIMEOUT)
+        val outputContext = stage.runFlow(context, TIMEOUT) {}
         assertEquals(newContext, outputContext)
         verifyInteractions(fiberOutputs)
         verify(checkpoint).waitingFor = WaitingFor(null)
@@ -276,7 +288,7 @@ class FlowExecutionPipelineStageTest {
 
         val context = createContext()
         assertThrows<FlowFatalException> {
-            stage.runFlow(context, TIMEOUT)
+            stage.runFlow(context, TIMEOUT) {}
         }
     }
 
@@ -303,7 +315,7 @@ class FlowExecutionPipelineStageTest {
 
         val context = createContext()
         assertThrows<FlowFatalException> {
-            stage.runFlow(context, TIMEOUT)
+            stage.runFlow(context, TIMEOUT) {}
         }
     }
 
@@ -336,7 +348,7 @@ class FlowExecutionPipelineStageTest {
         )
 
         val context = createContext(checkpoint = checkpoint)
-        val outputContext = stage.runFlow(context, TIMEOUT)
+        val outputContext = stage.runFlow(context, TIMEOUT) {}
         assertEquals(secondContext, outputContext)
     }
 
