@@ -196,7 +196,7 @@ class EntitySandboxServiceImpl @Activate constructor(
         requireSingleObserverToState(tokenStateObserverMap, tokenStateObserverMapV2)
 
         ctx.putObjectByKey(SANDBOX_TOKEN_STATE_OBSERVERS, singleObserverToState(tokenStateObserverMap))
-        //ctx.putObjectByKey(SANDBOX_TOKEN_STATE_OBSERVERS_V2, singleObserverToState(tokenStateObserverMapV2))
+        ctx.putObjectByKey(SANDBOX_TOKEN_STATE_OBSERVERS_V2, singleObserverToState(tokenStateObserverMapV2))
 
         genLogsDebug(tokenStateObserverMap)
         genLogsDebug(tokenStateObserverMapV2)
@@ -221,18 +221,7 @@ class EntitySandboxServiceImpl @Activate constructor(
         tokenStateObserverMap.entries.forEach { contractStateTypeToObservers ->
             val numberOfObservers = contractStateTypeToObservers.value.size
             if (numberOfObservers > 1) {
-                val observerTypes = contractStateTypeToObservers.value.map {
-                    observer ->
-                    if(observer is UtxoLedgerTokenStateObserver<*>) {
-                        observer.stateType.name
-                    }
-                    else if(observer is UtxoTokenTransactionStateObserver<*>) {
-                        observer.stateType.name
-                    }
-                    else {
-                        "Uknown"
-                    }
-                }
+                val observerTypes = contractStateTypeToObservers.value.map {it.javaClass }
                 throw IllegalStateException(
                     "More than one observer found for the contract state. " +
                             "Contract state: ${contractStateTypeToObservers.key}, observers: $observerTypes"
@@ -270,7 +259,7 @@ class EntitySandboxServiceImpl @Activate constructor(
             clazz.getConstructor().newInstance() as T
         } catch (e: Exception) {
             logger.error(
-                "The UtxoTokenTransactionStateObserver '${clazz}' must implement a default public constructor.",
+                "The UTXO  state observer '${clazz}' must implement a default public constructor.",
                 e
             )
             null
