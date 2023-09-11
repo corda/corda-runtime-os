@@ -12,6 +12,7 @@ import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.binder.BaseUnits
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
 import io.micrometer.core.instrument.config.MeterFilter
+import io.micrometer.core.instrument.config.MeterFilterReply
 import io.micrometer.core.instrument.noop.NoopGauge
 import java.io.File
 import java.nio.file.FileSystems
