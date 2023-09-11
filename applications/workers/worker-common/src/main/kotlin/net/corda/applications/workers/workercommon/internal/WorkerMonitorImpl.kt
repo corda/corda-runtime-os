@@ -5,32 +5,32 @@ import io.javalin.core.util.Header
 import io.micrometer.cloudwatch2.CloudWatchConfig
 import io.micrometer.cloudwatch2.CloudWatchMeterRegistry
 import io.micrometer.core.instrument.Clock
-import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics
-import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
-import io.micrometer.core.instrument.binder.jvm.JvmHeapPressureMetrics
-import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
-import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics
+import io.micrometer.core.instrument.Meter
+import io.micrometer.core.instrument.binder.jvm.*
 import io.micrometer.core.instrument.binder.system.FileDescriptorMetrics
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics
 import io.micrometer.core.instrument.binder.system.UptimeMetrics
+import io.micrometer.core.instrument.config.MeterFilter
+import io.micrometer.core.instrument.config.MeterFilterReply
 import io.micrometer.prometheus.PrometheusConfig
 import io.micrometer.prometheus.PrometheusMeterRegistry
 import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.metrics.CordaMetrics
+import net.corda.rest.ResponseCode
+import net.corda.web.api.Endpoint
+import net.corda.web.api.HTTPMethod
+import net.corda.web.api.WebHandler
+import net.corda.web.api.WebServer
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
+import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
-import net.corda.rest.ResponseCode
-import net.corda.web.api.Endpoint
-import net.corda.web.api.HTTPMethod
-import net.corda.web.api.WebHandler
-import net.corda.web.api.WebServer
 
 /**
  * An implementation of [WorkerMonitor].
@@ -61,11 +61,20 @@ internal class WorkerMonitorImpl @Activate constructor(
             return null
         }
 
+        override fun step(): Duration {
+            return Duration.ofMinutes(1)
+        }
+
+        override fun batchSize(): Int {
+            return CloudWatchConfig.MAX_BATCH_SIZE
+        }
+
+        override fun highResolution(): Boolean {
+            return false
+        }
+
         override fun namespace(): String {
-            val suffix = System.getenv(K8S_NAMESPACE_KEY)?.let {
-                "/$it"
-            } ?: ""
-            return "$CORDA_NAMESPACE$suffix"
+            return CORDA_NAMESPACE
         }
     }
     private val lastLogMessage = ConcurrentHashMap(mapOf(HTTP_HEALTH_ROUTE to "", HTTP_STATUS_ROUTE to ""))
@@ -78,7 +87,21 @@ internal class WorkerMonitorImpl @Activate constructor(
             val cloudwatchClient = CloudWatchAsyncClient.builder()
                 .credentialsProvider(WebIdentityTokenFileCredentialsProvider.create())
                 .build()
-            CordaMetrics.configure(name, CloudWatchMeterRegistry(cloudwatchConfig, Clock.SYSTEM, cloudwatchClient))
+            val registry = CloudWatchMeterRegistry(cloudwatchConfig, Clock.SYSTEM, cloudwatchClient)
+            registry.meterFilter(object : MeterFilter {
+                override fun accept(id: Meter.Id): MeterFilterReply {
+                    @Suppress("ComplexCondition")
+                    return if (
+                        id.name.contains("http.server.request") ||
+                        id.name.contains("flow.execution.time")
+                    ) {
+                        MeterFilterReply.ACCEPT
+                    } else {
+                        MeterFilterReply.DENY
+                    }
+                }
+            })
+            CordaMetrics.configure(name, registry)
         }
 
         ClassLoaderMetrics().bindTo(CordaMetrics.registry)
