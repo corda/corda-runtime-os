@@ -29,6 +29,7 @@ import net.corda.processors.p2p.gateway.GatewayProcessor
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.processors.persistence.PersistenceProcessor
 import net.corda.processors.rest.RestProcessor
+import net.corda.processors.scheduler.SchedulerProcessor
 import net.corda.processors.token.cache.TokenCacheProcessor
 import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.processors.verification.VerificationProcessor
@@ -93,6 +94,8 @@ class CombinedWorker @Activate constructor(
     val applicationBanner: ApplicationBanner,
     @Reference(service = SecretsServiceFactoryResolver::class)
     val secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
+    @Reference(service = SchedulerProcessor::class)
+    val schedulerProcessor: SchedulerProcessor,
 ) : Application {
 
     private companion object {
@@ -189,6 +192,7 @@ class CombinedWorker @Activate constructor(
         restProcessor.start(config)
         linkManagerProcessor.start(config)
         gatewayProcessor.start(config)
+        schedulerProcessor.start(config)
     }
 
     override fun shutdown() {
@@ -206,6 +210,7 @@ class CombinedWorker @Activate constructor(
         restProcessor.stop()
         linkManagerProcessor.stop()
         gatewayProcessor.stop()
+        schedulerProcessor.stop()
 
         webServer.stop()
         shutdownTracing()

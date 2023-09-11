@@ -21,7 +21,8 @@ class SessionParty (
     private val inboundMessages: MessageBus,
     private val outboundMessages: MessageBus,
     private val testConfig: SmartConfig,
-    var sessionState: SessionState?
+    var sessionState: SessionState?,
+    private val isInitiating: Boolean
 ) : SessionInteractions, BusInteractions by inboundMessages {
 
     private val messagingChunkFactory : MessagingChunkFactory = mock<MessagingChunkFactory>().apply {
@@ -49,7 +50,7 @@ class SessionParty (
     }
 
     override fun processNextReceivedMessage(sendMessages: Boolean, instant: Instant) {
-        processAndAcknowledgeEventsInSequence(getNextInboundMessage())
+        processAndAcknowledgeEventsInSequence(getNextInboundMessage(isInitiating))
 
         if (sendMessages) {
             sendMessages(instant)
@@ -57,10 +58,10 @@ class SessionParty (
     }
 
     override fun processAllReceivedMessages(sendMessages: Boolean, instant: Instant) {
-        var nextMessage = getNextInboundMessage()
+        var nextMessage = getNextInboundMessage(isInitiating)
         while (nextMessage != null) {
             processAndAcknowledgeEventsInSequence(nextMessage)
-            nextMessage = getNextInboundMessage()
+            nextMessage = getNextInboundMessage(isInitiating)
         }
 
         if (sendMessages) {
