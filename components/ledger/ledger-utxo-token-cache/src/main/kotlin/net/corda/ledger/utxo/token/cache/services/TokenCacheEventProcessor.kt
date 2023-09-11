@@ -2,18 +2,23 @@ package net.corda.ledger.utxo.token.cache.services
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.utxo.token.cache.converters.EntityConverter
 import net.corda.ledger.utxo.token.cache.converters.EventConverter
+import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
+import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import org.slf4j.LoggerFactory
+import java.math.BigDecimal
+import java.math.BigInteger
 
 class TokenCacheEventProcessor constructor(
     private val eventConverter: EventConverter,
@@ -77,13 +82,27 @@ class TokenCacheEventProcessor constructor(
                 "Received an event with and unrecognized payload '${tokenEvent.javaClass}'"
             }
 
-            val result = handler.handle(tokenCache, poolCacheState, tokenEvent)
-                ?: return StateAndEventProcessor.Response(poolCacheState.toAvro(), listOf())
-
-            StateAndEventProcessor.Response(
-                poolCacheState.toAvro(),
-                listOf(result)
+            val sb = StringBuffer()
+            sb.appendLine(
+                "Token Selection Request type = ${handler.javaClass.simpleName} Pool = ${nonNullableState.poolKey}"
             )
+            sb.appendLine("Before Handler:")
+            sb.append(getTokenSummary(tokenCache, poolCacheState))
+
+            val result = handler.handle(tokenCache, poolCacheState, tokenEvent)
+
+            sb.appendLine("After Handler:")
+            sb.append(getTokenSummary(tokenCache, poolCacheState))
+            log.info(sb.toString())
+
+            return if (result == null) {
+                StateAndEventProcessor.Response(poolCacheState.toAvro(), listOf())
+            } else {
+                StateAndEventProcessor.Response(
+                    poolCacheState.toAvro(),
+                    listOf(result)
+                )
+            }
         } catch (e: Exception) {
             val responseMessage = externalEventResponseFactory.platformError(
                 ExternalEventContext(
@@ -95,5 +114,38 @@ class TokenCacheEventProcessor constructor(
             )
             StateAndEventProcessor.Response(state, listOf(responseMessage), markForDLQ = false)
         }
+    }
+
+    private fun getTokenSummary(tokenCache: TokenCache, state: PoolCacheState): String {
+        val cachedTokenValue = tokenCache.sumOf { it.amount }
+        val cachedTokenCount = tokenCache.count()
+        val avroState = state.toAvro()
+        val sb = StringBuffer()
+        sb.appendLine("Token Cache Summary:")
+        sb.appendLine("Token Balance: $cachedTokenValue")
+        sb.appendLine("Token Count  : $cachedTokenCount")
+        val tokenIndex = tokenCache.associateBy { it.stateRef }
+
+        avroState.tokenClaims.forEach {
+            val claimedTokens = it.claimedTokenStateRefs.mapNotNull { ref -> tokenIndex[ref] }
+            val claimCount = claimedTokens.size
+            val claimBalance = claimedTokens.sumOf { token -> token.amount }
+            val tokens = claimedTokens.joinToString(" ") { token -> "$({token.stateRef}-${token.amount})" }
+            sb.appendLine(
+                "Claim       : ${it.claimId} Token Count $claimCount Token Balance $claimBalance Tokens:${tokens}"
+            )
+        }
+        return sb.toString()
+    }
+
+    private fun amountToBigDecimal(avroTokenAmount: TokenAmount): BigDecimal {
+        val unscaledValueBytes = ByteArray(avroTokenAmount.unscaledValue.remaining())
+            .apply { avroTokenAmount.unscaledValue.get(this) }
+
+        avroTokenAmount.unscaledValue.position(0)
+        return BigDecimal(
+            BigInteger(unscaledValueBytes),
+            avroTokenAmount.scale
+        )
     }
 }
