@@ -12,7 +12,7 @@ data class State(
     val key: String,
 
     /**
-     * The typed state itself.
+     * The actual value of the state.
      */
     val value: ByteArray,
 
