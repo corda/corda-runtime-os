@@ -20,9 +20,6 @@ import java.security.cert.CertificateFactory
 import java.security.cert.CertificateNotYetValidException
 import java.security.cert.X509Certificate
 import java.util.Date
-import net.corda.avro.serialization.CordaAvroDeserializer
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.data.KeyValuePairList
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.toMap

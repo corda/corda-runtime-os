@@ -60,7 +60,6 @@ internal class MGMRegistrationMemberInfoHandler(
 ) {
 
     private companion object {
-        const val SERIAL_CONST = "1"
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val keyIdList = listOf(SESSION_KEYS, ECDH_KEY_ID)
     }

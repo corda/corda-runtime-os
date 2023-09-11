@@ -184,7 +184,8 @@ class MGMRegistrationService @Activate constructor(
                     )
 
                     // Persist group parameters snapshot
-                    val groupParametersPersistenceResult = membershipPersistenceClient.persistGroupParametersInitialSnapshot(member).execute()
+                    val groupParametersPersistenceResult = membershipPersistenceClient
+                        .persistGroupParametersInitialSnapshot(member).execute()
                     if (groupParametersPersistenceResult is MembershipPersistenceResult.Failure) {
                         throw NotReadyMembershipRegistrationException(groupParametersPersistenceResult.errorMsg)
                     }

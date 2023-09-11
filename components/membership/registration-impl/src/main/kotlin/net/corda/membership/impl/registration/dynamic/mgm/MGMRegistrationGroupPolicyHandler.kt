@@ -1,7 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
-import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient

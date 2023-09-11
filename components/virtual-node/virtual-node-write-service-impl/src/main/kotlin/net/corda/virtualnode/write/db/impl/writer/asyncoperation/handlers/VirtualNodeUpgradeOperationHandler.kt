@@ -85,7 +85,7 @@ internal class VirtualNodeUpgradeOperationHandler(
         try {
             val (upgradedVNodeInfo, cpkChangelogs, targetCpi) = upgradeVirtualNodeEntityTransaction(requestTimestamp, requestId, request)
             upgradeVirtualNodeCpi(requestId, request, upgradedVNodeInfo, cpkChangelogs)
-            reRegisterMember(upgradedVNodeInfo, targetCpi, requestId)
+            reRegisterMember(upgradedVNodeInfo, targetCpi)
         } catch (e: Exception) {
             handleUpgradeException(e, requestId, request, requestTimestamp)
         }
@@ -210,7 +210,7 @@ internal class VirtualNodeUpgradeOperationHandler(
 
     // Re-register the member if the member already exists
     // after the virtual node has been upgraded, so that the member CPI version is up-to-date
-    private fun reRegisterMember(upgradedVNodeInfo: VirtualNodeInfo, cpiMetadata: CpiMetadata, requestId: String) {
+    private fun reRegisterMember(upgradedVNodeInfo: VirtualNodeInfo, cpiMetadata: CpiMetadata) {
         val holdingIdentity = upgradedVNodeInfo.holdingIdentity
         val registrationRequest = membershipQueryClient.queryRegistrationRequests(
             viewOwningIdentity = holdingIdentity,
@@ -223,11 +223,12 @@ internal class VirtualNodeUpgradeOperationHandler(
         val mgmInfo = if (!GroupPolicyParser.isStaticNetwork(cpiMetadata.groupPolicy!!)) {
             policyParser.getMgmInfo(holdingIdentity, cpiMetadata.groupPolicy!!)
         } else {
-            throw VirtualNodeUpgradeRejectedException("Cannot upgrade a virtual node in a static network.", requestId)
+            //If it's a static network there is no MGM to re-register with.
+            return
         }
 
         val records = if (mgmInfo == null) {
-            logger.info(".No MGM information found in group policy. MGM member info not published.")
+            logger.info("No MGM information found in group policy. MGM member info not published.")
             mutableListOf()
         } else {
             val oldMgmMemberInfo = membershipGroupReader.lookup(mgmInfo.name)

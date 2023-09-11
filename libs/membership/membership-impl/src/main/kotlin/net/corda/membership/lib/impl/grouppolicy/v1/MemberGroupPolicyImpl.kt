@@ -46,7 +46,7 @@ import net.corda.membership.lib.impl.grouppolicy.validatePemCert
 import net.corda.membership.lib.verifiers.GroupParametersUpdateVerifier
 import net.corda.v5.base.types.MemberX500Name
 
-class MemberGroupPolicyImpl(private val rootNode: JsonNode) : MemberGroupPolicy {
+class MemberGroupPolicyImpl(rootNode: JsonNode) : MemberGroupPolicy {
 
     override val fileFormatVersion = rootNode.getMandatoryInt(FILE_FORMAT_VERSION)
 
@@ -115,24 +115,6 @@ class MemberGroupPolicyImpl(private val rootNode: JsonNode) : MemberGroupPolicy 
                     throw BadGroupPolicyException(verifierResult.reason)
                 }
             }
-//
-//        override fun equals(other: Any?): Boolean {
-//            return if (other is ProtocolParametersImpl) {
-//                return sessionKeyPolicy == other.sessionKeyPolicy
-//                        && staticNetworkMembers?.toTypedArray().contentEquals(other.staticNetworkMembers?.toTypedArray())
-//                        && staticNetworkGroupParameters.equals(other.staticNetworkGroupParameters)
-//            } else {
-//                false
-//            }
-//        }
-//
-//        override fun hashCode(): Int {
-//            var result = sessionKeyPolicy.hashCode()
-//            result = 31 * result + (staticNetwork?.hashCode() ?: 0)
-//            result = 31 * result + (staticNetworkMembers?.hashCode() ?: 0)
-//            result = 31 * result + (staticNetworkGroupParameters?.hashCode() ?: 0)
-//            return result
-//        }
     }
 
     internal inner class P2PParametersImpl(rootNode: JsonNode) : GroupPolicy.P2PParameters {
@@ -217,17 +199,6 @@ class MemberGroupPolicyImpl(private val rootNode: JsonNode) : MemberGroupPolicy 
                         + "Allowed values are: [${TlsType.values().map { it.groupPolicyName }}]"
             )
         }
-//
-//        override fun equals(other: Any?): Boolean {
-//            return if (other is P2PParametersImpl) {
-//                this.sessionPki == other.sessionPki && this.sessionTrustRoots == other.sessionTrustRoots
-//                    && this.tlsTrustRoots == other.tlsTrustRoots && this.tlsPki == other.tlsPki && this.tlsVersion == other.tlsVersion
-//                    && this.tlsType == this.tlsType && this.mgmClientCertificateSubject == other.mgmClientCertificateSubject
-//                    && this.protocolMode == other.protocolMode && this.tlsType == other.tlsType
-//            } else {
-//                false
-//            }
-//        }
     }
 
     internal inner class MGMInfoImpl(
@@ -238,13 +209,6 @@ class MemberGroupPolicyImpl(private val rootNode: JsonNode) : MemberGroupPolicy 
         map: Map<String, String>
     ) : GroupPolicy.CipherSuite, Map<String, String> by map
 
-    override fun equals(other: Any?): Boolean {
-        return if (other is MemberGroupPolicyImpl) {
-            rootNode == other.rootNode
-        } else {
-            false
-        }
-    }
 }
 
 

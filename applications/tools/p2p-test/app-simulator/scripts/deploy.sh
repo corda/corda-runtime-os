@@ -8,8 +8,8 @@ deploy() {
    local namespace=$1
 
    echo Creating $namespace
-   kubectl delete ns $namespace || echo ''
-   kubectl create ns $namespace
+#   kubectl delete ns $namespace || echo ''
+#   kubectl create ns $namespace
    prereqs_args="--install prereqs -n $namespace  \
                 oci://corda-os-docker.software.r3.com/helm-charts/corda-dev  \
                 --set image.registry=\"corda-os-docker.software.r3.com\"  \
@@ -32,11 +32,11 @@ deploy() {
      corda_args+=" -f \"$SCRIPT_DIR/corda-eks.metrics.yaml\""
    fi
 
-   echo Installing prereqs into $namespace
-   helm upgrade ${prereqs_args}
+#   echo Installing prereqs into $namespace
+#   helm upgrade ${prereqs_args}
 
    echo Installing corda image $DOCKER_IMAGE_VERSION into $namespace
-   helm upgrade ${corda_args}
+   helm upgrade ${corda_args} --dry-run
 }
 
 helm registry login corda-os-docker.software.r3.com -u $CORDA_ARTIFACTORY_USERNAME -p $CORDA_ARTIFACTORY_PASSWORD
