@@ -51,7 +51,7 @@ class SigningServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    fun sign(bytes: ByteArray, publicKey: PublicKey, signatureSpec: SignatureSpec, context: Map<String, String>): DigitalSignature.WithKeyId {
+    override fun sign(bytes: ByteArray, publicKey: PublicKey, signatureSpec: SignatureSpec, context: Map<String, String>): DigitalSignature.WithKeyId {
         return recordSuspendable({ cryptoFlowTimer("sign") }) @Suspendable {
             val digitalSignatureWithKey = externalEventExecutor.execute(
                 CreateSignatureExternalEventFactory::class.java,
