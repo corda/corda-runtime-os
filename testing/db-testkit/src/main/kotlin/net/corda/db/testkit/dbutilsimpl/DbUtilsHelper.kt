@@ -3,7 +3,6 @@ package net.corda.db.testkit.dbutilsimpl
 import com.typesafe.config.Config
 import net.corda.db.core.CloseableDataSource
 import net.corda.orm.EntityManagerConfiguration
-import java.sql.Connection
 
 /**
  * An interface defining common database utility methods for managing database connections and configurations.
