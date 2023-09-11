@@ -4,6 +4,8 @@ import java.time.Instant
 
 /**
  * A state managed via the state manager.
+ * Methods [equals] and [hashCode] are manually overridden due to the inconsistencies when comparing arrays, see
+ * https://blog.jetbrains.com/kotlin/2015/09/feedback-request-limitations-on-data-classes/ for details.
  */
 data class State(
     /**

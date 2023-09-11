@@ -115,7 +115,9 @@ class StateRepositoryImpl : StateRepository {
             else -> throw IllegalArgumentException("Unsupported Type: ${value::class.java.simpleName}")
         }
         val query = entityManager.createNativeQuery(
-            "SELECT s.key, s.value, s.metadata, s.version, s.modified_time FROM ${DbSchema.STATE_MANAGER_TABLE} s WHERE (s.metadata->>'$key')::::$nativeType $comparison '$value'",
+            "SELECT s.key, s.value, s.metadata, s.version, s.modified_time " +
+                    "FROM ${DbSchema.STATE_MANAGER_TABLE} s " +
+                    "WHERE (s.metadata->>'$key')::::$nativeType $comparison '$value'",
             StateEntity::class.java
         )
 
