@@ -19,7 +19,6 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoProcessor
-import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.tracing.configureTracing
@@ -97,7 +96,7 @@ class CryptoWorker @Activate constructor(
         params.defaultParams,
         configurationValidatorFactory.createConfigValidator(),
         listOf(
-            PathAndConfig(BootConfig.BOOT_DB, params.databaseParams),
+            PathAndConfig(BOOT_DB, params.databaseParams),
             PathAndConfig(BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
         )
     )

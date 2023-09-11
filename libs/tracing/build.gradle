@@ -9,8 +9,6 @@ dependencies {
     compileOnly "biz.aQute.bnd:biz.aQute.bnd.annotation:$bndlibVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    api 'net.corda:corda-base'
-    api 'net.corda:corda-application'
     implementation 'net.corda:corda-config-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "org.slf4j:slf4j-api:$slf4jVersion"

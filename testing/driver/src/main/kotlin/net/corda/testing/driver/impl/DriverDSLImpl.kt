@@ -364,6 +364,7 @@ internal class DriverDSLImpl(
                 "co.paralleluniverse.quasar.excludeLocations" to quasarExcludeLocations,
                 "co.paralleluniverse.quasar.excludePackages" to quasarExcludePackages,
                 "co.paralleluniverse.quasar.verbose" to false.toString(),
+                "felix.bootdelegation.implicit" to false.toString(),
                 FRAMEWORK_STORAGE to frameworkDirectory.toString(),
                 FRAMEWORK_STORAGE_CLEAN to FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT,
                 FRAMEWORK_SYSTEMPACKAGES_EXTRA to systemPackagesExtra
