@@ -868,6 +868,7 @@ object CordaMetrics {
         val deployment = System.getenv(K8S_NAMESPACE_KEY) ?: ""
         this.registry.add(registry).config()
             .commonTags(Tag.Deployment.value, deployment)
+            .commonTags(Tag.WorkerType.value, workerType)
             .meterFilter(object : MeterFilter {
                 override fun map(id: Meter.Id): Meter.Id {
                     // prefix all metrics with `corda`, except standard JVM and Process metrics
