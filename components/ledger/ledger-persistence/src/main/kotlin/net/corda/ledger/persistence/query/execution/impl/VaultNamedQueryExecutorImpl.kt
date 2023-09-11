@@ -33,17 +33,62 @@ class VaultNamedQueryExecutorImpl(
         const val UTXO_TX_COMPONENT_TABLE = "utxo_transaction_component"
         const val TIMESTAMP_LIMIT_PARAM_NAME = "Corda_TimestampLimit"
 
+        const val RESULT_SET_FILL_RETRY_LIMIT = 5
+
         val log = LoggerFactory.getLogger(VaultNamedQueryExecutorImpl::class.java)
     }
 
-    // Captures data passed back and forth between this query execution and the caller in a flow
-    // processor to enable subsequent pages to know where to resume from. Data is opaque outside
-    // of this class.
+    /*
+     * Captures data passed back and forth between this query execution and the caller in a flow
+     * processor to enable subsequent pages to know where to resume from. Data is opaque outside
+     * this class.
+     */
     @CordaSerializable
     data class ResumePoint(
         val created: Instant,
         val txId: String,
         val leafIdx: Int
+    )
+
+    /*
+     * Stores query results following processing / filtering, in a form ready to return to th
+     * caller.
+     */
+    private data class ProcessedQueryResults(
+        val results: List<StateAndRef<ContractState>>,
+        val resumePoint: ResumePoint?,
+        val numberOfRowsFromQuery: Int
+    )
+
+    /*
+     * Stores the raw query data retrieved from an SQL query row.
+     */
+    private inner class RawQueryData(sqlRow: Tuple) {
+
+        private val txId = sqlRow[0] as String
+        private val leafIdx = sqlRow[1] as Int
+        private val outputInfoData = sqlRow[2] as ByteArray
+        private val outputData = sqlRow[3] as ByteArray
+        private val created = (sqlRow[4] as Timestamp).toInstant()
+
+        val stateAndRef: StateAndRef<ContractState> by lazy {
+            UtxoTransactionOutputDto(txId, leafIdx, outputInfoData, outputData)
+                .toStateAndRef(serializationService)
+        }
+
+         val resumePoint: ResumePoint? by lazy {
+             created?.let { ResumePoint(created, txId, leafIdx) }
+         }
+    }
+
+    /*
+     * Stores a set of raw query data returned from a single database query invocation. To support
+     * paging, this not only returns the raw query data, but also a `more` flag to indicate whether
+     * another page of data is available.
+     */
+    private data class RawQueryResults(
+        val results: List<RawQueryData>,
+        val more: Boolean
     )
 
     override fun executeQuery(
@@ -60,24 +105,25 @@ class VaultNamedQueryExecutorImpl(
             "Only WHERE queries are supported for now."
         }
 
-        // Fetch the state and refs for the given transaction IDs
-        val (contractStateResults, resumePoint) = fetchStateAndRefs(
-            request,
-            vaultNamedQuery.query.query
-        )
-
         // Deserialize the parameters into readable objects instead of bytes
         val deserializedParams = request.parameters.mapValues {
             serializationService.deserialize(it.value.array(), Any::class.java)
         }
 
-        // Apply filters and transforming functions (if there's any)
-        val filteredAndTransformedResults = contractStateResults.filter {
-            vaultNamedQuery.filter?.filter(it, deserializedParams) ?: true
-        }.mapNotNull { // This has no effect as of now, but we keep it for safety purposes
+        // Fetch and filter the results and try to fill up the page size then map the results
+        // mapNotNull has no effect as of now, but we keep it for safety purposes
+        val (fetchedRecords, resumePoint, numberOfRowsReturned) = filterResultsAndFillPageSize(
+            request,
+            vaultNamedQuery,
+            deserializedParams
+        )
+
+        log.trace("Fetched ${fetchedRecords.size} records in this page " +
+                "(${numberOfRowsReturned - fetchedRecords.size} records filtered)")
+
+        val filteredAndTransformedResults = fetchedRecords.mapNotNull {
             vaultNamedQuery.mapper?.transform(it, deserializedParams) ?: it
         }
-
         // Once filtering and transforming are done collector function can be applied (if present)
         val collectedResults = vaultNamedQuery.collector?.collect(
             filteredAndTransformedResults,
@@ -95,22 +141,119 @@ class VaultNamedQueryExecutorImpl(
     }
 
     /**
-     * A function that fetches the contract states that belong to the given transaction IDs. The data stored in the
-     * component table will be deserialized into contract states using component groups.
+     * This function will fetch a given number ("page size") of records from the database
+     * (amount defined by [request]'s limit field).
+     *
+     * After fetching those records the in-memory filter will be applied. If the filtering
+     * reduces the amount of records below the "page size", then another "page size" number
+     * of records will be fetched and filtered.
+     *
+     * This logic will be repeated until either:
+     * - The size of the filtered results reaches the "page size"
+     * - We run out of data to fetch from the database
+     * - We reach the number of retries ([RESULT_SET_FILL_RETRY_LIMIT])
+     *
+     * If any of these conditions happen, we just return the result set as-is without filling
+     * up the "page size".
+     *
+     * The returned [ProcessedQueryResults] object provides the collated query results
+     * post-filtering, a [ResumePoint] if there is another page of data to be returned, and the
+     * total number of rows returned from executed queries for informational purposes.
+     */
+    private fun filterResultsAndFillPageSize(
+        request: FindWithNamedQuery,
+        vaultNamedQuery: VaultNamedQuery,
+        deserializedParams: Map<String, Any>
+    ): ProcessedQueryResults {
+        val filteredRawData = mutableListOf<RawQueryData>()
+
+        var currentRetry = 0
+        var numberOfRowsFromQuery = 0
+        var currentResumePoint = request.resumePoint?.let {
+            serializationService.deserialize(request.resumePoint.array(), ResumePoint::class.java)
+        }
+
+        while (filteredRawData.size < request.limit && currentRetry < RESULT_SET_FILL_RETRY_LIMIT ) {
+            ++currentRetry
+
+            log.trace("Executing try: $currentRetry, fetched ${filteredRawData.size} number of results so far.")
+
+            // Fetch the state and refs for the given transaction IDs
+            val rawResults = fetchStateAndRefs(
+                request,
+                vaultNamedQuery.query.query,
+                currentResumePoint
+            )
+
+            // If we have no filter, there's no need to continue the loop
+            if (vaultNamedQuery.filter == null) {
+                with (rawResults) {
+                    return ProcessedQueryResults(
+                        results.map { it.stateAndRef },
+                        if (more) results.last().resumePoint else null,
+                        results.size
+                    )
+                }
+            }
+
+            rawResults.results.forEach { result ->
+                ++numberOfRowsFromQuery
+                if (vaultNamedQuery.filter.filter(result.stateAndRef, deserializedParams)) {
+                    filteredRawData.add(result)
+                }
+
+                if (filteredRawData.size >= request.limit) {
+                    // Page filled. We need to set the resume point based on the final filtered
+                    // result (as we may be throwing out additional records returned by the query).
+                    //
+                    // There are more results if either we didn't get through all the results
+                    // returned by the query invocation, or if the query itself indicated there are
+                    // more results to return.
+                    val moreResults = rawResults.results.size > filteredRawData.size || rawResults.more
+
+                    return ProcessedQueryResults(
+                        filteredRawData.map { it.stateAndRef },
+                        if (moreResults) filteredRawData.last().resumePoint else null,
+                        numberOfRowsFromQuery
+                    )
+                }
+            }
+
+            // If we can't fetch more states we just return the result set as-is
+            if (!rawResults.more) {
+                currentResumePoint = null
+                break
+            } else {
+                currentResumePoint = rawResults.results.last().resumePoint
+            }
+        }
+
+        return ProcessedQueryResults(
+            filteredRawData.map { it.stateAndRef },
+            currentResumePoint,
+            numberOfRowsFromQuery
+        )
+    }
+
+    /**
+     * A function that fetches the contract states that belong to the given transaction IDs.
+     * The data stored in the component table will be deserialized into contract states using
+     * component groups.
+     *
+     * Each invocation of this function represents a single distinct query to the database.
      */
     private fun fetchStateAndRefs(
         request: FindWithNamedQuery,
-        whereJson: String?
-    ): Pair<List<StateAndRef<ContractState>>, ResumePoint?> {
+        whereJson: String?,
+        resumePoint: ResumePoint?
+    ): RawQueryResults {
 
         validateParameters(request)
 
-        var newResumePoint: ResumePoint? = null
-
         @Suppress("UNCHECKED_CAST")
-        var resultList = entityManagerFactory.transaction { em ->
+        val resultList = entityManagerFactory.transaction { em ->
 
-            val resumePointExpr = request.resumePoint?.let {
+            val resumePointExpr = resumePoint?.let {
                 " AND ((tc_output.created > :created) OR " +
                 "(tc_output.created = :created AND tc_output.transaction_id > :txId) OR " +
                 "(tc_output.created = :created AND tc_output.transaction_id = :txId AND tc_output.leaf_idx > :leafIdx))"
@@ -132,20 +275,18 @@ class VaultNamedQueryExecutorImpl(
                              ON tc_output_info.transaction_id = tc_output.transaction_id
                              AND tc_output_info.leaf_idx = tc_output.leaf_idx
                              AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
-                        $whereJson
+                        WHERE ($whereJson)
                         $resumePointExpr
                         AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME
                         ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx
                 """,
                 Tuple::class.java)
 
-            if (request.resumePoint != null) {
-                with (serializationService.deserialize(request.resumePoint.array(), ResumePoint::class.java)) {
-                    log.debug("Query is resuming from $this")
-                    query.setParameter("created", this.created)
-                    query.setParameter("txId", this.txId)
-                    query.setParameter("leafIdx", this.leafIdx)
-                }
+            if (resumePoint != null) {
+                log.debug("Query is resuming from $resumePoint")
+                query.setParameter("created", resumePoint.created)
+                query.setParameter("txId", resumePoint.txId)
+                query.setParameter("leafIdx", resumePoint.leafIdx)
             }
 
             request.parameters.filter { it.value != null }.forEach { rec ->
@@ -161,28 +302,13 @@ class VaultNamedQueryExecutorImpl(
             query.resultList as List<Tuple>
         }
 
-        if (resultList.size > request.limit) {
-            // More results means we set the resume point for the next page, but we also need to
-            // filter out the additional result not originally requested from the list being returned
-            with (resultList[request.limit - 1]) {
-                newResumePoint = ResumePoint(
-                    (this[4] as Timestamp).toInstant(),
-                    this[0] as String,
-                    this[1] as Int
-                )
-            }
-
-            resultList = resultList.subList(0, request.limit)
+        return if (resultList.size > request.limit) {
+            // We need to truncate the list to the number requested, but also flag that there is
+            // another page to be returned
+            RawQueryResults(resultList.subList(0, request.limit).map { RawQueryData(it) }, more = true)
+        } else {
+            RawQueryResults(resultList.map { RawQueryData(it) }, more = false)
         }
-
-        return Pair(resultList.map { t ->
-            UtxoTransactionOutputDto(
-                t[0] as String, // transactionId
-                t[1] as Int, // leaf ID
-                t[2] as ByteArray, // outputs info data
-                t[3] as ByteArray // outputs data
-            ).toStateAndRef(serializationService) },
-            newResumePoint)
     }
 
     private fun validateParameters(request: FindWithNamedQuery) {
