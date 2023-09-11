@@ -1,4 +1,4 @@
-package net.corda.db.testkit
+package net.corda.db.testkit.dbutilsimpl
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
