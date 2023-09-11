@@ -1,5 +1,6 @@
 package net.corda.messaging.mediator
 
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -21,9 +22,11 @@ import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.UUID
 
+@Suppress("LongParameterList")
 class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private val config: EventMediatorConfig<K, S, E>,
-    private val cordaAvroSerializer: CordaAvroSerializer<Any>,
+    private val serializer: CordaAvroSerializer<Any>,
+    private val stateDeserializer: CordaAvroDeserializer<S>,
     private val stateManager: StateManager,
     private val taskManager: TaskManager,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -156,11 +159,12 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                     val events = msgGroup.value.map { it }
                     ProcessorTask(
                         key,
-                        config.messageProcessor.stateValueClass,
 //                        states[key],
                         events,
                         config.messageProcessor,
-                        stateManager
+                        stateManager,
+                        serializer,
+                        stateDeserializer,
                     )
                 }
 

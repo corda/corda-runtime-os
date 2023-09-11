@@ -5,22 +5,16 @@ import java.time.Instant
 /**
  * A state managed via the state manager.
  */
-data class State<S>(
-    /**
-     * The typed state itself.
-     */
-    val state: S,
-
+data class State(
     /**
      * Identifier for the state.
      */
     val key: String,
 
     /**
-     * Arbitrary Map of primitive types that can be used to store and query extra data associated with the state
-     * that must generally not be part of the state itself.
+     * The actual value of the state.
      */
-    val metadata: Metadata<Any> = Metadata(),
+    val value: ByteArray,
 
     /**
      * Version of the state.
@@ -28,7 +22,37 @@ data class State<S>(
     val version: Int = -1,
 
     /**
+     * Arbitrary Map of primitive types that can be used to store and query data associated with the state.
+     */
+    val metadata: Metadata = Metadata(),
+
+    /**
      * Time when the state was last modified.
      */
     val modifiedTime: Instant = Instant.now(),
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as State
+
+        if (key != other.key) return false
+        if (!value.contentEquals(other.value)) return false
+        if (version != other.version) return false
+        if (metadata != other.metadata) return false
+        if (modifiedTime != other.modifiedTime) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = key.hashCode()
+        result = 31 * result + value.contentHashCode()
+        result = 31 * result + version
+        result = 31 * result + metadata.hashCode()
+        result = 31 * result + modifiedTime.hashCode()
+
+        return result
+    }
+}

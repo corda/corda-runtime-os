@@ -14,8 +14,8 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
  * @property messagingConfig Messaging related configuration.
  * @property consumerFactories Factories for creating message consumers.
  * @property producerFactories Factories for creating message producers.
- *  @property messageProcessor State and event processor.
- *   @property messageRouter Message router that routes output messages of the state and event processor to producers.
+ * @property messageProcessor State and event processor.
+ * @property messageRouter Message router that routes output messages of the state and event processor to producers.
  */
 data class EventMediatorConfig<K: Any, S: Any, E: Any>(
     val name: String,

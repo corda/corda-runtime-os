@@ -12,7 +12,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-// @Suppress("LongParameterList")
+@Suppress("LongParameterList")
 @Component(service = [EventMediatorFactory::class])
 class EventMediatorFactoryImpl @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
@@ -29,9 +29,14 @@ class EventMediatorFactoryImpl @Activate constructor(
         eventMediatorConfig: EventMediatorConfig<K, S, E>,
     ): MultiSourceEventMediator<K, S, E> {
         val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
+        val stateDeserializer = cordaAvroSerializationFactory.createAvroDeserializer(
+            {},
+            eventMediatorConfig.messageProcessor.stateValueClass
+        )
         return MultiSourceEventMediatorImpl(
             eventMediatorConfig,
             serializer,
+            stateDeserializer,
             stateManager,
             taskManager,
             lifecycleCoordinatorFactory,
