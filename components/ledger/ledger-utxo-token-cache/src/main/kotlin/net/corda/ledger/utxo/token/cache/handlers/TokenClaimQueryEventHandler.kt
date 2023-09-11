@@ -34,7 +34,8 @@ class TokenClaimQueryEventHandler(
             // This way the cache size will be equal to the configured size once the claimed tokens are removed
             // from the query results
             val maxTokens = serviceConfiguration.cachedTokenPageSize + state.claimedTokens().size
-            val findResult = availableTokenService.findAvailTokens(event.poolKey, event.ownerHash, event.tagRegex, maxTokens)
+            val findResult =
+                availableTokenService.findAvailTokens(event.poolKey, event.ownerHash, event.tagRegex, maxTokens)
 
             // Remove the claimed tokens from the query results
             val tokens = findResult.tokens.filterNot { state.isTokenClaimed(it.stateRef) }
@@ -47,7 +48,7 @@ class TokenClaimQueryEventHandler(
         val selectedAmount = selectionResult.first
         val selectedTokens = selectionResult.second
 
-        return if (selectedAmount >= event.targetAmount) {
+        val result = if (selectedAmount >= event.targetAmount) {
             // Claimed tokens should not be stored in the token cache
             tokenCache.removeAll(selectedTokens.map { it.stateRef }.toSet())
             state.addNewClaim(event.externalEventRequestId, selectedTokens)
@@ -60,6 +61,8 @@ class TokenClaimQueryEventHandler(
         } else {
             recordFactory.getFailedClaimResponse(event.flowId, event.externalEventRequestId, event.poolKey)
         }
+
+        return result
     }
 
     private fun selectTokens(
