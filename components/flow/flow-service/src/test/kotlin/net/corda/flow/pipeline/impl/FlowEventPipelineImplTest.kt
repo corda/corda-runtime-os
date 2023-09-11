@@ -32,14 +32,8 @@ class FlowEventPipelineImplTest {
 
     private val payload = ExternalEventResponse("foo")
     private val waitingForWakeup = WaitingFor(WakeUpWaitingFor())
-    private val retryStartFlow = StartFlow()
 
     private val RUN_OR_CONTINUE_TIMEOUT = 60000L
-
-    private val retryEvent = FlowEvent().apply {
-        flowId = FLOW_ID_1
-        payload = retryStartFlow
-    }
 
     private val mockHoldingIdentity = mock<HoldingIdentity>().apply {
         whenever(shortHash).thenReturn(ShortHash.Companion.of("0123456789abc"))
