@@ -304,6 +304,41 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
+    override fun commitAsync(callback: CordaConsumer.Callback?) {
+        var attemptCommit = true
+
+        while (attemptCommit) {
+            try {
+                consumer.commitAsync { offsets, exception ->
+                    callback?.onCompletion(
+                        offsets.entries.associate {
+                            it.key!!.toCordaTopicPartition(config.topicPrefix) to it.value.offset()
+                        },
+                        exception
+                    )
+                }
+                attemptCommit = false
+            } catch (ex: Exception) {
+                when (ex::class.java) {
+                    in fatalExceptions -> {
+                        logErrorAndThrowFatalException(
+                            "Error attempting to commitAsync offsets.",
+                            ex
+                        )
+                    }
+                    in transientExceptions -> {
+                        logWarningAndThrowIntermittentException("Failed to commitAsync offsets.", ex)
+                    }
+                    else -> {
+                        logErrorAndThrowFatalException(
+                            "Unexpected error attempting to commitAsync offsets.", ex
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     override fun commitSyncOffsets(event: CordaConsumerRecord<K, V>, metaData: String?) {
         val offsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
         val topicPartition = TopicPartition(config.topicPrefix + event.topic, event.partition)

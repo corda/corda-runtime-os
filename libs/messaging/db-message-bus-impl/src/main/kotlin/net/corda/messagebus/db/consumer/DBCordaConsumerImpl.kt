@@ -203,6 +203,10 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
         }
     }
 
+    override fun commitAsync(callback: CordaConsumer.Callback?) {
+        TODO("Not yet implemented")
+    }
+
     override fun commitSyncOffsets(event: CordaConsumerRecord<K, V>, metaData: String?) {
         dbAccess.writeOffsets(
             listOf(
