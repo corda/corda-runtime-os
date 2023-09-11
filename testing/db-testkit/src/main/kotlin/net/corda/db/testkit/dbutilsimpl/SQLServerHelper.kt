@@ -1,4 +1,4 @@
-package net.corda.db.testkit
+package net.corda.db.testkit.dbutilsimpl
 
 class SQLServerHelper : AbstractDBHelper() {
     companion object {

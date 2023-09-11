@@ -2,6 +2,10 @@ package net.corda.db.testkit
 
 import com.typesafe.config.Config
 import net.corda.db.core.CloseableDataSource
+import net.corda.db.testkit.dbutilsimpl.DbUtilsHelper
+import net.corda.db.testkit.dbutilsimpl.HSQLHelper
+import net.corda.db.testkit.dbutilsimpl.PostgresHelper
+import net.corda.db.testkit.dbutilsimpl.SQLServerHelper
 import net.corda.orm.EntityManagerConfiguration
 
 object DbUtils {
@@ -15,9 +19,7 @@ object DbUtils {
         )
         isMSSQL -> SQLServerHelper()
         isPostgres -> PostgresHelper()
-        else -> {
-            HSQLHelper()
-        }
+        else -> HSQLHelper()
     }
 
     val isInMemory = utilsHelper.isInMemory()
