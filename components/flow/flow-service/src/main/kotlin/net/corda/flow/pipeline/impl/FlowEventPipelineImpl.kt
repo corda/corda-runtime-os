@@ -82,7 +82,10 @@ internal class FlowEventPipelineImpl(
     }
 
     override fun executeFlow(timeout: Long): FlowEventPipeline {
-        context = flowExecutionPipelineStage.runFlow(context, timeout)
+        context = flowExecutionPipelineStage.runFlow(context, timeout) {
+            // Ensure the most up-to-date version of the context is visible in case an error occurs.
+            context = it
+        }
         return this
     }
 
