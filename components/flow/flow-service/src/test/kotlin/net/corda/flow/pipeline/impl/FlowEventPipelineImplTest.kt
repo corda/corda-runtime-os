@@ -2,12 +2,10 @@ package net.corda.flow.pipeline.impl
 
 import net.corda.crypto.core.ShortHash
 import net.corda.data.flow.FlowStartContext
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.flow.state.waiting.external.ExternalEventResponse
 import net.corda.flow.BOB_X500
-import net.corda.flow.FLOW_ID_1
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
