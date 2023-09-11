@@ -2,7 +2,6 @@ package net.corda.ledger.utxo.token.cache.services.internal
 
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.libs.configuration.SmartConfig
-import net.corda.schema.configuration.LedgerConfig.UTXO_TOKEN_CACHED_TOKEN_PAGE_SIZE
 import net.corda.schema.configuration.LedgerConfig.UTXO_TOKEN_CLAIM_TIMEOUT_SECONDS
 import org.osgi.service.component.annotations.Component
 
@@ -16,7 +15,8 @@ class ServiceConfigurationImpl : ServiceConfiguration {
     }
 
     override val cachedTokenPageSize: Int
-        get() = getIntValue(UTXO_TOKEN_CACHED_TOKEN_PAGE_SIZE)
+        get() = 30000 // config?.getInt(UTXO_TOKEN_CACHED_TOKEN_PAGE_SIZE)
+            // ?:throw IllegalStateException("The token service has not been configured.")
 
     override val claimTimeoutSeconds: Int
         get() = getIntValue(UTXO_TOKEN_CLAIM_TIMEOUT_SECONDS)

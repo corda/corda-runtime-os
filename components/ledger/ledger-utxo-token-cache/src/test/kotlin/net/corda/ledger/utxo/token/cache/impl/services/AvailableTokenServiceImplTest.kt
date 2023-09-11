@@ -13,8 +13,10 @@ import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.ledger.utxo.token.cache.repositories.UtxoTokenRepository
 import net.corda.ledger.utxo.token.cache.services.internal.AvailableTokenServiceImpl
+import net.corda.ledger.utxo.token.cache.services.TokenSelectionMetricsImpl
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -55,7 +57,8 @@ class AvailableTokenServiceImplTest {
         virtualNodeInfoService,
         dbConnectionManager,
         jpaEntitiesRegistry,
-        utxoTokenRepository
+        utxoTokenRepository,
+        TokenSelectionMetricsImpl(UTCClock())
     )
 
     /**

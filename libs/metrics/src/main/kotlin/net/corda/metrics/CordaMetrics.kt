@@ -326,6 +326,11 @@ object CordaMetrics {
          */
         object UniquenessBackingStoreDbReadTime: Metric<Timer>("uniqueness.backingstore.db.read.time", CordaMetrics::timer)
 
+
+        object TokenSelectionExecutionTime : Metric<Timer>("token.selection.execution.time", CordaMetrics::timer)
+        object TokenSelectionDbExecutionTime : Metric<Timer>("token.selection.db.execution.time", CordaMetrics::timer)
+        object TokenSelectionEmCreationTime : Metric<Timer>("token.selection.em.creation.time", CordaMetrics::timer)
+
         object Crypto {
             private const val PREFIX = "crypto"
 
@@ -837,7 +842,12 @@ object CordaMetrics {
         /**
          * Partition of a message bus topic published to or consumed from.
          */
-        Partition("partition")
+        Partition("partition"),
+
+        /**
+         * Partition of a message bus topic published to or consumed from.
+         */
+        TokenSelectionEvent("token.selection.event")
     }
 
     /**

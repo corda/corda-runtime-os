@@ -3,7 +3,6 @@ package net.corda.ledger.persistence.utxo.impl.request.handlers
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
-import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
@@ -38,7 +37,7 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
 
         val listOfPairsStateAndUtxoToken =
             getTokens(transaction.getVisibleStates().values.toList(), tokenObservers)
-        val outputTokenRecords = getOutputTokenRecords(listOfPairsStateAndUtxoToken)
+        val outputTokenRecords = listOf<Record<TokenPoolCacheKey, TokenPoolCacheEvent>>()
         val utxoTokenMap = listOfPairsStateAndUtxoToken.associate { it.first.ref to it.second }
 
         // persist the transaction
@@ -48,7 +47,7 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
         return outputTokenRecords + utxoOutputRecordFactory.getPersistTransactionSuccessRecord(externalEventContext)
     }
 
-    private fun getOutputTokenRecords(
+   /* private fun getOutputTokenRecords(
         listOfPairsStateAndUtxoToken: List<Pair<StateAndRef<*>, UtxoToken>>
     ): List<Record<TokenPoolCacheKey, TokenPoolCacheEvent>> {
         val isTransactionVerified = transaction.status == TransactionStatus.VERIFIED
@@ -61,7 +60,7 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
             listOfPairsStateAndUtxoToken,
             getTokens(transaction.getConsumedStates(persistenceService), tokenObservers)
         )
-    }
+    }*/
 
     private fun getTokens(
         visibleStates: List<StateAndRef<ContractState>>,
