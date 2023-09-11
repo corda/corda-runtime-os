@@ -2,11 +2,6 @@ package net.corda.session.mapper.service.integration
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import java.lang.System.currentTimeMillis
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -21,10 +16,13 @@ import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.p2p.HostedIdentityEntry
+import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -53,6 +51,11 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.lang.System.currentTimeMillis
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -79,6 +82,9 @@ class FlowMapperServiceIntegrationTest {
     @InjectService(timeout = 4000)
     lateinit var flowMapperService: FlowMapperService
 
+    @InjectService(timeout = 4000)
+    lateinit var locallyHostedIdentityService: LocallyHostedIdentitiesService
+
     private val messagingConfig = SmartConfigImpl.empty()
         .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
         .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
@@ -87,18 +93,54 @@ class FlowMapperServiceIntegrationTest {
 
     private val schemaVersion = ConfigurationSchemaVersion(1, 0)
 
+
     @BeforeEach
     fun setup() {
         if (!setup) {
             setup = true
             val publisher = publisherFactory.createPublisher(PublisherConfig(clientId), messagingConfig)
             setupConfig(publisher)
+
+            val aliceHoldingIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group1")
+            val bobHoldingIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group1")
+
+            val tlsTenantId = "tlsTenantId"
+            val tlsCertificates = mutableListOf<String>()
+            val sessionPublicKey = "sessionPublicKey"
+            val sessionCertificates = listOf("sessionCertificates")
+            val preferredSessionKeyAndCert = HostedIdentitySessionKeyAndCert(sessionPublicKey, sessionCertificates)
+            val alternativeSessionKeysAndCerts = mutableListOf<HostedIdentitySessionKeyAndCert>()
+
+            val bobHostedIdentityEntry = HostedIdentityEntry(
+                bobHoldingIdentity,
+                tlsTenantId,
+                tlsCertificates,
+                preferredSessionKeyAndCert,
+                alternativeSessionKeysAndCerts
+            )
+
+            val aliceHostedIdentityEntry = HostedIdentityEntry(
+                aliceHoldingIdentity,
+                tlsTenantId,
+                tlsCertificates,
+                preferredSessionKeyAndCert,
+                alternativeSessionKeysAndCerts
+            )
+
+            val holdingIdentityToKey: List<Record<String, HostedIdentityEntry>> = listOf(
+                Record("p2p.hosted.identities", "bob", bobHostedIdentityEntry),
+                Record("p2p.hosted.identities", "alice", aliceHostedIdentityEntry)
+            )
+
+            publisher.publish(holdingIdentityToKey)
             flowMapperService.start()
+            locallyHostedIdentityService.start()
         }
     }
 
     @Test
-    fun testSessionInitOutAndDataInbound() {
+    fun `Test first session event outbound sets up flow mapper state, verify subsequent messages received are passed to flow event topic`
+                () {
         val testId = "test1"
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
 
@@ -106,9 +148,10 @@ class FlowMapperServiceIntegrationTest {
         val sessionInitEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 buildSessionEvent(
-                    MessageDirection.OUTBOUND, testId, 1, SessionInit(
-                        testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList(), null
-                    )
+                    MessageDirection.OUTBOUND, testId, 1, SessionData(ByteBuffer.wrap("bytes".toByteArray()), SessionInit(
+                        testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList()
+                    )),
+                    contextSessionProps = emptyKeyValuePairList()
                 )
             )
         )
@@ -128,7 +171,13 @@ class FlowMapperServiceIntegrationTest {
         //send data back
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                buildSessionEvent(MessageDirection.INBOUND, testId, 2, SessionData(ByteBuffer.wrap("".toByteArray())))
+                buildSessionEvent(
+                    MessageDirection.INBOUND,
+                    testId,
+                    2,
+                    SessionData(ByteBuffer.wrap("".toByteArray()), null),
+                    contextSessionProps = emptyKeyValuePairList()
+                )
             )
         )
         publisher.publish(listOf(sessionDataEvent))
@@ -224,7 +273,13 @@ class FlowMapperServiceIntegrationTest {
         //send data, no state
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                buildSessionEvent(MessageDirection.OUTBOUND, testId, 1, SessionData(ByteBuffer.wrap("".toByteArray())))
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    testId,
+                    1,
+                    SessionData(ByteBuffer.wrap("".toByteArray()), null),
+                    contextSessionProps = emptyKeyValuePairList()
+                )
             )
         )
         publisher.publish(listOf(sessionDataEvent))
@@ -250,8 +305,8 @@ class FlowMapperServiceIntegrationTest {
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 buildSessionEvent(
                     MessageDirection.OUTBOUND, testId, 1, SessionInit(
-                        testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList(), null
-                    )
+                        testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList()
+                    ), contextSessionProps = emptyKeyValuePairList()
                 )
             )
         )
@@ -274,7 +329,13 @@ class FlowMapperServiceIntegrationTest {
         //send data back
         val sessionDataEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                buildSessionEvent(MessageDirection.INBOUND, testId, 2, SessionData(ByteBuffer.wrap("".toByteArray())))
+                buildSessionEvent(
+                    MessageDirection.INBOUND,
+                    testId,
+                    2,
+                    SessionData(ByteBuffer.wrap("".toByteArray()), null),
+                    contextSessionProps = emptyKeyValuePairList()
+                )
             )
         )
         publisher.publish(listOf(sessionDataEvent))

@@ -58,7 +58,7 @@ class FlowContextPropertiesSubFlow1 : SubFlow<HashMap<String, FlowContextPropert
 
 
         val charlie = MemberX500Name.parse("CN=Charlie, OU=ExampleUnit, O=ExampleOrg, L=London, C=GB")
-        val charlieSession = flowMessaging.initiateFlow(charlie){flowContextProperties ->
+        val charlieSession = flowMessaging.initiateFlow(charlie, false){flowContextProperties ->
             flowContextProperties.put("key-4", "from-builder")
         }
         charlieSession.send(Member.CHARLIE)

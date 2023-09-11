@@ -11,6 +11,7 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getPa
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupWebserver
 import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
@@ -28,6 +29,7 @@ import net.corda.processors.p2p.gateway.GatewayProcessor
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.processors.persistence.PersistenceProcessor
 import net.corda.processors.rest.RestProcessor
+import net.corda.processors.scheduler.SchedulerProcessor
 import net.corda.processors.token.cache.TokenCacheProcessor
 import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.processors.verification.VerificationProcessor
@@ -36,6 +38,7 @@ import net.corda.schema.configuration.DatabaseConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
+import net.corda.web.api.WebServer
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -81,6 +84,8 @@ class CombinedWorker @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = WorkerMonitor::class)
     private val workerMonitor: WorkerMonitor,
+    @Reference(service = WebServer::class)
+    private val webServer: WebServer,
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = PlatformInfoProvider::class)
@@ -89,6 +94,8 @@ class CombinedWorker @Activate constructor(
     val applicationBanner: ApplicationBanner,
     @Reference(service = SecretsServiceFactoryResolver::class)
     val secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
+    @Reference(service = SchedulerProcessor::class)
+    val schedulerProcessor: SchedulerProcessor,
 ) : Application {
 
     private companion object {
@@ -164,6 +171,7 @@ class CombinedWorker @Activate constructor(
             config.factory,
         ).run()
 
+        webServer.setupWebserver(params.defaultParams)
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
         configureTracing("Combined Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
@@ -184,6 +192,7 @@ class CombinedWorker @Activate constructor(
         restProcessor.start(config)
         linkManagerProcessor.start(config)
         gatewayProcessor.start(config)
+        schedulerProcessor.start(config)
     }
 
     override fun shutdown() {
@@ -201,8 +210,9 @@ class CombinedWorker @Activate constructor(
         restProcessor.stop()
         linkManagerProcessor.stop()
         gatewayProcessor.stop()
+        schedulerProcessor.stop()
 
-        workerMonitor.stop()
+        webServer.stop()
         shutdownTracing()
     }
 }

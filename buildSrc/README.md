@@ -384,6 +384,12 @@ bnd """
 """
 ```
 
+## Java-Only Plugin
+
+The **Java-Only** plugin has no tasks of its own, and just configures Gradle's `compileKotlin` task to fail
+the build should it encounter any Kotlin files within the "main" `SourceSet`. It should only be applied
+to Gradle modules that _must_ be written in pure Java.
+
 ## OSGi Test Conventions Plugin
 
 The **OSGi Test Conventions** plugin provides tasks useful for running OSGi integration tests as well as some necessary

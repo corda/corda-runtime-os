@@ -6,8 +6,9 @@ interface BusInteractions {
 
     /**
      * Get the next message on the bus
+     * @param isInitiating property to help toggle session ids
      */
-    fun getNextInboundMessage() : SessionEvent?
+    fun getNextInboundMessage(isInitiating: Boolean) : SessionEvent?
 
     /**
      * Duplicate the message at the [position] in the inbound queue

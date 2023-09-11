@@ -1078,6 +1078,12 @@
                                 3
                             ]
                         },
+                        "timeoutSeconds": {
+                            "type": "integer",
+                            "default": 60,
+                            "minimum": 60,
+                            "title": "Maximum time, in seconds, to wait for Kafka topic creation operation to finish (might vary depending on the amount of partitions and replicas configured)"
+                        },
                         "sasl": {
                             "type": "object",
                             "title": "kafka SASL credentials",

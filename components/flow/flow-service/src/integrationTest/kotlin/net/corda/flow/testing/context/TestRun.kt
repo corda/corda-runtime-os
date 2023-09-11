@@ -10,7 +10,7 @@ import net.corda.messaging.api.records.Record
 class TestRun(
     val event: Record<String, FlowEvent>
 ) {
-    var ioRequest: FlowIORequest<*>? = null
+    val ioRequests: MutableList<FlowIORequest<*>> = mutableListOf()
     var response: StateAndEventProcessor.Response<Checkpoint>? = null
     var flowContinuation: FlowContinuation? = null
 }

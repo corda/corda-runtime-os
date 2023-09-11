@@ -8,6 +8,7 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getPa
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupWebserver
 import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
@@ -17,6 +18,7 @@ import net.corda.osgi.api.Shutdown
 import net.corda.processors.flow.mapper.FlowMapperProcessor
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
+import net.corda.web.api.WebServer
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -39,6 +41,8 @@ class FlowMapperWorker @Activate constructor(
     val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = ApplicationBanner::class)
     val applicationBanner: ApplicationBanner,
+    @Reference(service = WebServer::class)
+    private val webServer: WebServer,
     @Reference(service = SecretsServiceFactoryResolver::class)
     val secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
 ) : Application {
@@ -61,6 +65,7 @@ class FlowMapperWorker @Activate constructor(
         JavaSerialisationFilter.install()
 
         val params = getParams(args, FlowMapperWorkerParams())
+        webServer.setupWebserver(params.defaultParams)
         if (printHelpOrVersion(params.defaultParams, FlowMapperWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
@@ -77,7 +82,7 @@ class FlowMapperWorker @Activate constructor(
     override fun shutdown() {
         logger.info("Flow mapper worker stopping.")
         flowMapperProcessor.stop()
-        workerMonitor.stop()
+        webServer.stop()
         shutdownTracing()
     }
 }

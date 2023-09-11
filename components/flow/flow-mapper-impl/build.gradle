@@ -1,0 +1,36 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.common-publishing'
+}
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation project(":components:membership:locally-hosted-identities-service")
+    implementation project(":components:flow:flow-mapper")
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:messaging:messaging")
+    implementation project(":libs:flows:flow-utils")
+    implementation project(":libs:flows:session-manager")
+    implementation project(":libs:virtual-node:virtual-node-info")
+    implementation project(":libs:metrics")
+    implementation project(':libs:utilities')
+    implementation project(":libs:serialization:serialization-avro")
+    implementation project(":libs:lifecycle:lifecycle")
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-topic-schema"
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":testing:flow:flow-utilities")
+    testImplementation project(":libs:flows:flow-utils")
+}
+
+description 'Flow Mapper Library Impl'

@@ -3,7 +3,6 @@ package net.corda.tracing
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import java.util.concurrent.ExecutorService
-import javax.servlet.Filter
 
 interface TracingService : AutoCloseable {
 
@@ -23,8 +22,7 @@ interface TracingService : AutoCloseable {
 
     fun wrapWithTracingExecutor(executor: ExecutorService): ExecutorService
 
-    fun getTracedServletFilter(): Filter
+    fun configureJavalin(config: Any)
 
     fun traceBatch(operationName: String): BatchRecordTracer
 }
-

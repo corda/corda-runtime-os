@@ -51,7 +51,7 @@ class FlowProcessorImpl @Activate constructor(
     @Reference(service = GroupPolicyProvider::class)
     private val groupPolicyProvider: GroupPolicyProvider,
     @Reference(service = MembershipQueryClient::class)
-    private val membershipQueryClient: MembershipQueryClient
+    private val membershipQueryClient: MembershipQueryClient,
 ) : FlowProcessor {
 
     private companion object {
