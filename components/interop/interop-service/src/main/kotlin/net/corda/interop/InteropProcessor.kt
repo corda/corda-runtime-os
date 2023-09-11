@@ -8,7 +8,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.interop.InteropMessage
 import net.corda.data.interop.InteropState
 import net.corda.data.interop.InteropStateType
@@ -32,6 +31,8 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
+import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.interop.identity.registry.InteropIdentityRegistryService
 import net.corda.membership.lib.MemberInfoExtension
 
@@ -58,6 +59,12 @@ class InteropProcessor(
     private val sessionEventSerializer: CordaAvroSerializer<SessionEvent> =
         cordaAvroSerializationFactory.createAvroSerializer{}
 
+    private fun getInitPayload(payload: Any) = when (payload) {
+        is SessionInit -> payload
+        is SessionData -> payload.sessionInit
+        else -> null
+    }
+
     @Suppress("ThrowsCount")
     private fun processInboundEvent(state: InteropState?, eventKey: String, sessionEvent: SessionEvent):
             StateAndEventProcessor.Response<InteropState> {
@@ -73,13 +80,15 @@ class InteropProcessor(
         val realDestinationIdentity = lookupOwningIdentity(destinationInteropIdentity.toCorda())
 
         val sessionPayload = sessionEvent.payload
+        val sessionInit = getInitPayload(sessionPayload)
 
-        val updatedPayload = if (sessionPayload is SessionInit) {
-            val parameters = InteropSessionParameters.fromContextUserProperties(sessionPayload.contextUserProperties)
+        // If the session init field is present
+        val updatedPayload = if (sessionInit != null) {
+            val parameters = InteropSessionParameters.fromContextUserProperties(sessionInit.contextUserProperties)
 
             logger.info(
-                "Processing message from flow.interop.event with subsystem $SUBSYSTEM." +
-                " Key: $eventKey, facade request: ${parameters.facadeId}/${parameters.facadeMethod}")
+                "Processing message from flow.interop.event with subsystem $SUBSYSTEM. " +
+                "Key: $eventKey, facade request: ${parameters.facadeId}/${parameters.facadeMethod}")
 
             val flowName = try {
                 facadeToFlowMapperService.getFlowName(realDestinationIdentity, parameters.facadeId, parameters.facadeMethod)
@@ -89,13 +98,15 @@ class InteropProcessor(
 
             logger.info("Mapped flowName=$flowName for facade=${parameters.facadeId}/${parameters.facadeMethod}")
 
-            sessionPayload.apply {
-                contextUserProperties = KeyValuePairList(
-                    contextUserProperties.items + KeyValuePair(INTEROP_RESPONDER_FLOW, flowName)
-                )
+            (sessionPayload as SessionData).apply {
+                this.sessionInit = sessionInit.apply {
+                    contextUserProperties = KeyValuePairList(
+                        contextUserProperties.items + KeyValuePair(INTEROP_RESPONDER_FLOW, flowName)
+                    )
+                }
             }
         } else {
-            logger.info("Pass-through event ${sessionEvent.payload::class.java} without FacadeRequest")
+            logger.info("Pass-through non session init event ${sessionEvent.payload::class.java} without FacadeRequest")
             sessionPayload
         }
 
@@ -147,12 +158,20 @@ class InteropProcessor(
 
         val sessionPayload = sessionEvent.payload
 
-        val interopGroupId = if (sessionPayload is SessionInit) {
-            val parameters = InteropSessionParameters.fromContextUserProperties(sessionPayload.contextUserProperties)
+        // If group ID is null, get the group ID from the initial session data event
+        val interopGroupId = if (state?.groupId == null) {
+            assert(sessionPayload is SessionData) {
+                "State group ID is null and no session data event."
+            }
+            val sessionData = sessionPayload as SessionData
+            val sessionInit = requireNotNull(sessionData.sessionInit) {
+                "Session init property missing from initial session data event."
+            }
+            val parameters = InteropSessionParameters.fromContextUserProperties(sessionInit.contextUserProperties)
             parameters.interopGroupId
         } else {
-            state?.groupId ?: throw InteropProcessorException(
-                "Interop group ID missing from state InteropProcessor state. ", state
+            state.groupId ?: throw InteropProcessorException(
+                "Interop group ID missing from InteropProcessor state. ", state
             )
         }
 

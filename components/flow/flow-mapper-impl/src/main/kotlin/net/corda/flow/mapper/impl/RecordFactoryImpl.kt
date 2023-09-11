@@ -74,7 +74,13 @@ class RecordFactoryImpl @Activate constructor(
         isInteropSession: Boolean
     ): Record<*, *> {
         val outputTopic = getSessionEventOutputTopic(sessionEvent, messageDirection, isInteropSession)
-        return if (isLocalCluster(sessionEvent) && !isInteropSession) {
+        return if (isInteropSession) {
+            Record(
+                outputTopic,
+                sessionEvent.sessionId,
+                FlowMapperEvent(sessionEvent)
+            )
+        } else if (isLocalCluster(sessionEvent)) {
             sessionEvent.messageDirection = MessageDirection.INBOUND
             sessionEvent.sessionId = toggleSessionId(sessionEvent.sessionId)
             Record(

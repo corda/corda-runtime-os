@@ -177,11 +177,14 @@ class SessionEventHandler @Activate constructor(
                     protocolStore.responderForProtocol(requestedProtocolName, initiatorVersionsSupported, context)
                 }
             } else {
-                val sessionInit = if (sessionEvent.payload !is SessionInit) {
-                    throw FlowTransientException(
-                        "Failed to create the flow sandbox. Unable to get interop responder flow class name, no session init event.")
+                val sessionInit = if (sessionEvent.payload is SessionData) {
+                    (sessionEvent.payload as SessionData).sessionInit ?: throw FlowTransientException(
+                        "Failed to create the flow sandbox. Unable to get interop responder flow class name, event is missing session init."
+                    )
                 } else {
-                    sessionEvent.payload as SessionInit
+                    throw FlowTransientException(
+                        "Failed to create the flow sandbox. Unable to get interop responder flow class name, session init is null."
+                    )
                 }
                 val className = KeyValueStore(sessionInit.contextUserProperties)[INTEROP_RESPONDER_FLOW]
                     ?: throw FlowTransientException(

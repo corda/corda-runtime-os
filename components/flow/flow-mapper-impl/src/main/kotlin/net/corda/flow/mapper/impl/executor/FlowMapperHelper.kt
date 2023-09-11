@@ -17,6 +17,7 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 import net.corda.schema.Schemas
+import net.corda.session.manager.Constants
 
 /**
  * Generate and return random ID for flowId
@@ -125,3 +126,14 @@ fun createOutboundRecord(
         )
     )
 }
+
+/**
+ * Returns true if a session event is an interop session event, based on the content of the context session
+ * properties.
+ * @param event [SessionEvent] object.
+ * @return true if the session event is tagged as an interop session event, false otherwise.
+ */
+fun isInteropSession(event: SessionEvent) = event.contextSessionProperties?.let { properties ->
+    val map = properties.items.associate { it.key to it.value }
+    map[Constants.FLOW_SESSION_IS_INTEROP]?.equals("true")
+} ?: false

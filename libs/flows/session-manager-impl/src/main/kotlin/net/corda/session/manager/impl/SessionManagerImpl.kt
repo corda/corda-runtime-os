@@ -77,6 +77,7 @@ class SessionManagerImpl @Activate constructor(
             .setStatus(SessionStateType.CREATED)
             .setHasScheduledCleanup(false)
             .setRequireClose(contextSessionProperties.toMap()[Constants.FLOW_SESSION_REQUIRE_CLOSE].toBoolean())
+            .setIsInteropSession(contextSessionProperties.toMap()[Constants.FLOW_SESSION_IS_INTEROP]?.equals("true") ?: false)
             .build()
 
     override fun getNextReceivedEvent(sessionState: SessionState): SessionEvent? {

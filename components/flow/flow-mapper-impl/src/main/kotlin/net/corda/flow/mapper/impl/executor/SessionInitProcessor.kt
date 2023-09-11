@@ -16,7 +16,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.time.Instant
-import net.corda.session.manager.Constants
 
 /**
  * Helper class to process session events which contain a SessionInit field/payload
@@ -26,11 +25,6 @@ class SessionInitProcessor @Activate constructor(
     @Reference(service = RecordFactory::class)
     private val recordFactory: RecordFactory
 ) {
-
-    private fun isInteropSession(event: SessionEvent) = event.contextSessionProperties?.let { properties ->
-        val map = properties.items.associate { it.key to it.value }
-        map[Constants.FLOW_SESSION_IS_INTEROP]?.equals("true") ?: false
-    } ?: false
 
     /**
      * Process a [sessionEvent] and [sessionInit] payload to produce a flow mapper state
@@ -84,7 +78,6 @@ class SessionInitProcessor @Activate constructor(
         //with an extra field of flowId. set flowId to null to not expose it on outbound messages
         val tmpFLowEventKey = sessionInit.flowId
         sessionInit.flowId = null
-
         SessionInitOutputs(
             tmpFLowEventKey,
             recordFactory.forwardEvent(sessionEvent, instant, flowConfig, sessionEvent.messageDirection, isInteropSession(sessionEvent))
