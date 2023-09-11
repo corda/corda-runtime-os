@@ -39,7 +39,8 @@ class FlowFiberExecutionContextFactoryImpl @Activate constructor(
             membershipGroupReaderProvider.getGroupReader(checkpoint.holdingIdentity),
             currentSandboxGroupContext,
             context.mdcProperties,
-            context.flowMetrics
+            context.flowMetrics,
+            context.configs
         )
     }
 }

@@ -1,0 +1,33 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
+}
+
+description 'Ledger HSQLDB Support'
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation project(':components:ledger:ledger-persistence')
+    implementation project(':libs:db:db-orm')
+    implementation project(':testing:db-hsqldb-json')
+    implementation 'org.slf4j:slf4j-api'
+    runtimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+
+    integrationTestImplementation "net.corda:corda-db-schema"
+    integrationTestImplementation project(':components:db:db-connection-manager')
+    integrationTestImplementation project(':components:ledger:ledger-persistence:testing-datamodel')
+    integrationTestImplementation project(':components:persistence:persistence-service-common')
+    integrationTestImplementation project(':libs:db:db-admin-impl')
+    integrationTestImplementation project(':libs:db:db-orm-impl')
+    integrationTestImplementation project(':testing:persistence-testkit')
+    integrationTestRuntimeOnly project(':libs:application:application-impl')
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
+    integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
+}

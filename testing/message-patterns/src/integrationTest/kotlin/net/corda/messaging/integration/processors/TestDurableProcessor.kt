@@ -2,7 +2,6 @@ package net.corda.messaging.integration.processors
 
 import java.util.concurrent.CountDownLatch
 import net.corda.data.demo.DemoRecord
-import net.corda.data.flow.event.Wakeup
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 
@@ -58,13 +57,13 @@ class TestDurableStringProcessor(
 
 class TestDurableDummyMessageProcessor(
     private val latch: CountDownLatch, private val outputTopic: String? = null, private val delayProcessor: Long? = null
-) : DurableProcessor<String, Wakeup> {
+) : DurableProcessor<String, DemoRecord> {
     override val keyClass: Class<String>
         get() = String::class.java
-    override val valueClass: Class<Wakeup>
-        get() = Wakeup::class.java
+    override val valueClass: Class<DemoRecord>
+        get() = DemoRecord::class.java
 
-    override fun onNext(events: List<Record<String, Wakeup>>): List<Record<*, *>> {
+    override fun onNext(events: List<Record<String, DemoRecord>>): List<Record<*, *>> {
         if (delayProcessor != null) {
             Thread.sleep(delayProcessor)
         }
@@ -74,9 +73,9 @@ class TestDurableDummyMessageProcessor(
         }
 
         return if (outputTopic != null) {
-            listOf(Record(outputTopic, "durableOutputKey", Wakeup()))
+            listOf(Record(outputTopic, "durableOutputKey", DemoRecord()))
         } else {
-            emptyList<Record<String, Wakeup>>()
+            emptyList<Record<String, DemoRecord>>()
         }
     }
 }

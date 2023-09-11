@@ -2,7 +2,28 @@
 <Configuration status="INFO">
     <Appenders>
         <Console name="json" target="SYSTEM_OUT">
-            <JsonTemplateLayout eventTemplateUri="classpath:JsonLayout.json"/>
+            <JsonTemplateLayout eventTemplateUri="classpath:JsonLayout.json">
+                <EventTemplateAdditionalField
+                        key="thrown"
+                        format="JSON"
+                        value='{
+    "message": {
+      "$resolver": "exception",
+      "field": "message"
+    },
+    "name": {
+      "$resolver": "exception",
+      "field": "className"
+    },
+    "extendedStackTrace": {
+      "$resolver": "exception",
+      "field": "stackTrace",
+      "stackTrace": {
+        "stringified": true
+      }
+    }
+  }'/>
+            </JsonTemplateLayout>
         </Console>
         <Console name="text" target="SYSTEM_OUT">
             <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} %X - %msg%n"/>
@@ -14,16 +35,16 @@
         </logger>
 
         <!-- log warn only for these 3rd party libs -->
-        <Logger name="com.zaxxer.hikari" level="warn" />
-        <Logger name="io.javalin.Javalin" level="warn" />
-        <Logger name="org.apache.aries.spifly" level="warn" />
-        <Logger name="org.apache.kafka" level="warn" />
-        <Logger name="org.eclipse.jetty" level="warn" />
-        <Logger name="org.hibernate" level="warn" />
-        <Logger name="org.pf4j" level="warn" />
+        <Logger name="com.zaxxer.hikari" level="warn"/>
+        <Logger name="io.javalin.Javalin" level="warn"/>
+        <Logger name="org.apache.aries.spifly" level="warn"/>
+        <Logger name="org.apache.kafka" level="warn"/>
+        <Logger name="org.eclipse.jetty" level="warn"/>
+        <Logger name="org.hibernate" level="warn"/>
+        <Logger name="org.pf4j" level="warn"/>
 
         <!-- default to warn only for OSGi logging -->
-        <Logger name="net.corda.osgi.framework.OSGiFrameworkWrap" level="warn" />
+        <Logger name="net.corda.osgi.framework.OSGiFrameworkWrap" level="warn"/>
 
         <root level="${env:CONSOLE_LOG_LEVEL:-info}">
             <AppenderRef ref="${env:CONSOLE_LOG_FORMAT:-json}" level="${env:CONSOLE_LOG_LEVEL:-info}"/>

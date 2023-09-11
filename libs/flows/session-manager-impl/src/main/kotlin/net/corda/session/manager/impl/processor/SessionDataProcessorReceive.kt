@@ -1,6 +1,5 @@
 package net.corda.session.manager.impl.processor
 
-import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
@@ -14,6 +13,7 @@ import net.corda.session.manager.impl.processor.helper.recalcHighWatermark
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 /**
  * Process a [SessionData] event received from a counterparty.
@@ -24,11 +24,14 @@ import org.slf4j.LoggerFactory
  * Otherwise buffer the event in the received events state ready to be processed by the client code via the session manager api and queue
  * a session ack to send.
  */
+@Suppress("LongParameterList")
 class SessionDataProcessorReceive(
     private val key: Any,
     private val sessionState: SessionState?,
     private val sessionEvent: SessionEvent,
-    private val instant: Instant
+    private val payload: SessionData,
+    private val instant: Instant,
+    private val sessionInitProcessorReceive: SessionInitProcessorReceive
 ) : SessionEventProcessor {
 
     private companion object {
@@ -37,12 +40,16 @@ class SessionDataProcessorReceive(
 
     override fun execute(): SessionState {
         val sessionId = sessionEvent.sessionId
-        return if (sessionState == null) {
+        val sessionInit = payload.sessionInit
+        return if (sessionState != null) {
+            getInboundDataEventResult(sessionState, sessionId)
+        } else if (sessionInit != null) {
+            val newSessionState = sessionInitProcessorReceive.execute()
+            getInboundDataEventResult(newSessionState, sessionId)
+        } else {
             val errorMessage = "Received SessionData on key $key for session which was null"
             logger.debug { errorMessage }
             generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionData-NullSessionState", instant)
-        } else {
-            getInboundDataEventResult(sessionState, sessionId)
         }
     }
 
@@ -61,9 +68,7 @@ class SessionDataProcessorReceive(
                 "Duplicate message received on key $key with sessionId $sessionId with sequence number of $seqNum when next" +
                         " expected seqNum is $expectedNextSeqNum"
             }
-            sessionState.apply {
-                sendAck = true
-            }
+            sessionState
         }
     }
 
@@ -93,9 +98,13 @@ class SessionDataProcessorReceive(
             }
         } else {
             sessionState.apply {
-                receivedEventsState.lastProcessedSequenceNum = recalcHighWatermark(receivedEventsState.undeliveredMessages,
-                    receivedEventState.lastProcessedSequenceNum)
-                sendAck = true
+                if (currentStatus == SessionStateType.CREATED) {
+                    status = SessionStateType.CONFIRMED
+                }
+                receivedEventsState.lastProcessedSequenceNum = recalcHighWatermark(
+                    receivedEventsState.undeliveredMessages,
+                    receivedEventState.lastProcessedSequenceNum
+                )
             }
             logger.trace { "receivedEventsState after update: ${sessionState.receivedEventsState}" }
             sessionState
@@ -112,12 +121,12 @@ class SessionDataProcessorReceive(
      * @param currentStatus To validate the state is valid to receive new messages
      * @return True if there is a mismatch of messages between parties, false otherwise.
      */
-    private fun isSessionMismatch(receivedEventState: SessionProcessState, expectedNextSeqNum: Int, currentStatus: SessionStateType) :
+    private fun isSessionMismatch(receivedEventState: SessionProcessState, expectedNextSeqNum: Int, currentStatus: SessionStateType):
             Boolean {
         val receivedCloseSeqNum = receivedEventState.undeliveredMessages.find { it.payload is SessionClose }?.sequenceNum
         val otherPartyClosingMismatch = receivedCloseSeqNum != null && receivedCloseSeqNum <= expectedNextSeqNum
         val thisPartyClosingMismatch = receivedCloseSeqNum == null && currentStatus == SessionStateType.CLOSING
-        val statusMismatch = currentStatus == SessionStateType.WAIT_FOR_FINAL_ACK || currentStatus == SessionStateType.ERROR
+        val statusMismatch = currentStatus == SessionStateType.ERROR
                 || currentStatus == SessionStateType.CLOSED
         return otherPartyClosingMismatch || thisPartyClosingMismatch || statusMismatch
     }

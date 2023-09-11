@@ -12,13 +12,15 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
+import net.corda.v5.membership.GroupParameters
 import java.security.PublicKey
 
 @Suppress("TooManyFunctions")
 class UtxoLedgerTransactionImpl(
     private val wrappedWireTransaction: WrappedUtxoWireTransaction,
     private val inputStateAndRefs: List<StateAndRef<*>>,
-    private val referenceStateAndRefs: List<StateAndRef<*>>
+    private val referenceStateAndRefs: List<StateAndRef<*>>,
+    private val groupParameters: GroupParameters?
 ) : UtxoLedgerTransactionInternal {
 
     init {
@@ -113,6 +115,16 @@ class UtxoLedgerTransactionImpl(
 
     override fun <T : ContractState> getOutputStates(type: Class<T>): List<T> {
         return outputContractStates.filterIsInstance(type)
+    }
+
+    /*
+    * The null check in the method is to make 5.0 in-flight transactions caught in upgrades failing more gracefully.
+    */
+    override fun getGroupParameters(): GroupParameters {
+        requireNotNull(groupParameters) {
+            "Group parameters can't be accessed for the transaction = ${this.id}"
+        }
+        return groupParameters
     }
 
     override fun equals(other: Any?): Boolean {

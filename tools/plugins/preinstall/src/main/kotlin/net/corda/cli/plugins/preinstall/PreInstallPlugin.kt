@@ -8,15 +8,15 @@ import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.client.KubernetesClient
 import io.fabric8.kubernetes.client.KubernetesClientBuilder
 import io.fabric8.kubernetes.client.KubernetesClientException
+import java.io.File
+import java.io.FileNotFoundException
+import java.util.Base64
 import net.corda.cli.api.CordaCliPlugin
 import org.pf4j.Extension
 import org.pf4j.Plugin
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
-import java.io.File
-import java.io.FileNotFoundException
-import java.util.Base64
 
 class PreInstallPlugin : Plugin() {
 
@@ -245,6 +245,10 @@ class PreInstallPlugin : Plugin() {
         val db: KafkaWorker?,
         @JsonProperty("flow")
         val flow: KafkaWorker?,
+        @JsonProperty("flowMapper")
+        val flowMapper: KafkaWorker?,
+        @JsonProperty("verification")
+        val verification: KafkaWorker?,
         @JsonProperty("membership")
         val membership: KafkaWorker?,
         @JsonProperty("rest")
@@ -253,6 +257,8 @@ class PreInstallPlugin : Plugin() {
         val p2pLinkManager: KafkaWorker?,
         @JsonProperty("p2pGateway")
         val p2pGateway: KafkaWorker?,
+        @JsonProperty("persistence")
+        val persistence: KafkaWorker?,
         @JsonProperty("uniqueness")
         val uniqueness: KafkaWorker?
     )
@@ -362,6 +368,10 @@ class PreInstallPlugin : Plugin() {
         val db: Resources?,
         @JsonProperty("flow")
         val flow: Resources?,
+        @JsonProperty("flowMapper")
+        val flowMapper: Resources?,
+        @JsonProperty("verification")
+        val verification: Resources?,
         @JsonProperty("membership")
         val membership: Resources?,
         @JsonProperty("rest")
@@ -370,6 +380,8 @@ class PreInstallPlugin : Plugin() {
         val p2pLinkManager: Resources?,
         @JsonProperty("p2pGateway")
         val p2pGateway: Resources?,
+        @JsonProperty("persistence")
+        val persistence: Resources?,
         @JsonProperty("uniqueness")
         val uniqueness: Resources?
     )

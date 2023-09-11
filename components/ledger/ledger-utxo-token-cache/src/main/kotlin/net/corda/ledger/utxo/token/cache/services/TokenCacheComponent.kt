@@ -17,7 +17,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
-class TokenCacheComponent constructor(
+class TokenCacheComponent(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val configurationReadService: ConfigurationReadService,
     private val tokenCacheSubscriptionHandler: TokenCacheSubscriptionHandler,
@@ -25,7 +25,7 @@ class TokenCacheComponent constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private val configSections = setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
+        private val configSections = setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG, ConfigKeys.UTXO_LEDGER_CONFIG)
     }
 
     private var registration: RegistrationHandle? = null

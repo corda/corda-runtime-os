@@ -36,6 +36,7 @@ dependencies {
     implementation project(':libs:platform-info')
     implementation project(':libs:tracing')
     implementation project(':libs:configuration:configuration-validation')
+    implementation project(':libs:web:web')
     implementation project(':processors:rest-processor')
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "info.picocli:picocli:$picocliVersion"
@@ -43,6 +44,7 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
 
     runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
@@ -50,6 +52,7 @@ dependencies {
 
     runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
     runtimeOnly project(":libs:messaging:messaging-impl")
+    runtimeOnly project(':libs:tracing-impl')
 
     e2eTestImplementation project(':libs:configuration:configuration-endpoints')
     e2eTestImplementation project(':libs:chunking:chunking-core')

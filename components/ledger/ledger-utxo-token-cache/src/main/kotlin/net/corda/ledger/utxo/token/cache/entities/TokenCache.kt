@@ -14,7 +14,7 @@ interface TokenCache : Iterable<CachedToken> {
      *
      * @param tokens The list of [CachedToken] to add
      */
-    fun add(tokens: List<CachedToken>)
+    fun add(tokens: Collection<CachedToken>)
 
     /**
      * Removes a set of [CachedToken] from the cache
@@ -25,4 +25,3 @@ interface TokenCache : Iterable<CachedToken> {
      */
     fun removeAll(stateRefs: Set<String>)
 }
-

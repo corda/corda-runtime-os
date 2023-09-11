@@ -1,9 +1,11 @@
 package net.corda.cli.plugins.topicconfig
 
 import org.apache.kafka.clients.admin.Admin
+import org.apache.kafka.clients.admin.AdminClientConfig
 import org.apache.kafka.clients.admin.AlterConfigOp
 import org.apache.kafka.clients.admin.ConfigEntry
 import org.apache.kafka.clients.admin.NewTopic
+import org.apache.kafka.clients.admin.existingTopicNamesWithPrefix
 import org.apache.kafka.common.acl.AccessControlEntry
 import org.apache.kafka.common.acl.AclBinding
 import org.apache.kafka.common.acl.AclOperation
@@ -42,7 +44,12 @@ class CreateConnect : Runnable {
         val contextCL = Thread.currentThread().contextClassLoader
         Thread.currentThread().contextClassLoader = this::class.java.classLoader
 
-        val client = Admin.create(create!!.topic!!.getKafkaProperties())
+        val timeoutMillis = (wait * 1000).toInt()
+        val kafkaProperties = create!!.topic!!.getKafkaProperties()
+        kafkaProperties[AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG] = timeoutMillis
+        kafkaProperties[AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG] = timeoutMillis
+
+        val client = Admin.create(kafkaProperties)
         val topicConfigs = create!!.getTopicConfigs().map { it.copy(name = create!!.getTopicName(it)) }
 
         try {

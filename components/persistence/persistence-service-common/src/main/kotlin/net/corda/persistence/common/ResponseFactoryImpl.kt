@@ -8,23 +8,32 @@ import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.exceptions.KafkaMessageSizeException
+import net.corda.persistence.common.exceptions.MissingAccountContextPropertyException
 import net.corda.persistence.common.exceptions.NullParameterException
+import net.corda.v5.base.annotations.VisibleForTesting
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
+import java.sql.SQLException
 import javax.persistence.PersistenceException
 
 @Component(service = [ResponseFactory::class])
-class ResponseFactoryImpl @Activate constructor(
-    @Reference(service = ExternalEventResponseFactory::class)
-    private val externalEventResponseFactory: ExternalEventResponseFactory
+class ResponseFactoryImpl @VisibleForTesting internal constructor(
+    private val externalEventResponseFactory: ExternalEventResponseFactory,
+    private val persistenceExceptionCategorizer: PersistenceExceptionCategorizer
 ) : ResponseFactory {
 
     private companion object{
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
+
+    @Activate
+    constructor(
+        @Reference(service = ExternalEventResponseFactory::class)
+        externalEventResponseFactory: ExternalEventResponseFactory
+    ) : this(externalEventResponseFactory, PersistenceExceptionCategorizerImpl())
 
     override fun successResponse(
         flowExternalEventContext: ExternalEventContext,
@@ -34,16 +43,25 @@ class ResponseFactoryImpl @Activate constructor(
     }
 
     override fun errorResponse(externalEventContext : ExternalEventContext, exception: Exception) = when (exception) {
-        is CpkNotAvailableException, is VirtualNodeException ->
+        is CpkNotAvailableException, is VirtualNodeException -> {
             transientErrorResponse(externalEventContext, exception)
-        is NotSerializableException ->
+        }
+        is NotSerializableException, is NullParameterException -> {
             platformErrorResponse(externalEventContext, exception)
-        is KafkaMessageSizeException, is NullParameterException ->
+        }
+        is KafkaMessageSizeException, is MissingAccountContextPropertyException -> {
             fatalErrorResponse(externalEventContext, exception)
-        is PersistenceException ->
-            transientErrorResponse(externalEventContext, exception)
-        else ->
+        }
+        is PersistenceException, is SQLException -> {
+            when (persistenceExceptionCategorizer.categorize(exception)) {
+                PersistenceExceptionType.FATAL -> fatalErrorResponse(externalEventContext, exception)
+                PersistenceExceptionType.PLATFORM -> platformErrorResponse(externalEventContext, exception)
+                PersistenceExceptionType.TRANSIENT -> transientErrorResponse(externalEventContext, exception)
+            }
+        }
+        else -> {
             platformErrorResponse(externalEventContext, exception)
+        }
     }
 
     override fun transientErrorResponse(

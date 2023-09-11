@@ -1,16 +1,17 @@
 package net.corda.session.manager.impl.processor
 
-import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.flow.utils.toMap
+import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 /**
  * Process SessionInit messages.
@@ -31,41 +32,39 @@ class SessionInitProcessorReceive(
 
     override fun execute(): SessionState {
         return if (sessionState != null) {
-            val seqNum = sessionEvent.sequenceNum
-            if (sessionState.status == SessionStateType.CREATED || seqNum > 1) {
+            if (sessionState.status == SessionStateType.CREATED) {
                 sessionState.apply {
                     status = SessionStateType.ERROR
                     sendEventsState.undeliveredMessages = sendEventsState.undeliveredMessages.plus(
-                            generateErrorEvent(sessionState,
-                                sessionEvent,
-                                "Received SessionInit with seqNum $seqNum when session state which was not null: $sessionState",
-                                "SessionInit-SessionMismatch",
-                                instant
-                            )
+                        generateErrorEvent(
+                            sessionState,
+                            sessionEvent,
+                            "Received event with seqNum ${sessionEvent.sequenceNum} when session state which was not null: $sessionState",
+                            "SessionInit-SessionMismatch",
+                            instant
                         )
+                    )
                 }
             } else {
                 logger.debug { "Received duplicate SessionInit on key $key for session which was not null: $sessionState" }
-                sessionState.apply {
-                    sendAck = true
-                }
+                sessionState
             }
         } else {
             val sessionId = sessionEvent.sessionId
-            val sessionInit: SessionInit = sessionEvent.payload as SessionInit
             val seqNum = sessionEvent.sequenceNum
+            val contextSessionProperties = sessionEvent.contextSessionProperties
+            val requireClose = sessionEvent.contextSessionProperties.toMap()[FLOW_SESSION_REQUIRE_CLOSE].toBoolean()
             val newSessionState = SessionState.newBuilder()
                 .setSessionId(sessionId)
                 .setSessionStartTime(instant)
                 .setLastReceivedMessageTime(instant)
-                .setLastSentMessageTime(instant)
-                .setSendAck(true)
                 .setCounterpartyIdentity(sessionEvent.initiatingIdentity)
                 .setReceivedEventsState(SessionProcessState(seqNum, mutableListOf(sessionEvent)))
                 .setSendEventsState(SessionProcessState(0, mutableListOf()))
                 .setStatus(SessionStateType.CONFIRMED)
                 .setHasScheduledCleanup(false)
-                .setCounterpartySessionProperties(sessionInit.contextSessionProperties)
+                .setRequireClose(requireClose)
+                .setSessionProperties(contextSessionProperties)
                 .build()
 
             logger.trace { "Created new session with id $sessionId for SessionInit received on key $key. sessionState $newSessionState" }

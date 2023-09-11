@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
 
+import net.corda.flow.application.services.FlowConfigService
 import net.corda.crypto.core.parseSecureHash
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
@@ -13,6 +14,7 @@ import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPers
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.CordaSystemFlow
+import net.corda.schema.configuration.ConfigKeys.UTXO_LEDGER_CONFIG
 import net.corda.utilities.trace
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
@@ -39,6 +41,7 @@ class TransactionBackchainReceiverFlowV1(
 
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val BACKCHAIN_BATCH_CONFIG_PATH = "backchain.batchSize"
     }
 
     @CordaInject
@@ -53,6 +56,9 @@ class TransactionBackchainReceiverFlowV1(
     @CordaInject
     lateinit var signedGroupParametersVerifier: SignedGroupParametersVerifier
 
+    @CordaInject
+    lateinit var flowConfigService: FlowConfigService
+
     @Suspendable
     override fun call(): TopologicalSort {
         // Using a [Set] here ensures that if two or more transactions at the same level in the graph are dependent on the same transaction
@@ -62,9 +68,12 @@ class TransactionBackchainReceiverFlowV1(
 
         val sortedTransactionIds = TopologicalSort()
 
+        val ledgerConfig = flowConfigService.getConfig(UTXO_LEDGER_CONFIG)
+
+        val batchSize = ledgerConfig.getInt(BACKCHAIN_BATCH_CONFIG_PATH)
+
         while (transactionsToRetrieve.isNotEmpty()) {
-            // For now, we'll assume a batch size of 1
-            val batch = setOf(transactionsToRetrieve.first())
+            val batch = transactionsToRetrieve.take(batchSize)
 
             log.trace {
                 "Backchain resolution of $initialTransactionIds - Requesting the content of transactions $batch from transaction backchain"
@@ -73,7 +82,7 @@ class TransactionBackchainReceiverFlowV1(
             @Suppress("unchecked_cast")
             val retrievedTransactions = session.sendAndReceive(
                 List::class.java,
-                TransactionBackchainRequestV1.Get(batch)
+                TransactionBackchainRequestV1.Get(batch.toSet())
             ) as List<UtxoSignedTransaction>
 
             log.trace { "Backchain resolution of $initialTransactionIds - Received content for transactions $batch" }
