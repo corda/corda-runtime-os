@@ -688,7 +688,7 @@ object CordaMetrics {
         /**
          * Source of metric.
          */
-        Namespace("namespace"),
+        Deployment("deployment"),
 
         /**
          * Virtual Node for which the metric is applicable.
@@ -864,10 +864,10 @@ object CordaMetrics {
      * @param registry Registry instance
      */
     fun configure(workerType: String, registry: MeterRegistry) {
-        val namespace = System.getenv(K8S_NAMESPACE_KEY) ?: ""
+        val deployment = System.getenv(K8S_NAMESPACE_KEY) ?: ""
         this.registry.add(registry).config()
             .commonTags(Tag.WorkerType.value, workerType)
-            .commonTags(Tag.Namespace.value, namespace)
+            .commonTags(Tag.Deployment.value, deployment)
             .meterFilter(object : MeterFilter {
                 override fun map(id: Meter.Id): Meter.Id {
                     // prefix all metrics with `corda`, except standard JVM and Process metrics
