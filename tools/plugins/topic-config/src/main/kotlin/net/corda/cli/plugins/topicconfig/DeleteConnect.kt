@@ -1,8 +1,10 @@
 package net.corda.cli.plugins.topicconfig
 
 import org.apache.kafka.clients.admin.Admin
+import org.apache.kafka.clients.admin.AdminClientConfig
 import org.apache.kafka.clients.admin.AlterConfigOp
 import org.apache.kafka.clients.admin.ConfigEntry
+import org.apache.kafka.clients.admin.existingTopicNamesWithPrefix
 import org.apache.kafka.common.config.ConfigResource
 import picocli.CommandLine
 import picocli.CommandLine.ParentCommand
@@ -27,7 +29,12 @@ class DeleteConnect : Runnable {
         val contextCL = Thread.currentThread().contextClassLoader
         Thread.currentThread().contextClassLoader = this::class.java.classLoader
 
-        val client = Admin.create(delete!!.topic!!.getKafkaProperties())
+        val timeoutMillis = (wait * 1000).toInt()
+        val kafkaProperties = delete!!.topic!!.getKafkaProperties()
+        kafkaProperties[AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG] = timeoutMillis
+        kafkaProperties[AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG] = timeoutMillis
+
+        val client = Admin.create(kafkaProperties)
 
         try {
             val topicNames = client.existingTopicNamesWithPrefix(delete!!.topic!!.namePrefix, wait)
@@ -47,9 +54,4 @@ class DeleteConnect : Runnable {
 
         Thread.currentThread().contextClassLoader = contextCL
     }
-
 }
-
-fun Admin.existingTopicNamesWithPrefix(prefix: String, wait: Long) =
-    listTopics().names().get(wait, TimeUnit.SECONDS)
-        .filter { it.startsWith(prefix) }
