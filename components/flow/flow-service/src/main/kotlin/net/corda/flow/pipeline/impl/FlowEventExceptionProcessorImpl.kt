@@ -93,9 +93,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 )
             }
 
-            log.debug {
-                "A transient exception was thrown the event that failed will be retried. event='${context.inputEvent}',  $exception"
-            }
+            log.info("Flow ${context.checkpoint.flowId} encountered a transient problem and is retrying: ${exception.message}")
 
             val payload = context.inputEventPayload ?: return@withEscalation process(
                 FlowFatalException(
