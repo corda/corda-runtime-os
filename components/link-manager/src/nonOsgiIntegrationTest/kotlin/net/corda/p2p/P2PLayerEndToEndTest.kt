@@ -625,12 +625,6 @@ class P2PLayerEndToEndTest {
                     )
                 }
             }
-            on { getGroupPolicy(any()) } doAnswer {
-                val id: HoldingIdentity = it.getArgument(0)
-                localInfos.firstOrNull {
-                    it.identity.id == id
-                }?.groupPolicy
-            }
             on { getP2PParameters(any()) } doAnswer {
                 val id: HoldingIdentity = it.getArgument(0)
                 localInfos.firstOrNull {
