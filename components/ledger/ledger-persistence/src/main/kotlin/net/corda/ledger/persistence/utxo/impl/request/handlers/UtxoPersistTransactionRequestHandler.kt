@@ -51,17 +51,15 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
 
     private fun getOutputTokenRecords(listOfPairsStateAndUtxoToken: List<Pair<StateAndRef<*>, UtxoToken>>): List<Record<TokenPoolCacheKey, TokenPoolCacheEvent>> {
         val isTransactionVerified = transactionReader.status == TransactionStatus.VERIFIED
-        return if (isTransactionVerified) {
-            val consumedStates = transactionReader.getConsumedStates(persistenceService)
-            val consumedTokens = getTokens(consumedStates, tokenObservers)
-            utxoOutputRecordFactory.getTokenCacheChangeEventRecords(
-                holdingIdentity,
-                listOfPairsStateAndUtxoToken,
-                consumedTokens
-            )
-        } else {
-            listOf()
+        if (!isTransactionVerified) {
+            return listOf()
         }
+
+        return utxoOutputRecordFactory.getTokenCacheChangeEventRecords(
+            holdingIdentity,
+            listOfPairsStateAndUtxoToken,
+            getTokens(transactionReader.getConsumedStates(persistenceService), tokenObservers)
+        )
     }
 
     private fun getTokens(visibleStates: List<StateAndRef<ContractState>>, tokenObservers: UtxoTokenObserverMap): List<Pair<StateAndRef<*>, UtxoToken>> =
