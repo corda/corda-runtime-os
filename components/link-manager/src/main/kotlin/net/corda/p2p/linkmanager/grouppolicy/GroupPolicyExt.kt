@@ -19,10 +19,8 @@ internal val GroupPolicy.P2PParameters.protocolModes: Set<ProtocolMode>
         return when (this.protocolMode) {
             GroupPolicyConstants.PolicyValues.P2PParameters.ProtocolMode.AUTH_ENCRYPT
             -> setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION)
-
             GroupPolicyConstants.PolicyValues.P2PParameters.ProtocolMode.AUTH
             -> setOf(ProtocolMode.AUTHENTICATION_ONLY)
-
             else -> throw IllegalStateException("Invalid protocol mode: ${this.protocolMode}")
         }
     }

@@ -124,13 +124,7 @@ fun mockGroups(holdingIdentities: Collection<HoldingIdentity>): GroupPolicyProvi
         }
 
         override fun getP2PParameters(holdingIdentity: HoldingIdentity): GroupPolicy.P2PParameters? {
-            return if (holdingIdentities.contains(holdingIdentity)) {
-                mock {
-                    on { tlsPki } doReturn GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.STANDARD
-                }
-            } else {
-                null
-            }
+            return getGroupPolicy(holdingIdentity)?.p2pParameters
         }
 
         override val isRunning = true

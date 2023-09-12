@@ -234,7 +234,7 @@ class MessageConverter {
             val p2pParams = groupPolicyProvider.getP2PParameters(source)
             if (p2pParams == null) {
                 logger.warn(
-                    "Could not find the p2p parameters in the " +
+                    "Could not find the group info in the " +
                         "GroupPolicyProvider for our identity = $source. The message was discarded."
                 )
                 return null

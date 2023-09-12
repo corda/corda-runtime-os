@@ -199,9 +199,6 @@ class SessionManagerTest {
         on { sessionPki } doReturn GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
         on { protocolMode } doReturn GroupPolicyConstants.PolicyValues.P2PParameters.ProtocolMode.AUTH_ENCRYPT
     }
-    private val groupPolicy = mock<GroupPolicy> {
-        on { p2pParameters } doReturn parameters
-    }
     private val groupPolicyProvider = mock<GroupPolicyProvider> {
         on { getP2PParameters(OUR_PARTY) } doReturn parameters
     }
@@ -1096,11 +1093,13 @@ class SessionManagerTest {
             initiatorHandshake,
             listOf(PEER_KEY.public to SignatureSpecs.ECDSA_SHA256),
         )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
-        whenever(protocolResponder.validateEncryptedExtensions(
-            CertificateCheckMode.NoCertificate,
-            groupPolicy.p2pParameters.protocolModes,
-            PEER_MEMBER_INFO.name
-        )).thenThrow(InvalidPeerCertificate("Invalid peer certificate"))
+        whenever(groupPolicyProvider.getP2PParameters(OUR_PARTY)?.protocolModes?.let {
+            protocolResponder.validateEncryptedExtensions(
+                CertificateCheckMode.NoCertificate,
+                it,
+                PEER_MEMBER_INFO.name
+            )
+        }).thenThrow(InvalidPeerCertificate("Invalid peer certificate"))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
         assertThat(responseMessage).isNull()
@@ -1127,11 +1126,13 @@ class SessionManagerTest {
             initiatorHandshake,
             listOf(PEER_KEY.public to SignatureSpecs.ECDSA_SHA256),
         )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
-        whenever(protocolResponder.validateEncryptedExtensions(
-            CertificateCheckMode.NoCertificate,
-            groupPolicy.p2pParameters.protocolModes,
-            PEER_MEMBER_INFO.name
-        )).thenThrow(NoCommonModeError(setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), setOf(ProtocolMode.AUTHENTICATION_ONLY)))
+        whenever(groupPolicyProvider.getP2PParameters(OUR_PARTY)?.protocolModes?.let {
+            protocolResponder.validateEncryptedExtensions(
+                CertificateCheckMode.NoCertificate,
+                it,
+                PEER_MEMBER_INFO.name
+            )
+        }).thenThrow(NoCommonModeError(setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), setOf(ProtocolMode.AUTHENTICATION_ONLY)))
         val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
 
         assertThat(responseMessage).isNull()

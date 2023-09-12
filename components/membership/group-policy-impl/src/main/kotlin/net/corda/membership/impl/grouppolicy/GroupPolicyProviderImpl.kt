@@ -100,15 +100,7 @@ class GroupPolicyProviderImpl @Activate constructor(
         listeners.put(name, listener)?.stop()
     }
 
-    override fun getP2PParameters(holdingIdentity: HoldingIdentity): GroupPolicy.P2PParameters? {
-        val groupPolicy = getGroupPolicy(holdingIdentity)
-        return if (groupPolicy == null ) {
-            logger.warn("Could not get the group policy for holding identity [${holdingIdentity}].")
-            null
-        } else {
-            groupPolicy.p2pParameters
-        }
-    }
+    override fun getP2PParameters(holdingIdentity: HoldingIdentity) = getGroupPolicy(holdingIdentity)?.p2pParameters
 
     override fun start() = coordinator.start()
 
