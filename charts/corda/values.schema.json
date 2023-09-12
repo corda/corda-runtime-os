@@ -121,6 +121,128 @@
                 "Always"
             ]
         },
+        "containerSecurityContext": {
+            "type": "object",
+            "default": {},
+            "title": "define privilege and access control settings for a pod",
+            "properties": {
+                "runAsUser": {
+                    "type": "integer",
+                    "title": "specify what user ID that processes will run with",
+                    "examples": [
+                        "10001"
+                    ]
+                },
+                "runAsGroup": {
+                    "type": "integer",
+                    "title": "specify what group ID that processes will run with",
+                    "examples": [
+                        "10002"
+                    ]
+                },
+                "fsGroup": {
+                    "type": "integer",
+                    "title": "specify supplementary group ID that processes will run with",
+                    "examples": [
+                        "1000"
+                    ]
+                },
+                "allowPrivilegeEscalation": {
+                    "type": "boolean",
+                    "default": false,
+                    "title": "enable scraping of worker metrics through Prometheus annotations",
+                    "examples": [
+                        false
+                    ]
+                },
+                "readOnlyRootFilesystem": {
+                    "type": "boolean",
+                    "default": true,
+                    "title": "mount the container's root filesystem as read-only",
+                    "examples": [
+                        true
+                    ]
+                },
+                "capabilities": {
+                    "type": "object",
+                    "default": {},
+                    "title": "linux capabilities for users",
+                    "properties": {
+                        "drop": {
+                            "type": "array",
+                            "default": [],
+                            "title": "capabilities to drop"
+                        },
+                        "add": {
+                            "type": "array",
+                            "default": [],
+                            "title": "capabilities to add"
+                        }
+                    }
+                }
+            }
+        },
+        "podSecurityContext": {
+            "type": "object",
+            "default": {},
+            "title": "define privilege and access control settings for a pod",
+            "properties": {
+                "runAsUser": {
+                    "type": "integer",
+                    "title": "specify what user ID that processes will run with",
+                    "examples": [
+                        "10001"
+                    ]
+                },
+                "runAsGroup": {
+                    "type": "integer",
+                    "title": "specify what group ID that processes will run with",
+                    "examples": [
+                        "10002"
+                    ]
+                },
+                "fsGroup": {
+                    "type": "integer",
+                    "title": "specify supplementary group ID that processes will run with",
+                    "examples": [
+                        "1000"
+                    ]
+                },
+                "allowPrivilegeEscalation": {
+                    "type": "boolean",
+                    "default": false,
+                    "title": "enable scraping of worker metrics through Prometheus annotations",
+                    "examples": [
+                        false
+                    ]
+                },
+                "readOnlyRootFilesystem": {
+                    "type": "boolean",
+                    "default": true,
+                    "title": "mount the container's root filesystem as read-only",
+                    "examples": [
+                        true
+                    ]
+                },
+                "capabilities": {
+                    "type": "object",
+                    "default": {},
+                    "title": "linux capabilities for users",
+                    "properties": {
+                        "drop": {
+                            "type": "array",
+                            "default": [],
+                            "title": "capabilities to drop"
+                        },
+                        "add": {
+                            "type": "array",
+                            "default": [],
+                            "title": "capabilities to add"
+                        }
+                    }
+                }
+            }
+        },
         "resources": {
             "type": "object",
             "default": {},
