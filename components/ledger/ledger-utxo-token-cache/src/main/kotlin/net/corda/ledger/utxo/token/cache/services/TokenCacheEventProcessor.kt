@@ -115,7 +115,7 @@ class TokenCacheEventProcessor constructor(
             val claimCount = claimedTokens.size
             val claimBalance = claimedTokens.sumOf { token -> amountToBigDecimal(token.amount) }
             val tokens = claimedTokens.joinToString(" ") { token ->
-                "$({token.stateRef}-${amountToBigDecimal(token.amount)})"
+                "(${token.stateRef}-${amountToBigDecimal(token.amount)})"
             }
             sb.appendLine(
                 "Claim       : ${it.claimId} Token Count $claimCount Token Balance $claimBalance Tokens:${tokens}"
