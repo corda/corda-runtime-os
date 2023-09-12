@@ -1,5 +1,7 @@
 package net.corda.db.testkit.dbutilsimpl
 
+import java.sql.Connection
+
 class PostgresHelper : AbstractDBHelper() {
     companion object {
         private const val POSTGRES_PORT_PROPERTY = "postgresPort"
@@ -22,4 +24,11 @@ class PostgresHelper : AbstractDBHelper() {
 
     override val driverClass = "org.postgresql.Driver"
 
+    override fun createSchema(connection: Connection, schemaName: String): Pair<String, String> {
+        connection.use { conn ->
+            conn.prepareStatement("CREATE SCHEMA IF NOT EXISTS $schemaName;").execute()
+            conn.commit()
+        }
+        return getAdminUser() to getAdminPassword()
+    }
 }

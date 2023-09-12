@@ -9,7 +9,12 @@
     -DpostgresPort=${project.postgresPort},\
     -DpostgresDb=${project.postgresDb},\
     -DpostgresUser=${project.postgresUser},\
-    -DpostgresPassword=${project.postgresPassword}
+    -DpostgresPassword=${project.postgresPassword},\
+    -DmssqlHost=${project.mssqlHost},\
+    -DmssqlPort=${project.mssqlPort},\
+    -DmssqlDb=${project.mssqlDb},\
+    -DmssqlUser=${project.mssqlUser},\
+    -DmssqlPassword=${project.mssqlPassword}
 
 -runsystempackages: \
     sun.security.x509
@@ -25,6 +30,7 @@
     bnd.identity;id='org.osgi.service.jdbc',\
     bnd.identity;id='org.ops4j.pax.jdbc.hsqldb',\
     bnd.identity;id='org.postgresql.jdbc',\
+    bnd.identity;id='com.microsoft.sqlserver.mssql-jdbc',\
     bnd.identity;id='com.r3.testing.testing-cats',\
     bnd.identity;id='com.r3.testing.testing-dogs'
 

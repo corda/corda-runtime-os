@@ -12,6 +12,7 @@ import net.corda.schema.configuration.DatabaseConfig
 import net.corda.test.util.LoggingUtils.emphasise
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.sql.Connection
 
 /**
  * An abstract class that provides common functionality for working with databases using JDBC.
@@ -60,6 +61,8 @@ abstract class AbstractDBHelper : DbUtilsHelper {
         return DbEntityManagerConfiguration(ds,showSql,true, DdlManage.NONE)
     }
 
+    abstract fun createSchema(connection: Connection, schemaName: String): Pair<String, String>
+
     override fun createDataSource(
         dbUser: String?,
         dbPassword: String?,
@@ -71,10 +74,11 @@ abstract class AbstractDBHelper : DbUtilsHelper {
         val password = dbPassword ?: getAdminPassword()
 
         if (!schemaName.isNullOrBlank()) {
-            if (createSchema) {
+            val credentials = if (createSchema) {
                 logger.info("Creating schema: $schemaName".emphasise())
-                createDataSource(driverClass,jdbcUrl,user,password, maximumPoolSize = 1)
-                    .connection.createSchema(schemaName)
+                createSchema( createDataSource(driverClass,jdbcUrl,user,password, maximumPoolSize = 1).connection, schemaName)
+            } else {
+                user to password
             }
             val jdbcUrlCopy = if (rewriteBatchedInserts) {
                 "$jdbcUrl?currentSchema=$schemaName&reWriteBatchedInserts=true"
@@ -82,7 +86,7 @@ abstract class AbstractDBHelper : DbUtilsHelper {
                 "$jdbcUrl?currentSchema=$schemaName"
             }
             logger.info("Using URL $jdbcUrlCopy".emphasise())
-            return createDataSource(driverClass,jdbcUrlCopy, user, password)
+            return createDataSource(driverClass,jdbcUrlCopy, credentials.first, credentials.second)
         }
         logger.info("Using URL $jdbcUrl".emphasise())
         return createDataSource(driverClass,jdbcUrl, user, password)

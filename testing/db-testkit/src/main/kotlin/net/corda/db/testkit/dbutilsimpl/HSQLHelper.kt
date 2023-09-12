@@ -38,7 +38,12 @@ class HSQLHelper : DbUtilsHelper {
         logger.info("Using in-memory (HSQL) DB".emphasise())
         return TestInMemoryEntityManagerConfiguration(inMemoryDbName, showSql).also {
             if (createSchema) {
-                it.dataSource.connection.createSchema(schemaName)
+                requireNotNull(schemaName)
+                it.dataSource.connection.use { conn ->
+                    conn.prepareStatement("CREATE SCHEMA IF NOT EXISTS $schemaName;").execute()
+                    conn.commit()
+                }
+
             }
         }
     }
