@@ -43,9 +43,12 @@ class FlowMapperMessageProcessor(
     ): StateAndEventProcessor.Response<FlowMapperState> {
 
         val key = event.key
+        logger.info("QQQ onNext 1 $key")
         logger.trace { "Received event. Key: $key Event: ${event.value}" }
         val value = event.value ?: return StateAndEventProcessor.Response(state, emptyList())
+        logger.info("QQQ onNext 2 value ${value.javaClass}")
         val eventType = value.payload?.let { it.javaClass.simpleName } ?: "Unknown"
+        logger.info("QQQ onNext 3 eventType: $eventType")
 
 
         CordaMetrics.Metric.FlowMapperEventLag.builder()
@@ -57,11 +60,15 @@ class FlowMapperMessageProcessor(
         return traceStateAndEventExecution(event, "Flow Mapper Event - $eventType") {
             eventProcessingTimer.recordCallable {
                 if (!isExpiredSessionEvent(value)) {
+                    logger.info("QQQ onNext 4 !isExpiredSessionEvent")
                     val executor = flowMapperEventExecutorFactory.create(key, value, state, flowConfig)
+                    logger.info("QQQ onNext 5 executor: $executor")
                     val result = executor.execute()
+                    logger.info("QQQ onNext 6 result: $result")
                     StateAndEventProcessor.Response(result.flowMapperState, result.outputEvents)
                 } else {
                     logger.debug { "This event is expired and will be ignored. Event: $event State: $state" }
+                    logger.info("QQQ onNext 5 eventType: isExpiredSessionEvent")
                     CordaMetrics.Metric.FlowMapperExpiredSessionEventCount.builder()
                         .build().increment()
                     StateAndEventProcessor.Response(state, emptyList())

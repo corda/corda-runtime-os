@@ -114,11 +114,13 @@ class FlowRestResourceImpl @Activate constructor(
         startFlow: StartFlowParameters
     ): ResponseEntity<FlowStatusResponse> {
         return trace("API - Start Flow") {
+            log.info("QQQ startFlow 1 - $holdingIdentityShortHash, ${startFlow.clientRequestId}")
             traceVirtualNodeId(holdingIdentityShortHash)
 
             if (publisher == null) {
                 throw ServiceUnavailableException(FlowRestExceptionConstants.UNINITIALIZED_ERROR)
             }
+            log.info("QQQ startFlow 2 - $holdingIdentityShortHash, ${startFlow.clientRequestId}")
             if (fatalErrorOccurred) {
                 // If Kafka has told us this publisher should not attempt a retry, most likely we have already been
                 // replaced by another worker and have been "fenced". In that case it would be unsafe to create another
@@ -127,8 +129,10 @@ class FlowRestResourceImpl @Activate constructor(
                 // closing us down soon. There are other fatal error types, but none are recoverable by definition.
                 throw ServiceUnavailableException(FlowRestExceptionConstants.TEMPORARY_INTERNAL_FAILURE)
             }
+            log.info("QQQ startFlow 3 - $holdingIdentityShortHash, ${startFlow.clientRequestId}")
 
             val vNode = getVirtualNode(holdingIdentityShortHash)
+            log.info("QQQ startFlow 4 - $holdingIdentityShortHash, ${startFlow.clientRequestId}")
 
             if (vNode.flowStartOperationalStatus == VirtualNodeOperationalState.INACTIVE) {
                 throw OperationNotAllowedException(
@@ -138,20 +142,25 @@ class FlowRestResourceImpl @Activate constructor(
             }
 
             val clientRequestId = startFlow.clientRequestId
+            log.info("QQQ startFlow 5 - $holdingIdentityShortHash, ${startFlow.clientRequestId}")
 
             traceRequestId(clientRequestId)
 
             val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
+            log.info("QQQ startFlow 6 - $holdingIdentityShortHash, ${startFlow.clientRequestId} flowStatus: $flowStatus")
 
             validateClientRequestId(clientRequestId)
 
             if (flowStatus != null) {
                 throw ResourceAlreadyExistsException(FlowRestExceptionConstants.ALREADY_EXISTS_ERROR)
             }
+            log.info("QQQ startFlow 7 - $holdingIdentityShortHash, ${startFlow.clientRequestId}")
 
             val flowClassName = startFlow.flowClassName
             val startableFlows = getStartableFlows(holdingIdentityShortHash, vNode)
+            log.info("QQQ startFlow 8 - $holdingIdentityShortHash, ${startFlow.clientRequestId}")
             if (!startableFlows.contains(flowClassName)) {
+                log.info("QQQ startFlow 9 - $holdingIdentityShortHash, ${startFlow.clientRequestId} ??")
                 val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
                 val msg =
                     "The flow that was requested ($flowClassName) is not in the list of startable flows for this holding identity."
@@ -168,9 +177,11 @@ class FlowRestResourceImpl @Activate constructor(
             }
 
             traceTag(TraceTag.FLOW_CLASS, flowClassName)
+            log.info("QQQ startFlow 10 - $holdingIdentityShortHash, ${startFlow.clientRequestId}")
 
             val restContext = CURRENT_REST_CONTEXT.get()
             val principal = restContext.principal
+            log.info("QQQ startFlow 11 - $holdingIdentityShortHash, ${startFlow.clientRequestId} $principal")
 
             if (!permissionValidationService.permissionValidator.authorizeUser(
                     principal,
@@ -191,6 +202,7 @@ class FlowRestResourceImpl @Activate constructor(
                 "corda.account" to "account-zero",
                 MDC_CLIENT_ID to clientRequestId
             )
+            log.info("QQQ startFlow 12 - $holdingIdentityShortHash, ${startFlow.clientRequestId} $flowContextPlatformProperties")
             val startEvent =
                 messageFactory.createStartFlowEvent(
                     clientRequestId,
@@ -200,6 +212,7 @@ class FlowRestResourceImpl @Activate constructor(
                     flowContextPlatformProperties
                 )
             val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
+            log.info("QQQ startFlow 13 - $holdingIdentityShortHash, ${startFlow.clientRequestId} $status")
 
             val records = listOf(
                 addTraceContextToRecord(Record(FLOW_MAPPER_EVENT_TOPIC, status.key.toString(), startEvent)),
@@ -217,6 +230,7 @@ class FlowRestResourceImpl @Activate constructor(
             } catch (ex: CordaMessageAPIFatalException) {
                 throw markFatalAndReturnFailureException(ex)
             }
+            log.info("QQQ startFlow 14 - $holdingIdentityShortHash, ${startFlow.clientRequestId} $startEvent")
             waitOnPublisherFutures(recordFutures, PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS) { ex, failureIsFatal ->
                 if (failureIsFatal) {
                     throw markFatalAndReturnFailureException(ex)
@@ -228,6 +242,7 @@ class FlowRestResourceImpl @Activate constructor(
                     )
                 }
             }
+            log.info("QQQ startFlow 15 - $holdingIdentityShortHash, ${startFlow.clientRequestId}")
             ResponseEntity.accepted(messageFactory.createFlowStatusResponse(status))
         }
     }
