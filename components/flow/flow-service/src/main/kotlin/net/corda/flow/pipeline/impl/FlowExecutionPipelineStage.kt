@@ -43,15 +43,22 @@ internal class FlowExecutionPipelineStage(
      *
      * @param context The current flow context.
      * @param timeout Timeout for an individual flow execution.
+     * @param notifyContextUpdate A function to signal intermediate context updates to the caller.
+     *                            Useful for error scenarios.
      * @return FlowEventContext Updated context for the flow.
      */
-    fun runFlow(context: FlowEventContext<Any>, timeout: Long) : FlowEventContext<Any> {
+    fun runFlow(
+        context: FlowEventContext<Any>,
+        timeout: Long,
+        notifyContextUpdate: (FlowEventContext<Any>) -> Unit
+    ) : FlowEventContext<Any> {
         var currentContext = context
         var continuation = flowReady(currentContext)
         while (continuation != FlowContinuation.Continue) {
             continuation = try {
                 val output = executeFlow(currentContext, continuation, timeout)
                 currentContext = updateContext(output, currentContext)
+                notifyContextUpdate(currentContext)
                 flowReady(currentContext)
             } catch (e: FlowPlatformException) {
                 FlowContinuation.Error(

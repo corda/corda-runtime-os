@@ -16,7 +16,7 @@ fun initiateNewSession(config: SmartConfig): Pair<SessionParty, SessionParty> {
     initiated.processNextReceivedMessage(sendMessages = true)
     initiated.assertStatus(SessionStateType.CONFIRMED)
 
-    //process ack
+    //process confirm
     initiated.processNewOutgoingMessage(SessionMessageType.CONFIRM, sendMessages = true)
     initiator.processNextReceivedMessage()
     initiator.assertStatus(SessionStateType.CONFIRMED)
@@ -32,12 +32,12 @@ fun closeSession(
     partyA: SessionParty,
     partyB: SessionParty
 ) {
-    //partyB send close to partyA
+    //partyB sends close to partyA
     partyB.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
     partyB.assertStatus(SessionStateType.CLOSED)
 
-    //partyA receive close and send ack to partyB
-    partyA.processNextReceivedMessage(sendMessages = true)
-    partyA.assertStatus(SessionStateType.CLOSED)
+    //partyA receives close
+    partyA.processNextReceivedMessage()
+    partyA.assertStatus(SessionStateType.CLOSING)
 }
 

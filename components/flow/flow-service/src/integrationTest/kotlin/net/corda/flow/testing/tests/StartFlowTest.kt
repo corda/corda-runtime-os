@@ -87,7 +87,6 @@ class StartFlowTest : FlowServiceTestBase() {
             cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
             sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(BOB_HOLDING_IDENTITY)
-            flowConfiguration(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS, 3)
         }
 
         `when` {
@@ -127,7 +126,7 @@ class StartFlowTest : FlowServiceTestBase() {
             cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
             sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(BOB_HOLDING_IDENTITY)
-            flowConfiguration(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS, 1)
+            flowConfiguration(FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION, 0)
         }
 
         `when` {
