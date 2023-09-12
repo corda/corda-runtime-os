@@ -1,24 +1,33 @@
 package net.corda.flow.mapper.impl
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionError
+import net.corda.data.identity.HoldingIdentity
+import net.corda.data.p2p.app.AppMessage
+import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.data.p2p.app.AuthenticatedMessageHeader
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.flow.mapper.factory.RecordFactory
-import net.corda.flow.mapper.impl.executor.createOutboundRecord
-import net.corda.flow.mapper.impl.executor.getDestinationIdentity
 import net.corda.flow.mapper.impl.executor.toggleSessionId
+import net.corda.flow.utils.isInitiatedIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.FlowConfig
+import net.corda.session.manager.Constants
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.nio.ByteBuffer
 import java.time.Instant
+import java.util.UUID
 
 @Component(service = [RecordFactory::class])
 class RecordFactoryImpl @Activate constructor(
@@ -58,7 +67,6 @@ class RecordFactoryImpl @Activate constructor(
                     exceptionEnvelope
                 ),
                 instant,
-                sessionEventSerializer,
                 flowConfig,
                 outputTopic
             )
@@ -85,7 +93,6 @@ class RecordFactoryImpl @Activate constructor(
                 sessionEvent,
                 sessionEvent.payload,
                 instant,
-                sessionEventSerializer,
                 flowConfig,
                 outputTopic
             )
@@ -95,7 +102,7 @@ class RecordFactoryImpl @Activate constructor(
     private fun isLocalCluster(
         sessionEvent: SessionEvent
     ): Boolean {
-        val destinationIdentity = getDestinationIdentity(sessionEvent)
+        val destinationIdentity = getSourceAndDestinationIdentity(sessionEvent).destinationIdentity
         return when (locallyHostedIdentitiesService.getIdentityInfo(destinationIdentity.toCorda())) {
             null -> false
             else -> true
@@ -113,6 +120,84 @@ class RecordFactoryImpl @Activate constructor(
                 }
             }
         }
+    }
+
+    /**
+     * Data class for source and destination holding identities from a session event.
+     */
+    private data class SourceAndDestination(
+        val sourceIdentity: HoldingIdentity,
+        val destinationIdentity: HoldingIdentity
+    )
+
+    /**
+     * Get the source and destination holding identity from the [sessionEvent].
+     * @param sessionEvent Session event to extract identities from
+     * @return Source and destination identities for a SessionEvent message.
+     */
+    private fun getSourceAndDestinationIdentity(sessionEvent: SessionEvent): SourceAndDestination {
+        return if (isInitiatedIdentity(sessionEvent.sessionId)) {
+            SourceAndDestination(sessionEvent.initiatedIdentity, sessionEvent.initiatingIdentity)
+        } else {
+            SourceAndDestination(sessionEvent.initiatingIdentity, sessionEvent.initiatedIdentity)
+        }
+    }
+
+    /**
+     * Generate an AppMessage to send to the P2P.out topic.
+     * @param sessionEvent Flow event to send
+     * @param flowConfig config
+     * @return AppMessage to send to the P2P.out topic with the serialized session event as payload
+     */
+    private fun generateAppMessage(
+        sessionEvent: SessionEvent,
+        flowConfig: SmartConfig
+    ): AppMessage {
+        val (sourceIdentity, destinationIdentity) = getSourceAndDestinationIdentity(sessionEvent)
+        val header = AuthenticatedMessageHeader(
+            destinationIdentity,
+            sourceIdentity,
+            Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli() + flowConfig.getLong(FlowConfig.SESSION_P2P_TTL)),
+            sessionEvent.sessionId + "-" + UUID.randomUUID(),
+            "",
+            Constants.FLOW_SESSION_SUBSYSTEM,
+            MembershipStatusFilter.ACTIVE
+        )
+        return AppMessage(AuthenticatedMessage(header, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
+    }
+
+    /**
+     * Creates [Record] for P2P.out topic.
+     * @param sessionEvent Flow event to send
+     * @param payload Flow event payload
+     * @param instant Instant
+     * @param flowConfig config
+     * @param outputTopic topic where the record should be sent
+     */
+    @Suppress("LongParameterList")
+    private fun createOutboundRecord(
+        sessionEvent: SessionEvent,
+        payload: Any,
+        instant: Instant,
+        flowConfig: SmartConfig,
+        outputTopic: String
+    ) : Record<*, *> {
+        val sessionId = sessionEvent.sessionId
+        return Record(
+            outputTopic, sessionId, generateAppMessage(
+                SessionEvent(
+                    MessageDirection.OUTBOUND,
+                    instant,
+                    sessionId,
+                    null,
+                    sessionEvent.initiatingIdentity,
+                    sessionEvent.initiatedIdentity,
+                    payload,
+                    sessionEvent.contextSessionProperties
+                ),
+                flowConfig
+            )
+        )
     }
 }
 
