@@ -34,7 +34,7 @@ class ConfigProcessorTest {
     private val smartConfigFactory = SmartConfigFactory.createWithoutSecurityServices()
     private val configMerger: ConfigMerger = mock {
         on { getMessagingConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig }
-        on { getDbConfig(any(), anyOrNull()) } doAnswer { SmartConfigImpl.empty()  }
+        on { getDbConfig(any(), anyOrNull()) } doAnswer { SmartConfigImpl.empty() }
     }
 
     companion object {
@@ -87,11 +87,11 @@ class ConfigProcessorTest {
         val coordinator = mock<LifecycleCoordinator>()
         val dbConfig = DB_CONFIG_STRING.toSmartConfig()
         whenever(configMerger.getDbConfig(any(), anyOrNull())).thenReturn(dbConfig)
-        val bootconfig = BOOT_CONFIG_STRING.toSmartConfig()
-        val configProcessor = ConfigProcessor(coordinator, smartConfigFactory, bootconfig, configMerger)
+        val bootConfig = BOOT_CONFIG_STRING.toSmartConfig()
+        val configProcessor = ConfigProcessor(coordinator, smartConfigFactory, bootConfig, configMerger)
         configProcessor.onSnapshot(mapOf())
         verify(coordinator, times(1)).postEvent(capture(eventCaptor))
-        verify(configMerger, times(0)).getMessagingConfig(bootconfig, null)
+        verify(configMerger, times(0)).getMessagingConfig(bootConfig, null)
         verify(configMerger, times(1)).getDbConfig(any(), anyOrNull())
     }
 

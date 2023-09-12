@@ -1,5 +1,6 @@
 package net.corda.applications.workers.combined
 
+import com.typesafe.config.ConfigValueFactory.fromAnyRef
 import net.corda.application.dbsetup.PostgresDbSetup
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.BusType
@@ -35,6 +36,7 @@ import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.processors.verification.VerificationProcessor
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.DatabaseConfig
+import net.corda.schema.configuration.MessagingConfig.StateManager
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
@@ -45,6 +47,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
+import java.time.Duration
 
 
 // We use a different port for the combined worker since it is often run on Macs, which 
@@ -121,7 +124,7 @@ class CombinedWorker @Activate constructor(
         // Add the config schema to the JDBC URL in the params so that any processors which need the JDBC URL are using
         // the config schema.
         params.addSchemaToJdbcUrl("CONFIG")
-        params.addDatabaseParam(DatabaseConfig.JDBC_URL + "_messagebus", dbUrl + "?currentSchema=MESSAGEBUS")
+        params.addDatabaseParam(DatabaseConfig.JDBC_URL + "_messagebus", "$dbUrl?currentSchema=MESSAGEBUS")
 
         if (printHelpOrVersion(params.defaultParams, CombinedWorker::class.java, shutDownService)) return
         if (params.hsmId.isBlank()) {
@@ -131,11 +134,13 @@ class CombinedWorker @Activate constructor(
         val databaseConfig = PathAndConfig(BootConfig.BOOT_DB, params.databaseParams)
         val cryptoConfig = PathAndConfig(BootConfig.BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
         val restConfig = PathAndConfig(BootConfig.BOOT_REST, params.restParams)
-        val config = getBootstrapConfig(
+        val stateManagerConfig = PathAndConfig(BootConfig.BOOT_STATE_MANAGER, params.stateManagerParams)
+
+        var config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(databaseConfig, cryptoConfig, restConfig),
+            listOf(databaseConfig, cryptoConfig, restConfig, stateManagerConfig),
         )
 
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
@@ -145,6 +150,17 @@ class CombinedWorker @Activate constructor(
             config.getConfig(BootConfig.BOOT_DB).getString(DatabaseConfig.DB_USER) else "user"
         val dbAdminPassword = if (config.getConfig(BootConfig.BOOT_DB).hasPath(DatabaseConfig.DB_PASS))
             config.getConfig(BootConfig.BOOT_DB).getString(DatabaseConfig.DB_PASS) else "password"
+
+        // Default pool settings for State Manager
+        if (config.hasPath(BootConfig.BOOT_STATE_MANAGER)) {
+            config = config
+                .withValue(StateManager.JDBC_POOL_MIN_SIZE, fromAnyRef(1))
+                .withValue(StateManager.JDBC_POOL_MAX_SIZE, fromAnyRef(5))
+                .withValue(StateManager.JDBC_POOL_IDLE_TIMEOUT_SECONDS, fromAnyRef(Duration.ofMinutes(2).toSeconds()))
+                .withValue(StateManager.JDBC_POOL_MAX_LIFETIME_SECONDS, fromAnyRef(Duration.ofMinutes(30).toSeconds()))
+                .withValue(StateManager.JDBC_POOL_KEEP_ALIVE_TIME_SECONDS, fromAnyRef(Duration.ZERO.toSeconds()))
+                .withValue(StateManager.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS, fromAnyRef(Duration.ofSeconds(5).toSeconds()))
+        }
 
         // Part of DB setup is to generate defaults for the crypto code. That currently includes a
         // default master wrapping key passphrase and salt, which we want to keep secret, and so
@@ -231,6 +247,9 @@ private class CombinedWorkerParams {
     // TODO - remove when reviewing crypto config
     @Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])
     var hsmId = ""
+
+    @Option(names = ["-S", "--${BootConfig.BOOT_STATE_MANAGER}"], description = ["Configuration for the state manager."])
+    var stateManagerParams = emptyMap<String, String>()
 
     /**
      * Combined worker parameter for JDBC URL should be the schemaless database URL because the combined worker sets up
