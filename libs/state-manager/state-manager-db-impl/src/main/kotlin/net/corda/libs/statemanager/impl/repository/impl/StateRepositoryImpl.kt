@@ -39,14 +39,10 @@ class StateRepositoryImpl : StateRepository {
         entityManager: EntityManager,
         keys: Collection<String>
     ): List<StateEntity> {
-        val results = keys.chunked(50) { chunkedKeys ->
-            entityManager
+        return entityManager
                 .createNamedQuery(FILTER_STATES_BY_KEY_QUERY_NAME.trimIndent(), StateEntity::class.java)
-                .setParameter(KEY_ID, chunkedKeys)
+                .setParameter(KEY_ID, keys)
                 .resultList
-        }
-
-        return results.flatten()
     }
 
     override fun get(entityManager: EntityManager, keys: Collection<String>): List<StateEntity> {
@@ -120,13 +116,6 @@ class StateRepositoryImpl : StateRepository {
                     "WHERE (s.metadata->>'$key')::::$nativeType $comparison '$value'",
             StateEntity::class.java
         )
-
-//        Should we use this instead of casting to the specific type (::text, ::numeric, ::boolean)?
-//        val query = entityManager.createNativeQuery(
-//            "SELECT * FROM ${DbSchema.STATE_MANAGER_TABLE} s " +
-//                    "   WHERE s.metadata->'$key' $operation '$value'",
-//            StateEntity::class.java
-//        )
 
         @Suppress("UNCHECKED_CAST")
         return query.resultList as Collection<StateEntity>
