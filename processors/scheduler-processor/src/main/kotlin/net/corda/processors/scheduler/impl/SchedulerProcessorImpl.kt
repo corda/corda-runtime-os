@@ -64,6 +64,7 @@ class SchedulerProcessorImpl @Activate constructor(
     // now just hardcoding schedulers here until CORE-16331 is picked up, when we should take this from config
     private val schedules = listOf<Schedule>(
         // example schedule, delete/replace when we have a real one, uncomment for testing
+        Schedule("clean-up-deduplication-table", 20, "virtual.node.deduplication.table.clean.up")
 //        Schedule("say-hello", 60, "telephone"),
 //        Schedule("say-goodbye", 600, "telephone"),
     )
