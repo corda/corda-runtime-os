@@ -182,9 +182,14 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
     private fun createStatusRecord(id: String, statusGenerator: () -> FlowStatus): List<Record<*, *>> {
         return try {
+            log.info("QQQ createStatusRecord 1 $id")
             val status = statusGenerator()
-            listOf(flowRecordFactory.createFlowStatusRecord(status))
+            log.info("QQQ createStatusRecord 2 $id status: $status")
+            listOf(flowRecordFactory.createFlowStatusRecord(status)).also {
+                log.info("QQQ createStatusRecord 3 $id")
+            }
         } catch (e: IllegalStateException) {
+            log.info("QQQ createStatusRecord 4 $id error?!", e)
             // Most errors should happen after a flow has been initialised. However, it is possible for
             // initialisation to have not yet happened at the point the failure is hit if it's a session init message
             // and something goes wrong in trying to retrieve the sandbox. In this case we cannot update the status
