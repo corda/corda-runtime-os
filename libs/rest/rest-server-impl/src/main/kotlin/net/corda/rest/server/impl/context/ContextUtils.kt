@@ -144,6 +144,11 @@ internal object ContextUtils {
                         .withTag(CordaMetrics.Tag.HttpMethod, ctxMethod)
                         .withTag(CordaMetrics.Tag.OperationStatus, "${ctx.status()}")
                         .build().record(Duration.ofNanos(System.nanoTime() - startTime))
+                    CordaMetrics.Metric.HttpRequests.builder()
+                        .withTag(CordaMetrics.Tag.UriPath, ctx.matchedPath())
+                        .withTag(CordaMetrics.Tag.HttpMethod, ctxMethod)
+                        .withTag(CordaMetrics.Tag.OperationStatus, "${ctx.status()}")
+                        .build().increment()
                 }
             }
         }

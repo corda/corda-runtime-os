@@ -38,6 +38,7 @@ object CordaMetrics {
          * HTTP Requests time.
          */
         object HttpRequestTime : Metric<Timer>("http.server.request.time", CordaMetrics::timer)
+        object HttpRequests : Metric<Counter>("http.server.requests", Metrics::counter)
 
         /**
          * Time it took to create the sandbox
@@ -72,6 +73,7 @@ object CordaMetrics {
          * Total count of flows executed can be obtained by the number of events recorded for this metric.
          */
         object FlowExecutionTime : Metric<Timer>("flow.execution.time", CordaMetrics::timer)
+        object FlowExecutionCounter : Metric<Counter>("flow.executions", Metrics::counter)
 
         /**
          * Metric for lag between flow event publication and processing.
@@ -890,9 +892,13 @@ object CordaMetrics {
                     @Suppress("ComplexCondition")
                     return if (
                         id.name.contains("http.server.request") ||
+                        id.name.contains("http.server.requests") ||
                         id.name.contains("flow.execution.time") ||
+                        id.name.contains("flow.executions") ||
                         id.name.contains("http_server_request") ||
-                        id.name.contains("flow_execution_time")
+                        id.name.contains("http_server_requests") ||
+                        id.name.contains("flow_execution_time") ||
+                        id.name.contains("flow_executions")
                     ) {
                         MeterFilterReply.ACCEPT
                     } else {

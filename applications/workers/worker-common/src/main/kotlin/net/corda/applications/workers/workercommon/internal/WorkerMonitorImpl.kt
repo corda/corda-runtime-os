@@ -66,7 +66,7 @@ internal class WorkerMonitorImpl @Activate constructor(
         }
 
         override fun step(): Duration {
-            return Duration.ofSeconds(15)
+            return Duration.ofSeconds(30)
         }
 
         override fun batchSize(): Int {

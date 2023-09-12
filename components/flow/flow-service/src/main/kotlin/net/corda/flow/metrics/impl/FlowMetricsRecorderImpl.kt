@@ -77,6 +77,10 @@ class FlowMetricsRecorderImpl(
     }
 
     override fun recordFlowCompletion(flowName: String, executionTimeMillis: Long, runTimeMillis: Long, completionStatus: String) {
+        CordaMetrics.Metric.FlowExecutionCounter.builder()
+            .withTag(CordaMetrics.Tag.FlowClass, flowName)
+            .withTag(CordaMetrics.Tag.OperationStatus, completionStatus)
+            .build().increment()
         CordaMetrics.Metric.FlowExecutionTime.builder()
             .withTag(CordaMetrics.Tag.FlowClass, flowName)
             .withTag(CordaMetrics.Tag.OperationStatus, completionStatus)
