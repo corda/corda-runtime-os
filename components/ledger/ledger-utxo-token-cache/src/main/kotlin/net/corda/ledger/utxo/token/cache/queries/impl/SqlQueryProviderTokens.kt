@@ -64,7 +64,8 @@ class SqlQueryProviderTokens : SqlQueryProvider {
                     token_owner_hash,
                     token_amount
                 FROM {h-schema}utxo_transaction_output
-                WHERE token_type = :$SQL_PARAMETER_TOKEN_TYPE
+                WHERE t_state.consumed is null 
+                AND   token_type = :$SQL_PARAMETER_TOKEN_TYPE
                 AND   token_issuer_hash = :$SQL_PARAMETER_ISSUER_HASH
                 AND   token_symbol = :$SQL_PARAMETER_SYMBOL
                 $tagFilter
