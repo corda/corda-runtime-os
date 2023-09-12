@@ -20,7 +20,11 @@ class SQLServerHelper : AbstractDBHelper() {
 
     override val host = getPropertyNonBlank(MSSQL_HOST_PROPERTY, "localhost")
 
-    override var jdbcUrl = "jdbc:sqlserver://$host:$port;encrypt=true;trustServerCertificate=true;${if (getDatabase().isBlank()) "" else "database=${getDatabase()};"}"
+    override val jdbcUrl : String
+        get() {
+            val databaseConfig = if (getDatabase().isBlank()) "" else "database=${getDatabase()};"
+            return "jdbc:sqlserver://$host:$port;encrypt=true;trustServerCertificate=true;$databaseConfig"
+        }
 
     override val driverClass = "com.microsoft.sqlserver.jdbc.SQLServerDriver"
 

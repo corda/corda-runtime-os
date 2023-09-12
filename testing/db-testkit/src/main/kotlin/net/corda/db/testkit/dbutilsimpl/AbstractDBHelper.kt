@@ -44,7 +44,7 @@ abstract class AbstractDBHelper : DbUtilsHelper {
 
     abstract val host: String
 
-    abstract var jdbcUrl: String
+    abstract val jdbcUrl: String
 
     abstract val driverClass: String
 

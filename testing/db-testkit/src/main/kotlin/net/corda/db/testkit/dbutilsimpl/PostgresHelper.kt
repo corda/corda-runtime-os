@@ -20,7 +20,7 @@ class PostgresHelper : AbstractDBHelper() {
 
     override val host = getPropertyNonBlank(POSTGRES_HOST_PROPERTY,"localhost")
 
-    override var jdbcUrl = "jdbc:postgresql://$host:$port/${getDatabase()}"
+    override val jdbcUrl = "jdbc:postgresql://$host:$port/${getDatabase()}"
 
     override val driverClass = "org.postgresql.Driver"
 
