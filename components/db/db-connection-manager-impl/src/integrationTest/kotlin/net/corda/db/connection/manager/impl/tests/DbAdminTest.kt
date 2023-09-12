@@ -52,7 +52,7 @@ class DbAdminTest {
      */
     init {
         // uncomment this to run the test against local Postgres
-        // System.setProperty("postgresPort", "5432")
+        // System.setProperty("databaseType", "POSTGRES")
 
         val dbChange = ClassloaderChangeLog(
             linkedSetOf(

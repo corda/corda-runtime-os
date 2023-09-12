@@ -13,9 +13,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 class HSQLHelper : DbUtilsHelper {
-    override fun isInMemory(): Boolean = true
-
-    override fun getDatabase(): String = ""
+      override fun getDatabase(): String = ""
 
     override fun getAdminUser() = "sa"
 
@@ -38,7 +36,12 @@ class HSQLHelper : DbUtilsHelper {
         logger.info("Using in-memory (HSQL) DB".emphasise())
         return TestInMemoryEntityManagerConfiguration(inMemoryDbName, showSql).also {
             if (createSchema) {
-                it.dataSource.connection.createSchema(schemaName)
+                requireNotNull(schemaName)
+                it.dataSource.connection.use { conn ->
+                    conn.prepareStatement("CREATE SCHEMA IF NOT EXISTS $schemaName;").execute()
+                    conn.commit()
+                }
+
             }
         }
     }

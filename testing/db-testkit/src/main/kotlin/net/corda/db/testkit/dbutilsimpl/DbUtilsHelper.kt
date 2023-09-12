@@ -8,9 +8,6 @@ import net.corda.orm.EntityManagerConfiguration
  * An interface defining common database utility methods for managing database connections and configurations.
  */
 interface DbUtilsHelper {
-
-    fun isInMemory(): Boolean
-
     fun getDatabase(): String
 
     fun getAdminUser(): String
