@@ -59,41 +59,41 @@ internal class WorkerMonitorImpl @Activate constructor(
 
     private val objectMapper = ObjectMapper()
     private val prometheusRegistry: PrometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-    private val cloudwatchConfig = object : CloudWatchConfig {
-
-        override fun get(key: String): String? {
-            return null
-        }
-
-        override fun step(): Duration {
-            return Duration.ofSeconds(30)
-        }
-
-        override fun batchSize(): Int {
-            return CloudWatchConfig.MAX_BATCH_SIZE
-        }
-
-        override fun highResolution(): Boolean {
-            return true
-        }
-
-        override fun namespace(): String {
-            return CORDA_NAMESPACE
-        }
-    }
+//    private val cloudwatchConfig = object : CloudWatchConfig {
+//
+//        override fun get(key: String): String? {
+//            return null
+//        }
+//
+//        override fun step(): Duration {
+//            return Duration.ofSeconds(30)
+//        }
+//
+//        override fun batchSize(): Int {
+//            return CloudWatchConfig.MAX_BATCH_SIZE
+//        }
+//
+//        override fun highResolution(): Boolean {
+//            return true
+//        }
+//
+//        override fun namespace(): String {
+//            return CORDA_NAMESPACE
+//        }
+//    }
     private val lastLogMessage = ConcurrentHashMap(mapOf(HTTP_HEALTH_ROUTE to "", HTTP_STATUS_ROUTE to ""))
 
     private fun setupMetrics(name: String) {
         logger.info("Creating Prometheus metric registry")
         CordaMetrics.configure(name, prometheusRegistry)
-        if (System.getenv(CLOUDWATCH_ENABLED_KEY) == "true") {
-            logger.info("Enabling the cloudwatch metrics registry")
-            val cloudwatchClient = CloudWatchAsyncClient.builder()
-                .credentialsProvider(WebIdentityTokenFileCredentialsProvider.create())
-                .build()
-            val registry = CloudWatchMeterRegistry(cloudwatchConfig, Clock.SYSTEM, cloudwatchClient)
-            CordaMetrics.configure(name, registry)
-        }
+//        if (System.getenv(CLOUDWATCH_ENABLED_KEY) == "true") {
+//            logger.info("Enabling the cloudwatch metrics registry")
+//            val cloudwatchClient = CloudWatchAsyncClient.builder()
+//                .credentialsProvider(WebIdentityTokenFileCredentialsProvider.create())
+//                .build()
+//            val registry = CloudWatchMeterRegistry(cloudwatchConfig, Clock.SYSTEM, cloudwatchClient)
+//            CordaMetrics.configure(name, registry)
+//        }
 
         ClassLoaderMetrics().bindTo(CordaMetrics.registry)
         JvmMemoryMetrics().bindTo(CordaMetrics.registry)
