@@ -30,6 +30,7 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
@@ -129,8 +130,8 @@ class StateManagerIntegrationTest {
         }
     }
 
-    @ParameterizedTest
     @ValueSource(ints = [1, 10])
+    @ParameterizedTest(name = "can create basic states (batch size: {0})")
     fun canCreateBasicStates(stateCount: Int) {
         val states = mutableSetOf<State>()
         for (i in 1..stateCount) {
@@ -146,8 +147,8 @@ class StateManagerIntegrationTest {
         )
     }
 
-    @ParameterizedTest
     @ValueSource(ints = [1, 10])
+    @ParameterizedTest(name = "can create states with custom metadata (batch size: {0})")
     fun canCreateStatesWithCustomMetadata(stateCount: Int) {
         val states = mutableSetOf<State>()
         for (i in 1..stateCount) {
@@ -170,6 +171,7 @@ class StateManagerIntegrationTest {
     }
 
     @Test
+    @DisplayName(value = "failures when persisting some states do not halt the entire batch")
     fun failuresWhenPersistingSomeStatesDoesNotHaltTheEntireBatch() {
         val failedSates = 5
         val totalStates = 15
@@ -197,8 +199,8 @@ class StateManagerIntegrationTest {
         )
     }
 
-    @ParameterizedTest
     @ValueSource(ints = [1, 10])
+    @ParameterizedTest(name = "can retrieve states by key (batch size: {0})")
     fun canRetrieveStatesByKey(stateCount: Int) {
         persistStateEntities(
             (1..stateCount),
@@ -226,8 +228,8 @@ class StateManagerIntegrationTest {
         }
     }
 
-    @ParameterizedTest
     @ValueSource(ints = [1, 10])
+    @ParameterizedTest(name = "can update existing states (batch size: {0})")
     fun canUpdateExistingStates(stateCount: Int) {
         persistStateEntities(
             (1..stateCount),
@@ -253,6 +255,7 @@ class StateManagerIntegrationTest {
     }
 
     @Test
+    @DisplayName(value = "optimistic locking checks for concurrent updates do not halt the entire batch")
     fun optimisticLockingChecksForConcurrentUpdatesDoNotHaltTheEntireBatch() {
         val totalCount = 20
         persistStateEntities(
@@ -308,8 +311,8 @@ class StateManagerIntegrationTest {
         )
     }
 
-    @ParameterizedTest
     @ValueSource(ints = [1, 10])
+    @ParameterizedTest(name = "can delete existing states (batch size: {0})")
     fun canDeleteExistingStates(stateCount: Int) {
         persistStateEntities(
             (1..stateCount),
@@ -329,6 +332,7 @@ class StateManagerIntegrationTest {
     }
 
     @Test
+    @DisplayName(value = "optimistic locking checks for concurrent deletes do not halt the entire batch")
     fun optimisticLockingCheckForConcurrentDeletesDoesNotHaltTheEntireBatch() {
         val totalCount = 20
         persistStateEntities(
@@ -383,6 +387,7 @@ class StateManagerIntegrationTest {
     }
 
     @Test
+    @DisplayName(value = "can filter states by last update time")
     fun canFilterStatesByLastUpdatedTime() {
         val count = 10
         val startTime = Instant.now()
@@ -414,6 +419,7 @@ class StateManagerIntegrationTest {
     }
 
     @Test
+    @DisplayName(value = "can filter states using simple comparisons on metadata values")
     fun canFilterStatesUsingSimpleComparisonsOnMetadataValues() {
         val count = 20
         persistStateEntities(
