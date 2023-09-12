@@ -29,6 +29,7 @@ class SyncRPCSubscriptionImplTest {
     }
 
     private val webServer = JavalinServer(lifecycleCoordinatorFactory) { Javalin.create() }
+    private val SUBSCRIPTION_NAME = "Test"
     private val TEST_ENDPOINT = "/test"
     private val TEST_PORT = ServerSocket(0).use {
         it.localPort
@@ -63,12 +64,14 @@ class SyncRPCSubscriptionImplTest {
         webServer.start(TEST_PORT)
         rpcSubscription = SyncRPCSubscriptionImpl(
             SyncRPCConfig(
+                SUBSCRIPTION_NAME,
                 TEST_ENDPOINT
             ), processor, lifecycleCoordinatorFactory, webServer, serializer, deserializer
         )
 
         SyncRPCSubscriptionImpl(
             SyncRPCConfig(
+                SUBSCRIPTION_NAME,
                 TEST_ENDPOINT
             ), processor, lifecycleCoordinatorFactory, webServer, serializer, deserializer
         )
