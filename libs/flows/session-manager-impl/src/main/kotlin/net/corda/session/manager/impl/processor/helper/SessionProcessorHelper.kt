@@ -1,6 +1,5 @@
 package net.corda.session.manager.impl.processor.helper
 
-import java.time.Instant
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -9,6 +8,7 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
+import java.time.Instant
 
 /**
  * Generate an error SessionEvent.
@@ -65,9 +65,8 @@ fun generateErrorEvent(
         .setInitiatingIdentity(initiatingIdentity)
         .setInitiatedIdentity(initiatedIdentity)
         .setSessionId(sessionId)
-        .setReceivedSequenceNum(0)
-        .setOutOfOrderSequenceNums(emptyList())
         .setPayload(sessionError)
+        .setContextSessionProperties(null)
         .build()
 }
 
@@ -85,14 +84,13 @@ fun generateErrorSessionStateFromSessionEvent(errorMessage: String, sessionEvent
         .setSessionId(sessionEvent.sessionId)
         .setSessionStartTime(instant)
         .setLastReceivedMessageTime(instant)
-        .setLastSentMessageTime(instant)
         .setCounterpartyIdentity(sessionEvent.initiatingIdentity)
-        .setSendAck(false)
         .setReceivedEventsState(SessionProcessState(0, listOf()))
         .setSendEventsState(SessionProcessState(0, listOf()))
         .setStatus(SessionStateType.ERROR)
         .setHasScheduledCleanup(false)
-        .setCounterpartySessionProperties(null)
+        .setSessionProperties(null)
+        .setRequireClose(false)
         .build()
 
     val errorEvent = generateErrorEvent(sessionState, sessionEvent, errorMessage, errorType, instant)

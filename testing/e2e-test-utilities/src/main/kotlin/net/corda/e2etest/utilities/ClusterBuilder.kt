@@ -18,7 +18,7 @@ import java.time.Instant
 class ClusterBuilder {
     
     internal companion object {
-        val REST_API_VERSION_PATH = RestApiVersion.C5_1.versionPath
+        var REST_API_VERSION_PATH = ""
     }
     
     private var client: HttpsClient? = null
@@ -27,7 +27,11 @@ class ClusterBuilder {
         client = UnirestHttpsClient(uri, username, password)
     }
 
-    fun init(clusterInfo: ClusterInfo) {
+    fun init(
+        clusterInfo: ClusterInfo,
+        apiVersion: String,
+    ) {
+        REST_API_VERSION_PATH = apiVersion
         with(clusterInfo.rest) {
             endpoint(uri, user, password)
         }
@@ -88,17 +92,36 @@ class ClusterBuilder {
             ?: throw FileNotFoundException("No such resource: '$resourceName'")
 
     fun importCertificate(resourceName: String, usage: String, alias: String) =
-        uploadCertificateResource("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage", resourceName, alias)
+            uploadCertificateResource(
+                "/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage",
+                resourceName,
+                alias,
+            )
 
-    fun importCertificate(file: File, usage: String, alias: String) =
-        uploadCertificateFile("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage", file, alias)
-
-    // Used to test RestApiVersion.C5_0 CertificateRestResource, remove after LTS
+    // Used to test RestApiVersion.C5_0 CertificateRestResource from 5.1 cluster, remove after LTS
     fun deprecatedImportCertificate(resourceName: String, usage: String, alias: String) =
         uploadCertificateResource("/api/${RestApiVersion.C5_0.versionPath}/certificates/cluster/$usage", resourceName, alias)
 
+
+    fun importCertificate(file: File, usage: String, alias: String) =
+        uploadCertificateFile(
+            "/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage",
+            file,
+            alias,
+        )
+
     fun getCertificateChain(usage: String, alias: String) =
-        client!!.get("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage/$alias")
+        client!!.get("/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage/$alias")
+
+    /**
+     * Returns the correct path for certificate rest resource based on the rest api version we use.
+     */
+    private fun String.certificatePath(): String =
+        if (this == RestApiVersion.C5_0.versionPath) {
+            "certificates"
+        } else {
+            "certificate"
+        }
 
     /** Assumes the resource *is* a CPB */
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/$REST_API_VERSION_PATH/cpi/", resourceName)
@@ -357,9 +380,14 @@ class ClusterBuilder {
         post("/api/$REST_API_VERSION_PATH/hsm/soft/$holdingIdentityShortHash/$category", body = "")
 
     fun createKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
-        post("/api/$REST_API_VERSION_PATH/key/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme", body = "")
+        if (REST_API_VERSION_PATH == RestApiVersion.C5_0.versionPath) {
+            // Used to test RestApiVersion.C5_0 CertificateRestResource, remove after LTS
+            deprecatedCreateKey(holdingIdentityShortHash, alias, category, scheme)
+        } else {
+            post("/api/$REST_API_VERSION_PATH/key/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme", body = "")
+        }
 
-    // Used to test RestApiVersion.C5_0 KeysRestResource, remove after LTS
+    // Used to test RestApiVersion.C5_0 KeysRestResource from 5.1 cluster, remove after LTS
     fun deprecatedCreateKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
         post(
             "/api/${RestApiVersion.C5_0.versionPath}/keys/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme",
@@ -367,7 +395,7 @@ class ClusterBuilder {
         )
 
     fun getKey(tenantId: String, keyId: String) =
-        get("/api/$REST_API_VERSION_PATH/key/$tenantId/$keyId")
+        get("/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.keyPath()}/$tenantId/$keyId")
 
     fun getKey(
         tenantId: String,
@@ -385,8 +413,18 @@ class ClusterBuilder {
         } else {
             queries.joinToString(prefix = "?", separator = "&")
         }
-        return get("/api/$REST_API_VERSION_PATH/key/$tenantId$queryStr")
+        return get("/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.keyPath()}/$tenantId$queryStr")
     }
+
+    /**
+     * Returns the correct path for key rest resource based on the rest api version we use.
+     */
+    private fun String.keyPath(): String =
+        if (this == RestApiVersion.C5_0.versionPath) {
+            "keys"
+        } else {
+            "key"
+        }
 
     /** Get status of a flow */
     fun flowStatus(holdingIdentityShortHash: String, clientRequestId: String) =
@@ -550,8 +588,10 @@ class ClusterBuilder {
         )
 }
 
-fun <T> cluster(initialize: ClusterBuilder.() -> T): T = DEFAULT_CLUSTER.cluster(initialize)
+fun <T> cluster(
+    initialize: ClusterBuilder.() -> T,
+): T = DEFAULT_CLUSTER.cluster(initialize)
 
 fun <T> ClusterInfo.cluster(
     initialize: ClusterBuilder.() -> T
-): T = ClusterBuilder().apply { init(this@cluster) }.let(initialize)
+): T = ClusterBuilder().apply { init(this@cluster, restApiVersion.versionPath) }.let(initialize)

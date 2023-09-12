@@ -1,9 +1,9 @@
 package net.corda.session.manager.integration.transition
 
-import java.time.Instant
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.flow.utils.INITIATED_SESSION_ID_SUFFIX
 import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.session.manager.impl.SessionManagerImpl
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.time.Instant
 
 class SessionStateConfirmedTransitionTest {
 
@@ -27,15 +28,6 @@ class SessionStateConfirmedTransitionTest {
     private val maxMsgSize = 10000000L
 
     @Test
-    fun `Send session init when in state confirmed`() {
-        val sessionState = buildConfirmedState()
-
-        val sessionEvent = generateMessage(SessionMessageType.INIT, instant)
-        val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant, maxMsgSize)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
-    }
-
-    @Test
     fun `Send data when in state confirmed`() {
         val sessionState = buildConfirmedState()
 
@@ -44,14 +36,15 @@ class SessionStateConfirmedTransitionTest {
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CONFIRMED)
     }
 
-
     @Test
     fun `Send close when in state confirmed`() {
         val sessionState = buildConfirmedState()
-
+        sessionState.requireClose = true
+        sessionState.sessionId += INITIATED_SESSION_ID_SUFFIX
         val sessionEvent = generateMessage(SessionMessageType.CLOSE, instant)
+
         val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant, maxMsgSize)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSING)
+        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSED)
     }
 
     @Test
@@ -82,16 +75,6 @@ class SessionStateConfirmedTransitionTest {
         sessionEvent.sequenceNum = 1
         val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSING)
-    }
-
-    @Test
-    fun `Receive ack when in state confirmed`() {
-        val sessionState = buildConfirmedState()
-        val sessionEvent = generateMessage(SessionMessageType.ACK, instant, MessageDirection.INBOUND)
-        sessionEvent.receivedSequenceNum = 1
-
-        val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CONFIRMED)
     }
 
     private fun buildConfirmedState(): SessionState {

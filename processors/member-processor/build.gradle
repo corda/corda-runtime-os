@@ -63,6 +63,7 @@ dependencies {
     runtimeOnly project(':libs:crypto:merkle-impl')
     runtimeOnly project(':components:membership:locally-hosted-identities-service-impl')
     runtimeOnly project(':components:membership:members-client-certificate-publisher-service-impl')
+    runtimeOnly project(":libs:web:web-impl")
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

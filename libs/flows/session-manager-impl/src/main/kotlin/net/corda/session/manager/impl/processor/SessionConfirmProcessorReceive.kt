@@ -1,15 +1,16 @@
 package net.corda.session.manager.impl.processor
 
-import java.time.Instant
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionConfirm
 import net.corda.data.flow.state.session.SessionState
+import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorSessionStateFromSessionEvent
 import net.corda.session.manager.impl.processor.helper.recalcHighWatermark
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
+import java.time.Instant
 
 /**
  * Process a [SessionConfirm] received from the initiated counterparty in response to a SessionInit which was sent to trigger the session.
@@ -20,7 +21,6 @@ class SessionConfirmProcessorReceive(
     private val key: Any,
     private val sessionState: SessionState?,
     private val sessionEvent: SessionEvent,
-    private val sessionConfirm: SessionConfirm,
     private val instant: Instant,
 ) : SessionEventProcessor {
 
@@ -38,15 +38,17 @@ class SessionConfirmProcessorReceive(
                 .distinctBy { it.sequenceNum }.sortedBy { it.sequenceNum }
 
             sessionState.apply {
-                counterpartySessionProperties = sessionConfirm.contextSessionProperties
+                if (status == SessionStateType.CREATED) {
+                    status = SessionStateType.CONFIRMED
+                }
+                sessionProperties = sessionEvent.contextSessionProperties
                 //recalc high watermark but do not add the session confirm to the undelivered messages
                 receivedEventsState.lastProcessedSequenceNum =
                     recalcHighWatermark(eventsReceived, receivedEventsState.lastProcessedSequenceNum)
             }
 
             logger.trace {
-                "Received SessionConfirm on key $key with receivedSequenceNum ${sessionEvent.receivedSequenceNum} " +
-                        "and outOfOrderSequenceNums ${sessionEvent.outOfOrderSequenceNums} for session state: $sessionState"
+                "Received SessionConfirm on key $key for session state: $sessionState"
             }
 
             return sessionState

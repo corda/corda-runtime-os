@@ -1078,6 +1078,12 @@
                                 3
                             ]
                         },
+                        "timeoutSeconds": {
+                            "type": "integer",
+                            "default": 60,
+                            "minimum": 60,
+                            "title": "Maximum time, in seconds, to wait for Kafka topic creation operation to finish (might vary depending on the amount of partitions and replicas configured)"
+                        },
                         "sasl": {
                             "type": "object",
                             "title": "kafka SASL credentials",
@@ -1292,10 +1298,13 @@
                 "crypto",
                 "db",
                 "flow",
+                "flowMapper",
+                "verification",
                 "membership",
                 "rest",
                 "p2pLinkManager",
                 "p2pGateway",
+                "persistence",
                 "uniqueness"
             ],
             "additionalProperties": false,
@@ -1525,6 +1534,126 @@
                                 "image": {
                                     "registry": "corda-os-docker.software.r3.com",
                                     "repository": "corda-os-flow-worker",
+                                    "tag": ""
+                                },
+                                "replicaCount": 1,
+                                "debug": {
+                                    "enabled": false,
+                                    "suspend": false
+                                },
+                                "logging": {
+                                    "level": "warn"
+                                },
+                                "profiling": {
+                                    "enabled": false
+                                },
+                                "resources": {
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    },
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    }
+                                },
+                                "verifyInstrumentation": false
+                            }]
+                        }
+                    ]
+                },
+                "flowMapper": {
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/worker"
+                        },
+                        {
+                            "required": [
+                                "verifyInstrumentation"
+                            ],
+                            "properties": {
+                                "image": {},
+                                "javaOptions": {},
+                                "annotations": {},
+                                "replicaCount": {},
+                                "debug": {},
+                                "logging": {},
+                                "profiling": {},
+                                "resources": {},
+                                "kafka": {},
+                                "verifyInstrumentation": {
+                                    "type": "boolean",
+                                    "default": false,
+                                    "title": "run flow mapper worker with Quasar's verifyInstrumentation enabled",
+                                    "examples": [
+                                        false
+                                    ]
+                                }
+                            },
+                            "examples": [{
+                                "image": {
+                                    "registry": "corda-os-docker.software.r3.com",
+                                    "repository": "corda-os-flow-mapper-worker",
+                                    "tag": ""
+                                },
+                                "replicaCount": 1,
+                                "debug": {
+                                    "enabled": false,
+                                    "suspend": false
+                                },
+                                "logging": {
+                                    "level": "warn"
+                                },
+                                "profiling": {
+                                    "enabled": false
+                                },
+                                "resources": {
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    },
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    }
+                                },
+                                "verifyInstrumentation": false
+                            }]
+                        }
+                    ]
+                },
+                "verification": {
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/worker"
+                        },
+                        {
+                            "required": [
+                                "verifyInstrumentation"
+                            ],
+                            "properties": {
+                                "image": {},
+                                "javaOptions": {},
+                                "annotations": {},
+                                "replicaCount": {},
+                                "debug": {},
+                                "logging": {},
+                                "profiling": {},
+                                "resources": {},
+                                "kafka": {},
+                                "verifyInstrumentation": {
+                                    "type": "boolean",
+                                    "default": false,
+                                    "title": "run verification worker with Quasar's verifyInstrumentation enabled",
+                                    "examples": [
+                                        false
+                                    ]
+                                }
+                            },
+                            "examples": [{
+                                "image": {
+                                    "registry": "corda-os-docker.software.r3.com",
+                                    "repository": "corda-os-verification-worker",
                                     "tag": ""
                                 },
                                 "replicaCount": 1,
@@ -1946,6 +2075,118 @@
                         }
                     ]
                 },
+                "persistence": {
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/worker"
+                        },
+                        {
+                            "additionalProperties": false,
+                            "required": [
+                                "clusterDbConnectionPool"
+                            ],
+                            "properties": {
+                                "image": {},
+                                "javaOptions": {},
+                                "annotations": {},
+                                "replicaCount": {},
+                                "debug": {},
+                                "logging": {},
+                                "profiling": {},
+                                "resources": {},
+                                "kafka": {},
+                                "clusterDbConnectionPool": {
+                                    "type": "object",
+                                    "default": {},
+                                    "title": "persistence worker JDBC connection pool configuration for cluster DB",
+                                    "required": [
+                                        "maxSize",
+                                        "idleTimeoutSeconds",
+                                        "maxLifetimeSeconds",
+                                        "keepaliveTimeSeconds",
+                                        "validationTimeoutSeconds"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "maxSize": {
+                                            "type": "integer",
+                                            "default": 5,
+                                            "title": "persistence worker maximum JDBC connection pool size for cluster DB",
+                                            "examples": [
+                                                5
+                                            ]
+                                        },
+                                        "minSize": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                },
+                                                {
+                                                    "type": "null"
+                                                }
+                                            ],
+                                            "default": null,
+                                            "title": "persistence worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value"
+                                        },
+                                        "idleTimeoutSeconds": {
+                                            "type": "integer",
+                                            "default": 120,
+                                            "minimum": 0,
+                                            "title": "maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
+                                        },
+                                        "maxLifetimeSeconds": {
+                                            "type": "integer",
+                                            "default": 1800,
+                                            "minimum": 1,
+                                            "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
+                                        },
+                                        "keepaliveTimeSeconds": {
+                                            "type": "integer",
+                                            "default": 0,
+                                            "minimum": 0,
+                                            "title": "interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
+                                        },
+                                        "validationTimeoutSeconds": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "default": 5,
+                                            "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
+                                        }
+                                    }
+                                }
+                            },
+                            "examples": [{
+                                "image": {
+                                    "registry": "",
+                                    "repository": "corda-os-persistence-worker",
+                                    "tag": ""
+                                },
+                                "replicaCount": 1,
+                                "debug": {
+                                    "enabled": false,
+                                    "suspend": false
+                                },
+                                "logging": {
+                                    "level": "warn"
+                                },
+                                "profiling": {
+                                    "enabled": false
+                                },
+                                "resources": {
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    },
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    }
+                                }
+                            }]
+                        }
+                    ]
+                },
                 "uniqueness": {
                     "allOf": [
                         {
@@ -2145,6 +2386,64 @@
                     },
                     "verifyInstrumentation": false
                 },
+                "flowMapper": {
+                    "image": {
+                        "registry": "corda-os-docker.software.r3.com",
+                        "repository": "corda-os-flow-mapper-worker",
+                        "tag": ""
+                    },
+                    "replicaCount": 1,
+                    "debug": {
+                        "enabled": false,
+                        "suspend": false
+                    },
+                    "logging": {
+                        "level": "warn"
+                    },
+                    "profiling": {
+                        "enabled": false
+                    },
+                    "resources": {
+                        "requests": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        },
+                        "limits": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        }
+                    },
+                    "verifyInstrumentation": false
+                },
+                "verification": {
+                    "image": {
+                        "registry": "corda-os-docker.software.r3.com",
+                        "repository": "corda-os-verification-worker",
+                        "tag": ""
+                    },
+                    "replicaCount": 1,
+                    "debug": {
+                        "enabled": false,
+                        "suspend": false
+                    },
+                    "logging": {
+                        "level": "warn"
+                    },
+                    "profiling": {
+                        "enabled": false
+                    },
+                    "resources": {
+                        "requests": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        },
+                        "limits": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        }
+                    },
+                    "verifyInstrumentation": false
+                },
                 "membership": {
                     "image": {
                         "registry": "corda-os-docker.software.r3.com",
@@ -2275,6 +2574,34 @@
                     },
                     "service": {
                         "port": 8080
+                    }
+                },
+                "persistence": {
+                    "image": {
+                        "registry": "corda-os-docker.software.r3.com",
+                        "repository": "corda-os-persistence-worker",
+                        "tag": ""
+                    },
+                    "replicaCount": 1,
+                    "debug": {
+                        "enabled": false,
+                        "suspend": false
+                    },
+                    "logging": {
+                        "level": "warn"
+                    },
+                    "profiling": {
+                        "enabled": false
+                    },
+                    "resources": {
+                        "requests": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        },
+                        "limits": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        }
                     }
                 },
                 "uniqueness": {

@@ -9,5 +9,6 @@ class Constants {
         const val FLOW_PROTOCOL = "corda.protocol"
         const val FLOW_PROTOCOL_VERSIONS_SUPPORTED = "corda.protocol.versions.supported"
         const val FLOW_PROTOCOL_VERSION_USED = "corda.protocol.version"
+        const val FLOW_SESSION_REQUIRE_CLOSE = "corda.session.requireClose"
     }
 }

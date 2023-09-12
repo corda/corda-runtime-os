@@ -151,9 +151,9 @@ allprojects {
         mavenLocal()
 
         maven {
-            url = "${publicArtifactURL}/corda-dependencies"
+            url = "${publicArtifactURL}/corda-dependencies-dev"
             content {
-                // For Quasar release.
+                // For Quasar SNAPSHOT.
                 includeGroup 'co.paralleluniverse'
             }
         }

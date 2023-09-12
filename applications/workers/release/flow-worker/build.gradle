@@ -26,9 +26,9 @@ dependencies {
     implementation project(':libs:configuration:configuration-validation')
     implementation project(':libs:platform-info:')
     implementation project(':libs:tracing')
+    implementation project(':libs:web:web')
     // Processor list must be kept in sync with workersForProcessor in net.corda.cli.plugins.topicconfig.Create
     implementation project(':processors:flow-processor')
-    implementation project(':processors:verification-processor')
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
@@ -44,6 +44,7 @@ dependencies {
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
 
     runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
+    runtimeOnly project(':libs:tracing-impl')
 
     runtimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
         exclude group: 'org.apache.felix'
