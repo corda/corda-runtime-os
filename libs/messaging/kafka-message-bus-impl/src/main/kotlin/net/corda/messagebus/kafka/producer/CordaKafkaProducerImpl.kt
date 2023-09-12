@@ -82,7 +82,7 @@ class CordaKafkaProducerImpl(
             // There is no other producer, we are not a zombie, and so don't need to be fenced, we can simply abort and retry.
             KafkaException::class.java
         )
-        val apiExceptions: Set<Class<out Throwable>> = setOf(
+        val ApiExceptions: Set<Class<out Throwable>> = setOf(
             CordaMessageAPIFatalException::class.java,
             CordaMessageAPIIntermittentException::class.java
         )
@@ -381,19 +381,24 @@ class CordaKafkaProducerImpl(
     private fun handleException(ex: Exception, operation: String, abortTransaction: Boolean) {
         val errorString = "$operation for CordaKafkaProducer with clientId ${config.clientId}"
         when (ex::class.java) {
-            in fatalExceptions -> throw CordaMessageAPIFatalException("FatalError occurred $errorString", ex)
-            in transientExceptions -> {
-                if (abortTransaction) {
-                    abortTransaction()
-                }
-                throw CordaMessageAPIIntermittentException("Error occurred $errorString", ex)
+            in fatalExceptions -> {
+                throw CordaMessageAPIFatalException("FatalError occurred $errorString", ex)
             }
-            in apiExceptions -> throw ex
+
             IllegalStateException::class.java -> {
                 // It's not clear whether the producer is ok to abort and continue or not in this case, so play it safe
                 // and let the client know to create a new one.
                 throw CordaMessageAPIProducerRequiresReset("Error occurred $errorString", ex)
             }
+
+           in transientExceptions -> {
+                if (abortTransaction) {
+                    abortTransaction()
+                }
+                throw CordaMessageAPIIntermittentException("Error occurred $errorString", ex)
+            }
+            in ApiExceptions -> { throw ex }
+
             else -> {
                 // Here we do not know what the exact cause of the exception is, but we do know Kafka has not told us we
                 // must close down, nor has it told us we can abort and retry. In this instance the most sensible thing
