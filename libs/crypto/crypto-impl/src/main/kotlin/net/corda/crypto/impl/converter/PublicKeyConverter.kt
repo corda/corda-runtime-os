@@ -3,7 +3,6 @@ package net.corda.crypto.impl.converter
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter
-import net.corda.membership.lib.MemberInfoExtension.Companion.KEYS_PEM_SUFFIX
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -26,8 +25,8 @@ class PublicKeyConverter @Activate constructor(
     /**
      * Select the single element in case the structure is like 'corda.ledger.keys.1'
      */
-    override fun convert(context: ConversionContext): PublicKey? = if (context.value(KEYS_PEM_SUFFIX) != null) {
-        context.value(KEYS_PEM_SUFFIX)?.let {
+    override fun convert(context: ConversionContext): PublicKey? = if (context.value("pem") != null) {
+        context.value("pem")?.let {
             keyEncodingService.decodePublicKey(it)
         }
     } else {
