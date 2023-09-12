@@ -30,7 +30,7 @@ containerSecurityContext:
   allowPrivilegeEscalation: false
   # -- mount the container's root filesystem as read-only
   readOnlyRootFilesystem: true
-  # -- linux capabilities for users
+  # linux capabilities for users
   capabilities:
     # -- capabilities to drop
     drop:
