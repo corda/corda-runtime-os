@@ -62,7 +62,7 @@ class SessionEventExecutor(
                 ),
                 instant,
                 flowConfig,
-                sessionEvent.messageDirection,
+                "invalid-flow-id"
             )
             FlowMapperResult(null, listOf(outputRecord))
         } else {
@@ -78,26 +78,18 @@ class SessionEventExecutor(
      * Output the session event to the correct topic and key
      */
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
-        val messageDirection = sessionEvent.messageDirection
-        val msg = "Attempted to process a message ${sessionEvent.messageDirection} " +
-                "but flow mapper state is in ${flowMapperState.status}. Session ID: ${sessionEvent.sessionId}. Ignoring Event"
-
         return when (flowMapperState.status) {
             null -> {
                 log.warn("FlowMapperState with null status. Key: $eventKey, Event: $sessionEvent.")
                 FlowMapperResult(null, listOf())
             }
             FlowMapperStateType.CLOSING, FlowMapperStateType.ERROR -> {
-                log.warn(msg)
+                log.warn("Attempted to process a message ${sessionEvent.messageDirection} but flow mapper state is " +
+                        "in ${flowMapperState.status}. Session ID: ${sessionEvent.sessionId}. Ignoring Event")
                 FlowMapperResult(flowMapperState, listOf())
             }
             FlowMapperStateType.OPEN -> {
-                val outputTopic = recordFactory.getSessionEventOutputTopic(sessionEvent, messageDirection)
-                val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
-                    recordFactory.forwardEvent(sessionEvent, instant, flowConfig, messageDirection)
-                } else {
-                    Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
-                }
+                val outputRecord = recordFactory.forwardEvent(sessionEvent, instant, flowConfig, flowMapperState.flowId)
                 FlowMapperResult(flowMapperState, listOf(outputRecord))
             }
         }

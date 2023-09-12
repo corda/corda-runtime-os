@@ -71,7 +71,7 @@ class RecordFactoryImpl @Activate constructor(
         )
     }
 
-    override fun getSessionEventOutputTopic(sessionEvent: SessionEvent): String {
+    private fun getSessionEventOutputTopic(sessionEvent: SessionEvent): String {
         return when (sessionEvent.messageDirection) {
             MessageDirection.INBOUND -> Schemas.Flow.FLOW_EVENT_TOPIC
             MessageDirection.OUTBOUND -> {
@@ -94,7 +94,7 @@ class RecordFactoryImpl @Activate constructor(
         config: SmartConfig,
         flowId: String
     ) : Record<*, *> {
-        val outputTopic = getSessionEventOutputTopic(sourceEvent, sourceEvent.messageDirection)
+        val outputTopic = getSessionEventOutputTopic(sourceEvent)
         val (newDirection, sessionId) = when (outputTopic) {
             Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC -> Pair(MessageDirection.INBOUND, toggleSessionId(sourceEvent.sessionId))
             Schemas.Flow.FLOW_EVENT_TOPIC -> Pair(MessageDirection.INBOUND, toggleSessionId(sourceEvent.sessionId))

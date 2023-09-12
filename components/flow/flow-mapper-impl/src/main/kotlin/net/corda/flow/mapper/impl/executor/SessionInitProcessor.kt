@@ -66,22 +66,18 @@ class SessionInitProcessor @Activate constructor(
         sessionInit: SessionInit,
         flowConfig: SmartConfig,
         instant: Instant
-    ): SessionInitOutputs = if (messageDirection == MessageDirection.INBOUND) {
-        val flowId = generateFlowId()
-        sessionInit.flowId = flowId
-        SessionInitOutputs(
+    ): SessionInitOutputs {
+        val flowId = if (messageDirection == MessageDirection.INBOUND) {
+            generateFlowId()
+        } else {
+            // Null out the flow ID on the source session init before generating the forward record.
+            val tmpFlowId = sessionInit.flowId
+            sessionInit.flowId = null
+            tmpFlowId
+        }
+        return SessionInitOutputs(
             flowId,
-            Record(Schemas.Flow.FLOW_EVENT_TOPIC, flowId, FlowEvent(flowId, sessionEvent))
-        )
-    } else {
-        //reusing SessionInit object for inbound and outbound traffic rather than creating a new object identical to SessionInit
-        //with an extra field of flowId. set flowId to null to not expose it on outbound messages
-        val tmpFLowEventKey = sessionInit.flowId
-        sessionInit.flowId = null
-
-        SessionInitOutputs(
-            tmpFLowEventKey,
-            recordFactory.forwardEvent(sessionEvent, instant, flowConfig, sessionEvent.messageDirection)
+            recordFactory.forwardEvent(sessionEvent, instant, flowConfig, flowId)
         )
     }
 
