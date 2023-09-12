@@ -2,8 +2,12 @@ package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.SignedData
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -14,26 +18,32 @@ import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
+import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
 
@@ -50,11 +60,25 @@ class QueueRegistrationHandlerTest {
     private val mgmName = MemberX500Name("MGM", "London", "GB")
     private val member = HoldingIdentity(aliceName.toString(), groupId.toString())
     private val mgm = HoldingIdentity(mgmName.toString(), groupId.toString())
+    private val encodedSessionKey1 = "BBC123456789"
+    private val encodedSessionKey2 = "BBC123456786"
+    private val sessionKey1 = mock<PublicKey>()
+    private val sessionKey2 = mock<PublicKey>()
 
-    val serialisedMemberContext = byteArrayOf(0)
-    val memberContextList = KeyValuePairList(listOf(KeyValuePair(PLATFORM_VERSION , "50100")))
+    private val serialisedMemberContext = byteArrayOf(0)
+    private val memberContextList = KeyValuePairList(
+        listOf(
+            KeyValuePair(PLATFORM_VERSION , "50100"),
+            KeyValuePair(PARTY_SESSION_KEYS_PEM.format(0), encodedSessionKey1),
+            KeyValuePair(PARTY_SESSION_KEYS_PEM.format(1), encodedSessionKey2),
+        )
+    )
+    private val signature = mock<CryptoSignatureWithKey>()
+    private val signatureSpec = mock<CryptoSignatureSpec>()
     private val memberContext = mock<SignedData> {
         on { data } doReturn ByteBuffer.wrap(serialisedMemberContext)
+        on { signature } doReturn signature
+        on { signatureSpec } doReturn signatureSpec
     }
     private val registrationContext = mock<SignedData>()
 
@@ -87,6 +111,12 @@ class QueueRegistrationHandlerTest {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
     }
 
+    private val signatureVerificationService = mock<SignatureVerificationService>()
+    private val keyEncodingService = mock<KeyEncodingService> {
+        on { decodePublicKey(encodedSessionKey1) } doReturn sessionKey1
+        on { decodePublicKey(encodedSessionKey2) } doReturn sessionKey2
+    }
+
     private val authenticatedMessageRecord = mock<Record<String, AppMessage>>()
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
         on {
@@ -94,11 +124,25 @@ class QueueRegistrationHandlerTest {
         } doReturn authenticatedMessageRecord
     }
 
+    private val verifier = mock<Verifier> {
+        on {
+            verify(
+                listOf(sessionKey1, sessionKey2),
+                memberContext.signature,
+                memberContext.signatureSpec,
+                memberContext.data.array(),
+            )
+        } doAnswer {}
+    }
+
     private val handler = QueueRegistrationHandler(
         clock,
         membershipPersistenceClient,
         cordaAvroSerializationFactory,
-        p2pRecordsFactory
+        signatureVerificationService,
+        keyEncodingService,
+        p2pRecordsFactory,
+        verifier,
     )
 
     @Test
@@ -179,6 +223,20 @@ class QueueRegistrationHandlerTest {
     @Test
     fun `discard if max retries exceeded`() {
         val inputCommand = RegistrationCommand(QueueRegistration(mgm, member, registrationRequest, 10))
+        with(handler.invoke(null, Record(TOPIC, KEY, inputCommand))) {
+            assertThat(updatedState).isNull()
+            assertThat(outputStates).isEmpty()
+        }
+    }
+
+    @Test
+    fun `discard if signature verification failed`() {
+        whenever(verifier.verify(
+            listOf(sessionKey1, sessionKey2),
+            memberContext.signature,
+            memberContext.signatureSpec,
+            memberContext.data.array(),
+        )).doThrow(CryptoSignatureException("Invalid signature."))
         with(handler.invoke(null, Record(TOPIC, KEY, inputCommand))) {
             assertThat(updatedState).isNull()
             assertThat(outputStates).isEmpty()
