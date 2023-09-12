@@ -15,4 +15,15 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
 }
 
+// include coroutines bundle in this jar as it doesn't have OSGi metadata
+tasks.named('jar', Jar) {
+    bundle {
+        bnd '''\
+-conditionalpackage: kotlinx.coroutines*
+Export-Package: kotlinx.coroutines*
+Import-Package: !android*, *
+'''
+    }
+}
+
 description 'Message Bus API'
