@@ -12,10 +12,12 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.cpk.read.CpkReadService
 import net.corda.cpk.write.CpkWriteService
+import net.corda.data.scheduler.ScheduledTaskTrigger
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.libs.scheduler.datamodel.SchedulerEntities
@@ -45,12 +47,15 @@ import net.corda.membership.persistence.service.MembershipPersistenceService
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.permissions.model.RbacEntities
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
+import net.corda.processors.db.internal.schedule.DeduplicationTableCleanUpProcessor
 import net.corda.reconciliation.ReconcilerFactory
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
@@ -230,7 +235,7 @@ class DBProcessorImpl @Activate constructor(
         when (event) {
             is StartEvent -> onStartEvent()
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
-            is ConfigChangedEvent -> onConfigChangedEvent(event)
+            is ConfigChangedEvent -> onConfigChangedEvent(event, coordinator)
             is BootConfigEvent -> onBootConfigEvent(event)
             is StopEvent -> onStopEvent()
             else -> log.error("Unexpected event $event!")
@@ -262,8 +267,10 @@ class DBProcessorImpl @Activate constructor(
         if (event.status == LifecycleStatus.UP) {
             coordinator.createManagedResource(CONFIG) {
                 configurationReadService.registerComponentForUpdates(
-                    coordinator, setOf(
-                        ConfigKeys.RECONCILIATION_CONFIG
+                    coordinator,
+                    setOf(
+                        ConfigKeys.RECONCILIATION_CONFIG,
+                        ConfigKeys.MESSAGING_CONFIG
                     )
                 )
             }
@@ -271,11 +278,26 @@ class DBProcessorImpl @Activate constructor(
         coordinator.updateStatus(event.status)
     }
 
+    private var deduplicationTableCleanUpSubscription: Subscription<String, ScheduledTaskTrigger>? = null
+
+    @Suppress("warnings")
     private fun onConfigChangedEvent(
         event: ConfigChangedEvent,
+        coordinator: LifecycleCoordinator
     ) {
         // Creates and starts the rest of the reconcilers
         reconcilers.onConfigChanged(event)
+
+        deduplicationTableCleanUpSubscription?.close()
+        val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+        deduplicationTableCleanUpSubscription = subscriptionFactory.createDurableSubscription(
+            SubscriptionConfig("asd", "virtual.node.deduplication.table.clean.up"),
+            DeduplicationTableCleanUpProcessor(),
+            messagingConfig,
+            null
+        ).also {
+            it.start()
+        }
     }
 
     private fun onStartEvent() {
