@@ -140,7 +140,7 @@ class StateManagerIntegrationTest {
         assertThat(stateManager.create(states)).isEmpty()
         softlyAssertPersistedStateEntities(
             (1..stateCount),
-            { _, _ -> -1 },
+            { _, _ -> 0 },
             { i, _ -> "simpleState_$i" },
             { _, _ -> metadata() }
         )
@@ -163,7 +163,7 @@ class StateManagerIntegrationTest {
         assertThat(stateManager.create(states)).isEmpty()
         softlyAssertPersistedStateEntities(
             (1..stateCount),
-            { _, _ -> -1 },
+            { _, _ -> 0 },
             { i, _ -> "customState_$i" },
             { i, _ -> metadata("key1" to "value$i", "key2" to i) }
         )
@@ -191,7 +191,7 @@ class StateManagerIntegrationTest {
         }
         softlyAssertPersistedStateEntities(
             (failedSates + 1..totalStates),
-            { _, _ -> -1 },
+            { _, _ -> 0 },
             { i, _ -> "newState_$i" },
             { _, _ -> metadata() }
         )
