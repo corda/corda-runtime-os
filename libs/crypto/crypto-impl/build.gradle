@@ -15,6 +15,7 @@ dependencies {
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(':libs:layered-property-map')
+    implementation project(':libs:membership:membership-common')
     implementation project(":libs:metrics")
     implementation project(":libs:utilities")
 

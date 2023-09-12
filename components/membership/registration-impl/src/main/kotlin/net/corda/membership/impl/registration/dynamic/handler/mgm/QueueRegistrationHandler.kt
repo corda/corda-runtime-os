@@ -13,6 +13,7 @@ import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
+import net.corda.membership.lib.MemberInfoExtension.Companion.KEYS_PEM_SUFFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
 import net.corda.membership.lib.VersionedMessageBuilder
@@ -160,7 +161,7 @@ internal class QueueRegistrationHandler(
 
     private fun KeyValuePairList.getSessionKeys() =
         this.items.filter { keyValuePair ->
-            keyValuePair.key.startsWith(SESSION_KEYS) && keyValuePair.key.endsWith(".pem")
+            keyValuePair.key.startsWith(SESSION_KEYS) && keyValuePair.key.endsWith(KEYS_PEM_SUFFIX)
         }.map {  filtered ->
             keyEncodingService.decodePublicKey(filtered.value)
         }
