@@ -15,8 +15,8 @@ data class CordaMessage<T: Any>(
      *
      * @param property A key value [Pair] to insert into our additional properties map.
      */
-    fun addProperty(property: Pair<String, Any>) {
-        props[property.first] = property.second
+    fun addProperty(key: String, value: Any) {
+        props[key] = value
     }
 
     /**

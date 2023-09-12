@@ -20,7 +20,7 @@ class CordaMessageTest {
     @Test
     fun `Test add property (string)`() {
         val message: CordaMessage<Any> = CordaMessage(payload)
-        message.addProperty(Pair(topicKey, topicValue))
+        message.addProperty(topicKey, topicValue)
 
         assertEquals(message.props, mutableMapOf(topicKey to topicValue))
     }
@@ -28,7 +28,7 @@ class CordaMessageTest {
     @Test
     fun `Test add property (long)`() {
         val message: CordaMessage<Any> = CordaMessage(payload)
-        message.addProperty(Pair(partitionKey, partitionValue))
+        message.addProperty(partitionKey, partitionValue)
 
         assertEquals(message.props, mutableMapOf(partitionKey to partitionValue))
     }
