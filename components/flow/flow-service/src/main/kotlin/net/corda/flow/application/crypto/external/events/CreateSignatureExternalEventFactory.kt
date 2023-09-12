@@ -43,4 +43,8 @@ class CreateSignatureExternalEventFactory @Activate constructor(
     }
 }
 
-data class SignParameters(val bytes: ByteArray, val encodedPublicKeyBytes: ByteArray, val signatureSpec: SignatureSpec, val context: Map<String, String>)
+data class SignParameters(val bytes: ByteArray,
+                          val encodedPublicKeyBytes: ByteArray,
+                          val signatureSpec: SignatureSpec,
+                          val context: Map<String, String>
+)
