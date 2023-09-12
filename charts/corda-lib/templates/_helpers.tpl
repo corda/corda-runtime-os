@@ -74,7 +74,7 @@ Container security context
 {{- if not .Values.dumpHostPath }}
 {{- with .Values.containerSecurityContext }}
 securityContext:
-  {{ . | toYaml }}
+  {{ . | toYaml | nindent 2}}
 {{- end }}
 {{- end }}
 {{- end }}
