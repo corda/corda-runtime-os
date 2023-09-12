@@ -8,6 +8,7 @@ import javax.persistence.Embeddable
 import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.IdClass
+import javax.persistence.Index
 import javax.persistence.JoinColumn
 import javax.persistence.ManyToOne
 import javax.persistence.NamedQuery
@@ -19,7 +20,7 @@ import javax.persistence.Table
     query = "from UtxoVisibleTransactionStateEntity where transaction.id = :transactionId"
 )
 @Entity
-@Table(name = "utxo_visible_transaction_state")
+@Table(name = "utxo_visible_transaction_state", indexes = [Index(name = "consumed_index", columnList = "consumed")])
 @IdClass(UtxoVisibleTransactionStateEntityId::class)
 data class UtxoVisibleTransactionStateEntity(
     @get:Id
