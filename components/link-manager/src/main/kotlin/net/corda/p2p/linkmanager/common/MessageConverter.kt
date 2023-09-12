@@ -15,7 +15,6 @@ import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
-import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
@@ -177,13 +176,13 @@ class MessageConverter {
             message: InboundUnauthenticatedMessage,
             source: HoldingIdentity,
             destMemberInfo: MemberInfo,
-            groupPolicy: GroupPolicy,
+            networkType: NetworkType,
         ): LinkOutMessage {
             return createLinkOutMessage(
                 message,
                 source,
                 destMemberInfo,
-                groupPolicy.networkType,
+                networkType,
                 )
         }
 
@@ -232,8 +231,8 @@ class MessageConverter {
                         "which is not in the network map. The message was discarded.")
                 return null
             }
-            val groupPolicy = groupPolicyProvider.getGroupPolicy(source)
-            if (groupPolicy == null) {
+            val p2pParams = groupPolicyProvider.getP2PParameters(source)
+            if (p2pParams == null) {
                 logger.warn(
                     "Could not find the group info in the " +
                         "GroupPolicyProvider for our identity = $source. The message was discarded."
@@ -245,7 +244,7 @@ class MessageConverter {
                 result,
                 source,
                 destMemberInfo,
-                groupPolicy.networkType,
+                p2pParams.networkType,
             )
         }
 

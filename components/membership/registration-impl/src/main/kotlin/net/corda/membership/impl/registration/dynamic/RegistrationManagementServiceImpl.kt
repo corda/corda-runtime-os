@@ -3,6 +3,8 @@ package net.corda.membership.impl.registration.dynamic
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.state.RegistrationState
 import net.corda.libs.configuration.helper.getConfig
@@ -57,6 +59,10 @@ class RegistrationManagementServiceImpl @Activate constructor(
     private val membershipQueryClient: MembershipQueryClient,
     @Reference(service = GroupParametersWriterService::class)
     private val groupParametersWriterService: GroupParametersWriterService,
+    @Reference(service = SignatureVerificationService::class)
+    private val signatureVerificationService: SignatureVerificationService,
+    @Reference(service = KeyEncodingService::class)
+    private val keyEncodingService: KeyEncodingService,
 ) : RegistrationManagementService {
 
     companion object {
@@ -163,6 +169,8 @@ class RegistrationManagementServiceImpl @Activate constructor(
                         membershipQueryClient,
                         membershipConfig,
                         groupParametersWriterService,
+                        signatureVerificationService,
+                        keyEncodingService,
                     ),
                     messagingConfig
                 ).also {

@@ -150,18 +150,19 @@ allprojects {
         mavenLocal()
 
         maven {
+            url = "${publicArtifactURL}/corda-dependencies-dev"
             url = "$artifactoryContextUrl/corda-dependencies-dev"
             content {
                 // For Quasar SNAPSHOT.
                 includeGroup 'co.paralleluniverse'
             }
-            authentication {
-                basic(BasicAuthentication)
-            }
-            credentials {
-                username = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
-                password = findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
-            }
+//            authentication {
+//                basic(BasicAuthentication)
+//            }
+//            credentials {
+//                username = findProperty('cordaArtifactoryUsername') ?: System.getenv('CORDA_ARTIFACTORY_USERNAME')
+//                password = findProperty('cordaArtifactoryPassword') ?: System.getenv('CORDA_ARTIFACTORY_PASSWORD')
+//            }
         }
         //needed for C5 binaries
         maven {

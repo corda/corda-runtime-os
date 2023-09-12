@@ -73,4 +73,9 @@ fun Config.getStringOrDefault(path: String, default: String): String {
     return default
 }
 
+fun Config.getLongOrDefault(path: String, default: Long): Long {
+    if(this.hasPath(path)) return this.getLong(path)
+    return default
+}
+
 

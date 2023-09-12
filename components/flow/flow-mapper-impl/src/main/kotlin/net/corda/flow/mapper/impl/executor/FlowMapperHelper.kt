@@ -8,7 +8,7 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.flow.utils.isInitiatedParty
+import net.corda.flow.utils.isInitiatedIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig.SESSION_P2P_TTL
@@ -45,7 +45,7 @@ fun getSessionEventOutputTopic(messageDirection: MessageDirection, isInterop: Bo
  * @return Source and destination identities for a SessionEvent message.
  */
 fun getSourceAndDestinationIdentity(sessionEvent: SessionEvent): Pair<HoldingIdentity, HoldingIdentity> {
-    return if (isInitiatedParty(sessionEvent)) {
+    return if (isInitiatedIdentity(sessionEvent.sessionId)) {
         Pair(sessionEvent.initiatedIdentity, sessionEvent.initiatingIdentity)
     } else {
         Pair(sessionEvent.initiatingIdentity, sessionEvent.initiatedIdentity)
@@ -58,7 +58,7 @@ fun getSourceAndDestinationIdentity(sessionEvent: SessionEvent): Pair<HoldingIde
  * @return destination identity for a SessionEvent message.
  */
 fun getDestinationIdentity(sessionEvent: SessionEvent): HoldingIdentity {
-    return if (isInitiatedParty(sessionEvent)) {
+    return if (isInitiatedIdentity(sessionEvent.sessionId)) {
         sessionEvent.initiatedIdentity
     } else {
         sessionEvent.initiatingIdentity
