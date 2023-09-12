@@ -160,10 +160,10 @@ internal class QueueRegistrationHandler(
     }
 
     private fun KeyValuePairList.getSessionKeys() =
-        this.items.filter { keyValuePair ->
-            keyValuePair.key.startsWith(SESSION_KEYS) && keyValuePair.key.endsWith(KEYS_PEM_SUFFIX)
-        }.map {  filtered ->
-            keyEncodingService.decodePublicKey(filtered.value)
+        this.items.filter { items ->
+            items.key.startsWith(SESSION_KEYS) && items.key.endsWith(KEYS_PEM_SUFFIX)
+        }.map {  sessionKeys ->
+            keyEncodingService.decodePublicKey(sessionKeys.value)
         }
 
     private fun increaseNumberOfRetries(key: String, command: QueueRegistration) = listOf(
