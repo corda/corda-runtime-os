@@ -9,7 +9,6 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import net.corda.orm.utils.transaction
-import net.corda.v5.base.annotations.VisibleForTesting
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import javax.persistence.EntityManager
@@ -36,8 +35,7 @@ class StateManagerImpl(
     private fun String.toMetadataMap() =
         objectMapper.readValue(this, object : TypeReference<Metadata>() {})
 
-    @VisibleForTesting
-    fun checkVersionAndPrepareEntitiesForPersistence(
+    internal fun checkVersionAndPrepareEntitiesForPersistence(
         states: Collection<State>,
         entityManager: EntityManager
     ): Pair<List<StateEntity>, Map<String, State>> {
