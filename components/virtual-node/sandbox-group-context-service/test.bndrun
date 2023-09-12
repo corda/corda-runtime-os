@@ -5,7 +5,11 @@
 -runtrace: true
 
 -runsystemcapabilities: \
-    osgi.service;objectClass:List<String>='org.osgi.service.condpermadmin.ConditionalPermissionAdmin';effective:=active
+    osgi.service;objectClass:List<String>='net.corda.configuration.read.ConfigurationReadService';effective=active,\
+    osgi.service;objectClass:List<String>='net.corda.lifecycle.LifecycleCoordinatorFactory';effective:=active,\
+    osgi.service;objectClass:List<String>='net.corda.messaging.api.subscription.factory.SubscriptionFactory';effective:=active,\
+    osgi.service;objectClass:List<String>='org.osgi.service.condpermadmin.ConditionalPermissionAdmin';effective:=active,\
+    osgi.service;objectClass:List<String>='net.corda.avro.serialization.CordaAvroSerializationFactory';effective:=active
 
 -runvm: \
     -Djdk.io.permissionsUseCanonicalPath=true, \
@@ -21,11 +25,16 @@
 # -runjdb: 1044
 
 -runproperties: \
+    org.osgi.framework.security=osgi,\
     org.slf4j.simpleLogger.defaultLogLevel=info,\
     org.slf4j.simpleLogger.showShortLogName=true,\
     org.slf4j.simpleLogger.showThreadName=false,\
     org.slf4j.simpleLogger.showDateTime=true,\
     org.slf4j.simpleLogger.dateTimeFormat='yyyy-MM-dd HH:mm:ss:SSS Z'
+
+-runblacklist: \
+    bnd.identity;id='net.corda.configuration-read-service-impl',\
+    bnd.identity;id='net.corda.lifecycle-impl'
 
 -runrequires: \
     bnd.identity;id='sandbox-group-context-service-tests',\
@@ -42,6 +51,3 @@
 -runstartlevel: \
     order=sortbynameversion,\
     begin=-1
-
--runproperties: \
-    org.osgi.framework.security=osgi

@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.handlers.waiting.sessions
 
-import java.nio.ByteBuffer
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
@@ -20,6 +19,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 
 @Suppress("MaxLineLength")
 class SessionDataWaitingForHandlerTest {
@@ -60,12 +60,12 @@ class SessionDataWaitingForHandlerTest {
                 listOf(
                     sessionState to SessionEvent().apply {
                         sessionId = SESSION_ID
-                        payload = SessionData(ByteBuffer.wrap(DATA))
+                        payload = SessionData(ByteBuffer.wrap(DATA), null)
                         sequenceNum = 1
                     },
                     sessionStateTwo to SessionEvent().apply {
                         sessionId = SESSION_ID_2
-                        payload = SessionData(ByteBuffer.wrap(MORE_DATA))
+                        payload = SessionData(ByteBuffer.wrap(MORE_DATA), null)
                         sequenceNum = 1
                     }
                 )
@@ -113,7 +113,7 @@ class SessionDataWaitingForHandlerTest {
                 listOf(
                     sessionState to SessionEvent().apply {
                         sessionId = SESSION_ID
-                        payload = SessionData(ByteBuffer.wrap(DATA))
+                        payload = SessionData(ByteBuffer.wrap(DATA), null)
                         sequenceNum = 1
                     },
                 )
@@ -163,43 +163,10 @@ class SessionDataWaitingForHandlerTest {
                 listOf(
                     sessionState to SessionEvent().apply {
                         sessionId = SESSION_ID
-                        payload = SessionData(ByteBuffer.wrap(DATA))
+                        payload = SessionData(ByteBuffer.wrap(DATA), null)
                         sequenceNum = 1
                     }
                 ))
-
-        val inputContext = buildFlowEventContext(
-            checkpoint = checkpoint,
-            inputEventPayload = Unit
-        )
-
-        val continuation = sessionDataWaitingForHandler.runOrContinue(
-            inputContext,
-            net.corda.data.flow.state.waiting.SessionData(sessions)
-        )
-
-        assertEquals(FlowContinuation.Continue, continuation)
-    }
-
-    @Test
-    fun `Sessions not confirmed yet returns a FlowContinuation#Continue`() {
-        whenever(flowSessionManager.getSessionsWithStatus(checkpoint, sessions, SessionStateType.CREATED)).thenReturn(listOf(sessionState))
-
-        whenever(flowSessionManager.getReceivedEvents(checkpoint, sessions))
-            .thenReturn(
-                listOf(
-                    sessionState to SessionEvent().apply {
-                        sessionId = SESSION_ID
-                        payload = SessionData(ByteBuffer.wrap(DATA))
-                        sequenceNum = 1
-                    },
-                    sessionStateTwo to SessionEvent().apply {
-                        sessionId = SESSION_ID_2
-                        payload = SessionData(ByteBuffer.wrap(MORE_DATA))
-                        sequenceNum = 1
-                    }
-                )
-            )
 
         val inputContext = buildFlowEventContext(
             checkpoint = checkpoint,
@@ -221,7 +188,7 @@ class SessionDataWaitingForHandlerTest {
                 listOf(
                     sessionState to SessionEvent().apply {
                         sessionId = SESSION_ID
-                        payload = SessionData(ByteBuffer.wrap(DATA))
+                        payload = SessionData(ByteBuffer.wrap(DATA), null)
                         sequenceNum = 1
                     },
                 )
@@ -252,12 +219,12 @@ class SessionDataWaitingForHandlerTest {
         val receivedEvents = listOf(
             sessionState to SessionEvent().apply {
                 sessionId = SESSION_ID
-                payload = SessionData(ByteBuffer.wrap(DATA))
+                payload = SessionData(ByteBuffer.wrap(DATA), null)
                 sequenceNum = 1
             },
             sessionStateTwo to SessionEvent().apply {
                 sessionId = SESSION_ID_2
-                payload = SessionData(ByteBuffer.wrap(MORE_DATA))
+                payload = SessionData(ByteBuffer.wrap(MORE_DATA), null)
                 sequenceNum = 1
             }
         )
@@ -284,7 +251,7 @@ class SessionDataWaitingForHandlerTest {
         val receivedEvents = listOf(
             sessionState to SessionEvent().apply {
                 sessionId = SESSION_ID
-                payload = SessionData(ByteBuffer.wrap(DATA))
+                payload = SessionData(ByteBuffer.wrap(DATA), null)
                 sequenceNum = 1
             }
         )
@@ -334,7 +301,7 @@ class SessionDataWaitingForHandlerTest {
                 listOf(
                     sessionState to SessionEvent().apply {
                         sessionId = SESSION_ID
-                        payload = SessionData(ByteBuffer.wrap(DATA))
+                        payload = SessionData(ByteBuffer.wrap(DATA), null)
                         sequenceNum = 1
                     },
                     sessionStateTwo to SessionEvent().apply {

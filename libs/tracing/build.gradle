@@ -4,14 +4,9 @@ plugins {
 }
 description 'Tracing'
 
-ext {
-    releasable = true
-}
-
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
-    compileOnly 'org.osgi:osgi.core'
-    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "biz.aQute.bnd:biz.aQute.bnd.annotation:$bndlibVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     api 'net.corda:corda-base'
@@ -20,25 +15,6 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
-    implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:messaging:messaging")
-    implementation project(":libs:messaging:message-bus")
-
-    implementation("io.zipkin.reporter2:zipkin-sender-urlconnection:$zipkinVersion")
-    implementation("io.zipkin.brave:brave-context-slf4j:$braveVersion")
-    implementation("io.zipkin.brave:brave-instrumentation-servlet:$braveVersion")
-
-    implementation "io.javalin:javalin-osgi:$javalinVersion"
-    constraints {
-        implementation("org.eclipse.jetty:jetty-server:$jettyVersion") {
-            because 'Javalin uses an older version of Jetty which is exposed to CVE-2023-26048 and CVE-2023-26049. ' +
-                    'This might be resolved in the future versions of Javalin.'
-        }
-    }
-
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-
-    testRuntimeOnly 'org.osgi:osgi.core'
+    api project(':libs:messaging:messaging')
+    api project(':libs:messaging:message-bus')
 }

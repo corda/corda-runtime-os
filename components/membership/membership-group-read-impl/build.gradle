@@ -17,6 +17,7 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:membership:membership-impl")
     implementation project(":libs:messaging:messaging")
+    implementation project(":libs:serialization:serialization-avro")
     implementation project(":libs:virtual-node:virtual-node-info")
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
@@ -27,6 +28,8 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "org.slf4j:slf4j-api"
+
+    runtimeOnly project(":libs:web:web-impl")
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")
 

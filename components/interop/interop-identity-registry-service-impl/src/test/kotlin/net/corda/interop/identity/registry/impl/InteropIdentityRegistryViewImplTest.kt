@@ -2,6 +2,7 @@ package net.corda.interop.identity.registry.impl
 
 import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
+import net.corda.interop.identity.registry.InteropIdentityRegistryStateError
 import net.corda.v5.application.interop.facade.FacadeId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -107,21 +108,18 @@ class InteropIdentityRegistryViewImplTest {
 
         testView.putInteropIdentity(testInteropIdentity)
 
-        var byShortHash = testView.getIdentitiesByShortHash()
+        var byShortHash = testView.getIdentityWithShortHash(testInteropIdentity.shortHash)
 
-        assertThat(byShortHash).hasSize(1)
+        val identity = checkNotNull(byShortHash)
 
-        val singleEntry = byShortHash.entries.single()
-        val identity = singleEntry.value
-
-        assertThat(singleEntry.key).isEqualTo(testInteropIdentity.shortHash)
+        assertThat(identity.shortHash).isEqualTo(testInteropIdentity.shortHash)
         assertThat(identity).isEqualTo(testInteropIdentity)
 
         testView.removeInteropIdentity(testInteropIdentity)
 
-        byShortHash = testView.getIdentitiesByShortHash()
+        byShortHash = testView.getIdentityWithShortHash(testInteropIdentity.shortHash)
 
-        assertThat(byShortHash).hasSize(0)
+        assertThat(byShortHash).isNull()
     }
 
     @Test
@@ -149,15 +147,15 @@ class InteropIdentityRegistryViewImplTest {
         testView.putInteropIdentity(ownedIdentity)
         testView.putInteropIdentity(notOwnedIdentity)
 
-        var ownedIdentities = testView.getOwnedIdentities()
+        var ownedIdentities = testView.getOwnedIdentities(INTEROP_GROUP_ID)
 
         assertThat(ownedIdentities).hasSize(1)
-        assertThat(ownedIdentities.values).contains(ownedIdentity)
-        assertThat(ownedIdentities.values).doesNotContain(notOwnedIdentity)
+        assertThat(ownedIdentities).contains(ownedIdentity)
+        assertThat(ownedIdentities).doesNotContain(notOwnedIdentity)
 
         testView.removeInteropIdentity(ownedIdentity)
 
-        ownedIdentities = testView.getOwnedIdentities()
+        ownedIdentities = testView.getOwnedIdentities(INTEROP_GROUP_ID)
 
         assertThat(ownedIdentities).hasSize(0)
     }
@@ -189,23 +187,25 @@ class InteropIdentityRegistryViewImplTest {
         testView.putInteropIdentity(testInteropIdentity)
         testView.putInteropIdentity(testInteropIdentity2)
 
-        val facadeToIds = testView.getIdentitiesByFacadeId()
+        val facade1Identities = testView.getIdentitiesByFacadeId(facadeId1)
 
-        val facadeMap1 = checkNotNull(facadeToIds[facadeId1.toString()]) {
+        check(facade1Identities.isNotEmpty()) {
             "No Facade data found for given FacadeId"
         }
 
-        assertThat(facadeMap1).hasSize(2)
-        assertThat(facadeMap1).contains(testInteropIdentity)
-        assertThat(facadeMap1).contains(testInteropIdentity2)
+        assertThat(facade1Identities).hasSize(2)
+        assertThat(facade1Identities).contains(testInteropIdentity)
+        assertThat(facade1Identities).contains(testInteropIdentity2)
 
-        val facadeMap2 = checkNotNull(facadeToIds[facadeId2.toString()]) {
+        val facade2Identities = testView.getIdentitiesByFacadeId(facadeId2)
+
+        check(facade2Identities.isNotEmpty()) {
             "No Facade data found for given FacadeId"
         }
 
-        assertThat(facadeMap2).hasSize(1)
-        assertThat(facadeMap2).doesNotContain(testInteropIdentity)
-        assertThat(facadeMap2).contains(testInteropIdentity2)
+        assertThat(facade2Identities).hasSize(1)
+        assertThat(facade2Identities).doesNotContain(testInteropIdentity)
+        assertThat(facade2Identities).contains(testInteropIdentity2)
     }
 
     @Test
@@ -222,12 +222,57 @@ class InteropIdentityRegistryViewImplTest {
 
         testView.putInteropIdentity(testInteropIdentity)
 
-        val identity = testView.getIdentitiesByApplicationName()["Gold"]
+        val identity = testView.getIdentitiesByApplicationName("Gold").single()
+
         assertThat(identity).isEqualTo(testInteropIdentity)
     }
 
     @Test
-    fun `multiple owned identities causes an error`() {
+    fun `duplicate application names causes error on read`() {
+        val applicationName = "Gold"
+
+        val testInteropIdentity1 = InteropIdentity(
+            x500Name = "C=GB, L=London, O=Alice",
+            groupId = INTEROP_GROUP_ID,
+            owningVirtualNodeShortHash = ShortHash.parse("101010101010"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
+            applicationName = applicationName,
+            endpointUrl = "1",
+            endpointProtocol = "https://alice.corda5.r3.com:10000"
+        )
+
+        val testInteropIdentity2 = InteropIdentity(
+            x500Name = "C=GB, L=London, O=Bob",
+            groupId = INTEROP_GROUP_ID,
+            owningVirtualNodeShortHash = ShortHash.parse("101010101010"),
+            facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
+            applicationName = applicationName,
+            endpointUrl = "1",
+            endpointProtocol = "https://alice.corda5.r3.com:10000"
+        )
+
+        testView.putInteropIdentity(testInteropIdentity1)
+        testView.putInteropIdentity(testInteropIdentity2)
+
+        val identities = testView.getIdentitiesByApplicationName(applicationName)
+
+        assertThat(identities).hasSize(2)
+        assertThat(identities).containsAll(listOf(testInteropIdentity1, testInteropIdentity2))
+
+        assertThrows<InteropIdentityRegistryStateError> {
+            testView.getIdentityWithApplicationName(applicationName)
+        }
+
+        testView.removeInteropIdentity(testInteropIdentity2)
+
+        val identity = testView.getIdentityWithApplicationName(applicationName)
+
+        assertThat(identity).isNotNull
+        assertThat(identity).isEqualTo(testInteropIdentity1)
+    }
+
+    @Test
+    fun `multiple owned identities causes an error on read`() {
         val ownedIdentity1 = InteropIdentity(
             x500Name = "C=GB, L=London, O=Alice1",
             groupId = INTEROP_GROUP_ID,
@@ -249,9 +294,22 @@ class InteropIdentityRegistryViewImplTest {
         )
 
         testView.putInteropIdentity(ownedIdentity1)
+        testView.putInteropIdentity(ownedIdentity2)
 
-        assertThrows<IllegalArgumentException> {
-            testView.putInteropIdentity(ownedIdentity2)
+        val identities = testView.getOwnedIdentities(INTEROP_GROUP_ID)
+
+        assertThat(identities).hasSize(2)
+        assertThat(identities).containsAll(listOf(ownedIdentity1, ownedIdentity2))
+
+        assertThrows<InteropIdentityRegistryStateError> {
+            testView.getOwnedIdentity(INTEROP_GROUP_ID)
         }
+
+        testView.removeInteropIdentity(ownedIdentity2)
+
+        val identity = testView.getOwnedIdentity(INTEROP_GROUP_ID)
+
+        assertThat(identity).isNotNull
+        assertThat(identity).isEqualTo(ownedIdentity1)
     }
 }

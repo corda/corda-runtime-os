@@ -25,10 +25,11 @@ class NetworkPluginWrapper : Plugin() {
     @CommandLine.Command(
         name = "network",
         subcommands = [
-            MemberList::class,
             GenerateGroupPolicy::class,
             Dynamic::class,
-            GetRegistrations::class
+            GetRegistrations::class,
+            Lookup::class,
+            Operate:: class
         ],
         hidden = true,
         mixinStandardHelpOptions = true,

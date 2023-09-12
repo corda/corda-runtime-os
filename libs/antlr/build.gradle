@@ -1,0 +1,82 @@
+import aQute.bnd.version.MavenVersion
+
+plugins {
+    id 'java-library'
+    id 'biz.aQute.bnd.builder'
+    id 'com.jfrog.artifactory'
+    id 'maven-publish'
+}
+
+description 'Antlr'
+
+dependencies {
+    compileOnly "antlr:antlr:$antlrVersion"
+}
+
+tasks.named('jar', Jar) {
+    archiveBaseName = 'corda-antlr'
+
+    ext {
+        bundleVersion = MavenVersion.parseMavenString(antlrVersion).OSGiVersion
+    }
+
+    bundle {
+        bnd """\
+Bundle-Name: Antlr
+Bundle-SymbolicName: \${project.group}.antlr
+Bundle-Version: \${task.bundleVersion}
+Export-Package: antlr.*
+Import-Package: \
+    javax.swing.*;resolution:=optional,\
+    *
+-includeresource: @antlr-${antlrVersion}.jar
+"""
+    }
+}
+
+publishing {
+    publications {
+        antlr(MavenPublication) {
+            pluginManager.withPlugin('java') {
+                from components.java
+            }
+
+            pom {
+                description = 'A framework for constructing recognizers, compilers, and translators from grammatical descriptions containing Java, C#, C++, or Python actions.'
+                name = 'AntLR Parser Generator'
+                url = 'http://www.antlr.org/'
+
+                scm {
+                    url = 'git@github.com:antlr/antlr4.git'
+                }
+
+                licenses {
+                    license {
+                        name = 'BSD License'
+                        url = 'http://www.antlr.org/license.html'
+                        distribution = 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        name = 'Terence Parr'
+                        email = 'parrt@cs.usfca.edu'
+                    }
+                    developer {
+                        name = 'Sam Harwell'
+                    }
+                    developer {
+                        id = 'R3'
+                        name = 'R3'
+                        email = 'dev@corda.net'
+                    }
+                }
+            }
+        }
+    }
+}
+
+artifactoryPublish {
+    publications('antlr')
+}

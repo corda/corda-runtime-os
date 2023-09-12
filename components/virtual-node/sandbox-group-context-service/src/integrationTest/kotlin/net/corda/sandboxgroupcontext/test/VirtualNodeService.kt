@@ -10,6 +10,7 @@ import net.corda.sandboxgroupcontext.service.registerCustomCryptography
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
+import net.corda.testing.sandboxes.testkit.RequireSandboxTestkit
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.ledger.utxo.ContractState
@@ -24,8 +25,9 @@ import org.osgi.service.component.annotations.Reference
 import java.time.Duration.ofSeconds
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
-import java.util.function.BiConsumer
+import java.util.function.BiFunction
 
+@RequireSandboxTestkit
 @Component(service = [ VirtualNodeService::class ])
 class VirtualNodeService @Activate constructor(
     @Reference
@@ -56,7 +58,11 @@ class VirtualNodeService @Activate constructor(
         sandboxGroupContextComponent.close()
     }
 
-    private fun getOrCreateSandbox(virtualNodeInfo: VirtualNodeInfo, type: SandboxGroupType): SandboxGroupContext {
+    private fun getOrCreateSandbox(
+        virtualNodeInfo: VirtualNodeInfo,
+        type: SandboxGroupType,
+        serviceFilter: String?
+    ): SandboxGroupContext {
         val cpi = cpiLoader.getCpiMetadata(virtualNodeInfo.cpiIdentifier).get()
             ?: fail("CPI ${virtualNodeInfo.cpiIdentifier} not found")
         val cpks = when (type) {
@@ -67,7 +73,7 @@ class VirtualNodeService @Activate constructor(
             virtualNodeInfo.holdingIdentity,
             cpks.mapTo(LinkedHashSet(), CpkMetadata::fileChecksum),
             type,
-            null
+            serviceFilter
         )
         return sandboxGroupContextComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
             val closeables = listOf(
@@ -81,9 +87,9 @@ class VirtualNodeService @Activate constructor(
         }
     }
 
-    fun loadSandbox(resourceName: String, type: SandboxGroupType): SandboxGroupContext {
+    fun loadSandbox(resourceName: String, type: SandboxGroupType, serviceFilter: String? = null): SandboxGroupContext {
         val vnodeInfo = virtualNodeLoader.loadVirtualNode(resourceName, generateHoldingIdentity())
-        return getOrCreateSandbox(vnodeInfo, type).also { ctx ->
+        return getOrCreateSandbox(vnodeInfo, type, serviceFilter).also { ctx ->
             vnodes[ctx] = vnodeInfo
         }
     }
@@ -109,13 +115,26 @@ class VirtualNodeService @Activate constructor(
         } while (!sandboxGroupContextComponent.waitFor(completion, ONE_SECOND))
     }
 
-    fun withSandbox(resourceName: String, type: SandboxGroupType, action: BiConsumer<VirtualNodeService, SandboxGroupContext>) {
-        val sandboxGroupContext = loadSandbox(resourceName, type)
-        try {
-            action.accept(this, sandboxGroupContext)
+    fun <T> withSandbox(
+        resourceName: String,
+        type: SandboxGroupType,
+        serviceFilter: String?,
+        action: BiFunction<VirtualNodeService, SandboxGroupContext, T>
+    ): T {
+        val sandboxGroupContext = loadSandbox(resourceName, type, serviceFilter)
+        return try {
+            action.apply(this, sandboxGroupContext)
         } finally {
             releaseSandbox(sandboxGroupContext)
         }
+    }
+
+    fun <T> withSandbox(
+        resourceName: String,
+        type: SandboxGroupType,
+        action: BiFunction<VirtualNodeService, SandboxGroupContext, T>
+    ): T {
+        return withSandbox(resourceName, type, null, action)
     }
 
     fun getFlowClass(className: String, groupContext: SandboxGroupContext): Class<out Flow> {

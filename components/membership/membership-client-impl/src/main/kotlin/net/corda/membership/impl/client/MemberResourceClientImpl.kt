@@ -1,5 +1,6 @@
 package net.corda.membership.impl.client
 
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.ShortHash
@@ -23,7 +24,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.membership.client.CouldNotFindMemberException
+import net.corda.membership.client.CouldNotFindEntityException
+import net.corda.membership.client.Entity
 import net.corda.membership.client.MemberResourceClient
 import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.client.ServiceNotReadyException
@@ -33,6 +35,7 @@ import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.client.dto.SubmittedRegistrationStatus
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.deserializeContext
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toWire
@@ -94,6 +97,14 @@ class MemberResourceClientImpl @Activate constructor(
 
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize key value pair list.") }
+
+    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> =
+        cordaAvroSerializationFactory.createAvroDeserializer(
+            {
+                logger.error("Failed to deserialize key value pair list.")
+            },
+            KeyValuePairList::class.java
+        )
 
     private interface InnerMemberOpsClient {
         fun startRegistration(
@@ -237,7 +248,7 @@ class MemberResourceClientImpl @Activate constructor(
             val holdingIdentity =
                 virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
                     ?.holdingIdentity
-                    ?: throw CouldNotFindMemberException(holdingIdentityShortHash)
+                    ?: throw CouldNotFindEntityException(Entity.VIRTUAL_NODE, holdingIdentityShortHash)
             try {
                 asyncPublisher.publish(
                     listOf(
@@ -347,7 +358,7 @@ class MemberResourceClientImpl @Activate constructor(
 
         override fun checkRegistrationProgress(holdingIdentityShortHash: ShortHash): List<RegistrationRequestStatusDto> {
             val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
-                ?: throw CouldNotFindMemberException(holdingIdentityShortHash)
+                ?: throw CouldNotFindEntityException(Entity.VIRTUAL_NODE, holdingIdentityShortHash)
             return try {
                 membershipQueryClient.queryRegistrationRequests(
                     holdingIdentity.holdingIdentity
@@ -364,7 +375,7 @@ class MemberResourceClientImpl @Activate constructor(
             registrationRequestId: String,
         ): RegistrationRequestStatusDto {
             val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
-                ?: throw CouldNotFindMemberException(holdingIdentityShortHash)
+                ?: throw CouldNotFindEntityException(Entity.VIRTUAL_NODE, holdingIdentityShortHash)
             return try {
                 val status =
                     membershipQueryClient.queryRegistrationRequest(
@@ -389,8 +400,7 @@ class MemberResourceClientImpl @Activate constructor(
                 MemberInfoSubmittedDto(
                     mapOf(
                         "registrationProtocolVersion" to this.registrationProtocolVersion.toString(),
-                        *this.memberProvidedContext.items.map { it.key to it.value }.toTypedArray(),
-                    )
+                    ) + this.memberProvidedContext.data.array().deserializeContext(keyValuePairListDeserializer)
                 ),
                 this.reason,
                 this.serial,

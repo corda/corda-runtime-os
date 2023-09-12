@@ -11,6 +11,7 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnk
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorUnhandledExceptionImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
+import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
@@ -25,9 +26,10 @@ import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
+import net.corda.v5.membership.MemberContext
+import net.corda.v5.membership.MemberInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.mockito.kotlin.any
@@ -43,6 +45,8 @@ import java.time.Instant
 class NonValidatingNotaryServerFlowImplTest {
 
     private companion object {
+        const val NOTARY_SERVICE_NAME = "corda.notary.service.name"
+
         /* Cache for storing response from server */
         val responseFromServer = mutableListOf<NotarizationResponse>()
 
@@ -61,6 +65,11 @@ class NonValidatingNotaryServerFlowImplTest {
         val memberCharlieName = MemberX500Name.parse("O=MemberCharlie, L=London, C=GB")
 
         val mockTransactionSignatureService = mock<TransactionSignatureService>()
+
+        // mock for notary member lookup
+        val notaryInfo = mock<MemberInfo>()
+        val memberProvidedContext = mock<MemberContext>()
+        val mockMemberLookup = mock<MemberLookup>()
     }
 
     @BeforeEach
@@ -273,8 +282,6 @@ class NonValidatingNotaryServerFlowImplTest {
     }
 
     @Test
-    @Disabled
-    // TODO CORE-8976 For now we don't have this check in the server validation code, once we have that, we can enable
     fun `Non-validating notary plugin server should respond with error if notary identity invalid`() {
         createAndCallServer(
             mockSuccessfulUniquenessClientService(),
@@ -322,7 +329,12 @@ class NonValidatingNotaryServerFlowImplTest {
             on { size } doReturn 1
         }
 
-        // 2. Check if any filtered transaction data should be overwritten
+        // 2. Get current notary and parse its data
+        whenever(mockMemberLookup.myInfo()).thenReturn(notaryInfo)
+        whenever(notaryInfo.memberProvidedContext).thenReturn(memberProvidedContext)
+        whenever(memberProvidedContext.parse(NOTARY_SERVICE_NAME, MemberX500Name::class.java)).thenReturn(notaryServiceName)
+
+        // 3. Check if any filtered transaction data should be overwritten
         val filteredTx = mock<UtxoFilteredTransaction> {
             on { notaryName } doAnswer {
                 if (filteredTxContents.containsKey("notaryName")) {
@@ -374,7 +386,7 @@ class NonValidatingNotaryServerFlowImplTest {
             on { id } doReturn txId
         }
 
-        // 3. Mock the receive and send from the counterparty session, unless it is overwritten
+        // 4. Mock the receive and send from the counterparty session, unless it is overwritten
         val paramOrDefaultSession = flowSession ?: mock {
             on { receive(NonValidatingNotarizationPayload::class.java) } doReturn NonValidatingNotarizationPayload(
                 filteredTx,
@@ -389,7 +401,8 @@ class NonValidatingNotaryServerFlowImplTest {
 
         val server = NonValidatingNotaryServerFlowImpl(
             clientService,
-            mockTransactionSignatureService
+            mockTransactionSignatureService,
+            mockMemberLookup
         )
 
         server.call(paramOrDefaultSession)

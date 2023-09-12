@@ -24,13 +24,14 @@ class MemberInfoExtension {
 
         /** Key name for ledger keys property. */
         const val LEDGER_KEYS = "corda.ledger.keys"
-        const val LEDGER_KEYS_KEY = "corda.ledger.keys.%s.pem"
+        const val LEDGER_KEYS_ID = "$LEDGER_KEYS.%s.id"
+        const val LEDGER_KEYS_KEY = "$LEDGER_KEYS.%s.pem"
 
         /** Key name for ledger key hashes property. */
-        const val LEDGER_KEY_HASHES_KEY = "corda.ledger.keys.%s.hash"
+        const val LEDGER_KEY_HASHES_KEY = "$LEDGER_KEYS.%s.hash"
 
         /** Key name for ledger key signature spec property. */
-        const val LEDGER_KEY_SIGNATURE_SPEC = "corda.ledger.keys.%s.signature.spec"
+        const val LEDGER_KEY_SIGNATURE_SPEC = "$LEDGER_KEYS.%s.signature.spec"
 
         /** Key name for platform version property. */
         const val PLATFORM_VERSION = "corda.platformVersion"
@@ -38,6 +39,7 @@ class MemberInfoExtension {
         /** Key name for party property. */
         const val PARTY_NAME = "corda.name"
         const val SESSION_KEYS = "corda.session.keys"
+        const val PARTY_SESSION_KEYS_ID = "$SESSION_KEYS.%s.id"
         const val PARTY_SESSION_KEYS = "$SESSION_KEYS.%s"
         const val PARTY_SESSION_KEYS_PEM = "$SESSION_KEYS.%s.pem"
 
@@ -140,6 +142,7 @@ class MemberInfoExtension {
         const val NOTARY_SERVICE_NAME = "corda.notary.service.name"
         const val NOTARY_SERVICE_PROTOCOL = "corda.notary.service.flow.protocol.name"
         const val NOTARY_SERVICE_PROTOCOL_VERSIONS = "corda.notary.service.flow.protocol.version.%s"
+        const val NOTARY_KEYS_ID = "corda.notary.keys.%s.id"
         const val NOTARY_KEY_PEM = "corda.notary.keys.%s.pem"
         const val NOTARY_KEY_HASH = "corda.notary.keys.%s.hash"
         const val NOTARY_KEY_SPEC = "corda.notary.keys.%s.signature.spec"
@@ -220,6 +223,11 @@ class MemberInfoExtension {
         @JvmStatic
         val MemberInfo.modifiedTime: Instant?
             get() = mgmProvidedContext.parse(MODIFIED_TIME)
+
+        /** TLS certificate subject for member. */
+        @JvmStatic
+        val MemberInfo.tlsCertificateSubject: String?
+            get() = memberProvidedContext.parseOrNull(TLS_CERTIFICATE_SUBJECT)
 
         /** Collection of ledger key hashes for member's node. */
         @JvmStatic

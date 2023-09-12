@@ -1,8 +1,10 @@
 package net.corda.applications.workers.workercommon.internal
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.javalin.Javalin
 import io.javalin.core.util.Header
+import io.micrometer.cloudwatch2.CloudWatchConfig
+import io.micrometer.cloudwatch2.CloudWatchMeterRegistry
+import io.micrometer.core.instrument.Clock
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmHeapPressureMetrics
@@ -17,39 +19,67 @@ import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.metrics.CordaMetrics
-import net.corda.utilities.classload.executeWithThreadContextClassLoader
-import net.corda.utilities.executeWithStdErrSuppressed
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
-import org.osgi.framework.FrameworkUtil
-import org.osgi.framework.wiring.BundleWiring
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
 import java.util.concurrent.ConcurrentHashMap
+import net.corda.rest.ResponseCode
+import net.corda.web.api.Endpoint
+import net.corda.web.api.HTTPMethod
+import net.corda.web.api.WebHandler
+import net.corda.web.api.WebServer
 
 /**
  * An implementation of [WorkerMonitor].
  *
- * @property server The server that serves worker health and readiness.
+ * @property webServer The server that serves worker health and readiness.
  */
 @Component(service = [WorkerMonitor::class])
 @Suppress("Unused")
 internal class WorkerMonitorImpl @Activate constructor(
     @Reference(service = LifecycleRegistry::class)
-    private val lifecycleRegistry: LifecycleRegistry
+    private val lifecycleRegistry: LifecycleRegistry,
+    @Reference(service = WebServer::class)
+    private val webServer: WebServer
 ) : WorkerMonitor {
-    private val logger = LoggerFactory.getLogger(this::class.java)
 
-    // The use of Javalin is temporary, and will be replaced in the future.
-    private var server: Javalin? = null
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val CORDA_NAMESPACE = "CORDA"
+        private const val K8S_NAMESPACE_KEY = "K8S_NAMESPACE"
+        private const val CLOUDWATCH_ENABLED_KEY = "ENABLE_CLOUDWATCH"
+    }
+
     private val objectMapper = ObjectMapper()
     private val prometheusRegistry: PrometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+    private val cloudwatchConfig = object : CloudWatchConfig {
+
+        override fun get(key: String): String? {
+            return null
+        }
+
+        override fun namespace(): String {
+            val suffix = System.getenv(K8S_NAMESPACE_KEY)?.let {
+                "/$it"
+            } ?: ""
+            return "$CORDA_NAMESPACE$suffix"
+        }
+    }
     private val lastLogMessage = ConcurrentHashMap(mapOf(HTTP_HEALTH_ROUTE to "", HTTP_STATUS_ROUTE to ""))
 
     private fun setupMetrics(name: String) {
         logger.info("Creating Prometheus metric registry")
         CordaMetrics.configure(name, prometheusRegistry)
+        if (System.getenv(CLOUDWATCH_ENABLED_KEY) == "true") {
+            logger.info("Enabling the cloudwatch metrics registry")
+            val cloudwatchClient = CloudWatchAsyncClient.builder()
+                .credentialsProvider(WebIdentityTokenFileCredentialsProvider.create())
+                .build()
+            CordaMetrics.configure(name, CloudWatchMeterRegistry(cloudwatchConfig, Clock.SYSTEM, cloudwatchClient))
+        }
 
         ClassLoaderMetrics().bindTo(CordaMetrics.registry)
         JvmMemoryMetrics().bindTo(CordaMetrics.registry)
@@ -62,46 +92,53 @@ internal class WorkerMonitorImpl @Activate constructor(
     }
 
 
-    override fun listen(port: Int, workerType: String) {
+    override fun registerEndpoints(workerType: String) {
         setupMetrics(workerType)
-        server = Javalin
-            .create()
-            .apply { startServer(this, port) }
-            .get(HTTP_HEALTH_ROUTE) { context ->
-                val unhealthyComponents = componentWithStatus(setOf(LifecycleStatus.ERROR))
-                val status = if (unhealthyComponents.isEmpty()) {
-                    clearLastLogMessageForRoute(HTTP_HEALTH_ROUTE)
-                    HTTP_OK_CODE
-                } else {
-                    logIfDifferentFromLastMessage(
-                        HTTP_HEALTH_ROUTE,
-                        "Status is unhealthy. The status of $unhealthyComponents has error."
-                    )
-                    HTTP_SERVICE_UNAVAILABLE_CODE
-                }
-                context.status(status)
-                context.header(Header.CACHE_CONTROL, NO_CACHE)
+
+        val healthRouteHandler = WebHandler { context ->
+            val unhealthyComponents = componentWithStatus(setOf(LifecycleStatus.ERROR))
+            val status = if (unhealthyComponents.isEmpty()) {
+                clearLastLogMessageForRoute(HTTP_HEALTH_ROUTE)
+                ResponseCode.OK
+            } else {
+                logIfDifferentFromLastMessage(
+                    HTTP_HEALTH_ROUTE,
+                    "Status is unhealthy. The status of $unhealthyComponents has error."
+                )
+                ResponseCode.SERVICE_UNAVAILABLE
             }
-            .get(HTTP_STATUS_ROUTE) { context ->
-                val notReadyComponents = componentWithStatus(setOf(LifecycleStatus.DOWN, LifecycleStatus.ERROR))
-                val status = if (notReadyComponents.isEmpty()) {
-                    clearLastLogMessageForRoute(HTTP_STATUS_ROUTE)
-                    HTTP_OK_CODE
-                } else {
-                    logIfDifferentFromLastMessage(
-                        HTTP_STATUS_ROUTE,
-                        "There are components with error or down state: $notReadyComponents."
-                    )
-                    HTTP_SERVICE_UNAVAILABLE_CODE
-                }
-                context.status(status)
-                context.result(objectMapper.writeValueAsString(lifecycleRegistry.componentStatus()))
-                context.header(Header.CACHE_CONTROL, NO_CACHE)
+            context.status(status)
+            context.header(Header.CACHE_CONTROL, NO_CACHE)
+            context
+        }
+
+        val statusRouteHandler = WebHandler { context ->
+            val notReadyComponents = componentWithStatus(setOf(LifecycleStatus.DOWN, LifecycleStatus.ERROR))
+            val status = if (notReadyComponents.isEmpty()) {
+                clearLastLogMessageForRoute(HTTP_STATUS_ROUTE)
+                ResponseCode.OK
+            } else {
+                logIfDifferentFromLastMessage(
+                    HTTP_STATUS_ROUTE,
+                    "There are components with error or down state: $notReadyComponents."
+                )
+                ResponseCode.SERVICE_UNAVAILABLE
             }
-            .get(HTTP_METRICS_ROUTE) { context ->
-                context.result(prometheusRegistry.scrape())
-                context.header(Header.CACHE_CONTROL, NO_CACHE)
-            }
+            context.status(status)
+            context.result(objectMapper.writeValueAsString(lifecycleRegistry.componentStatus()))
+            context.header(Header.CACHE_CONTROL, NO_CACHE)
+            context
+        }
+
+        val metricsRouteHandler = WebHandler { context ->
+            context.result(prometheusRegistry.scrape())
+            context.header(Header.CACHE_CONTROL, NO_CACHE)
+            context
+        }
+
+        webServer.registerEndpoint(Endpoint(HTTPMethod.GET, HTTP_HEALTH_ROUTE, healthRouteHandler))
+        webServer.registerEndpoint(Endpoint(HTTPMethod.GET, HTTP_STATUS_ROUTE, statusRouteHandler))
+        webServer.registerEndpoint(Endpoint(HTTPMethod.GET, HTTP_METRICS_ROUTE, metricsRouteHandler))
     }
 
     private fun clearLastLogMessageForRoute(route: String) {
@@ -112,31 +149,6 @@ internal class WorkerMonitorImpl @Activate constructor(
         val lastLogMessage = lastLogMessage.put(route, logMessage)
         if (logMessage != lastLogMessage) {
             logger.warn(logMessage)
-        }
-    }
-
-    override val port get() = server?.port()
-
-    override fun stop() {
-        server?.stop()
-    }
-
-    /** Starts a Javalin server on [port]. */
-    private fun startServer(server: Javalin, port: Int) {
-        val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
-
-        if (bundle == null) {
-            server.start(port)
-        } else {
-            // We temporarily switch the context class loader to allow Javalin to find `WebSocketServletFactory`.
-            executeWithThreadContextClassLoader(bundle.adapt(BundleWiring::class.java).classLoader) {
-                // Required because Javalin prints an error directly to stderr if it cannot find a logging
-                // implementation via standard class loading mechanism. This mechanism is not appropriate for OSGi.
-                // The logging implementation is found correctly in practice.
-                executeWithStdErrSuppressed {
-                    server.start(port)
-                }
-            }
         }
     }
 

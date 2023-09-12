@@ -1,9 +1,12 @@
 package net.corda.membership.impl.rest.v1
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.data.KeyValuePairList
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -107,7 +110,16 @@ class MemberLookupRestResourceTest {
         PublicKeyConverter(keyEncodingService)
     )
 
-    private val memberInfoFactory = MemberInfoFactoryImpl(LayeredPropertyMapMocks.createFactory(converters))
+    private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>>()
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on {
+            createAvroSerializer<KeyValuePairList>(any())
+        } doReturn keyValuePairListSerializer
+    }
+    private val memberInfoFactory = MemberInfoFactoryImpl(
+        LayeredPropertyMapMocks.createFactory(converters),
+        cordaAvroSerializationFactory
+    )
 
     private val alice = createMemberInfo("CN=Alice,O=Alice,OU=Unit1,L=London,ST=State1,C=GB")
     private val bob = createMemberInfo("CN=Bob,O=Bob,OU=Unit2,L=Dublin,ST=State2,C=IE")
@@ -125,7 +137,7 @@ class MemberLookupRestResourceTest {
         name: String,
         memberStatus: String = MEMBER_STATUS_ACTIVE,
         isMgm: Boolean = false,
-    ): MemberInfo = memberInfoFactory.create(
+    ): MemberInfo = memberInfoFactory.createMemberInfo(
         sortedMapOf(
             PARTY_NAME to name,
             String.format(PARTY_SESSION_KEYS, 0) to KNOWN_KEY,

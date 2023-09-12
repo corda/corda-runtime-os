@@ -60,7 +60,21 @@ fun ClusterInfo.generateCsr(
 
     assertWithRetryIgnoringExceptions {
         interval(1.seconds)
-        command { post("/api/${RestApiVersion.C5_1.versionPath}/certificate/$tenantId/$keyId", ObjectMapper().writeValueAsString(payload)) }
+        if (restApiVersion == RestApiVersion.C5_0) {
+            command {
+                post(
+                    "/api/${RestApiVersion.C5_0.versionPath}/certificates/$tenantId/$keyId",
+                    ObjectMapper().writeValueAsString(payload)
+                )
+            }
+        } else {
+            command {
+                post(
+                    "/api/${RestApiVersion.C5_1.versionPath}/certificate/$tenantId/$keyId",
+                    ObjectMapper().writeValueAsString(payload)
+                )
+            }
+        }
         condition { it.code == ResponseCode.OK.statusCode }
     }.body
 }

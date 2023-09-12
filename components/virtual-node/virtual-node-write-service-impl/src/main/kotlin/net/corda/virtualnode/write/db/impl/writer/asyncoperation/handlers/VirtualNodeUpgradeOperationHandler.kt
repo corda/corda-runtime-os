@@ -1,6 +1,10 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.core.ShortHash
+import net.corda.data.KeyValuePairList
+import net.corda.data.membership.common.v2.RegistrationStatus.APPROVED
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
@@ -31,6 +35,13 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
+import net.corda.membership.client.MemberResourceClient
+import net.corda.membership.lib.ContextDeserializationException
+import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.deserializeContext
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.membership.read.MembershipGroupReaderProvider
 
 @Suppress("LongParameterList")
 internal class VirtualNodeUpgradeOperationHandler(
@@ -38,13 +49,26 @@ internal class VirtualNodeUpgradeOperationHandler(
     private val oldVirtualNodeEntityRepository: VirtualNodeEntityRepository,
     private val virtualNodeInfoPublisher: Publisher,
     private val migrationUtility: MigrationUtility,
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    private val memberResourceClient: MemberResourceClient,
+    private val membershipQueryClient: MembershipQueryClient,
+    private val externalMessagingRouteConfigGenerator: ExternalMessagingRouteConfigGenerator,
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository(),
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
-    private val externalMessagingRouteConfigGenerator: ExternalMessagingRouteConfigGenerator
 ) : VirtualNodeAsyncOperationHandler<VirtualNodeUpgradeRequest> {
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
+    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
+        cordaAvroSerializationFactory.createAvroDeserializer(
+            {
+                logger.error("Failed to deserialize key value pair list.")
+            },
+            KeyValuePairList::class.java
+        )
     }
 
     override fun handle(
@@ -56,7 +80,9 @@ internal class VirtualNodeUpgradeOperationHandler(
         request.validateMandatoryFields()
 
         try {
-            upgradeVirtualNodeCpi(requestTimestamp, requestId, request)
+            val (upgradedVNodeInfo, cpkChangelogs) = upgradeVirtualNodeEntityTransaction(requestTimestamp, requestId, request)
+            upgradeVirtualNodeCpi(requestId, request, upgradedVNodeInfo, cpkChangelogs)
+            reRegisterMember(upgradedVNodeInfo)
         } catch (e: Exception) {
             handleUpgradeException(e, requestId, request, requestTimestamp)
         }
@@ -92,22 +118,11 @@ internal class VirtualNodeUpgradeOperationHandler(
     }
 
     private fun upgradeVirtualNodeCpi(
-        requestTimestamp: Instant,
         requestId: String,
-        request: VirtualNodeUpgradeRequest
+        request: VirtualNodeUpgradeRequest,
+        upgradedVNodeInfo: VirtualNodeInfo,
+        cpkChangelogs: List<CpkDbChangeLog>
     ) {
-        val (upgradedVNodeInfo, cpkChangelogs) = entityManagerFactory.createEntityManager().transaction { em ->
-            val (virtualNode, targetCpi) = validateUpgradeRequest(em, request, requestId)
-
-            val externalMessagingRouteConfig = externalMessagingRouteConfigGenerator.generateUpgradeConfig(
-                virtualNode,
-                targetCpi.cpiId,
-                targetCpi.cpksMetadata
-            )
-
-            upgradeVirtualNodeEntity(em, request, requestId, requestTimestamp, targetCpi, externalMessagingRouteConfig)
-        }
-
         publishVirtualNodeInfo(upgradedVNodeInfo)
 
         if (migrationUtility.areChangesetsDeployedOnVault(
@@ -188,6 +203,72 @@ internal class VirtualNodeUpgradeOperationHandler(
         }
 
         return Pair(currentVirtualNode, targetCpiMetadata)
+    }
+
+    // Re-register the member if the member already exists
+    // after the virtual node has been upgraded, so that the member CPI version is up-to-date
+    private fun reRegisterMember(upgradedVNodeInfo: VirtualNodeInfo) {
+        val holdingIdentity = upgradedVNodeInfo.holdingIdentity
+        val registrationRequestsCheck = membershipQueryClient.queryRegistrationRequests(holdingIdentity)
+        if (
+            registrationRequestsCheck is MembershipQueryResult.Success
+            && registrationRequestsCheck.payload.isNotEmpty()
+        ) {
+            val x500Name = membershipGroupReaderProvider.getGroupReader(holdingIdentity).owningMember
+            val registrationRequest = membershipQueryClient
+                .queryRegistrationRequests(holdingIdentity, x500Name, listOf(APPROVED), 1)
+
+            when (registrationRequest) {
+                is MembershipQueryResult.Success ->
+                    try {
+                        val registrationRequestDetails = registrationRequest.payload.first()
+
+                        val updatedSerial = registrationRequestDetails.serial + 1
+                        val registrationContext = registrationRequestDetails
+                            .memberProvidedContext.data.array()
+                            .deserializeContext(keyValuePairListDeserializer)
+                            .toMutableMap()
+
+                        registrationContext[MemberInfoExtension.SERIAL] = updatedSerial.toString()
+
+                        memberResourceClient.startRegistration(
+                            holdingIdentity.shortHash,
+                            registrationContext,
+                        )
+                    } catch (e: ContextDeserializationException) {
+                        logger.warn(
+                            "Could not deserialize previous registration context for ${holdingIdentity.shortHash}. " +
+                                    "Re-registration will not be attempted."
+                        )
+                    }
+
+                is MembershipQueryResult.Failure ->
+                    logger.warn(
+                        "Failed to query for an APPROVED previous registration request for ${holdingIdentity.shortHash}: " +
+                                "${registrationRequest.errorMsg}. " +
+                                "Re-registration will not be attempted."
+                    )
+            }
+        }
+    }
+
+    private fun upgradeVirtualNodeEntityTransaction(
+        requestTimestamp: Instant,
+        requestId: String,
+        request: VirtualNodeUpgradeRequest
+    ): Pair<VirtualNodeInfo, List<CpkDbChangeLog>> {
+        val (upgradedVNodeInfo, cpkChangelogs) = entityManagerFactory.createEntityManager().transaction { em ->
+            val (virtualNode, targetCpi) = validateUpgradeRequest(em, request, requestId)
+
+            val externalMessagingRouteConfig = externalMessagingRouteConfigGenerator.generateUpgradeConfig(
+                virtualNode,
+                targetCpi.cpiId,
+                targetCpi.cpksMetadata
+            )
+
+            upgradeVirtualNodeEntity(em, request, requestId, requestTimestamp, targetCpi, externalMessagingRouteConfig)
+        }
+        return Pair(upgradedVNodeInfo, cpkChangelogs)
     }
 
     private fun upgradeVirtualNodeEntity(

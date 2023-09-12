@@ -1,5 +1,8 @@
 package net.corda.membership.impl.client
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
@@ -10,6 +13,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentGroupParameters
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedData
 import net.corda.data.membership.actions.request.DistributeGroupParameters
 import net.corda.data.membership.actions.request.DistributeMemberInfo
 import net.corda.data.membership.actions.request.MembershipActionsRequest
@@ -40,8 +44,9 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.membership.client.CouldNotFindMemberException
+import net.corda.membership.client.CouldNotFindEntityException
 import net.corda.membership.client.MemberNotAnMgmException
+import net.corda.membership.lib.ContextDeserializationException
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.InternalGroupParameters
@@ -174,7 +179,27 @@ class MGMResourceClientTest {
         on { execute() } doReturn MembershipPersistenceResult.success()
     }
 
-    private val memberInfoFactory = MemberInfoFactoryImpl(LayeredPropertyMapMocks.createFactory(converters))
+    private val contextBytes = byteArrayOf(0)
+    private val memberContext = SignedData(ByteBuffer.wrap(contextBytes), mock(), mock())
+    private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>>()
+    private val keyValuePairListDeserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
+        on { deserialize(contextBytes) } doReturn KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
+    }
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on {
+            createAvroDeserializer(
+                any(),
+                eq(KeyValuePairList::class.java)
+            )
+        } doReturn keyValuePairListDeserializer
+        on {
+            createAvroSerializer<KeyValuePairList>(any())
+        } doReturn keyValuePairListSerializer
+    }
+    private val memberInfoFactory = MemberInfoFactoryImpl(
+        LayeredPropertyMapMocks.createFactory(converters),
+        cordaAvroSerializationFactory
+    )
     private class Operation<T>(
         private val result: MembershipPersistenceResult<T>,
     ) : MembershipPersistenceOperation<T> {
@@ -188,7 +213,7 @@ class MGMResourceClientTest {
     private val bob = createMemberInfo(memberName.toString(), isMgm = false)
 
     @Suppress("SpreadOperator")
-    private fun createMemberInfo(name: String, isMgm: Boolean = true): MemberInfo = memberInfoFactory.create(
+    private fun createMemberInfo(name: String, isMgm: Boolean = true): MemberInfo = memberInfoFactory.createMemberInfo(
         sortedMapOf(
             PARTY_NAME to name,
             String.format(MemberInfoExtension.PARTY_SESSION_KEYS, 0) to KNOWN_KEY,
@@ -211,7 +236,7 @@ class MGMResourceClientTest {
         on { serial } doReturn 0
     }
     private val mockMemberInfoFactory = mock<MemberInfoFactory> {
-        on {create(any())} doReturn memberInfo
+        on { createMemberInfo(any()) } doReturn memberInfo
     }
 
     private fun convertPublicKeys(): List<Pair<String, String>> =
@@ -304,7 +329,8 @@ class MGMResourceClientTest {
         membershipPersistenceClient,
         membershipQueryClient,
         mockMemberInfoFactory,
-        keyEncodingService
+        keyEncodingService,
+        cordaAvroSerializationFactory,
     )
 
     private val messagingConfig: SmartConfig = mock()
@@ -480,7 +506,7 @@ class MGMResourceClientTest {
             )
         )
 
-        assertThrows<CouldNotFindMemberException> {
+        assertThrows<CouldNotFindEntityException> {
             mgmResourceClient.generateGroupPolicy(ShortHash.of("000000000000"))
         }
         mgmResourceClient.stop()
@@ -496,7 +522,7 @@ class MGMResourceClientTest {
         )
         whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-        assertThrows<CouldNotFindMemberException> {
+        assertThrows<CouldNotFindEntityException> {
             mgmResourceClient.generateGroupPolicy(shortHash)
         }
         mgmResourceClient.stop()
@@ -558,7 +584,7 @@ class MGMResourceClientTest {
             mgmResourceClient.start()
             setUpRpcSender(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.addApprovalRule(
                     ShortHash.of("000000000000"),
                     ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
@@ -573,7 +599,7 @@ class MGMResourceClientTest {
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.addApprovalRule(
                     shortHash, ApprovalRuleParams(RULE_REGEX, ApprovalRuleType.STANDARD, RULE_LABEL)
                 )
@@ -635,7 +661,7 @@ class MGMResourceClientTest {
             mgmResourceClient.start()
             setUpRpcSender(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.deleteApprovalRule(
                     ShortHash.of("000000000000"), RULE_ID, RULE_TYPE
                 )
@@ -649,7 +675,7 @@ class MGMResourceClientTest {
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.deleteApprovalRule(
                     shortHash, RULE_ID, RULE_TYPE
                 )
@@ -708,7 +734,7 @@ class MGMResourceClientTest {
             mgmResourceClient.start()
             setUpRpcSender(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.getApprovalRules(
                     ShortHash.of("000000000000"), ApprovalRuleType.STANDARD
                 )
@@ -722,7 +748,7 @@ class MGMResourceClientTest {
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.getApprovalRules(
                     shortHash, ApprovalRuleType.STANDARD
                 )
@@ -784,7 +810,7 @@ class MGMResourceClientTest {
             mgmResourceClient.start()
             setUpRpcSender(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.viewRegistrationRequests(
                     ShortHash.of("000000000000"), memberName, true
                 )
@@ -798,7 +824,7 @@ class MGMResourceClientTest {
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.viewRegistrationRequests(
                     shortHash, memberName, true
                 )
@@ -833,7 +859,7 @@ class MGMResourceClientTest {
             whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
             val mockStatus = mock<RegistrationRequestDetails> {
                 on { registrationStatus } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
-                on { memberProvidedContext } doReturn KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
+                on { memberProvidedContext } doReturn memberContext
             }
             whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(mockStatus)
@@ -865,7 +891,7 @@ class MGMResourceClientTest {
             whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
             val mockStatus = mock<RegistrationRequestDetails> {
                 on { registrationStatus } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
-                on { memberProvidedContext } doReturn KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
+                on { memberProvidedContext } doReturn memberContext
             }
             whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(mockStatus)
@@ -894,11 +920,61 @@ class MGMResourceClientTest {
         }
 
         @Test
+        fun `reviewRegistrationRequest should fail when context cannot be deserialized`() {
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+            val mockStatus = mock<RegistrationRequestDetails> {
+                on { registrationStatus } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
+                on { memberProvidedContext } doReturn memberContext
+            }
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
+                MembershipQueryResult.Success(mockStatus)
+            )
+            whenever(keyValuePairListDeserializer.deserialize(any())).thenReturn(null)
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            assertThrows<ContextDeserializationException> {
+                mgmResourceClient.reviewRegistrationRequest(
+                    shortHash,
+                    REQUEST_ID.uuid(),
+                    true
+                )
+            }
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `reviewRegistrationRequest should fail when name cannot be retrieved`() {
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+            val mockStatus = mock<RegistrationRequestDetails> {
+                on { registrationStatus } doReturn RegistrationStatus.PENDING_MANUAL_APPROVAL
+                on { memberProvidedContext } doReturn memberContext
+            }
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
+                MembershipQueryResult.Success(mockStatus)
+            )
+            whenever(keyValuePairListDeserializer.deserialize(any())).thenReturn(KeyValuePairList(emptyList()))
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            assertThrows<IllegalArgumentException> {
+                mgmResourceClient.reviewRegistrationRequest(
+                    shortHash,
+                    REQUEST_ID.uuid(),
+                    true
+                )
+            }
+            mgmResourceClient.stop()
+        }
+
+        @Test
         fun `reviewRegistrationRequest should fail if the member cannot be found`() {
             mgmResourceClient.start()
             setUpRpcSender(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.reviewRegistrationRequest(
                     ShortHash.of("000000000000"),
                     REQUEST_ID.uuid(),
@@ -914,7 +990,7 @@ class MGMResourceClientTest {
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.reviewRegistrationRequest(
                     shortHash,
                     REQUEST_ID.uuid(),
@@ -992,7 +1068,7 @@ class MGMResourceClientTest {
             whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
             val mockStatus = mock<RegistrationRequestDetails> {
                 on { registrationStatus } doReturn RegistrationStatus.PENDING_MEMBER_VERIFICATION
-                on { memberProvidedContext } doReturn KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
+                on { memberProvidedContext } doReturn memberContext
             }
             whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(mockStatus)
@@ -1018,10 +1094,60 @@ class MGMResourceClientTest {
         }
 
         @Test
+        fun `forceDeclineRegistrationRequest should fail when context cannot be deserialized`() {
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+            val mockStatus = mock<RegistrationRequestDetails> {
+                on { registrationStatus } doReturn RegistrationStatus.PENDING_MEMBER_VERIFICATION
+                on { memberProvidedContext } doReturn memberContext
+            }
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
+                MembershipQueryResult.Success(mockStatus)
+            )
+            whenever(keyValuePairListDeserializer.deserialize(any())).thenReturn(null)
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            assertThrows<ContextDeserializationException> {
+                mgmResourceClient.forceDeclineRegistrationRequest(
+                    shortHash,
+                    REQUEST_ID.uuid(),
+                )
+            }
+            verify(publisher, never()).publish(any())
+            mgmResourceClient.stop()
+        }
+
+        @Test
+        fun `forceDeclineRegistrationRequest should fail when name cannot be retrieved`() {
+            whenever(coordinator.getManagedResource<Publisher>(any())).doReturn(publisher)
+            whenever(publisher.publish(any())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+            val mockStatus = mock<RegistrationRequestDetails> {
+                on { registrationStatus } doReturn RegistrationStatus.PENDING_MEMBER_VERIFICATION
+                on { memberProvidedContext } doReturn memberContext
+            }
+            whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
+                MembershipQueryResult.Success(mockStatus)
+            )
+            whenever(keyValuePairListDeserializer.deserialize(any())).thenReturn(KeyValuePairList(emptyList()))
+            mgmResourceClient.start()
+            setUpRpcSender(null)
+
+            assertThrows<IllegalArgumentException> {
+                mgmResourceClient.forceDeclineRegistrationRequest(
+                    shortHash,
+                    REQUEST_ID.uuid(),
+                )
+            }
+            verify(publisher, never()).publish(any())
+            mgmResourceClient.stop()
+        }
+
+        @Test
         fun `forceDeclineRegistrationRequest should fail for completed requests`() {
             val mockStatus = mock<RegistrationRequestDetails> {
                 on { registrationStatus } doReturn RegistrationStatus.APPROVED
-                on { memberProvidedContext } doReturn KeyValuePairList(listOf(KeyValuePair(PARTY_NAME, memberName.toString())))
+                on { memberProvidedContext } doReturn memberContext
             }
             whenever(membershipQueryClient.queryRegistrationRequest(any(), any())).doReturn(
                 MembershipQueryResult.Success(mockStatus)
@@ -1044,7 +1170,7 @@ class MGMResourceClientTest {
             mgmResourceClient.start()
             setUpRpcSender(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.forceDeclineRegistrationRequest(
                     ShortHash.of("000000000000"),
                     REQUEST_ID.uuid(),
@@ -1059,7 +1185,7 @@ class MGMResourceClientTest {
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.forceDeclineRegistrationRequest(
                     shortHash,
                     REQUEST_ID.uuid(),
@@ -1688,7 +1814,7 @@ class MGMResourceClientTest {
         fun `suspendMember should fail if the member cannot be found`() {
             setUpRpcSender(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.suspendMember(
                     ShortHash.of("000000000000"),
                     memberName
@@ -1701,7 +1827,7 @@ class MGMResourceClientTest {
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.suspendMember(shortHash, memberName)
             }
         }
@@ -1890,7 +2016,7 @@ class MGMResourceClientTest {
         fun `activateMember should fail if the member cannot be found`() {
             setUpRpcSender(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.activateMember(
                     ShortHash.of("000000000000"),
                     memberName
@@ -1903,7 +2029,7 @@ class MGMResourceClientTest {
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.activateMember(shortHash, memberName)
             }
         }
@@ -2032,7 +2158,7 @@ class MGMResourceClientTest {
         fun `updateGroupParameters should fail if the member cannot be found`() {
             setUpRpcSender(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.updateGroupParameters(
                     ShortHash.of("000000000000"),
                     mockUpdate
@@ -2045,7 +2171,7 @@ class MGMResourceClientTest {
             setUpRpcSender(null)
             whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
 
-            assertThrows<CouldNotFindMemberException> {
+            assertThrows<CouldNotFindEntityException> {
                 mgmResourceClient.updateGroupParameters(shortHash, mockUpdate)
             }
         }

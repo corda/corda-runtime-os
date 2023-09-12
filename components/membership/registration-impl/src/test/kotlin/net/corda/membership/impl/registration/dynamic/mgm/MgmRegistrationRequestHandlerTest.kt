@@ -2,15 +2,13 @@ package net.corda.membership.impl.registration.dynamic.mgm
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
-import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
-import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -18,8 +16,6 @@ import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.MemberContext
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -42,15 +38,14 @@ class MgmRegistrationRequestHandlerTest {
         MemberX500Name.parse("O=Alice, L=London, C=GB"),
         UUID(0, 1).toString()
     )
-    private val mockMemberContext: MemberContext = mock {
-        on { entries } doReturn mapOf("key" to "value").entries
-    }
-    private val memberInfo: MemberInfo = mock {
-        on { memberProvidedContext } doReturn mockMemberContext
-    }
+    private val serializedMemberContext = "1".toByteArray()
     private val signature = CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf()))
     private val signatureSpec = CryptoSignatureSpec("", null, null)
-    private val signedMemberInfo: SignedMemberInfo = SignedMemberInfo(memberInfo, signature, signatureSpec)
+    private val signedMemberInfo: SelfSignedMemberInfo = mock {
+        on { memberContextBytes } doReturn serializedMemberContext
+        on { memberSignature } doReturn signature
+        on { memberSignatureSpec } doReturn signatureSpec
+    }
     private val cordaAvroSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn "".toByteArray()
     }
@@ -77,10 +72,9 @@ class MgmRegistrationRequestHandlerTest {
     @Test
     fun `persistRegistrationRequest sends request to persistence client`() {
         val serialisedPayload = "test1".toByteArray()
-        val serialisedPayload2 = "test2".toByteArray()
 
         val contextCaptor = argumentCaptor<KeyValuePairList>()
-        whenever(cordaAvroSerializer.serialize(contextCaptor.capture())).thenReturn(serialisedPayload, serialisedPayload2)
+        whenever(cordaAvroSerializer.serialize(contextCaptor.capture())).thenReturn(serialisedPayload)
         assertDoesNotThrow {
             mgmRegistrationRequestHandler.persistRegistrationRequest(
                 registrationId,
@@ -92,16 +86,14 @@ class MgmRegistrationRequestHandlerTest {
         val captor = argumentCaptor<RegistrationRequest>()
         verify(membershipPersistenceClient).persistRegistrationRequest(eq(holdingIdentity), captor.capture())
         assertThat(captor.firstValue.registrationId).isEqualTo(registrationId.toString())
-        assertThat(captor.firstValue.memberContext.data).isEqualTo(ByteBuffer.wrap(serialisedPayload))
-        assertThat(captor.firstValue.registrationContext.data).isEqualTo(ByteBuffer.wrap(serialisedPayload2))
+        assertThat(captor.firstValue.memberContext.data).isEqualTo(ByteBuffer.wrap(serializedMemberContext))
+        assertThat(captor.firstValue.registrationContext.data).isEqualTo(ByteBuffer.wrap(serialisedPayload))
         assertThat(captor.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
         assertThat(captor.firstValue.memberContext.signature).isEqualTo(signature)
         assertThat(captor.firstValue.memberContext.signatureSpec).isEqualTo(signatureSpec)
-        verify(cordaAvroSerializer).serialize(memberInfo.memberProvidedContext.toWire())
 
-        assertThat(contextCaptor.allValues).hasSize(2)
-        assertThat(contextCaptor.firstValue).isEqualTo(KeyValuePairList(listOf(KeyValuePair("key", "value"))))
-        assertThat(contextCaptor.secondValue).isEqualTo(KeyValuePairList(emptyList()))
+        assertThat(contextCaptor.allValues).hasSize(1)
+        assertThat(contextCaptor.firstValue).isEqualTo(KeyValuePairList(emptyList()))
     }
 
     @Test

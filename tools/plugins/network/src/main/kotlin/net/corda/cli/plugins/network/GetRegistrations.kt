@@ -7,14 +7,12 @@ import picocli.CommandLine
 import net.corda.cli.plugins.common.RestCommand
 import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.cli.plugins.network.output.Output
+import net.corda.cli.plugins.network.utils.HoldingIdentityUtils.getHoldingIdentity
 import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
-import net.corda.cli.plugins.network.utils.PrintUtils.Companion.printJsonOutput
-import net.corda.cli.plugins.network.utils.PrintUtils.Companion.verifyAndPrintError
+import net.corda.cli.plugins.network.utils.PrintUtils.printJsonOutput
+import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
-import net.corda.virtualnode.HoldingIdentity
-import net.corda.v5.base.types.MemberX500Name
-import java.io.File
 
 @CommandLine.Command(
     name = "get-registrations",
@@ -66,7 +64,7 @@ class GetRegistrations(private val output: Output = ConsoleOutput()) : RestComma
             ) {
                 try {
                     val registrationProxy = client.start().proxy
-                    val holdingIdentity = getHoldingIdentity()
+                    val holdingIdentity = getHoldingIdentity(holdingIdentityShortHash, name, group)
                     if (requestId != null) {
                         listOf(
                             registrationProxy.checkSpecificRegistrationProgress(
@@ -86,32 +84,9 @@ class GetRegistrations(private val output: Output = ConsoleOutput()) : RestComma
         }
     }
 
-    private fun getHoldingIdentity(): String {
-        return holdingIdentityShortHash ?: name?.let {
-            val x500Name = MemberX500Name.parse(it)
-            val holdingIdentity = group?.let { group ->
-                HoldingIdentity(x500Name, group)
-            } ?: HoldingIdentity(x500Name, readDefaultGroup())
-            holdingIdentity.shortHash.toString()
-        } ?: throw IllegalArgumentException("Either 'holdingIdentityShortHash' or 'name' must be specified.")
-    }
-
-    private fun readDefaultGroup(): String {
-        val groupIdFile = File(
-            File(File(File(System.getProperty("user.home")), ".corda"), "groupId"),
-            "groupId.txt"
-        )
-        return if (groupIdFile.exists()) {
-            groupIdFile.readText().trim()
-        } else {
-            throw IllegalArgumentException("Group ID was not specified, and the last created group could not be found.")
-        }
-    }
-
     override fun run() {
         verifyAndPrintError {
-            val result = getRegistrations()
-            printJsonOutput(result, output)
+            printJsonOutput(getRegistrations(), output)
         }
     }
 }

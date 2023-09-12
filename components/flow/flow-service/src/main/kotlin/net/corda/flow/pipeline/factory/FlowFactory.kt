@@ -25,6 +25,7 @@ interface FlowFactory {
      * Creates an initiated [Flow].
      *
      * @param flowStartContext The [FlowStartContext] describing the flow.
+     * @param requireClose True if the initiated party sends a close message when a session is closed.
      * @param sandboxGroupContext The sandbox to load the [Flow] class from.
      * @param contextProperties The context properties to be set on the session which is passed to the initiated flow.
      * @param isInteropFlow Optional flag to process the session as an interop session.
@@ -33,6 +34,7 @@ interface FlowFactory {
      */
     fun createInitiatedFlow(
         flowStartContext: FlowStartContext,
+        requireClose: Boolean,
         sandboxGroupContext: SandboxGroupContext,
         contextProperties: Map<String, String>,
         isInteropFlow: Boolean = false
