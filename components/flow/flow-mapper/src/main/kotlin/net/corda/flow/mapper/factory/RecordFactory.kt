@@ -1,7 +1,6 @@
 package net.corda.flow.mapper.factory
 
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record

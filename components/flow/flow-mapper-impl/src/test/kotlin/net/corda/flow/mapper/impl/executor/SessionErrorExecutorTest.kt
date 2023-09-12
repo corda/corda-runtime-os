@@ -1,7 +1,6 @@
 package net.corda.flow.mapper.impl.executor
 
 import com.typesafe.config.ConfigValueFactory
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
@@ -11,7 +10,6 @@ import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
