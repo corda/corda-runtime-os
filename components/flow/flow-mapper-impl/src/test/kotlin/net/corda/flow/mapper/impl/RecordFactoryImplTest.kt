@@ -15,7 +15,6 @@ import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.schema.configuration.FlowConfig
 import net.corda.virtualnode.toCorda
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -76,7 +75,7 @@ internal class RecordFactoryImplTest {
             "Received SessionError with sessionId 1"),
             Instant.now(),
             flowConfig,
-            sessionEvent.messageDirection
+            "my-flow-id"
         )
         assertThat(record).isNotNull
         assertThat(record.topic).isEqualTo("flow.mapper.event")
@@ -99,7 +98,7 @@ internal class RecordFactoryImplTest {
             sessionEvent,
             Instant.now(),
             flowConfig,
-            sessionEvent.messageDirection
+            "my-flow-id"
         )
         assertThat(record).isNotNull
         assertThat(record.topic).isEqualTo("flow.mapper.event")
@@ -129,7 +128,7 @@ internal class RecordFactoryImplTest {
                 "Received SessionError with sessionId 1"),
             Instant.now(),
             flowConfig,
-            sessionEvent.messageDirection
+            "my-flow-id"
         )
         assertThat(record).isNotNull
         assertThat(record.topic).isEqualTo("p2p.out")
@@ -152,48 +151,10 @@ internal class RecordFactoryImplTest {
             sessionEvent,
             Instant.now(),
             flowConfig,
-            sessionEvent.messageDirection
+            "my-flow-id"
         )
         assertThat(record).isNotNull
         assertThat(record.topic).isEqualTo("p2p.out")
         assertThat(record.value!!::class).isEqualTo(AppMessage::class)
-    }
-
-    @Test
-    fun `getSessionEventOutputTopic returns topic when same cluster`() {
-        val sessionEvent = SessionEvent(
-            MessageDirection.OUTBOUND,
-            Instant.now(), "", 1,
-            HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1"),
-            HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1"),
-            SessionData(),
-            null
-        )
-
-        val topic = recordFactoryImplSameCluster.getSessionEventOutputTopic(
-            sessionEvent,
-            sessionEvent.messageDirection
-        )
-        assertThat(topic).isNotNull
-        assertThat(topic).isEqualTo("flow.mapper.event")
-    }
-
-    @Test
-    fun `getSessionEventOutputTopic returns topic when different cluster`() {
-        val sessionEvent = SessionEvent(
-            MessageDirection.OUTBOUND,
-            Instant.now(), "", 1,
-            HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1"),
-            HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1"),
-            SessionData(),
-            null
-        )
-
-        val topic = recordFactoryImplDifferentCluster.getSessionEventOutputTopic(
-            sessionEvent,
-            sessionEvent.messageDirection
-        )
-        assertThat(topic).isNotNull
-        assertThat(topic).isEqualTo("p2p.out")
     }
 }
