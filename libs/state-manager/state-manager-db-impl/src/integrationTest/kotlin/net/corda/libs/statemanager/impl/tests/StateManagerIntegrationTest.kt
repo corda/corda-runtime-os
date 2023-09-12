@@ -140,7 +140,7 @@ class StateManagerIntegrationTest {
         assertThat(stateManager.create(states)).isEmpty()
         softlyAssertPersistedStateEntities(
             (1..stateCount),
-            { _, _ -> 0 },
+            { _, _ -> State.VERSION_INITIAL_VALUE },
             { i, _ -> "simpleState_$i" },
             { _, _ -> metadata() }
         )
@@ -163,7 +163,7 @@ class StateManagerIntegrationTest {
         assertThat(stateManager.create(states)).isEmpty()
         softlyAssertPersistedStateEntities(
             (1..stateCount),
-            { _, _ -> 0 },
+            { _, _ -> State.VERSION_INITIAL_VALUE },
             { i, _ -> "customState_$i" },
             { i, _ -> metadata("key1" to "value$i", "key2" to i) }
         )
@@ -175,7 +175,7 @@ class StateManagerIntegrationTest {
         val totalStates = 15
         persistStateEntities(
             (1..failedSates),
-            { _, _ -> -1 },
+            { _, _ -> State.VERSION_INITIAL_VALUE },
             { i, _ -> "existingState_$i" },
             { i, _ -> """{"k1": "v$i", "k2": $i}""" }
         )
@@ -191,7 +191,7 @@ class StateManagerIntegrationTest {
         }
         softlyAssertPersistedStateEntities(
             (failedSates + 1..totalStates),
-            { _, _ -> 0 },
+            { _, _ -> State.VERSION_INITIAL_VALUE },
             { i, _ -> "newState_$i" },
             { _, _ -> metadata() }
         )
@@ -202,7 +202,7 @@ class StateManagerIntegrationTest {
     fun canRetrieveStatesByKey(stateCount: Int) {
         persistStateEntities(
             (1..stateCount),
-            { _, _ -> -1 },
+            { _, _ -> State.VERSION_INITIAL_VALUE },
             { i, _ -> "existingState_$i" },
             { i, _ -> """{"k1": "v$i", "k2": $i}""" }
         )
@@ -219,7 +219,7 @@ class StateManagerIntegrationTest {
                 it.assertThat(loadedState.modifiedTime).isNotNull
                 it.assertThat(loadedState.value).isEqualTo("existingState_$i".toByteArray())
                 it.assertThat(loadedState.key).isEqualTo(key)
-                it.assertThat(loadedState.version).isEqualTo(-1)
+                it.assertThat(loadedState.version).isEqualTo(State.VERSION_INITIAL_VALUE)
                 it.assertThat(loadedState.metadata)
                     .containsExactlyInAnyOrderEntriesOf(mutableMapOf("k1" to "v$i", "k2" to i))
             }
@@ -257,7 +257,7 @@ class StateManagerIntegrationTest {
         val totalCount = 20
         persistStateEntities(
             (1..totalCount),
-            { _, _ -> 0 },
+            { _, _ -> State.VERSION_INITIAL_VALUE },
             { i, _ -> "existingState_$i" },
             { i, _ -> """{"k1": "v$i", "k2": $i}""" }
         )
@@ -333,7 +333,7 @@ class StateManagerIntegrationTest {
         val totalCount = 20
         persistStateEntities(
             (1..totalCount),
-            { _, _ -> 0 },
+            { _, _ -> State.VERSION_INITIAL_VALUE },
             { i, _ -> "existingState_$i" },
             { i, _ -> """{"k1": "v$i", "k2": $i}""" }
         )
@@ -388,7 +388,7 @@ class StateManagerIntegrationTest {
         val startTime = Instant.now()
         persistStateEntities(
             (1..count),
-            { _, _ -> -1 },
+            { _, _ -> State.VERSION_INITIAL_VALUE },
             { i, _ -> "state_$i" },
             { _, _ -> "{}" }
         )
@@ -407,7 +407,7 @@ class StateManagerIntegrationTest {
                 it.assertThat(loadedState.modifiedTime).isNotNull
                 it.assertThat(loadedState.value).isEqualTo("state_$i".toByteArray())
                 it.assertThat(loadedState.key).isEqualTo(key)
-                it.assertThat(loadedState.version).isEqualTo(-1)
+                it.assertThat(loadedState.version).isEqualTo(State.VERSION_INITIAL_VALUE)
                 it.assertThat(loadedState.metadata).containsExactlyInAnyOrderEntriesOf(emptyMap())
             }
         }
@@ -418,7 +418,7 @@ class StateManagerIntegrationTest {
         val count = 20
         persistStateEntities(
             (1..count),
-            { _, _ -> 0 },
+            { _, _ -> State.VERSION_INITIAL_VALUE },
             { i, _ -> "state_$i" },
             { i, _ -> """{ "number": $i, "boolean": ${i % 2 == 0}, "string": "random_$i" }""" }
         )
