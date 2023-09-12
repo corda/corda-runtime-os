@@ -65,7 +65,7 @@ class TokenCacheEventProcessor constructor(
             // be removed. Any claim that contains a non-empty claimedTokenStateRefs field are considered invalid because
             // this means the avro object is an old one, and it should be replaced by the new format.
             val validClaims =
-                nonNullableState.tokenClaims.filter { it.claimedTokenStateRefs.isNullOrEmpty() }
+                nonNullableState.tokenClaims.filter { it.claimedTokens.isNullOrEmpty() }
             val invalidClaims = nonNullableState.tokenClaims - validClaims.toSet()
             if (invalidClaims.isNotEmpty()) {
                 val invalidClaimsId = invalidClaims.map { it.claimId }
@@ -124,13 +124,18 @@ class TokenCacheEventProcessor constructor(
         sb.appendLine("Token Cache Summary:")
         sb.appendLine("Token Balance: $cachedTokenValue")
         sb.appendLine("Token Count  : $cachedTokenCount")
-        val tokenIndex = tokenCache.associateBy { it.stateRef }
+
+        if (avroState.tokenClaims == null) {
+            avroState.tokenClaims = listOf()
+        }
 
         avroState.tokenClaims.forEach {
-            val claimedTokens = it.claimedTokenStateRefs.mapNotNull { ref -> tokenIndex[ref] }
+            val claimedTokens = it.claimedTokens
             val claimCount = claimedTokens.size
-            val claimBalance = claimedTokens.sumOf { token -> token.amount }
-            val tokens = claimedTokens.joinToString(" ") { token -> "$({token.stateRef}-${token.amount})" }
+            val claimBalance = claimedTokens.sumOf { token -> amountToBigDecimal(token.amount) }
+            val tokens = claimedTokens.joinToString(" ") { token ->
+                "$({token.stateRef}-${amountToBigDecimal(token.amount)})"
+            }
             sb.appendLine(
                 "Claim       : ${it.claimId} Token Count $claimCount Token Balance $claimBalance Tokens:${tokens}"
             )
