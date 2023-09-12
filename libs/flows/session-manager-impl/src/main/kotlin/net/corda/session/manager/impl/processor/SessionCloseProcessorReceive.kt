@@ -52,9 +52,7 @@ class SessionCloseProcessorReceive(
                     "Received duplicate SessionClose on key $key and sessionId $sessionId with seqNum of $seqNum " +
                             "when last processed seqNum was $lastProcessedSeqNum. Current SessionState: $sessionState"
                 }
-                sessionState.apply {
-                    sendAck = true
-                }
+                sessionState
             } else {
                 sessionState.receivedEventsState.apply {
                     undeliveredMessages = undeliveredMessages.plus(sessionEvent).distinctBy { it.sequenceNum }.sortedBy { it.sequenceNum }
@@ -75,19 +73,15 @@ class SessionCloseProcessorReceive(
             sessionState.apply {
                 logger.trace { "Updating session state to ${SessionStateType.CLOSING} for session state $sessionState" }
                 status = SessionStateType.CLOSING
-                sendAck = true
             }
         }
         SessionStateType.CLOSING -> {
             sessionState.apply {
-                status = if (sendEventsState.undeliveredMessages.isNullOrEmpty()) {
+                if (sendEventsState.undeliveredMessages.isNullOrEmpty()) {
                     logger.trace { "Updating session state to ${SessionStateType.CLOSED} for session state $sessionState" }
-                    SessionStateType.CLOSED
-                } else {
-                    logger.trace { "Updating session state to ${SessionStateType.WAIT_FOR_FINAL_ACK} for session state $sessionState" }
-                    SessionStateType.WAIT_FOR_FINAL_ACK
+                    status = SessionStateType.CLOSED
                 }
-                sendAck = true
+
             }
         }
         else -> {

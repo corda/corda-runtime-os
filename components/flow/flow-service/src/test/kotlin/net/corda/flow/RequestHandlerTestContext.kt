@@ -7,7 +7,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
-import net.corda.flow.pipeline.handlers.requests.sessions.service.InitiateFlowRequestService
+import net.corda.flow.pipeline.handlers.requests.sessions.service.GenerateSessionService
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
@@ -40,7 +40,7 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
         .withValue(SESSION_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(10000))
         .withValue(PROCESSING_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(10000))
     val flowSandboxService = mock<FlowSandboxService>()
-    val initiateFlowReqService = mock<InitiateFlowRequestService>()
+    val initiateFlowReqService = mock<GenerateSessionService>()
     val isRetryEvent = false
 
     init {
@@ -62,6 +62,7 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
         flowCheckpoint,
         flowEvent,
         payload,
+        configs = emptyMap(),
         flowConfig,
         isRetryEvent,
         recordList,

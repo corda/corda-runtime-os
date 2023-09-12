@@ -126,6 +126,10 @@ tasks.register('smokeTest', Test) {
             project.getProperties().getOrDefault("flowWorkerHealthHttp",combinedWorker ? null : "http://localhost:7003/")
     systemProperty "dbWorkerHealthHttp",
             project.getProperties().getOrDefault("dbWorkerHealthHttp",combinedWorker ? null : "http://localhost:7004/")
+    systemProperty "persistenceWorkerHealthHttp",
+            project.getProperties().getOrDefault("persistenceWorkerHealthHttp",combinedWorker ? null : "http://localhost:7005/")
+    systemProperty "uniquenessWorkerHealthHttp",
+            project.getProperties().getOrDefault("uniquenessWorkerHealthHttp",combinedWorker ? null : "http://localhost:7006/")
 
     systemProperty "combinedWorkerHealthHttp",
             project.getProperties().getOrDefault("combinedWorkerHealthHttp", combinedWorker ? "http://localhost:7004/" : null)

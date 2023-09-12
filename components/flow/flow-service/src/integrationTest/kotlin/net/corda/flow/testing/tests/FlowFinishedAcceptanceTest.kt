@@ -2,9 +2,7 @@ package net.corda.flow.testing.tests
 
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStates
-import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
-import net.corda.flow.testing.context.initiateSingleFlow
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -62,7 +60,6 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                noFlowEvents()
                 checkpointHasRetry(1)
             }
         }
@@ -91,19 +88,6 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
     fun `A flow finishing with FlowFinished removes fiber from fiber cache`() {
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, BOB_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.InitialCheckpoint)
-        }
-
-        then {
-            expectOutputForFlow(FLOW_ID1) {
-                wakeUpEvent()
-                flowStatus(FlowStates.RUNNING)
-                flowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
-            }
-        }
-
-        `when` {
-            wakeupEventReceived(FLOW_ID1)
                 .completedSuccessfullyWith(DONE)
         }
 
@@ -129,31 +113,6 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
                 flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, INITIATED_SESSION_ID_1)
-            }
-        }
-    }
-
-    @Test
-    fun `Given the flow has a WAIT_FOR_FINAL_ACK session receiving a session close event and then finishing the flow schedules flow and session cleanup`() {
-        given {
-            initiateSingleFlow(this, 2)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
-
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
-                .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1)))
-        }
-
-        `when` {
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 3)
-                .completedSuccessfullyWith(DONE)
-        }
-
-        then {
-            expectOutputForFlow(FLOW_ID1) {
-                nullStateRecord()
-                flowStatus(FlowStates.COMPLETED, result = DONE)
-                scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString(), SESSION_ID_1)
-                flowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
     }

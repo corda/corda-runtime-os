@@ -4,6 +4,7 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.core.ShortHash
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.common.v2.RegistrationStatus.APPROVED
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
@@ -213,30 +214,40 @@ internal class VirtualNodeUpgradeOperationHandler(
             registrationRequestsCheck is MembershipQueryResult.Success
             && registrationRequestsCheck.payload.isNotEmpty()
         ) {
-            val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
-            val x500Name = membershipGroupReader.owningMember
+            val x500Name = membershipGroupReaderProvider.getGroupReader(holdingIdentity).owningMember
             val registrationRequest = membershipQueryClient
-                .queryRegistrationRequests(holdingIdentity, x500Name, limit = 1)
-            try {
-                val registrationContext = (registrationRequest as MembershipQueryResult.Success)
-                    .payload
-                    .first()
-                    .memberProvidedContext.data.array()
-                    .deserializeContext(keyValuePairListDeserializer)
-                    .toMutableMap()
+                .queryRegistrationRequests(holdingIdentity, x500Name, listOf(APPROVED), 1)
 
-                if (registrationContext.containsKey(MemberInfoExtension.SERIAL)) {
-                    registrationContext[MemberInfoExtension.SERIAL] =
-                        membershipGroupReader.lookup(x500Name)?.serial.toString()
-                }
+            when (registrationRequest) {
+                is MembershipQueryResult.Success ->
+                    try {
+                        val registrationRequestDetails = registrationRequest.payload.first()
 
-                memberResourceClient.startRegistration(
-                    holdingIdentity.shortHash,
-                    registrationContext,
-                )
-            } catch (e: ContextDeserializationException) {
-                logger.warn("Could not deserialize previous registration context for ${holdingIdentity.shortHash}. " +
-                        "Re-registration won't be attempted.")
+                        val updatedSerial = registrationRequestDetails.serial + 1
+                        val registrationContext = registrationRequestDetails
+                            .memberProvidedContext.data.array()
+                            .deserializeContext(keyValuePairListDeserializer)
+                            .toMutableMap()
+
+                        registrationContext[MemberInfoExtension.SERIAL] = updatedSerial.toString()
+
+                        memberResourceClient.startRegistration(
+                            holdingIdentity.shortHash,
+                            registrationContext,
+                        )
+                    } catch (e: ContextDeserializationException) {
+                        logger.warn(
+                            "Could not deserialize previous registration context for ${holdingIdentity.shortHash}. " +
+                                    "Re-registration will not be attempted."
+                        )
+                    }
+
+                is MembershipQueryResult.Failure ->
+                    logger.warn(
+                        "Failed to query for an APPROVED previous registration request for ${holdingIdentity.shortHash}: " +
+                                "${registrationRequest.errorMsg}. " +
+                                "Re-registration will not be attempted."
+                    )
             }
         }
     }

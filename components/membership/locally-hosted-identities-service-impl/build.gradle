@@ -7,6 +7,7 @@ description 'Membership Locally Hosted Identity Service'
 
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':components:membership:locally-hosted-identities-service')

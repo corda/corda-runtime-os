@@ -24,6 +24,7 @@ class FlowSessionFactoryImpl @Activate constructor(
 
     override fun createInitiatedFlowSession(
         sessionId: String,
+        requireClose: Boolean,
         x500Name: MemberX500Name,
         contextProperties: Map<String, String>,
         isInteropSession: Boolean
@@ -41,7 +42,8 @@ class FlowSessionFactoryImpl @Activate constructor(
                         contextUserProperties = emptyMap(),
                         contextPlatformProperties = contextProperties
                     ),
-                    FlowSessionImpl.Direction.INITIATED_SIDE
+                    FlowSessionImpl.Direction.INITIATED_SIDE,
+                    requireClose
                 )
             })
         } catch (e: PrivilegedActionException) {
@@ -51,6 +53,7 @@ class FlowSessionFactoryImpl @Activate constructor(
 
     override fun createInitiatingFlowSession(
         sessionId: String,
+        requireClose: Boolean,
         x500Name: MemberX500Name,
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder?,
         isInteropSession: Boolean
@@ -68,7 +71,8 @@ class FlowSessionFactoryImpl @Activate constructor(
                         flowContextPropertiesBuilder,
                         flowFiberService
                     ),
-                    FlowSessionImpl.Direction.INITIATING_SIDE
+                    FlowSessionImpl.Direction.INITIATING_SIDE,
+                    requireClose
                 )
             })
         } catch (e: PrivilegedActionException) {

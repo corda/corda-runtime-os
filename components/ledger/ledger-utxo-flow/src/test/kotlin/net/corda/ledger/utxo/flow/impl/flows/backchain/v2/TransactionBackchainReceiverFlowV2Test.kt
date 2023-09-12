@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.flows.backchain.v2
 
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.flow.application.services.FlowConfigService
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
@@ -13,7 +14,9 @@ import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParam
 import net.corda.ledger.utxo.flow.impl.persistence.TransactionExistenceStatus
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
+import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.lib.SignedGroupParameters
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
@@ -22,9 +25,11 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.times
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
@@ -49,6 +54,9 @@ class TransactionBackchainReceiverFlowV2Test {
         val TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_2 = StateRef(TX_ID_3, 1)
 
         val PACKAGE_SUMMARY = CordaPackageSummaryImpl("name", "version", "hash", "checksum")
+
+        const val BACKCHAIN_BATCH_CONFIG_PATH = "backchain.batchSize"
+        const val BACKCHAIN_BATCH_DEFAULT_SIZE = 1
     }
 
     private val groupParameters = mock<SignedGroupParameters>()
@@ -62,12 +70,21 @@ class TransactionBackchainReceiverFlowV2Test {
     private val utxoLedgerMetricRecorder = mock<UtxoLedgerMetricRecorder>()
     private val utxoLedgerGroupParametersPersistenceService = mock<UtxoLedgerGroupParametersPersistenceService>()
     private val signedGroupParametersVerifier = mock<SignedGroupParametersVerifier>()
+    private val flowConfigService = mock<FlowConfigService>()
 
     private val session = mock<FlowSession>()
 
     private val retrievedTransaction1 = mock<UtxoSignedTransaction>()
     private val retrievedTransaction2 = mock<UtxoSignedTransaction>()
     private val retrievedTransaction3 = mock<UtxoSignedTransaction>()
+
+    @BeforeEach
+    fun setup() {
+        val utxoConfig = mock<SmartConfig> {
+            on { getInt(BACKCHAIN_BATCH_CONFIG_PATH) } doReturn BACKCHAIN_BATCH_DEFAULT_SIZE
+        }
+        whenever(flowConfigService.getConfig(ConfigKeys.UTXO_LEDGER_CONFIG)).thenReturn(utxoConfig)
+    }
 
     @Test
     fun `a resolved transaction has its dependencies retrieved from its peer and persisted`() {
@@ -469,6 +486,7 @@ class TransactionBackchainReceiverFlowV2Test {
             utxoLedgerMetricRecorder = this@TransactionBackchainReceiverFlowV2Test.utxoLedgerMetricRecorder
             utxoLedgerGroupParametersPersistenceService = this@TransactionBackchainReceiverFlowV2Test.utxoLedgerGroupParametersPersistenceService
             signedGroupParametersVerifier = this@TransactionBackchainReceiverFlowV2Test.signedGroupParametersVerifier
+            flowConfigService = this@TransactionBackchainReceiverFlowV2Test.flowConfigService
         }.call()
     }
 }

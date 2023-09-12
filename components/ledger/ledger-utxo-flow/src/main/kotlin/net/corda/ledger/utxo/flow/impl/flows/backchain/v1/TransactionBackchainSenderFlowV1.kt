@@ -56,9 +56,7 @@ class TransactionBackchainSenderFlowV1(
                         utxoLedgerPersistenceService.findSignedTransaction(id)
                             ?: throw CordaRuntimeException("Requested transaction does not exist locally")
                     }
-                    // sending in batches of 1
-                    // TODO Switch to [FlowMessaging.sendAll]
-                    transactions.map { session.send(listOf(it)) }
+                    session.send(transactions)
                     log.trace {
                         "Backchain resolution of $headTransactionIds - Sent backchain transactions ${transactions.map { it.id }} to " +
                                 session.counterparty

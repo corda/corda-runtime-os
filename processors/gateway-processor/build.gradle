@@ -24,6 +24,7 @@ dependencies {
     runtimeOnly project(':libs:messaging:messaging-impl')
     runtimeOnly project(":libs:crypto:crypto-impl")
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
+    runtimeOnly project(":libs:web:web-impl")
 }
 
 description 'Gateway Processor'

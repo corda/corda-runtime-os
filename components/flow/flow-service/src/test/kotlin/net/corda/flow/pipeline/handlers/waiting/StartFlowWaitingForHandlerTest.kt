@@ -1,6 +1,6 @@
 package net.corda.flow.pipeline.handlers.waiting
 
-import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.event.StartFlow
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.test.utils.buildFlowEventContext
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -13,7 +13,7 @@ class StartFlowWaitingForHandlerTest {
     fun `Returns a FlowContinuation#Run`() {
         val inputContext = buildFlowEventContext(
             checkpoint = mock(),
-            inputEventPayload = Wakeup()
+            inputEventPayload = StartFlow()
         )
         val continuation = StartFlowWaitingForHandler().runOrContinue(inputContext, WaitingForStartFlow)
         assertEquals(FlowContinuation.Run(Unit), continuation)

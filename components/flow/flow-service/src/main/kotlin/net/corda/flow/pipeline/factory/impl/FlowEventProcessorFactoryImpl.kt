@@ -27,12 +27,12 @@ class FlowEventProcessorFactoryImpl @Activate constructor(
     private val flowMDCService: FlowMDCService
 ) : FlowEventProcessorFactory {
 
-    override fun create(config: SmartConfig): StateAndEventProcessor<String, Checkpoint, FlowEvent> {
+    override fun create(configs: Map<String, SmartConfig>): StateAndEventProcessor<String, Checkpoint, FlowEvent> {
         return FlowEventProcessorImpl(
             flowEventPipelineFactory,
             flowEventExceptionProcessor,
             flowEventContextConverter,
-            config,
+            configs,
             flowMDCService
         )
     }

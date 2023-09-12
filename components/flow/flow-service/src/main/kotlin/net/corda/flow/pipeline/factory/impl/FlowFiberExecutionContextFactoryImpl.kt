@@ -43,7 +43,8 @@ class FlowFiberExecutionContextFactoryImpl @Activate constructor(
             interopIdentityRegistryService.getVirtualNodeRegistryView(checkpoint.holdingIdentity.shortHash),
             currentSandboxGroupContext,
             context.mdcProperties,
-            context.flowMetrics
+            context.flowMetrics,
+            context.configs
         )
     }
 }

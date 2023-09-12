@@ -29,6 +29,7 @@ dependencies {
     implementation project(':libs:virtual-node:sandbox-group-context')
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation "org.hibernate:hibernate-core:$hibernateVersion"
 
     runtimeOnly project(":libs:crypto:crypto-serialization-impl")
 

@@ -45,6 +45,8 @@ dependencies {
 
     integrationTestImplementation project(':testing:group-policy-test-common')
 
+    runtimeOnly project(":libs:web:web-impl")
+
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')

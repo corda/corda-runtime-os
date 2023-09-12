@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.event.StartFlow
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.output.FlowStates
@@ -94,9 +93,24 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 "A transient exception was thrown the event that failed will be retried. event='${context.inputEvent}',  $exception"
             }
 
+            /**
+             * When retrying, the flow engine switches on whether to retry a previous event on whether the current input
+             * is a Wakeup or not. The mechanism for generating the Wakeup events that would trigger a retry has been
+             * removed, however, so publishing a Wakeup here is required to keep the retry feature alive.
+             *
+             * This is really only a temporary solution and a bit of a hack. Longer term this should be replaced with
+             * the new scheduler mechanism. It may also be possible to remove all sources of transient exceptions if
+             * the state storage solution is changed, which would allow this feature to be removed entirely.
+             */
+            val payload = context.inputEventPayload ?: return@withEscalation process(
+                FlowFatalException(
+                    "Could not process a retry as the input event has no payload.",
+                    exception
+                ), context
+            )
             val records = createStatusRecord(context.checkpoint.flowId) {
                 flowMessageFactory.createFlowRetryingStatusMessage(context.checkpoint)
-            }
+            } + flowRecordFactory.createFlowEventRecord(context.checkpoint.flowId, payload)
 
             // Set up records before the rollback, just in case a transient exception happens after a flow is initialised
             // but before the first checkpoint has been recorded.
@@ -136,7 +150,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             )
         }
 
-        val errorEvents = flowSessionManager.getSessionErrorEventRecords(checkpoint, context.config, exceptionHandlingStartTime)
+        val errorEvents = flowSessionManager.getSessionErrorEventRecords(checkpoint, context.flowConfig, exceptionHandlingStartTime)
         val cleanupEvents = createCleanupEventsForSessions(
             getScheduledCleanupExpiryTime(context, exceptionHandlingStartTime),
             checkpoint.sessions.filterNot { it.hasScheduledCleanup }
@@ -201,8 +215,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
             removeCachedFlowFiber(checkpoint)
 
-            val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
-            flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + record))
+            flowEventContextConverter.convert(context)
         }
     }
 
@@ -240,7 +253,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             }
             val errorEvents = flowSessionManager.getSessionErrorEventRecords(
                 context.checkpoint,
-                context.config,
+                context.flowConfig,
                 exceptionHandlingStartTime
             )
             val cleanupEvents = createCleanupEventsForSessions(
@@ -320,7 +333,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     }
 
     private fun getScheduledCleanupExpiryTime(context: FlowEventContext<*>, now: Instant): Long {
-        val flowCleanupTime = context.config.getLong(FlowConfig.SESSION_FLOW_CLEANUP_TIME)
+        val flowCleanupTime = context.flowConfig.getLong(FlowConfig.SESSION_FLOW_CLEANUP_TIME)
         return now.plusMillis(flowCleanupTime).toEpochMilli()
     }
 
