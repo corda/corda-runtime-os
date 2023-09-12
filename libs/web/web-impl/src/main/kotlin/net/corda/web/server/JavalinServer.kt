@@ -85,31 +85,29 @@ class JavalinServer(
     }
 
     override fun registerEndpoint(endpoint: Endpoint) {
-        registerEndpointInternal(endpoint)
+        // register immediately when the server has been started
+        if(null != server) registerEndpointInternal(endpoint)
+        // record the endpoint in case we need to register when it's already started
         endpoints.add(endpoint)
     }
 
     override fun removeEndpoint(endpoint: Endpoint) {
-        requireServerInitialized()
-        endpoints.remove(endpoint)
+        if(null != server) endpoints.remove(endpoint)
         stop()
         port?.let { startServer(it) }
     }
 
     private fun registerEndpointInternal(endpoint: Endpoint) {
+        if (server == null) {
+            throw IllegalStateException("The Javalin webserver has not been initialized")
+        }
         endpoint.validate()
-        requireServerInitialized()
         when (endpoint.methodType) {
             HTTPMethod.GET -> server?.get(endpoint.endpoint) { endpoint.webHandler.handle(JavalinContext(it)) }
             HTTPMethod.POST -> server?.post(endpoint.endpoint) { endpoint.webHandler.handle(JavalinContext(it)) }
         }
+        log.info("Endpoint $endpoint registered.")
     }
 
     override val port: Int? get() = server?.port()
-
-    private fun requireServerInitialized() {
-        if (server == null) {
-            throw CordaRuntimeException("The Javalin webserver has not been initialized")
-        }
-    }
 }
