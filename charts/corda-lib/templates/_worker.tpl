@@ -106,7 +106,7 @@ spec:
       {{- if and ( not $.Values.dumpHostPath ) ( not .profiling.enabled ) }}
       {{- with $.Values.podSecurityContext }}
       securityContext:
-        {{ . | toYaml }}
+        {{ . | toYaml | nindent 8 }}
       {{- end }}
       {{- end }}
       {{- include "corda.imagePullSecrets" $ | nindent 6 }}

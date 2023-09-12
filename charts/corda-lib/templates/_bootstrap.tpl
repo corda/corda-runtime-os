@@ -72,7 +72,7 @@ spec:
       serviceAccountName: {{ include "corda.bootstrapPreinstallServiceAccountName" . }}
       {{- with .Values.podSecurityContext }}
       securityContext:
-        {{ . | toYaml }}
+        {{ . | toYaml | nindent 8 }}
       {{- end }}
       containers:
         - name: preinstall-checks
@@ -137,7 +137,7 @@ spec:
       {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
       {{- with .Values.podSecurityContext }}
       securityContext:
-        {{ . | toYaml }}
+        {{ . | toYaml | nindent 8 }}
       {{- end }}
       containers:
         - name: fin
@@ -225,7 +225,7 @@ spec:
       {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
       {{- with .Values.podSecurityContext }}
       securityContext:
-        {{ . | toYaml }}
+        {{ . | toYaml | nindent 8 }}
       {{- end }}
       containers:
         - name: create-topics
@@ -371,7 +371,7 @@ spec:
       {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
       {{- with .Values.podSecurityContext }}
       securityContext:
-        {{ . | toYaml }}
+        {{ . | toYaml | nindent 8 }}
       {{- end }}
       containers:
         - name: create-rbac-role-user-admin
