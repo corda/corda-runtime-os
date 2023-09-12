@@ -5,6 +5,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.applications.workers.smoketest.utils.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.utils.TEST_CPI_NAME
+import net.corda.crypto.core.CryptoConsts
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.FlowResult
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_FAILED
@@ -568,8 +569,8 @@ class FlowTests {
     @Test
     fun `Crypto - Sign bytes with key type`() {
         val requestBody = RpcSmokeTestInput().apply {
-            command = "crypto_sign_and_verify"
-            data = mapOf("memberX500" to bobX500)
+            command = "crypto_sign_with_key_category"
+            data = mapOf("memberX500" to bobX500, "keyCategory" to CryptoConsts.Categories.LEDGER)
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
@@ -577,10 +578,9 @@ class FlowTests {
         val flowResult = awaitRestFlowResult(bobHoldingId, requestId)
 
         assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(flowResult.json).isNotNull
+        assertThat(flowResult.json).isNotNull()
         assertThat(flowResult.flowError).isNull()
-        assertThat(flowResult.json.command).isEqualTo("crypto_sign_and_verify")
-        assertThat(flowResult.json.result).isEqualTo(true.toString())
+        assertThat(flowResult.json.command).isEqualTo("crypto_sign_with_key_category")
     }
 
     @Test
