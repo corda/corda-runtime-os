@@ -11,8 +11,8 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import javax.persistence.EntityManager
@@ -35,100 +35,113 @@ class StateManagerImplTest {
         entityManagerFactory = entityManagerFactory,
     )
 
-    private val firstStateEntity = StateEntity("key1", "state1".toByteArray(), "{}", 1, Instant.now())
-    private val firstState = State(
-        firstStateEntity.key,
-        firstStateEntity.value,
-        firstStateEntity.version,
-        metadata(),
-        firstStateEntity.modifiedTime
-    )
+    private val persistentStateOne = StateEntity("key1", "state1".toByteArray(), "{}", 1, Instant.now())
+    private val apiStateOne = persistentStateOne.toState()
+    private val persistentStateTwo = StateEntity("key2", "state2".toByteArray(), "{}", 2, Instant.now())
+    private val apiStateTwo = persistentStateTwo.toState()
+    private val persistentStateThree = StateEntity("key3", "state3".toByteArray(), "{}", 3, Instant.now())
+    private val apiStateThree = persistentStateThree.toState()
 
-    private val secondStateEntity = StateEntity("key2", "state2".toByteArray(), "{}", 2, Instant.now())
-    private val secondState = State(
-        secondStateEntity.key,
-        secondStateEntity.value,
-        secondStateEntity.version,
-        metadata(),
-        secondStateEntity.modifiedTime
-    )
+    private fun StateEntity.toState() = State(key, value, version, metadata(), modifiedTime)
 
-    private val thirdStateEntity = StateEntity("key3", "state3".toByteArray(), "{}", 3, Instant.now())
-    private val thirdState = State(
-        thirdStateEntity.key,
-        thirdStateEntity.value,
-        thirdStateEntity.version,
-        metadata(),
-        thirdStateEntity.modifiedTime
-    )
+    private fun StateEntity.newVersion() = StateEntity(key, value, metadata, version + 1, modifiedTime)
+
     @Test
     fun checkVersionAndPrepareEntitiesForPersistenceReturnsEmptyUnmatchedVersionsWhenAllEntitiesHaveCorrectVersionSet() {
-        whenever(stateRepository.get(any(), any())).thenReturn(listOf(firstStateEntity, secondStateEntity))
-        val result =
-            stateManager.checkVersionAndPrepareEntitiesForPersistence(listOf(firstState, secondState), entityManager)
+        whenever(stateRepository.get(any(), any())).thenReturn(listOf(persistentStateOne, persistentStateTwo))
 
-        assertThat(result.first).containsExactly(firstStateEntity, secondStateEntity)
+        val result =
+            stateManager.checkVersionAndPrepareEntitiesForPersistence(listOf(apiStateOne, apiStateTwo), entityManager)
+        assertThat(result.first).containsExactly(persistentStateOne, persistentStateTwo)
         assertThat(result.second).isEmpty()
     }
 
     @Test
     fun checkVersionAndPrepareEntitiesForPersistenceReturnsEmptyMatchedVersionsWhenAllEntitiesHaveIncorrectVersionSet() {
-        whenever(stateRepository.get(any(), any())).thenReturn(emptyList())
-        val result =
-            stateManager.checkVersionAndPrepareEntitiesForPersistence(listOf(firstState, secondState), entityManager)
+        val moreUpToDateStateOne = persistentStateOne.newVersion()
+        val moreUpToDateStateTwo = persistentStateTwo.newVersion()
+        whenever(stateRepository.get(any(), any())).thenReturn(listOf(moreUpToDateStateOne, moreUpToDateStateTwo))
 
+        val result =
+            stateManager.checkVersionAndPrepareEntitiesForPersistence(listOf(apiStateOne, apiStateTwo), entityManager)
         assertThat(result.first).isEmpty()
-        assertThat(result.second).containsExactly(
-            entry(firstState.key, firstState),
-            entry(secondState.key, secondState)
+        assertThat(result.second).containsExactlyInAnyOrderEntriesOf(
+            mutableMapOf(
+                apiStateOne.key to moreUpToDateStateOne.toState(),
+                apiStateTwo.key to moreUpToDateStateTwo.toState(),
+            )
         )
     }
 
     @Test
     fun checkVersionAndPrepareEntitiesForPersistenceReturnsCorrectlyWhenSomeVersionsMatchAndSomeVersionsDoNotMatch() {
-        whenever(stateRepository.get(any(), any())).thenReturn(listOf(firstStateEntity))
-        val result =
-            stateManager.checkVersionAndPrepareEntitiesForPersistence(listOf(firstState, secondState), entityManager)
+        val moreUpToDateStateTwo = persistentStateTwo.newVersion()
+        whenever(stateRepository.get(any(), any())).thenReturn(listOf(persistentStateOne, moreUpToDateStateTwo))
+        val result = stateManager.checkVersionAndPrepareEntitiesForPersistence(
+            listOf(apiStateOne, apiStateTwo, apiStateThree), entityManager
+        )
 
-        assertThat(result.first).containsExactly(firstStateEntity)
-        assertThat(result.second).containsExactly(entry(secondState.key, secondState))
+        assertThat(result.first).containsExactly(persistentStateOne)
+        assertThat(result.second).containsExactlyInAnyOrderEntriesOf(
+            mutableMapOf(
+                apiStateTwo.key to moreUpToDateStateTwo.toState(),
+            )
+        )
     }
 
     @Test
     fun createReturnsEmptyMapWhenAllInsertsSucceed() {
-        assertThat(stateManager.create(listOf(firstState, secondState))).isEmpty()
-        verify(stateRepository).create(entityManager, firstStateEntity)
-        verify(stateRepository).create(entityManager, secondStateEntity)
+        assertThat(stateManager.create(listOf(apiStateOne, apiStateTwo))).isEmpty()
+        verify(stateRepository).create(entityManager, persistentStateOne)
+        verify(stateRepository).create(entityManager, persistentStateTwo)
     }
 
     @Test
     fun createReturnsMapWithStatesThatAlreadyExist() {
         val persistenceException = PersistenceException("Mock Exception")
-        doThrow(persistenceException).whenever(stateRepository).create(entityManager, firstStateEntity)
+        doThrow(persistenceException).whenever(stateRepository).create(entityManager, persistentStateOne)
 
-        assertThat(stateManager.create(listOf(firstState, secondState)))
-            .containsExactly(entry(firstState.key, persistenceException))
-        verify(stateRepository).create(entityManager, firstStateEntity)
-        verify(stateRepository).create(entityManager, secondStateEntity)
+        assertThat(stateManager.create(listOf(apiStateOne, apiStateTwo)))
+            .containsExactly(entry(apiStateOne.key, persistenceException))
+        verify(stateRepository).create(entityManager, persistentStateOne)
+        verify(stateRepository).create(entityManager, persistentStateTwo)
     }
 
     @Test
     fun updateOnlyPersistsStatesWithMatchingVersions() {
-        whenever(stateRepository.get(any(), any())).thenReturn(listOf(firstStateEntity, thirdStateEntity))
-        val result = stateManager.update(listOf(firstState, secondState, thirdState))
+        val moreUpToDateStateTwo = persistentStateTwo.newVersion()
+        val persistentStateFour = StateEntity("key4", "state4".toByteArray(), "{}", 4, Instant.now())
+        val apiStateFour = persistentStateFour.toState()
+        whenever(stateRepository.get(any(), any())).thenReturn(
+            listOf(persistentStateOne, moreUpToDateStateTwo, persistentStateFour)
+        )
 
-        assertThat(result).containsExactly(entry(secondState.key, secondState))
-        verify(stateRepository).update(entityManager, listOf(firstStateEntity, thirdStateEntity))
-        verify(stateRepository, never()).update(entityManager, listOf(secondStateEntity))
+        val result = stateManager.update(listOf(apiStateOne, apiStateTwo, apiStateThree, apiStateFour))
+        assertThat(result).containsExactly(entry(apiStateTwo.key, moreUpToDateStateTwo.toState()))
+        verify(stateRepository).get(
+            entityManager,
+            listOf(apiStateOne.key, apiStateTwo.key, apiStateThree.key, apiStateFour.key)
+        )
+        verify(stateRepository).update(entityManager, listOf(persistentStateOne, persistentStateFour))
+        verifyNoMoreInteractions(stateRepository)
     }
 
     @Test
     fun deleteOnlyPersistsStatesWithMatchingVersions() {
-        whenever(stateRepository.get(any(), any())).thenReturn(listOf(firstStateEntity, thirdStateEntity))
-        val result = stateManager.delete(listOf(firstState, secondState, thirdState))
+        val moreUpToDateStateTwo = persistentStateTwo.newVersion()
+        val persistentStateFour = StateEntity("key4", "state4".toByteArray(), "{}", 4, Instant.now())
+        val apiStateFour = persistentStateFour.toState()
+        whenever(stateRepository.get(any(), any())).thenReturn(
+            listOf(persistentStateOne, moreUpToDateStateTwo, persistentStateFour)
+        )
 
-        assertThat(result).containsExactly(entry(secondState.key, secondState))
-        verify(stateRepository).delete(entityManager, listOf(firstStateEntity.key, thirdStateEntity.key))
-        verify(stateRepository, never()).delete(entityManager, listOf(secondStateEntity.key))
+        val result = stateManager.delete(listOf(apiStateOne, apiStateTwo, apiStateThree, apiStateFour))
+        assertThat(result).containsExactly(entry(apiStateTwo.key, moreUpToDateStateTwo.toState()))
+        verify(stateRepository).get(
+            entityManager,
+            listOf(apiStateOne.key, apiStateTwo.key, apiStateThree.key, apiStateFour.key)
+        )
+        verify(stateRepository).delete(entityManager, listOf(persistentStateOne.key, persistentStateFour.key))
+        verifyNoMoreInteractions(stateRepository)
     }
 }

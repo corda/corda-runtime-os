@@ -41,19 +41,23 @@ class StateManagerImpl(
         states: Collection<State>,
         entityManager: EntityManager
     ): Pair<List<StateEntity>, Map<String, State>> {
+        val matchedVersions = mutableListOf<StateEntity>()
+        val unmatchedVersions = mutableMapOf<String, State>()
         val persistedStates = stateRepository.get(entityManager, states.map { it.key })
-        val (matchedVersions, unmatchedVersions) = states.partition { st ->
-            st.version == persistedStates.find { it.key == st.key }?.version
+
+        states.forEach { st ->
+            val persisted = persistedStates.find { it.key == st.key }
+
+            persisted?.let {
+                if (st.version == persisted.version) {
+                    matchedVersions.add(st.toPersistentEntity())
+                } else {
+                    unmatchedVersions[it.key] = it.fromPersistentEntity()
+                }
+            }
         }
 
-        return Pair(
-            matchedVersions.map {
-                it.toPersistentEntity()
-            },
-            unmatchedVersions.associateBy {
-                it.key
-            }
-        )
+        return Pair(matchedVersions, unmatchedVersions)
     }
 
     override fun create(states: Collection<State>): Map<String, Exception> {
@@ -92,7 +96,7 @@ class StateManagerImpl(
 
             return mismatchVersions.also {
                 if (it.isNotEmpty()) {
-                    logger.warn("Optimistic locking check failed for States ${it.entries.joinToString()}")
+                    logger.info("Optimistic locking check failed for States ${it.entries.joinToString()}")
                 }
             }
         }
@@ -105,7 +109,7 @@ class StateManagerImpl(
 
             return mismatchVersions.also {
                 if (it.isNotEmpty()) {
-                    logger.warn("Optimistic locking check failed for States ${it.entries.joinToString()}")
+                    logger.info("Optimistic locking check failed for States ${it.entries.joinToString()}")
                 }
             }
         }
