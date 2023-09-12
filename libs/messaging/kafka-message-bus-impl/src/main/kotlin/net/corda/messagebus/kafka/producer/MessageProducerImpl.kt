@@ -24,15 +24,12 @@ class MessageProducerImpl(
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun send(message: CordaMessage<*>): Deferred<CordaMessage<*>?> {
-        val result: CompletableDeferred<CordaMessage<*>> = CompletableDeferred()
-        producer.send(message.toCordaProducerRecord()) { ex ->
-            if (ex != null) {
-                result.completeExceptionally(ex)
+    override fun send(message: CordaMessage<*>): Deferred<CordaMessage<*>?> =
+        CompletableDeferred<CordaMessage<*>>().apply {
+            producer.send(message.toCordaProducerRecord()) { ex ->
+                ex?.let { completeExceptionally(ex) }
             }
         }
-        return result
-    }
 
     override fun close() {
         try {
