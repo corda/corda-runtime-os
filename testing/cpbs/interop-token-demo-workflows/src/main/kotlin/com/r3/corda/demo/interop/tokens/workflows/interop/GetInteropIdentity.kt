@@ -3,7 +3,7 @@ package com.r3.corda.demo.interop.tokens.workflows.interop
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.interop.InteropIdentityLookUp
+import net.corda.v5.application.interop.InteropIdentityLookup
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.UtxoLedgerService
@@ -25,7 +25,7 @@ class GetInteropIdentity : ClientStartableFlow {
     lateinit var ledgerService: UtxoLedgerService
 
     @CordaInject
-    lateinit var interopIdentityLookUp: InteropIdentityLookUp
+    lateinit var interopIdentityLookUp: InteropIdentityLookup
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {

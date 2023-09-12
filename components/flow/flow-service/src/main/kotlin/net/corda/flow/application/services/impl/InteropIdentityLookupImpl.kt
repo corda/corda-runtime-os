@@ -4,7 +4,7 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.interop.identity.registry.InteropIdentityRegistryView
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.interop.InterOpIdentityInfo
-import net.corda.v5.application.interop.InteropIdentityLookUp
+import net.corda.v5.application.interop.InteropIdentityLookup
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -14,11 +14,11 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import org.slf4j.LoggerFactory
 
-@Component(service = [InteropIdentityLookUp::class, UsedByFlow::class], scope = PROTOTYPE)
-class InteropIdentityLookUpImpl @Activate constructor(
+@Component(service = [InteropIdentityLookup::class, UsedByFlow::class], scope = PROTOTYPE)
+class InteropIdentityLookupImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService,
-) : InteropIdentityLookUp, UsedByFlow, SingletonSerializeAsToken {
+) : InteropIdentityLookup, UsedByFlow, SingletonSerializeAsToken {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
