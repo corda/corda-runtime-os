@@ -24,6 +24,7 @@ import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
 class UtxoTransactionReaderImpl(
     sandbox: SandboxGroupContext,
@@ -118,4 +119,6 @@ class UtxoTransactionReaderImpl(
     }
 
     override fun getConsumedStateRefs(): List<StateRef> = wrappedWireTransaction.inputStateRefs
+
+    override fun getUtxoTransaction(): UtxoLedgerTransaction? = null // This needs to be updated
 }

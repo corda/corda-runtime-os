@@ -2,6 +2,8 @@
 package net.corda.ledger.persistence.utxo.impl.request.handlers
 
 import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
+import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
@@ -35,21 +37,9 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
     }
 
     override fun execute(): List<Record<*, *>> {
-        val isTransactionVerified = transactionReader.status == TransactionStatus.VERIFIED
 
-        //
-        val listOfPairsStateAndUtxoToken = transactionReader.getVisibleStates().values.toList().toTokens(tokenObservers)
-        val outputTokenRecords = if (isTransactionVerified) {
-            utxoOutputRecordFactory.getTokenCacheChangeEventRecords(
-                holdingIdentity,
-                listOfPairsStateAndUtxoToken,
-                transactionReader.getConsumedStates(persistenceService).toTokens(tokenObservers)
-                //
-            )
-        } else {
-            listOf()
-        }
-
+        val listOfPairsStateAndUtxoToken = getTokens(transactionReader.getVisibleStates().values.toList(), tokenObservers)
+        val outputTokenRecords = getOutputTokenRecords(listOfPairsStateAndUtxoToken)
         val utxoTokenMap = listOfPairsStateAndUtxoToken.associate { it.first.ref to it.second }
 
         // persist the transaction
@@ -59,23 +49,38 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
         return outputTokenRecords + utxoOutputRecordFactory.getPersistTransactionSuccessRecord(externalEventContext)
     }
 
-    private fun List<StateAndRef<ContractState>>.toTokens(tokenObservers: UtxoTokenObserverMap): List<Pair<StateAndRef<*>, UtxoToken>> =
-        flatMap { stateAndRef ->
+    private fun getOutputTokenRecords(listOfPairsStateAndUtxoToken: List<Pair<StateAndRef<*>, UtxoToken>>): List<Record<TokenPoolCacheKey, TokenPoolCacheEvent>> {
+        val isTransactionVerified = transactionReader.status == TransactionStatus.VERIFIED
+        return if (isTransactionVerified) {
+            val consumedStates = transactionReader.getConsumedStates(persistenceService)
+            val consumedTokens = getTokens(consumedStates, tokenObservers)
+            utxoOutputRecordFactory.getTokenCacheChangeEventRecords(
+                holdingIdentity,
+                listOfPairsStateAndUtxoToken,
+                consumedTokens
+            )
+        } else {
+            listOf()
+        }
+    }
+
+    private fun getTokens(visibleStates: List<StateAndRef<ContractState>>, tokenObservers: UtxoTokenObserverMap): List<Pair<StateAndRef<*>, UtxoToken>> =
+        visibleStates.flatMap { stateAndRef ->
             val observer = tokenObservers.getObserverFor(stateAndRef.state.contractStateType)
-            if (observer == null) {
-                // Observer with the deprecated observer interface was not found
-                // Try again but using the new version of the observer interface
-                val observerV2 = tokenObservers.getObserverForV2(stateAndRef.state.contractStateType)
-                if (observerV2 == null) {
-                   emptyList()
-                } else {
-                    log.info("Filpe: OnCommitV2")
-                    emptyList()
-                  //  onCommit(observer, /*transaction*/, stateAndRef)
-                }
-            } else {
-                onCommit(observer, stateAndRef)
+            if (observer != null) {
+                return@flatMap onCommit(observer, stateAndRef)
             }
+
+            // No observer with the deprecated interface was found
+            // Look for an observer that implements the new interface
+            val observerV2 = tokenObservers.getObserverForV2(stateAndRef.state.contractStateType)
+            if (observerV2 != null) {
+                return@flatMap onCommit(observerV2, transactionReader.getUtxoTransaction()!!, stateAndRef)
+            }
+
+            // No observer found
+            // Return an empty list of tokens
+            emptyList()
         }
 
     private fun onCommit(

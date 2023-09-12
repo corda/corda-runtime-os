@@ -763,6 +763,8 @@ class UtxoPersistenceServiceImplTest {
                 StateRef(transactionId, index)
             )
         }
+
+        override fun getUtxoTransaction(): UtxoLedgerTransaction? = null // This needs to be updated
     }
 
     class TestContract : Contract {
