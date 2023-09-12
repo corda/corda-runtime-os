@@ -93,9 +93,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
 
     private fun interopCounterpartyExists(checkpoint: FlowCheckpoint, counterparty: MemberX500Name): Boolean {
         val registryView = interopIdentityRegistryService.getVirtualNodeRegistryView(checkpoint.holdingIdentity.shortHash)
-        val identities = registryView.getIdentitiesByApplicationName()
-
-        val counterpartyExists = identities.containsKey(counterparty.organization)
+        val counterpartyExists = registryView.getIdentityWithApplicationName(counterparty.organization) != null
 
         if (!counterpartyExists) {
             log.warn("Interop counterparty '${counterparty}' does not exist!")
