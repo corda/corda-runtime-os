@@ -256,6 +256,9 @@ internal class VirtualNodeUpgradeOperationHandler(
                 logger.warn("Could not deserialize previous registration context for ${holdingIdentity.shortHash}. " +
                         "Re-registration won't be attempted.")
             }
+        } else if (registrationRequest is MembershipQueryResult.Failure) {
+            logger.warn("Failed to query for an APPROVED previous registration request for ${holdingIdentity.shortHash}: " +
+                "${registrationRequest.errorMsg}. Re-registration will not be attempted.")
         }
     }
 
