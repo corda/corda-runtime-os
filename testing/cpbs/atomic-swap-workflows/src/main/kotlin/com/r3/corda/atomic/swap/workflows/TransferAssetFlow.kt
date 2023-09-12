@@ -62,13 +62,13 @@ class TransferAssetFlow : ClientStartableFlow {
                 listOf(buyer.ledgerKey)
             )
 
-            val lockState = LockState(
-                input.owner.ledgerKey,
-                buyer.ledgerKey,
-                input.assetName,
-                input.assetId,
-                listOf(input.owner.ledgerKey, buyer.ledgerKey)
-            )
+//            val lockState = LockState(
+//                input.owner.ledgerKey,
+//                buyer.ledgerKey,
+//                input.assetName,
+//                input.assetId,
+//                listOf(input.owner.ledgerKey, buyer.ledgerKey)
+//            )
 
             val notaryName = stateAndRef.state.notaryName
 

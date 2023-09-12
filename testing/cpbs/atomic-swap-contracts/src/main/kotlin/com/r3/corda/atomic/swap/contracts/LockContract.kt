@@ -20,7 +20,6 @@ class LockContract : Contract {
 //        val inputState = transaction.inputContractStates.first() as LockState
         val outputState = transaction.outputContractStates.first() as LockState
 
-        //todo change the rules of the commands
         when (command) {
             is Lock -> {
                 "When command is Lock there should be exactly two participants." using (outputState.participants.size == 2)
