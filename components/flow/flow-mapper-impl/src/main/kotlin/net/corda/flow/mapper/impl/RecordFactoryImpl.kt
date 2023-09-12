@@ -1,8 +1,8 @@
 package net.corda.flow.mapper.impl
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
@@ -43,74 +43,36 @@ class RecordFactoryImpl @Activate constructor(
         exceptionEnvelope: ExceptionEnvelope,
         instant: Instant,
         flowConfig: SmartConfig,
-        messageDirection: MessageDirection
+        flowId: String
     ): Record<*, *> {
-        val outputTopic = getSessionEventOutputTopic(sessionEvent, messageDirection)
-        return if (isLocalCluster(sessionEvent)) {
-            val errEvent = SessionEvent(
-                MessageDirection.INBOUND,
-                instant,
-                toggleSessionId(sessionEvent.sessionId),
-                null,
-                sessionEvent.initiatingIdentity,
-                sessionEvent.initiatedIdentity,
-                SessionError(
-                    exceptionEnvelope
-                ),
-                sessionEvent.contextSessionProperties
-            )
-            Record(outputTopic, errEvent.sessionId, FlowMapperEvent(errEvent))
-        } else {
-            createOutboundRecord(
-                sessionEvent,
-                SessionError(
-                    exceptionEnvelope
-                ),
-                instant,
-                flowConfig,
-                outputTopic
-            )
-        }
+        return buildSessionRecord(
+            sessionEvent,
+            SessionError(
+                exceptionEnvelope
+            ),
+            instant,
+            flowConfig,
+            flowId
+        )
     }
 
     override fun forwardEvent(
         sessionEvent: SessionEvent,
         instant: Instant,
         flowConfig: SmartConfig,
-        messageDirection: MessageDirection
+        flowId: String
     ): Record<*, *> {
-        val outputTopic = getSessionEventOutputTopic(sessionEvent, messageDirection)
-        return if (isLocalCluster(sessionEvent)) {
-            sessionEvent.messageDirection = MessageDirection.INBOUND
-            sessionEvent.sessionId = toggleSessionId(sessionEvent.sessionId)
-            Record(
-                outputTopic,
-                sessionEvent.sessionId,
-                FlowMapperEvent(sessionEvent)
-            )
-        } else {
-            createOutboundRecord(
-                sessionEvent,
-                sessionEvent.payload,
-                instant,
-                flowConfig,
-                outputTopic
-            )
-        }
+        return buildSessionRecord(
+            sessionEvent,
+            sessionEvent.payload,
+            instant,
+            flowConfig,
+            flowId
+        )
     }
 
-    private fun isLocalCluster(
-        sessionEvent: SessionEvent
-    ): Boolean {
-        val destinationIdentity = getSourceAndDestinationIdentity(sessionEvent).destinationIdentity
-        return when (locallyHostedIdentitiesService.getIdentityInfo(destinationIdentity.toCorda())) {
-            null -> false
-            else -> true
-        }
-    }
-
-    override fun getSessionEventOutputTopic(sessionEvent: SessionEvent, messageDirection: MessageDirection): String {
-        return when (messageDirection) {
+    override fun getSessionEventOutputTopic(sessionEvent: SessionEvent): String {
+        return when (sessionEvent.messageDirection) {
             MessageDirection.INBOUND -> Schemas.Flow.FLOW_EVENT_TOPIC
             MessageDirection.OUTBOUND -> {
                 if (isLocalCluster(sessionEvent)) {
@@ -118,6 +80,50 @@ class RecordFactoryImpl @Activate constructor(
                 } else {
                     Schemas.P2P.P2P_OUT_TOPIC
                 }
+            }
+            else -> {
+                throw IllegalArgumentException("Session event had an invalid message direction set: ${sessionEvent.messageDirection}")
+            }
+        }
+    }
+
+    private fun buildSessionRecord(
+        sourceEvent: SessionEvent,
+        newPayload: Any,
+        timestamp: Instant,
+        config: SmartConfig,
+        flowId: String
+    ) : Record<*, *> {
+        val outputTopic = getSessionEventOutputTopic(sourceEvent, sourceEvent.messageDirection)
+        val (newDirection, sessionId) = when (outputTopic) {
+            Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC -> Pair(MessageDirection.INBOUND, toggleSessionId(sourceEvent.sessionId))
+            Schemas.Flow.FLOW_EVENT_TOPIC -> Pair(MessageDirection.INBOUND, toggleSessionId(sourceEvent.sessionId))
+            else -> Pair(MessageDirection.OUTBOUND, sourceEvent.sessionId)
+        }
+        val sequenceNumber = if (newPayload is SessionError) null else sourceEvent.sequenceNum
+        val sessionEvent = SessionEvent(
+            newDirection,
+            timestamp,
+            sessionId,
+            sequenceNumber,
+            sourceEvent.initiatingIdentity,
+            sourceEvent.initiatedIdentity,
+            newPayload,
+            sourceEvent.contextSessionProperties
+        )
+        return when (outputTopic) {
+            Schemas.Flow.FLOW_EVENT_TOPIC -> {
+                Record(outputTopic, flowId, FlowEvent(flowId, sessionEvent))
+            }
+            Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC -> {
+                Record(outputTopic, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))
+            }
+            Schemas.P2P.P2P_OUT_TOPIC -> {
+                val appMessage = generateAppMessage(sessionEvent, config)
+                Record(outputTopic, sessionId, appMessage)
+            }
+            else -> {
+                throw IllegalArgumentException("Invalid output topic of $outputTopic was found when forwarding a session event")
             }
         }
     }
@@ -143,6 +149,16 @@ class RecordFactoryImpl @Activate constructor(
         }
     }
 
+    private fun isLocalCluster(
+        sessionEvent: SessionEvent
+    ): Boolean {
+        val destinationIdentity = getSourceAndDestinationIdentity(sessionEvent).destinationIdentity
+        return when (locallyHostedIdentitiesService.getIdentityInfo(destinationIdentity.toCorda())) {
+            null -> false
+            else -> true
+        }
+    }
+
     /**
      * Generate an AppMessage to send to the P2P.out topic.
      * @param sessionEvent Flow event to send
@@ -164,40 +180,6 @@ class RecordFactoryImpl @Activate constructor(
             MembershipStatusFilter.ACTIVE
         )
         return AppMessage(AuthenticatedMessage(header, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
-    }
-
-    /**
-     * Creates [Record] for P2P.out topic.
-     * @param sessionEvent Flow event to send
-     * @param payload Flow event payload
-     * @param instant Instant
-     * @param flowConfig config
-     * @param outputTopic topic where the record should be sent
-     */
-    @Suppress("LongParameterList")
-    private fun createOutboundRecord(
-        sessionEvent: SessionEvent,
-        payload: Any,
-        instant: Instant,
-        flowConfig: SmartConfig,
-        outputTopic: String
-    ) : Record<*, *> {
-        val sessionId = sessionEvent.sessionId
-        return Record(
-            outputTopic, sessionId, generateAppMessage(
-                SessionEvent(
-                    MessageDirection.OUTBOUND,
-                    instant,
-                    sessionId,
-                    null,
-                    sessionEvent.initiatingIdentity,
-                    sessionEvent.initiatedIdentity,
-                    payload,
-                    sessionEvent.contextSessionProperties
-                ),
-                flowConfig
-            )
-        )
     }
 }
 

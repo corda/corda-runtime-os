@@ -24,7 +24,7 @@ interface RecordFactory {
         sessionEvent: SessionEvent,
         instant: Instant,
         flowConfig: SmartConfig,
-        messageDirection: MessageDirection
+        flowId: String
         ): Record<*, *>
 
     /**
@@ -36,7 +36,7 @@ interface RecordFactory {
         exceptionEnvelope: ExceptionEnvelope,
         instant: Instant,
         flowConfig: SmartConfig,
-        messageDirection: MessageDirection
+        flowId: String
     ): Record<*, *>
 
     /**

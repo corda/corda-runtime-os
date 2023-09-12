@@ -14,12 +14,15 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.schema.configuration.FlowConfig
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -29,6 +32,8 @@ internal class RecordFactoryImplTest {
     private lateinit var recordFactoryImplSameCluster: RecordFactoryImpl
     private lateinit var recordFactoryImplDifferentCluster: RecordFactoryImpl
 
+    private val locallyHostedIdentitiesServiceSameCluster = mock<LocallyHostedIdentitiesService>()
+
     @BeforeEach
     fun setup() {
         val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
@@ -37,8 +42,6 @@ internal class RecordFactoryImplTest {
 
         whenever(cordaAvroSerializer.serialize(any<SessionEvent>())).thenReturn(byteArray)
         whenever(cordaAvroSerializationFactory.createAvroSerializer<SessionEvent>(anyOrNull())).thenReturn(cordaAvroSerializer)
-
-        val locallyHostedIdentitiesServiceSameCluster: LocallyHostedIdentitiesService = mock()
         whenever(locallyHostedIdentitiesServiceSameCluster.getIdentityInfo(any())).thenReturn(mock())
 
         val locallyHostedIdentitiesServiceDifferentCluster: LocallyHostedIdentitiesService = mock()
@@ -51,6 +54,7 @@ internal class RecordFactoryImplTest {
 
     @Test
     fun `forwardError returns record for same cluster`() {
+        val bobId = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1")
         val sessionEvent = SessionEvent(
             MessageDirection.OUTBOUND,
             Instant.now(), "", 1,
@@ -74,9 +78,10 @@ internal class RecordFactoryImplTest {
             flowConfig,
             sessionEvent.messageDirection
         )
-        Assertions.assertThat(record).isNotNull
-        Assertions.assertThat(record.topic).isEqualTo("flow.mapper.event")
-        Assertions.assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
+        assertThat(record).isNotNull
+        assertThat(record.topic).isEqualTo("flow.mapper.event")
+        assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
+        verify(locallyHostedIdentitiesServiceSameCluster).getIdentityInfo(bobId.toCorda())
     }
 
     @Test
@@ -96,9 +101,9 @@ internal class RecordFactoryImplTest {
             flowConfig,
             sessionEvent.messageDirection
         )
-        Assertions.assertThat(record).isNotNull
-        Assertions.assertThat(record.topic).isEqualTo("flow.mapper.event")
-        Assertions.assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
+        assertThat(record).isNotNull
+        assertThat(record.topic).isEqualTo("flow.mapper.event")
+        assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
     }
 
     @Test
@@ -126,9 +131,9 @@ internal class RecordFactoryImplTest {
             flowConfig,
             sessionEvent.messageDirection
         )
-        Assertions.assertThat(record).isNotNull
-        Assertions.assertThat(record.topic).isEqualTo("p2p.out")
-        Assertions.assertThat(record.value!!::class).isEqualTo(AppMessage::class)
+        assertThat(record).isNotNull
+        assertThat(record.topic).isEqualTo("p2p.out")
+        assertThat(record.value!!::class).isEqualTo(AppMessage::class)
     }
 
     @Test
@@ -149,9 +154,9 @@ internal class RecordFactoryImplTest {
             flowConfig,
             sessionEvent.messageDirection
         )
-        Assertions.assertThat(record).isNotNull
-        Assertions.assertThat(record.topic).isEqualTo("p2p.out")
-        Assertions.assertThat(record.value!!::class).isEqualTo(AppMessage::class)
+        assertThat(record).isNotNull
+        assertThat(record.topic).isEqualTo("p2p.out")
+        assertThat(record.value!!::class).isEqualTo(AppMessage::class)
     }
 
     @Test
@@ -169,8 +174,8 @@ internal class RecordFactoryImplTest {
             sessionEvent,
             sessionEvent.messageDirection
         )
-        Assertions.assertThat(topic).isNotNull
-        Assertions.assertThat(topic).isEqualTo("flow.mapper.event")
+        assertThat(topic).isNotNull
+        assertThat(topic).isEqualTo("flow.mapper.event")
     }
 
     @Test
@@ -188,7 +193,7 @@ internal class RecordFactoryImplTest {
             sessionEvent,
             sessionEvent.messageDirection
         )
-        Assertions.assertThat(topic).isNotNull
-        Assertions.assertThat(topic).isEqualTo("p2p.out")
+        assertThat(topic).isNotNull
+        assertThat(topic).isEqualTo("p2p.out")
     }
 }
