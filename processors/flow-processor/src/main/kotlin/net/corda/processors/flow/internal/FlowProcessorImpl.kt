@@ -68,7 +68,7 @@ class FlowProcessorImpl @Activate constructor(
         ::groupParametersReaderService,
         ::cpkReadService,
         ::groupPolicyProvider,
-        ::membershipQueryClient,
+        ::membershipQueryClient
     )
 
     private val lifecycleCoordinator =

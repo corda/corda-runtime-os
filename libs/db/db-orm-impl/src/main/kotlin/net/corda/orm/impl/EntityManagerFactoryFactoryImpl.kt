@@ -58,8 +58,8 @@ class EntityManagerFactoryFactoryImpl(
     ): EntityManagerFactory {
         return create(
             persistenceUnitName,
-            entities.map { it.canonicalName },
-            entities.map { it.classLoader }.distinct(),
+            entities.map(Class<*>::getCanonicalName),
+            entities.map(Class<*>::getClassLoader).distinct(),
             configuration
         )
     }
@@ -71,7 +71,7 @@ class EntityManagerFactoryFactoryImpl(
         classLoaders: List<ClassLoader>,
         configuration: EntityManagerConfiguration
     ): EntityManagerFactory {
-        log.info("Creating for $persistenceUnitName")
+        log.info("Creating for {}", persistenceUnitName)
 
         val props = mapOf(
             "hibernate.show_sql" to configuration.showSql.toString(),
@@ -87,6 +87,7 @@ class EntityManagerFactoryFactoryImpl(
             "javax.persistence.validation.mode" to "none"
         ).toProperties()
         props[AvailableSettings.CLASSLOADERS] = classLoaders
+        props += configuration.extraProperties
 
         val persistenceUnitInfo = CustomPersistenceUnitInfo(
             persistenceUnitName,

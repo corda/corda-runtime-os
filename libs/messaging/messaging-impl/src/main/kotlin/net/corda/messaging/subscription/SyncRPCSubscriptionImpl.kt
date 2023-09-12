@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription
 
-import java.util.UUID
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -16,6 +15,7 @@ import net.corda.web.api.HTTPMethod
 import net.corda.web.api.WebHandler
 import net.corda.web.api.WebServer
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 
 /**

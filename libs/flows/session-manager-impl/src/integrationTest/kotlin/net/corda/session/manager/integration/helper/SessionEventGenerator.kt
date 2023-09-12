@@ -9,6 +9,8 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.flow.utils.keyValuePairListOf
+import net.corda.session.manager.Constants
 import net.corda.session.manager.integration.SessionMessageType
 import net.corda.test.flow.util.buildSessionEvent
 import java.nio.ByteBuffer
@@ -18,8 +20,7 @@ fun generateMessage(
     messageType: SessionMessageType,
     instant: Instant,
     messageDirection: MessageDirection = MessageDirection.OUTBOUND
-):
-        SessionEvent {
+): SessionEvent {
     return when (messageType) {
         SessionMessageType.INIT -> generateInit(instant, messageDirection)
         SessionMessageType.CONFIRM -> generateConfirm(instant, messageDirection)
@@ -60,5 +61,6 @@ fun generateClose(instant: Instant, messageDirection: MessageDirection): Session
 }
 
 fun generateSessionEvent(payload: Any, instant: Instant, messageDirection: MessageDirection): SessionEvent {
-    return buildSessionEvent(messageDirection, "sessionId", null, payload, instant, contextSessionProps = emptyKeyValuePairList())
+    return buildSessionEvent(messageDirection, "sessionId", null, payload, instant,
+        contextSessionProps = keyValuePairListOf(mapOf(Constants.FLOW_SESSION_REQUIRE_CLOSE to true.toString())))
 }

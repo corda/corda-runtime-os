@@ -8,8 +8,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
 class ReceiveRequestHandlerTest {
 
@@ -20,7 +20,6 @@ class ReceiveRequestHandlerTest {
 
     private val testContext = RequestHandlerTestContext(Any())
     private val flowEventContext = testContext.flowEventContext
-    private val flowSessionManager = testContext.flowSessionManager
     private val receiveRequestHandler =
         ReceiveRequestHandler(testContext.initiateFlowReqService)
 
@@ -41,7 +40,6 @@ class ReceiveRequestHandlerTest {
 
     @Test
     fun `No output records if all sessions have already received the required data`() {
-        whenever(flowSessionManager.hasReceivedEvents(flowEventContext.checkpoint, listOf(SESSION_ID, ANOTHER_SESSION_ID))).thenReturn(true)
         val outputContext = receiveRequestHandler.postProcess(
             flowEventContext,
             FlowIORequest.Receive(
@@ -51,20 +49,13 @@ class ReceiveRequestHandlerTest {
                 )
             )
         )
-        verify(testContext.initiateFlowReqService).initiateFlowsNotInitiated(any(), any())
+        verify(testContext.initiateFlowReqService).generateSessions(any(), any(), eq(true))
 
         assertThat(outputContext.outputRecords).isEmpty()
     }
 
     @Test
     fun `Does not create a Wakeup record if any the sessions have not already received events`() {
-        whenever(
-            flowSessionManager.hasReceivedEvents(
-                flowEventContext.checkpoint,
-                listOf(SESSION_ID, ANOTHER_SESSION_ID)
-            )
-        ).thenReturn(false)
-
         val outputContext = receiveRequestHandler.postProcess(
             flowEventContext,
             FlowIORequest.Receive(
@@ -74,18 +65,12 @@ class ReceiveRequestHandlerTest {
                 )
             )
         )
-        verify(testContext.initiateFlowReqService).initiateFlowsNotInitiated(any(), any())
+        verify(testContext.initiateFlowReqService).generateSessions(any(), any(), eq(true))
         assertEquals(0, outputContext.outputRecords.size)
     }
 
     @Test
     fun `Does not modify the context when the sessions have not already received events`() {
-        whenever(
-            flowSessionManager.hasReceivedEvents(
-                flowEventContext.checkpoint,
-                listOf(SESSION_ID, ANOTHER_SESSION_ID)
-            )
-        ).thenReturn(false)
         val outputContext = receiveRequestHandler.postProcess(
             flowEventContext,
             FlowIORequest.Receive(
@@ -95,7 +80,7 @@ class ReceiveRequestHandlerTest {
                 )
             )
         )
-        verify(testContext.initiateFlowReqService).initiateFlowsNotInitiated(any(), any())
+        verify(testContext.initiateFlowReqService).generateSessions(any(), any(), eq(true))
         assertEquals(flowEventContext, outputContext)
     }
 }

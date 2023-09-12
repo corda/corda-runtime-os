@@ -6,9 +6,11 @@ import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.metrics.FlowIORequestTypeConverter
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.runner.FlowRunner
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
@@ -41,15 +43,30 @@ internal class FlowExecutionPipelineStage(
      *
      * @param context The current flow context.
      * @param timeout Timeout for an individual flow execution.
+     * @param notifyContextUpdate A function to signal intermediate context updates to the caller.
+     *                            Useful for error scenarios.
      * @return FlowEventContext Updated context for the flow.
      */
-    fun runFlow(context: FlowEventContext<Any>, timeout: Long) : FlowEventContext<Any> {
+    fun runFlow(
+        context: FlowEventContext<Any>,
+        timeout: Long,
+        notifyContextUpdate: (FlowEventContext<Any>) -> Unit
+    ) : FlowEventContext<Any> {
         var currentContext = context
         var continuation = flowReady(currentContext)
         while (continuation != FlowContinuation.Continue) {
-            val output = executeFlow(currentContext, continuation, timeout)
-            currentContext = updateContext(output, currentContext)
-            continuation = flowReady(currentContext)
+            continuation = try {
+                val output = executeFlow(currentContext, continuation, timeout)
+                currentContext = updateContext(output, currentContext)
+                notifyContextUpdate(currentContext)
+                flowReady(currentContext)
+            } catch (e: FlowPlatformException) {
+                FlowContinuation.Error(
+                    CordaRuntimeException(
+                        e.message, e
+                    )
+                )
+            }
         }
         return currentContext
     }
