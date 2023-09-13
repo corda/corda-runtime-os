@@ -30,6 +30,7 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:utilities')
     implementation project(":notary-plugins:notary-plugin-common")
+    implementation project(":components:interop:interop-group-policy-read-service")
 
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
     runtimeOnly project(':libs:ledger:ledger-common-data')
@@ -59,5 +60,6 @@ dependencies {
     runtimeOnly project(':libs:ledger:ledger-utxo-data')
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
+    runtimeOnly project(":components:interop:interop-group-policy-read-service-impl")
 
 }
