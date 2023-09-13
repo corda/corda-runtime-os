@@ -8,7 +8,9 @@ import net.corda.libs.virtualnode.datamodel.repository.RequestsIdsRepository
 import net.corda.libs.virtualnode.datamodel.repository.RequestsIdsRepositoryImpl
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
+import net.corda.orm.utils.use
 import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -54,6 +56,15 @@ class RequestsIdsRepositoryTest {
     fun cleanup() {
         dbConfig.close()
         entityManagerFactory.close()
+    }
+
+    @AfterEach
+    fun cleanUpAfterEach() {
+        entityManagerFactory.createEntityManager().transaction {
+            it.createNativeQuery(
+                "DELETE FROM ${DbSchema.VNODE_PERSISTENCE_REQUEST_ID_TABLE}"
+            ).executeUpdate()
+        }
     }
 
     private val requestsIdsRepository: RequestsIdsRepository = RequestsIdsRepositoryImpl()

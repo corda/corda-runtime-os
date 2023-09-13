@@ -14,9 +14,9 @@ class RequestsIdsRepositoryImpl : RequestsIdsRepository {
     override fun persist(requestId: UUID, em: EntityManager) {
         em.createNativeQuery(
             """
-            INSERT INTO {h-schema}$VNODE_PERSISTENCE_REQUEST_ID_TABLE(request_id)
-            VALUES (:requestId)
-        """.trimIndent()
+                INSERT INTO {h-schema}$VNODE_PERSISTENCE_REQUEST_ID_TABLE(request_id)
+                VALUES (:requestId)
+            """.trimIndent()
         ).setParameter("requestId", requestId.toString())
             .executeUpdate()
     }
