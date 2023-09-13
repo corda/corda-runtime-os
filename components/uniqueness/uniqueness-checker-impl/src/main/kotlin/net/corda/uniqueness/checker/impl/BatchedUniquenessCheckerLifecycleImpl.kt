@@ -10,10 +10,8 @@ import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -26,7 +24,6 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.uniqueness.backingstore.BackingStoreLifecycle
 import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.uniqueness.checker.UniquenessCheckerLifecycle
-import net.corda.web.api.WebServer
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -65,8 +62,6 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
     private val lifecycleCoordinator: LifecycleCoordinator =
         coordinatorFactory.createCoordinator<UniquenessCheckerLifecycle>(::eventHandler)
 
-    private var registration: RegistrationHandle? = null
-
     private val dependentComponents = DependentComponents.of(
         ::backingStoreLifecycle
     )
@@ -90,13 +85,6 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
             is StartEvent -> {
                 configurationReadService.start()
                 dependentComponents.registerAndStartAll(coordinator)
-                registration?.close()
-                registration =
-                    coordinator.followStatusChangesByName(
-                        setOf(
-                            LifecycleCoordinatorName.forComponent<WebServer>()
-                        )
-                    )
             }
             is StopEvent -> {
                 dependentComponents.stopAll()
