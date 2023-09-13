@@ -28,7 +28,8 @@ class TokenClaimQueryEventHandler(
         event: ClaimQuery
     ): Record<String, FlowEvent> {
 
-        val sb = StringBuffer("Token Query for $event cache size = ${tokenCache.count()}")
+        val sb = StringBuffer()
+            .appendLine("Token Query for $event cache size = ${tokenCache.count()}")
         // Attempt to select the tokens from the current cache
         var selectionResult = selectTokens(tokenCache, state, event)
 
