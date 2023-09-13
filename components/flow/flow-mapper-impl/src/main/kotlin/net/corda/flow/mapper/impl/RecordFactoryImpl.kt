@@ -97,7 +97,7 @@ class RecordFactoryImpl @Activate constructor(
         val outputTopic = getSessionEventOutputTopic(sourceEvent)
         val (newDirection, sessionId) = when (outputTopic) {
             Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC -> Pair(MessageDirection.INBOUND, toggleSessionId(sourceEvent.sessionId))
-            Schemas.Flow.FLOW_EVENT_TOPIC -> Pair(MessageDirection.INBOUND, toggleSessionId(sourceEvent.sessionId))
+            Schemas.Flow.FLOW_EVENT_TOPIC -> Pair(MessageDirection.INBOUND, sourceEvent.sessionId)
             else -> Pair(MessageDirection.OUTBOUND, sourceEvent.sessionId)
         }
         val sequenceNumber = if (newPayload is SessionError) null else sourceEvent.sequenceNum
