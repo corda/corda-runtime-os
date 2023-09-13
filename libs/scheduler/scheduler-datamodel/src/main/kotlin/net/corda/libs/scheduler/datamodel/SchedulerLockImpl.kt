@@ -27,6 +27,10 @@ class SchedulerLockImpl(
         tx.commit()
     }
 
+    override fun release() {
+        tx.rollback()
+    }
+
     override fun close() {
         em.close()
     }
