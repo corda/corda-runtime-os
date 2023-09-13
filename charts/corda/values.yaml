@@ -250,9 +250,6 @@ bootstrap:
           key: ""
   # Configuration for database bootstrap
   db:
-    # -- Indicates whether DB bootstrap is enabled as part of installation
-    enabled: true
-
     # Bootstrap cluster database configuration
     cluster:
       # the bootstrap cluster database password configuration
@@ -279,7 +276,8 @@ bootstrap:
             name: ""
             # -- the bootstrap cluster database user secret key
             key: ""
-
+    # -- Indicates whether DB bootstrap is enabled as part of installation
+    enabled: true
     # crypto configuration
     crypto:
       # -- the schema in which the cluster database crypto entities will be stored

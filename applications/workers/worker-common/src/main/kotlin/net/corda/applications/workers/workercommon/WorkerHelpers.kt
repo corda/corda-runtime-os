@@ -1,5 +1,6 @@
 package net.corda.applications.workers.workercommon
 
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -58,6 +59,48 @@ class WorkerHelpers {
         }
 
         /**
+         * Creates a Typesafe Config object from a map of parameters by adding a top-level key to each parameter's key.
+         *
+         * This function takes a map of parameters and a `topLevelKey` as input and generates a Typesafe Config object.
+         * Each key in the input map is modified by prepending the `topLevelKey` followed by a dot ('.') separator.
+         *
+         * For example, given `topLevelKey` = "config" and the input map:
+         * ```
+         * {
+         *     "key1" to "value1",
+         *     "key2" to "value2"
+         * }
+         * ```
+         * The resulting Typesafe Config object will have keys like:
+         * ```
+         * config.key1 = "value1"
+         * config.key2 = "value2"
+         * ```
+         *
+         * @param topLevelKey The top-level key to be added to each parameter's key.
+         * @param params The input map of parameters to be included in the resulting Config.
+         * @return A Typesafe Config object created from the modified parameter keys.
+         */
+        fun createConfigFromParams(topLevelKey: String, params: Map<String, String>): Config {
+            return ConfigFactory.parseMap(
+                params.mapKeys { (originalKey, _) -> "$topLevelKey.$originalKey" }
+            )
+        }
+
+        /**
+         * Merges a list of Config objects over a base Config, with configurations from the list taking precedence.
+         *
+         * @param baseConfig The base Config which will be used as fallback when merged with the reciever config list.
+         * @return A new Config object containing the merged configuration.
+         */
+        fun List<Config>.mergeOver(baseConfig: Config): Config {
+            val accumulator = ConfigFactory.empty()
+            return this.fold(accumulator) { mergedConfig, config ->
+                mergedConfig.withFallback(config)
+            }.withFallback(baseConfig)
+        }
+
+        /**
          * Return a SmartConfig object for the top level of the bootstrap configuration.
          *
          * Uses [smartConfigFactory] to create a `SmartConfig` containing the instance ID, topic prefix, additional
@@ -79,6 +122,7 @@ class WorkerHelpers {
             defaultParams: DefaultWorkerParams,
             validator: ConfigurationValidator,
             extraParams: List<PathAndConfig> = emptyList(),
+            extraConfigs: List<Config> = emptyList(),
         ): SmartConfig {
             val extraParamsMap = extraParams
                 .map { (path, params) -> params.mapKeys { (key, _) -> "$path.$key" } }
@@ -109,8 +153,10 @@ class WorkerHelpers {
             val secretsConfig =
                 defaultParams.secrets.mapKeys { (key, _) -> "${BootConfig.BOOT_SECRETS}.${key.trim()}" }
 
-            val config = ConfigFactory
+            val builtConfig = ConfigFactory
                 .parseMap(messagingParams + defaultParamsMap + extraParamsMap + secretsConfig)
+
+            val config = extraConfigs.mergeOver(builtConfig)
 
             // merge with all files
             val configWithFiles = defaultParams.configFiles.reversed().fold(config) { acc, next ->

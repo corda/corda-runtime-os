@@ -3,7 +3,7 @@ package net.corda.applications.workers.flow
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
-import net.corda.applications.workers.workercommon.PathAndConfig
+import net.corda.applications.workers.workercommon.WorkerHelpers
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
@@ -79,9 +79,8 @@ class FlowWorker @Activate constructor(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(
-                PathAndConfig(BootConfig.BOOT_STATE_MANAGER, params.stateManagerParams)
-            )
+            emptyList(),
+            listOf(WorkerHelpers.createConfigFromParams(BootConfig.BOOT_STATE_MANAGER, params.stateManagerParams))
         )
 
         flowProcessor.start(config)
