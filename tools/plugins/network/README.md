@@ -170,11 +170,11 @@ To look up group parameters for a holding identity:
 ./corda-cli.sh network lookup group-parameters -h <holding-id> --user=admin --password=admin --target=https://localhost:8888
 ```
 
-## Operate
+# Operate
 
 The `operate` command allows MGM operators to manage application networks.
 
-### Allow Client Certificate
+## Allow Client Certificate
 
 This is a sub-command under the `operate` command for adding a member TLS certificate subject to the MGM's allowed list, when mutual TLS is enabled.
 
@@ -184,7 +184,7 @@ To add a certificate subject to the MGM's allowed list, use the following comman
 ./corda-cli.sh network operate allow-client-certificate <short-hash> <certificate-subject> --user=admin --password=admin --target=https://localhost:8888
 ```
 
-### Export Group Policy
+## Export Group Policy
 
 This is a sub-command under the `operate` command for exporting the group policy file from the MGM.
 
