@@ -73,7 +73,7 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
             // Look for an observer that implements the new interface
             val observerV2 = tokenObservers.getObserverForV2(stateAndRef.state.contractStateType)
             if (observerV2 != null) {
-                return@flatMap onCommit(observerV2, transactionReader.getUtxoTransaction()!!, stateAndRef)
+                return@flatMap onCommit(observerV2, transactionReader.getUtxoTransaction(persistenceService)!!, stateAndRef)
             }
 
             // No observer found

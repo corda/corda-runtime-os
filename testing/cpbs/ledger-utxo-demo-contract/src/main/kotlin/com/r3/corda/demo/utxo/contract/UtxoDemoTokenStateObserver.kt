@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.r3.corda.demo.utxo.contract
 
 import net.corda.v5.application.crypto.DigestService

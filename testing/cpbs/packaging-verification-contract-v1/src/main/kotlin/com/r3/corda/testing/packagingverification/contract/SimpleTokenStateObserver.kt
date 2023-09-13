@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package com.r3.corda.testing.packagingverification.contract
 
 import net.corda.v5.application.crypto.DigestService

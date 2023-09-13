@@ -478,7 +478,7 @@ class UtxoPersistenceServiceImplTest {
                 }
 
             val dbRelevancyData = em.createNamedQuery(
-                "UtxoVisibleTransactionStateEntity.findByTransactionId",
+                "   UtxoVisibleTransactionStateEntity.findByTransactionId",
                 entityFactory.utxoVisibleTransactionState
             )
                 .setParameter("transactionId", signedTransaction.id.toString())
@@ -764,7 +764,9 @@ class UtxoPersistenceServiceImplTest {
             )
         }
 
-        override fun getUtxoTransaction(): UtxoLedgerTransaction? = null // This needs to be updated
+        override fun getUtxoTransaction(persistenceService: UtxoPersistenceService): UtxoLedgerTransaction? {
+            return null
+        }
     }
 
     class TestContract : Contract {

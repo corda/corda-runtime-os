@@ -28,6 +28,7 @@ import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransa
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoResolveStateRefsRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoUpdateTransactionStatusRequestHandler
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
@@ -44,7 +45,9 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
     @Reference(service = ExternalEventResponseFactory::class)
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     @Reference(service = ResponseFactory::class)
-    private val responseFactory: ResponseFactory
+    private val responseFactory: ResponseFactory,
+    @Reference(service = GroupParametersFactory::class)
+    private val groupParametersFactory: GroupParametersFactory
 ): UtxoRequestHandlerSelector {
 
     override fun selectHandler(sandbox: SandboxGroupContext, request: LedgerPersistenceRequest): RequestHandler {
@@ -106,7 +109,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             is PersistTransaction -> {
                 UtxoPersistTransactionRequestHandler(
                     sandbox.virtualNodeContext.holdingIdentity,
-                    UtxoTransactionReaderImpl(sandbox, externalEventContext, req),
+                    UtxoTransactionReaderImpl(sandbox, externalEventContext, req, groupParametersFactory),
                     UtxoTokenObserverMapImpl(sandbox), //
                     externalEventContext,
                     persistenceService,
@@ -116,7 +119,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             }
             is PersistTransactionIfDoesNotExist -> {
                 UtxoPersistTransactionIfDoesNotExistRequestHandler(
-                    UtxoTransactionReaderImpl(sandbox, externalEventContext, req),
+                    UtxoTransactionReaderImpl(sandbox, externalEventContext, req, groupParametersFactory),
                     externalEventContext,
                     externalEventResponseFactory,
                     serializationService,
