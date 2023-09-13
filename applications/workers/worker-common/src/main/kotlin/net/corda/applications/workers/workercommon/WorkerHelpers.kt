@@ -22,9 +22,6 @@ import net.corda.web.api.WebServer
 import kotlin.math.absoluteValue
 import kotlin.random.Random
 
-/** Associates a configuration key/value map with the path at which the configuration should be stored. */
-data class PathAndConfig(val path: String, val config: Map<String, String>)
-
 enum class BusType {
     KAFKA,
     DATABASE
@@ -121,14 +118,8 @@ class WorkerHelpers {
             secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
             defaultParams: DefaultWorkerParams,
             validator: ConfigurationValidator,
-            extraParams: List<PathAndConfig> = emptyList(),
             extraConfigs: List<Config> = emptyList(),
         ): SmartConfig {
-            val extraParamsMap = extraParams
-                .map { (path, params) -> params.mapKeys { (key, _) -> "$path.$key" } }
-                .flatMap { map -> map.entries }
-                .associate { (key, value) -> key to value }
-
             val defaultParamsAndValues = listOf<Triple<String,Any?,Any>>(
                 Triple(ConfigKeys.WORKSPACE_DIR,defaultParams.workspaceDir, ConfigDefaults.WORKSPACE_DIR),
                 Triple(ConfigKeys.TEMP_DIR,defaultParams.tempDir, ConfigDefaults.TEMP_DIR),
@@ -153,8 +144,7 @@ class WorkerHelpers {
             val secretsConfig =
                 defaultParams.secrets.mapKeys { (key, _) -> "${BootConfig.BOOT_SECRETS}.${key.trim()}" }
 
-            val builtConfig = ConfigFactory
-                .parseMap(messagingParams + defaultParamsMap + extraParamsMap + secretsConfig)
+            val builtConfig = ConfigFactory.parseMap(messagingParams + defaultParamsMap + secretsConfig)
 
             val config = extraConfigs.mergeOver(builtConfig)
 

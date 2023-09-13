@@ -6,7 +6,6 @@ import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.BusType
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
-import net.corda.applications.workers.workercommon.PathAndConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.createConfigFromParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
@@ -132,16 +131,17 @@ class CombinedWorker @Activate constructor(
             // the combined worker may use SOFT HSM by default unlike the crypto worker
             params.hsmId = SOFT_HSM_ID
         }
-        val databaseConfig = PathAndConfig(BootConfig.BOOT_DB, params.databaseParams)
-        val cryptoConfig = PathAndConfig(BootConfig.BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
-        val restConfig = PathAndConfig(BootConfig.BOOT_REST, params.restParams)
 
         var config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(databaseConfig, cryptoConfig, restConfig),
-            listOf(createConfigFromParams(BootConfig.BOOT_STATE_MANAGER, params.stateManagerParams))
+            listOf(
+                createConfigFromParams(BootConfig.BOOT_DB, params.databaseParams),
+                createConfigFromParams(BootConfig.BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId)),
+                createConfigFromParams(BootConfig.BOOT_REST, params.restParams),
+                createConfigFromParams(BootConfig.BOOT_STATE_MANAGER, params.stateManagerParams),
+            )
         )
 
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"

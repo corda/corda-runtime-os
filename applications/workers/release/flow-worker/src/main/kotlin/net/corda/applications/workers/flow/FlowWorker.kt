@@ -79,7 +79,6 @@ class FlowWorker @Activate constructor(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            emptyList(),
             listOf(WorkerHelpers.createConfigFromParams(BootConfig.BOOT_STATE_MANAGER, params.stateManagerParams))
         )
 

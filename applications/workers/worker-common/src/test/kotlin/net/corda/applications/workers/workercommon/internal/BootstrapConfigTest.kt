@@ -1,7 +1,7 @@
 package net.corda.applications.workers.workercommon.internal
 
+import com.typesafe.config.ConfigFactory
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
-import net.corda.applications.workers.workercommon.PathAndConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
@@ -27,7 +27,7 @@ class BootstrapConfigTest {
         )
     }
     private val extraParamsMap = listOf(
-        PathAndConfig("fred", mapOf("age" to "12", "hair" to "none"))
+        ConfigFactory.parseMap(mapOf("fred.age" to "12", "fred.hair" to "none"))
     )
     private val file1 = Path.of(this::class.java.classLoader.getResource("test1.properties")!!.toURI())
     private val file2 = Path.of(this::class.java.classLoader.getResource("test2.properties")!!.toURI())
@@ -83,10 +83,10 @@ class BootstrapConfigTest {
             },
             mockConfigurationValidator,
             listOf(
-                PathAndConfig(BootConfig.BOOT_DB, emptyMap()),
-                PathAndConfig(BootConfig.BOOT_CRYPTO, emptyMap()),
-                PathAndConfig(BootConfig.BOOT_REST, emptyMap()),
-                PathAndConfig(BootConfig.BOOT_STATE_MANAGER, emptyMap()),
+                ConfigFactory.empty(),
+                ConfigFactory.empty(),
+                ConfigFactory.empty(),
+                ConfigFactory.empty(),
             )
         )
 
@@ -136,10 +136,10 @@ class BootstrapConfigTest {
             defaultWorkerParams,
             mockConfigurationValidator,
             listOf(
-                PathAndConfig(BootConfig.BOOT_SECRETS, emptyMap()),
-                PathAndConfig(BootConfig.BOOT_DB, emptyMap()),
-                PathAndConfig(BootConfig.BOOT_CRYPTO, emptyMap()),
-                PathAndConfig(BootConfig.BOOT_REST, emptyMap()),
+                ConfigFactory.empty(),
+                ConfigFactory.empty(),
+                ConfigFactory.empty(),
+                ConfigFactory.empty(),
             )
         )
 
@@ -148,6 +148,30 @@ class BootstrapConfigTest {
             softly.assertThat(config.getString("dir.workspace")).isEqualTo(ConfigDefaults.WORKSPACE_DIR)
             softly.assertThat(config.getInt("instanceId")).isNotNull
             softly.assertThat(config.getInt("maxAllowedMessageSize")).isEqualTo(972800)
+            softly.assertThat(config.getString("topicPrefix")).isEqualTo("")
+        }
+
+    }
+
+    @Test
+    fun `get bootstrap config overrides built config with extra config list provided`() {
+        val config = WorkerHelpers.getBootstrapConfig(
+            mockSecretsServiceFactoryResolver,
+            defaultWorkerParams,
+            mockConfigurationValidator,
+            listOf(
+                ConfigFactory.parseMap(mapOf(
+                    "dir.tmp" to "newConf",
+                    "maxAllowedMessageSize" to 0
+                )),
+            )
+        )
+
+        assertSoftly { softly ->
+            softly.assertThat(config.getString("dir.tmp")).isEqualTo("newConf")
+            softly.assertThat(config.getString("dir.workspace")).isEqualTo(ConfigDefaults.WORKSPACE_DIR)
+            softly.assertThat(config.getInt("instanceId")).isNotNull
+            softly.assertThat(config.getInt("maxAllowedMessageSize")).isEqualTo(0)
             softly.assertThat(config.getString("topicPrefix")).isEqualTo("")
         }
 

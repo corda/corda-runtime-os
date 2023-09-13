@@ -3,7 +3,7 @@ package net.corda.applications.workers.crypto
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
-import net.corda.applications.workers.workercommon.PathAndConfig
+import net.corda.applications.workers.workercommon.WorkerHelpers
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
@@ -19,7 +19,6 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoProcessor
-import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.tracing.configureTracing
@@ -97,8 +96,8 @@ class CryptoWorker @Activate constructor(
         params.defaultParams,
         configurationValidatorFactory.createConfigValidator(),
         listOf(
-            PathAndConfig(BootConfig.BOOT_DB, params.databaseParams),
-            PathAndConfig(BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
+            WorkerHelpers.createConfigFromParams(BOOT_DB, params.databaseParams),
+            WorkerHelpers.createConfigFromParams(BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
         )
     )
 }
