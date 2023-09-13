@@ -13,7 +13,6 @@ import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.flow.mapper.factory.RecordFactory
-import net.corda.flow.mapper.impl.executor.toggleSessionId
 import net.corda.flow.utils.isInitiatedIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
@@ -180,6 +179,20 @@ class RecordFactoryImpl @Activate constructor(
             MembershipStatusFilter.ACTIVE
         )
         return AppMessage(AuthenticatedMessage(header, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
+    }
+
+    /**
+     * Toggle the [sessionId] to that of the other party and return it.
+     * Initiating party sessionId will be a random UUID.
+     * Initiated party sessionId will be the initiating party session id with a suffix of "-INITIATED" added.
+     * @return the toggled session id
+     */
+    private fun toggleSessionId(sessionId: String): String {
+        return if (sessionId.endsWith(Constants.INITIATED_SESSION_ID_SUFFIX)) {
+            sessionId.removeSuffix(Constants.INITIATED_SESSION_ID_SUFFIX)
+        } else {
+            "$sessionId${Constants.INITIATED_SESSION_ID_SUFFIX}"
+        }
     }
 }
 
