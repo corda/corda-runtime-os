@@ -38,9 +38,7 @@ class JavalinServer(
     private val endpoints: MutableList<Endpoint> = mutableListOf()
 
     override fun start(port: Int) {
-        if (server != null) {
-            throw IllegalStateException("The Javalin webserver is already initialized")
-        }
+        check(null == server) { "The Javalin webserver is already initialized" }
         coordinator.start()
         startServer(port)
     }
@@ -112,9 +110,7 @@ class JavalinServer(
     }
 
     private fun registerEndpointInternal(endpoint: Endpoint) {
-        if (server == null) {
-            throw IllegalStateException("The Javalin webserver has not been initialized")
-        }
+        checkNotNull(server) { "The Javalin webserver has not been initialized" }
         endpoint.validate()
         when (endpoint.methodType) {
             HTTPMethod.GET -> server?.get(endpoint.endpoint) { endpoint.webHandler.handle(JavalinContext(it)) }
