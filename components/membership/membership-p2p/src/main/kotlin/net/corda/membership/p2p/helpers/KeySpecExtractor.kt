@@ -33,7 +33,7 @@ class KeySpecExtractor(
             SM2_CODE_NAME to SignatureSpecs.SM2_SM3,
             SPHINCS256_CODE_NAME to SignatureSpecs.SPHINCS256_SHA512,
         )
-        private val validSpecsNames = mapOf(
+        private val validSpecsNamesForSessionKeys = mapOf(
             ECDSA_SECP256K1_CODE_NAME to listOf(
                 SignatureSpecs.ECDSA_SHA256,
                 SignatureSpecs.ECDSA_SHA384,
@@ -46,21 +46,29 @@ class KeySpecExtractor(
                 SignatureSpecs.ECDSA_SHA512,
             )
                 .map { it.signatureName },
-            EDDSA_ED25519_CODE_NAME to listOf(SignatureSpecs.EDDSA_ED25519.signatureName),
-            GOST3410_GOST3411_CODE_NAME to listOf(SignatureSpecs.GOST3410_GOST3411.signatureName),
             RSA_CODE_NAME to listOf(SignatureSpecs.RSA_SHA256, SignatureSpecs.RSA_SHA384, SignatureSpecs.RSA_SHA512)
                 .map { it.signatureName },
+        )
+        private val validSpecsNames = mapOf(
+            EDDSA_ED25519_CODE_NAME to listOf(SignatureSpecs.EDDSA_ED25519.signatureName),
+            GOST3410_GOST3411_CODE_NAME to listOf(SignatureSpecs.GOST3410_GOST3411.signatureName),
             SM2_CODE_NAME to listOf(SignatureSpecs.SM2_SM3.signatureName),
             SPHINCS256_CODE_NAME to listOf(SignatureSpecs.SPHINCS256_SHA512.signatureName),
-        )
+        ) + validSpecsNamesForSessionKeys
 
-        fun CryptoSigningKey.validateSpecName(specName: String) {
-            val validSpecs = validSpecsNames[this.schemeCodeName]
-                ?: throw IllegalArgumentException("Could not identify spec for key scheme ${this.schemeCodeName}.")
-            if (!validSpecs.contains(specName)) {
-                throw IllegalArgumentException(
-                    "Invalid key spec $specName. Valid specs for key scheme ${this.schemeCodeName} are $validSpecs."
-                )
+        fun CryptoSigningKey.validateSpecName(specName: String, type: KeySpecType = KeySpecType.OTHER) {
+            val validSpecs = if (type == KeySpecType.SESSION) {
+                requireNotNull(validSpecsNamesForSessionKeys[this.schemeCodeName]) {
+                    "Invalid key scheme ${this.schemeCodeName}. The following " +
+                            "schemes could be used when generating session keys: ${validSpecsNamesForSessionKeys.keys}"
+                }
+            } else {
+                requireNotNull(validSpecsNames[this.schemeCodeName]) {
+                    "Could not identify spec for key scheme ${this.schemeCodeName}."
+                }
+            }
+            require(validSpecs.contains(specName)) {
+                "Invalid key spec $specName. Valid specs for key scheme ${this.schemeCodeName} are $validSpecs."
             }
         }
     }
@@ -73,5 +81,9 @@ class KeySpecExtractor(
             ),
         ).firstOrNull() ?: throw CordaRuntimeException("Public key is not owned by $tenantId")
         return keyInfo.spec ?: throw CordaRuntimeException("Can not find spec for ${keyInfo.schemeCodeName}")
+    }
+
+    enum class KeySpecType {
+        SESSION, OTHER
     }
 }

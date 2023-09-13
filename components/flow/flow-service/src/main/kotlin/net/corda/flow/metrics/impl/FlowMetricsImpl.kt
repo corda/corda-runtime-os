@@ -1,12 +1,12 @@
 package net.corda.flow.metrics.impl
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.data.flow.output.FlowStates
 import net.corda.flow.metrics.FlowMetricsRecorder
 import net.corda.flow.pipeline.metrics.FlowMetrics
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.utilities.time.Clock
 
+@Suppress("TooManyFunctions")
 class FlowMetricsImpl(
     private val clock: Clock,
     private val flowMetricsRecorder: FlowMetricsRecorder,
@@ -19,20 +19,14 @@ class FlowMetricsImpl(
     private var fiberStartTime = clock.nowInMillis()
     private var fiberExecutionTime: Long = 0
 
-    private companion object {
-        val objectMapper = ObjectMapper()
-    }
-
     init {
         eventReceivedTimestampMillis = clock.nowInMillis()
 
-        currentState = objectMapper.readValue(
-            flowCheckpoint.flowMetricsState,
-            FlowMetricState::class.java
-        )
+        currentState = flowCheckpoint.readCustomState(FlowMetricState::class.java) ?: FlowMetricState()
     }
 
-    private val currentFlowStackItemMetricState: FlowStackItemMetricState get() = currentState.flowStackItemMetricStates.last()
+    private val currentFlowStackItemMetricState: FlowStackItemMetricState get() = currentState
+        .flowStackItemMetricStates.last()
 
     override fun flowEventReceived(flowEventType: String) {
         // Record the event lag
@@ -53,7 +47,12 @@ class FlowMetricsImpl(
         currentState.flowStackItemMetricStates.lastOrNull()?.run {
             if (suspensionAction != null && suspensionTimestampMillis != null) {
                 val flowSuspensionTime = clock.nowInMillis() - suspensionTimestampMillis!!
-                flowMetricsRecorder.recordFlowSuspensionCompletion(name, isSubFlow, suspensionAction!!, flowSuspensionTime)
+                flowMetricsRecorder.recordFlowSuspensionCompletion(
+                    name,
+                    isSubFlow,
+                    suspensionAction!!,
+                    flowSuspensionTime
+                )
                 totalSuspensionTime += flowSuspensionTime
                 suspensionAction = null
                 suspensionTimestampMillis = null
@@ -88,7 +87,8 @@ class FlowMetricsImpl(
             totalPipelineExecutionTime += pipelineExecutionTime
             totalEventProcessedCount++
         }
-        flowCheckpoint.setMetricsState(objectMapper.writeValueAsString(currentState))
+
+        flowCheckpoint.writeCustomState(currentState)
     }
 
     override fun flowCompletedSuccessfully() {
@@ -109,7 +109,8 @@ class FlowMetricsImpl(
 
     override fun flowSessionMessageReceived(flowEventType: String) {
         // Use the flow context's class name if the subflow stack hasn't been initialised yet.
-        val (flowName, isSubFlow) = when (val currentFlowStackItem = currentState.flowStackItemMetricStates.lastOrNull()) {
+        val (flowName, isSubFlow) = when (val currentFlowStackItem =
+            currentState.flowStackItemMetricStates.lastOrNull()) {
             null -> flowCheckpoint.flowStartContext.flowClassName to false
             else -> currentFlowStackItem.name to currentFlowStackItem.isSubFlow
         }
@@ -195,9 +196,9 @@ class FlowMetricsImpl(
 
     /**
      * @property flowProcessingStartTime The start time of the top level flow.
-     * @property flowStackItemMetricStates Includes all SubFlows as well as the top level flow, after the initial flow stack item has been
-     * added. Some metrics reference the flow class name from the flow start context in the scenario that the flow stack for the top level
-     * flow has not been added yet.
+     * @property flowStackItemMetricStates Includes all SubFlows as well as the top level flow, after the initial flow
+     * stack item has been added. Some metrics reference the flow class name from the flow start context in the scenario
+     * that the flow stack for the top level flow has not been added yet.
      */
     private class FlowMetricState {
         var flowProcessingStartTime: Long = 0

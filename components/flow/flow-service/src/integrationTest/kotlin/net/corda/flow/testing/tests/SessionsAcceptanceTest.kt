@@ -20,6 +20,7 @@ import java.util.stream.Stream
  */
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
+
 class SessionsAcceptanceTest : FlowServiceTestBase() {
 
     private companion object {

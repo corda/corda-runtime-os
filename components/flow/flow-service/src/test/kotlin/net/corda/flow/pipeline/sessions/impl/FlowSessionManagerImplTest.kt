@@ -100,7 +100,8 @@ class FlowSessionManagerImplTest {
         0,
         mutableListOf(),
         sessionId = SESSION_ID,
-        counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
+        counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
+        requireClose = false
     )
 
     private val anotherSessionState = buildSessionState(
@@ -110,7 +111,8 @@ class FlowSessionManagerImplTest {
         0,
         mutableListOf(),
         sessionId = ANOTHER_SESSION_ID,
-        counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
+        counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
+        requireClose = false
     )
 
     private val flowKey = mock<FlowKey>()
@@ -155,8 +157,22 @@ class FlowSessionManagerImplTest {
     fun `get session error event records`() {
         whenever(checkpoint.sessions).thenReturn(sessionsWithErrors)
 
-        whenever(sessionManager.getMessagesToSend(eq(errorSessionState1), any(), any(), any())).thenReturn(errorPairing1)
-        whenever(sessionManager.getMessagesToSend(eq(errorSessionState2), any(), any(), any())).thenReturn(errorPairing2)
+        whenever(
+            sessionManager.getMessagesToSend(
+                eq(errorSessionState1),
+                any(),
+                any(),
+                any()
+            )
+        ).thenReturn(errorPairing1)
+        whenever(
+            sessionManager.getMessagesToSend(
+                eq(errorSessionState2),
+                any(),
+                any(),
+                any()
+            )
+        ).thenReturn(errorPairing2)
 
         whenever(flowRecordFactory.createFlowMapperEventRecord(eq("s1"), eq(errorEvent1))).thenReturn(record1)
         whenever(flowRecordFactory.createFlowMapperEventRecord(eq("s2"), eq(errorEvent2))).thenReturn(record2)
@@ -765,7 +781,8 @@ class FlowSessionManagerImplTest {
             0,
             mutableListOf(),
             sessionId = SESSION_ID,
-            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
+            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
+            requireClose = false
         )
 
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(closingSessionState)
@@ -776,7 +793,7 @@ class FlowSessionManagerImplTest {
     }
 
     @Test
-    fun `validate doesnt find closing state when closing session not listed in given session ids`() {
+    fun `validate doesn't find closing state when closing session not listed in given session ids`() {
         val closingSessionState = buildSessionState(
             SessionStateType.CLOSING,
             1,
@@ -790,7 +807,8 @@ class FlowSessionManagerImplTest {
             0,
             mutableListOf(),
             sessionId = SESSION_ID,
-            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
+            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
+            requireClose = false
         )
 
         whenever(checkpoint.sessions).thenReturn(listOf(closingSessionState))
@@ -811,7 +829,8 @@ class FlowSessionManagerImplTest {
             0,
             mutableListOf(),
             sessionId = SESSION_ID,
-            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
+            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
+            requireClose = false
         )
 
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(closingSessionState)
@@ -831,7 +850,8 @@ class FlowSessionManagerImplTest {
             0,
             mutableListOf(),
             sessionId = SESSION_ID,
-            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
+            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
+            requireClose = false
         )
 
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(closingSessionState)
@@ -925,7 +945,12 @@ class FlowSessionManagerImplTest {
             MessageDirection.OUTBOUND,
             SESSION_ID,
             sequenceNum = null,
-            payload = SessionError(ExceptionEnvelope(IllegalArgumentException::class.qualifiedName, "No exception message provided.")),
+            payload = SessionError(
+                ExceptionEnvelope(
+                    IllegalArgumentException::class.qualifiedName,
+                    "No exception message provided."
+                )
+            ),
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY,
@@ -936,7 +961,12 @@ class FlowSessionManagerImplTest {
             MessageDirection.OUTBOUND,
             ANOTHER_SESSION_ID,
             sequenceNum = null,
-            payload = SessionError(ExceptionEnvelope(IllegalArgumentException::class.qualifiedName, "No exception message provided.")),
+            payload = SessionError(
+                ExceptionEnvelope(
+                    IllegalArgumentException::class.qualifiedName,
+                    "No exception message provided."
+                )
+            ),
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY,
@@ -967,12 +997,116 @@ class FlowSessionManagerImplTest {
             0,
             mutableListOf(),
             sessionId = SESSION_ID,
-            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
+            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
+            requireClose = false
         )
 
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(confirmedSessionState)
 
         flowSessionManager.sendConfirmMessage(checkpoint, SESSION_ID, emptyKeyValuePairList(), Instant.now())
         verify(sessionManager, times(1)).processMessageToSend(any(), any(), any(), any(), any())
+    }
+
+    @Test
+    fun `getRequireCloseTrueAndFalse when states are in CONFIRMED or CREATED or CLOSING and requireClose is true or false`() {
+        sessionState.status = SessionStateType.CONFIRMED
+        anotherSessionState.status = SessionStateType.CREATED
+
+        sessionState.requireClose = true
+        anotherSessionState.requireClose = false
+
+        assertEquals(
+            Pair(
+                listOf(SESSION_ID), listOf(ANOTHER_SESSION_ID)
+            ),
+            flowSessionManager.getRequireCloseTrueAndFalse(
+                checkpoint,
+                listOf(SESSION_ID, ANOTHER_SESSION_ID)
+            )
+        )
+
+    }
+
+    @Test
+    fun `getRequireCloseTrueAndFalse when states are in CONFIRMED or CREATED or CLOSING and requireClose is true`() {
+        sessionState.status = SessionStateType.CLOSING
+        anotherSessionState.status = SessionStateType.CLOSING
+
+        sessionState.requireClose = true
+        anotherSessionState.requireClose = true
+
+        assertEquals(
+            Pair(
+                listOf(ANOTHER_SESSION_ID, SESSION_ID), emptyList<String>()
+            ),
+            flowSessionManager.getRequireCloseTrueAndFalse(
+                checkpoint,
+                listOf(ANOTHER_SESSION_ID, SESSION_ID)
+            )
+        )
+
+    }
+
+    @Test
+    fun `getRequireCloseTrueAndFalse when states are in ERROR or CLOSED and requireClose is true or false`() {
+        sessionState.status = SessionStateType.ERROR
+        anotherSessionState.status = SessionStateType.CLOSED
+
+        sessionState.requireClose = true
+        anotherSessionState.requireClose = false
+
+        assertEquals(
+            Pair(
+                emptyList<String>(), emptyList<String>()
+            ),
+            flowSessionManager.getRequireCloseTrueAndFalse(
+                checkpoint,
+                listOf(SESSION_ID, ANOTHER_SESSION_ID)
+            )
+        )
+
+    }
+
+    @Test
+    fun getInitiatingAndInitiatedSessions() {
+        sessionState.sessionId = "$SESSION_ID-INITIATED"
+
+        assertEquals(
+            Pair(
+                listOf(anotherSessionState.sessionId), listOf(sessionState.sessionId)
+            ),
+            flowSessionManager.getInitiatingAndInitiatedSessions(
+                (listOf(sessionState.sessionId, anotherSessionState.sessionId))
+            )
+        )
+    }
+
+    @Test
+    fun updateStatus() {
+        sessionState.status = SessionStateType.CREATED
+        assertEquals(
+            listOf(sessionState),
+            flowSessionManager.getSessionsWithStatus(
+                checkpoint,
+                listOf(SESSION_ID),
+                SessionStateType.CREATED
+            )
+        )
+
+        anotherSessionState.status = SessionStateType.CONFIRMED
+        assertEquals(
+            listOf(anotherSessionState),
+            flowSessionManager.getSessionsWithStatus(
+                checkpoint,
+                listOf(ANOTHER_SESSION_ID),
+                SessionStateType.CONFIRMED
+            )
+        )
+
+        flowSessionManager.updateStatus(checkpoint, listOf(SESSION_ID), SessionStateType.CLOSED)
+        assertThat(sessionState.status).isEqualTo(SessionStateType.CLOSED)
+
+        flowSessionManager.updateStatus(checkpoint, listOf(ANOTHER_SESSION_ID), SessionStateType.CLOSING)
+        assertThat(anotherSessionState.status).isEqualTo(SessionStateType.CLOSING)
     }
 }
