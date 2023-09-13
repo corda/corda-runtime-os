@@ -25,7 +25,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import picocli.CommandLine
 import picocli.CommandLine.Mixin
 
 /** The worker for handling flows. */
@@ -79,7 +78,7 @@ class FlowWorker @Activate constructor(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(WorkerHelpers.createConfigFromParams(BootConfig.BOOT_STATE_MANAGER, params.stateManagerParams))
+            listOf(WorkerHelpers.createConfigFromParams(BootConfig.BOOT_STATE_MANAGER, params.defaultParams.stateManagerParams))
         )
 
         flowProcessor.start(config)
@@ -97,10 +96,4 @@ class FlowWorker @Activate constructor(
 private class FlowWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
-
-    @CommandLine.Option(
-        names = ["-S", "--${BootConfig.BOOT_STATE_MANAGER}"],
-        description = ["Configuration for the state manager."]
-    )
-    var stateManagerParams = emptyMap<String, String>()
 }

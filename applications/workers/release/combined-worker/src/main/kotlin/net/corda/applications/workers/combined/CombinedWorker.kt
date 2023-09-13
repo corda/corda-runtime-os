@@ -140,7 +140,7 @@ class CombinedWorker @Activate constructor(
                 createConfigFromParams(BootConfig.BOOT_DB, params.databaseParams),
                 createConfigFromParams(BootConfig.BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId)),
                 createConfigFromParams(BootConfig.BOOT_REST, params.restParams),
-                createConfigFromParams(BootConfig.BOOT_STATE_MANAGER, params.stateManagerParams),
+                createConfigFromParams(BootConfig.BOOT_STATE_MANAGER, params.defaultParams.stateManagerParams),
             )
         )
 
@@ -248,9 +248,6 @@ private class CombinedWorkerParams {
     // TODO - remove when reviewing crypto config
     @Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])
     var hsmId = ""
-
-    @Option(names = ["-S", "--${BootConfig.BOOT_STATE_MANAGER}"], description = ["Configuration for the state manager."])
-    var stateManagerParams = emptyMap<String, String>()
 
     /**
      * Combined worker parameter for JDBC URL should be the schemaless database URL because the combined worker sets up
