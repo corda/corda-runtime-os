@@ -38,6 +38,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Instant
 
 class FlowEventExceptionProcessorImplTest {
     private val flowMessageFactory = mock<FlowMessageFactory>()
@@ -47,7 +48,7 @@ class FlowEventExceptionProcessorImplTest {
     private val flowCheckpoint = mock<FlowCheckpoint>()
 
     private val flowConfig = ConfigFactory.empty()
-        .withValue(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS, ConfigValueFactory.fromAnyRef(2))
+        .withValue(FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION, ConfigValueFactory.fromAnyRef(1000L))
     private val smartFlowConfig = SmartConfigFactory.createWithoutSecurityServices().create(flowConfig)
     private val inputEvent = ExternalEventResponse()
     private val context = buildFlowEventContext<Any>(checkpoint = flowCheckpoint, inputEventPayload = inputEvent)
@@ -151,17 +152,19 @@ class FlowEventExceptionProcessorImplTest {
     }
 
     @Test
-    fun `flow transient exception processed as fatal when retry limit reached`() {
+    fun `flow transient exception processed as fatal when retry window expired`() {
         val error = FlowTransientException("mock error message")
         val flowStatusUpdate = FlowStatus()
         val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
-        whenever(flowCheckpoint.currentRetryCount).thenReturn(2)
+        val retryCount = 2
+        val now = Instant.now()
+        whenever(flowCheckpoint.currentRetryCount).thenReturn(retryCount)
+        whenever(flowCheckpoint.firstFailureTimestamp).thenReturn(now.minusMillis(2000))
         whenever(
             flowMessageFactory.createFlowFailedStatusMessage(
                 flowCheckpoint,
                 FlowProcessingExceptionTypes.FLOW_FAILED,
-                "Execution failed with \"${error.message}\" after " +
-                        "${flowConfig.getInt(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS)} retry attempts.",
+                "Execution failed with \"${error.message}\" after $retryCount retry attempts in a retry window of PT1S.",
             )
         ).thenReturn(flowStatusUpdate)
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)

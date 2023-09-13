@@ -401,7 +401,7 @@ class ConcurrentFlowMessagingTest {
         )
 
         // When we pass a flow context properties builder
-        val session = flowMessaging.initiateFlow(receiverX500){flowContextProperties ->
+        val session = flowMessaging.initiateFlow(receiverX500, false){flowContextProperties ->
             flowContextProperties.put("key-2", "val-2")
         }
 

@@ -34,7 +34,28 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Clling 'close' on a session completes successfully`() {
+    fun `Calling 'close' on a session completes successfully when require close is set to false`() {
+        given {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.Receive(setOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName, requireClose = false))))
+        }
+
+        `when` {
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, 1)
+                .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1)))
+                .completedSuccessfullyWith("hello")
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY, SESSION_ID_1)
+                sessionCloseEvents()
+            }
+        }
+    }
+
+    @Test
+    fun `Calling 'close' on a session which is already in CLOSING when require close is set to true completes successfully`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.Receive(setOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName))))
@@ -51,16 +72,43 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY, SESSION_ID_1)
+                sessionCloseEvents()
             }
         }
     }
 
     @Test
-    fun `Receiving an out-of-order session close events does not resume the flow`() {
+    fun `Calling 'close' on a session when require close is set to true suspends and waits for close`() {
+        given {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.Receive(setOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName))))
+        }
+
+        `when` {
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, 1)
+                .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1)))
+
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 2)
+                .completedSuccessfullyWith("hello")
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                noOutputEvent()
+            }
+
+            expectOutputForFlow(FLOW_ID1) {
+                scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY, SESSION_ID_1)
+                sessionCloseEvents()
+            }
+        }
+    }
+
+    @Test
+    fun `Receiving an out-of-order session close event does not resume the flow`() {
         given {
             startFlow(this)
                 .suspendsWith(FlowIORequest.Receive(setOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName))))
-
         }
 
         `when` {
@@ -88,6 +136,48 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWithError(CordaRuntimeException::class.java)
+            }
+        }
+    }
+
+    @Test
+    fun `As an initiated flow, with require close true, when close is called, a SessionClose is sent`() {
+        given {
+            membershipGroupFor(BOB_HOLDING_IDENTITY)
+            initiatingToInitiatedFlow(PROTOCOL_2, FLOW_NAME, FLOW_NAME_2)
+        }
+
+        `when` {
+            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
+                .suspendsWith(FlowIORequest.CloseSessions(setOf(INITIATED_SESSION_ID_1)))
+                .completedSuccessfullyWith("hello")
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                sessionCloseEvents(INITIATED_SESSION_ID_1)
+                scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
+            }
+        }
+    }
+
+    @Test
+    fun `As an initiated flow, with require close false, when close is called, a SessionClose is not sent`() {
+        given {
+            membershipGroupFor(BOB_HOLDING_IDENTITY)
+            initiatingToInitiatedFlow(PROTOCOL_2, FLOW_NAME, FLOW_NAME_2)
+        }
+
+        `when` {
+            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2, requireClose = false)
+                .suspendsWith(FlowIORequest.CloseSessions(setOf(INITIATED_SESSION_ID_1)))
+                .completedSuccessfullyWith("hello")
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                scheduleFlowMapperCleanupEvents(INITIATED_SESSION_ID_1)
+                sessionCloseEvents()
             }
         }
     }

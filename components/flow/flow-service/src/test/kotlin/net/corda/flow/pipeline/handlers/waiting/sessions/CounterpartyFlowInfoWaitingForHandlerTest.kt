@@ -9,11 +9,9 @@ import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.flow.utils.emptyKeyValuePairList
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -28,7 +26,7 @@ class CounterpartyFlowInfoWaitingForHandlerTest {
     private val checkpoint = mock<FlowCheckpoint>()
     private val sessionState = SessionState()
     private val anotherSessionState = SessionState()
-    private val sessionConfirmationWaitingForHandler = CounterpartyFlowInfoWaitingForHandler()
+    private val counterpartyFlowInfoWaitingForHandler = CounterpartyFlowInfoWaitingForHandler()
 
     val inputContext = buildFlowEventContext(
         checkpoint = checkpoint,
@@ -49,11 +47,10 @@ class CounterpartyFlowInfoWaitingForHandlerTest {
     }
 
     @Test
-    fun `Throws exception when the session does not exist`() {
+    fun `Returns error to flow when the session does not exist`() {
         whenever(checkpoint.getSessionState(sessionState.sessionId)).thenReturn(null)
-        assertThrows<CordaRuntimeException> {
-            sessionConfirmationWaitingForHandler.runOrContinue(inputContext, CounterPartyFlowInfo(SESSION_ID))
-        }
+        val continuation = counterpartyFlowInfoWaitingForHandler.runOrContinue(inputContext, CounterPartyFlowInfo(SESSION_ID))
+        assertEquals(FlowContinuation.Error::class, continuation::class)
     }
 
     @Test
@@ -61,7 +58,7 @@ class CounterpartyFlowInfoWaitingForHandlerTest {
         whenever(checkpoint.getSessionState(sessionState.sessionId)).thenReturn(sessionState.apply {
             status = SessionStateType.CREATED
         })
-        val continuation = sessionConfirmationWaitingForHandler.runOrContinue(inputContext, CounterPartyFlowInfo(SESSION_ID))
+        val continuation = counterpartyFlowInfoWaitingForHandler.runOrContinue(inputContext, CounterPartyFlowInfo(SESSION_ID))
         assertEquals(FlowContinuation.Continue::class, continuation::class)
     }
 
@@ -70,7 +67,7 @@ class CounterpartyFlowInfoWaitingForHandlerTest {
         whenever(checkpoint.getSessionState(sessionState.sessionId)).thenReturn(sessionState.apply {
             status = SessionStateType.ERROR
         })
-        val continuation = sessionConfirmationWaitingForHandler.runOrContinue(inputContext, CounterPartyFlowInfo(SESSION_ID))
+        val continuation = counterpartyFlowInfoWaitingForHandler.runOrContinue(inputContext, CounterPartyFlowInfo(SESSION_ID))
         assertEquals(FlowContinuation.Error::class, continuation::class)
     }
 
@@ -81,7 +78,7 @@ class CounterpartyFlowInfoWaitingForHandlerTest {
             sessionProperties = emptyKeyValuePairList()
         })
 
-        val continuation = sessionConfirmationWaitingForHandler.runOrContinue(inputContext, CounterPartyFlowInfo(SESSION_ID))
+        val continuation = counterpartyFlowInfoWaitingForHandler.runOrContinue(inputContext, CounterPartyFlowInfo(SESSION_ID))
         assertEquals(FlowContinuation.Run::class, continuation::class)
     }
 }

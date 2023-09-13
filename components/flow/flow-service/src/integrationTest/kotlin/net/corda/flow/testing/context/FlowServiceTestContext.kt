@@ -57,6 +57,7 @@ import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPPORTED
+import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
@@ -100,13 +101,13 @@ class FlowServiceTestContext @Activate constructor(
 
     private val testConfig = mutableMapOf<String, Any>(
         FlowConfig.EXTERNAL_EVENT_MAX_RETRIES to 2,
-        FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW to 500000L,
-        FlowConfig.SESSION_TIMEOUT_WINDOW to 500000L,
+        FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW to 500000,
+        FlowConfig.SESSION_TIMEOUT_WINDOW to 500000,
         FlowConfig.SESSION_FLOW_CLEANUP_TIME to 30000,
-        FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS to 5,
         FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION to 60000,
         FlowConfig.PROCESSING_MAX_RETRY_DELAY to 16000,
         FlowConfig.PROCESSING_FLOW_CLEANUP_TIME to 30000,
+        FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION to 300000,
         MessagingConfig.Subscription.PROCESSOR_TIMEOUT to 60000,
         MessagingConfig.MAX_ALLOWED_MSG_SIZE to 972800
     )
@@ -272,7 +273,8 @@ class FlowServiceTestContext @Activate constructor(
         cpiId: String,
         protocol: String,
         initiatingIdentity: HoldingIdentity?,
-        initiatedIdentity: HoldingIdentity?
+        initiatedIdentity: HoldingIdentity?,
+        requireClose: Boolean
     ): FlowIoRequestSetup {
         return createAndAddSessionEvent(
             flowId,
@@ -286,14 +288,15 @@ class FlowServiceTestContext @Activate constructor(
                 .setContextUserProperties(emptyKeyValuePairList())
                 .build(),
             sequenceNum = 0,
-            getContextSessionProps(protocol)
+            getContextSessionProps(protocol, requireClose)
         )
     }
 
-    private fun getContextSessionProps(protocol: String): KeyValuePairList {
+    private fun getContextSessionProps(protocol: String, requireClose: Boolean): KeyValuePairList {
         return KeyValueStore().apply {
             put(FLOW_PROTOCOL, protocol)
             put(FLOW_PROTOCOL_VERSIONS_SUPPORTED, "1")
+            put(FLOW_SESSION_REQUIRE_CLOSE, requireClose.toString())
         }.avro
     }
 

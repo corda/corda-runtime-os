@@ -1,4 +1,4 @@
-package net.corda.tracing.impl
+package net.corda.tracing.brave
 
 import brave.Span
 import brave.Tracing
