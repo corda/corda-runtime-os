@@ -12,6 +12,7 @@ import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.binder.BaseUnits
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
 import io.micrometer.core.instrument.config.MeterFilter
+import io.micrometer.core.instrument.config.MeterFilterReply
 import io.micrometer.core.instrument.noop.NoopGauge
 import java.io.File
 import java.nio.file.FileSystems
@@ -37,6 +38,7 @@ object CordaMetrics {
          * HTTP Requests time.
          */
         object HttpRequestTime : Metric<Timer>("http.server.request.time", CordaMetrics::timer)
+        object HttpRequests : Metric<Counter>("http.server.requests", Metrics::counter)
 
         /**
          * Time it took to create the sandbox
@@ -71,6 +73,7 @@ object CordaMetrics {
          * Total count of flows executed can be obtained by the number of events recorded for this metric.
          */
         object FlowExecutionTime : Metric<Timer>("flow.execution.time", CordaMetrics::timer)
+        object FlowExecutionCounter : Metric<Counter>("flow.executions", Metrics::counter)
 
         /**
          * Metric for lag between flow event publication and processing.
@@ -686,6 +689,11 @@ object CordaMetrics {
         WorkerType("worker.type"),
 
         /**
+         * Source of metric.
+         */
+        Deployment("deployment"),
+
+        /**
          * Virtual Node for which the metric is applicable.
          */
         VirtualNode("virtualnode"),
@@ -848,6 +856,7 @@ object CordaMetrics {
      * but it still needs to be populated in order to avoid lost data points.
      */
     const val NOT_APPLICABLE_TAG_VALUE = "not_applicable"
+    const val K8S_NAMESPACE_KEY = "K8S_NAMESPACE"
 
     val registry: CompositeMeterRegistry = Metrics.globalRegistry
 
@@ -858,7 +867,9 @@ object CordaMetrics {
      * @param registry Registry instance
      */
     fun configure(workerType: String, registry: MeterRegistry) {
+        val deployment = System.getenv(K8S_NAMESPACE_KEY) ?: ""
         this.registry.add(registry).config()
+            .commonTags(Tag.Deployment.value, deployment)
             .commonTags(Tag.WorkerType.value, workerType)
             .meterFilter(object : MeterFilter {
                 override fun map(id: Meter.Id): Meter.Id {
@@ -873,6 +884,25 @@ object CordaMetrics {
                         id
                     } else {
                         id.withName("corda." + id.name)
+                    }
+                }
+            })
+            .meterFilter(object : MeterFilter {
+                override fun accept(id: Meter.Id): MeterFilterReply {
+                    @Suppress("ComplexCondition")
+                    return if (
+                        id.name.contains("http.server.request") ||
+                        id.name.contains("http.server.requests") ||
+                        id.name.contains("flow.execution.time") ||
+                        id.name.contains("flow.executions") ||
+                        id.name.contains("http_server_request") ||
+                        id.name.contains("http_server_requests") ||
+                        id.name.contains("flow_execution_time") ||
+                        id.name.contains("flow_executions")
+                    ) {
+                        MeterFilterReply.ACCEPT
+                    } else {
+                        MeterFilterReply.DENY
                     }
                 }
             })

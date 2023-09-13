@@ -77,8 +77,11 @@ class FlowMetricsRecorderImpl(
     }
 
     override fun recordFlowCompletion(flowName: String, executionTimeMillis: Long, runTimeMillis: Long, completionStatus: String) {
+        CordaMetrics.Metric.FlowExecutionCounter.builder()
+            .withTag(CordaMetrics.Tag.FlowClass, flowName)
+            .withTag(CordaMetrics.Tag.OperationStatus, completionStatus)
+            .build().increment()
         CordaMetrics.Metric.FlowExecutionTime.builder()
-            .forVirtualNode(flowCheckpoint.holdingIdentity.shortHash.toString())
             .withTag(CordaMetrics.Tag.FlowClass, flowName)
             .withTag(CordaMetrics.Tag.OperationStatus, completionStatus)
             .build().record(Duration.ofMillis(executionTimeMillis))
