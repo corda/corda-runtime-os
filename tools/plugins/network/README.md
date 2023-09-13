@@ -6,9 +6,11 @@ This is a plug-in for [Corda CLI plugin host](https://github.com/corda/corda-cli
 > `corda-cli-plugin-host/build/plugins/` and run the commands as shown below by locating corda-cli.sh in 
 > `corda-cli-plugin-host/build/generatedScripts/`.
 
-# Generate Group Policy
+# Static Network Operations
 
-This is a sub-command under the `network` plugin for generating a GroupPolicy.json file. This is a new command.
+## Generate Group Policy
+
+This is a sub-command under the `network` plugin for generating a GroupPolicy.json file.
 
 Running `groupPolicy` without any command line arguments prints a sample GroupPolicy file for the user to manually tweak.
 ```shell
@@ -47,7 +49,7 @@ Note:
 3. Single endpoint is assumed for all members.
 4. The `groupPolicy` sub-command is also available under the `mgm` command in order to preserve backwards compatibility.
 
-## Sample files
+### Sample files
 
 1. Sample JSON with `memberNames`
 ```json
