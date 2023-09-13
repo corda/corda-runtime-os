@@ -1,201 +1,105 @@
-# Network Plugin
+The Network plugin is a plugin for [Corda CLI plugin host](https://github.com/corda/corda-cli-plugin-host) to set up and manage application networks using corda-cli.
 
-The Network Plugin is a powerful tool that extends the functionality of the Corda CLI plugin host for managing membership operations and setting up application networks. It provides a set of commands to interact with an application network, onboard new members, manage group policies, and perform various network-related operations.
+# Before you start
 
-## Before you start
+To use the Network plugin, you will need a working copy of `corda-cli` with the plugin installed.
 
-To use the Corda Network Plugin, you will need a working copy of `corda-cli` with the mgm and package plugins installed. Here are two options to get started:
+## Build from source
 
-### Option 1: Build from Source
+1. Clone the [corda-cli-plugin-host](https://github.com/corda/corda-cli-plugin-host) repository from GitHub:
 
-1. Clone the `corda-cli-plugin-host` repository from GitHub:
-
-```shell 
+``` 
 git clone https://github.com/corda/corda-cli-plugin-host.git
-```
-
-2. Navigate to the `corda-cli-plugin-host` directory:
-
-```shell 
 cd corda-cli-plugin-host
 ```
 
-3. Build the project using Gradle:
-
-```shell 
+2. Build the project using Gradle:
+``` 
 ./gradlew build
 ```
 
-4. After a successful build, locate the generated JAR file in the `corda-cli-plugin-host/build/libs/` directory.
+3. Locate the `corda-cli.sh` script in the `corda-cli-plugin-host/build/generatedScripts/` directory.
 
-### Option 2: Download the Final Artifact
-
-1. Go to the [Corda CLI Plugin Host releases page](https://docs.r3.com/en/platform/corda/5.0/deploying-operating/tooling/installing-corda-cli.html) on GitHub.
-
-2. Download the latest release of the Corda CLI Plugin Host JAR file.
-
-Once you have the Corda CLI Plugin Host JAR file, follow these steps to set up the Corda Network Plugin:
-
-1. Create a `plugins` directory in the `corda-cli-plugin-host/build/` directory if it doesn't already exist.
-
-2. Move the downloaded or built Corda Network Plugin JAR file to the `plugins` directory.
-
-With the Corda Network Plugin set up, you can now use the `corda-cli.sh` script to run the commands.
-
-> Note: If you downloaded the final artifact, you can skip the build step and directly move the downloaded JAR file to the `plugins` directory.
-
-For more information on setting up and building the Corda CLI Plugin Host, refer to the [official documentation](https://github.com/corda/corda-cli-plugin-host#setupbuild).
-
-## Basic Commands
-
-The Corda Network Plugin provides the following basic commands:
-
-- `network groupPolicy`: Generates a GroupPolicy.json file for defining the static network section of the GroupPolicy.
-- `network dynamic onboard-mgm`: Onboards a new MGM member (and creates a new group) to an existing Corda cluster.
-- `network dynamic onboard-member`: Onboards a new standard member to an existing group in the Corda cluster.
-- `network lookup members`: Looks up members in an application network based on various filters.
-- `network lookup group-parameters`: Looks up group parameters in an application network based on various filters.
-- `network get-registrations`: Retrieves the registration information for a member in the network.
-
-For more details on each command and its usage, refer to the command-specific documentation below.
-
-## Setting up an Application Network
-
-To set up an application network using the Corda Network Plugin, follow these steps:
-
-1. Onboard an MGM member to the existing Corda cluster using the `network onboard-mgm` command. This command creates a new group and saves the group policy file.
-2. Onboard standard members to the existing group using the `network onboard-member` command. Provide the necessary parameters such as member name, CPB file, etc.
-3. Use the `network lookup members` command to verify the members in the network.
-4. Use the `network lookup group-parameters` command to view the group parameters of the network.
-5. Use the `network get-registrations` command to retrieve the registration information for a member in the network.
-
-# Setting up an Application Network
-
-This guide provides step-by-step instructions on how to set up an application network using the Corda Network Plugin. The application network consists of an MGM, standard members, and a notary.
-
-## Prerequisites
-
-Before setting up the application network, ensure that you have completed the following prerequisites:
-
-- Installed the Corda Network Plugin as described in the [Installation](#installation) section.
-- Familiarized yourself with the basic commands of the Corda Network Plugin as described in the [Basic Commands](#basic-commands) section.
-
-## Steps
-
-### Installation
-
-To use the Corda Network Plugin, follow these steps:
-
-1. Build the JAR file by running 
-```bash
+4. Build the plugin JAR from the [corda-runtime-os](https://github.com/corda/corda-runtime-os) repository from GitHub:
+```
 ./gradlew :tools:plugins:network:build
 ```
-4. Move the generated JAR file to the `corda-cli-plugin-host/build/plugins/` directory.
-5. Locate the `corda-cli.sh` script in the `corda-cli-plugin-host/build/generatedScripts/` directory.
-6. Run the commands using the `corda-cli.sh` script.
 
-Follow these steps to set up an application network:
+5. Move the generated JAR to the `corda-cli-plugin-host/build/plugins/` directory.
 
-1. Onboard an MGM member:
-   - Run the `network dynamic onboard-mgm` command with the necessary parameters to onboard the MGM member and create a new group.
-   - Specify the member's details, such as name, user, password, target URL, etc.
+6. Run commands using the `corda-cli.sh` script.
 
-Example Commands
-```bash
-./corda-cli.sh network dynamic onboard-mgm 'O=MGM, L=London, C=GB' --user=admin --password=admin --target=https://localhost:8888 --insecure
+## Download from the R3 Developer Portal
+
+1. Follow the instructions on the [Installing the Corda CLI](https://docs.r3.com/en/platform/corda/5.0/deploying-operating/tooling/installing-corda-cli.html) page.
+2. Run commands using the `corda-cli.sh` script.
+
+# Setting up an application network
+
+## Onboard MGM
+
+The `onboard-mgm` command creates a virtual node for an MGM and initiates the onboarding process, through which a membership group is created. The session and ECDH keys are auto-generated by the Network plugin during registration. The group policy is also exported to be used for creating Member CPI(s).
+
 ```
-- Use `./corda-cli.sh network dynamic onboard-mgm --help` to view the other options.
-
-Example Command
-```bash
-./corda-cli.sh network dynamic onboard-mgm 'O=MGM, L=London, C=GB' --save-group-policy-as /tmp/groupPolicy.json --user=admin --password=admin --target=https://localhost:8888 --insecure
+./corda-cli.sh network dynamic onboard-mgm "O=MGM, L=London, C=GB" -s <save-group-policy-as> --wait --user=admin --password=admin --target=https://localhost:8888 --insecure
 ```
+Use `./corda-cli.sh network dynamic onboard-mgm --help` to view all available options.
 
-2. Onboard a member:
-   - Run the `network dynamic onboard-member` command with the necessary parameters to onboard standard members to the existing group.
-   - Specify the member's details, such as name, CPB file, user, password, target URL, etc.
-   - Optionally, use the `--wait` parameter to wait until the request gets approved/declined.
-  
-Example Command
-```bash
-./corda-cli.sh network dynamic onboard-member 'O=Alice, L=London, C=GB' --cpb-file <path-to-your-CPB-file> --user=admin --password=admin --target=https://localhost:8888 --insecure
+## Onboard a member
+
+The `onboard-member` command is for onboarding members onto a dynamic network. It creates a virtual node for the member, and starts the registration process by auto-generating session and ledger keys.
+
+To onboard a member using a CPB and group policy:
 ```
-
-- Use `./corda-cli.sh network dynamic onboard-member --help` to view the other options.
-
-3. Verify the network:
-   - Use the `network lookup members` command to verify the members in the network.
-   - Specify filters such as holding identity short hash, name, group, etc., to narrow down the search.
-
-Example Commands:
-
-To look up all members visible to member `3B8DECDDD6E2`:
-
-```bash
-./corda-cli.sh network lookup members -h "3B8DECDDD6E2"
+./corda-cli.sh network dynamic onboard-member "O=Alice, L=London, C=GB" --cpb-file <path-to-your-CPB-file> --group-policy-file <path-to-your-group-policy> --wait --user=admin --password=admin --target=https://localhost:8888 --insecure
 ```
 
-To look up members visible to member `3B8DECDDD6E2` filtered by attributes Organization (O) `Alice` and Country (C) `IE`:
-
-```bash
-./corda-cli.sh network lookup members -h "3B8DECDDD6E2" -o "Alice" -c "IE"
+To onboard a member using the hash of a previously uploaded CPI:
+```
+./corda-cli.sh network dynamic onboard-member "O=Alice, L=London, C=GB" --cpi-hash <cpi-hash> --wait --user=admin --password=admin --target=https://localhost:8888 --insecure
 ```
 
-To look up all members visible to `C=GB, L=London, O=Member1` from the default (last created) group:
-
-```bash
-./corda-cli.sh network lookup members -n "C=GB, L=London, O=Member1"
+To onboard a member as a notary:
+```
+./corda-cli.sh network dynamic onboard-member "O=Alice, L=London, C=GB" --cpi-hash <cpi-hash> --role "notary" --set "corda.notary.service.name"="C=GB, L=London, O=Notary" --wait --user=admin --password=admin --target=https://localhost:8888 --insecure
 ```
 
-To look up all members visible to `C=GB, L=London, O=Member1` from group `b0a0f381-e0d6-49d2-abba-6094992cef02`:
+Use `./corda-cli.sh network dynamic onboard-member --help` to view all available options.
 
-```bash
-./corda-cli.sh network lookup members -n "C=GB, L=London, O=Member1" -g "b0a0f381-e0d6-49d2-abba-6094992cef02"
-``` 
+## Get Registrations
 
-To look up suspended members as the MGM (`1B8DECDDD6E2`) from the default group:
+The `get-registrations` command is for checking the status of registration requests.
 
-```bash
-./corda-cli.sh network lookup members -h "1B8DECDDD6E2" -s "SUSPENDED"
+To view all requests for a holding identity:
+```
+./corda-cli.sh network check-registration-status -h <holding-id> --user=admin --password=admin --target=https://localhost:8888 --insecure
 ```
 
-   - Use `--help` for more details on available filters and options.
-
-4. View group parameters:
-   - Use the `network lookup group-parameters` command to view the group parameters of the network.
-   - Specify filters such as holding identity short hash, name, group, etc., to narrow down the search.
-   - Use `--help` for more details on available filters and options.
-
-Example Commands:
-
-To look up group parameters visible to member `3B8DECDDD6E2`:
-
-```bash
-./corda-cli.sh network lookup group-parameters -h "3B8DECDDD6E2" --user=admin --password=admin --target=https://localhost:8888 --insecure
+To view a specific registration request, use `--request-id`:
+```
+./corda-cli.sh network check-registration-status -h <holding-id> --request-id <request-id> --user=admin --password=admin --target=https://localhost:8888 --insecure
 ```
 
-To look up group parameters visible to `C=GB, L=London, O=Member1` from the default (last created) group:
+> Note: You can use `--name` and `--group` if the holding ID is not known. If only `--name` is specified, the last created group will be used by default.
 
-```bash
-./corda-cli.sh network lookup group-parameters -n "C=GB, L=London, O=Member1" --user=admin --password=admin --target=https://localhost:8888 --insecure
-``` 
+## Lookup
 
-To look up group parameters visible to `C=GB, L=London, O=Member1` from group `b0a0f381-e0d6-49d2-abba-6094992cef02`:
+The `lookup` command is for looking up group parameters or peers on the network.
 
-```bash
-./corda-cli.sh network lookup group-parameters -n "C=GB, L=London, O=Member1" -g "b0a0f381-e0d6-49d2-abba-6094992cef02" --user=admin --password=admin --target=https://localhost:8888 --insecure
+> Note: You can use `--name` and `--group` if the holding ID is not known. If only `--name` is specified, the last created group will be used by default.
+
+### Member Lookup
+
+To lookup all members visible to a holding identity:
+```
+./corda-cli.sh network lookup members -h <holding-id> --user=admin --password=admin --target=https://localhost:8888 --insecure
 ```
 
-5. Retrieve registration information:
-   - Use the network get-registrations command to retrieve the registration information for a member in the network.
-   - Specify the member's identity short hash to retrieve the registration information. 
-   
-Example Command: 
+Use `./corda-cli.sh network lookup members --help` to view all available options, including status and X.500 attribute filters.
 
-To retrieve the registration information for member 3B8DECDDD6E2:
+### Group Parameters Lookup
 
-```bash
-./corda-cli.sh network get-registrations -h "3B8DECDDD6E2" --user=admin --password=admin --target=https://localhost:8888 --insecure
+To lookup group parameters for a holding identity:
 ```
-
-Use --help for more details on available options.
+./corda-cli.sh network lookup group-parameters -h <holding-id> --user=admin --password=admin --target=https://localhost:8888 --insecure
+```
