@@ -63,7 +63,7 @@ class JavalinServer(
         val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
 
         if (bundle == null) {
-            server?.start(port)
+            server?.start("0.0.0.0", port)
         } else {
             // We temporarily switch the context class loader to allow Javalin to find `WebSocketServletFactory`.
             executeWithThreadContextClassLoader(bundle.adapt(BundleWiring::class.java).classLoader) {
@@ -71,7 +71,7 @@ class JavalinServer(
                 // implementation via standard class loading mechanism. This mechanism is not appropriate for OSGi.
                 // The logging implementation is found correctly in practice.
                 executeWithStdErrSuppressed {
-                    server?.start(port)
+                    server?.start("0.0.0.0", port)
                 }
             }
         }
@@ -99,8 +99,8 @@ class JavalinServer(
 
     override fun removeEndpoint(endpoint: Endpoint) {
         if(null != server) endpoints.remove(endpoint)
-        stop()
-        port?.let { startServer(it) }
+        //stop()
+        //port?.let { startServer(it) }
     }
 
     private fun registerEndpointInternal(endpoint: Endpoint) {
