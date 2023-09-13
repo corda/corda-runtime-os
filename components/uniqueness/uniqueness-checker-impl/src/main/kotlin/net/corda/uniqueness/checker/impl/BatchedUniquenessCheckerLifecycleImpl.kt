@@ -57,6 +57,7 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
         const val SUBSCRIPTION_NAME = "Uniqueness Check"
         const val UNIQUENESS_CHECKER_ENDPOINT = "/uniqueness-checker"
         const val SUBSCRIPTION = "SUBSCRIPTION"
+        const val RPC_SUBSCRIPTION = "RPC_SUBSCRIPTION"
 
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -120,7 +121,7 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
             is ConfigChangedEvent -> {
                 log.info("Received configuration change event, (re)initialising subscription")
                 initialiseSubscription(event.config.getConfig(MESSAGING_CONFIG))
-                initialiseRpcSubscription()
+                // RPC Subscription doesn't need to be re-created because it doesn't take config.
             }
             else -> {
                 log.warn("Unexpected event ${event}, ignoring")
@@ -151,7 +152,7 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
             UniquenessCheckRequestAvro::class.java,
             FlowEvent::class.java
         )
-        lifecycleCoordinator.createManagedResource(SUBSCRIPTION) {
+        lifecycleCoordinator.createManagedResource(RPC_SUBSCRIPTION) {
             val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, UNIQUENESS_CHECKER_ENDPOINT)
             subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor).also {
                 it.start()

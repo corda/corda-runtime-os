@@ -1,13 +1,11 @@
 package net.corda.web.server
 
 import io.javalin.Javalin
-import io.javalin.core.util.RouteOverviewUtil.metaInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
 import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.utilities.executeWithStdErrSuppressed
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
 import net.corda.web.api.WebServer
@@ -44,26 +42,20 @@ class JavalinServer(
             throw IllegalStateException("The Javalin webserver is already initialized")
         }
         coordinator.start()
-
-        try {
-            log.info("Starting Worker Web Server on port: $port")
-            server = javalinFactory()
-            startServer(port)
-
-            endpoints.forEach {
-                registerEndpointInternal(it)
-            }
-
-        } catch (ex: Exception) {
-            throw CordaRuntimeException(ex.message, ex)
-        }
+        startServer(port)
     }
 
     private fun startServer(port: Int) {
+        log.info("Starting Worker Web Server on port: $port")
+        server = javalinFactory()
+        endpoints.forEach {
+            registerEndpointInternal(it)
+        }
+
         val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
 
         if (bundle == null) {
-            server?.start("0.0.0.0", port)
+            server?.start(port)
         } else {
             // We temporarily switch the context class loader to allow Javalin to find `WebSocketServletFactory`.
             executeWithThreadContextClassLoader(bundle.adapt(BundleWiring::class.java).classLoader) {
@@ -71,7 +63,7 @@ class JavalinServer(
                 // implementation via standard class loading mechanism. This mechanism is not appropriate for OSGi.
                 // The logging implementation is found correctly in practice.
                 executeWithStdErrSuppressed {
-                    server?.start("0.0.0.0", port)
+                    server?.start(port)
                 }
             }
         }
@@ -83,10 +75,21 @@ class JavalinServer(
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
-    override fun stop() {
-        coordinator.updateStatus(LifecycleStatus.DOWN)
+    private fun stopServer() {
         server?.stop()
         server = null
+    }
+
+    private fun restartServer() {
+        // restart server without marking the component down.
+        val port = server?.port()?:throw java.lang.IllegalStateException("Cannot restart a non-existing server")
+        stopServer()
+        startServer(port)
+    }
+
+    override fun stop() {
+        coordinator.updateStatus(LifecycleStatus.DOWN)
+        stopServer()
         coordinator.stop()
     }
 
@@ -99,8 +102,13 @@ class JavalinServer(
 
     override fun removeEndpoint(endpoint: Endpoint) {
         if(null != server) endpoints.remove(endpoint)
-        //stop()
-        //port?.let { startServer(it) }
+        // NOTE: this is a bit crappy.
+        //  The server needs to be restarted to un-register the endpoint. However, this means everything dependent on
+        //  this is impacted by a restart, which doesn't feel right.
+        //  This also means we can't really DOWN/UP the lifecycle status of this because this would end up in a
+        //  relentless yoyo-ing of this component as dependent components keen calling this function.
+        // TODO - review if it is really needed to de-register an endpoint when a Subscription goes down, for example.
+        restartServer()
     }
 
     private fun registerEndpointInternal(endpoint: Endpoint) {
@@ -112,7 +120,6 @@ class JavalinServer(
             HTTPMethod.GET -> server?.get(endpoint.endpoint) { endpoint.webHandler.handle(JavalinContext(it)) }
             HTTPMethod.POST -> server?.post(endpoint.endpoint) { endpoint.webHandler.handle(JavalinContext(it)) }
         }
-        log.info("Endpoint $endpoint registered. ${server?.metaInfo}")
     }
 
     override val port: Int? get() = server?.port()
