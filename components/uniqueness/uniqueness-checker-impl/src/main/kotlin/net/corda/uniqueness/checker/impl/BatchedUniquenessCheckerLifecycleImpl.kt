@@ -55,7 +55,7 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
         const val GROUP_NAME = "uniqueness.checker"
         const val CONFIG_HANDLE = "CONFIG_HANDLE"
         const val SUBSCRIPTION_NAME = "Uniqueness Check"
-        const val UNIQUENESS_CHECKER_ENDPOINT = "/uniquenessChecker"
+        const val UNIQUENESS_CHECKER_ENDPOINT = "/uniqueness-checker"
         const val SUBSCRIPTION = "SUBSCRIPTION"
 
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)

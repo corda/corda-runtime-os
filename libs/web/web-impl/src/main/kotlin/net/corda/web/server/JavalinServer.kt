@@ -1,6 +1,7 @@
 package net.corda.web.server
 
 import io.javalin.Javalin
+import io.javalin.core.util.RouteOverviewUtil.metaInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
@@ -40,12 +41,12 @@ class JavalinServer(
 
     override fun start(port: Int) {
         if (server != null) {
-            throw CordaRuntimeException("The Javalin webserver is already initialized")
+            throw IllegalStateException("The Javalin webserver is already initialized")
         }
         coordinator.start()
 
         try {
-            log.debug("Starting Worker Web Server on port: $port")
+            log.info("Starting Worker Web Server on port: $port")
             server = javalinFactory()
             startServer(port)
 
@@ -72,6 +73,11 @@ class JavalinServer(
                 executeWithStdErrSuppressed {
                     server?.start(port)
                 }
+            }
+        }
+        server?.events {
+            it.handlerAdded { meta ->
+                log.info("Handler added to webserver: $meta")
             }
         }
         coordinator.updateStatus(LifecycleStatus.UP)
@@ -106,7 +112,7 @@ class JavalinServer(
             HTTPMethod.GET -> server?.get(endpoint.endpoint) { endpoint.webHandler.handle(JavalinContext(it)) }
             HTTPMethod.POST -> server?.post(endpoint.endpoint) { endpoint.webHandler.handle(JavalinContext(it)) }
         }
-        log.info("Endpoint $endpoint registered.")
+        log.info("Endpoint $endpoint registered. ${server?.metaInfo}")
     }
 
     override val port: Int? get() = server?.port()
