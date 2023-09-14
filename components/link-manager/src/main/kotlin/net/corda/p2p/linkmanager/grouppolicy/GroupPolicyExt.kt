@@ -5,22 +5,20 @@ import net.corda.data.p2p.crypto.ProtocolMode
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 
-internal val GroupPolicy.networkType: NetworkType
+internal val GroupPolicy.P2PParameters.networkType: NetworkType
     get() {
-        return when(this.p2pParameters.tlsPki) {
+        return when(this.tlsPki) {
             GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.STANDARD -> NetworkType.CORDA_5
             GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.CORDA_4 -> NetworkType.CORDA_4
-            else -> throw IllegalStateException("Invalid tlsPki value: ${this.p2pParameters.tlsPki}")
+            else -> throw IllegalStateException("Invalid tlsPki value: ${this.tlsPki}")
         }
     }
 
-internal val GroupPolicy.protocolModes: Set<ProtocolMode>
+internal val GroupPolicy.P2PParameters.protocolModes: Set<ProtocolMode>
     get() {
-        return when(this.p2pParameters.protocolMode) {
-            GroupPolicyConstants.PolicyValues.P2PParameters.ProtocolMode.AUTH_ENCRYPT
-                -> setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION)
-            GroupPolicyConstants.PolicyValues.P2PParameters.ProtocolMode.AUTH
-                -> setOf(ProtocolMode.AUTHENTICATION_ONLY)
-            else -> throw IllegalStateException("Invalid protocol mode: ${this.p2pParameters.protocolMode}")
+        return when(this.protocolMode) {
+            GroupPolicyConstants.PolicyValues.P2PParameters.ProtocolMode.AUTH_ENCRYPT -> setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION)
+            GroupPolicyConstants.PolicyValues.P2PParameters.ProtocolMode.AUTH -> setOf(ProtocolMode.AUTHENTICATION_ONLY)
+            else -> throw IllegalStateException("Invalid protocol mode: ${this.protocolMode}")
         }
     }

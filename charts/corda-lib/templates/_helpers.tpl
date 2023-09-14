@@ -72,14 +72,10 @@ Container security context
 */}}
 {{- define "corda.containerSecurityContext" -}}
 {{- if not .Values.dumpHostPath }}
+{{- with .Values.containerSecurityContext }}
 securityContext:
-  runAsUser: 10001
-  runAsGroup: 10002
-  allowPrivilegeEscalation: false
-  readOnlyRootFilesystem: true
-  capabilities:
-    drop:
-      - "ALL"
+  {{ . | toYaml | nindent 2}}
+{{- end }}
 {{- end }}
 {{- end }}
 
