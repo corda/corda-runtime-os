@@ -61,7 +61,7 @@ class SchedulerLockTest {
     }
 
     @Test
-    fun `when close, commit the tx and the close em`() {
+    fun `when close, commit the tx and close the em`() {
         SchedulerLockImpl("superman", "hulk", em, repo).close()
         verify(tx).commit()
         verify(em).close()
