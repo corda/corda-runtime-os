@@ -53,6 +53,27 @@ class UniquenessChecker {
         assertThat(responseEvent).isNotNull
     }
 
+    //TODO: draft a request builder using Ramzi's example
+    private fun newRequestBuilder(txId: SecureHash = randomSecureHash())
+            : UniquenessCheckRequestAvro.Builder =
+        UniquenessCheckRequestAvro.newBuilder(
+            UniquenessCheckRequestAvro(
+                defaultNotaryVNodeHoldingIdentity,
+                ExternalEventContext(
+                    UUID.randomUUID().toString(),
+                    UUID.randomUUID().toString(),
+                    KeyValuePairList(emptyList())
+                ),
+                txId.toString(),
+                defaultOriginatorX500Name,
+                emptyList(),
+                emptyList(),
+                0,
+                null,
+                defaultTimeWindowUpperBound
+            )
+        )
+
     private fun createPayload(): UniquenessCheckRequestAvro {
         return UniquenessCheckRequestAvro(
             HoldingIdentity(
