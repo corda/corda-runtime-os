@@ -105,9 +105,9 @@ class GroupPolicyProviderImpl @Activate constructor(
 
     override fun getP2PParameters(holdingIdentity: HoldingIdentity) : GroupPolicy.P2PParameters? {
         val mgmGroupPolicy = getGroupPolicy(holdingIdentity)
-        return if(mgmGroupPolicy == null ) {
+        return if (mgmGroupPolicy == null) {
             val groupPolicyJson = interopGroupPolicyReadService.getGroupPolicy(holdingIdentity.groupId)
-            if(groupPolicyJson != null) {
+            if (groupPolicyJson != null) {
                 groupPolicyParser.parseInteropGroupPolicy(groupPolicyJson).p2pParameters
             } else {
                 logger.warn("Could not get interop group policy for holding identity with Id : [${holdingIdentity.shortHash}].")
