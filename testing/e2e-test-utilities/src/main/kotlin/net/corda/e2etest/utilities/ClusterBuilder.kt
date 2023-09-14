@@ -1,5 +1,6 @@
 package net.corda.e2etest.utilities
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.rest.annotations.RestApiVersion
 import java.io.File
 import java.io.FileNotFoundException
@@ -36,6 +37,17 @@ class ClusterBuilder {
             endpoint(uri, user, password)
         }
     }
+
+    data class vNodeCreateBody(
+        val cpiFileChecksum: String,
+        val x500Name: String,
+        val cryptoDdlConnection: String? = null,
+        val cryptoDmlConnection: String? = null,
+        val uniquenessDdlConnection: String? = null,
+        val uniquenessDmlConnection: String? = null,
+        val vaultDdlConnection: String? = null,
+        val vaultDmlConnection: String? = null
+    )
 
     /** POST, but most useful for running flows */
     fun post(cmd: String, body: String) = client!!.post(cmd, body)
@@ -200,18 +212,18 @@ class ClusterBuilder {
         vaultDdlConnection: String?,
         vaultDmlConnection: String?
     ): String {
-        val body: List<String> = mutableListOf(
-            """"cpiFileChecksum": "$cpiHash"""",
-            """"x500Name": "$x500Name""""
-        ).apply {
-            cryptoDdlConnection?.let { add(""""cryptoDdlConnection": "$it"""") }
-            cryptoDmlConnection?.let { add(""""cryptoDmlConnection": "$it"""") }
-            uniquenessDdlConnection?.let { add(""""uniquenessDdlConnection": "$it"""") }
-            uniquenessDmlConnection?.let { add(""""uniquenessDmlConnection": "$it"""") }
-            vaultDdlConnection?.let { add(""""vaultDdlConnection": "$it"""") }
-            vaultDmlConnection?.let { add(""""vaultDmlConnection": "$it"""") }
-        }
-        return body.joinToString(prefix = "{", postfix = "}")
+        val body = vNodeCreateBody(
+                cpiHash,
+                x500Name,
+                cryptoDdlConnection,
+                cryptoDmlConnection,
+                uniquenessDdlConnection,
+                uniquenessDmlConnection,
+                vaultDdlConnection,
+                vaultDmlConnection
+            )
+        val mapper = jacksonObjectMapper()
+        return mapper.writeValueAsString(body)
     }
 
     private fun registerMemberBody(
