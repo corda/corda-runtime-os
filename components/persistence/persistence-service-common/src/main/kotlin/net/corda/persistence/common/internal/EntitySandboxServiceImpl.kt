@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package net.corda.persistence.common.internal
 
 import net.corda.cpk.read.CpkReadService
@@ -30,7 +28,6 @@ import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
 import net.corda.utilities.debug
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
 import net.corda.v5.ledger.utxo.observer.UtxoTokenTransactionStateObserver
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryFactory
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
@@ -181,10 +178,15 @@ class EntitySandboxServiceImpl @Activate constructor(
         ctx: MutableSandboxGroupContext,
         cpks: Collection<CpkMetadata>
     ) {
+        @Suppress("DEPRECATION")
         val tokenStateObserverMap = cpks
             .flatMap { it.cordappManifest.tokenStateObservers }
             .toSet()
-            .mapNotNull { getObserverFromClassName<UtxoLedgerTokenStateObserver<ContractState>>(it, ctx.sandboxGroup) }
+            .mapNotNull {
+                getObserverFromClassName<
+                        net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<ContractState>
+                        >(it, ctx.sandboxGroup)
+            }
             .groupBy { it.stateType }
 
         val tokenStateObserverMapV2 = cpks
@@ -211,9 +213,9 @@ class EntitySandboxServiceImpl @Activate constructor(
             }"
         }
 
-    //
     private fun requireSingleObserverToState(
-        tokenStateObserverMapV1: Map<Class<ContractState>, List<UtxoLedgerTokenStateObserver<ContractState>>>,
+        @Suppress("DEPRECATION")
+        tokenStateObserverMapV1: Map<Class<ContractState>, List<net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<ContractState>>>,
         tokenStateObserverMapV2: Map<Class<ContractState>, List<UtxoTokenTransactionStateObserver<ContractState>>>
     ) {
         val tokenStateObserverMap = merge(tokenStateObserverMapV1, tokenStateObserverMapV2)
@@ -231,7 +233,8 @@ class EntitySandboxServiceImpl @Activate constructor(
     }
 
     private fun merge(
-        map1: Map<Class<ContractState>, List<UtxoLedgerTokenStateObserver<ContractState>>>,
+        @Suppress("DEPRECATION")
+        map1: Map<Class<ContractState>, List<net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<ContractState>>>,
         map2: Map<Class<ContractState>, List<UtxoTokenTransactionStateObserver<ContractState>>>
     ) =
         (map1.asSequence() + map2.asSequence())

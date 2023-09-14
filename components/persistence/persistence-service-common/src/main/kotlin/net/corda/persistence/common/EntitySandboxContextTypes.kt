@@ -1,4 +1,3 @@
-@file:Suppress("DEPRECATION")
 package net.corda.persistence.common
 
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
@@ -34,6 +33,7 @@ fun SandboxGroupContext.getEntityManagerFactory(): EntityManagerFactory =
                     "${virtualNodeContext.holdingIdentity}"
         )
 
+@Suppress("DEPRECATION")
 fun SandboxGroupContext.getTokenStateObservers()
         : Map<Class<out ContractState>, UtxoLedgerTokenStateObserver<ContractState>?> =
     getTokenStateObservers(EntitySandboxContextTypes.SANDBOX_TOKEN_STATE_OBSERVERS)
