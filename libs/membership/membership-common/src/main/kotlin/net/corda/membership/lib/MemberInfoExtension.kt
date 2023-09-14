@@ -41,7 +41,8 @@ class MemberInfoExtension {
         const val SESSION_KEYS = "corda.session.keys"
         const val PARTY_SESSION_KEYS_ID = "$SESSION_KEYS.%s.id"
         const val PARTY_SESSION_KEYS = "$SESSION_KEYS.%s"
-        const val PARTY_SESSION_KEYS_PEM = "$SESSION_KEYS.%s.pem"
+        const val KEYS_PEM_SUFFIX = "pem"
+        const val PARTY_SESSION_KEYS_PEM = "$SESSION_KEYS.%s.$KEYS_PEM_SUFFIX"
 
         /** Key name for the session key hash **/
         const val SESSION_KEYS_HASH = "$SESSION_KEYS.%s.hash"

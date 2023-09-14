@@ -54,20 +54,24 @@ class GroupPolicyProviderImpl @Activate constructor(
 
             object : GroupPolicy {
                 override val fileFormatVersion: Int
-                    get() = TODO("Not yet implemented")
+                    get() = TODO("fileFormatVersion - Not yet implemented")
                 override val groupId = hid.groupId
                 override val registrationProtocol: String
-                    get() = TODO("Not yet implemented")
+                    get() = TODO("registrationProtocol - Not yet implemented")
                 override val synchronisationProtocol: String
-                    get() = TODO("Not yet implemented")
+                    get() = TODO("synchronisationProtocol - Not yet implemented")
                 override val protocolParameters: GroupPolicy.ProtocolParameters
-                    get() = TODO("Not yet implemented")
+                    get() = TODO("protocolParameters - Not yet implemented")
                 override val p2pParameters: GroupPolicy.P2PParameters
-                    get() = TODO("Not yet implemented")
+                    get() = TODO("p2pParameters - Not yet implemented")
                 override val mgmInfo: GroupPolicy.MGMInfo = DriverMGMInfo(sessionContext)
                 override val cipherSuite: GroupPolicy.CipherSuite = DriverCipherSuite(emptyMap())
             }
         }
+    }
+
+    override fun getP2PParameters(holdingIdentity: HoldingIdentity): GroupPolicy.P2PParameters? {
+        TODO("p2pParameters - Not yet implemented")
     }
 
     override fun registerListener(name: String, callback: (HoldingIdentity, GroupPolicy) -> Unit) {

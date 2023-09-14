@@ -57,10 +57,10 @@ class PoolCacheStateImpl(private val cacheState: TokenPoolCacheState) : PoolCach
     }
 
     private fun createClaim(claimId: String, selectedTokens: List<CachedToken>): TokenClaim {
-        return TokenClaim().apply {
-            this.claimId = claimId
-            this.claimedTokens = selectedTokens.map { it.toAvro() }
-        }
+        return TokenClaim.newBuilder()
+            .setClaimId(claimId)
+            .setClaimedTokens(selectedTokens.map { it.toAvro() })
+            .build()
     }
 
     private fun createClaimedTokenMap(): Map<String, CachedToken> {
