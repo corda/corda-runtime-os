@@ -55,15 +55,14 @@ class SessionEventExecutor(
             // back from where it came. Note that at present if the flow engine sends a data message without first
             // sending an init message this will result in failure, as the mapper has no knowledge of the flow ID to
             // respond on.
-            val outputRecord = recordFactory.forwardError(
+            val outputRecord = recordFactory.sendBackError(
                 sessionEvent,
                 ExceptionEnvelope(
                     "FlowMapper-SessionExpired",
                     "Tried to process session event for expired session with sessionId ${sessionEvent.sessionId}"
                 ),
                 instant,
-                flowConfig,
-                "invalid-flow-id"
+                flowConfig
             )
             FlowMapperResult(null, listOf(outputRecord))
         } else {
