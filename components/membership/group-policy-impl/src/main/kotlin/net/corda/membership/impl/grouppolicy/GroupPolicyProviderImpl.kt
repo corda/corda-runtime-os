@@ -23,6 +23,7 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.lib.grouppolicy.InteropGroupPolicyReader
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -66,8 +67,8 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = MemberInfoFactory::class)
     private val memberInfoFactory: MemberInfoFactory,
-    @Reference(service = InteropGroupPolicyReadService::class)
-    private val interopGroupPolicyReadService: InteropGroupPolicyReadService
+    @Reference(service = InteropGroupPolicyReader::class)
+    private val interopGroupPolicyReader: InteropGroupPolicyReader
 ) : GroupPolicyProvider {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -106,7 +107,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     override fun getP2PParameters(holdingIdentity: HoldingIdentity) : GroupPolicy.P2PParameters? {
         val mgmGroupPolicy = getGroupPolicy(holdingIdentity)
         return if (mgmGroupPolicy == null) {
-            val groupPolicyJson = interopGroupPolicyReadService.getGroupPolicy(holdingIdentity.groupId)
+            val groupPolicyJson = interopGroupPolicyReader.getGroupPolicy(holdingIdentity)
             if (groupPolicyJson != null) {
                 groupPolicyParser.parseInteropGroupPolicy(groupPolicyJson).p2pParameters
             } else {
