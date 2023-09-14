@@ -4,6 +4,7 @@ import net.corda.cpk.read.CpkReadService
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
+import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.orm.JpaEntitiesSet
 import net.corda.persistence.common.EntityExtractor
@@ -179,26 +180,15 @@ class EntitySandboxServiceImpl @Activate constructor(
         cpks: Collection<CpkMetadata>
     ) {
         @Suppress("DEPRECATION")
-        val tokenStateObserverMap = cpks
-            .flatMap { it.cordappManifest.tokenStateObservers }
-            .toSet()
-            .mapNotNull {
-                getObserverFromClassName<
-                        net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<ContractState>
-                        >(it, ctx.sandboxGroup)
-            }
-            .groupBy { it.stateType }
+        val tokenStateObserverMap =
+            getStateObserver<net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<ContractState>>(ctx, cpks) { manifest ->
+                manifest.tokenStateObservers
+            }.groupBy { it.stateType }
 
-        val tokenStateObserverMapV2 = cpks
-            .flatMap { it.cordappManifest.tokenStateObserversV2 }
-            .toSet()
-            .mapNotNull {
-                getObserverFromClassName<UtxoTokenTransactionStateObserver<ContractState>>(
-                    it,
-                    ctx.sandboxGroup
-                )
-            }
-            .groupBy { it.stateType }
+        val tokenStateObserverMapV2 =
+            getStateObserver<UtxoTokenTransactionStateObserver<ContractState>>(ctx, cpks) { manifest ->
+                manifest.tokenStateObserversV2
+            }.groupBy { it.stateType }
 
         requireSingleObserverToState(tokenStateObserverMap, tokenStateObserverMapV2)
 
@@ -208,6 +198,18 @@ class EntitySandboxServiceImpl @Activate constructor(
         genLogsDebug(tokenStateObserverMap)
         genLogsDebug(tokenStateObserverMapV2)
     }
+
+    private inline fun <reified T : Any> getStateObserver(
+        ctx: MutableSandboxGroupContext,
+        cpks: Collection<CpkMetadata>,
+        getObserverNameList: (CordappManifest) -> Set<String>
+    ) =
+        cpks
+            .flatMap { getObserverNameList(it.cordappManifest) }
+            .toSet()
+            .mapNotNull {
+                getObserverFromClassName<T>(it, ctx.sandboxGroup)
+            }
 
     private fun <T : Any> genLogsDebug(tokenStateObserverMap: Map<Class<ContractState>, List<T>>) =
         logger.debug {
