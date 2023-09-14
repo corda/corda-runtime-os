@@ -70,18 +70,25 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
         visibleStates.flatMap { stateAndRef ->
             val observer = tokenObservers.getObserverFor(stateAndRef.state.contractStateType)
             if (observer != null) {
-                return@flatMap onCommit(observer, stateAndRef)
+                return@flatMap onCommit(observer, stateAndRef) {
+                    it.onCommit(
+                        stateAndRef.state.contractState,
+                        digestService
+                    )
+                }
             }
 
             // No observer with the deprecated interface was found
             // Look for an observer that implements the new interface
             val observerV2 = tokenObservers.getObserverForV2(stateAndRef.state.contractStateType)
             if (observerV2 != null) {
-                return@flatMap onCommit(
-                    observerV2,
-                    transactionReader.getUtxoTransaction(persistenceService)!!,
-                    stateAndRef
-                )
+                return@flatMap  onCommit(observerV2, stateAndRef) {
+                    it.onCommit(
+                        stateAndRef,
+                        transactionReader.getUtxoTransaction(persistenceService)!!,
+                        digestService
+                    )
+                }
             }
 
             // No observer found
@@ -89,33 +96,14 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
             emptyList()
         }
 
-    private fun onCommit(
+    private fun<T> onCommit(
         @Suppress("DEPRECATION")
-        observer: net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<ContractState>,
-        stateAndRef: StateAndRef<ContractState>
+        observer: T,
+        stateAndRef: StateAndRef<ContractState>,
+        observerOnCommitCallBlock: (T) -> UtxoToken
     ): List<Pair<StateAndRef<*>, UtxoToken>> {
         return try {
-            val token = observer.onCommit(stateAndRef.state.contractState, digestService).let { token ->
-                if (token.poolKey.tokenType != null) {
-                    token
-                } else {
-                    createUtxoToken(token, stateAndRef)
-                }
-            }
-            listOf(Pair(stateAndRef, token))
-        } catch (e: Exception) {
-            log.error("Failed while trying call '${this.javaClass}'.onCommit() with '${stateAndRef.state.contractStateType}'")
-            emptyList()
-        }
-    }
-
-    private fun onCommit(
-        observer: UtxoTokenTransactionStateObserver<ContractState>,
-        transaction: UtxoLedgerTransaction,
-        stateAndRef: StateAndRef<ContractState>
-    ): List<Pair<StateAndRef<*>, UtxoToken>> {
-        return try {
-            val token = observer.onCommit(stateAndRef, transaction, digestService).let { token ->
+            val token = observerOnCommitCallBlock(observer).let { token ->
                 if (token.poolKey.tokenType != null) {
                     token
                 } else {
