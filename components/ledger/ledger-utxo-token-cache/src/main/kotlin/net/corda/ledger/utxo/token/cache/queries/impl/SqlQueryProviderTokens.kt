@@ -57,19 +57,24 @@ class SqlQueryProviderTokens : SqlQueryProvider {
 
         // The query orders by transaction_id to create some randomness in the tokens that are selected
         return """
-                SELECT
-                    transaction_id,
-                    leaf_idx,
-                    token_tag,
-                    token_owner_hash,
-                    token_amount
-                FROM {h-schema}utxo_transaction_output
-                WHERE token_type = :$SQL_PARAMETER_TOKEN_TYPE
-                AND   token_issuer_hash = :$SQL_PARAMETER_ISSUER_HASH
-                AND   token_symbol = :$SQL_PARAMETER_SYMBOL
+                 SELECT
+                    t_output.transaction_id,
+                    t_output.leaf_idx,
+                    t_output.token_tag,
+                    t_output.token_owner_hash,
+                    t_output.token_amount
+                FROM {h-schema}utxo_transaction_output as t_output
+                INNER JOIN {h-schema}utxo_visible_transaction_state as t_state 
+                ON    t_output.transaction_id = t_state.transaction_id 
+                AND   t_output.group_idx = t_state.group_idx 
+                AND   t_output.leaf_idx = t_state.leaf_idx 
+                WHERE t_state.consumed is null 
+                AND   t_output.token_type = :$SQL_PARAMETER_TOKEN_TYPE
+                AND   t_output.token_issuer_hash = :$SQL_PARAMETER_ISSUER_HASH
+                AND   t_output.token_symbol = :$SQL_PARAMETER_SYMBOL
                 $tagFilter
                 $ownerFilter
-                ORDER BY transaction_id
+                ORDER BY t_output.transaction_id
                 LIMIT $limit
                 """.trimIndent()
     }
