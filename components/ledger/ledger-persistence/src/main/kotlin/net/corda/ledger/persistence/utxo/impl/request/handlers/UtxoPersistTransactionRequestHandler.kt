@@ -70,9 +70,9 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
         visibleStates.flatMap { stateAndRef ->
             val observer = tokenObservers.getObserverFor(stateAndRef.state.contractStateType)
             if (observer != null) {
-                return@flatMap onCommit(observer, stateAndRef) {
-                    it.onCommit(
-                        stateAndRef.state.contractState,
+                return@flatMap onCommit(observer, stateAndRef) { obs, sAndRef ->
+                    obs.onCommit(
+                        sAndRef.state.contractState,
                         digestService
                     )
                 }
@@ -82,9 +82,9 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
             // Look for an observer that implements the new interface
             val observerV2 = tokenObservers.getObserverForV2(stateAndRef.state.contractStateType)
             if (observerV2 != null) {
-                return@flatMap  onCommit(observerV2, stateAndRef) {
-                    it.onCommit(
-                        stateAndRef,
+                return@flatMap  onCommit(observerV2, stateAndRef) { obs, sAndRef ->
+                    obs.onCommit(
+                        sAndRef,
                         transactionReader.getUtxoTransaction(persistenceService)!!,
                         digestService
                     )
@@ -99,10 +99,10 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
     private fun<T> onCommit(
         observer: T,
         stateAndRef: StateAndRef<ContractState>,
-        observerOnCommitCallBlock: (T) -> UtxoToken
+        observerOnCommitCallBlock: (T,  StateAndRef<ContractState>) -> UtxoToken
     ): List<Pair<StateAndRef<*>, UtxoToken>> {
         return try {
-            val token = observerOnCommitCallBlock(observer).let { token ->
+            val token = observerOnCommitCallBlock(observer, stateAndRef).let { token ->
                 if (token.poolKey.tokenType != null) {
                     token
                 } else {
