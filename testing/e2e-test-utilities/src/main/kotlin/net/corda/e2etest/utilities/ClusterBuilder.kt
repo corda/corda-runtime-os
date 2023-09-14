@@ -17,11 +17,11 @@ import java.time.Instant
  */
 @Suppress("TooManyFunctions")
 class ClusterBuilder {
-    
+
     internal companion object {
         var REST_API_VERSION_PATH = ""
     }
-    
+
     private var client: HttpsClient? = null
 
     private fun endpoint(uri: URI, username: String, password: String) {
@@ -104,15 +104,19 @@ class ClusterBuilder {
             ?: throw FileNotFoundException("No such resource: '$resourceName'")
 
     fun importCertificate(resourceName: String, usage: String, alias: String) =
-            uploadCertificateResource(
-                "/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage",
-                resourceName,
-                alias,
-            )
+        uploadCertificateResource(
+            "/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage",
+            resourceName,
+            alias,
+        )
 
     // Used to test RestApiVersion.C5_0 CertificateRestResource from 5.1 cluster, remove after LTS
     fun deprecatedImportCertificate(resourceName: String, usage: String, alias: String) =
-        uploadCertificateResource("/api/${RestApiVersion.C5_0.versionPath}/certificates/cluster/$usage", resourceName, alias)
+        uploadCertificateResource(
+            "/api/${RestApiVersion.C5_0.versionPath}/certificates/cluster/$usage",
+            resourceName,
+            alias
+        )
 
 
     fun importCertificate(file: File, usage: String, alias: String) =
@@ -213,15 +217,15 @@ class ClusterBuilder {
         vaultDmlConnection: String?
     ): String {
         val body = VNodeCreateBody(
-                cpiHash,
-                x500Name,
-                cryptoDdlConnection,
-                cryptoDmlConnection,
-                uniquenessDdlConnection,
-                uniquenessDmlConnection,
-                vaultDdlConnection,
-                vaultDmlConnection
-            )
+            cpiHash,
+            x500Name,
+            cryptoDdlConnection,
+            cryptoDmlConnection,
+            uniquenessDdlConnection,
+            uniquenessDmlConnection,
+            vaultDdlConnection,
+            vaultDmlConnection
+        )
         val mapper = jacksonObjectMapper()
         return mapper.writeValueAsString(body)
     }
@@ -243,8 +247,8 @@ class ClusterBuilder {
             "corda.key.scheme" to "CORDA.ECDSA.SECP256R1",
             "corda.roles.0" to "notary",
             "corda.notary.service.name" to "$notaryServiceName",
-             "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
-             "corda.notary.service.flow.protocol.version.0" to "1",
+            "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
+            "corda.notary.service.flow.protocol.version.0" to "1",
         ) + customMetadata)
             .map { "\"${it.key}\" : \"${it.value}\"" }
             .joinToString()
@@ -301,7 +305,7 @@ class ClusterBuilder {
     ): String {
 
         val body1 = permissionsToCreate.map { createPermissionBody(it.second, it.first, null, null) }
-        
+
         val bodyStr1 = if (body1.isEmpty()) {
             ""
         } else {
@@ -328,8 +332,9 @@ class ClusterBuilder {
         uniquenessDmlConnection: String? = null,
         vaultDdlConnection: String? = null,
         vaultDmlConnection: String? = null
-    )=
-        post("/api/$REST_API_VERSION_PATH/virtualnode",
+    ) =
+        post(
+            "/api/$REST_API_VERSION_PATH/virtualnode",
             vNodeBody(
                 cpiHash,
                 x500Name,
@@ -353,7 +358,8 @@ class ClusterBuilder {
     fun vNodeList() = client!!.get("/api/$REST_API_VERSION_PATH/virtualnode")
 
     /** List all virtual nodes */
-    fun getVNode(holdingIdentityShortHash: String) = client!!.get("/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdentityShortHash")
+    fun getVNode(holdingIdentityShortHash: String) =
+        client!!.get("/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdentityShortHash")
 
     fun getVNodeStatus(requestId: String) = client!!.get("/api/$REST_API_VERSION_PATH/virtualnode/status/$requestId")
 
@@ -372,9 +378,11 @@ class ClusterBuilder {
         notaryServiceName: String? = null,
         customMetadata: Map<String, String> = emptyMap(),
     ) = register(
-            holdingIdShortHash,
-            if (notaryServiceName != null) registerNotaryBody(notaryServiceName, customMetadata) else registerMemberBody(customMetadata)
+        holdingIdShortHash,
+        if (notaryServiceName != null) registerNotaryBody(notaryServiceName, customMetadata) else registerMemberBody(
+            customMetadata
         )
+    )
 
     fun register(holdingIdShortHash: String, registrationContext: String) =
         post(
@@ -396,7 +404,10 @@ class ClusterBuilder {
             // Used to test RestApiVersion.C5_0 CertificateRestResource, remove after LTS
             deprecatedCreateKey(holdingIdentityShortHash, alias, category, scheme)
         } else {
-            post("/api/$REST_API_VERSION_PATH/key/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme", body = "")
+            post(
+                "/api/$REST_API_VERSION_PATH/key/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme",
+                body = ""
+            )
         }
 
     // Used to test RestApiVersion.C5_0 KeysRestResource from 5.1 cluster, remove after LTS
@@ -474,7 +485,8 @@ class ClusterBuilder {
         parentGroup: String? = null,
         passwordExpiry: Instant? = null
     ) =
-        post("/api/$REST_API_VERSION_PATH/user",
+        post(
+            "/api/$REST_API_VERSION_PATH/user",
             createRbacUserBody(enabled, fullName, password, loginName, parentGroup, passwordExpiry)
         )
 
@@ -501,7 +513,8 @@ class ClusterBuilder {
         groupVisibility: String? = null,
         virtualNode: String? = null
     ) =
-        post("/api/$REST_API_VERSION_PATH/permission",
+        post(
+            "/api/$REST_API_VERSION_PATH/permission",
             createPermissionBody(permissionString, permissionType, groupVisibility, virtualNode)
         )
 
