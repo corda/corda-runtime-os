@@ -32,9 +32,11 @@ class SessionEventExecutorTest {
     private val flowConfig = SmartConfigImpl.empty().withValue(SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
     private val sessionEventSerializer = mock<CordaAvroSerializer<SessionEvent>>()
     private val record = Record("Topic", "Key", "Value")
+    private val sendBackRecord = Record("Topic", "Key", "Value2")
     private val recordFactory = mock<RecordFactory>{
         on { forwardError(any(), any(), any(), any(), any()) } doReturn record
         on { forwardEvent(any(), any(), any(), any()) } doReturn record
+        on { sendBackError(any(), any(), any(), any()) } doReturn sendBackRecord
     }
     private val sessionInitProcessor = mock<SessionInitProcessor>()
 
@@ -118,7 +120,7 @@ class SessionEventExecutorTest {
         assertThat(outboundEvents.size).isEqualTo(1)
 
         val outputRecord = outboundEvents.first()
-        assertThat(outputRecord.value).isEqualTo("Value")
+        assertThat(outputRecord.value).isEqualTo("Value2")
     }
 
     @Test
