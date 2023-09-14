@@ -625,11 +625,11 @@ class P2PLayerEndToEndTest {
                     )
                 }
             }
-            on { getGroupPolicy(any()) } doAnswer {
+            on { getP2PParameters(any()) } doAnswer {
                 val id: HoldingIdentity = it.getArgument(0)
                 localInfos.firstOrNull {
                     it.identity.id == id
-                }?.groupPolicy
+                }?.groupPolicy?.p2pParameters
             }
         }
         private val otherHostMembers = ConcurrentHashMap<MemberX500Name, MemberInfo>()

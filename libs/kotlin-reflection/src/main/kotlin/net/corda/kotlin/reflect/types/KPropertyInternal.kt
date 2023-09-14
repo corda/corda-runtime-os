@@ -1,9 +1,9 @@
 package net.corda.kotlin.reflect.types
 
-import kotlinx.metadata.jvm.JvmFieldSignature
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import kotlin.reflect.KProperty
+import kotlinx.metadata.jvm.JvmFieldSignature
 
 /**
  * Internal API for Kotlin properties.
