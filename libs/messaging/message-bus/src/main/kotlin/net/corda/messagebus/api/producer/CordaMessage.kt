@@ -55,7 +55,7 @@ data class CordaMessage<T: Any>(
     }
 
     /**
-     * Retrieves a property of a specific type from the additional properties map, returning null if not found or if the cast fails.
+     * Retrieves a property of a specific type from the additional properties map, returning null if not found.
      *
      * @param key The identifier of the property to retrieve.
      * @return The property associated with the given key cast to the specified type, or null if not found or casting fails.
