@@ -12,6 +12,8 @@ internal class GroupPolicyProviderStub : GroupPolicyProvider {
         callback: (HoldingIdentity, GroupPolicy) -> Unit,
     ) = run { }
 
+    override fun getP2PParameters(holdingIdentity: HoldingIdentity) = throw UnsupportedOperationException()
+
     override val isRunning = true
 
     override fun start() = Unit

@@ -13,6 +13,7 @@ description "Bare bones Kotlin reflection within an OSGi framework."
 
 configurations {
     bundle {
+        canBeDeclared = false
         canBeResolved = false
     }
     bundle.extendsFrom runtimeClasspath

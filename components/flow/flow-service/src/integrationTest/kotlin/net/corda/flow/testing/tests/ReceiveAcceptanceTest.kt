@@ -78,6 +78,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             }
         }
     }
+
     @Test
     fun `Receiving a session close event instead of a data resumes the flow with an error`() {
         given {
@@ -218,6 +219,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             }
         }
     }
+
     @Test
     fun `Given two sessions receiving a single session error event does not resume the flow and schedules session cleanup`() {
         given {
@@ -271,6 +273,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             }
         }
     }
+
     @Test
     fun `Given two sessions receiving a session error event first for one and a session data event for the other resumes the flow with an error and schedules session cleanup`() {
         given {

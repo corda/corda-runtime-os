@@ -1,8 +1,11 @@
 package net.corda.flow.state.impl
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import java.nio.ByteBuffer
 import java.time.Instant
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
@@ -25,6 +28,26 @@ class FlowCheckpointImpl(
     private val config: SmartConfig,
     instantProvider: () -> Instant
 ) : FlowCheckpoint {
+
+    /**
+     * It's important that we guard against null values for default fields added between versions of the Avro object.
+     * An edge condition exists where an existing checkpoint for a previous version can be loaded
+     * by the newer version. In these cases any new, default fields will be null. initFlowState() is only called when
+     * the checkpoint is first created, so it's important we check these fields each time we create an instance
+     * of FlowCheckpointImpl.
+     */
+    init {
+        if (checkpoint.customState == null) {
+            val newCustomState = KeyValuePairList.newBuilder()
+                .setItems(listOf())
+                .build()
+            checkpoint.customState = newCustomState
+        }
+    }
+
+    private companion object {
+        val objectMapper = ObjectMapper()
+    }
 
     private val pipelineStateManager = PipelineStateManager(checkpoint.pipelineState, config, instantProvider)
     private var flowStateManager = checkpoint.flowState?.let(::FlowStateManager)
@@ -106,6 +129,9 @@ class FlowCheckpointImpl(
     override val currentRetryCount: Int
         get() = pipelineStateManager.retryCount
 
+    override val firstFailureTimestamp: Instant?
+        get() = pipelineStateManager.firstFailureTimestamp
+
     override val inRetryState: Boolean
         get() = pipelineStateManager.retryState != null
 
@@ -127,9 +153,6 @@ class FlowCheckpointImpl(
 
     override val initialPlatformVersion: Int
         get() = checkpoint.initialPlatformVersion
-
-    override val flowMetricsState: String
-        get() = checkpoint.flowMetricsState ?: "{}"
 
     override fun initFlowState(flowStartContext: FlowStartContext, cpkFileHashes: Set<SecureHash>) {
         if (flowStateManager != null) {
@@ -213,8 +236,25 @@ class FlowCheckpointImpl(
         pipelineStateManager.setPendingPlatformError(type, message)
     }
 
-    override fun setMetricsState(stateJson: String) {
-        checkpoint.flowMetricsState = stateJson
+    override fun writeCustomState(state: Any) {
+        val key = state.javaClass.name
+        val newState = KeyValuePair.newBuilder()
+            .setKey(key)
+            .setValue(objectMapper.writeValueAsString(state))
+            .build()
+
+        checkpoint.customState = KeyValuePairList
+            .newBuilder()
+            .setItems(checkpoint.customState.items.filterNot { it.key == key } + newState)
+            .build()
+    }
+
+    override fun <T> readCustomState(clazz: Class<T>): T? {
+        return checkpoint.customState.items
+            .firstOrNull { it.key == clazz.name }
+            ?.let {
+                objectMapper.readValue(it.value, clazz)
+            }
     }
 
     override fun toAvro(): Checkpoint? {

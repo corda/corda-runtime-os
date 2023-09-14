@@ -8,8 +8,6 @@ import com.r3.corda.testing.smoketests.flow.messages.JsonSerializationInput
 import com.r3.corda.testing.smoketests.flow.messages.JsonSerializationOutput
 import com.r3.corda.testing.smoketests.flow.messages.RpcSmokeTestInput
 import com.r3.corda.testing.smoketests.flow.messages.RpcSmokeTestOutput
-import java.time.Instant
-import java.util.UUID
 import net.corda.v5.application.crypto.CompositeKeyGenerator
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
@@ -34,6 +32,8 @@ import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.util.UUID
 
 @Suppress("unused", "TooManyFunctions")
 @InitiatingFlow(protocol = "smoke-test-protocol")

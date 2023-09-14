@@ -7,6 +7,7 @@ import java.time.Instant
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
@@ -36,7 +37,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
+import java.time.temporal.ChronoUnit
 
+@Suppress("LargeClass")
 class FlowCheckpointImplTest {
     private val flowConfig = ConfigFactory.empty()
         .withValue(FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(60000L))
@@ -284,7 +287,12 @@ class FlowCheckpointImplTest {
         flowCheckpoint.suspendedOn = "A"
         flowCheckpoint.waitingFor = waitingFor
         val flowStackItem =
-            flowCheckpoint.flowStack.pushWithContext(flow, userPropertiesLevel0.avro, platformPropertiesLevel0.avro, mock())
+            flowCheckpoint.flowStack.pushWithContext(
+                flow,
+                userPropertiesLevel0.avro,
+                platformPropertiesLevel0.avro,
+                mock()
+            )
         flowCheckpoint.putSessionState(session1)
         flowCheckpoint.serializedFiber = serializedFiber
 
@@ -297,7 +305,8 @@ class FlowCheckpointImplTest {
         assertThat(avroCheckpoint.flowState.fiber).isEqualTo(serializedFiber)
         assertThat(avroCheckpoint.pipelineState.maxFlowSleepDuration).isEqualTo(60000)
 
-        assertThat(avroCheckpoint.flowState.flowStackItems[0].contextUserProperties).isEqualTo(userPropertiesLevel0.avro)
+        assertThat(avroCheckpoint.flowState.flowStackItems[0].contextUserProperties)
+            .isEqualTo(userPropertiesLevel0.avro)
         assertThat(avroCheckpoint.flowState.flowStackItems[0].contextPlatformProperties).isEqualTo(
             platformPropertiesLevel0.avro
         )
@@ -517,10 +526,12 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `rollback - original state restored when checkpoint rolled back from init`() {
-        val flowCheckpoint = createFlowCheckpoint(setupAvroCheckpoint(initialiseFlowState = false,
-            retryState = RetryState().apply {
-                retryCount = 1
-        }))
+        val flowCheckpoint = createFlowCheckpoint(
+            setupAvroCheckpoint(initialiseFlowState = false,
+                retryState = RetryState().apply {
+                    retryCount = 1
+                })
+        )
         val context = FlowStartContext().apply {
             statusKey = FlowKey(FLOW_ID_1, BOB_X500_HOLDING_IDENTITY)
             identity = BOB_X500_HOLDING_IDENTITY
@@ -614,16 +625,18 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `retry - creating a checkpoint with a retry state set should allow retry information to be retrieved`() {
+        val firstFailure = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val flowEvent = FlowEvent("F1", Wakeup())
         val checkpoint = setupAvroCheckpoint(retryState = RetryState().apply {
             retryCount = 1
             failedEvent = flowEvent
+            firstFailureTimestamp = firstFailure
         })
 
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
         assertThat(flowCheckpoint.inRetryState).isTrue
         assertThat(flowCheckpoint.retryEvent).isEqualTo(flowEvent)
-        assertThat(flowCheckpoint.currentRetryCount).isEqualTo(1)
+        assertThat(flowCheckpoint.firstFailureTimestamp?.truncatedTo(ChronoUnit.MILLIS)).isEqualTo(firstFailure)
     }
 
     @Test
@@ -764,6 +777,86 @@ class FlowCheckpointImplTest {
         val avroCheckpoint = flowCheckpoint.toAvro()
         assertThat(avroCheckpoint!!.flowState!!.externalEventState).isEqualTo(externalEventState)
     }
+
+    @Test
+    fun `existing checkpoint - read missing custom state returns null`() {
+        val checkpoint = setupAvroCheckpoint()
+        val flowCheckpoint = createFlowCheckpoint(checkpoint)
+        val storedState = flowCheckpoint.readCustomState(ExampleCustomState::class.java)
+        assertThat(storedState).isNull()
+    }
+
+    @Test
+    fun `existing checkpoint - read  custom state`() {
+        val checkpoint = setupAvroCheckpoint()
+        val avroState = KeyValuePair.newBuilder()
+            .setKey(ExampleCustomState::class.java.name)
+            .setValue("{ \"name\": \"test\"}")
+            .build()
+        checkpoint.customState = KeyValuePairList.newBuilder()
+            .setItems(listOf(avroState))
+            .build()
+
+        val flowCheckpoint = createFlowCheckpoint(checkpoint)
+        val storedState = flowCheckpoint.readCustomState(ExampleCustomState::class.java)
+        assertThat(storedState).isNotNull
+        assertThat(storedState!!.name).isEqualTo("test")
+    }
+
+    @Test
+    fun `existing checkpoint - write new custom state updates avro`() {
+        val checkpoint = setupAvroCheckpoint()
+        val flowCheckpoint = createFlowCheckpoint(checkpoint)
+        flowCheckpoint.writeCustomState(ExampleCustomState().apply { name = "test" })
+
+        val expectedAvroCustomState = KeyValuePairList.newBuilder()
+            .setItems(
+                listOf(
+                    KeyValuePair.newBuilder()
+                        .setKey(ExampleCustomState::class.java.name)
+                        .setValue("{\"name\":\"test\"}")
+                        .build()
+                )
+            )
+            .build()
+
+        val avroCheckpoint = flowCheckpoint.toAvro()
+        assertThat(avroCheckpoint!!.customState).isEqualTo(expectedAvroCustomState)
+    }
+
+    @Test
+    fun `existing checkpoint - write updated custom state updates avro`() {
+        val checkpoint = setupAvroCheckpoint()
+        val flowCheckpoint = createFlowCheckpoint(checkpoint)
+
+        val existingAvroCustomState = KeyValuePair.newBuilder()
+            .setKey(ExampleCustomState::class.java.name)
+            .setValue("{\"name\":\"test1\"}")
+            .build()
+        checkpoint.customState = KeyValuePairList.newBuilder()
+            .setItems(listOf(existingAvroCustomState))
+            .build()
+
+        flowCheckpoint.writeCustomState(ExampleCustomState().apply { name = "test2" })
+
+        val expectedAvroCustomState = KeyValuePairList.newBuilder()
+            .setItems(
+                listOf(
+                    KeyValuePair.newBuilder()
+                        .setKey(ExampleCustomState::class.java.name)
+                        .setValue("{\"name\":\"test2\"}")
+                        .build()
+                )
+            )
+            .build()
+
+        val avroCheckpoint = flowCheckpoint.toAvro()
+        assertThat(avroCheckpoint!!.customState).isEqualTo(expectedAvroCustomState)
+    }
+}
+
+class ExampleCustomState {
+    var name: String? = null
 }
 
 @InitiatingFlow(protocol = "valid-example")

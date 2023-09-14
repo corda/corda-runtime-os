@@ -20,6 +20,31 @@ image:
   # -- worker image tag, defaults to Chart appVersion
   tag: ""
 
+# define privilege and access control settings for a container
+containerSecurityContext:
+  # -- specify what user ID that processes will run with
+  runAsUser: 10001
+  # -- specify what group ID that processes will run with
+  runAsGroup: 10002
+  # -- enable privilege escalation
+  allowPrivilegeEscalation: false
+  # -- mount the container's root filesystem as read-only
+  readOnlyRootFilesystem: true
+  # linux capabilities for users
+  capabilities:
+    # -- capabilities to drop
+    drop:
+      - "ALL"
+
+# define privilege and access control settings for a pod
+podSecurityContext:
+  # -- specify what user ID that processes will run with
+  runAsUser: 10001
+  # -- specify what group ID that processes will run with
+  runAsGroup: 10002
+  # -- specify supplementary group ID that processes will run with
+  fsGroup: 1000
+
 # -- extra labels to add to all deployed objects
 commonLabels: {}
 
@@ -362,6 +387,8 @@ bootstrap:
     partitions: 10
     # -- Kafka topic replicas
     replicas: 3
+    # -- Maximum time, in seconds, to wait for Kafka topic creation operation to finish (might vary depending on the amount of partitions and replicas configured)
+    timeoutSeconds: 60
     # if kafka.sasl.enabled, the credentials to connect to Kafka with for bootstrap
     sasl:
       # bootstrap SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username

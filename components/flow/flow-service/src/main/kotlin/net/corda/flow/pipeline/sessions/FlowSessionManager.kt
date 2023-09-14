@@ -251,4 +251,38 @@ interface FlowSessionManager {
         checkpoint: FlowCheckpoint,
         sessionIds: List<String>
     ): List<SessionState>
+
+    /**
+     * Get a list of requireClose = true and requireClose = false as a [Pair]
+     * @param checkpoint The checkpoint to check states within
+     * @param sessionIds The sessions to check
+     * @return a [Pair] of <requireClose, !requireClose> sessions
+     */
+    fun getRequireCloseTrueAndFalse(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>
+    ): Pair<List<String>, List<String>>
+
+    /**
+     * Update [status] for the sessions passed in.
+     * @param checkpoint The flow's [FlowCheckpoint].
+     * @param sessionIds The session ids to update the status of.
+     * @param status The acceptable status the sessions can have.
+     * @return A list of [SessionState]s that have been updated to the new [status].
+     *
+     */
+    fun updateStatus(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        status: SessionStateType
+    ): List<SessionState>
+
+    /**
+     * Get a list of initiating and initiated sessions as a [Pair]
+     * @param sessionIds The sessions to check
+     * @return a [Pair] of <initiating, initiated> sessions
+     */
+    fun getInitiatingAndInitiatedSessions(
+        sessionIds: List<String>
+    ): Pair<List<String>, List<String>>
 }
