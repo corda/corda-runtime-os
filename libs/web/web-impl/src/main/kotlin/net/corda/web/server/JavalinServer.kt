@@ -100,9 +100,9 @@ class JavalinServer(
 
     override fun removeEndpoint(endpoint: Endpoint) {
         if(null != server) endpoints.remove(endpoint)
-        // NOTE: this is a bit crappy.
+        // NOTE:
         //  The server needs to be restarted to un-register the endpoint. However, this means everything dependent on
-        //  this is impacted by a restart, which doesn't feel right.
+        //  this is impacted by a restart, which doesn't feel quite right.
         //  This also means we can't really DOWN/UP the lifecycle status of this because this would end up in a
         //  relentless yoyo-ing of this component as dependent components keen calling this function.
         // TODO - review if it is really needed to de-register an endpoint when a Subscription goes down, for example.
