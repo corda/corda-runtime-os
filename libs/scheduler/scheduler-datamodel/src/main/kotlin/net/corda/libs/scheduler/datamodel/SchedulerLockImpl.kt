@@ -21,17 +21,13 @@ class SchedulerLockImpl(
         secondsSinceLastScheduledTrigger = log.lastScheduled.until(log.now, ChronoUnit.SECONDS)
     }
 
-    override fun updateAndRelease(schedulerId: String) {
+    override fun updateLog(schedulerId: String) {
         log.schedulerId = schedulerId
         logEntityRepository.updateLog(taskName, schedulerId, em)
-        tx.commit()
-    }
-
-    override fun release() {
-        tx.rollback()
     }
 
     override fun close() {
+        tx.commit()
         em.close()
     }
 }

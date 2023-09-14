@@ -66,12 +66,11 @@ class SchedulerEventHandler(
         schedulerLog.getLastTriggerAndLock(schedule.taskName, schedulerName).use { schedulerLock ->
             if (schedulerLock.secondsSinceLastScheduledTrigger >= schedule.scheduleIntervalInSeconds) {
                 publisher.publish(schedule.taskName, schedule.scheduleTriggerTopic)
-                schedulerLock.updateAndRelease(schedulerName)
+                schedulerLock.updateLog(schedulerName)
             } else {
                 logger.debug { "Skipping publishing task scheduler for ${schedule.taskName} " +
                         "because it has only been ${schedulerLock.secondsSinceLastScheduledTrigger} " +
                         "since the last trigger." }
-                schedulerLock.release()
             }
         }
         scheduleNext(coordinator)

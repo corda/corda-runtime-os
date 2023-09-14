@@ -55,7 +55,7 @@ class SchedulerLockTest {
     @Test
     fun `when updateAndRelease update and commit`() {
         SchedulerLockImpl("superman", "hulk", em, repo).use {
-            it.updateAndRelease("thor")
+            it.updateLog("thor")
             verify(repo).updateLog("superman", "thor", em)
             verify(tx).commit()
         }

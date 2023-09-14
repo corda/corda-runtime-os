@@ -20,14 +20,14 @@ interface SchedulerLock : AutoCloseable {
     val secondsSinceLastScheduledTrigger: Long
 
     /**
-     * Updates the scheduler log entry with the current timestamp and releases it in the database.
+     * Updates the scheduler log entry with the current timestamp.
      *
      * @param schedulerId is the name/id of the current process.
      */
-    fun updateAndRelease(schedulerId: String)
+    fun updateLog(schedulerId: String)
 
     /**
-     * Releases the scheduler log entry in the database without updating it.
+     * Releases the log entry in the database.
      */
-    fun release()
+    override fun close()
 }
