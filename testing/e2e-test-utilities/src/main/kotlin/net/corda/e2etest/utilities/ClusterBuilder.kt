@@ -226,8 +226,7 @@ class ClusterBuilder {
             vaultDdlConnection,
             vaultDmlConnection
         )
-        val mapper = jacksonObjectMapper()
-        return mapper.writeValueAsString(body)
+        return jacksonObjectMapper().writeValueAsString(body)
     }
 
     private fun registerMemberBody(
