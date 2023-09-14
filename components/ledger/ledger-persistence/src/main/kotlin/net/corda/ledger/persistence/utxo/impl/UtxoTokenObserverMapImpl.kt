@@ -12,7 +12,9 @@ class UtxoTokenObserverMapImpl(private val sandboxGroupContext: SandboxGroupCont
     UtxoTokenObserverMap {
 
     @Suppress("DEPRECATION")
-    override fun getObserverFor(contactStateType: Class<*>): net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<ContractState>? {
+    override fun getObserverFor(
+        contactStateType: Class<*>
+    ): net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<ContractState>? {
         return sandboxGroupContext.getTokenStateObservers()[contactStateType]
     }
 

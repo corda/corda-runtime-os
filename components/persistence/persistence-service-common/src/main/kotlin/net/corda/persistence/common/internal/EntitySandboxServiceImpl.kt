@@ -192,7 +192,12 @@ class EntitySandboxServiceImpl @Activate constructor(
         val tokenStateObserverMapV2 = cpks
             .flatMap { it.cordappManifest.tokenStateObserversV2 }
             .toSet()
-            .mapNotNull { getObserverFromClassName<UtxoTokenTransactionStateObserver<ContractState>>(it, ctx.sandboxGroup) }
+            .mapNotNull {
+                getObserverFromClassName<UtxoTokenTransactionStateObserver<ContractState>>(
+                    it,
+                    ctx.sandboxGroup
+                )
+            }
             .groupBy { it.stateType }
 
         requireSingleObserverToState(tokenStateObserverMap, tokenStateObserverMapV2)
@@ -204,7 +209,7 @@ class EntitySandboxServiceImpl @Activate constructor(
         genLogsDebug(tokenStateObserverMapV2)
     }
 
-    private fun<T: Any> genLogsDebug(tokenStateObserverMap: Map<Class<ContractState>, List<T>>) =
+    private fun <T : Any> genLogsDebug(tokenStateObserverMap: Map<Class<ContractState>, List<T>>) =
         logger.debug {
             "Registered token observers: ${
                 tokenStateObserverMap.mapValues { (_, observers) ->
@@ -215,7 +220,9 @@ class EntitySandboxServiceImpl @Activate constructor(
 
     private fun requireSingleObserverToState(
         @Suppress("DEPRECATION")
-        tokenStateObserverMapV1: Map<Class<ContractState>, List<net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<ContractState>>>,
+        tokenStateObserverMapV1: Map<
+                Class<ContractState>,
+                List<net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<ContractState>>>,
         tokenStateObserverMapV2: Map<Class<ContractState>, List<UtxoTokenTransactionStateObserver<ContractState>>>
     ) {
         val tokenStateObserverMap = merge(tokenStateObserverMapV1, tokenStateObserverMapV2)
@@ -223,7 +230,7 @@ class EntitySandboxServiceImpl @Activate constructor(
         tokenStateObserverMap.entries.forEach { contractStateTypeToObservers ->
             val numberOfObservers = contractStateTypeToObservers.value.size
             if (numberOfObservers > 1) {
-                val observerTypes = contractStateTypeToObservers.value.map {it.javaClass }
+                val observerTypes = contractStateTypeToObservers.value.map { it.javaClass }
                 throw IllegalStateException(
                     "More than one observer found for the contract state. " +
                             "Contract state: ${contractStateTypeToObservers.key}, observers: $observerTypes"

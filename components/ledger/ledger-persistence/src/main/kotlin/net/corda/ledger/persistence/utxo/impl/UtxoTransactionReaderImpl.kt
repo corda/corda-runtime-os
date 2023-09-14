@@ -30,6 +30,7 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.membership.GroupParameters
 
+@Suppress("LongParameterList")
 class UtxoTransactionReaderImpl(
     sandbox: SandboxGroupContext,
     private val externalEventContext: ExternalEventContext,

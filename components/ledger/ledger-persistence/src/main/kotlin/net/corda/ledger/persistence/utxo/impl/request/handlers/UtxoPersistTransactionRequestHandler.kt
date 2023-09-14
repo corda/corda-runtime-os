@@ -36,7 +36,8 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
 
     override fun execute(): List<Record<*, *>> {
 
-        val listOfPairsStateAndUtxoToken = getTokens(transactionReader.getVisibleStates().values.toList(), tokenObservers)
+        val listOfPairsStateAndUtxoToken =
+            getTokens(transactionReader.getVisibleStates().values.toList(), tokenObservers)
         val outputTokenRecords = getOutputTokenRecords(listOfPairsStateAndUtxoToken)
         val utxoTokenMap = listOfPairsStateAndUtxoToken.associate { it.first.ref to it.second }
 
@@ -47,7 +48,9 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
         return outputTokenRecords + utxoOutputRecordFactory.getPersistTransactionSuccessRecord(externalEventContext)
     }
 
-    private fun getOutputTokenRecords(listOfPairsStateAndUtxoToken: List<Pair<StateAndRef<*>, UtxoToken>>): List<Record<TokenPoolCacheKey, TokenPoolCacheEvent>> {
+    private fun getOutputTokenRecords(
+        listOfPairsStateAndUtxoToken: List<Pair<StateAndRef<*>, UtxoToken>>
+    ): List<Record<TokenPoolCacheKey, TokenPoolCacheEvent>> {
         val isTransactionVerified = transactionReader.status == TransactionStatus.VERIFIED
         if (!isTransactionVerified) {
             return listOf()
@@ -60,7 +63,10 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
         )
     }
 
-    private fun getTokens(visibleStates: List<StateAndRef<ContractState>>, tokenObservers: UtxoTokenObserverMap): List<Pair<StateAndRef<*>, UtxoToken>> =
+    private fun getTokens(
+        visibleStates: List<StateAndRef<ContractState>>,
+        tokenObservers: UtxoTokenObserverMap
+    ): List<Pair<StateAndRef<*>, UtxoToken>> =
         visibleStates.flatMap { stateAndRef ->
             val observer = tokenObservers.getObserverFor(stateAndRef.state.contractStateType)
             if (observer != null) {
@@ -71,7 +77,11 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
             // Look for an observer that implements the new interface
             val observerV2 = tokenObservers.getObserverForV2(stateAndRef.state.contractStateType)
             if (observerV2 != null) {
-                return@flatMap onCommit(observerV2, transactionReader.getUtxoTransaction(persistenceService)!!, stateAndRef)
+                return@flatMap onCommit(
+                    observerV2,
+                    transactionReader.getUtxoTransaction(persistenceService)!!,
+                    stateAndRef
+                )
             }
 
             // No observer found
