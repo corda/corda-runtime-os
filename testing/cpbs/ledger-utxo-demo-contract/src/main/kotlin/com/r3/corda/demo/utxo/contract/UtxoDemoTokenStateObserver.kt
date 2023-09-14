@@ -1,9 +1,6 @@
-@file:Suppress("DEPRECATION")
-
 package com.r3.corda.demo.utxo.contract
 
 import net.corda.v5.application.crypto.DigestService
-import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.observer.UtxoTokenFilterFields
 import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
@@ -14,8 +11,8 @@ const val TOKEN_SYMBOL = "USD"
 const val TOKEN_TYPE = "TestUtxoState"
 val TOKEN_AMOUNT = BigDecimal.TEN
 
-@Suppress("UNUSED")
-class UtxoDemoTokenStateObserver : UtxoLedgerTokenStateObserver<TestUtxoState> {
+@Suppress("UNUSED","DEPRECATION" )
+class UtxoDemoTokenStateObserver : net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<TestUtxoState> {
 
     override fun getStateType(): Class<TestUtxoState> {
         return TestUtxoState::class.java
