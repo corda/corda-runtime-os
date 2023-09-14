@@ -84,10 +84,6 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(utxoLedgerPersistenceService.findTransactionIdsWithStatuses(any(), any()))
             .thenReturn(listOf(TX_ID_1))
 
-        whenever(session.sendAndReceive(eq(List::class.java), any())).thenReturn(
-            emptyList<UtxoSignedTransaction>()
-        )
-
         whenever(session.sendAndReceive(eq(List::class.java), eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_2))))).thenReturn(
             listOf(retrievedTransaction2)
         )
