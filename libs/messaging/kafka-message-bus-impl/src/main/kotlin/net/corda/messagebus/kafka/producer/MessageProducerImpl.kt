@@ -25,9 +25,13 @@ class MessageProducerImpl(
     }
 
     override fun send(message: CordaMessage<*>): Deferred<CordaMessage<*>?> =
-        CompletableDeferred<CordaMessage<*>>().apply {
+        CompletableDeferred<CordaMessage<*>?>().apply {
             producer.send(message.toCordaProducerRecord()) { ex ->
-                ex?.let { completeExceptionally(ex) }
+                if (ex != null) {
+                    completeExceptionally(ex)
+                } else {
+                    complete(null)
+                }
             }
         }
 
