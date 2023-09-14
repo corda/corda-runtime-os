@@ -478,7 +478,7 @@ class UtxoPersistenceServiceImplTest {
                 }
 
             val dbRelevancyData = em.createNamedQuery(
-                "   UtxoVisibleTransactionStateEntity.findByTransactionId",
+                "UtxoVisibleTransactionStateEntity.findByTransactionId",
                 entityFactory.utxoVisibleTransactionState
             )
                 .setParameter("transactionId", signedTransaction.id.toString())
