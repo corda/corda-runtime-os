@@ -130,7 +130,7 @@ class UtxoTransactionReaderImpl(
 
     override fun getConsumedStateRefs(): List<StateRef> = wrappedWireTransaction.inputStateRefs
 
-    override fun getUtxoTransaction(persistenceService: UtxoPersistenceService): UtxoLedgerTransaction? {
+    override fun getUtxoTransaction(persistenceService: UtxoPersistenceService): UtxoLedgerTransaction {
 
         val stateRefsToStateAndRefs = resolveStateRefs(persistenceService).associateBy { it.ref }
         val inputStateAndRefs = getInputAndRefs(stateRefsToStateAndRefs)

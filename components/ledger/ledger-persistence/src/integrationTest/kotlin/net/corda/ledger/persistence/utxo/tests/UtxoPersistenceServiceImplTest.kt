@@ -376,7 +376,8 @@ class UtxoPersistenceServiceImplTest {
             signedTransaction,
             account,
             transactionStatus,
-            visibleStatesIndexes
+            visibleStatesIndexes,
+            serializationService = serializationService
         )
 
         // Create the utxo tokens
@@ -699,7 +700,8 @@ class UtxoPersistenceServiceImplTest {
         val transactionContainer: SignedTransactionContainer,
         override val account: String,
         override val status: TransactionStatus,
-        override val visibleStatesIndexes: List<Int>
+        override val visibleStatesIndexes: List<Int>,
+        private var serializationService: SerializationService
     ) : UtxoTransactionReader {
         override val id: SecureHash
             get() = transactionContainer.id
@@ -764,8 +766,8 @@ class UtxoPersistenceServiceImplTest {
             )
         }
 
-        override fun getUtxoTransaction(persistenceService: UtxoPersistenceService): UtxoLedgerTransaction? {
-            return null
+        override fun getUtxoTransaction(persistenceService: UtxoPersistenceService): UtxoLedgerTransaction {
+            TODO("Not yet implemented")
         }
     }
 

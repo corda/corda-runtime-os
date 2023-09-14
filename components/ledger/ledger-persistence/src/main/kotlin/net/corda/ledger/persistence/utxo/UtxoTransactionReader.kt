@@ -34,5 +34,5 @@ interface UtxoTransactionReader {
 
     fun getConsumedStateRefs(): List<StateRef>
 
-    fun getUtxoTransaction(persistenceService: UtxoPersistenceService): UtxoLedgerTransaction? // this shouldnt be nullable
+    fun getUtxoTransaction(persistenceService: UtxoPersistenceService): UtxoLedgerTransaction
 }

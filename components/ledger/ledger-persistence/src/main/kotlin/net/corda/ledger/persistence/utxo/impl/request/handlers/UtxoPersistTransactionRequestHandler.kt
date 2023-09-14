@@ -85,7 +85,7 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
                 return@flatMap  onCommit(observerV2, stateAndRef) { obs, sAndRef ->
                     obs.onCommit(
                         sAndRef,
-                        transactionReader.getUtxoTransaction(persistenceService)!!,
+                        transactionReader.getUtxoTransaction(persistenceService),
                         digestService
                     )
                 }
