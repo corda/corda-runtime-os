@@ -20,7 +20,12 @@ import javax.persistence.EntityManagerFactory
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RequestsIdsRepositoryTest {
-    private val dbConfig = DbUtils.getEntityManagerConfiguration(this::class.java.simpleName)
+
+    private val dbConfig = run {
+        //System.setProperty("postgresPort", "5432")
+        DbUtils.getEntityManagerConfiguration(this::class.java.simpleName)
+    }
+
     private val entityManagerFactory: EntityManagerFactory
 
     private companion object {
@@ -118,21 +123,23 @@ class RequestsIdsRepositoryTest {
 
     private fun getStoredRequestIds(): List<Pair<UUID, java.sql.Timestamp>> =
         dbConfig.dataSource.connection.use {
-            val rs = it.prepareStatement(
+            val stmt = it.prepareStatement(
                 "SELECT * FROM ${DbSchema.VNODE_PERSISTENCE_REQUEST_ID_TABLE} ORDER BY insert_ts"
-            ).use { stmt ->
-                stmt.executeQuery()
-            }
+            )
 
-            val list = mutableListOf<Pair<UUID, java.sql.Timestamp>>()
-            while (rs.next()) {
-                list.add(
-                    Pair(
-                        UUID.fromString(rs.getString(1)),
-                        rs.getTimestamp(2)
+            return stmt.use {
+                val rs = stmt.executeQuery()
+
+                val list = mutableListOf<Pair<UUID, java.sql.Timestamp>>()
+                while (rs.next()) {
+                    list.add(
+                        Pair(
+                            UUID.fromString(rs.getString(1)),
+                            rs.getTimestamp(2)
+                        )
                     )
-                )
+                }
+                list
             }
-            list
         }
 }
