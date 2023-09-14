@@ -6,7 +6,6 @@ import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
 import javax.persistence.EntityManagerFactory
 import net.corda.v5.ledger.utxo.observer.UtxoTokenTransactionStateObserver
 
@@ -35,7 +34,7 @@ fun SandboxGroupContext.getEntityManagerFactory(): EntityManagerFactory =
 
 @Suppress("DEPRECATION")
 fun SandboxGroupContext.getTokenStateObservers()
-        : Map<Class<out ContractState>, UtxoLedgerTokenStateObserver<ContractState>?> =
+        : Map<Class<out ContractState>, net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<ContractState>?> =
     getTokenStateObservers(EntitySandboxContextTypes.SANDBOX_TOKEN_STATE_OBSERVERS)
 
 fun SandboxGroupContext.getTokenStateObserversV2()
