@@ -4,7 +4,6 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.membership.PersistentMemberInfo
-import net.corda.interop.group.policy.read.InteropGroupPolicyReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator

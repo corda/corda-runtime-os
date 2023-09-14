@@ -8,7 +8,6 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedData
-import net.corda.interop.group.policy.read.InteropGroupPolicyReadService
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpiIdentifier
