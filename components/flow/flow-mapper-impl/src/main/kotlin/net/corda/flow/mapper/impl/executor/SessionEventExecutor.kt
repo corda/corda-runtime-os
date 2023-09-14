@@ -1,8 +1,6 @@
 package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
@@ -13,7 +11,6 @@ import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.messaging.api.records.Record
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -62,7 +59,7 @@ class SessionEventExecutor(
                 ),
                 instant,
                 flowConfig,
-                sessionEvent.messageDirection,
+                "invalid-flow-id"
             )
             FlowMapperResult(null, listOf(outputRecord))
         } else {
@@ -78,26 +75,18 @@ class SessionEventExecutor(
      * Output the session event to the correct topic and key
      */
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState): FlowMapperResult {
-        val messageDirection = sessionEvent.messageDirection
-        val msg = "Attempted to process a message ${sessionEvent.messageDirection} " +
-                "but flow mapper state is in ${flowMapperState.status}. Session ID: ${sessionEvent.sessionId}. Ignoring Event"
-
         return when (flowMapperState.status) {
             null -> {
                 log.warn("FlowMapperState with null status. Key: $eventKey, Event: $sessionEvent.")
                 FlowMapperResult(null, listOf())
             }
             FlowMapperStateType.CLOSING, FlowMapperStateType.ERROR -> {
-                log.warn(msg)
+                log.warn("Attempted to process a message ${sessionEvent.messageDirection} but flow mapper state is " +
+                        "in ${flowMapperState.status}. Session ID: ${sessionEvent.sessionId}. Ignoring Event")
                 FlowMapperResult(flowMapperState, listOf())
             }
             FlowMapperStateType.OPEN -> {
-                val outputTopic = recordFactory.getSessionEventOutputTopic(sessionEvent, messageDirection)
-                val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
-                    recordFactory.forwardEvent(sessionEvent, instant, flowConfig, messageDirection)
-                } else {
-                    Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
-                }
+                val outputRecord = recordFactory.forwardEvent(sessionEvent, instant, flowConfig, flowMapperState.flowId)
                 FlowMapperResult(flowMapperState, listOf(outputRecord))
             }
         }

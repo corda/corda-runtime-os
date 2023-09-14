@@ -2,7 +2,6 @@ package net.corda.flow.mapper.impl.executor
 
 import com.typesafe.config.ConfigValueFactory
 import net.corda.avro.serialization.CordaAvroSerializer
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
@@ -36,7 +35,6 @@ class SessionEventExecutorTest {
     private val recordFactory = mock<RecordFactory>{
         on { forwardError(any(), any(), any(), any(), any()) } doReturn record
         on { forwardEvent(any(), any(), any(), any()) } doReturn record
-        on { getSessionEventOutputTopic(any(), any()) } doReturn "Topic"
     }
     private val sessionInitProcessor = mock<SessionInitProcessor>()
 
@@ -96,9 +94,7 @@ class SessionEventExecutorTest {
         assertThat(state).isNotNull
         assertThat(outboundEvents.size).isEqualTo(1)
         val outboundEvent = outboundEvents.first()
-        assertThat(outboundEvent.topic).isEqualTo("Topic")
-        assertThat(outboundEvent.key).isEqualTo("flowId1")
-        assertThat(outboundEvent.value!!::class).isEqualTo(FlowEvent::class)
+        assertThat(outboundEvent).isEqualTo(record)
         assertThat(payload.sessionId).isEqualTo(sessionId)
     }
 
@@ -166,9 +162,7 @@ class SessionEventExecutorTest {
         assertThat(state?.status).isEqualTo(FlowMapperStateType.OPEN)
         assertThat(outboundEvents.size).isEqualTo(1)
         val outboundEvent = outboundEvents.first()
-        assertThat(outboundEvent.topic).isEqualTo("Topic")
-        assertThat(outboundEvent.key).isEqualTo("flowId1")
-        assertThat(outboundEvent.value!!::class).isEqualTo(FlowEvent::class)
+        assertThat(outboundEvent).isEqualTo(record)
         assertThat(payload.sessionId).isEqualTo(sessionId)
     }
 
