@@ -8,8 +8,8 @@ dependencies {
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(path: ':libs:kotlin-coroutines', configuration: 'bundle')
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-base"
     implementation project(":libs:configuration:configuration-core")
