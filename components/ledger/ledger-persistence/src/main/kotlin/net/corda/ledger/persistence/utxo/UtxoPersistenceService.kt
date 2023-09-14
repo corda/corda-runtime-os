@@ -27,13 +27,15 @@ interface UtxoPersistenceService {
     fun findSignedTransaction(id: String, transactionStatus: TransactionStatus): Pair<SignedTransactionContainer?, String?>
 
     /**
-     * Find transactions with the given [transactionIds] that are present in the persistence context.
+     * Find transactions with the given [transactionIds] that are present in the persistence context
+     * and has a status that is in the [statuses] list.
      *
      * @param transactionIds IDs of transactions to find.
+     * @param statuses Statuses the transactions should have in order to be fetched.
      *
      * @return A list of the transaction IDs found.
      */
-    fun findExistingNotInvalidTransactionIds(transactionIds: List<String>): List<SecureHash>
+    fun findTransactionIdsWithStatus(transactionIds: List<String>, statuses: List<String>): List<SecureHash>
 
     /**
      * Find a signed ledger transaction in the persistence context given it's [id] and return it with the status it is stored with. This

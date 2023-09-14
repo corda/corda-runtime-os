@@ -71,20 +71,21 @@ class UtxoRepositoryImpl @Activate constructor(
         )
     }
 
-    override fun findExistingNotInvalidTransactionIds(
+    override fun findTransactionIdsWithStatus(
         entityManager: EntityManager,
-        transactionIds: List<String>
+        transactionIds: List<String>,
+        statuses: List<String>
     ): List<SecureHash> {
         return entityManager.createNativeQuery(
             """
-                SELECT id,
-                FROM {h-schema}utxo_transaction
+                SELECT id 
+                FROM {h-schema}utxo_transaction_status 
                 WHERE id IN (:transactionIds) 
-                AND status <> :invalid""",
+                AND status IN :(statuses)""",
             Tuple::class.java
         )
-            .setParameter("invalid", TransactionStatus.INVALID.value)
             .setParameter("transactionIds", transactionIds)
+            .setParameter("statuses", statuses)
             .resultListAsTuples()
             .map { r -> parseSecureHash(r.get(0) as String) }
     }

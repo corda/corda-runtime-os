@@ -2,7 +2,7 @@ package net.corda.ledger.persistence.utxo.impl.request.handlers
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.ledger.persistence.FindExistingNotInvalidTransactionIds
+import net.corda.data.ledger.persistence.FindTransactionIds
 import net.corda.data.persistence.EntityResponse
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.persistence.common.RequestHandler
@@ -12,7 +12,7 @@ import net.corda.v5.application.serialization.SerializationService
 import java.nio.ByteBuffer
 
 class UtxoFindNotInvalidTransactionIdsRequestHandler(
-    private val findTransactions: FindExistingNotInvalidTransactionIds,
+    private val findTransactions: FindTransactionIds,
     private val externalEventContext: ExternalEventContext,
     private val persistenceService: UtxoPersistenceService,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
@@ -20,8 +20,9 @@ class UtxoFindNotInvalidTransactionIdsRequestHandler(
 ) : RequestHandler {
 
     override fun execute(): List<Record<*, *>> {
-        val existingTransactions = persistenceService.findExistingNotInvalidTransactionIds(
-            findTransactions.transactionIds
+        val existingTransactions = persistenceService.findTransactionIdsWithStatus(
+            findTransactions.ids,
+            findTransactions.transactionStatuses
         )
         return listOf(
             externalEventResponseFactory.success(

@@ -84,7 +84,7 @@ class TransactionBackchainReceiverFlowV2Test {
             on { getInt(BACKCHAIN_BATCH_CONFIG_PATH) } doReturn BACKCHAIN_BATCH_DEFAULT_SIZE
         }
         whenever(flowConfigService.getConfig(ConfigKeys.UTXO_LEDGER_CONFIG)).thenReturn(utxoConfig)
-        whenever(utxoLedgerPersistenceService.findExistingNotInvalidTransactionIds(any()))
+        whenever(utxoLedgerPersistenceService.findTransactionIdsWithStatuses(any(), any()))
             .thenReturn(emptyList())
     }
 
@@ -95,7 +95,7 @@ class TransactionBackchainReceiverFlowV2Test {
      */
     @Test
     fun `transaction will not be requested if it is present in the database`() {
-        whenever(utxoLedgerPersistenceService.findExistingNotInvalidTransactionIds(any()))
+        whenever(utxoLedgerPersistenceService.findTransactionIdsWithStatuses(any(), any()))
             .thenReturn(listOf(TX_ID_1))
 
         whenever(session.sendAndReceive(eq(List::class.java), any())).thenReturn(

@@ -14,11 +14,12 @@ import javax.persistence.EntityManager
 @Suppress("TooManyFunctions")
 interface UtxoRepository {
 
-    /** Retrieves transaction IDs that are either Verified or Unverified
-     * but not Invalid and are in the [transactionIds] list. */
-    fun findExistingNotInvalidTransactionIds(
+    /** Retrieves transaction IDs that have a status that is in the [statuses] list
+     * and its ID is included in the [transactionIds] list. */
+    fun findTransactionIdsWithStatus(
         entityManager: EntityManager,
-        transactionIds: List<String>
+        transactionIds: List<String>,
+        statuses: List<String>
     ): List<SecureHash>
 
     /** Retrieves transaction by [id] */

@@ -31,11 +31,12 @@ interface UtxoLedgerPersistenceService {
      * Find transactions with the given [ids] that are present in the persistence context.
      *
      * @param ids IDs of transactions to find.
+     * @param statuses Statuses the transactions should have in order to be fetched.
      *
      * @return A list of the transaction IDs found.
      */
     @Suspendable
-    fun findExistingNotInvalidTransactionIds(ids: Collection<SecureHash>): List<SecureHash>
+    fun findTransactionIdsWithStatuses(ids: Collection<SecureHash>, statuses: List<TransactionStatus>): List<SecureHash>
 
     /**
      * Find a verified [UtxoSignedLedgerTransaction] in the persistence context given it's [id]. This involves resolving its input and

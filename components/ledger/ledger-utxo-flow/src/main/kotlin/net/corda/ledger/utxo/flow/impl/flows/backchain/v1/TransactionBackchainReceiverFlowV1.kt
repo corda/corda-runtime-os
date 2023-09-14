@@ -4,6 +4,7 @@ import net.corda.flow.application.services.FlowConfigService
 import net.corda.crypto.core.parseSecureHash
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
+import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerMetricRecorder
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TopologicalSort
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackChainResolutionVersion
@@ -75,9 +76,10 @@ class TransactionBackchainReceiverFlowV1(
         val existingTransactionsInDb = mutableSetOf<SecureHash>()
 
         while (transactionsToRetrieve.isNotEmpty()) {
-            existingTransactionsInDb.addAll(utxoLedgerPersistenceService.findExistingNotInvalidTransactionIds(
+            existingTransactionsInDb.addAll(utxoLedgerPersistenceService.findTransactionIdsWithStatuses(
                 // Make sure we don't fetch the same transaction multiple times
-                (transactionsToRetrieve - existingTransactionsInDb)
+                (transactionsToRetrieve - existingTransactionsInDb),
+                listOf(UNVERIFIED, VERIFIED)
             ))
 
             // Remove the transaction from the "to retrieve" set if they are in our DB

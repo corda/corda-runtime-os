@@ -14,8 +14,8 @@ import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperat
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransaction
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransactionIfDoesNotExist
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.UpdateTransactionStatus
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindExistingNotInvalidTransactionIdsExternalEventFactory
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindExistingNotInvalidTransactionIdsParameters
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
@@ -87,12 +87,15 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun findExistingNotInvalidTransactionIds(ids: Collection<SecureHash>): List<SecureHash> {
+    override fun findTransactionIdsWithStatuses(ids: Collection<SecureHash>, statuses: List<TransactionStatus>): List<SecureHash> {
         return recordSuspendable({ ledgerPersistenceFlowTimer(FindTransactionWithStatus) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
-                    FindExistingNotInvalidTransactionIdsExternalEventFactory::class.java,
-                    FindExistingNotInvalidTransactionIdsParameters(ids.map { it.toString() })
+                    FindTransactionIdsExternalEventFactory::class.java,
+                    FindTransactionIdsParameters(
+                        ids.map { it.toString() },
+                        statuses
+                    )
                 )
             }
         }.map {

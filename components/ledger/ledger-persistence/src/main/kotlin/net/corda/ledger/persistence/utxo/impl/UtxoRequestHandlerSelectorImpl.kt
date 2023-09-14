@@ -1,9 +1,9 @@
 package net.corda.ledger.persistence.utxo.impl
 
-import net.corda.data.ledger.persistence.FindExistingNotInvalidTransactionIds
 import net.corda.data.ledger.persistence.FindSignedGroupParameters
 import net.corda.data.ledger.persistence.FindSignedLedgerTransaction
 import net.corda.data.ledger.persistence.FindTransaction
+import net.corda.data.ledger.persistence.FindTransactionIds
 import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
@@ -157,7 +157,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     persistenceService
                 )
             }
-            is FindExistingNotInvalidTransactionIds -> {
+            is FindTransactionIds -> {
                 UtxoFindNotInvalidTransactionIdsRequestHandler(
                     req,
                     externalEventContext,
