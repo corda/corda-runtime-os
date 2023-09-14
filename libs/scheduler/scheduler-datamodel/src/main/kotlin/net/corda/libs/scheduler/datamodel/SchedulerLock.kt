@@ -2,7 +2,7 @@ package net.corda.libs.scheduler.datamodel
 
 /**
  * Represents a lock on a given Task, allowing to find out when the last time was one was triggered.
- * This lock must be released by calling `updateAndRelease` or will be released when closing the `ScheduleLock`.
+ * This lock must be released by closing the `ScheduleLock`.
  */
 interface SchedulerLock : AutoCloseable {
     /**
