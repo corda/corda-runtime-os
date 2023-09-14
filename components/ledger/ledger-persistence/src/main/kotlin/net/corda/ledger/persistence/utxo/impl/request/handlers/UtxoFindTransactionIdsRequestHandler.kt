@@ -11,7 +11,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.v5.application.serialization.SerializationService
 import java.nio.ByteBuffer
 
-class UtxoFindNotInvalidTransactionIdsRequestHandler(
+class UtxoFindTransactionIdsRequestHandler(
     private val findTransactions: FindTransactionIds,
     private val externalEventContext: ExternalEventContext,
     private val persistenceService: UtxoPersistenceService,
