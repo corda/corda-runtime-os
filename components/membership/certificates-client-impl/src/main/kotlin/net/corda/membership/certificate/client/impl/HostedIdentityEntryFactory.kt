@@ -28,6 +28,7 @@ import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.slf4j.LoggerFactory
 import java.io.StringWriter
 import java.security.InvalidKeyException
+import java.security.SignatureException
 import java.security.cert.CertificateFactory
 
 @Suppress("LongParameterList")
@@ -268,6 +269,8 @@ internal class HostedIdentityEntryFactory(
                     certificate.verify(rootCertificate.publicKey)
                     true
                 } catch (e: InvalidKeyException) {
+                    false
+                } catch (e: SignatureException) {
                     false
                 }
             }.firstOrNull()

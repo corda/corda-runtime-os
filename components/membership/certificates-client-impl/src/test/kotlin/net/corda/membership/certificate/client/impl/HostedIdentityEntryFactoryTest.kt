@@ -45,6 +45,7 @@ class HostedIdentityEntryFactoryTest {
         const val PUBLIC_KEY_PEM = "publicKeyPem"
         const val PUBLIC_CLUSTER_KEY_PEM = "publicClusterKeyPem"
         const val VALID_CERTIFICATE_ALIAS = "alias"
+        const val WRONG_SIGN_CERTIFICATE_ALIAS = "wrong"
         val SESSION_KEY_ID = ShortHash.of("AB0123456789")
     }
 
@@ -65,8 +66,16 @@ class HostedIdentityEntryFactoryTest {
         HostedIdentityEntryFactoryTest::class.java.getResource("/certificates/$VALID_NODE.pem")!!.readText()
             .replace("\r", "")
             .replace("\n", System.lineSeparator())
+    private val wrongSignCertificatePem =
+        HostedIdentityEntryFactoryTest::class.java.getResource("/certificates/wrong-sign-certificate.pem")!!.readText()
+        .replace("\r", "")
+        .replace("\n", System.lineSeparator())
+
     private val rootPem = HostedIdentityEntryFactoryTest::class.java.getResource("/certificates/root.pem")!!.readText()
     private val certificatePublicKey = certificatePem.let {
+        CertificateFactory.getInstance("X.509").generateCertificate(it.byteInputStream()).publicKey
+    }
+    private val wrongSignCertificatePublicKey = wrongSignCertificatePem.let {
         CertificateFactory.getInstance("X.509").generateCertificate(it.byteInputStream()).publicKey
     }
     private val filter = argumentCaptor<Map<String, String>>()
@@ -94,6 +103,12 @@ class HostedIdentityEntryFactoryTest {
         on {
             filterMyKeys(eq(P2P), eq(listOf(certificatePublicKey)), any())
         }.doReturn(listOf(certificatePublicKey))
+        on {
+            filterMyKeys(eq(VALID_NODE.toString()), eq(listOf(wrongSignCertificatePublicKey)), any())
+        }.doReturn(listOf(wrongSignCertificatePublicKey))
+        on {
+            filterMyKeys(eq(P2P), eq(listOf(wrongSignCertificatePublicKey)), any())
+        }.doReturn(listOf(wrongSignCertificatePublicKey))
     }
     private val sessionPublicKey = mock<PublicKey>()
     private val clusterSessionPublicKey = mock<PublicKey>()
@@ -127,10 +142,10 @@ class HostedIdentityEntryFactoryTest {
         groupPolicyProvider,
         mtlsMgmClientCertificateKeeper,
     ) { _, _, alias ->
-        if (alias == VALID_CERTIFICATE_ALIAS) {
-            certificatePem
-        } else {
-            null
+        when (alias) {
+            VALID_CERTIFICATE_ALIAS -> certificatePem
+            WRONG_SIGN_CERTIFICATE_ALIAS -> wrongSignCertificatePem
+            else -> null
         }
     }
 
@@ -554,6 +569,23 @@ class HostedIdentityEntryFactoryTest {
         }
     }
 
+
+    @Test
+    fun `createIdentityRecord will throw an exception if the tlsTrustRoots certificate signature is wrong`() {
+        assertThrows<CordaRuntimeException> {
+            factory.createIdentityRecord(
+                holdingIdentityShortHash = VALID_NODE,
+                tlsCertificateChainAlias = WRONG_SIGN_CERTIFICATE_ALIAS,
+                useClusterLevelTlsCertificateAndKey = false,
+                preferredSessionKeyAndCertificate = CertificatesClient.SessionKeyAndCertificate(
+                    sessionKeyId = SESSION_KEY_ID,
+                    sessionCertificateChainAlias = null,
+                ),
+                alternativeSessionKeyAndCertificates = emptyList(),
+            )
+        }
+    }
+
     @Test
     fun `createIdentityRecord will throw an exception if the group sessionTrustRoots is empty`() {
         val p2pParams: GroupPolicy.P2PParameters = mock {
@@ -591,6 +623,28 @@ class HostedIdentityEntryFactoryTest {
                 preferredSessionKeyAndCertificate = CertificatesClient.SessionKeyAndCertificate(
                     sessionKeyId = SESSION_KEY_ID,
                     sessionCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                ),
+                alternativeSessionKeyAndCertificates = emptyList(),
+                useClusterLevelTlsCertificateAndKey = true,
+            )
+        }
+    }
+
+    @Test
+    fun `createIdentityRecord will throw an exception if the group sessionTrustRoots is sign wrongly`() {
+        val p2pParams: GroupPolicy.P2PParameters = mock {
+            on { tlsTrustRoots } doReturn listOf(rootPem)
+            on { sessionTrustRoots } doReturn listOf(rootPem)
+        }
+        whenever(groupPolicy.p2pParameters) doReturn p2pParams
+
+        assertThrows<CordaRuntimeException> {
+            factory.createIdentityRecord(
+                holdingIdentityShortHash = VALID_NODE,
+                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                preferredSessionKeyAndCertificate = CertificatesClient.SessionKeyAndCertificate(
+                    sessionKeyId = SESSION_KEY_ID,
+                    sessionCertificateChainAlias = WRONG_SIGN_CERTIFICATE_ALIAS,
                 ),
                 alternativeSessionKeyAndCertificates = emptyList(),
                 useClusterLevelTlsCertificateAndKey = true,
