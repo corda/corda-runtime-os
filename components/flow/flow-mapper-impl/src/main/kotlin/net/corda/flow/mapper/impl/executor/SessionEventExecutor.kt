@@ -51,6 +51,10 @@ class SessionEventExecutor(
                 "Flow mapper received session event for session which does not exist. Session may have expired. Returning error to " +
                         "counterparty. Key: $eventKey, Event: class ${sessionEvent.payload::class.java}, $sessionEvent"
             )
+            // In this case, the error message should not be forwarded through the mapper, and instead should be sent
+            // back from where it came. Note that at present if the flow engine sends a data message without first
+            // sending an init message this will result in failure, as the mapper has no knowledge of the flow ID to
+            // respond on.
             val outputRecord = recordFactory.forwardError(
                 sessionEvent,
                 ExceptionEnvelope(

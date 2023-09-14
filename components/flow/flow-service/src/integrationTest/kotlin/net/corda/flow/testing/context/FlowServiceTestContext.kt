@@ -393,6 +393,7 @@ class FlowServiceTestContext @Activate constructor(
             flowId,
             sessionInitiatingIdentity,
             sessionInitiatedIdentity,
+
             flowFiberCache
         )
         assertions.add(assertionsCapture)
