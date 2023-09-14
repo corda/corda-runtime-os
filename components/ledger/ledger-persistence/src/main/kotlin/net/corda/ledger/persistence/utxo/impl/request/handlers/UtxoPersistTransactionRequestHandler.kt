@@ -97,7 +97,6 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
         }
 
     private fun<T> onCommit(
-        @Suppress("DEPRECATION")
         observer: T,
         stateAndRef: StateAndRef<ContractState>,
         observerOnCommitCallBlock: (T) -> UtxoToken
