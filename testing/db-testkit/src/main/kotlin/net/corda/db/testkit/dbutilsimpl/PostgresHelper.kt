@@ -24,11 +24,16 @@ class PostgresHelper : AbstractDBHelper() {
 
     override val driverClass = "org.postgresql.Driver"
 
-    override fun createSchema(connection: Connection, schemaName: String): Pair<String, String> {
+    override fun createSchemaAndLogin(
+        connection: Connection,
+        schemaName: String,
+        user: String,
+        password: String
+    ): Pair<String, String> {
         connection.use { conn ->
             conn.prepareStatement("CREATE SCHEMA IF NOT EXISTS $schemaName;").execute()
             conn.commit()
         }
-        return getAdminUser() to getAdminPassword()
+        return user to password
     }
 }

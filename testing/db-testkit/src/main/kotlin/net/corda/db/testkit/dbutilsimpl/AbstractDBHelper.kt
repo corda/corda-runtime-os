@@ -57,11 +57,16 @@ abstract class AbstractDBHelper : DbUtilsHelper {
         showSql: Boolean,
         rewriteBatchedInserts: Boolean
     ): EntityManagerConfiguration {
-        val ds = createDataSource(dbUser,dbPassword, schemaName, createSchema, rewriteBatchedInserts)
-        return DbEntityManagerConfiguration(ds,showSql,true, DdlManage.NONE)
+        val ds = createDataSource(dbUser, dbPassword, schemaName, createSchema, rewriteBatchedInserts)
+        return DbEntityManagerConfiguration(ds, showSql, true, DdlManage.NONE)
     }
 
-    abstract fun createSchema(connection: Connection, schemaName: String): Pair<String, String>
+    /**
+     * Creates the schema
+     * This function will also return the credentials to use for login to use
+     * as some database implementations require a mapping of user to schema.
+     */
+    abstract fun createSchemaAndLogin(connection: Connection, schemaName: String, user: String, password: String ): Pair<String, String>
 
     override fun createDataSource(
         dbUser: String?,
@@ -72,24 +77,32 @@ abstract class AbstractDBHelper : DbUtilsHelper {
     ): CloseableDataSource {
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
+        var credentials = user to password
 
-        if (!schemaName.isNullOrBlank()) {
-            val credentials = if (createSchema) {
+        val jdbcUrlCopy = if (!schemaName.isNullOrBlank()) {
+            if (createSchema) {
                 logger.info("Creating schema: $schemaName".emphasise())
-                createSchema( createDataSource(driverClass,jdbcUrl,user,password, maximumPoolSize = 1).connection, schemaName)
-            } else {
-                user to password
+                credentials = createSchemaAndLogin(
+                    createDataSource(
+                        driverClass,
+                        jdbcUrl,
+                        user,
+                        password,
+                        maximumPoolSize = 1
+                    ).connection, schemaName, user, password
+                )
             }
-            val jdbcUrlCopy = if (rewriteBatchedInserts) {
+
+            if (rewriteBatchedInserts) {
                 "$jdbcUrl?currentSchema=$schemaName&reWriteBatchedInserts=true"
             } else {
                 "$jdbcUrl?currentSchema=$schemaName"
             }
-            logger.info("Using URL $jdbcUrlCopy".emphasise())
-            return createDataSource(driverClass,jdbcUrlCopy, credentials.first, credentials.second)
+        } else {
+            jdbcUrl
         }
-        logger.info("Using URL $jdbcUrl".emphasise())
-        return createDataSource(driverClass,jdbcUrl, user, password)
+        logger.info("Using URL $jdbcUrlCopy".emphasise())
+        return createDataSource(driverClass, jdbcUrlCopy, credentials.first, credentials.second)
     }
 
     override fun createConfig(

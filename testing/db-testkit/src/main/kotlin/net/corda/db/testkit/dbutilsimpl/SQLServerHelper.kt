@@ -28,7 +28,12 @@ class SQLServerHelper : AbstractDBHelper() {
 
     override val driverClass = "com.microsoft.sqlserver.jdbc.SQLServerDriver"
 
-    override fun createSchema(connection: Connection, schemaName: String): Pair<String, String> {
+    override fun createSchemaAndLogin(
+        connection: Connection,
+        schemaName: String,
+        user: String,
+        password: String
+    ): Pair<String, String> {
         val schemaUser = "user_$schemaName"
         val schemaPassword = "password${schemaName}123(!)"
         connection.use { conn ->
