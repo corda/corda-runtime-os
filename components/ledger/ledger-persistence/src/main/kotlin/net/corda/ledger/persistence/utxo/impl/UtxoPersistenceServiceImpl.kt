@@ -238,7 +238,7 @@ class UtxoPersistenceServiceImpl(
             nowUtc
         )
 
-        // Insert the CPK details linked to this transaction
+        // Insert the CPK details liked to this transaction
         // TODOs: The CPK file meta does not exist yet, this will be implemented by
         // https://r3-cev.atlassian.net/browse/CORE-7626
         return emptyList()
