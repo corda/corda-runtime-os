@@ -26,7 +26,6 @@ import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
 import net.corda.utilities.debug
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryFactory
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import net.corda.virtualnode.HoldingIdentity
@@ -189,9 +188,12 @@ class EntitySandboxServiceImpl @Activate constructor(
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun requireSingleObserverToState(
-        tokenStateObserverMap: Map<Class<ContractState>, List<UtxoLedgerTokenStateObserver<ContractState>>>
-    ): Map<Class<ContractState>, UtxoLedgerTokenStateObserver<ContractState>?> {
+        tokenStateObserverMap: Map<Class<
+                ContractState>,
+                List<net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<ContractState>>>
+    ): Map<Class<ContractState>, net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<ContractState>?> {
 
         return tokenStateObserverMap.entries.associate { contractStateTypeToObservers  ->
             val numberOfObservers = contractStateTypeToObservers.value.size
@@ -207,18 +209,19 @@ class EntitySandboxServiceImpl @Activate constructor(
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun getObserverFromClassName(
         className: String,
         ctx: MutableSandboxGroupContext
-    ): UtxoLedgerTokenStateObserver<ContractState>? {
+    ): net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<ContractState>? {
         val clazz = ctx.sandboxGroup.loadClassFromMainBundles(
             className,
-            UtxoLedgerTokenStateObserver::class.java
+            net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver::class.java
         )
 
         return try {
             @Suppress("unchecked_cast")
-            clazz.getConstructor().newInstance() as UtxoLedgerTokenStateObserver<ContractState>
+            clazz.getConstructor().newInstance() as net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<ContractState>
         } catch (e: Exception) {
             logger.error(
                 "The UtxoLedgerTokenStateObserver '${clazz}' must implement a default public constructor.",

@@ -6,7 +6,6 @@ import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
 import javax.persistence.EntityManagerFactory
 
 /**
@@ -31,8 +30,10 @@ fun SandboxGroupContext.getEntityManagerFactory(): EntityManagerFactory =
                     "${virtualNodeContext.holdingIdentity}"
         )
 
+@Suppress("DEPRECATION")
 fun SandboxGroupContext.getTokenStateObservers()
-        : Map<Class<out ContractState>, UtxoLedgerTokenStateObserver<ContractState>?> = getObjectByKey(
+        : Map<Class<out ContractState>, net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<ContractState>?>
+= getObjectByKey(
     EntitySandboxContextTypes.SANDBOX_TOKEN_STATE_OBSERVERS
 ) ?: throw CordaRuntimeException(
     "Token State Observers not found within the sandbox for identity: ${virtualNodeContext.holdingIdentity}"

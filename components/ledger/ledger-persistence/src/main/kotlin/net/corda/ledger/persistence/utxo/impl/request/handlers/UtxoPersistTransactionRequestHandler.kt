@@ -11,7 +11,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
-import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
 import net.corda.virtualnode.HoldingIdentity
@@ -64,8 +63,9 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
             }
         }
 
+    @Suppress("DEPRECATION")
     private fun onCommit(
-        observer: UtxoLedgerTokenStateObserver<ContractState>,
+        observer: net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<ContractState>,
         stateAndRef: StateAndRef<ContractState>
     ): List<Pair<StateAndRef<*>, UtxoToken>> {
         return try {
