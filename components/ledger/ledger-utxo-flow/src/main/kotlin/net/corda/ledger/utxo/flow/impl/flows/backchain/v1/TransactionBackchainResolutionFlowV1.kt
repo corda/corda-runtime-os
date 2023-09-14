@@ -49,10 +49,9 @@ class TransactionBackchainResolutionFlowV1(
             initialTransactionIds.filter { utxoLedgerPersistenceService.findSignedTransaction(it, VERIFIED) != null }.toSet()
         val originalTransactionsToRetrieve = initialTransactionIds - alreadyVerifiedTransactions
         if (originalTransactionsToRetrieve.isNotEmpty()) {
-            // this log line is worded poorly
             log.debug {
-                "Backchain resolution of $initialTransactionIds - Transaction needs to resolve its dependencies of " +
-                        "$originalTransactionsToRetrieve in its backchain, starting transaction backchain resolution"
+                "Backchain resolution of $initialTransactionIds - Resolving unseen transactions $originalTransactionsToRetrieve" +
+                        ", starting transaction backchain resolution"
             }
             val topologicalSort = flowEngine.subFlow(
                 TransactionBackchainReceiverFlowV1(
