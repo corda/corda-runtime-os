@@ -49,6 +49,7 @@ class TransactionBackchainResolutionFlowV1(
             initialTransactionIds.filter { utxoLedgerPersistenceService.findSignedTransaction(it, VERIFIED) != null }.toSet()
         val originalTransactionsToRetrieve = initialTransactionIds - alreadyVerifiedTransactions
         if (originalTransactionsToRetrieve.isNotEmpty()) {
+            // this log line is worded poorly
             log.debug {
                 "Backchain resolution of $initialTransactionIds - Transaction needs to resolve its dependencies of " +
                         "$originalTransactionsToRetrieve in its backchain, starting transaction backchain resolution"
