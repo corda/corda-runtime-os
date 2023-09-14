@@ -38,15 +38,15 @@ class ClusterBuilder {
         }
     }
 
-    data class vNodeCreateBody(
+    data class VNodeCreateBody(
         val cpiFileChecksum: String,
         val x500Name: String,
-        val cryptoDdlConnection: String? = null,
-        val cryptoDmlConnection: String? = null,
-        val uniquenessDdlConnection: String? = null,
-        val uniquenessDmlConnection: String? = null,
-        val vaultDdlConnection: String? = null,
-        val vaultDmlConnection: String? = null
+        val cryptoDdlConnection: String?,
+        val cryptoDmlConnection: String?,
+        val uniquenessDdlConnection: String?,
+        val uniquenessDmlConnection: String?,
+        val vaultDdlConnection: String?,
+        val vaultDmlConnection: String?
     )
 
     /** POST, but most useful for running flows */
@@ -212,7 +212,7 @@ class ClusterBuilder {
         vaultDdlConnection: String?,
         vaultDmlConnection: String?
     ): String {
-        val body = vNodeCreateBody(
+        val body = VNodeCreateBody(
                 cpiHash,
                 x500Name,
                 cryptoDdlConnection,
