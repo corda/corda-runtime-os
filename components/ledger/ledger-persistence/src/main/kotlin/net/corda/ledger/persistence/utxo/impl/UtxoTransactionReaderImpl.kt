@@ -33,7 +33,7 @@ import net.corda.v5.membership.GroupParameters
 class UtxoTransactionReaderImpl(
     sandbox: SandboxGroupContext,
     private val externalEventContext: ExternalEventContext,
-    transaction: ByteArray, // This is serialized format of the transaction
+    transaction: ByteArray,
     override val status: TransactionStatus,
     override val visibleStatesIndexes: List<Int>,
     private val groupParametersFactory: GroupParametersFactory

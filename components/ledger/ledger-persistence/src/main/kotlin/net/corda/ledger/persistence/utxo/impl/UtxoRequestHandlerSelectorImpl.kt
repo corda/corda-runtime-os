@@ -110,7 +110,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                 UtxoPersistTransactionRequestHandler(
                     sandbox.virtualNodeContext.holdingIdentity,
                     UtxoTransactionReaderImpl(sandbox, externalEventContext, req, groupParametersFactory),
-                    UtxoTokenObserverMapImpl(sandbox), //
+                    UtxoTokenObserverMapImpl(sandbox),
                     externalEventContext,
                     persistenceService,
                     outputRecordFactory,
