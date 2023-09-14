@@ -256,7 +256,8 @@ spec:
             {{- include "corda.rbacDbUserEnv" . | nindent 12 }}
             {{- include "corda.clusterDbEnv" . | nindent 12 }}
             {{- include "corda.restApiAdminSecretEnv" . | nindent 12 }}
-            {{- include "corda.cryptoDbUserEnv" . | nindent 12 }}
+            {{- include "corda.cryptoDbUsernameEnv" . | nindent 12 }}
+            {{- include "corda.cryptoDbPasswordEnv" . | nindent 12 }}
       containers:
         - name: apply
           image: {{ include "corda.bootstrapDbClientImage" . }}
@@ -310,7 +311,8 @@ spec:
               value: {{ .Values.bootstrap.db.crypto.schema | quote }}
             {{- include "corda.bootstrapClusterDbEnv" . | nindent 12 }}
             {{- include "corda.rbacDbUserEnv" . | nindent 12 }}
-            {{- include "corda.cryptoDbUserEnv" . | nindent 12 }}
+            {{- include "corda.cryptoDbUsernameEnv" . | nindent 12 }}
+            {{- include "corda.cryptoDbPasswordEnv" . | nindent 12 }}
             {{- include "corda.clusterDbEnv" . | nindent 12 }}
       volumes:
         - name: temp
