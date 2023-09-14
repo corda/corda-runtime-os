@@ -2,25 +2,6 @@
 @file:Suppress("TooManyFunctions")
 package net.corda.kotlin.reflect.types
 
-import kotlinx.metadata.Flag.Common.IS_ABSTRACT
-import kotlinx.metadata.Flag.Common.IS_FINAL
-import kotlinx.metadata.Flag.Common.IS_INTERNAL
-import kotlinx.metadata.Flag.Common.IS_OPEN
-import kotlinx.metadata.Flag.Common.IS_PRIVATE
-import kotlinx.metadata.Flag.Common.IS_PROTECTED
-import kotlinx.metadata.Flag.Common.IS_PUBLIC
-import kotlinx.metadata.Flag.Property.IS_CONST
-import kotlinx.metadata.Flag.Property.IS_VAR
-import kotlinx.metadata.Flag.Type.IS_NULLABLE
-import kotlinx.metadata.Flags
-import kotlinx.metadata.KmFunction
-import kotlinx.metadata.KmProperty
-import kotlinx.metadata.KmType
-import kotlinx.metadata.KmValueParameter
-import kotlinx.metadata.jvm.JvmFieldSignature
-import kotlinx.metadata.jvm.JvmMethodSignature
-import org.objectweb.asm.Opcodes.ACC_SYNTHETIC
-import org.objectweb.asm.Type
 import java.lang.reflect.Field
 import java.lang.reflect.Member
 import java.lang.reflect.Method
@@ -47,22 +28,33 @@ import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.full.withNullability
 import kotlin.reflect.jvm.javaGetter
 import kotlin.reflect.jvm.javaMethod
+import kotlinx.metadata.KmFunction
+import kotlinx.metadata.KmProperty
+import kotlinx.metadata.KmValueParameter
+import kotlinx.metadata.Modality
+import kotlinx.metadata.Visibility
+import kotlinx.metadata.isNullable
+import kotlinx.metadata.isVar
+import kotlinx.metadata.jvm.JvmFieldSignature
+import kotlinx.metadata.jvm.JvmMethodSignature
+import org.objectweb.asm.Opcodes.ACC_SYNTHETIC
+import org.objectweb.asm.Type
 
-fun getVisibility(flags: Flags): KVisibility? {
-    return when {
-        IS_PUBLIC(flags) -> KVisibility.PUBLIC
-        IS_PRIVATE(flags) -> KVisibility.PRIVATE
-        IS_PROTECTED(flags) -> KVisibility.PROTECTED
-        IS_INTERNAL(flags) -> KVisibility.INTERNAL
+fun getVisibility(visibility: Visibility): KVisibility? {
+    return when(visibility) {
+        Visibility.PUBLIC -> KVisibility.PUBLIC
+        Visibility.PRIVATE -> KVisibility.PRIVATE
+        Visibility.PROTECTED -> KVisibility.PROTECTED
+        Visibility.INTERNAL -> KVisibility.INTERNAL
         else -> null
     }
 }
 
-fun getVisibility(flags: Flags, isJavaProperty: Boolean): KVisibility? {
-    return if (isJavaProperty && !IS_PUBLIC(flags) && !IS_PRIVATE(flags)) {
+fun getVisibility(visibility: Visibility, isJavaProperty: Boolean): KVisibility? {
+    return if (isJavaProperty && visibility != Visibility.PUBLIC && visibility != Visibility.PRIVATE) {
         null
     } else {
-        getVisibility(flags)
+        getVisibility(visibility)
     }
 }
 
@@ -73,9 +65,6 @@ fun getVisibility(member: Member): KVisibility? {
         else -> null
     }
 }
-
-val KmType.isNullable: Boolean
-    get() = IS_NULLABLE(flags)
 
 val Member?.isKotlin: Boolean
     get() {
@@ -91,19 +80,19 @@ fun isAbstract(member: Member): Boolean {
     return (member.modifiers and ABSTRACT) != 0
 }
 
-fun isAbstract(member: Member?, flags: Flags): Boolean {
+fun isAbstract(member: Member?, modality: Modality): Boolean {
     return if (member != null) {
         isAbstract(member)
     } else {
-        IS_ABSTRACT(flags)
+        modality == Modality.ABSTRACT
     }
 }
 
-fun isAbstract(member1: Member?, member2: Member?, flags: Flags): Boolean {
+fun isAbstract(member1: Member?, member2: Member?, modality: Modality): Boolean {
     return if (member1 != null && member2 != null && member1.declaringClass === member2.declaringClass) {
         isAbstract(member1) || isAbstract(member2)
     } else {
-        IS_ABSTRACT(flags)
+        modality == Modality.ABSTRACT
     }
 }
 
@@ -111,19 +100,19 @@ fun isFinal(member: Member): Boolean {
     return (member.modifiers and FINAL) != 0
 }
 
-fun isFinal(member: Member?, flags: Flags): Boolean {
+fun isFinal(member: Member?, modality: Modality): Boolean {
     return if (member != null) {
         isFinal(member)
     } else {
-        IS_FINAL(flags)
+        modality == Modality.FINAL
     }
 }
 
-fun isFinal(member1: Member?, member2: Member?, flags: Flags): Boolean {
+fun isFinal(member1: Member?, member2: Member?, modality: Modality): Boolean {
     return if (member1 != null && member2 != null && member1.declaringClass === member2.declaringClass) {
         isFinal(member1) && isFinal(member2)
     } else {
-        IS_FINAL(flags)
+        modality == Modality.FINAL
     }
 }
 
@@ -132,23 +121,15 @@ fun isConst(field: Field): Boolean {
             && (field.type.isPrimitive || field.type === String::class.java)
 }
 
-fun isConst(field: Field?, flags: Flags): Boolean {
-    return if (field != null) {
-        isConst(field)
-    } else {
-        IS_CONST(flags)
-    }
-}
-
 fun isOpen(member: Member): Boolean {
     return (member.modifiers and (ABSTRACT or FINAL)) == 0
 }
 
-fun isOpen(member: Member?, flags: Flags): Boolean {
+fun isOpen(member: Member?, modality: Modality): Boolean {
     return if (member != null) {
         isOpen(member)
     } else {
-        IS_OPEN(flags)
+        modality == Modality.OPEN
     }
 }
 
@@ -170,11 +151,11 @@ fun isExtension(function: KmFunction): Boolean = function.receiverParameterType 
 
 // Only guaranteed to work with the classloader from the method's declaring class.
 fun JvmMethodSignature.toSignature(classLoader: ClassLoader): MemberSignature {
-    val descriptor = Type.getMethodType(desc)
+    val methodDescriptor = Type.getMethodType(descriptor)
     return MemberSignature(
         name = name,
-        returnType = descriptor.returnType.toClass(classLoader),
-        parameterTypes = descriptor.argumentTypes.map { type ->
+        returnType = methodDescriptor.returnType.toClass(classLoader),
+        parameterTypes = methodDescriptor.argumentTypes.map { type ->
             type.toClass(classLoader)
         }.toTypedArray()
     )
@@ -284,16 +265,16 @@ fun <T, V> Class<*>.createProperty(field: Field): KProperty1<T, V> {
     }
 }
 
-fun <T, V> Class<*>.createKotlinProperty1(property: KmProperty): KotlinProperty1<T, V> {
-    return if (IS_VAR(property.flags)) {
-        KotlinMutableProperty1(property, declaringClass = this)
+fun <T, V> Class<*>.createKotlinProperty1(kmProperty: KmProperty): KotlinProperty1<T, V> {
+    return if (kmProperty.isVar) {
+        KotlinMutableProperty1(kmProperty, declaringClass = this)
     } else {
-        KotlinProperty1(property, declaringClass = this)
+        KotlinProperty1(kmProperty, declaringClass = this)
     }
 }
 
 fun <D, E, V> Class<*>.createKotlinProperty2(kmProperty: KmProperty): KotlinProperty2<D, E, V> {
-    return if (IS_VAR(kmProperty.flags)) {
+    return if (kmProperty.isVar) {
         KotlinMutableProperty2(kmProperty, declaringClass = this)
     } else {
         KotlinProperty2(kmProperty, declaringClass = this)

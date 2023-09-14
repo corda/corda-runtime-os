@@ -20,6 +20,31 @@ image:
   # -- worker image tag, defaults to Chart appVersion
   tag: ""
 
+# define privilege and access control settings for a container
+containerSecurityContext:
+  # -- specify what user ID that processes will run with
+  runAsUser: 10001
+  # -- specify what group ID that processes will run with
+  runAsGroup: 10002
+  # -- enable privilege escalation
+  allowPrivilegeEscalation: false
+  # -- mount the container's root filesystem as read-only
+  readOnlyRootFilesystem: true
+  # linux capabilities for users
+  capabilities:
+    # -- capabilities to drop
+    drop:
+      - "ALL"
+
+# define privilege and access control settings for a pod
+podSecurityContext:
+  # -- specify what user ID that processes will run with
+  runAsUser: 10001
+  # -- specify what group ID that processes will run with
+  runAsGroup: 10002
+  # -- specify supplementary group ID that processes will run with
+  fsGroup: 1000
+
 # -- extra labels to add to all deployed objects
 commonLabels: {}
 

@@ -140,7 +140,7 @@ internal class InMemorySessionReplayer(
             return
         }
 
-        val networkType = groupPolicyProvider.getGroupPolicy(messageReplay.sessionCounterparties.ourId)?.networkType
+        val networkType = groupPolicyProvider.getP2PParameters(messageReplay.sessionCounterparties.ourId)?.networkType
         if (networkType == null) {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName}) but" +
                 " could not find the network type in the GroupPolicyProvider for ${messageReplay.sessionCounterparties.ourId}." +
