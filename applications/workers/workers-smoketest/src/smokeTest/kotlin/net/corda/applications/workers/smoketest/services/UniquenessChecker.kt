@@ -54,7 +54,12 @@ class UniquenessChecker {
     }
 
     //TODO: draft a request builder using Ramzi's example
-    private fun newRequestBuilder(txId: SecureHash = randomSecureHash())
+/*    private val groupId = UUID.randomUUID().toString()
+
+    private val defaultNotaryVNodeHoldingIdentity = createTestHoldingIdentity(
+        "C=GB, L=London, O=NotaryRep1", groupId).toAvro()
+
+    private fun payloadBuilder(txId: SecureHash = randomSecureHash())
             : UniquenessCheckRequestAvro.Builder =
         UniquenessCheckRequestAvro.newBuilder(
             UniquenessCheckRequestAvro(
@@ -72,7 +77,7 @@ class UniquenessChecker {
                 null,
                 defaultTimeWindowUpperBound
             )
-        )
+        )*/
 
     private fun createPayload(): UniquenessCheckRequestAvro {
         return UniquenessCheckRequestAvro(
