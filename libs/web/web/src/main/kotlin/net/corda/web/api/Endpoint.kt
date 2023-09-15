@@ -4,7 +4,7 @@ import org.apache.commons.validator.routines.UrlValidator
 
 
 /**
- * Endpoint class that stores a http path with its associated WebHandler. Also contains validation logic
+ * Endpoint class that stores a http endpoint with its associated WebHandler. Also contains validation logic
  *
  * @property methodType Http method type
  * @property path url path

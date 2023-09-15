@@ -56,7 +56,7 @@ internal class EndpointAvailabilityCondition : ExecutionCondition {
     }
 
     /**
-     * Checks to see if REST path is reachable
+     * Checks to see if REST endpoint is reachable
      *
      * @return true if reachable, false if not
      */

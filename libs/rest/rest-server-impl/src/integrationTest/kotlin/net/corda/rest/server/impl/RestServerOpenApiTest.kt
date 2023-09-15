@@ -14,8 +14,14 @@ import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.server.impl.internal.OptionalDependency
 import net.corda.rest.server.impl.utils.compact
 import net.corda.rest.test.CalendarRestResourceImpl
+import net.corda.rest.test.NullabilityRestResourceImpl
+import net.corda.rest.test.ObjectsInJsonEndpointImpl
 import net.corda.rest.test.TestEntityRestResourceImpl
+import net.corda.rest.test.TestFileUploadImpl
 import net.corda.rest.test.TestHealthCheckAPIImpl
+import net.corda.rest.test.utils.TestHttpClientUnirestImpl
+import net.corda.rest.test.utils.WebRequest
+import net.corda.rest.test.utils.multipartDir
 import net.corda.rest.tools.HttpVerb.GET
 import net.corda.utilities.NetworkHostAndPort
 import org.apache.http.HttpStatus
@@ -30,12 +36,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import net.corda.rest.test.NullabilityRestResourceImpl
-import net.corda.rest.test.ObjectsInJsonEndpointImpl
-import net.corda.rest.test.TestFileUploadImpl
-import net.corda.rest.test.utils.TestHttpClientUnirestImpl
-import net.corda.rest.test.utils.WebRequest
-import net.corda.rest.test.utils.multipartDir
 
 class RestServerOpenApiTest : RestServerTestBase() {
     companion object {
@@ -459,7 +459,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
             )
         }
 
-        with(openAPI.paths["/objects-in-json-path/create-with-one-object"]) {
+        with(openAPI.paths["/objects-in-json-endpoint/create-with-one-object"]) {
             assertNotNull(this)
             val requestSchema = post.requestBody.content["application/json"]!!.schema
             assertEquals("#/components/schemas/RequestWithJsonObject", requestSchema.`$ref`)
@@ -474,7 +474,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
             assertJsonObject(jsonObject)
         }
 
-        with(openAPI.paths["/objects-in-json-path/create-with-individual-params"]) {
+        with(openAPI.paths["/objects-in-json-endpoint/create-with-individual-params"]) {
             assertNotNull(this)
             val requestSchema = post.requestBody.content["application/json"]!!.schema
             assertEquals("#/components/schemas/CreateWithIndividualParamsWrapperRequest", requestSchema.`$ref`)
@@ -489,7 +489,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
             assertJsonObject(jsonObject)
         }
 
-        with(openAPI.paths["/objects-in-json-path/nullable-json-object-in-request"]) {
+        with(openAPI.paths["/objects-in-json-endpoint/nullable-json-object-in-request"]) {
             assertNotNull(this)
             val requestSchema = post.requestBody.content["application/json"]!!.schema
             assertEquals("#/components/schemas/NullableJsonObjectInRequestWrapperRequest", requestSchema.`$ref`)
