@@ -51,7 +51,8 @@ fun ClusterInfo.onboardMember(
     groupPolicy: String,
     x500Name: String,
     waitForApproval: Boolean = true,
-    getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null
+    getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
+    certificateUploadedCallback: (String) -> Unit = {}
 ): NetworkOnboardingMetadata {
     conditionallyUploadCpiSigningCertificate()
     conditionallyUploadCordaPackage(cpiName, cpb, groupPolicy)
@@ -67,11 +68,13 @@ fun ClusterInfo.onboardMember(
         disableCertificateRevocationChecks()
         val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
         val tlsCsr = generateCsr(x500Name, tlsKeyId)
-        val tlsCert = File.createTempFile("${this.hashCode()}$CAT_TLS", ".pem").also {
+        val tlsCert = getCa().generateCert(tlsCsr)
+        val tlsCertFile = File.createTempFile("${this.hashCode()}$CAT_TLS", ".pem").also {
             it.deleteOnExit()
-            it.writeBytes(getCa().generateCert(tlsCsr).toByteArray())
+            it.writeBytes(tlsCert.toByteArray())
         }
-        importCertificate(tlsCert, CERT_USAGE_P2P, CERT_ALIAS_P2P)
+        importCertificate(tlsCertFile, CERT_USAGE_P2P, CERT_ALIAS_P2P)
+        certificateUploadedCallback(tlsCert)
     }
 
     val registrationContext = createRegistrationContext(
@@ -119,26 +122,29 @@ fun ClusterInfo.onboardNotaryMember(
     groupPolicy: String,
     x500Name: String,
     wait: Boolean = true,
-    getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null
+    getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
+    certificateUploadedCallback: (String) -> Unit = {}
 ) = onboardMember(
     resourceName,
     cpiName,
     groupPolicy,
     x500Name,
-    wait
-) { holdingId ->
-    addSoftHsmFor(holdingId, CAT_NOTARY)
-    val notaryKeyId = createKeyFor(holdingId, "$holdingId$CAT_NOTARY", CAT_NOTARY, DEFAULT_KEY_SCHEME)
+    wait,
+    getAdditionalContext = { holdingId ->
+        addSoftHsmFor(holdingId, CAT_NOTARY)
+        val notaryKeyId = createKeyFor(holdingId, "$holdingId$CAT_NOTARY", CAT_NOTARY, DEFAULT_KEY_SCHEME)
 
-    mapOf(
-        "corda.roles.0" to "notary",
-        "corda.notary.service.name" to MemberX500Name.parse("O=NotaryService, L=London, C=GB").toString(),
-        "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
-        "corda.notary.service.flow.protocol.version.0" to "1",
-        "corda.notary.keys.0.id" to notaryKeyId,
-        "corda.notary.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC
-    ) + (getAdditionalContext?.let { it(holdingId) } ?: emptyMap())
-}
+        mapOf(
+            "corda.roles.0" to "notary",
+            "corda.notary.service.name" to MemberX500Name.parse("O=NotaryService, L=London, C=GB").toString(),
+            "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
+            "corda.notary.service.flow.protocol.version.0" to "1",
+            "corda.notary.keys.0.id" to notaryKeyId,
+            "corda.notary.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC
+        ) + (getAdditionalContext?.let { it(holdingId) } ?: emptyMap())
+    },
+    certificateUploadedCallback = certificateUploadedCallback
+)
 
 /**
  * Configure a member to be a network participant.

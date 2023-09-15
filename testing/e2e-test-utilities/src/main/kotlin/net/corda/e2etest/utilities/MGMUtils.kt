@@ -13,6 +13,8 @@ import java.net.URLEncoder.encode
 import java.nio.charset.Charset.defaultCharset
 import java.time.Duration
 import net.corda.rest.annotations.RestApiVersion
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 
 /**
  * Calls the necessary endpoints to create a vnode, and onboard the MGM to that vnode.
@@ -427,4 +429,26 @@ fun ClusterInfo.updateGroupParameters(
         }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()
+}
+
+fun ClusterInfo.allowClientCertificates(certificatePem: String, mgmHoldingId: String) {
+    val subject = CertificateFactory.getInstance("X.509")
+        .generateCertificates(certificatePem.byteInputStream())
+        .filterIsInstance<X509Certificate>()
+        .first()
+        .subjectX500Principal
+
+    cluster {
+        assertWithRetryIgnoringExceptions {
+            timeout(15.seconds)
+            interval(1.seconds)
+            command {
+                put(
+                    "/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/mutual-tls/allowed-client-certificate-subjects/$subject",
+                    ""
+                )
+            }
+            condition { it.code == ResponseCode.OK.statusCode }
+        }
+    }
 }
