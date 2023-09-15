@@ -120,12 +120,12 @@ class WorkerHelpers {
             validator: ConfigurationValidator,
             extraConfigs: List<Config> = emptyList(),
         ): SmartConfig {
-            val defaultParamsAndValues = listOf<Triple<String,Any?,Any>>(
-                Triple(ConfigKeys.WORKSPACE_DIR,defaultParams.workspaceDir, ConfigDefaults.WORKSPACE_DIR),
-                Triple(ConfigKeys.TEMP_DIR,defaultParams.tempDir, ConfigDefaults.TEMP_DIR),
-                Triple(BootConfig.INSTANCE_ID,defaultParams.instanceId, Random.nextInt().absoluteValue),
-                Triple(BootConfig.TOPIC_PREFIX,defaultParams.topicPrefix, ""),
-                Triple(MAX_ALLOWED_MSG_SIZE,defaultParams.maxAllowedMessageSize, 972800),
+            val defaultParamsAndValues = listOf<Triple<String, Any?, Any>>(
+                Triple(ConfigKeys.WORKSPACE_DIR, defaultParams.workspaceDir, ConfigDefaults.WORKSPACE_DIR),
+                Triple(ConfigKeys.TEMP_DIR, defaultParams.tempDir, ConfigDefaults.TEMP_DIR),
+                Triple(BootConfig.INSTANCE_ID, defaultParams.instanceId, Random.nextInt().absoluteValue),
+                Triple(BootConfig.TOPIC_PREFIX, defaultParams.topicPrefix, ""),
+                Triple(MAX_ALLOWED_MSG_SIZE, defaultParams.maxAllowedMessageSize, 972800),
             )
             val defaultParamsMap = defaultParamsAndValues
                 .mapNotNull { t -> t.second?.let { t.first to t.second } }
@@ -144,7 +144,8 @@ class WorkerHelpers {
             val secretsConfig =
                 defaultParams.secrets.mapKeys { (key, _) -> "${BootConfig.BOOT_SECRETS}.${key.trim()}" }
 
-            val stateManagerConfig = defaultParams.stateManagerParams.mapKeys { (key, _) -> "${BootConfig.BOOT_STATE_MANAGER}.${key.trim()}" }
+            val stateManagerConfig =
+                defaultParams.stateManagerParams.mapKeys { (key, _) -> "${BootConfig.BOOT_STATE_MANAGER}.${key.trim()}" }
 
             val builtConfig = ConfigFactory.parseMap(messagingParams + defaultParamsMap + secretsConfig + stateManagerConfig)
 
@@ -159,7 +160,8 @@ class WorkerHelpers {
             val smartConfigFactory = SmartConfigFactory
                 .createWith(
                     configWithFiles.getConfig(BootConfig.BOOT_SECRETS).atPath(BootConfig.BOOT_SECRETS),
-                    secretsServiceFactoryResolver.findAll())
+                    secretsServiceFactoryResolver.findAll()
+                )
 
             val bootConfig = smartConfigFactory.create(configWithFiles.withoutPath(BootConfig.BOOT_SECRETS))
 
@@ -247,8 +249,9 @@ class WorkerHelpers {
 
             val arguments = processInfo.arguments()
             if (arguments.isPresent) {
-                arguments.get().map { arg -> SENSITIVE_ARGS.firstOrNull { arg.trim().startsWith(it) }
-                    .let { prefix -> if (prefix == null) arg else "$prefix=[REDACTED]" }
+                arguments.get().map { arg ->
+                    SENSITIVE_ARGS.firstOrNull { arg.trim().startsWith(it) }
+                        .let { prefix -> if (prefix == null) arg else "$prefix=[REDACTED]" }
                 }.forEachIndexed { i, redactedArg -> info("argument $i, $redactedArg") }
             } else {
                 info("arguments: Null")
