@@ -1,6 +1,5 @@
 package net.corda.applications.workers.smoketest.services
 
-import net.corda.applications.workers.smoketest.utils.UniquenessAssertions
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
@@ -10,6 +9,7 @@ import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.time.AutoTickTestClock
+import net.corda.uniqueness.utils.UniquenessAssertions
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
