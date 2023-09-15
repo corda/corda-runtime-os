@@ -28,7 +28,7 @@ class DeduplicationTableCleanUpProcessor(
         get() = ScheduledTaskTrigger::class.java
 
     override fun onNext(events: List<Record<String, ScheduledTaskTrigger>>): List<Record<*, *>> {
-        // TODO Add metric/ count time around it
+        // TODO Add metric around it?
         log.info("Cleaning up deduplication table for all vnodes")
         val startTime = System.nanoTime()
         virtualNodeInfoReadService.getAll().forEach {
