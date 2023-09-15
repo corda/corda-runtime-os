@@ -22,7 +22,6 @@ dependencies {
     implementation project(':libs:db:db-orm')
     implementation project(':libs:db:db-core')
     implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:messaging:message-bus")
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 

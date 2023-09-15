@@ -3,8 +3,8 @@ package net.corda.libs.configuration.merger.impl
 import com.typesafe.config.ConfigFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.statemanager.api.configuration.StateManagerConfigMerger
 import net.corda.messagebus.api.configuration.BusConfigMerger
-import net.corda.messagebus.api.configuration.StateManagerConfigMerger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
