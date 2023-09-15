@@ -22,9 +22,21 @@ configurations {
     configureEach {
         resolutionStrategy {
             dependencySubstitution {
-                substitute module('antlr:antlr') using project(':libs:antlr')
-                substitute module('de.javakaffee:kryo-serializers') using project(':libs:serialization:kryo-serializers')
-                substitute module('software.amazon.awssdk:cloudwatch') using project(':libs:awssdk')
+                substitute module('antlr:antlr') using variant(project(':libs:antlr')) {
+                    attributes {
+                        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
+                    }
+                }
+                substitute module('de.javakaffee:kryo-serializers') using variant(project(':libs:serialization:kryo-serializers')) {
+                    attributes {
+                        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
+                    }
+                }
+                substitute module('software.amazon.awssdk:cloudwatch') using variant(project(':libs:awssdk')) {
+                    attributes {
+                        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
+                    }
+                }
             }
         }
     }
