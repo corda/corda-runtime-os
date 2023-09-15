@@ -12,6 +12,11 @@ interface WebServer{
     val port: Int?
 
     /**
+     * Return list of all registered endpoints
+     */
+    val endpoints: List<Endpoint>
+
+    /**
      * Start the webserver
      *
      * @param port the port for the server to listen on

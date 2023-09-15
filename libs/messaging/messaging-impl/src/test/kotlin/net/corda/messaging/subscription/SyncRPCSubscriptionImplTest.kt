@@ -29,7 +29,7 @@ class SyncRPCSubscriptionImplTest {
         on { createCoordinator(any(), any()) }.doReturn(lifecycleCoordinator)
     }
     private val infoProviderMock = mock<PlatformInfoProvider> {
-        on { localWorkerSoftwareVersion } doReturn ("1.2.3.4")
+        on { localWorkerSoftwareShortVersion } doReturn ("1.2")
     }
     private val webServer = JavalinServer(lifecycleCoordinatorFactory, { Javalin.create() }, infoProviderMock)
     private val SUBSCRIPTION_NAME = "Test"
