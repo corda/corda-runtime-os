@@ -2,23 +2,23 @@ package net.corda.applications.workers.workercommon.internal
 
 import io.javalin.Javalin
 import net.corda.applications.workers.workercommon.WorkerMonitor
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.CoordinatorStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
-import java.net.HttpURLConnection
-import java.net.ServerSocket
-import java.net.URL
-import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.web.server.JavalinServer
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import java.net.HttpURLConnection
+import java.net.ServerSocket
+import java.net.URL
 
 /** Tests of [WorkerMonitorImpl]. */
 class WorkerMonitorImplTests {
@@ -28,7 +28,7 @@ class WorkerMonitorImplTests {
         on { createCoordinator(any(), any()) }.doReturn(lifecycleCoordinator)
     }
 
-    private val webServer = JavalinServer(lifecycleCoordinatorFactory) { Javalin.create() }
+    private val webServer = JavalinServer(lifecycleCoordinatorFactory, { Javalin.create() }, mock() )
     private val port = ServerSocket(0).use {
         it.localPort
     }

@@ -1,7 +1,6 @@
 package net.corda.web.server
 
 import io.javalin.Javalin
-import java.lang.reflect.Field
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -18,6 +17,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import java.lang.reflect.Field
 
 class JavalinServerTest {
 
@@ -35,7 +35,7 @@ class JavalinServerTest {
 
     @BeforeEach
     fun setup() {
-        javalinServer = JavalinServer(lifecycleCoordinatorFactory) { javalinMock }
+        javalinServer = JavalinServer(lifecycleCoordinatorFactory, { javalinMock }, mock())
 
         endpointsField = JavalinServer::class.java.getDeclaredField("endpoints")
         endpointsField.isAccessible = true

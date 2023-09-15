@@ -1,11 +1,6 @@
 package net.corda.messaging.subscription
 
 import io.javalin.Javalin
-import java.net.ServerSocket
-import java.net.URL
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinator
@@ -13,13 +8,18 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.web.server.JavalinServer
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import java.net.ServerSocket
+import java.net.URL
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 
 class SyncRPCSubscriptionImplTest {
 
@@ -28,7 +28,7 @@ class SyncRPCSubscriptionImplTest {
         on { createCoordinator(any(), any()) }.doReturn(lifecycleCoordinator)
     }
 
-    private val webServer = JavalinServer(lifecycleCoordinatorFactory) { Javalin.create() }
+    private val webServer = JavalinServer(lifecycleCoordinatorFactory, { Javalin.create() }, mock())
     private val SUBSCRIPTION_NAME = "Test"
     private val TEST_ENDPOINT = "/test"
     private val TEST_PORT = ServerSocket(0).use {
