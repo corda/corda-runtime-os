@@ -12,6 +12,7 @@ import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.utils.UniquenessAssertions
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import java.net.URI
 import java.net.http.HttpClient
@@ -51,15 +52,15 @@ class UniquenessChecker {
             .POST(HttpRequest.BodyPublishers.ofByteArray(serializedPayload))
             .build()
         val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
-
-        assertThat(response.statusCode()).isEqualTo(200)
-
         val responseBody: ByteArray = response.body()
         val responseEvent = avroDeserializer.deserialize(responseBody)
 
         // TODO: assert response
-        assertThat(responseEvent).isNotNull
-        UniquenessAssertions.assertStandardSuccessResponse(responseEvent!!, testClock)
+        assertSoftly {
+            assertThat(response.statusCode()).isEqualTo(200)
+            assertThat(responseEvent).isNotNull
+            UniquenessAssertions.assertStandardSuccessResponse(responseEvent!!, testClock)
+        }
     }
 
     private val testClock = AutoTickTestClock(Instant.EPOCH, Duration.ofSeconds(1))
