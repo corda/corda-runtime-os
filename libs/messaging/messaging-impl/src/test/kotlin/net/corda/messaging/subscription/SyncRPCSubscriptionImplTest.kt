@@ -3,6 +3,7 @@ package net.corda.messaging.subscription
 import io.javalin.Javalin
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.processor.SyncRPCProcessor
@@ -27,8 +28,10 @@ class SyncRPCSubscriptionImplTest {
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), any()) }.doReturn(lifecycleCoordinator)
     }
-
-    private val webServer = JavalinServer(lifecycleCoordinatorFactory, { Javalin.create() }, mock())
+    private val infoProviderMock = mock<PlatformInfoProvider> {
+        on { localWorkerSoftwareVersion } doReturn ("1.2.3.4")
+    }
+    private val webServer = JavalinServer(lifecycleCoordinatorFactory, { Javalin.create() }, infoProviderMock)
     private val SUBSCRIPTION_NAME = "Test"
     private val TEST_ENDPOINT = "/test"
     private val TEST_PORT = ServerSocket(0).use {
@@ -86,7 +89,7 @@ class SyncRPCSubscriptionImplTest {
     fun `starting the subscription should register endpoint and handle request`() {
         rpcSubscription.start()
 
-        val url = URL("http://localhost:$TEST_PORT$TEST_ENDPOINT")
+        val url = URL("http://localhost:$TEST_PORT/api/1.2$TEST_ENDPOINT")
         val client = HttpClient.newBuilder().build()
         val request = HttpRequest.newBuilder()
             .uri(url.toURI())
