@@ -166,6 +166,8 @@ class DBProcessorImpl @Activate constructor(
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val REGISTRATION = "REGISTRATION"
         private const val CONFIG = "CONFIG"
+
+        private const val DEDUPLICATION_TABLE_CLEAN_UP_GROUP = "deduplication.table.clean.up"
     }
 
     private val dependentComponents = DependentComponents.of(
@@ -293,7 +295,7 @@ class DBProcessorImpl @Activate constructor(
         deduplicationTableCleanUpSubscription?.close()
         val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
         deduplicationTableCleanUpSubscription = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("asd", VIRTUAL_NODE_DEDUPLICATION_TABLE_CLEAN_UP_TOPIC),
+            SubscriptionConfig(DEDUPLICATION_TABLE_CLEAN_UP_GROUP, VIRTUAL_NODE_DEDUPLICATION_TABLE_CLEAN_UP_TOPIC),
             DeduplicationTableCleanUpProcessor(
                 dbConnectionManager,
                 virtualNodeInfoReadService,
