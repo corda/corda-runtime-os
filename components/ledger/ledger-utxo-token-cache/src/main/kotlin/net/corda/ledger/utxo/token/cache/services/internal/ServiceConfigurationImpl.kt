@@ -16,7 +16,8 @@ class ServiceConfigurationImpl : ServiceConfiguration {
     }
 
     override val cachedTokenPageSize: Int
-        get() = getIntValue(UTXO_TOKEN_CACHED_TOKEN_PAGE_SIZE)
+        get() = 30000 // config?.getInt(UTXO_TOKEN_CACHED_TOKEN_PAGE_SIZE)
+            // ?:throw IllegalStateException("The token service has not been configured.")
 
     override val claimTimeoutSeconds: Int
         get() = getIntValue(UTXO_TOKEN_CLAIM_TIMEOUT_SECONDS)
