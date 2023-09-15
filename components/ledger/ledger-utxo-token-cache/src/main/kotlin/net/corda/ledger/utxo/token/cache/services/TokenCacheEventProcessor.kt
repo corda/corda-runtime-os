@@ -65,7 +65,7 @@ class TokenCacheEventProcessor constructor(
             // be removed. Any claim that contains a non-empty claimedTokenStateRefs field are considered invalid because
             // this means the avro object is an old one, and it should be replaced by the new format.
             val validClaims =
-                nonNullableState.tokenClaims.filter { it.claimedTokens.isNullOrEmpty() }
+                nonNullableState.tokenClaims.filter { it.claimedTokenStateRefs.isNullOrEmpty() }
             val invalidClaims = nonNullableState.tokenClaims - validClaims.toSet()
             if (invalidClaims.isNotEmpty()) {
                 val invalidClaimsId = invalidClaims.map { it.claimId }
