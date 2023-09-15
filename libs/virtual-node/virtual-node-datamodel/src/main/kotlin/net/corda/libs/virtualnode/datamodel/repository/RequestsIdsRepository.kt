@@ -25,8 +25,9 @@ class RequestsIdsRepositoryImpl : RequestsIdsRepository {
         em.createNativeQuery(
             """
                 DELETE FROM {h-schema}$VNODE_PERSISTENCE_REQUEST_ID_TABLE
-                WHERE insert_ts < NOW() - INTERVAL '1' SECOND * $intervalInSeconds 
+                WHERE insert_ts < NOW() - INTERVAL '1' SECOND * :intervalInSeconds 
             """.trimIndent()
-        ).executeUpdate()
+        ).setParameter("intervalInSeconds", intervalInSeconds)
+            .executeUpdate()
     }
 }
