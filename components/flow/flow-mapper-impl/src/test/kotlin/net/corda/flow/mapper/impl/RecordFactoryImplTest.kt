@@ -21,12 +21,14 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.lang.IllegalArgumentException
 import java.nio.ByteBuffer
 import java.time.Instant
 
@@ -319,5 +321,32 @@ internal class RecordFactoryImplTest {
         val sessionOutput = (record.value as FlowMapperEvent).payload as SessionEvent
         assertThat(sessionOutput.sessionId).isEqualTo("$SESSION_ID-INITIATED")
         assertThat(sessionOutput.messageDirection).isEqualTo(MessageDirection.INBOUND)
+    }
+
+    @Test
+    fun `sendBackError throws for outbound session events`() {
+        val timestamp = Instant.now()
+        val sessionEvent = SessionEvent(
+            MessageDirection.OUTBOUND,
+            timestamp,
+            SESSION_ID,
+            1,
+            alice,
+            bob,
+            SessionData(ByteBuffer.wrap("data".toByteArray()), null),
+            null
+        )
+        val msgPayload = ExceptionEnvelope(
+            "FlowMapper-SessionError",
+            "Received SessionError with sessionId 1"
+        )
+        assertThrows<IllegalArgumentException> {
+            recordFactoryImplSameCluster.sendBackError(
+                sessionEvent,
+                msgPayload,
+                timestamp,
+                flowConfig,
+            )
+        }
     }
 }
