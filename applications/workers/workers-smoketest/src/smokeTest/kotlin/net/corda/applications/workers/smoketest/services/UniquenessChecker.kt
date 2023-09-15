@@ -2,7 +2,6 @@ package net.corda.applications.workers.smoketest.services
 
 import net.corda.applications.workers.smoketest.utils.UniquenessAssertions
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.identity.HoldingIdentity
@@ -107,7 +106,7 @@ class UniquenessChecker {
             )
         )
 
-    private fun createPayload(): UniquenessCheckRequestAvro {
+    /*private fun createPayload(): UniquenessCheckRequestAvro {
         return UniquenessCheckRequestAvro(
             HoldingIdentity(
                 "CN=Notary-0fc246bf-b427-4652-befd-25d0e2375e9c, OU=Application, O=R3, L=London, C=GB",
@@ -179,5 +178,5 @@ class UniquenessChecker {
             Instant.now(),
             Instant.now().plusSeconds(120)
         )
-    }
+    }*/
 }
