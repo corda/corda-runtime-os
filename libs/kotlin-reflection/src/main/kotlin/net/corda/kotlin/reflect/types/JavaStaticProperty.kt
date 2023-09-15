@@ -1,6 +1,5 @@
 package net.corda.kotlin.reflect.types
 
-import kotlinx.metadata.jvm.JvmFieldSignature
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.Objects
@@ -10,6 +9,7 @@ import kotlin.reflect.KType
 import kotlin.reflect.KTypeParameter
 import kotlin.reflect.KVisibility
 import kotlin.reflect.full.starProjectedType
+import kotlinx.metadata.jvm.JvmFieldSignature
 
 open class JavaStaticProperty<V>(final override val javaField: Field): KProperty0<V>, KPropertyInternal<V> {
     override val annotations: List<Annotation>

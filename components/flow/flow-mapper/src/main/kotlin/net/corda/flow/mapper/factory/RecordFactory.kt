@@ -1,7 +1,6 @@
 package net.corda.flow.mapper.factory
 
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
@@ -25,7 +24,7 @@ interface RecordFactory {
         sessionEvent: SessionEvent,
         instant: Instant,
         flowConfig: SmartConfig,
-        messageDirection: MessageDirection,
+        flowId: String,
         isInteropSession: Boolean
     ): Record<*, *>
 
@@ -39,20 +38,7 @@ interface RecordFactory {
         exceptionEnvelope: ExceptionEnvelope,
         instant: Instant,
         flowConfig: SmartConfig,
-        messageDirection: MessageDirection,
+        flowId: String,
         isInteropSession: Boolean
     ): Record<*, *>
-
-    /**
-     * Inbound records should be directed to the flow event topic.
-     * Outbound records that are not local should be directed to the p2p out topic.
-     * Outbound records that are local should be directed to the flow mapper event topic.
-     * Outbound records for interop should be directed to the interop flow event topic.
-     * @return the output topic based on [messageDirection] and [isInteropSession].
-     */
-    fun getSessionEventOutputTopic(
-        sessionEvent: SessionEvent,
-        messageDirection: MessageDirection,
-        isInteropSession: Boolean
-    ): String
 }

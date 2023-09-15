@@ -63,12 +63,13 @@ class SchedulerEventHandler(
     }
 
     private fun triggerAndScheduleNext(coordinator: LifecycleCoordinator) = try {
-        schedulerLog.getLastTriggerAndLock(schedule.taskName, schedulerName).use {
-            if (it.secondsSinceLastScheduledTrigger >= schedule.scheduleIntervalInSeconds) {
+        schedulerLog.getLastTriggerAndLock(schedule.taskName, schedulerName).use { schedulerLock ->
+            if (schedulerLock.secondsSinceLastScheduledTrigger >= schedule.scheduleIntervalInSeconds) {
                 publisher.publish(schedule.taskName, schedule.scheduleTriggerTopic)
+                schedulerLock.updateLog(schedulerName)
             } else {
                 logger.debug { "Skipping publishing task scheduler for ${schedule.taskName} " +
-                        "because it has only been ${it.secondsSinceLastScheduledTrigger} " +
+                        "because it has only been ${schedulerLock.secondsSinceLastScheduledTrigger} " +
                         "since the last trigger." }
             }
         }

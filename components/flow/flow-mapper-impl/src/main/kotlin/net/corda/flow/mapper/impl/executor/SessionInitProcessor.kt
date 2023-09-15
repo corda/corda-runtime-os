@@ -1,6 +1,5 @@
 package net.corda.flow.mapper.impl.executor
 
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
@@ -11,11 +10,11 @@ import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
-import net.corda.schema.Schemas
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.time.Instant
+import net.corda.session.manager.Constants
 
 /**
  * Helper class to process session events which contain a SessionInit field/payload
@@ -25,6 +24,17 @@ class SessionInitProcessor @Activate constructor(
     @Reference(service = RecordFactory::class)
     private val recordFactory: RecordFactory
 ) {
+
+    /**
+     * Returns true if a session event is an interop session event, based on the content of the context session
+     * properties.
+     * @param event [SessionEvent] object.
+     * @return true if the session event is tagged as an interop session event, false otherwise.
+     */
+    private fun isInteropSession(event: SessionEvent) = event.contextSessionProperties?.let { properties ->
+        val map = properties.items.associate { it.key to it.value }
+        map[Constants.FLOW_SESSION_IS_INTEROP]?.equals("true")
+    } ?: false
 
     /**
      * Process a [sessionEvent] and [sessionInit] payload to produce a flow mapper state
@@ -66,21 +76,18 @@ class SessionInitProcessor @Activate constructor(
         sessionInit: SessionInit,
         flowConfig: SmartConfig,
         instant: Instant
-    ): SessionInitOutputs = if (messageDirection == MessageDirection.INBOUND) {
-        val flowId = generateFlowId()
-        sessionInit.flowId = flowId
-        SessionInitOutputs(
+    ): SessionInitOutputs {
+        val flowId = if (messageDirection == MessageDirection.INBOUND) {
+            generateFlowId()
+        } else {
+            // Null out the flow ID on the source session init before generating the forward record.
+            val tmpFlowId = sessionInit.flowId
+            sessionInit.flowId = null
+            tmpFlowId
+        }
+        return SessionInitOutputs(
             flowId,
-            Record(Schemas.Flow.FLOW_EVENT_TOPIC, flowId, FlowEvent(flowId, sessionEvent))
-        )
-    } else {
-        //reusing SessionInit object for inbound and outbound traffic rather than creating a new object identical to SessionInit
-        //with an extra field of flowId. set flowId to null to not expose it on outbound messages
-        val tmpFLowEventKey = sessionInit.flowId
-        sessionInit.flowId = null
-        SessionInitOutputs(
-            tmpFLowEventKey,
-            recordFactory.forwardEvent(sessionEvent, instant, flowConfig, sessionEvent.messageDirection, isInteropSession(sessionEvent))
+            recordFactory.forwardEvent(sessionEvent, instant, flowConfig, flowId, isInteropSession(sessionEvent))
         )
     }
 
