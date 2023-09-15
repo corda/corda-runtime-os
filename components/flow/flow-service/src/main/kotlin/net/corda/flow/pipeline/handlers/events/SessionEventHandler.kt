@@ -48,6 +48,7 @@ class SessionEventHandler @Activate constructor(
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val INTEROP_RESPONDER_FLOW = "INTEROP_RESPONDER_FLOW"
     }
 
     override val type = SessionEvent::class.java
@@ -112,7 +113,7 @@ class SessionEventHandler @Activate constructor(
         val (requestedProtocolName, initiatorVersionsSupported) = getProtocolInfo(sessionEvent.contextSessionProperties, sessionEvent)
 
         val initiatedFlowNameAndProtocolResult = initializeCheckpointAndGetResult(
-            context, sessionEvent, cpiId, requestedProtocolName, initiatorVersionsSupported
+            context, sessionEvent, initialSessionState, cpiId, requestedProtocolName, initiatorVersionsSupported
         )
 
         //set initial session state, so it can be found when trying to send the confirmation message
@@ -142,9 +143,11 @@ class SessionEventHandler @Activate constructor(
         }
     }
 
+    @Suppress("LongParameterList", "ThrowsCount")
     private fun initializeCheckpointAndGetResult(
         context: FlowEventContext<*>,
         sessionEvent: SessionEvent,
+        initialSessionState: SessionState,
         cpiId: String,
         requestedProtocolName: String,
         initiatorVersionsSupported: List<Int>
@@ -160,22 +163,40 @@ class SessionEventHandler @Activate constructor(
             WaitingFor(WaitingForSessionInit(sessionId)),
             holdingIdentity
         ) {
-            val protocolStore = try {
-                flowSandboxService.get(holdingIdentity, it).protocolStore
-            } catch (e: Exception) {
-                throw FlowTransientException(
-                    "Failed to create the flow sandbox: ${e.message ?: "No exception message provided."}",
-                    e
-                )
-            }
+            initiatedFlowNameAndProtocolResult = if (!initialSessionState.isInteropSession) {
+                val protocolStore = try {
+                    flowSandboxService.get(holdingIdentity, it).protocolStore
+                } catch (e: Exception) {
+                    throw FlowTransientException(
+                        "Failed to create the flow sandbox: ${e.message ?: "No exception message provided."}",
+                        e
+                    )
+                }
 
-            initiatedFlowNameAndProtocolResult = runCatching {
-                protocolStore.responderForProtocol(requestedProtocolName, initiatorVersionsSupported, context)
+                runCatching {
+                    protocolStore.responderForProtocol(requestedProtocolName, initiatorVersionsSupported, context)
+                }
+            } else {
+                val sessionInit = if (sessionEvent.payload is SessionData) {
+                    (sessionEvent.payload as SessionData).sessionInit ?: throw FlowTransientException(
+                        "Failed to create the flow sandbox. Unable to get interop responder flow class name, event is missing session init."
+                    )
+                } else {
+                    throw FlowTransientException(
+                        "Failed to create the flow sandbox. Unable to get interop responder flow class name, session init is null."
+                    )
+                }
+                val className = KeyValueStore(sessionInit.contextUserProperties)[INTEROP_RESPONDER_FLOW]
+                    ?: throw FlowTransientException(
+                        "Failed to create the flow sandbox. Missing flowClassName while starting an interoperable flow.")
+
+                log.info("Starting interoperable flow $className.")
+                Result.success(FlowAndProtocolVersion("", className))
             }
 
             FlowStartContext.newBuilder()
                 .setStatusKey(FlowKey(sessionId, initiatedIdentity))
-                .setInitiatorType(FlowInitiatorType.P2P)
+                .setInitiatorType(if (initialSessionState.isInteropSession) FlowInitiatorType.INTEROP else FlowInitiatorType.P2P)
                 .setRequestId(sessionId)
                 .setIdentity(initiatedIdentity)
                 .setCpiId(cpiId)

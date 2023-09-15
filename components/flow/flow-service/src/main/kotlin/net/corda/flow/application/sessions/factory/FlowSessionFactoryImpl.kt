@@ -26,7 +26,8 @@ class FlowSessionFactoryImpl @Activate constructor(
         sessionId: String,
         requireClose: Boolean,
         x500Name: MemberX500Name,
-        contextProperties: Map<String, String>
+        contextProperties: Map<String, String>,
+        isInteropSession: Boolean
     ): FlowSession {
         return try {
             @Suppress("deprecation", "removal")
@@ -34,6 +35,7 @@ class FlowSessionFactoryImpl @Activate constructor(
                 FlowSessionImpl(
                     counterparty = x500Name,
                     sessionId,
+                    isInteropSession,
                     flowFiberService,
                     serializationService,
                     FlatSerializableContext(
@@ -53,7 +55,8 @@ class FlowSessionFactoryImpl @Activate constructor(
         sessionId: String,
         requireClose: Boolean,
         x500Name: MemberX500Name,
-        flowContextPropertiesBuilder: FlowContextPropertiesBuilder?
+        flowContextPropertiesBuilder: FlowContextPropertiesBuilder?,
+        isInteropSession: Boolean
     ): FlowSession {
         return try {
             @Suppress("deprecation", "removal")
@@ -61,6 +64,7 @@ class FlowSessionFactoryImpl @Activate constructor(
                 FlowSessionImpl(
                     counterparty = x500Name,
                     sessionId,
+                    isInteropSession,
                     flowFiberService,
                     serializationService,
                     createInitiatingFlowContextProperties(

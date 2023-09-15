@@ -1,6 +1,8 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.FlowInitiatorType
+import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
@@ -44,6 +46,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.stream.Stream
+import net.corda.interop.identity.registry.InteropIdentityRegistryService
 
 class FlowGlobalPostProcessorImplTest {
 
@@ -107,6 +110,7 @@ class FlowGlobalPostProcessorImplTest {
     private val externalEventManager = mock<ExternalEventManager>()
     private val flowRecordFactory = mock<FlowRecordFactory>()
     private val membershipGroupReaderProvider = mock<MembershipGroupReaderProvider>()
+    private val interopIdentityRegistryService = mock<InteropIdentityRegistryService>()
     private val membershipGroupReader = mock<MembershipGroupReader>()
     private val flowMessageFactory = mock<FlowMessageFactory>()
     private val checkpoint = mock<FlowCheckpoint>()
@@ -116,7 +120,8 @@ class FlowGlobalPostProcessorImplTest {
         sessionManager,
         flowMessageFactory,
         flowRecordFactory,
-        membershipGroupReaderProvider
+        membershipGroupReaderProvider,
+        interopIdentityRegistryService
     )
 
     @Suppress("Unused")
@@ -127,6 +132,7 @@ class FlowGlobalPostProcessorImplTest {
         whenever(checkpoint.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
         whenever(checkpoint.doesExist).thenReturn(true)
         whenever(checkpoint.pendingPlatformError).thenReturn(null)
+        whenever(checkpoint.flowStartContext).thenReturn(FlowStartContext().apply { initiatorType = FlowInitiatorType.P2P })
         whenever(
             sessionManager.getMessagesToSend(
                 eq(sessionState1),

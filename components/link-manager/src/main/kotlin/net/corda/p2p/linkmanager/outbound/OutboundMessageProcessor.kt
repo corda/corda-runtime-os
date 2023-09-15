@@ -213,6 +213,9 @@ internal class OutboundMessageProcessor(
         )
         if (linkManagerHostingMap.isHostedLocallyAndSessionKeyMatch(destinationMemberInfo)) {
             recordInboundMessagesMetric(inboundMessage)
+            //TODO new log statement added temporarily for Interop Team, revert to debug as part of CORE-10683
+            logger.info("Sending outbound message hosted locally ${message.header.messageId} from ${message.header.source} " +
+                    "to ${message.header.destination}.")
             return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(inboundMessage)))
         } else {
             val source = message.header.source.toCorda()
@@ -231,6 +234,9 @@ internal class OutboundMessageProcessor(
                 destinationMemberInfo,
                 p2pParams.networkType
             )
+            //TODO logger info level and source identity added temporarily for Interop Team, revert to debug as part of CORE-10683
+            logger.info ("Sending outbound message ${message.header.messageId} to ${message.header.destination} " +
+                    "for ${linkOutMessage.header.address}." )
             return listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), linkOutMessage))
         }
     }

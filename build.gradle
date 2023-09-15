@@ -59,7 +59,6 @@ allprojects {
         }
 
         tasks.withType(JavaCompile).configureEach {
-            options.release = javaVersionNumber
             options.encoding = 'UTF-8'
             options.compilerArgs += [ '-XDenableSunApiLintControl', '-parameters' ]
         }

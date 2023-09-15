@@ -13,6 +13,7 @@ import net.corda.e2etest.utilities.RpcSmokeTestInput
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
 import net.corda.e2etest.utilities.awaitRestFlowResult
+import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.config.configWithDefaultsNode
@@ -29,6 +30,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -925,6 +927,26 @@ class FlowTests {
             """.trimJson()
 
         assertThat(flowResult.json.result).isEqualTo(expectedOutputJson)
+    }
+
+    @Disabled("Fails in e2e because require a single cluster.") //TODO CORE-12469
+    @Test
+    fun `Interoperability - facade call returns payload back to caller`() {
+        val payload = "Hello world!"
+
+        val args = mapOf(
+            "facadeId" to "None",
+            "methodName" to "None",
+            "payload" to payload,
+            "alias" to charlyX500.replace("$testRunUniqueId", "$testRunUniqueId Alias")
+        )
+
+        val requestId = startRpcFlow(bobHoldingId, args, "net.cordapp.testing.testflows.FacadeInvocationFlow")
+        val flowStatus = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(flowStatus.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(flowStatus.flowError).isNull()
+        assertThat(flowStatus.flowResult).isEqualTo(payload)
     }
 
     /**

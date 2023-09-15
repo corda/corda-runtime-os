@@ -1,0 +1,19 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Interop identity write service'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+
+    implementation "net.corda:corda-base"
+
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation project(':libs:interop:interop-core')
+    implementation project(':libs:crypto:crypto-core')
+}

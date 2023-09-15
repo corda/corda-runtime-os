@@ -31,6 +31,8 @@ class SessionErrorExecutor(
     }
 
     private val messageDirection = sessionEvent.messageDirection
+    private val isInteropSession = flowMapperState?.isInteropSession ?: false
+
     private val defaultMsg = "$messageDirection flow mapper received error event while in $flowMapperState, {} event. " +
             "Key: $eventKey, Event: $sessionEvent"
     private val missingSessionMsg = "$messageDirection flow mapper received error event from counterparty for session " +
@@ -74,7 +76,8 @@ class SessionErrorExecutor(
                     payload,
                     instant,
                     flowConfig,
-                    flowMapperState.flowId
+                    flowMapperState.flowId,
+                    isInteropSession
                 )
                 FlowMapperResult(flowMapperState, listOf(record))
             }

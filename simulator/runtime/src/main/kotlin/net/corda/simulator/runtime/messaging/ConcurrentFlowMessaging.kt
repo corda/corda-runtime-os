@@ -139,6 +139,16 @@ class ConcurrentFlowMessaging(
     }
 
 
+    override fun callFacade(
+        memberName: MemberX500Name,
+        interopGroupId: String,
+        facadeName: String,
+        methodName: String,
+        payload: String
+    ): String {
+        TODO("The simulator does not currently support facade calls.")
+    }
+
     /**
      * Not yet implemented.
      */

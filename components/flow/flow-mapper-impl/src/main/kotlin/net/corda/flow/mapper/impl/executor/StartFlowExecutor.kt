@@ -28,7 +28,7 @@ class StartFlowExecutor(
                 .withTag(CordaMetrics.Tag.FlowEvent, startRPCFlow::class.java.name)
                 .build().increment()
             val flowId = generateFlowId()
-            val newState = FlowMapperState(flowId, null, FlowMapperStateType.OPEN)
+            val newState = FlowMapperState(flowId, null, FlowMapperStateType.OPEN, false)
             val flowEvent = FlowEvent(flowId, startRPCFlow)
             FlowMapperResult(
                 newState,

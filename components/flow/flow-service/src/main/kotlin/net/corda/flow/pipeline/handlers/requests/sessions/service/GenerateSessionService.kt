@@ -10,6 +10,7 @@ import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.keyValuePairListOf
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
+import net.corda.session.manager.Constants.Companion.FLOW_SESSION_IS_INTEROP
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPPORTED
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
 import net.corda.utilities.trace
@@ -94,7 +95,7 @@ class GenerateSessionService @Activate constructor(
 
         val sessionContext = KeyValueStore().apply {
             put(FLOW_PROTOCOL, protocolName)
-            put(FLOW_PROTOCOL_VERSIONS_SUPPORTED, protocolVersions.joinToString())
+            put(FLOW_PROTOCOL_VERSIONS_SUPPORTED, protocolVersions.joinToString().lowercase())
         }
 
         sessionsNotGenerated.map { sessionInfo ->
@@ -102,7 +103,10 @@ class GenerateSessionService @Activate constructor(
                 checkpoint,
                 sessionInfo.sessionId,
                 sessionInfo.counterparty,
-                sessionProperties = sessionContext.apply { put(FLOW_SESSION_REQUIRE_CLOSE, sessionInfo.requireClose.toString()) }.avro,
+                sessionProperties = sessionContext.apply {
+                    put(FLOW_SESSION_REQUIRE_CLOSE, sessionInfo.requireClose.toString())
+                    put(FLOW_SESSION_IS_INTEROP, sessionInfo.isInteropSession.toString())
+                }.avro,
                 Instant.now()
             ).also { checkpoint.putSessionState(it) }
 

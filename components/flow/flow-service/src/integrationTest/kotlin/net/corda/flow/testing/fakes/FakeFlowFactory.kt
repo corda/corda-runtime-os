@@ -27,7 +27,8 @@ class FakeFlowFactory : FlowFactory {
         flowStartContext: FlowStartContext,
         requireClose: Boolean,
         sandboxGroupContext: SandboxGroupContext,
-        contextProperties: Map<String, String>
+        contextProperties: Map<String, String>,
+        isInteropFlow: Boolean
     ): FlowLogicAndArgs {
         return InitiatedFlow(FakeInitiatedFlow(), FakeFlowSession())
     }

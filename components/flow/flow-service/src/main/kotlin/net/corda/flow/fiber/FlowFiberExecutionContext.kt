@@ -4,6 +4,7 @@ import net.corda.flow.pipeline.metrics.FlowMetrics
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
+import net.corda.interop.identity.registry.InteropIdentityRegistryView
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -17,6 +18,7 @@ class FlowFiberExecutionContext(
     val sandboxGroupContext: FlowSandboxGroupContext,
     val holdingIdentity: HoldingIdentity,
     val membershipGroupReader: MembershipGroupReader,
+    val interopIdentityRegistryView : InteropIdentityRegistryView,
     val currentSandboxGroupContext: CurrentSandboxGroupContext,
     val mdcLoggingData: Map<String, String>,
     val flowMetrics: FlowMetrics,

@@ -20,6 +20,8 @@ dependencies {
     implementation project(":components:virtual-node:cpi-info-read-service")
     implementation project(":components:virtual-node:cpk-read-service")
     implementation project(":components:virtual-node:sandbox-group-context-service")
+    implementation project(":components:interop:interop-identity-registry-service")
+
     runtimeOnly project(':components:virtual-node:sandbox-amqp')
     runtimeOnly project(':components:virtual-node:sandbox-json')
 
@@ -31,6 +33,7 @@ dependencies {
     implementation project(':libs:flows:flow-api')
     implementation project(':libs:flows:session-manager')
     implementation project(":libs:flows:flow-utils")
+    implementation project(':libs:interop:interop-core')
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:membership:membership-common")
     implementation project(":libs:metrics")
@@ -48,6 +51,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-ledger-utxo"
@@ -77,7 +81,7 @@ dependencies {
     testImplementation project(':testing:test-utilities')
 
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
-
+    integrationTestRuntimeOnly project(":components:virtual-node:cpk-read-service-impl")
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':testing:virtual-node-info-read-service-fake')
     integrationTestImplementation project(':testing:cpi-info-read-service-fake')
@@ -87,6 +91,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
     integrationTestRuntimeOnly project(':libs:serialization:serialization-checkpoint-api')
     integrationTestRuntimeOnly project(':libs:serialization:serialization-kryo')

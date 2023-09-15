@@ -26,12 +26,17 @@ class SessionInitProcessorTest {
             sessionEvent: SessionEvent,
             instant: Instant,
             flowConfig: SmartConfig,
-            flowId: String
+            flowId: String,
+            isInteropSession: Boolean
         ): Record<*, *> {
-            return if (sessionEvent.messageDirection == MessageDirection.INBOUND) {
-                Record(Schemas.Flow.FLOW_EVENT_TOPIC, flowId, FlowEvent(flowId, sessionEvent))
+            return if (isInteropSession) {
+                Record(Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC, flowId, FlowEvent(flowId, sessionEvent))
             } else {
-                Record(Schemas.P2P.P2P_OUT_TOPIC, "sessionId", "")
+                if (sessionEvent.messageDirection == MessageDirection.INBOUND) {
+                    Record(Schemas.Flow.FLOW_EVENT_TOPIC, flowId, FlowEvent(flowId, sessionEvent))
+                } else {
+                    Record(Schemas.P2P.P2P_OUT_TOPIC, "sessionId", "")
+                }
             }
         }
 
@@ -40,11 +45,13 @@ class SessionInitProcessorTest {
             exceptionEnvelope: ExceptionEnvelope,
             instant: Instant,
             flowConfig: SmartConfig,
-            flowId: String
+            flowId: String,
+            isInteropSession: Boolean
         ): Record<*, *> {
             TODO("Not yet implemented")
         }
     }
+
     private val flowConfig = SmartConfigImpl.empty().withValue(FlowConfig.SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
     private val sessionInitProcessor = SessionInitProcessor(recordFactory)
 

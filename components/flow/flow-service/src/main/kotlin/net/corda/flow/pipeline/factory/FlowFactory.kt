@@ -28,6 +28,7 @@ interface FlowFactory {
      * @param requireClose True if the initiated party sends a close message when a session is closed.
      * @param sandboxGroupContext The sandbox to load the [Flow] class from.
      * @param contextProperties The context properties to be set on the session which is passed to the initiated flow.
+     * @param isInteropFlow Optional flag to process the session as an interop session.
      *
      * @return A new [Flow] instance.
      */
@@ -35,6 +36,7 @@ interface FlowFactory {
         flowStartContext: FlowStartContext,
         requireClose: Boolean,
         sandboxGroupContext: SandboxGroupContext,
-        contextProperties: Map<String, String>
+        contextProperties: Map<String, String>,
+        isInteropFlow: Boolean = false
     ): FlowLogicAndArgs
 }

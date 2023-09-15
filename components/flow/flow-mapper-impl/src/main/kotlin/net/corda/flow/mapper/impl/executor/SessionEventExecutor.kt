@@ -29,6 +29,8 @@ class SessionEventExecutor(
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    private val isInteropSession = flowMapperState?.isInteropSession ?: false
+
     override fun execute() = if (flowMapperState == null) {
         getInitPayload(sessionEvent.payload)?.let { sessionInit->
             sessionInitProcessor.processSessionInit(sessionEvent, sessionInit, flowConfig, instant)
@@ -59,7 +61,8 @@ class SessionEventExecutor(
                 ),
                 instant,
                 flowConfig,
-                "invalid-flow-id"
+                "invalid-flow-id",
+                false
             )
             FlowMapperResult(null, listOf(outputRecord))
         } else {
@@ -86,7 +89,7 @@ class SessionEventExecutor(
                 FlowMapperResult(flowMapperState, listOf())
             }
             FlowMapperStateType.OPEN -> {
-                val outputRecord = recordFactory.forwardEvent(sessionEvent, instant, flowConfig, flowMapperState.flowId)
+                val outputRecord = recordFactory.forwardEvent(sessionEvent, instant, flowConfig, flowMapperState.flowId, isInteropSession)
                 FlowMapperResult(flowMapperState, listOf(outputRecord))
             }
         }

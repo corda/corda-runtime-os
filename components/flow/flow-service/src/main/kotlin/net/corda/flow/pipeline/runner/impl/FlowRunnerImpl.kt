@@ -24,6 +24,7 @@ import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.flow.utils.toMap
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.session.manager.Constants.Companion.FLOW_SESSION_IS_INTEROP
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
 import net.corda.v5.application.flows.FlowContextPropertyKeys
 import net.corda.virtualnode.HoldingIdentity
@@ -120,6 +121,10 @@ class FlowRunnerImpl @Activate constructor(
             mapOf("corda.account" to "account-zero")
         )
 
+        val isInteropSessionInit = sessionEvent.contextSessionProperties?.let { sessionProperties ->
+            KeyValueStore(sessionProperties)[FLOW_SESSION_IS_INTEROP]?.equals("true")
+        } ?: false
+
         val requireClose = getRequireClose(sessionEvent)
 
         return startFlow(
@@ -129,7 +134,8 @@ class FlowRunnerImpl @Activate constructor(
                     flowStartContext,
                     requireClose,
                     sgc,
-                    localContext.sessionProperties
+                    localContext.sessionProperties,
+                    isInteropSessionInit
                 )
             },
             updateFlowStackItem = { fsi -> addFlowStackItemSession(fsi, sessionId) },

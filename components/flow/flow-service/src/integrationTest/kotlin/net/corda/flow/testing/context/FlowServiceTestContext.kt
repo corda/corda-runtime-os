@@ -32,6 +32,7 @@ import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.flow.testing.fakes.FakeClientRequestBody
 import net.corda.flow.testing.fakes.FakeFlow
 import net.corda.flow.testing.fakes.FakeFlowFiberFactory
+import net.corda.flow.testing.fakes.FakeInteropIdentityRegistryService
 import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
 import net.corda.flow.testing.tests.ALL_TEST_VIRTUAL_NODES
@@ -93,6 +94,8 @@ class FlowServiceTestContext @Activate constructor(
     val virtualNodeInfoReadService: VirtualNodeInfoReadServiceFake,
     @Reference(service = FlowFiberCache::class)
     val flowFiberCache: FlowFiberCache,
+    @Reference(service = FakeInteropIdentityRegistryService::class)
+    val interopIdentityRegistryService : FakeInteropIdentityRegistryService,
 ) : StepSetup, ThenSetup {
 
     private companion object {

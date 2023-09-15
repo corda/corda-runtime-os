@@ -85,6 +85,7 @@ class ClientRequestBodyImplTest {
             holdingIdentity,
             mock(),
             mock(),
+            mock(),
             emptyMap(),
             mock(),
             emptyMap()

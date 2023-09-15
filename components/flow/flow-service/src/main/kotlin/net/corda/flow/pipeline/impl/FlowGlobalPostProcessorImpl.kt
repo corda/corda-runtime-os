@@ -23,7 +23,11 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Instant
+import net.corda.flow.state.FlowCheckpoint
+import net.corda.interop.identity.registry.InteropIdentityRegistryService
 
+
+@Suppress("LongParameterList")
 @Component(service = [FlowGlobalPostProcessor::class])
 class FlowGlobalPostProcessorImpl @Activate constructor(
     @Reference(service = ExternalEventManager::class)
@@ -36,6 +40,8 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     private val flowRecordFactory: FlowRecordFactory,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = InteropIdentityRegistryService::class)
+    private val interopIdentityRegistryService: InteropIdentityRegistryService
 ) : FlowGlobalPostProcessor {
 
     private companion object {
@@ -85,6 +91,17 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             }
     }
 
+    private fun interopCounterpartyExists(checkpoint: FlowCheckpoint, counterparty: MemberX500Name): Boolean {
+        val registryView = interopIdentityRegistryService.getVirtualNodeRegistryView(checkpoint.holdingIdentity.shortHash)
+        val counterpartyExists = registryView.getIdentityWithApplicationName(counterparty.organization) != null
+
+        if (!counterpartyExists) {
+            log.warn("Interop counterparty '${counterparty}' does not exist!")
+        }
+
+        return counterpartyExists
+    }
+
     private fun verifyCounterparty(
         context: FlowEventContext<Any>,
         sessionState: SessionState
@@ -97,23 +114,37 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         val doesCheckpointExist = checkpoint.doesExist
         val counterparty: MemberX500Name = MemberX500Name.parse(sessionState.counterpartyIdentity.x500Name!!)
         val groupReader = membershipGroupReaderProvider.getGroupReader(context.checkpoint.holdingIdentity)
-        val counterpartyExists: Boolean = null != groupReader.lookup(counterparty)
+
+        val counterpartyExists = when (sessionState.isInteropSession) {
+            true -> interopCounterpartyExists(checkpoint, counterparty)
+            false -> groupReader.lookup(counterparty) != null
+        }
+
+        val errorMessage by lazy {
+            when (sessionState.isInteropSession) {
+                true -> {
+                    "[${context.checkpoint.holdingIdentity.x500Name}] has failed to create an interop flow with " +
+                            "counterparty: [$counterparty] as the interop identity cannot be found."
+                }
+                false -> {
+                    "[${context.checkpoint.holdingIdentity.x500Name}] has failed to create a flow with counterparty: " +
+                            "[$counterparty] as the recipient doesn't exist in the network."
+                }
+            }
+        }
 
         /**
          * If the counterparty doesn't exist in our network, throw a [FlowPlatformException]
          */
         if (!counterpartyExists) {
-            val msg = "[${context.checkpoint.holdingIdentity.x500Name}] has failed to create a flow with counterparty: " +
-                    "[${counterparty}] as the recipient doesn't exist in the network."
             sessionManager.errorSession(sessionState)
             if (doesCheckpointExist) {
-                log.debug { "$msg. Throwing FlowFatalException" }
+                log.debug { "$errorMessage. Throwing FlowPlatformException" }
                 checkpoint.putSessionState(sessionState)
-                throw FlowFatalException(msg)
+                throw FlowFatalException(errorMessage)
             } else {
-                log.debug { "$msg. Checkpoint is already marked for deletion." }
+                log.debug { "$errorMessage. Checkpoint is already marked for deletion." }
             }
-
             return false
         }
 

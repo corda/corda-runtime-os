@@ -42,7 +42,8 @@ class RecordFactoryImpl @Activate constructor(
         exceptionEnvelope: ExceptionEnvelope,
         instant: Instant,
         flowConfig: SmartConfig,
-        flowId: String
+        flowId: String,
+        isInteropSession: Boolean
     ): Record<*, *> {
         return buildSessionRecord(
             sessionEvent,
@@ -51,7 +52,8 @@ class RecordFactoryImpl @Activate constructor(
             ),
             instant,
             flowConfig,
-            flowId
+            flowId,
+            isInteropSession
         )
     }
 
@@ -59,25 +61,31 @@ class RecordFactoryImpl @Activate constructor(
         sessionEvent: SessionEvent,
         instant: Instant,
         flowConfig: SmartConfig,
-        flowId: String
+        flowId: String,
+        isInteropSession: Boolean
     ): Record<*, *> {
         return buildSessionRecord(
             sessionEvent,
             sessionEvent.payload,
             instant,
             flowConfig,
-            flowId
+            flowId,
+            isInteropSession
         )
     }
 
-    private fun getSessionEventOutputTopic(sessionEvent: SessionEvent): String {
+    private fun getSessionEventOutputTopic(sessionEvent: SessionEvent, isInteropSession: Boolean): String {
         return when (sessionEvent.messageDirection) {
             MessageDirection.INBOUND -> Schemas.Flow.FLOW_EVENT_TOPIC
             MessageDirection.OUTBOUND -> {
-                if (isLocalCluster(sessionEvent)) {
-                    Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
+                if (isInteropSession) {
+                    Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC
                 } else {
-                    Schemas.P2P.P2P_OUT_TOPIC
+                    if (isLocalCluster(sessionEvent)) {
+                        Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
+                    } else {
+                        Schemas.P2P.P2P_OUT_TOPIC
+                    }
                 }
             }
             else -> {
@@ -86,14 +94,16 @@ class RecordFactoryImpl @Activate constructor(
         }
     }
 
+    @Suppress("LongParameterList")
     private fun buildSessionRecord(
         sourceEvent: SessionEvent,
         newPayload: Any,
         timestamp: Instant,
         config: SmartConfig,
-        flowId: String
+        flowId: String,
+        isInteropSession: Boolean
     ) : Record<*, *> {
-        val outputTopic = getSessionEventOutputTopic(sourceEvent)
+        val outputTopic = getSessionEventOutputTopic(sourceEvent, isInteropSession)
         val (newDirection, sessionId) = when (outputTopic) {
             Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC -> Pair(MessageDirection.INBOUND, toggleSessionId(sourceEvent.sessionId))
             Schemas.Flow.FLOW_EVENT_TOPIC -> Pair(MessageDirection.INBOUND, sourceEvent.sessionId)
@@ -113,6 +123,9 @@ class RecordFactoryImpl @Activate constructor(
         return when (outputTopic) {
             Schemas.Flow.FLOW_EVENT_TOPIC -> {
                 Record(outputTopic, flowId, FlowEvent(flowId, sessionEvent))
+            }
+            Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC -> {
+                Record(outputTopic, sessionId, FlowMapperEvent(sessionEvent))
             }
             Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC -> {
                 Record(outputTopic, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))

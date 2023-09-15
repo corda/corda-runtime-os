@@ -111,6 +111,7 @@ class FlowRunnerImplTest {
             BOB_X500_HOLDING_IDENTITY.toCorda(),
             mock(),
             mock(),
+            mock(),
             emptyMap(),
             mock(),
             emptyMap()

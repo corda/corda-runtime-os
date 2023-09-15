@@ -1,0 +1,20 @@
+{
+  "id": "org.corda.interop/test/qualification/v1.0",
+  "aliases": {
+    "fruit": "json (org.corda.test/test/fruit/v1.0)",
+    "pastry": "json (org.corda.test/test/pastry/v1.0)",
+    "ingredients-list": "json (org.corda.test/test/ingredients/v1.0)"
+  },
+  "commands": {
+    "make-pie": {
+      "in": {
+        "fruit": "fruit",
+        "pastry": "pastry"
+      },
+      "out": {
+        "name": "string",
+        "ingredients": "ingredients-list"
+      }
+    }
+  }
+}

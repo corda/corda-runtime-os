@@ -30,6 +30,10 @@ dependencies {
     implementation project(":components:crypto:crypto-client-hsm")
     implementation project(':components:membership:group-policy')
     implementation project(":libs:utilities")
+    implementation project(":components:interop:interop-identity-write-service")
+    implementation project(":components:interop:interop-identity-registry-service")
+    implementation project(":components:interop:interop-group-policy-read-service")
+    implementation project(':components:membership:group-policy-configuration-validation')
 
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-merger')
@@ -49,8 +53,13 @@ dependencies {
     runtimeOnly project(":components:membership:membership-persistence-client-impl")
     runtimeOnly project(':components:virtual-node:virtual-node-rest-service-impl')
     runtimeOnly project(':components:virtual-node:virtual-node-rest-maintenance-impl')
+    runtimeOnly project(':components:interop:interop-rest-service-impl')
     runtimeOnly project(":components:permissions:permission-rest-resource-impl")
     runtimeOnly project(":components:membership:group-policy-impl")
+    runtimeOnly project(":components:interop:interop-identity-write-service-impl")
+    runtimeOnly project(":components:interop:interop-identity-registry-service-impl")
+    runtimeOnly project(":components:interop:interop-group-policy-read-service-impl")
+    implementation project(':components:membership:group-policy-configuration-validation-impl')
 
     runtimeOnly project(':libs:configuration:configuration-endpoints')
     runtimeOnly project(':libs:crypto:cipher-suite-impl')
@@ -83,6 +92,7 @@ dependencies {
     integrationTestImplementation project(':libs:permissions:permission-endpoint')
     integrationTestImplementation project(':libs:virtual-node:virtual-node-endpoints')
     integrationTestImplementation project(':libs:virtual-node:virtual-node-endpoints-maintenance')
+    integrationTestImplementation project(':libs:interop:interop-rest')
 
     integrationTestRuntimeOnly project(':libs:messaging:kafka-message-bus-impl')
     integrationTestRuntimeOnly 'org.osgi:osgi.core'

@@ -14,6 +14,7 @@ import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext;
 import net.corda.flow.state.FlowCheckpoint;
 import net.corda.flow.state.FlowContext;
 import net.corda.internal.serialization.SerializedBytesImpl;
+import net.corda.interop.identity.registry.InteropIdentityRegistryView;
 import net.corda.membership.read.MembershipGroupReader;
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext;
 import net.corda.sandboxgroupcontext.service.SandboxDependencyInjector;
@@ -42,6 +43,7 @@ public class FlowSessionImplJavaTest {
             flowSandboxGroupContext,
             createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group1"),
             mock(MembershipGroupReader.class),
+            mock(InteropIdentityRegistryView.class),
             mock(CurrentSandboxGroupContext.class),
             Map.of(),
             mock(FlowMetrics.class),
@@ -54,6 +56,7 @@ public class FlowSessionImplJavaTest {
     private final FlowSession session = new FlowSessionImpl(
             new MemberX500Name("Alice", "Alice Corp", "LDN", "GB"),
             "session id",
+            false,
             flowFiberService,
             serializationService,
             flowContext,

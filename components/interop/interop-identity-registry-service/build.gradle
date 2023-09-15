@@ -1,0 +1,22 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Interop identity registry service'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-application:$cordaApiVersion"
+
+    implementation "net.corda:corda-avro-schema"
+
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation project(':libs:interop:interop-core')
+    implementation project(":libs:virtual-node:virtual-node-info")
+
+}

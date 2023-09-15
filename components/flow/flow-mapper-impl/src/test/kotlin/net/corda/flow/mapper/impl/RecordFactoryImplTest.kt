@@ -88,7 +88,8 @@ internal class RecordFactoryImplTest {
             "Received SessionError with sessionId 1"),
             Instant.now(),
             flowConfig,
-            "my-flow-id"
+            "my-flow-id",
+            false
         )
         assertThat(record).isNotNull
         assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC)
@@ -123,7 +124,8 @@ internal class RecordFactoryImplTest {
                 "Received SessionError with sessionId 1"),
             Instant.now(),
             flowConfig,
-            FLOW_ID
+            FLOW_ID,
+            false
         )
         assertThat(record).isNotNull
         assertThat(record.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
@@ -152,7 +154,8 @@ internal class RecordFactoryImplTest {
                 "Received SessionError with sessionId 1"),
             Instant.now(),
             flowConfig,
-            FLOW_ID
+            FLOW_ID,
+            false
         )
         assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_EVENT_TOPIC)
         assertThat(record.key).isEqualTo(FLOW_ID)
@@ -177,7 +180,8 @@ internal class RecordFactoryImplTest {
             sessionEvent,
             Instant.now(),
             flowConfig,
-            FLOW_ID
+            FLOW_ID,
+            false
         )
         assertThat(record).isNotNull
         assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC)
@@ -205,7 +209,8 @@ internal class RecordFactoryImplTest {
             sessionEvent,
             Instant.now(),
             flowConfig,
-            FLOW_ID
+            FLOW_ID,
+            false
         )
         assertThat(record).isNotNull
         assertThat(record.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
@@ -232,7 +237,8 @@ internal class RecordFactoryImplTest {
             sessionEvent,
             Instant.now(),
             flowConfig,
-            FLOW_ID
+            FLOW_ID,
+            false
         )
         assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_EVENT_TOPIC)
         assertThat(record.key).isEqualTo(FLOW_ID)

@@ -22,7 +22,7 @@ class FlowMapperListenerTest {
     fun testOnPartitionsLost() {
         val publisher: Publisher = mock()
         val scheduledKeys = listOf("1", "2", "3")
-        val states = scheduledKeys.associateBy({ it }, { FlowMapperState(null, null, null) })
+        val states = scheduledKeys.associateBy({ it }, { FlowMapperState(null, null, null, false) })
         val scheduledTaskState = generateScheduledTaskState(publisher, scheduledKeys)
         assertThat(scheduledTaskState.tasks.size).isEqualTo(3)
 
@@ -38,7 +38,7 @@ class FlowMapperListenerTest {
         val scheduledKeys = listOf("1", "2", "3")
         whenever(clock.millis()).thenReturn(1001)
         val states = scheduledKeys.associateBy({ it }, { FlowMapperState(null, 1000, FlowMapperStateType
-            .CLOSING) })
+            .CLOSING, false) })
         val scheduledTaskState = generateScheduledTaskState(publisher, emptyList())
         assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
 
@@ -55,7 +55,7 @@ class FlowMapperListenerTest {
         val scheduledKeys = listOf("1", "2", "3")
         whenever(clock.millis()).thenReturn(999)
         val states = scheduledKeys.associateBy({ it }, { FlowMapperState(null, 100000, FlowMapperStateType
-            .CLOSING) })
+            .CLOSING, false) })
         val scheduledTaskState = generateScheduledTaskState(publisher, emptyList())
         assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
 
@@ -75,7 +75,7 @@ class FlowMapperListenerTest {
         val scheduledKeys = listOf("1", "2", "3")
         whenever(clock.millis()).thenReturn(999)
         val states = scheduledKeys.associateBy({ it }, { FlowMapperState(null, null, FlowMapperStateType
-            .CLOSING) })
+            .CLOSING, false) })
         val scheduledTaskState = generateScheduledTaskState(publisher, emptyList())
         assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
 
@@ -92,7 +92,7 @@ class FlowMapperListenerTest {
         val clock: Clock = mock()
         val scheduledKeys = listOf("1", "2", "3")
         val states = scheduledKeys.associateBy({ it }, { FlowMapperState(null, 100000, FlowMapperStateType
-            .CLOSING) })
+            .CLOSING, false) })
         val scheduledTaskState = generateScheduledTaskState(publisher, emptyList())
         assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
 
@@ -110,7 +110,7 @@ class FlowMapperListenerTest {
         val clock: Clock = mock()
         val scheduledKeys = listOf("1", "2", "3")
         val states = scheduledKeys.associateBy({ it }, { FlowMapperState(null, null, FlowMapperStateType
-            .CLOSING) })
+            .CLOSING, false) })
         val scheduledTaskState = generateScheduledTaskState(publisher, emptyList())
         assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
 
@@ -127,7 +127,7 @@ class FlowMapperListenerTest {
         val clock: Clock = mock()
         val scheduledKeys = listOf("1", "2", "3")
         val states = scheduledKeys.associateBy({ it }, { FlowMapperState(null, null, FlowMapperStateType
-            .OPEN) })
+            .OPEN, false) })
         val scheduledTaskState = generateScheduledTaskState(publisher, emptyList())
         assertThat(scheduledTaskState.tasks.size).isEqualTo(0)
 

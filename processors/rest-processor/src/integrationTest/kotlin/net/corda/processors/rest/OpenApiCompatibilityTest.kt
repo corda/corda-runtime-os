@@ -12,6 +12,7 @@ import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.server.factory.RestServerFactory
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.libs.interop.endpoints.v1.InteropRestResource
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
@@ -42,6 +43,7 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.nio.file.Files
 
 @ExtendWith(ServiceExtension::class)
 class OpenApiCompatibilityTest {
@@ -60,6 +62,7 @@ class OpenApiCompatibilityTest {
             FlowClassRestResource::class.java, // Flow
             CpiUploadRestResource::class.java, // Packaging
             VirtualNodeRestResource::class.java, // Packaging
+            InteropRestResource::class.java, // Interop
             MemberLookupRestResource::class.java, // MGM
             MemberRegistrationRestResource::class.java, // MGM
             MGMRestResource::class.java, // MGM

@@ -1,11 +1,13 @@
 package net.corda.session.manager.impl.processor
 
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.state.session.SessionState
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.time.Instant
+import net.corda.data.flow.state.session.SessionState
+import net.corda.flow.utils.KeyValueStore
+import net.corda.session.manager.Constants.Companion.FLOW_SESSION_IS_INTEROP
 
 /**
  * Process SessionInit messages to be sent to a counterparty.
@@ -22,6 +24,10 @@ class SessionInitProcessorSend(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    private val isInteropSessionInit = sessionEvent.contextSessionProperties?.let { properties ->
+        KeyValueStore(properties)[FLOW_SESSION_IS_INTEROP]?.equals("true")
+    } ?: false
+
     override fun execute(): SessionState {
         val newSessionId = sessionEvent.sessionId
         val seqNum = 1
@@ -32,6 +38,7 @@ class SessionInitProcessorSend(
         }
 
         sessionState.apply {
+            isInteropSession = isInteropSessionInit
             sendEventsState.lastProcessedSequenceNum = seqNum
             sendEventsState.undeliveredMessages = sendEventsState.undeliveredMessages.plus(sessionEvent)
         }

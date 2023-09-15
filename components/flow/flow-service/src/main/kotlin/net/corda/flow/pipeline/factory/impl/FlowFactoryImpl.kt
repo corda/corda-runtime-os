@@ -50,7 +50,8 @@ class FlowFactoryImpl @Activate constructor(
         flowStartContext: FlowStartContext,
         requireClose: Boolean,
         sandboxGroupContext: SandboxGroupContext,
-        contextProperties: Map<String, String>
+        contextProperties: Map<String, String>,
+        isInteropFlow: Boolean
     ): FlowLogicAndArgs {
         return try {
             val flowClass = sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
@@ -62,7 +63,8 @@ class FlowFactoryImpl @Activate constructor(
                 flowStartContext.statusKey.id, // The ID on a start context is the session ID
                 requireClose,
                 MemberX500Name.parse(flowStartContext.initiatedBy.x500Name),
-                contextProperties
+                contextProperties,
+                isInteropFlow
             )
             val logic = flowClass.getDeclaredConstructor().newInstance()
 

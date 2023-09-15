@@ -78,9 +78,9 @@ internal class InboundMessageProcessor(
                     }
 
                     is InboundUnauthenticatedMessage -> {
-                        logger.debug {
+                        logger.info( //TODO info level for Interop Team, revert to debug as part of CORE-10683
                             "Processing unauthenticated message ${payload.header.messageId}"
-                        }
+                        )
                         recordInboundMessagesMetric(payload)
                         listOf(
                             Record(
@@ -90,7 +90,6 @@ internal class InboundMessageProcessor(
                             )
                         )
                     }
-
                     else -> {
                         logger.error("Received unknown payload type ${message.payload::class.java.simpleName}. The message was discarded.")
                         emptyList()

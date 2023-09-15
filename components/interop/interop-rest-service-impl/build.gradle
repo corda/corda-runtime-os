@@ -1,0 +1,41 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description "Interop REST Resource Implementation"
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation project(':components:configuration:configuration-read-service')
+    implementation project(':components:interop:interop-identity-registry-service')
+    implementation project(':components:interop:interop-identity-write-service')
+    implementation project(':components:virtual-node:cpi-info-read-service')
+    implementation project(":components:virtual-node:virtual-node-info-read-service")
+    implementation project(":components:interop:interop-group-policy-read-service")
+    implementation project(':components:membership:group-policy-configuration-validation')
+    implementation project(":components:membership:membership-group-read")
+    implementation project(':libs:crypto:crypto-core')
+    implementation project(':libs:external-messaging')
+    implementation project(':libs:interop:interop-rest')
+    implementation project(':libs:interop:interop-core')
+    implementation project(':libs:virtual-node:virtual-node-info')
+    implementation project(':libs:rest:rest')
+    implementation project(':libs:rest:rest-common')
+    implementation  project(':libs:rest:json-serialization')
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation project(':libs:utilities')
+    implementation 'net.corda:corda-avro-schema'
+    implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-config-schema'
+    implementation 'net.corda:corda-membership'
+    implementation 'net.corda:corda-topic-schema'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":libs:lifecycle:lifecycle-test-impl")
+}

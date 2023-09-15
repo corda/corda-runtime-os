@@ -4,14 +4,16 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
-import net.corda.flow.utils.toMap
-import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.time.Instant
+import net.corda.flow.utils.KeyValueStore
+import net.corda.flow.utils.toMap
+import net.corda.session.manager.Constants.Companion.FLOW_SESSION_IS_INTEROP
+import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
 
 /**
  * Process SessionInit messages.
@@ -29,6 +31,10 @@ class SessionInitProcessorReceive(
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
+
+    private val isInteropSessionEvent = sessionEvent.contextSessionProperties?.let { properties ->
+        KeyValueStore(properties)[FLOW_SESSION_IS_INTEROP]?.equals("true")
+    } ?: false
 
     override fun execute(): SessionState {
         return if (sessionState != null) {
@@ -56,6 +62,7 @@ class SessionInitProcessorReceive(
             val requireClose = sessionEvent.contextSessionProperties.toMap()[FLOW_SESSION_REQUIRE_CLOSE].toBoolean()
             val newSessionState = SessionState.newBuilder()
                 .setSessionId(sessionId)
+                .setIsInteropSession(isInteropSessionEvent)
                 .setSessionStartTime(instant)
                 .setLastReceivedMessageTime(instant)
                 .setCounterpartyIdentity(sessionEvent.initiatingIdentity)

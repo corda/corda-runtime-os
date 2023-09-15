@@ -1,0 +1,33 @@
+{
+  "id": "org.corda.interop/platform/serialisation/v1.0",
+  "aliases": {
+    "hash": "bytes (org.corda.test/test/hash/1.0)",
+    "fruit": "json (org.corda.test/test/fruit/1.0)"
+  },
+  "commands": {
+    "exchange-bytes": {
+      "in": {
+        "bytes": "bytes"
+      },
+      "out": {
+        "bytes": "hash"
+      }
+    },
+    "exchange-json": {
+      "in": {
+        "json": "json"
+      },
+      "out": {
+        "json": "fruit"
+      }
+    },
+    "exchange-timestamp": {
+      "in": {
+        "timestamp": "timestamp"
+      },
+      "out": {
+        "timestamp": "timestamp"
+      }
+    }
+  }
+}

@@ -72,7 +72,8 @@ class Create(
         "link-manager" to listOf("p2pLinkManager", "combined"),
         "persistence" to listOf("persistence", "combined"),
         "rest" to listOf("rest", "combined"),
-        "uniqueness" to listOf("uniqueness", "combined")
+        "uniqueness" to listOf("uniqueness", "combined"),
+        "interop" to listOf("flow", "combined")
     )
 
     fun getTopicConfigs(): List<TopicConfig> {
