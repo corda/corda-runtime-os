@@ -18,6 +18,7 @@ import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.libs.packaging.hash
 import net.corda.orm.utils.transaction
+import net.corda.utilities.serialization.deserialize
 import net.corda.utilities.time.Clock
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -100,7 +101,10 @@ class UtxoPersistenceServiceImpl(
 
     override fun <T: ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoTransactionOutputDto> {
         return entityManagerFactory.transaction { em ->
-            repository.findUnconsumedVisibleStatesByType(em, stateClass.canonicalName)
+            repository.findUnconsumedVisibleStatesByType(em)
+        }.filter {
+            val contractState = serializationService.deserialize<ContractState>(it.data)
+            stateClass.isInstance(contractState)
         }
     }
 

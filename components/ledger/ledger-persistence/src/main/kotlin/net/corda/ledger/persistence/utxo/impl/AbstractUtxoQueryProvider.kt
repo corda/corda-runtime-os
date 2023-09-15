@@ -39,12 +39,8 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
                 ON tc_output.transaction_id = tc_output_info.transaction_id
                 AND tc_output.leaf_idx = tc_output_info.leaf_idx
                 AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
-            JOIN {h-schema}utxo_transaction_output AS tx_output
-                ON tx_output.transaction_id = tc_output.transaction_id
-                AND tx_output.leaf_idx = tc_output.leaf_idx
             JOIN {h-schema}utxo_transaction_status AS ts
-                ON ts.transaction_id = tx_output.transaction_id
-            AND tx_output.type = :type    
+                ON ts.transaction_id = tc_output.transaction_id
             AND rts.consumed IS NULL
             AND ts.status = :verified
             ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx"""
