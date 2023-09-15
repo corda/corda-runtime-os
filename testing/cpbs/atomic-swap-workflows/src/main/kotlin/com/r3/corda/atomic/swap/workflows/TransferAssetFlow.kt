@@ -3,7 +3,6 @@ package com.r3.corda.atomic.swap.workflows
 
 import com.r3.corda.atomic.swap.contracts.AssetContract
 import com.r3.corda.atomic.swap.states.Asset
-import com.r3.corda.atomic.swap.states.LockState
 import com.r3.corda.atomic.swap.states.Member
 import net.corda.v5.application.flows.*
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -50,9 +49,19 @@ class TransferAssetFlow : ClientStartableFlow {
                 ?: throw CordaRuntimeException("MemberLookup can't find otherMember specified in flow arguments.")
             val buyer = Member(otherMember.name, otherMember.ledgerKeys[0])
 
-            val stateAndRef = ledgerService.findUnconsumedStatesByType(Asset::class.java).singleOrNull {
-                it.state.contractState.assetId == flowArgs.assetId
-            } ?: throw CordaRuntimeException("Multiple or zero Asset states with id ${flowArgs.assetId} found.")
+//            val stateAndRef = ledgerService.findUnconsumedStatesByType(Asset::class.java).singleOrNull {
+//                it.state.contractState.assetId == flowArgs.assetId
+//            } ?: throw CordaRuntimeException("Multiple or zero Asset states with id ${flowArgs.assetId} found.")
+            val stateId = flowArgs.assetId
+
+            val unconsumedStates = ledgerService.findUnconsumedStatesByType(Asset::class.java)
+            val unconsumedStatesWithId = unconsumedStates.filter { it.state.contractState.assetId == stateId }
+
+            if (unconsumedStatesWithId.size != 1) {
+                throw CordaRuntimeException("Multiple or zero states with id '$stateId' found")
+            }
+
+            val stateAndRef = unconsumedStatesWithId.first()
 
             val input = stateAndRef.state.contractState
             val output = Asset(
@@ -115,7 +124,7 @@ class TransferAssetResponder : ResponderFlow {
         log.info("TransferAssetResponder.call() called")
 
         try {
-            val finalizedSignedTransaction = ledgerService.receiveFinality(session) { ledgerTransaction -> }
+            val finalizedSignedTransaction = ledgerService.receiveFinality(session) { _ -> }
             log.info("Finished responder flow - ${finalizedSignedTransaction.transaction.id}")
         }
         // Soft fails the flow and log the exception.
