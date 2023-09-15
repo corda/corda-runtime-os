@@ -54,7 +54,7 @@ kotlin {
 dependencies {
     // NO CORDA DEPENDENCIES!!
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    implementation project(path: ':libs:kotlin-coroutines', configuration: 'bundle')
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
 
     // Avoid having the schema names and keys scattered across projects
     smokeTestImplementation "net.corda:corda-config-schema:$cordaApiVersion"
