@@ -17,6 +17,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
+import net.corda.processors.scheduler.SchedulerProcessor
 import net.corda.processors.token.cache.TokenCacheProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.tracing.configureTracing
@@ -37,6 +38,8 @@ class DBWorker @Activate constructor(
     private val processor: DBProcessor,
     @Reference(service = TokenCacheProcessor::class)
     private val tokenCacheProcessor: TokenCacheProcessor,
+    @Reference(service = SchedulerProcessor::class)
+    private val schedulerProcessor: SchedulerProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = WorkerMonitor::class)
@@ -85,6 +88,7 @@ class DBWorker @Activate constructor(
 
         processor.start(config)
         tokenCacheProcessor.start(config)
+        schedulerProcessor.start(config)
     }
 
     override fun shutdown() {
@@ -92,6 +96,7 @@ class DBWorker @Activate constructor(
         processor.stop()
         webServer.stop()
         tokenCacheProcessor.stop()
+        schedulerProcessor.stop()
         shutdownTracing()
     }
 }
