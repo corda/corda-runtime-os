@@ -91,10 +91,12 @@ class UtxoRepositoryImpl @Activate constructor(
     }
 
     override fun findUnconsumedVisibleStatesByType(
-        entityManager: EntityManager
+        entityManager: EntityManager,
+        stateClassType: String
     ): List<UtxoTransactionOutputDto> {
         return entityManager.createNativeQuery(queryProvider.findUnconsumedVisibleStatesByType, Tuple::class.java)
             .setParameter("verified", TransactionStatus.VERIFIED.value)
+            .setParameter("type", stateClassType)
             .resultListAsTuples()
             .map { t ->
                 UtxoTransactionOutputDto(
