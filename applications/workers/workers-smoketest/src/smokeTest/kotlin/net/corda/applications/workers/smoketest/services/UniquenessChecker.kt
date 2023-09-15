@@ -1,5 +1,7 @@
 package net.corda.applications.workers.smoketest.services
 
+import net.corda.applications.workers.smoketest.utils.UniquenessAssertions
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
@@ -8,20 +10,27 @@ import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
+import net.corda.test.util.time.AutoTickTestClock
+import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.security.MessageDigest
+import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.util.UUID
 
 /**
  * Tests for the UniquenessChecker RPC service
  */
 class UniquenessChecker {
     private val httpClient: HttpClient = HttpClient.newBuilder()
-        .connectTimeout(java.time.Duration.ofSeconds(30))
+        .connectTimeout(Duration.ofSeconds(30))
         .build()
     private val serializationFactory = CordaAvroSerializationFactoryImpl(
         AvroSchemaRegistryImpl()
@@ -35,7 +44,7 @@ class UniquenessChecker {
         // TODO: construct path from constants (and add api/v5.1/ into it)
         val url = "${System.getProperty("uniquenessWorkerHealthHttp")}api/5.1/uniqueness-checker"
         // TODO: populate with real/useful data
-        val serializedPayload = avroSerializer.serialize(createPayload())
+        val serializedPayload = avroSerializer.serialize(payloadBuilder().build())
 
         val request = HttpRequest.newBuilder()
             .uri(URI.create(url))
@@ -51,13 +60,32 @@ class UniquenessChecker {
 
         // TODO: assert response
         assertThat(responseEvent).isNotNull
+        UniquenessAssertions.assertStandardSuccessResponse(responseEvent!!, testClock)
     }
 
-    //TODO: draft a request builder using Ramzi's example
-/*    private val groupId = UUID.randomUUID().toString()
+    private val testClock = AutoTickTestClock(Instant.EPOCH, Duration.ofSeconds(1))
 
-    private val defaultNotaryVNodeHoldingIdentity = createTestHoldingIdentity(
-        "C=GB, L=London, O=NotaryRep1", groupId).toAvro()
+    /**
+     * Returns a random set of bytes
+     */
+    private fun randomBytes(): ByteArray {
+        return (1..16).map { ('0'..'9').random() }.joinToString("").toByteArray()
+    }
+
+    /**
+     * Returns a random secure hash of the specified algorithm
+     */
+    private fun randomSecureHash(algorithm: String = "SHA-256"): SecureHash {
+        val digest = MessageDigest.getInstance(algorithm)
+        return SecureHashImpl(digest.algorithm, digest.digest(randomBytes()))
+    }
+
+    private val groupId = UUID.randomUUID().toString()
+    private val defaultNotaryVNodeHoldingIdentity = HoldingIdentity("C=GB, L=London, O=NotaryRep1", groupId)
+    private val defaultOriginatorX500Name = "C=GB, L=London, O=Alice"
+    // We don't use Instant.MAX because this appears to cause a long overflow in Avro
+    private val defaultTimeWindowUpperBound: Instant =
+        LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
 
     private fun payloadBuilder(txId: SecureHash = randomSecureHash())
             : UniquenessCheckRequestAvro.Builder =
@@ -77,7 +105,7 @@ class UniquenessChecker {
                 null,
                 defaultTimeWindowUpperBound
             )
-        )*/
+        )
 
     private fun createPayload(): UniquenessCheckRequestAvro {
         return UniquenessCheckRequestAvro(
