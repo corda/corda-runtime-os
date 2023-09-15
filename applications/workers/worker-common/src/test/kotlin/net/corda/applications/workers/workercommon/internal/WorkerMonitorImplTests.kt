@@ -2,6 +2,7 @@ package net.corda.applications.workers.workercommon.internal
 
 import io.javalin.Javalin
 import net.corda.applications.workers.workercommon.WorkerMonitor
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -27,8 +28,10 @@ class WorkerMonitorImplTests {
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), any()) }.doReturn(lifecycleCoordinator)
     }
-
-    private val webServer = JavalinServer(lifecycleCoordinatorFactory, { Javalin.create() }, mock() )
+    private val infoProviderMock = mock<PlatformInfoProvider> {
+        on { localWorkerSoftwareVersion } doReturn ("1.2.3.4")
+    }
+    private val webServer = JavalinServer(lifecycleCoordinatorFactory, { Javalin.create() }, infoProviderMock )
     private val port = ServerSocket(0).use {
         it.localPort
     }

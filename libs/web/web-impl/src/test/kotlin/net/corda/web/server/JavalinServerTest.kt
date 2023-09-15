@@ -1,6 +1,7 @@
 package net.corda.web.server
 
 import io.javalin.Javalin
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -32,10 +33,13 @@ class JavalinServerTest {
 
     private val port = 8888
     private val webHandler = WebHandler { context -> context }
+    private val infoProviderMock = mock<PlatformInfoProvider> {
+        on { localWorkerSoftwareVersion } doReturn ("1.2.3.4")
+    }
 
     @BeforeEach
     fun setup() {
-        javalinServer = JavalinServer(lifecycleCoordinatorFactory, { javalinMock }, mock())
+        javalinServer = JavalinServer(lifecycleCoordinatorFactory, { javalinMock }, infoProviderMock)
 
         endpointsField = JavalinServer::class.java.getDeclaredField("endpoints")
         endpointsField.isAccessible = true
@@ -57,7 +61,7 @@ class JavalinServerTest {
     @Test
     fun `starting an already started server should throw exception`() {
         javalinServer.start(port)
-        assertThrows<CordaRuntimeException> {
+        assertThrows<IllegalStateException> {
             javalinServer.start(port)
         }
     }
@@ -87,8 +91,14 @@ class JavalinServerTest {
         javalinServer.registerEndpoint(Endpoint(HTTPMethod.GET, "/url", webHandler))
         verify(javalinMock).get(eq("/url"), any())
 
+        javalinServer.registerEndpoint(Endpoint(HTTPMethod.GET, "/foo", webHandler, true))
+        verify(javalinMock).get(eq("/api/1.2/foo"), any())
+
         javalinServer.registerEndpoint(Endpoint(HTTPMethod.POST, "/url", webHandler))
         verify(javalinMock).post(eq("/url"), any())
+
+        javalinServer.registerEndpoint(Endpoint(HTTPMethod.POST, "/foo", webHandler, true))
+        verify(javalinMock).post(eq("/api/1.2/foo"), any())
     }
 
     @Test
