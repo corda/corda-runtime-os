@@ -22,6 +22,7 @@ import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.libs.scheduler.datamodel.SchedulerEntities
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
+import net.corda.libs.virtualnode.datamodel.repository.RequestsIdsRepositoryImpl
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -292,7 +293,11 @@ class DBProcessorImpl @Activate constructor(
         val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
         deduplicationTableCleanUpSubscription = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("asd", "virtual.node.deduplication.table.clean.up"),
-            DeduplicationTableCleanUpProcessor(),
+            DeduplicationTableCleanUpProcessor(
+                dbConnectionManager,
+                virtualNodeInfoReadService,
+                RequestsIdsRepositoryImpl()
+            ),
             messagingConfig,
             null
         ).also {
