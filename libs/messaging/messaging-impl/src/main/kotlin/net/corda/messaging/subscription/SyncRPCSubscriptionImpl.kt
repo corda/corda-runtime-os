@@ -21,13 +21,13 @@ import java.util.UUID
 /**
  * Implementation of a RPCSubscription
  *
- * This subscription will register and listen to an path that will be registered to
+ * This subscription will register and listen to an endpoint that will be registered to
  * the webserver on subscription start
  *
  *
  * @param REQUEST the request Type to be deserialized
  * @param RESPONSE the response Type to be serialized
- * @property rpcConfig the config object that contains path for the subscription to listen on
+ * @property rpcConfig the config object that contains endpoint for the subscription to listen on
  * @property processor processes incoming requests. Produces an output of RESPONSE.
  * @property lifecycleCoordinatorFactory
  * @property webServer webserver component
