@@ -438,15 +438,13 @@ fun ClusterInfo.allowClientCertificates(certificatePem: String, mgmHoldingId: St
         .first()
         .subjectX500Principal
 
+    val endpoint = "/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/mutual-tls/allowed-client-certificate-subjects/$subject"
     cluster {
         assertWithRetryIgnoringExceptions {
             timeout(15.seconds)
             interval(1.seconds)
             command {
-                put(
-                    "/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/mutual-tls/allowed-client-certificate-subjects/$subject",
-                    ""
-                )
+                put(endpoint,"")
             }
             condition { it.code == ResponseCode.OK.statusCode }
         }
