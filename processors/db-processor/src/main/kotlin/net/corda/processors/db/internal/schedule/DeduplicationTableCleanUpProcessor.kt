@@ -11,6 +11,7 @@ import net.corda.orm.utils.use
 import net.corda.utilities.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
+import java.time.Duration
 
 class DeduplicationTableCleanUpProcessor(
     private val dbConnectionManager: DbConnectionManager,
@@ -28,7 +29,8 @@ class DeduplicationTableCleanUpProcessor(
 
     override fun onNext(events: List<Record<String, ScheduledTaskTrigger>>): List<Record<*, *>> {
         // TODO Add metric/ count time around it
-        log.info("Cleaning up deduplication tables for all vnodes")
+        log.info("Cleaning up deduplication table for all vnodes")
+        val startTime = System.nanoTime()
         virtualNodeInfoReadService.getAll().forEach {
             log.debug { "Cleaning up deduplication table for vnode: ${it.holdingIdentity.shortHash}" }
             val emf = dbConnectionManager.createEntityManagerFactory(
@@ -49,8 +51,9 @@ class DeduplicationTableCleanUpProcessor(
                 }
             }
         }
-
-        log.info("Cleaning up deduplication tables for all vnodes COMPLETED")
+        val cleanUpTime = Duration.ofNanos(System.nanoTime() - startTime)
+        log.info("Cleaning up deduplication table for all vnodes COMPLETED in ${cleanUpTime.toMillis()} ms")
+        // TODO Fix the response
         return emptyList()
     }
 }
