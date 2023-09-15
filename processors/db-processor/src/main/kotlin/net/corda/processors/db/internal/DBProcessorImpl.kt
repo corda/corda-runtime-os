@@ -167,6 +167,7 @@ class DBProcessorImpl @Activate constructor(
         private const val REGISTRATION = "REGISTRATION"
         private const val CONFIG = "CONFIG"
 
+        private const val DEDUPLICATION_TABLE_MANAGED_RESOURCE = "DEDUPLICATION_TABLE"
         private const val DEDUPLICATION_TABLE_CLEAN_UP_GROUP = "deduplication.table.clean.up"
     }
 
@@ -282,8 +283,6 @@ class DBProcessorImpl @Activate constructor(
         coordinator.updateStatus(event.status)
     }
 
-    private var deduplicationTableCleanUpSubscription: Subscription<String, ScheduledTaskTrigger>? = null
-
     @Suppress("warnings")
     private fun onConfigChangedEvent(
         event: ConfigChangedEvent,
@@ -292,18 +291,19 @@ class DBProcessorImpl @Activate constructor(
         // Creates and starts the rest of the reconcilers
         reconcilers.onConfigChanged(event)
 
-        deduplicationTableCleanUpSubscription?.close()
         val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-        deduplicationTableCleanUpSubscription = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig(DEDUPLICATION_TABLE_CLEAN_UP_GROUP, VIRTUAL_NODE_DEDUPLICATION_TABLE_CLEAN_UP_TOPIC),
-            DeduplicationTableCleanUpProcessor(
-                dbConnectionManager,
-                virtualNodeInfoReadService,
-                RequestsIdsRepositoryImpl()
-            ),
-            messagingConfig,
-            null
-        ).also {
+        coordinator.createManagedResource(DEDUPLICATION_TABLE_MANAGED_RESOURCE) {
+            subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig(DEDUPLICATION_TABLE_CLEAN_UP_GROUP, VIRTUAL_NODE_DEDUPLICATION_TABLE_CLEAN_UP_TOPIC),
+                DeduplicationTableCleanUpProcessor(
+                    dbConnectionManager,
+                    virtualNodeInfoReadService,
+                    RequestsIdsRepositoryImpl()
+                ),
+                messagingConfig,
+                null
+            )
+        }.also {
             it.start()
         }
     }
