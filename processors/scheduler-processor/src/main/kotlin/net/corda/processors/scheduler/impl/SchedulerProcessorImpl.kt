@@ -20,6 +20,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.scheduler.SchedulerProcessor
+import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_DEDUPLICATION_TABLE_CLEAN_UP_TOPIC
 import net.corda.schema.configuration.BootConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -64,7 +65,7 @@ class SchedulerProcessorImpl @Activate constructor(
     // now just hardcoding schedulers here until CORE-16331 is picked up, when we should take this from config
     private val schedules = listOf<Schedule>(
         // example schedule, delete/replace when we have a real one, uncomment for testing
-        Schedule("clean-up-deduplication-table", 120, "virtual.node.deduplication.table.clean.up")
+        Schedule("clean-up-deduplication-table", 120, VIRTUAL_NODE_DEDUPLICATION_TABLE_CLEAN_UP_TOPIC)
 //        Schedule("say-hello", 60, "telephone"),
 //        Schedule("say-goodbye", 600, "telephone"),
     )

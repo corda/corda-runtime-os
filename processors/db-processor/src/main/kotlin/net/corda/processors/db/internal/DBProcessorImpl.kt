@@ -58,6 +58,7 @@ import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
 import net.corda.processors.db.internal.schedule.DeduplicationTableCleanUpProcessor
 import net.corda.reconciliation.ReconcilerFactory
+import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_DEDUPLICATION_TABLE_CLEAN_UP_TOPIC
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
@@ -292,7 +293,7 @@ class DBProcessorImpl @Activate constructor(
         deduplicationTableCleanUpSubscription?.close()
         val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
         deduplicationTableCleanUpSubscription = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("asd", "virtual.node.deduplication.table.clean.up"),
+            SubscriptionConfig("asd", VIRTUAL_NODE_DEDUPLICATION_TABLE_CLEAN_UP_TOPIC),
             DeduplicationTableCleanUpProcessor(
                 dbConnectionManager,
                 virtualNodeInfoReadService,
