@@ -80,7 +80,7 @@ class TransactionBackchainReceiverFlowV1Test {
      * requested.
      */
     @Test
-    fun `transaction will not be requested if it is present in the database`() {
+    fun `transaction will not be requested if it is present in the database and DB data will not be in the topological sort`() {
         whenever(utxoLedgerPersistenceService.findTransactionIdsWithStatuses(any(), any()))
             .thenReturn(listOf(TX_ID_1))
 
@@ -98,7 +98,9 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(retrievedTransaction2.referenceStateRefs).thenReturn(emptyList())
 
         assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_1, TX_ID_2)).complete())
-            .isEqualTo(listOf(TX_ID_2)) // TX_ID_1 is already present in the DB so should not be retrieved
+            // TX_ID_1 is already present in the DB so should not be retrieved and the transaction from the database
+            // should not be part of the topological sort output
+            .isEqualTo(listOf(TX_ID_2))
     }
 
     @Test

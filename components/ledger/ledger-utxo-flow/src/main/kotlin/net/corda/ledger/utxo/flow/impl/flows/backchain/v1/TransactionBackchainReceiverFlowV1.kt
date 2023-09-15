@@ -83,8 +83,13 @@ class TransactionBackchainReceiverFlowV1(
             ))
 
             // Remove the transaction from the "to retrieve" set if they are in our DB
-            transactionsToRetrieve.removeIf { existingTransactionsInDb.contains(it) }
+            transactionsToRetrieve.removeAll(existingTransactionsInDb)
             val batch = transactionsToRetrieve.take(batchSize)
+
+            if (batch.isEmpty()) {
+                log.trace { "Backchain batch is empty, will stop receiving transactions now." }
+                break
+            }
 
             log.trace {
                 "Backchain resolution of $initialTransactionIds - Requesting the content of transactions $batch from transaction backchain"
