@@ -24,7 +24,9 @@ const val CAT_TLS = "TLS"
 const val CAT_NOTARY = "NOTARY"
 const val TENANT_P2P = "p2p"
 const val CERT_USAGE_P2P = "p2p-tls"
+const val CERT_USAGE_SESSION = "p2p-session"
 const val CERT_ALIAS_P2P = "p2p-tls-cert"
+const val CERT_ALIAS_SESSION = "p2p-session-cert"
 const val DEFAULT_KEY_SCHEME = "CORDA.ECDSA.SECP256R1"
 const val DEFAULT_SIGNATURE_SPEC = "SHA256withECDSA"
 
@@ -52,7 +54,8 @@ fun ClusterInfo.onboardMember(
     x500Name: String,
     waitForApproval: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
-    certificateUploadedCallback: (String) -> Unit = {}
+    certificateUploadedCallback: (String) -> Unit = {},
+    useSessionCertificate: Boolean = false
 ): NetworkOnboardingMetadata {
     conditionallyUploadCpiSigningCertificate()
     conditionallyUploadCordaPackage(cpiName, cpb, groupPolicy)
@@ -60,6 +63,16 @@ fun ClusterInfo.onboardMember(
 
     addSoftHsmFor(holdingId, CAT_SESSION_INIT)
     val sessionKeyId = createKeyFor(holdingId, "$holdingId$CAT_SESSION_INIT", CAT_SESSION_INIT, DEFAULT_KEY_SCHEME)
+    var memberSessionCert: String? = null
+    if (useSessionCertificate) {
+        val memberSessionCsr = generateCsr(x500Name, sessionKeyId)
+        memberSessionCert = getCa().generateCert(memberSessionCsr)
+        val mgmSessionCertFile = File.createTempFile("${this.hashCode()}$CAT_SESSION_INIT", ".pem").also {
+            it.deleteOnExit()
+            it.writeBytes(memberSessionCert.toByteArray())
+        }
+        importCertificate(mgmSessionCertFile, CERT_USAGE_SESSION, "$CERT_ALIAS_SESSION-$holdingId")
+    }
 
     addSoftHsmFor(holdingId, CAT_LEDGER)
     val ledgerKeyId = createKeyFor(holdingId, "$holdingId$CAT_LEDGER", CAT_LEDGER, DEFAULT_KEY_SCHEME)
@@ -82,7 +95,11 @@ fun ClusterInfo.onboardMember(
         ledgerKeyId
     ) + (getAdditionalContext?.let { it(holdingId) } ?: emptyMap())
 
-    configureNetworkParticipant(holdingId, sessionKeyId)
+    if (memberSessionCert != null) {
+        configureNetworkParticipant(holdingId, sessionKeyId, memberSessionCert)
+    } else {
+        configureNetworkParticipant(holdingId, sessionKeyId)
+    }
 
     val registrationId = register(holdingId, registrationContext, waitForApproval)
 
@@ -151,12 +168,13 @@ fun ClusterInfo.onboardNotaryMember(
  */
 fun ClusterInfo.configureNetworkParticipant(
     holdingId: String,
-    sessionKeyId: String
+    sessionKeyId: String,
+    sessionKeyCert: String? = null
 ) {
     return cluster {
         assertWithRetryIgnoringExceptions {
             interval(1.seconds)
-            command { configureNetworkParticipant(holdingId, sessionKeyId) }
+            command { configureNetworkParticipant(holdingId, sessionKeyId, sessionKeyCert) }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
             failMessage("Failed to configure member '$holdingId' as a network participant")
         }

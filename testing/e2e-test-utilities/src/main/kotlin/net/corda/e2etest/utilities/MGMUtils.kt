@@ -32,6 +32,16 @@ fun ClusterInfo.onboardMgm(
     val sessionKeyId = createKeyFor(
         mgmHoldingId, "$mgmHoldingId$CAT_SESSION_INIT", CAT_SESSION_INIT, DEFAULT_KEY_SCHEME
     )
+    var mgmSessionCert: String? = null
+    if (groupPolicyConfig.sessionPkiMode == "Standard") {
+        val mgmSessionCsr = generateCsr(mgmName, sessionKeyId)
+        mgmSessionCert = getCa().generateCert(mgmSessionCsr)
+        val mgmSessionCertFile = File.createTempFile("${this.hashCode()}$CAT_SESSION_INIT", ".pem").also {
+            it.deleteOnExit()
+            it.writeBytes(mgmSessionCert.toByteArray())
+        }
+        importCertificate(mgmSessionCertFile, CERT_USAGE_SESSION, "$CERT_ALIAS_SESSION-$mgmHoldingId")
+    }
 
     addSoftHsmFor(mgmHoldingId, CAT_PRE_AUTH)
     val ecdhKeyId = createKeyFor(
@@ -56,7 +66,11 @@ fun ClusterInfo.onboardMgm(
         importCertificate(mgmTlsCert, CERT_USAGE_P2P, CERT_ALIAS_P2P)
     }
     val registrationId = register(mgmHoldingId, registrationContext, waitForApproval = true)
-    configureNetworkParticipant(mgmHoldingId, sessionKeyId)
+    if (mgmSessionCert != null) {
+        configureNetworkParticipant(mgmHoldingId, sessionKeyId, mgmSessionCert)
+    } else {
+        configureNetworkParticipant(mgmHoldingId, sessionKeyId)
+    }
 
     return NetworkOnboardingMetadata(mgmHoldingId, mgmName, registrationId, registrationContext, this)
 }

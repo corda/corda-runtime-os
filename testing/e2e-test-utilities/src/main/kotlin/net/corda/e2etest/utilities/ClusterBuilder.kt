@@ -571,11 +571,11 @@ class ClusterBuilder {
 
     fun configureNetworkParticipant(
         holdingIdentityShortHash: String,
-        sessionKeyId: String
-    ) =
-        put(
-            "/api/$REST_API_VERSION_PATH/network/setup/$holdingIdentityShortHash",
-            body = """
+        sessionKeyId: String,
+        sessionKeyCertAlias: String? = null
+    ): SimpleResponse {
+        val body = if (sessionKeyCertAlias == null) {
+            """
                 {
                     "p2pTlsCertificateChainAlias": "$CERT_ALIAS_P2P",
                     "useClusterLevelTlsCertificateAndKey": true,
@@ -585,7 +585,25 @@ class ClusterBuilder {
                     }]
                 }
             """.trimIndent()
+        } else {
+            """
+                {
+                    "p2pTlsCertificateChainAlias": "$CERT_ALIAS_P2P",
+                    "useClusterLevelTlsCertificateAndKey": true,
+                    "sessionKeysAndCertificates": [{
+                      "preferred": true,
+                      "sessionKeyId": "$sessionKeyId",
+                      "sessionCertificateChainAlias": "$sessionKeyCertAlias"
+                    }]
+                }
+            """.trimIndent()
+        }
+        return put(
+            "/api/$REST_API_VERSION_PATH/network/setup/$holdingIdentityShortHash",
+            body = body
         )
+    }
+
 }
 
 fun <T> cluster(
