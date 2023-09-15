@@ -4,19 +4,19 @@ import io.javalin.Javalin
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
 import net.corda.web.api.WebHandler
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import java.lang.reflect.Field
 
@@ -34,7 +34,7 @@ class JavalinServerTest {
     private val port = 8888
     private val webHandler = WebHandler { context -> context }
     private val infoProviderMock = mock<PlatformInfoProvider> {
-        on { localWorkerSoftwareVersion } doReturn ("1.2.3.4")
+        on { localWorkerSoftwareShortVersion } doReturn ("1.2")
     }
 
     @BeforeEach
@@ -67,25 +67,8 @@ class JavalinServerTest {
     }
 
     @Test
-    fun `registering an endpoint with improper endpoint string throws`() {
-        javalinServer.start(port)
-
-        assertThrows<CordaRuntimeException> {
-            javalinServer.registerEndpoint(Endpoint(HTTPMethod.GET, "", webHandler))
-        }
-        assertThrows<CordaRuntimeException> {
-            javalinServer.registerEndpoint(Endpoint(HTTPMethod.GET, "noslash", webHandler))
-        }
-        assertThrows<CordaRuntimeException> {
-            javalinServer.registerEndpoint(Endpoint(HTTPMethod.GET, "not a url", webHandler))
-        }
-        assertDoesNotThrow {
-            javalinServer.registerEndpoint(Endpoint(HTTPMethod.GET, "/url", webHandler))
-        }
-    }
-
-    @Test
     fun `registering an endpoint should call the correct method on javalin`() {
+        // start server so endpoints register immediately
         javalinServer.start(port)
 
         javalinServer.registerEndpoint(Endpoint(HTTPMethod.GET, "/url", webHandler))
@@ -102,6 +85,20 @@ class JavalinServerTest {
     }
 
     @Test
+    fun `register endpoints when the server is started `() {
+        val endpoint = Endpoint(HTTPMethod.GET, "/url", webHandler)
+        javalinServer.registerEndpoint(endpoint)
+        //check it hasn't been registered yet
+        verify(javalinMock, never()).get(eq("/url"), any())
+        // but it's in the collection
+        assertThat(javalinServer.endpoints).contains(endpoint)
+
+        javalinServer.start(port)
+        // now it is
+        verify(javalinMock).get(eq("/url"), any())
+    }
+
+    @Test
     fun `registering an endpoint add it to the endpoints list`() {
         javalinServer.start(port)
         val getEndpoint = Endpoint(HTTPMethod.GET, "/url1", webHandler)
@@ -110,11 +107,9 @@ class JavalinServerTest {
         javalinServer.registerEndpoint(getEndpoint)
         javalinServer.registerEndpoint(postEndpoint)
 
-        val endpoints = listCast(endpointsField.get(javalinServer) as MutableList<*>)
-
-        assertEquals(2, endpoints.size)
-        assertEquals(getEndpoint, endpoints[0])
-        assertEquals(postEndpoint, endpoints[1])
+        assertEquals(2, javalinServer.endpoints.size)
+        assertEquals(getEndpoint, javalinServer.endpoints[0])
+        assertEquals(postEndpoint, javalinServer.endpoints[1])
     }
 
     @Test
@@ -132,13 +127,8 @@ class JavalinServerTest {
         verify(javalinMock).stop()
         verify(javalinMock).start(port)
 
-        val endpoints = listCast(endpointsField.get(javalinServer) as MutableList<*>)
+        val endpoints = javalinServer.endpoints
         assertEquals(1, endpoints.size)
         assertEquals(postEndpoint, endpoints[0])
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun listCast(inputList: MutableList<*>): MutableList<Endpoint> {
-        return inputList as? MutableList<Endpoint> ?: mutableListOf()
     }
 }

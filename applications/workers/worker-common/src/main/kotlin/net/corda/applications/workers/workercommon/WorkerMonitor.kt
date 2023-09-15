@@ -1,7 +1,7 @@
 package net.corda.applications.workers.workercommon
 
 /**
- * Exposes an HTTP path to report health, status and metrics for the worker.
+ * Exposes an HTTP endpoint to report health, status and metrics for the worker.
  *
  * A worker indicates its healthiness/readiness by returning a 200 code for HTTP requests to
  * `HTTP_HEALTH_ROUTE`/`HTTP_READINESS_ROUTE`.

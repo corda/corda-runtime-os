@@ -33,7 +33,9 @@ import net.corda.utilities.minutes
 import net.corda.utilities.seconds
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.fail
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
@@ -182,7 +184,7 @@ fun E2eCluster.createVirtualNode(
 
             assertNotEquals("", requestId, "Create VNode did not return a request ID")
 
-            // Block until virtual node is created and available from the REST path
+            // Block until virtual node is created and available from the REST endpoint
             eventually(timeout) {
                 val operationStatus = proxy.getVirtualNodeOperationStatus(requestId)
                 assertEquals(SUCCEEDED, operationStatus.status)
@@ -292,8 +294,8 @@ fun E2eCluster.register(
                     assertThat(registrationStatus.registrationStatus)
                         .withFailMessage {
                             "${member.name} failed to get to approved registration state. " +
-                                "Last state was ${registrationStatus.registrationStatus}. " +
-                                "Registration ID was $registrationId"
+                                    "Last state was ${registrationStatus.registrationStatus}. " +
+                                    "Registration ID was $registrationId"
                         }
                         .isEqualTo(RegistrationStatus.APPROVED)
                 }
@@ -466,7 +468,7 @@ fun E2eCluster.onboardMembers(
         )
 
         // Check registration complete.
-        // Eventually we can use the registration status path.
+        // Eventually we can use the registration status endpoint.
         // For now just assert we have received our own member data.
         assertMemberInMemberList(
             member.holdingId,
@@ -564,7 +566,7 @@ fun E2eCluster.onboardStaticMembers(groupPolicy: ByteArray, tempDir: Path) {
         )
 
         // Check registration complete.
-        // Eventually we can use the registration status path.
+        // Eventually we can use the registration status endpoint.
         // For now just assert we have received our own member data.
         assertMemberInMemberList(
             member.holdingId,

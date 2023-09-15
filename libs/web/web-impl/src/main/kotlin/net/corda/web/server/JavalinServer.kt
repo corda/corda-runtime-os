@@ -16,6 +16,7 @@ import org.osgi.framework.wiring.BundleWiring
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 
@@ -23,7 +24,7 @@ import org.slf4j.LoggerFactory
 class JavalinServer(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val javalinFactory: () -> Javalin,
-    private val platformInfoProvider: PlatformInfoProvider,
+    platformInfoProvider: PlatformInfoProvider,
 ) : WebServer {
     @Activate
     constructor(
@@ -34,14 +35,14 @@ class JavalinServer(
     ) : this(coordinatorFactory, { Javalin.create() }, platformInfoProvider)
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val apiPathPrefix: String = "/api/${platformInfoProvider
-        .localWorkerSoftwareVersion.split(".").take(2).joinToString(".")}"
+    private val apiPathPrefix: String = "/api/${platformInfoProvider.localWorkerSoftwareShortVersion}"
     private var server: Javalin? = null
     private val coordinator = coordinatorFactory.createCoordinator<WebServer> { _, _ -> }
-    private val endpoints: MutableList<Endpoint> = mutableListOf()
+
+    override val endpoints: MutableList<Endpoint> = mutableListOf()
 
     override fun start(port: Int) {
         check(null == server) { "The Javalin webserver is already initialized" }
@@ -117,7 +118,6 @@ class JavalinServer(
 
     private fun registerEndpointInternal(endpoint: Endpoint) {
         checkNotNull(server) { "The Javalin webserver has not been initialized" }
-        endpoint.validate()
         val path = if (endpoint.isApi) apiPathPrefix + endpoint.path else endpoint.path
         when (endpoint.methodType) {
             HTTPMethod.GET -> server?.get(path) { endpoint.webHandler.handle(JavalinContext(it)) }
