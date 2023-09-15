@@ -13,6 +13,8 @@ import java.net.URLEncoder.encode
 import java.nio.charset.Charset.defaultCharset
 import java.time.Duration
 import net.corda.rest.annotations.RestApiVersion
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 
@@ -34,7 +36,7 @@ fun ClusterInfo.onboardMgm(
     )
     var mgmSessionCert: String? = null
     if (groupPolicyConfig.sessionPkiMode == "Standard") {
-        val mgmSessionCsr = generateCsr(mgmName, sessionKeyId)
+        val mgmSessionCsr = generateCsr(mgmName, sessionKeyId, mgmHoldingId)
         mgmSessionCert = getCa().generateCert(mgmSessionCsr)
         val mgmSessionCertFile = File.createTempFile("${this.hashCode()}$CAT_SESSION_INIT", ".pem").also {
             it.deleteOnExit()
@@ -451,7 +453,8 @@ fun ClusterInfo.allowClientCertificates(certificatePem: String, mgmHoldingId: St
         .first()
         .subjectX500Principal
 
-    val endpoint = "/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/mutual-tls/allowed-client-certificate-subjects/$subject"
+    val encodedSubject = encode(subject.toString(), StandardCharsets.UTF_8)
+    val endpoint = "/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/mutual-tls/allowed-client-certificate-subjects/$encodedSubject"
     cluster {
         assertWithRetryIgnoringExceptions {
             timeout(15.seconds)
@@ -459,7 +462,7 @@ fun ClusterInfo.allowClientCertificates(certificatePem: String, mgmHoldingId: St
             command {
                 put(endpoint,"")
             }
-            condition { it.code == ResponseCode.OK.statusCode }
+            condition { it.code == ResponseCode.NO_CONTENT.statusCode }
         }
     }
 }

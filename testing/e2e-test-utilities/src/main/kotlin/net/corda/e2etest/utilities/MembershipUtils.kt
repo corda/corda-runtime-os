@@ -65,7 +65,7 @@ fun ClusterInfo.onboardMember(
     val sessionKeyId = createKeyFor(holdingId, "$holdingId$CAT_SESSION_INIT", CAT_SESSION_INIT, DEFAULT_KEY_SCHEME)
     var memberSessionCert: String? = null
     if (useSessionCertificate) {
-        val memberSessionCsr = generateCsr(x500Name, sessionKeyId)
+        val memberSessionCsr = generateCsr(x500Name, sessionKeyId, holdingId)
         memberSessionCert = getCa().generateCert(memberSessionCsr)
         val mgmSessionCertFile = File.createTempFile("${this.hashCode()}$CAT_SESSION_INIT", ".pem").also {
             it.deleteOnExit()
