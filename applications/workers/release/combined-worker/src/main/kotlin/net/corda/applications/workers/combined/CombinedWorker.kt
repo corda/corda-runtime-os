@@ -139,8 +139,7 @@ class CombinedWorker @Activate constructor(
             listOf(
                 createConfigFromParams(BootConfig.BOOT_DB, params.databaseParams),
                 createConfigFromParams(BootConfig.BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId)),
-                createConfigFromParams(BootConfig.BOOT_REST, params.restParams),
-                createConfigFromParams(BootConfig.BOOT_STATE_MANAGER, params.defaultParams.stateManagerParams),
+                createConfigFromParams(BootConfig.BOOT_REST, params.restParams)
             )
         )
 

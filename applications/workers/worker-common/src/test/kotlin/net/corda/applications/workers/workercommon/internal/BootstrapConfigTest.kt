@@ -81,13 +81,7 @@ class BootstrapConfigTest {
                 it.configFiles =
                     listOf(Path.of(this::class.java.classLoader.getResource("example-config.json")!!.toURI()))
             },
-            mockConfigurationValidator,
-            listOf(
-                ConfigFactory.empty(),
-                ConfigFactory.empty(),
-                ConfigFactory.empty(),
-                ConfigFactory.empty(),
-            )
+            mockConfigurationValidator
         )
 
         assertSoftly { softly ->
@@ -118,15 +112,32 @@ class BootstrapConfigTest {
 
             softly.assertThat(config.hasPath("secrets")).isFalse
 
-            softly.assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_TYPE))
-                .isEqualTo("DATABASE")
-            softly.assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_JDBC_URL))
-                .isEqualTo("cnx-url")
-            softly.assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_DB_USER))
-                .isEqualTo("cnx-user")
-            softly.assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_DB_PASS))
-                .isEqualTo("cnx-password")
+            softly.assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_TYPE)).isEqualTo("DATABASE")
+            softly.assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_JDBC_URL)).isEqualTo("cnx-url")
+            softly.assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_DB_USER)).isEqualTo("cnx-user")
+            softly.assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_DB_PASS)).isEqualTo("cnx-password")
         }
+    }
+
+    @Test
+    fun `state manager config can be provided in default worker params and put into boot config`() {
+        val config = WorkerHelpers.getBootstrapConfig(
+            mockSecretsServiceFactoryResolver,
+            DefaultWorkerParams(1234).also {
+                it.stateManagerParams = mapOf(
+                    "database.user" to "user123",
+                    "database.pass" to "pass123",
+                )
+                it.secrets = mapOf(
+                    "salt" to "foo",
+                    "passphrase" to "bar",
+                )
+            },
+            mockConfigurationValidator
+        )
+
+        assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_DB_USER)).isEqualTo("user123")
+        assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_DB_PASS)).isEqualTo("pass123")
     }
 
     @Test
@@ -134,13 +145,7 @@ class BootstrapConfigTest {
         val config = WorkerHelpers.getBootstrapConfig(
             mockSecretsServiceFactoryResolver,
             defaultWorkerParams,
-            mockConfigurationValidator,
-            listOf(
-                ConfigFactory.empty(),
-                ConfigFactory.empty(),
-                ConfigFactory.empty(),
-                ConfigFactory.empty(),
-            )
+            mockConfigurationValidator
         )
 
         assertSoftly { softly ->
@@ -154,7 +159,7 @@ class BootstrapConfigTest {
     }
 
     @Test
-    fun `get bootstrap config overrides built config with extra config list provided`() {
+    fun `extra configs provided override other config that may clash`() {
         val config = WorkerHelpers.getBootstrapConfig(
             mockSecretsServiceFactoryResolver,
             defaultWorkerParams,

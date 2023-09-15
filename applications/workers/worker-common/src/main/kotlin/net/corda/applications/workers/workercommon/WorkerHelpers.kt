@@ -144,7 +144,9 @@ class WorkerHelpers {
             val secretsConfig =
                 defaultParams.secrets.mapKeys { (key, _) -> "${BootConfig.BOOT_SECRETS}.${key.trim()}" }
 
-            val builtConfig = ConfigFactory.parseMap(messagingParams + defaultParamsMap + secretsConfig)
+            val stateManagerConfig = defaultParams.stateManagerParams.mapKeys { (key, _) -> "${BootConfig.BOOT_STATE_MANAGER}.${key.trim()}" }
+
+            val builtConfig = ConfigFactory.parseMap(messagingParams + defaultParamsMap + secretsConfig + stateManagerConfig)
 
             val config = extraConfigs.mergeOver(builtConfig)
 
