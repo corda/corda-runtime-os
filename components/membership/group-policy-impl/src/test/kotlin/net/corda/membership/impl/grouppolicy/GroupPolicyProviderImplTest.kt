@@ -8,6 +8,7 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedData
+import net.corda.interop.group.policy.read.InteropGroupPolicyReadService
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -36,7 +37,6 @@ import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.grouppolicy.InteropGroupPolicy
-import net.corda.membership.lib.grouppolicy.InteropGroupPolicyReader
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult

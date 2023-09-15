@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.interop.group.policy.read.InteropGroupPolicyReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -22,7 +23,6 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
-import net.corda.membership.lib.grouppolicy.InteropGroupPolicyReader
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
