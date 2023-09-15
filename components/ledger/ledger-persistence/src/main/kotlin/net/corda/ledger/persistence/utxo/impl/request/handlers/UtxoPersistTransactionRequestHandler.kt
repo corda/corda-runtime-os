@@ -15,8 +15,6 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
-import net.corda.v5.ledger.utxo.observer.UtxoTokenTransactionStateObserver
-import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 
