@@ -33,12 +33,12 @@ class EndpointInfoConverterTest {
     fun `converting EndpointInfo should work for single element`() {
         val memberContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
             sortedMapOf(
-                "corda.endpoint.connectionURL" to endpoint.url,
-                "corda.endpoint.protocolVersion" to endpoint.protocolVersion.toString()
+                "corda.path.connectionURL" to endpoint.url,
+                "corda.path.protocolVersion" to endpoint.protocolVersion.toString()
             ),
             converters
         )
-        with(memberContext.parse<EndpointInfo>("corda.endpoint")) {
+        with(memberContext.parse<EndpointInfo>("corda.path")) {
             assertEquals(endpoint.url, this.url)
             assertEquals(endpoint.protocolVersion, this.protocolVersion)
         }
@@ -63,11 +63,11 @@ class EndpointInfoConverterTest {
     fun `converting EndpointInfo fails when one of the keys is null`() {
         val memberContext = LayeredPropertyMapMocks.create<MemberContextImpl>(
             sortedMapOf(
-                "corda.endpoint.connectionURL" to endpoint.url,
-                "corda.endpoint.protocolVersion" to null
+                "corda.path.connectionURL" to endpoint.url,
+                "corda.path.protocolVersion" to null
             ),
             converters
         )
-        assertFailsWith<ValueNotFoundException> { memberContext.parse<EndpointInfo>("corda.endpoint") }
+        assertFailsWith<ValueNotFoundException> { memberContext.parse<EndpointInfo>("corda.path") }
     }
 }

@@ -60,7 +60,7 @@ abstract class ClusterInfo {
 }
 
 /**
- * Data class for data relevant to the REST endpoint information of the E2E test cluster.
+ * Data class for data relevant to the REST path information of the E2E test cluster.
  */
 data class RestEndpointInfo(
     val host: String,
@@ -72,7 +72,7 @@ data class RestEndpointInfo(
 }
 
 /**
- * Data class for data relevant to the P2P endpoint information of the E2E test cluster.
+ * Data class for data relevant to the P2P path information of the E2E test cluster.
  */
 data class P2PEndpointInfo(
     val host: String,

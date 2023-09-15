@@ -138,7 +138,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     fun `test escaped string serialization with api taking object`() {
         val response = client.call(
             POST, WebRequest<Any>(
-                "objects-in-json-endpoint/create-with-one-object",
+                "objects-in-json-path/create-with-one-object",
                 stringEscapedObjectPayload
             ),
             userName, password
@@ -151,7 +151,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     fun `test real json object serialization with api taking object`() {
         val response = client.call(
             POST, WebRequest<Any>(
-                "objects-in-json-endpoint/create-with-one-object",
+                "objects-in-json-path/create-with-one-object",
                 realJsonObjectPayload
             ),
             userName, password
@@ -164,7 +164,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     fun `test escaped string serialization with api taking individual parameters`() {
         val response = client.call(
             POST, WebRequest<Any>(
-                "objects-in-json-endpoint/create-with-individual-params",
+                "objects-in-json-path/create-with-individual-params",
                 stringEscapedObjectPayload
             ),
             userName, password
@@ -177,7 +177,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     fun `test real json object serialization with api taking individual parameters`() {
         val response = client.call(
             POST, WebRequest<Any>(
-                "objects-in-json-endpoint/create-with-individual-params",
+                "objects-in-json-path/create-with-individual-params",
                 realJsonObjectPayload
             ),
             userName, password
@@ -190,7 +190,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     fun `test real json map serialization with api taking object`() {
         val response = client.call(
             POST, WebRequest<Any>(
-                "objects-in-json-endpoint/create-with-one-object",
+                "objects-in-json-path/create-with-one-object",
                 realJsonMap
             ),
             userName, password
@@ -203,7 +203,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     fun `test real json map serialization with api taking single parameters`() {
         val response = client.call(
             POST, WebRequest<Any>(
-                "objects-in-json-endpoint/create-with-individual-params",
+                "objects-in-json-path/create-with-individual-params",
                 realJsonMap
             ),
             userName, password
@@ -216,7 +216,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     fun `test string escaped map serialization with api taking object`() {
         val response = client.call(
             POST, WebRequest<Any>(
-                "objects-in-json-endpoint/create-with-one-object",
+                "objects-in-json-path/create-with-one-object",
                 stringEscapedMapPayload
             ),
             userName, password
@@ -229,7 +229,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     fun `test string escaped map serialization with api taking single parameters`() {
         val response = client.call(
             POST, WebRequest<Any>(
-                "objects-in-json-endpoint/create-with-individual-params",
+                "objects-in-json-path/create-with-individual-params",
                 stringEscapedMapPayload
             ),
             userName, password
@@ -242,7 +242,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     fun `test string escaped array serialization with api taking object`() {
         val response = client.call(
             POST, WebRequest<Any>(
-                "objects-in-json-endpoint/create-with-one-object",
+                "objects-in-json-path/create-with-one-object",
                 stringEscapedArrayPayload
             ),
             userName, password
@@ -255,7 +255,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     fun `test string escaped array serialization with api taking single parameters`() {
         val response = client.call(
             POST, WebRequest<Any>(
-                "objects-in-json-endpoint/create-with-individual-params",
+                "objects-in-json-path/create-with-individual-params",
                 stringEscapedArrayPayload
             ),
             userName, password
@@ -268,7 +268,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     fun `test real json array serialization with api taking object`() {
         val response = client.call(
             POST, WebRequest<Any>(
-                "objects-in-json-endpoint/create-with-one-object",
+                "objects-in-json-path/create-with-one-object",
                 realJsonArrayPayload
             ),
             userName, password
@@ -281,7 +281,7 @@ class RestServerJsonObjectTest : RestServerTestBase() {
     fun `test real json array serialization with api taking single parameters`() {
         val response = client.call(
             POST, WebRequest<Any>(
-                "objects-in-json-endpoint/create-with-individual-params",
+                "objects-in-json-path/create-with-individual-params",
                 realJsonArrayPayload
             ),
             userName, password

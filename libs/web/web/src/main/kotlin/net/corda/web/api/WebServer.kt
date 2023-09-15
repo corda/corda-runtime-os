@@ -24,15 +24,15 @@ interface WebServer{
     fun stop()
 
     /**
-     * Register an endpoint
+     * Register an path
      *
      * @param endpoint The Endpoint to be registered on the webserver, containing a handler to be ran when
-     * the endpoint is hit
+     * the path is hit
      */
     fun registerEndpoint(endpoint: Endpoint)
 
     /**
-     * Remove an endpoint
+     * Remove an path
      *
      * @param endpoint The Endpoint to be removed from the webserver, meaning it will no longer be reachable
      */

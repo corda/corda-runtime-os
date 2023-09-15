@@ -1413,7 +1413,7 @@ class DynamicMemberRegistrationServiceTest {
             val exception = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, newContext.toMap())
             }
-            assertThat(exception).hasMessageContaining("endpoint URL")
+            assertThat(exception).hasMessageContaining("path URL")
         }
     }
 

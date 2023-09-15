@@ -33,7 +33,7 @@ class UniquenessChecker {
     @Test
     fun `when call service with valid payload return idempotently`() {
         // TODO: construct path from constants (and add api/v5.1/ into it)
-        val url = "${System.getProperty("uniquenessWorkerHealthHttp")}uniqueness-checker"
+        val url = "${System.getProperty("uniquenessWorkerHealthHttp")}api/5.1/uniqueness-checker"
         // TODO: populate with real/useful data
         val serializedPayload = avroSerializer.serialize(createPayload())
 

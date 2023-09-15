@@ -265,7 +265,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             // HACK for testing only
             outputRecords.firstOrNull { it.topic == Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC }?.also { record ->
                 // call HTTP RPC service for testing
-                val url = "http://localhost:7004/uniqueness-checker"
+                val url = "http://localhost:7004/api/5.1/uniqueness-checker"
                 log.info("Posting ${record.value} to $url")
                 try {
                     val payload = record.value?.run { avroSerializer.serialize(record.value!!) }

@@ -459,7 +459,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
             )
         }
 
-        with(openAPI.paths["/objects-in-json-endpoint/create-with-one-object"]) {
+        with(openAPI.paths["/objects-in-json-path/create-with-one-object"]) {
             assertNotNull(this)
             val requestSchema = post.requestBody.content["application/json"]!!.schema
             assertEquals("#/components/schemas/RequestWithJsonObject", requestSchema.`$ref`)
@@ -474,7 +474,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
             assertJsonObject(jsonObject)
         }
 
-        with(openAPI.paths["/objects-in-json-endpoint/create-with-individual-params"]) {
+        with(openAPI.paths["/objects-in-json-path/create-with-individual-params"]) {
             assertNotNull(this)
             val requestSchema = post.requestBody.content["application/json"]!!.schema
             assertEquals("#/components/schemas/CreateWithIndividualParamsWrapperRequest", requestSchema.`$ref`)
@@ -489,7 +489,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
             assertJsonObject(jsonObject)
         }
 
-        with(openAPI.paths["/objects-in-json-endpoint/nullable-json-object-in-request"]) {
+        with(openAPI.paths["/objects-in-json-path/nullable-json-object-in-request"]) {
             assertNotNull(this)
             val requestSchema = post.requestBody.content["application/json"]!!.schema
             assertEquals("#/components/schemas/NullableJsonObjectInRequestWrapperRequest", requestSchema.`$ref`)

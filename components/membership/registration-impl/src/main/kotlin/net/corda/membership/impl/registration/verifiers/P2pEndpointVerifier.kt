@@ -11,12 +11,12 @@ internal class P2pEndpointVerifier(
             MemberInfoExtension.URL_KEY.format("[0-9]+").toRegex().matches(key)
         }
         urlEntries.map { it.key }.apply {
-            require(isNotEmpty()) { "No endpoint URL was provided." }
-            require(orderVerifier.isOrdered(this, 2)) { "Provided endpoint URLs are incorrectly numbered." }
+            require(isNotEmpty()) { "No path URL was provided." }
+            require(orderVerifier.isOrdered(this, 2)) { "Provided path URLs are incorrectly numbered." }
         }
         context.keys.filter { MemberInfoExtension.PROTOCOL_VERSION.format("[0-9]+").toRegex().matches(it) }.apply {
-            require(isNotEmpty()) { "No endpoint protocol was provided." }
-            require(orderVerifier.isOrdered(this, 2)) { "Provided endpoint protocols are incorrectly numbered." }
+            require(isNotEmpty()) { "No path protocol was provided." }
+            require(orderVerifier.isOrdered(this, 2)) { "Provided path protocols are incorrectly numbered." }
         }
         urlEntries.map { it.value }.forEach {
             verifyP2pUrl(it)
@@ -30,9 +30,9 @@ internal class P2pEndpointVerifier(
             throw IllegalArgumentException("Endpoint URL ('$url') is not a valid URL.")
         }
 
-        require(uri.scheme == "https") { "The scheme of the endpoint URL ('$url') was not https." }
-        require(uri.host != null) { "The host of the endpoint URL ('$url') was not specified or had an invalid value." }
-        require(uri.port > 0) { "The port of the endpoint URL ('$url') was not specified or had an invalid value." }
+        require(uri.scheme == "https") { "The scheme of the path URL ('$url') was not https." }
+        require(uri.host != null) { "The host of the path URL ('$url') was not specified or had an invalid value." }
+        require(uri.port > 0) { "The port of the path URL ('$url') was not specified or had an invalid value." }
         require(uri.userInfo == null) { "Endpoint URL ('$url') had user info specified, which must not be specified." }
     }
 }

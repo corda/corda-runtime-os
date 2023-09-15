@@ -1,6 +1,7 @@
 package net.corda.web.server
 
 import io.javalin.Javalin
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
@@ -21,18 +22,23 @@ import org.slf4j.LoggerFactory
 @Component(service = [WebServer::class])
 class JavalinServer(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val javalinFactory: () -> Javalin
+    private val javalinFactory: () -> Javalin,
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : WebServer {
     @Activate
     constructor(
         @Reference(service = LifecycleCoordinatorFactory::class)
-        coordinatorFactory: LifecycleCoordinatorFactory
-    ) : this(coordinatorFactory, { Javalin.create() })
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        @Reference(service = PlatformInfoProvider::class)
+        platformInfoProvider: PlatformInfoProvider,
+    ) : this(coordinatorFactory, { Javalin.create() }, platformInfoProvider)
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    private val apiPathPrefix: String = "/api/${platformInfoProvider
+        .localWorkerSoftwareVersion.split(".").take(2).joinToString(".")}"
     private var server: Javalin? = null
     private val coordinator = coordinatorFactory.createCoordinator<WebServer> { _, _ -> }
     private val endpoints: MutableList<Endpoint> = mutableListOf()
@@ -94,27 +100,28 @@ class JavalinServer(
     override fun registerEndpoint(endpoint: Endpoint) {
         // register immediately when the server has been started
         if(null != server) registerEndpointInternal(endpoint)
-        // record the endpoint in case we need to register when it's already started
+        // record the path in case we need to register when it's already started
         endpoints.add(endpoint)
     }
 
     override fun removeEndpoint(endpoint: Endpoint) {
         if(null != server) endpoints.remove(endpoint)
         // NOTE:
-        //  The server needs to be restarted to un-register the endpoint. However, this means everything dependent on
+        //  The server needs to be restarted to un-register the path. However, this means everything dependent on
         //  this is impacted by a restart, which doesn't feel quite right.
         //  This also means we can't really DOWN/UP the lifecycle status of this because this would end up in a
         //  relentless yoyo-ing of this component as dependent components keen calling this function.
-        // TODO - review if it is really needed to de-register an endpoint when a Subscription goes down, for example.
+        // TODO - review if it is really needed to de-register an path when a Subscription goes down, for example.
         restartServer()
     }
 
     private fun registerEndpointInternal(endpoint: Endpoint) {
         checkNotNull(server) { "The Javalin webserver has not been initialized" }
         endpoint.validate()
+        val path = if (endpoint.isApi) apiPathPrefix + endpoint.path else endpoint.path
         when (endpoint.methodType) {
-            HTTPMethod.GET -> server?.get(endpoint.endpoint) { endpoint.webHandler.handle(JavalinContext(it)) }
-            HTTPMethod.POST -> server?.post(endpoint.endpoint) { endpoint.webHandler.handle(JavalinContext(it)) }
+            HTTPMethod.GET -> server?.get(path) { endpoint.webHandler.handle(JavalinContext(it)) }
+            HTTPMethod.POST -> server?.post(path) { endpoint.webHandler.handle(JavalinContext(it)) }
         }
     }
 

@@ -182,7 +182,7 @@ fun E2eCluster.createVirtualNode(
 
             assertNotEquals("", requestId, "Create VNode did not return a request ID")
 
-            // Block until virtual node is created and available from the REST endpoint
+            // Block until virtual node is created and available from the REST path
             eventually(timeout) {
                 val operationStatus = proxy.getVirtualNodeOperationStatus(requestId)
                 assertEquals(SUCCEEDED, operationStatus.status)
@@ -466,7 +466,7 @@ fun E2eCluster.onboardMembers(
         )
 
         // Check registration complete.
-        // Eventually we can use the registration status endpoint.
+        // Eventually we can use the registration status path.
         // For now just assert we have received our own member data.
         assertMemberInMemberList(
             member.holdingId,
@@ -564,7 +564,7 @@ fun E2eCluster.onboardStaticMembers(groupPolicy: ByteArray, tempDir: Path) {
         )
 
         // Check registration complete.
-        // Eventually we can use the registration status endpoint.
+        // Eventually we can use the registration status path.
         // For now just assert we have received our own member data.
         assertMemberInMemberList(
             member.holdingId,
