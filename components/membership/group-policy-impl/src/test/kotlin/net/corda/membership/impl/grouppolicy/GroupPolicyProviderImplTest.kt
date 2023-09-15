@@ -221,8 +221,8 @@ class GroupPolicyProviderImplTest {
         on { registerComponentForUpdates(eq(coordinator), eq(configs)) } doReturn configHandle
     }
 
-    private val interopGroupPolicyReadService: InteropGroupPolicyReader = mock {
-        on { getGroupPolicy(eq(holdingIdentity6)) } doReturn interopGroupPolicy
+    private val interopGroupPolicyReadService: InteropGroupPolicyReadService = mock {
+        on { getGroupPolicy(eq(holdingIdentity6.groupId)) } doReturn interopGroupPolicy
     }
 
     private val subscriptionFactory: SubscriptionFactory = mock {

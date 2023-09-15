@@ -66,8 +66,8 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = MemberInfoFactory::class)
     private val memberInfoFactory: MemberInfoFactory,
-    @Reference(service = InteropGroupPolicyReader::class)
-    private val interopGroupPolicyReader: InteropGroupPolicyReader
+    @Reference(service = InteropGroupPolicyReadService::class)
+    private val interopGroupPolicyReadService: InteropGroupPolicyReadService
 ) : GroupPolicyProvider {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -106,7 +106,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     override fun getP2PParameters(holdingIdentity: HoldingIdentity) : GroupPolicy.P2PParameters? {
         val mgmGroupPolicy = getGroupPolicy(holdingIdentity)
         return if (mgmGroupPolicy == null) {
-            val groupPolicyJson = interopGroupPolicyReader.getGroupPolicy(holdingIdentity)
+            val groupPolicyJson = interopGroupPolicyReadService.getGroupPolicy(holdingIdentity.groupId)
             if (groupPolicyJson != null) {
                 groupPolicyParser.parseInteropGroupPolicy(groupPolicyJson).p2pParameters
             } else {
@@ -140,6 +140,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                         LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
                         LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                        LifecycleCoordinatorName.forComponent<InteropGroupPolicyReadService>(),
                     )
                 )
             }

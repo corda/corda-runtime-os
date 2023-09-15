@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.interop.group.policy.read.InteropGroupPolicyReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinator
@@ -60,7 +61,7 @@ class LinkManagerProcessorImpl @Activate constructor(
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
     @Reference(service = GroupParametersReaderService::class)
-    private val groupParametersReaderService: GroupParametersReaderService,
+    private val groupParametersReaderService: GroupParametersReaderService
 ) : LinkManagerProcessor {
 
     private companion object {
@@ -120,6 +121,7 @@ class LinkManagerProcessorImpl @Activate constructor(
                 registration = lifecycleCoordinator.followStatusChangesByName(
                     setOf(
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                        LifecycleCoordinatorName.forComponent<InteropGroupPolicyReadService>(),
                         linkManager.dominoTile.coordinatorName
                     )
                 )
