@@ -6,7 +6,6 @@ import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAuthority
 import net.corda.crypto.test.certificates.generation.KeysFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
-import net.corda.e2etest.utilities.config.SingleClusterTestConfigManager
 import net.corda.e2etest.utilities.config.TestConfigManager
 import net.corda.rest.ResponseCode
 import net.corda.rest.annotations.RestApiVersion
