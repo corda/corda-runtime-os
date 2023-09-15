@@ -71,23 +71,22 @@ class UtxoRepositoryImpl @Activate constructor(
         )
     }
 
-    override fun findTransactionIdsWithStatus(
+    override fun findTransactionIdsAndStatuses(
         entityManager: EntityManager,
-        transactionIds: List<String>,
-        statuses: List<String>
-    ): List<SecureHash> {
+        transactionIds: List<String>
+    ): Map<SecureHash, TransactionStatus> {
         return entityManager.createNativeQuery(
             """
-                SELECT id 
+                SELECT transaction_id, status, 
                 FROM {h-schema}utxo_transaction_status 
-                WHERE id IN (:transactionIds) 
-                AND status IN :(statuses)""",
+                WHERE transaction_id IN (:transactionIds)""",
             Tuple::class.java
         )
             .setParameter("transactionIds", transactionIds)
-            .setParameter("statuses", statuses)
             .resultListAsTuples()
-            .map { r -> parseSecureHash(r.get(0) as String) }
+            .associate {
+                    r -> parseSecureHash(r.get(0) as String) to TransactionStatus.valueOf(r.get(1) as String)
+            }
     }
 
     private fun findTransactionPrivacySalt(

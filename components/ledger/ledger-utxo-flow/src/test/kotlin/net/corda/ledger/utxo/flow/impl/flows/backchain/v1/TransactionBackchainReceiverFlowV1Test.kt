@@ -70,8 +70,8 @@ class TransactionBackchainReceiverFlowV1Test {
             on { getInt(BACKCHAIN_BATCH_CONFIG_PATH) } doReturn BACKCHAIN_BATCH_DEFAULT_SIZE
         }
         whenever(flowConfigService.getConfig(ConfigKeys.UTXO_LEDGER_CONFIG)).thenReturn(utxoConfig)
-        whenever(utxoLedgerPersistenceService.findTransactionIdsWithStatuses(any(), any()))
-            .thenReturn(emptyList())
+        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+            .thenReturn(emptyMap())
     }
 
     /**
@@ -81,8 +81,8 @@ class TransactionBackchainReceiverFlowV1Test {
      */
     @Test
     fun `transaction will not be requested if it is present in the database and DB data will not be in the topological sort`() {
-        whenever(utxoLedgerPersistenceService.findTransactionIdsWithStatuses(any(), any()))
-            .thenReturn(listOf(TX_ID_1))
+        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+            .thenReturn(mapOf(TX_ID_1 to UNVERIFIED))
 
         whenever(session.sendAndReceive(eq(List::class.java), eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_2))))).thenReturn(
             listOf(retrievedTransaction2)

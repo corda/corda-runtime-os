@@ -3,7 +3,7 @@ package net.corda.ledger.persistence.utxo.impl
 import net.corda.data.ledger.persistence.FindSignedGroupParameters
 import net.corda.data.ledger.persistence.FindSignedLedgerTransaction
 import net.corda.data.ledger.persistence.FindTransaction
-import net.corda.data.ledger.persistence.FindTransactionIds
+import net.corda.data.ledger.persistence.FindTransactionIdsAndStatuses
 import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
@@ -20,7 +20,7 @@ import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFacto
 import net.corda.ledger.persistence.query.execution.impl.VaultNamedQueryExecutorImpl
 import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoExecuteNamedQueryHandler
-import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionIdsRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionIdsAndStatusesRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedGroupParametersRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedLedgerTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionRequestHandler
@@ -157,8 +157,8 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     persistenceService
                 )
             }
-            is FindTransactionIds -> {
-                UtxoFindTransactionIdsRequestHandler(
+            is FindTransactionIdsAndStatuses -> {
+                UtxoFindTransactionIdsAndStatusesRequestHandler(
                     req,
                     externalEventContext,
                     persistenceService,

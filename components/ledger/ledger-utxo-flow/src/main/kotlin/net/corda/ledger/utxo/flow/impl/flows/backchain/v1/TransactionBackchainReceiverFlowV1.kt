@@ -76,11 +76,16 @@ class TransactionBackchainReceiverFlowV1(
         val existingTransactionsInDb = mutableSetOf<SecureHash>()
 
         while (transactionsToRetrieve.isNotEmpty()) {
-            existingTransactionsInDb.addAll(utxoLedgerPersistenceService.findTransactionIdsWithStatuses(
-                // Make sure we don't fetch the same transaction multiple times
-                (transactionsToRetrieve - existingTransactionsInDb),
-                listOf(UNVERIFIED, VERIFIED)
-            ))
+
+            // Fetch the existing transaction with Verified/Unverified status from the DB and store them
+            existingTransactionsInDb.addAll(
+                utxoLedgerPersistenceService.findTransactionIdsAndStatuses(
+                    // Make sure we don't fetch the same transaction multiple times
+                    (transactionsToRetrieve - existingTransactionsInDb)
+                ).filterValues {
+                    it == VERIFIED || it == UNVERIFIED
+                }.keys
+            )
 
             // Remove the transaction from the "to retrieve" set if they are in our DB
             transactionsToRetrieve.removeAll(existingTransactionsInDb)

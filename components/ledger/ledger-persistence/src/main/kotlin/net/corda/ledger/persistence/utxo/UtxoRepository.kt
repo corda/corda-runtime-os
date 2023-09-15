@@ -14,13 +14,11 @@ import javax.persistence.EntityManager
 @Suppress("TooManyFunctions")
 interface UtxoRepository {
 
-    /** Retrieves transaction IDs that have a status that is in the [statuses] list
-     * and its ID is included in the [transactionIds] list. */
-    fun findTransactionIdsWithStatus(
+    /** Retrieves transaction IDs and their statuses if its ID is included in the [transactionIds] list. */
+    fun findTransactionIdsAndStatuses(
         entityManager: EntityManager,
-        transactionIds: List<String>,
-        statuses: List<String>
-    ): List<SecureHash>
+        transactionIds: List<String>
+    ): Map<SecureHash, TransactionStatus>
 
     /** Retrieves transaction by [id] */
     fun findTransaction(

@@ -14,8 +14,8 @@ import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperat
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransaction
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransactionIfDoesNotExist
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.UpdateTransactionStatus
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsExternalEventFactory
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsParameters
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsAndStatusesExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsAndStatusesParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
@@ -87,20 +87,21 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun findTransactionIdsWithStatuses(ids: Collection<SecureHash>, statuses: List<TransactionStatus>): List<SecureHash> {
+    override fun findTransactionIdsAndStatuses(ids: Collection<SecureHash>): Map<SecureHash, TransactionStatus> {
         return recordSuspendable({ ledgerPersistenceFlowTimer(FindTransactionWithStatus) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
-                    FindTransactionIdsExternalEventFactory::class.java,
-                    FindTransactionIdsParameters(
-                        ids.map { it.toString() },
-                        statuses
+                    FindTransactionIdsAndStatusesExternalEventFactory::class.java,
+                    FindTransactionIdsAndStatusesParameters(
+                        ids.map { it.toString() }
                     )
                 )
             }
-        }.map {
-            parseSecureHash(serializationService.deserialize(it.array()))
-        }
+        }.firstOrNull()?.let {
+            serializationService.deserialize<Map<String, TransactionStatus>>(it.array()).mapKeys { entry ->
+                parseSecureHash(entry.key)
+            }
+        } ?: emptyMap()
     }
 
     @Suspendable
