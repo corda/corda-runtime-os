@@ -7,6 +7,7 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.interop.group.policy.read.InteropGroupPolicyReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
+import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -61,7 +62,9 @@ class LinkManagerProcessorImpl @Activate constructor(
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
     @Reference(service = GroupParametersReaderService::class)
-    private val groupParametersReaderService: GroupParametersReaderService
+    private val groupParametersReaderService: GroupParametersReaderService,
+    @Reference(service = InteropGroupPolicyReadService::class)
+    private val interopGroupPolicyReadService: InteropGroupPolicyReadService
 ) : LinkManagerProcessor {
 
     private companion object {
@@ -71,7 +74,12 @@ class LinkManagerProcessorImpl @Activate constructor(
     private var registration: RegistrationHandle? = null
     private var linkManager: LinkManager? = null
 
-    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<LinkManagerProcessorImpl>(::eventHandler)
+    private val dependentComponents = DependentComponents.of(
+        ::configurationReadService,
+        ::interopGroupPolicyReadService
+    )
+
+    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<LinkManagerProcessorImpl>(dependentComponents, ::eventHandler)
 
     override fun start(bootConfig: SmartConfig) {
         log.info("Link manager processor starting.")

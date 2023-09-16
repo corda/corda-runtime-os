@@ -45,15 +45,15 @@ dependencies {
     implementation project(":components:membership:membership-persistence-client")
     implementation project(":libs:metrics")
     implementation project(":libs:tracing")
-    implementation project(":components:interop:interop-group-policy-read-service")
-    implementation project(":components:interop:interop-group-policy-read-service-impl")
+//    implementation project(":components:interop:interop-group-policy-read-service")
+//    implementation project(":components:interop:interop-group-policy-read-service-impl")
 
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
-    runtimeOnly project(":components:interop:interop-group-policy-read-service")
-    runtimeOnly project(":components:interop:interop-group-policy-read-service-impl")
+//    runtimeOnly project(":components:interop:interop-group-policy-read-service")
+//    runtimeOnly project(":components:interop:interop-group-policy-read-service-impl")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":libs:utilities")
@@ -78,13 +78,13 @@ dependencies {
     testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     testImplementation project(":components:interop:interop-group-policy-read-service")
     testImplementation project(":components:interop:interop-group-policy-read-service-impl")
-    testRuntimeOnly project(":components:interop:interop-group-policy-read-service")
-    testRuntimeOnly project(":components:interop:interop-group-policy-read-service-impl")
+//    testRuntimeOnly project(":components:interop:interop-group-policy-read-service")
+//    testRuntimeOnly project(":components:interop:interop-group-policy-read-service-impl")
 
     integrationTestImplementation project(":components:gateway")
     integrationTestImplementation project(":testing:db-message-bus-testkit")
-    integrationTestImplementation project(":components:interop:interop-group-policy-read-service")
-    integrationTestImplementation project(":components:interop:interop-group-policy-read-service-impl")
+//    integrationTestImplementation project(":components:interop:interop-group-policy-read-service")
+//    integrationTestImplementation project(":components:interop:interop-group-policy-read-service-impl")
 
     nonOsgiIntegrationTestImplementation platform("net.corda:corda-api:$cordaApiVersion")
     nonOsgiIntegrationTestImplementation project(":components:configuration:configuration-read-service-impl")
@@ -100,13 +100,13 @@ dependencies {
     nonOsgiIntegrationTestImplementation project(':libs:schema-registry:schema-registry')
     nonOsgiIntegrationTestImplementation "net.corda:corda-avro-schema"
     nonOsgiIntegrationTestImplementation project(":libs:schema-registry:schema-registry-impl")
-    nonOsgiIntegrationTestImplementation project(":components:interop:interop-group-policy-read-service")
-    nonOsgiIntegrationTestImplementation project(":components:interop:interop-group-policy-read-service-impl")
+//    nonOsgiIntegrationTestImplementation project(":components:interop:interop-group-policy-read-service")
+//    nonOsgiIntegrationTestImplementation project(":components:interop:interop-group-policy-read-service-impl")
     nonOsgiIntegrationTestRuntimeOnly 'org.osgi:osgi.core'
 
     integrationTestImplementation project(":components:configuration:configuration-read-service-impl")
-    integrationTestImplementation project(":components:interop:interop-group-policy-read-service")
-    integrationTestImplementation project(":components:interop:interop-group-policy-read-service-impl")
+//    integrationTestImplementation project(":components:interop:interop-group-policy-read-service")
+//    integrationTestImplementation project(":components:interop:interop-group-policy-read-service-impl")
     integrationTestRuntimeOnly project(":libs:crypto:cipher-suite-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly project(":libs:messaging:db-topic-admin-impl")
@@ -115,8 +115,8 @@ dependencies {
     integrationTestRuntimeOnly project(":components:crypto:crypto-client-impl")
     integrationTestRuntimeOnly project(":components:membership:membership-group-read-impl")
     integrationTestRuntimeOnly project(":components:membership:membership-persistence-client-impl")
-    integrationTestRuntimeOnly project(":components:interop:interop-group-policy-read-service")
-    integrationTestRuntimeOnly project(":components:interop:interop-group-policy-read-service-impl")
+//    integrationTestRuntimeOnly project(":components:interop:interop-group-policy-read-service")
+//    integrationTestRuntimeOnly project(":components:interop:interop-group-policy-read-service-impl")
 
     testRuntimeOnly "com.lmax:disruptor:$disruptorVersion"
     testRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
