@@ -50,8 +50,8 @@ class TransactionBackchainResolutionFlowV1(
         val originalTransactionsToRetrieve = initialTransactionIds - alreadyVerifiedTransactions
         if (originalTransactionsToRetrieve.isNotEmpty()) {
             log.debug {
-                "Backchain resolution of $initialTransactionIds - Transaction needs to resolve its dependencies of " +
-                        "$originalTransactionsToRetrieve in its backchain, starting transaction backchain resolution"
+                "Backchain resolution of $initialTransactionIds - Resolving unseen transactions $originalTransactionsToRetrieve" +
+                        ", starting transaction backchain resolution"
             }
             val topologicalSort = flowEngine.subFlow(
                 TransactionBackchainReceiverFlowV1(

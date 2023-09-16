@@ -221,10 +221,9 @@ internal class OutboundMessageProcessor(
             val source = message.header.source.toCorda()
             val p2pParams = groupPolicyProvider.getP2PParameters(source)
             if (p2pParams == null) {
-                //TODO extended warn statement added temporarily for Interop Team, revert to debug as part of CORE-10683
                 logger.warn(
-                    "Could not find the group information in the GroupPolicyProvider for $source to ${message.header.destination}. " +
-                            "The message ${message.header.messageId} was discarded."
+                    "Could not find the p2p parameters in the GroupPolicyProvider for $source. " +
+                    "The message ${message.header.messageId} was discarded."
                 )
                 return emptyList()
             }

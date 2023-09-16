@@ -30,6 +30,7 @@ class SessionInitExecutor(
     }
 
     private val messageDirection = sessionEvent.messageDirection
+    private val isInteropSession = flowMapperState?.isInteropSession ?: false
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
@@ -38,9 +39,9 @@ class SessionInitExecutor(
             //duplicate
             log.debug { "Duplicate SessionInit event received. Key: $eventKey, Event: $sessionEvent" }
             if (messageDirection == MessageDirection.OUTBOUND) {
+                val tmpFlowId = sessionInit.flowId
                 sessionInit.flowId = null
-                val outputRecord = recordFactory.forwardEvent(
-                    sessionEvent, instant, flowConfig, messageDirection, flowMapperState.isInteropSession)
+                val outputRecord = recordFactory.forwardEvent(sessionEvent, instant, flowConfig, tmpFlowId, isInteropSession)
                 FlowMapperResult(flowMapperState, listOf(outputRecord))
             } else {
                 CordaMetrics.Metric.FlowMapperDeduplicationCount.builder()

@@ -74,8 +74,8 @@ class FlowProcessorImpl @Activate constructor(
         ::groupParametersReaderService,
         ::cpkReadService,
         ::groupPolicyProvider,
-        ::membershipQueryClient,
         ::interopIdentityRegistryService,
+        ::membershipQueryClient,
         ::interopGroupPolicyReadService
     )
 
