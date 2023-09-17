@@ -75,6 +75,7 @@ import java.util.UUID
 class PersistenceExceptionTests {
     companion object {
         const val TOPIC = "pretend-topic"
+        private const val TIMEOUT_MILLIS = 10000L
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val DOGS_TABLE = "migration/db.changelog-master.xml"
@@ -91,7 +92,9 @@ class PersistenceExceptionTests {
     private lateinit var cpkReadService: CpkReadService
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
     private lateinit var responseFactory: ResponseFactory
-    private lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
+
+    @InjectService(timeout = TIMEOUT_MILLIS)
+    lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
     private lateinit var dbConnectionManager: FakeDbConnectionManager
     private lateinit var entitySandboxService: EntitySandboxService
@@ -105,7 +108,7 @@ class PersistenceExceptionTests {
 
     @BeforeAll
     fun setup(
-        @InjectService(timeout = 5000)
+        @InjectService(timeout = TIMEOUT_MILLIS)
         sandboxSetup: SandboxSetup,
         @InjectBundleContext
         bundleContext: BundleContext,
@@ -120,7 +123,6 @@ class PersistenceExceptionTests {
             cpkReadService = sandboxSetup.fetchService(timeout = 5000)
             virtualNodeInfoReadService = sandboxSetup.fetchService(timeout = 5000)
             responseFactory = sandboxSetup.fetchService(timeout = 5000)
-            currentSandboxGroupContext = sandboxSetup.fetchService(timeout = 5000)
         }
 
         virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)

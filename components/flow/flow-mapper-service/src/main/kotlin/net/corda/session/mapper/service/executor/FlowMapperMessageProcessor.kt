@@ -26,7 +26,7 @@ import java.time.Instant
  */
 class FlowMapperMessageProcessor(
     private val flowMapperEventExecutorFactory: FlowMapperEventExecutorFactory,
-    private val flowConfig: SmartConfig
+    private val flowConfig: SmartConfig,
 ) : StateAndEventProcessor<String, FlowMapperState, FlowMapperEvent> {
 
     companion object {

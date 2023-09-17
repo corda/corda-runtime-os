@@ -87,8 +87,9 @@ internal class InteropRestResourceImpl @Activate constructor(
     override fun getInterOpGroups(holdingIdentityShortHash: String): Map<UUID, String> {
         val validHoldingIdentityShortHash = validateShortHash(holdingIdentityShortHash)
         val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(validHoldingIdentityShortHash)
-        val cacheView = interopIdentityRegistryService.getVirtualNodeRegistryView(vNodeInfo.getVNodeShortHash())
-        return cacheView.getOwnedIdentities().keys.associate {
+        val registryView = interopIdentityRegistryService.getVirtualNodeRegistryView(vNodeInfo.getVNodeShortHash())
+        val groupIds = registryView.getIdentities().map { it.groupId }.toSet()
+        return groupIds.associate {
             Pair(UUID.fromString(it), interopGroupPolicyReadService.getGroupPolicy(it) ?: "")
         }
     }
@@ -146,8 +147,8 @@ internal class InteropRestResourceImpl @Activate constructor(
 
         if (interopIdentityRegistryService
                 .getVirtualNodeRegistryView(validHoldingIdentityShortHash)
-                .getIdentitiesByApplicationName()
-                .keys.contains(createInteropIdentityRestRequest.applicationName)) {
+                .getIdentitiesByApplicationName(createInteropIdentityRestRequest.applicationName).isNotEmpty()
+        ) {
             throw InvalidInputDataException(
                 "Interop identity already present with application name '${createInteropIdentityRestRequest.applicationName}'."
             )
@@ -287,15 +288,11 @@ internal class InteropRestResourceImpl @Activate constructor(
         val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(validHoldingIdentityShortHash)
         val vNodeShortHash = vNodeInfo.getVNodeShortHash()
         val registryView = interopIdentityRegistryService.getVirtualNodeRegistryView(vNodeShortHash)
-        val interopIdentityMap = registryView.getIdentitiesByShortHash()
-        val interopIdentityToExport = if (interopIdentityMap.containsKey(validInteropIdentityShortHash)) {
-            interopIdentityMap[validInteropIdentityShortHash]!!
-        } else {
-            throw InvalidInputDataException(
+        val interopIdentityToExport = registryView.getIdentityWithShortHash(validInteropIdentityShortHash)
+            ?: throw InvalidInputDataException(
                 "No interop identity with short hash '$validInteropIdentityShortHash' found for holding " +
                         "identity '$validHoldingIdentityShortHash'."
             )
-        }
         if (interopIdentityToExport.owningVirtualNodeShortHash != vNodeShortHash) {
             throw InvalidInputDataException(
                 "Only owned identities may be exported." +

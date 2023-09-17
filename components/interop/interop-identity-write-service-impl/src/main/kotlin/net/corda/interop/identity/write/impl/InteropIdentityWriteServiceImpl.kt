@@ -109,16 +109,14 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
 
     private fun writeMemberInfoTopic(vNodeShortHash: ShortHash, identity: InteropIdentity) {
         val cacheView = interopIdentityRegistryService.getVirtualNodeRegistryView(vNodeShortHash)
-        val ownedInteropIdentities = cacheView.getOwnedIdentities()
 
-        // If the new interop identity will become the owned one use that. Otherwise, retrieve an existing one from the cache.
+        // If the new interop identity will become the owned one use that. Otherwise, retrieve the existing one from the registry.
         val ownedInteropIdentity = if (identity.owningVirtualNodeShortHash == vNodeShortHash) {
             identity
-        } else if (ownedInteropIdentities[identity.groupId] != null) {
-            ownedInteropIdentities[identity.groupId]!!
         } else {
-            throw IllegalStateException(
-                "The interop group ${identity.groupId} does not contain an interop identity for holding identity $vNodeShortHash.")
+            checkNotNull(cacheView.getOwnedIdentity(identity.groupId)) {
+                "The interop group ${identity.groupId} does not contain an interop identity for holding identity $vNodeShortHash."
+            }
         }
 
         // This may be null when the owning virtual node is hosted on a different cluster

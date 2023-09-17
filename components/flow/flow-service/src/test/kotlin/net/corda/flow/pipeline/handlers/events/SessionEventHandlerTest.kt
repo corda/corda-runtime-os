@@ -1,15 +1,11 @@
 package net.corda.flow.pipeline.handlers.events
 
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.stream.Stream
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
@@ -20,7 +16,7 @@ import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.pipeline.CheckpointInitializer
 import net.corda.flow.pipeline.exceptions.FlowEventException
-import net.corda.flow.pipeline.handlers.waiting.sessions.WaitingForSessionInit
+import net.corda.flow.pipeline.handlers.waiting.WaitingForSessionInit
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sessions.FlowSessionManager
@@ -51,6 +47,9 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.stream.Stream
 
 @Suppress("MaxLineLength")
 class SessionEventHandlerTest {
@@ -66,7 +65,6 @@ class SessionEventHandlerTest {
         @JvmStatic
         fun nonInitSessionEventTypes(): Stream<Arguments> {
             return Stream.of(
-                Arguments.of(SessionAck()),
                 Arguments.of(SessionData()),
                 Arguments.of(SessionClose()),
                 Arguments.of(SessionError()),
@@ -136,6 +134,18 @@ class SessionEventHandlerTest {
     }
 
     @Test
+    fun `Receiving a session data with init payload creates a checkpoint and adds the new session to it, does not reply with confirm`() {
+        val sessionEvent = createSessionDatWithInit()
+        val inputContext = buildFlowEventContext(checkpoint = expectedCheckpoint, inputEventPayload = sessionEvent)
+
+        whenever(sessionManager.getNextReceivedEvent(updatedSessionState)).thenReturn(sessionEvent)
+
+        sessionEventHandler.preProcess(inputContext)
+
+        verify(flowSessionManager, times(0)).sendConfirmMessage(any(), any(), anyOrNull(), any())
+    }
+
+    @Test
     fun `Receiving a session init payload throws an exception when the session manager returns no next received event`() {
         val sessionEvent = createSessionInit()
         val inputContext = buildFlowEventContext(checkpoint = expectedCheckpoint, inputEventPayload = sessionEvent)
@@ -184,16 +194,27 @@ class SessionEventHandlerTest {
         val payload = SessionInit.newBuilder()
             .setFlowId(FLOW_ID)
             .setCpiId(CPI_ID)
-            .setPayload(ByteBuffer.wrap(byteArrayOf()))
             .setContextPlatformProperties(emptyKeyValuePairList())
             .setContextUserProperties(emptyKeyValuePairList())
-            .setContextSessionProperties(sessionContextProperties())
             .build()
 
         return createSessionEvent(payload)
     }
 
-    private fun sessionContextProperties() :KeyValuePairList {
+    private fun createSessionDatWithInit(): SessionEvent {
+        val sessionInit = SessionInit.newBuilder()
+            .setFlowId(FLOW_ID)
+            .setCpiId(CPI_ID)
+            .setContextPlatformProperties(emptyKeyValuePairList())
+            .setContextUserProperties(emptyKeyValuePairList())
+            .build()
+
+        val payload = SessionData(ByteBuffer.allocate(1), sessionInit)
+
+        return createSessionEvent(payload)
+    }
+
+    private fun contextSessionProperties() :KeyValuePairList {
         return KeyValueStore().apply {
             put(FLOW_PROTOCOL, PROTOCOL.protocol)
             put(FLOW_PROTOCOL_VERSIONS_SUPPORTED, "1")
@@ -205,11 +226,10 @@ class SessionEventHandlerTest {
             .setMessageDirection(MessageDirection.INBOUND)
             .setTimestamp(Instant.now())
             .setSequenceNum(1)
-            .setReceivedSequenceNum(0)
-            .setOutOfOrderSequenceNums(listOf(0))
             .setPayload(payload)
             .setInitiatedIdentity(ALICE_X500_HOLDING_IDENTITY)
             .setInitiatingIdentity(BOB_X500_HOLDING_IDENTITY)
+            .setContextSessionProperties(contextSessionProperties())
             .build()
     }
 

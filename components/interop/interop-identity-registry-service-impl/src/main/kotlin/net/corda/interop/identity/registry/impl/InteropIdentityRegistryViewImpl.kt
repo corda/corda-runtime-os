@@ -5,62 +5,66 @@ import net.corda.interop.core.InteropIdentity
 import net.corda.interop.identity.registry.InteropIdentityRegistryView
 import net.corda.v5.application.interop.facade.FacadeId
 import java.util.*
+import net.corda.interop.identity.registry.InteropIdentityRegistryStateError
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 
+@Suppress("TooManyFunctions")
 class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: ShortHash): InteropIdentityRegistryView {
-    private val interopIdentities = HashSet<InteropIdentity>()
+    companion object {
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
-    private val byGroupId = HashMap<String, HashSet<InteropIdentity>>()
-    private val byVirtualNodeShortHash = HashMap<ShortHash, HashSet<InteropIdentity>>()
-    private val byShortHash = HashMap<ShortHash, InteropIdentity>()
-    private val myIdentities = HashMap<String, InteropIdentity>()
-    private val byApplicationName = HashMap<String, InteropIdentity>()
-    private val byFacadeId = HashMap<String, HashSet<InteropIdentity>>()
+    private val interopIdentities = InteropIdentityRegistrySet()
 
-    private fun getOrCreateByGroupIdEntry(groupId: String): HashSet<InteropIdentity> {
+    private val ownedIdentities = HashMap<String, InteropIdentityRegistrySet>()
+    private val byGroupId = HashMap<String, InteropIdentityRegistrySet>()
+    private val byVirtualNodeShortHash = HashMap<ShortHash, InteropIdentityRegistrySet>()
+    private val byApplicationName = HashMap<String, InteropIdentityRegistrySet>()
+    private val byFacadeId = HashMap<FacadeId, InteropIdentityRegistrySet>()
+
+
+    private fun getOrCreateOwnedIdentitiesEntry(groupId: String): InteropIdentityRegistrySet {
+        return ownedIdentities.computeIfAbsent(groupId) {
+            InteropIdentityRegistrySet()
+        }
+    }
+
+    private fun getOrCreateByGroupIdEntry(groupId: String): InteropIdentityRegistrySet {
         return byGroupId.computeIfAbsent(groupId) {
-            HashSet()
+            InteropIdentityRegistrySet()
         }
     }
 
-    private fun getOrCreateByVirtualNodeEntry(shortHash: ShortHash): HashSet<InteropIdentity> {
+    private fun getOrCreateByVirtualNodeEntry(shortHash: ShortHash): InteropIdentityRegistrySet {
         return byVirtualNodeShortHash.computeIfAbsent(shortHash) {
-            HashSet()
+            InteropIdentityRegistrySet()
         }
     }
 
-    private fun getOrCreateByFacadeIdEntry(facadeId: FacadeId): HashSet<InteropIdentity> {
-        return byFacadeId.computeIfAbsent(facadeId.toString()) {
-            HashSet()
+    private fun getOrCreateByApplicationNameEntry(applicationName: String): InteropIdentityRegistrySet {
+        return byApplicationName.computeIfAbsent(applicationName) {
+            InteropIdentityRegistrySet()
+        }
+    }
+
+    private fun getOrCreateByFacadeIdEntry(facadeId: FacadeId): InteropIdentityRegistrySet {
+        return byFacadeId.computeIfAbsent(facadeId) {
+            InteropIdentityRegistrySet()
         }
     }
 
     fun putInteropIdentity(identity: InteropIdentity) {
-        if (identity.owningVirtualNodeShortHash == virtualNodeShortHash) {
-            val existingOwnedIdentity = myIdentities[identity.groupId]
-            require(existingOwnedIdentity == null || identity == existingOwnedIdentity) {
-                "Unable to add identity $identity to view of virtual node $virtualNodeShortHash, " +
-                "specified virtual node already owns an identity in this interop group."
-            }
-
-            myIdentities[identity.groupId] = identity
-        }
-
         interopIdentities.add(identity)
 
+        if (identity.owningVirtualNodeShortHash == virtualNodeShortHash) {
+            getOrCreateOwnedIdentitiesEntry(identity.groupId).add(identity)
+        }
+
         getOrCreateByGroupIdEntry(identity.groupId).add(identity)
-        identity.owningVirtualNodeShortHash.let {
-            getOrCreateByVirtualNodeEntry(it).add(identity)
-        }
-
-        // Safety check for short hash collisions
-        require(byShortHash[identity.shortHash] == null || byShortHash[identity.shortHash] == identity) {
-            "Unable to add identity $identity to view of virtual node $virtualNodeShortHash, " +
-            "the identity shares a short hash with an existing identity."
-        }
-
-        byShortHash[identity.shortHash] = identity
-        byApplicationName[identity.applicationName] = identity
+        getOrCreateByVirtualNodeEntry(identity.owningVirtualNodeShortHash).add(identity)
+        getOrCreateByApplicationNameEntry(identity.applicationName).add(identity)
 
         identity.facadeIds.forEach {
             getOrCreateByFacadeIdEntry(it).add(identity)
@@ -68,55 +72,67 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: ShortHas
     }
 
     fun removeInteropIdentity(identity: InteropIdentity) {
-        interopIdentities.remove(identity)
-        byGroupId[identity.groupId]?.let {
-            it.remove(identity)
-            if (it.size == 0) {
-                byGroupId.remove(identity.groupId)
-            }
+        val actualIdentity = interopIdentities.get(identity.shortHash) ?: return
+
+        if (actualIdentity != identity) {
+            log.warn(
+                "Removing interop identity from registry view of node '$virtualNodeShortHash', but " +
+                "the identity to remove does not match the existing identity."
+            )
         }
 
-        byVirtualNodeShortHash[identity.owningVirtualNodeShortHash]?.let {
-            it.remove(identity)
-            if (it.size == 0) {
-                byVirtualNodeShortHash.remove(identity.owningVirtualNodeShortHash)
-            }
+        if (actualIdentity.owningVirtualNodeShortHash == virtualNodeShortHash) {
+            ownedIdentities[actualIdentity.groupId]?.remove(actualIdentity)
         }
 
-        byShortHash[identity.shortHash]?.let {
-            byShortHash.remove(identity.shortHash)
+        byGroupId[actualIdentity.groupId]?.remove(actualIdentity)
+        byVirtualNodeShortHash[actualIdentity.owningVirtualNodeShortHash]?.remove(actualIdentity)
+        byApplicationName[actualIdentity.applicationName]?.remove(actualIdentity)
+
+        actualIdentity.facadeIds.forEach { facadeId ->
+            byFacadeId[facadeId]?.remove(actualIdentity)
         }
 
-        if (identity.owningVirtualNodeShortHash == virtualNodeShortHash) {
-            myIdentities.remove(identity.groupId)
-        }
-
-        byApplicationName.remove(identity.applicationName)
-
-        byFacadeId.forEach {
-            if (it.value.contains(identity)) {
-                it.value.remove(identity)
-            }
-        }
+        interopIdentities.remove(actualIdentity)
     }
 
-    override fun getIdentities(): Set<InteropIdentity> = interopIdentities
+    override fun getIdentities(): Set<InteropIdentity> =
+        Collections.unmodifiableSet(interopIdentities.toSet())
 
-    override fun getIdentitiesByGroupId(): Map<String, Set<InteropIdentity>> =
-        Collections.unmodifiableMap(byGroupId)
+    override fun getIdentitiesByGroupId(groupId: String): Set<InteropIdentity> =
+        Collections.unmodifiableSet(byGroupId[groupId]?.toSet() ?: emptySet())
 
-    override fun getIdentitiesByVirtualNode(): Map<ShortHash, Set<InteropIdentity>> =
-        Collections.unmodifiableMap(byVirtualNodeShortHash)
+    override fun getIdentityWithShortHash(shortHash: ShortHash): InteropIdentity? =
+        interopIdentities.get(shortHash)
 
-    override fun getIdentitiesByShortHash(): Map<ShortHash, InteropIdentity> =
-        Collections.unmodifiableMap(byShortHash)
+    override fun getIdentitiesByApplicationName(applicationName: String): Set<InteropIdentity> =
+        Collections.unmodifiableSet(byApplicationName[applicationName]?.toSet() ?: emptySet())
 
-    override fun getIdentitiesByApplicationName(): Map<String, InteropIdentity> =
-        Collections.unmodifiableMap(byApplicationName)
+    override fun getIdentityWithApplicationName(applicationName: String): InteropIdentity? {
+        val identities = getIdentitiesByApplicationName(applicationName)
+        if (identities.size > 1) {
+            throw InteropIdentityRegistryStateError(
+                "Registry view of virtual node $virtualNodeShortHash contains multiple interop identities with " +
+                        "application name $applicationName."
+            )
+        }
+        return identities.singleOrNull()
+    }
 
-    override fun getIdentitiesByFacadeId(): Map<String, Set<InteropIdentity>> =
-        Collections.unmodifiableMap(byFacadeId)
+    override fun getIdentitiesByFacadeId(facadeId: FacadeId): Set<InteropIdentity> =
+        Collections.unmodifiableSet(byFacadeId[facadeId]?.toSet() ?: emptySet())
 
-    override fun getOwnedIdentities(): Map<String, InteropIdentity> =
-        Collections.unmodifiableMap(myIdentities)
+    override fun getOwnedIdentities(groupId: String): Set<InteropIdentity> =
+        Collections.unmodifiableSet(ownedIdentities[groupId]?.toSet() ?: emptySet())
+
+    override fun getOwnedIdentity(groupId: String): InteropIdentity? {
+        val ownedIdentities = getOwnedIdentities(groupId)
+        if (ownedIdentities.size > 1) {
+            throw InteropIdentityRegistryStateError(
+                "Registry view of virtual node $virtualNodeShortHash contains multiple owned interop identities " +
+                        "within interop group $groupId."
+            )
+        }
+        return ownedIdentities.singleOrNull()
+    }
 }

@@ -6,6 +6,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
@@ -17,11 +18,14 @@ import java.nio.ByteBuffer
 class ResultSetImplTest {
 
     private companion object {
-        const val LIMIT = 10
+        const val LIMIT = 2
         const val OFFSET = 0
         val serializedParameters = mapOf<String, ByteBuffer>("1" to ByteBuffer.wrap(byteArrayOf(1, 2, 3, 4)))
         val resultExecutorResults = ResultSetExecutor.Results(
-            listOf(ByteBuffer.wrap(byteArrayOf(5, 6, 7, 8)), ByteBuffer.wrap(byteArrayOf(5, 6, 7, 8))),
+            listOf(
+                ByteBuffer.wrap(byteArrayOf(5, 6, 7, 8)),
+                ByteBuffer.wrap(byteArrayOf(5, 6, 7, 8))
+            ),
             LIMIT
         )
     }
@@ -60,41 +64,36 @@ class ResultSetImplTest {
     }
 
     @Test
-    fun `hasNext returns true when the limit is 0 and next has not been called yet`() {
-        val resultSet = this.resultSet.copy(limit = 0)
-        assertThat(resultSet.hasNext()).isTrue
-    }
-
-    @Test
     fun `hasNext returns true when the number of rows returned from next is equal to the limit`() {
         whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults)
         resultSet.next()
         assertThat(resultSet.hasNext()).isTrue
     }
 
-    /**
-     * Within the system, this scenario shouldn't be possible but a >= check has been added for safety.
-     */
-    @Test
-    fun `hasNext returns true when the number of rows returned from next is greater than the limit`() {
-        whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults.copy(numberOfRowsFromQuery = 12))
-        resultSet.next()
-        assertThat(resultSet.hasNext()).isTrue
-    }
-
     @Test
     fun `hasNext returns false when the number of rows returned from next is less than the limit`() {
-        whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults.copy(numberOfRowsFromQuery = 2))
+        whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults.copy(
+            serializedResults = listOf(
+                ByteBuffer.wrap(byteArrayOf(5, 6, 7, 8))
+            ),
+            numberOfRowsFromQuery = 12) // Let's say we filtered out 11
+        )
         resultSet.next()
         assertThat(resultSet.hasNext()).isFalse
     }
 
     @Test
-    fun `hasNext returns false when the limit is 0 and next has been called`() {
-        val resultSet = this.resultSet.copy(limit = 0)
-        whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults.copy(numberOfRowsFromQuery = 1))
-        resultSet.next()
-        assertThat(resultSet.hasNext()).isFalse
+    fun `result set cannot be instantiated with zero limit`() {
+        assertThrows<IllegalArgumentException> {
+            this.resultSet.copy(limit = 0)
+        }
+    }
+
+    @Test
+    fun `result set cannot be instantiated with negative offset`() {
+        assertThrows<IllegalArgumentException> {
+            this.resultSet.copy(offset = -1)
+        }
     }
 
     @Test
@@ -119,15 +118,13 @@ class ResultSetImplTest {
 
     @Test
     fun `next throws exception when hasNext returns false`() {
-        whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults.copy(numberOfRowsFromQuery = 2))
+        whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(resultExecutorResults.copy(
+            serializedResults = listOf(
+                ByteBuffer.wrap(byteArrayOf(5, 6, 7, 8))
+            ),
+            numberOfRowsFromQuery = 1
+        ))
         resultSet.next()
         assertThatThrownBy { resultSet.next() }.isInstanceOf(NoSuchElementException::class.java)
-    }
-
-    @Test
-    fun `next returns empty list when limit is 0`() {
-        val resultSet = this.resultSet.copy(limit = 0)
-        whenever(resultSetExecutor.execute(serializedParameters, OFFSET)).thenReturn(ResultSetExecutor.Results(emptyList(), 0))
-        assertThat(resultSet.next()).isEmpty()
     }
 }

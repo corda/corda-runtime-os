@@ -15,7 +15,6 @@ import net.corda.data.ledger.persistence.PersistTransaction
 import net.corda.data.persistence.EntityResponse
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.helpers.Resources
-import net.corda.db.testkit.DbUtils
 import net.corda.flow.utils.keyValuePairListOf
 import net.corda.flow.utils.toKeyValuePairList
 import net.corda.flow.utils.toMap
@@ -46,7 +45,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -102,7 +100,9 @@ class UtxoLedgerMessageProcessorTests {
     private lateinit var deserializer: CordaAvroDeserializer<EntityResponse>
     private lateinit var delegatedRequestHandlerSelector: DelegatedRequestHandlerSelector
     private lateinit var cpiInfoReadService: CpiInfoReadService
-    private lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
+
+    @InjectService(timeout = TIMEOUT_MILLIS)
+    lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
     @BeforeAll
     fun setup(
@@ -122,13 +122,11 @@ class UtxoLedgerMessageProcessorTests {
                 .createAvroDeserializer({}, EntityResponse::class.java)
             delegatedRequestHandlerSelector = setup.fetchService(TIMEOUT_MILLIS)
             cpiInfoReadService = setup.fetchService(TIMEOUT_MILLIS)
-            currentSandboxGroupContext = setup.fetchService(TIMEOUT_MILLIS)
         }
     }
 
     @Test
     fun `persistTransaction for utxo ledger deserialises the transaction and persists`() {
-        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
         val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
         val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)

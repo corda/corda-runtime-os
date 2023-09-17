@@ -121,6 +121,290 @@
                 "Always"
             ]
         },
+        "containerSecurityContext": {
+            "type": "object",
+            "default": {},
+            "title": "define privilege and access control settings for a pod",
+            "properties": {
+                "runAsUser": {
+                    "type": "integer",
+                    "title": "specify what user ID that processes will run with",
+                    "examples": [
+                        "10001"
+                    ]
+                },
+                "runAsNonRoot": {
+                    "type": "boolean", 
+                    "description": "indicates that the container must run as a non-root user",
+                    "examples": [
+                        true
+                    ]
+                }, 
+                "runAsGroup": {
+                    "type": "integer",
+                    "title": "specify what group ID that processes will run with",
+                    "examples": [
+                        "10002"
+                    ]
+                },
+                "allowPrivilegeEscalation": {
+                    "type": "boolean",
+                    "title": "enable scraping of worker metrics through Prometheus annotations",
+                    "examples": [
+                        true
+                    ]
+                },
+                "readOnlyRootFilesystem": {
+                    "type": "boolean",
+                    "title": "mount the container's root filesystem as read-only",
+                    "examples": [
+                        true
+                    ]
+                },
+                "procMount": {
+                    "type": "string", 
+                    "description": "denotes the type of proc mount to use for the containers - cannot be set when spec.os.name is windows", 
+                    "examples": [
+                        "DefaultProcMount"
+                    ]
+                }, 
+                "privileged": {
+                    "type": "boolean",
+                    "title": "run container in privileged mode",
+                    "examples": [
+                        true
+                    ]
+                },
+                "capabilities": {
+                    "type": "object",
+                    "default": {},
+                    "title": "linux capabilities for users",
+                    "properties": {
+                        "add": {
+                            "items": {
+                                "type": [
+                                    "string", 
+                                    "null"
+                                ]
+                            }, 
+                            "type": [
+                                "array", 
+                                "null"
+                            ], 
+                            "description": "added capabilities"
+                        }, 
+                        "drop": {
+                            "items": {
+                                "type": [
+                                    "string", 
+                                    "null"
+                                ]
+                            }, 
+                            "type": [
+                                "array", 
+                                "null"
+                            ], 
+                            "description": "removed capabilities"
+                        }
+                    }
+                },
+                "seccompProfile": {
+                    "type": "object",
+                    "description": "the seccomp options to use by the containers in this pod - this field cannot be set if spec.os.name is windows",
+                    "properties": {
+                        "type": {
+                            "description": "type indicates which kind of seccomp profile will be applied",
+                            "type": "string"
+                        },
+                        "localhostProfile": {
+                            "description": "localhostProfile indicates a profile defined in a file on the node should be used",
+                            "type": "string"
+                        }
+                    }
+                },
+                "seLinuxOptions": {
+                    "type": "object",
+                    "description": "SELinuxOptions are the labels to be applied to the container",
+                    "properties": {
+                        "level": {
+                            "description": "Level is SELinux level label that applies to the container.",
+                            "type": "string"
+                        },
+                        "role": {
+                            "description": "Role is a SELinux role label that applies to the container.",
+                            "type": "string"
+                        },
+                        "type": {
+                            "description": "Type is a SELinux type label that applies to the container.",
+                            "type": "string"
+                        },
+                        "user": {
+                            "description": "User is a SELinux user label that applies to the container.",
+                            "type": "string"
+                        }
+                    }
+                },
+                "windowsOptions": {
+                    "type": "object",
+                    "description": "the Windows specific settings applied to all containers",
+                    "properties": {
+                        "gmsaCredentialSpec": {
+                            "description": "this is where the GMSA admission webhook inlines the contents of the GMSA credential spec named by the GMSACredentialSpecName field",
+                            "type": "string"
+                        },
+                        "gmsaCredentialSpecName": {
+                            "description": "the name of the GMSA credential spec to use",
+                            "type": "string"
+                        },
+                        "hostProcess": {
+                            "description": "determines if a container should be run as a 'Host Process' container",
+                            "type": "string"
+                        },
+                        "runAsUserName": {
+                            "description": "the UserName in Windows to run the entrypoint of the container process",
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "podSecurityContext": {
+            "type": "object",
+            "default": {},
+            "title": "define privilege and access control settings for a pod",
+            "properties": {
+                "runAsNonRoot": {
+                    "type": "boolean", 
+                    "description": "indicates that the container must run as a non-root user",
+                    "examples": [
+                        true
+                    ]
+                }, 
+                "fsGroup": {
+                    "type": "integer", 
+                    "description": "a special supplemental group that applies to all containers in a pod", 
+                    "format": "int64",
+                    "examples": [
+                        "1000"
+                    ]
+                },
+                "fsGroupChangePolicy": {
+                    "type": "string", 
+                    "description": "defines behavior of changing ownership and permission of the volume before being exposed inside Pod", 
+                    "enum": ["Always", "OnRootMismatch"]
+                }, 
+                "seccompProfile": {
+                    "type": "object",
+                    "description": "the seccomp options to use by the containers in this pod - this field cannot be set if spec.os.name is windows",
+                    "properties": {
+                        "type": {
+                            "description": "type indicates which kind of seccomp profile will be applied",
+                            "type": "string"
+                        },
+                        "localhostProfile": {
+                            "description": "localhostProfile indicates a profile defined in a file on the node should be used",
+                            "type": "string"
+                        }
+                    }
+                },
+                "seLinuxOptions": {
+                    "type": "object",
+                    "description": "SELinuxOptions are the labels to be applied to the container",
+                    "properties": {
+                        "level": {
+                            "description": "Level is SELinux level label that applies to the container.",
+                            "type": "string"
+                        },
+                        "role": {
+                            "description": "Role is a SELinux role label that applies to the container.",
+                            "type": "string"
+                        },
+                        "type": {
+                            "description": "Type is a SELinux type label that applies to the container.",
+                            "type": "string"
+                        },
+                        "user": {
+                            "description": "User is a SELinux user label that applies to the container.",
+                            "type": "string"
+                        }
+                    }
+                },
+                "sysctls": {
+                    "items": {
+                        "description": "Sysctl defines a kernel parameter to be set",
+                        "properties": {
+                            "name": {
+                                "description": "Name of a property to set",
+                                "type": "string"
+                            },
+                            "value": {
+                                "description": "Value of a property to set",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "name",
+                            "value"
+                        ],
+                        "type": "object"
+                    },
+                    "description": "sysctls holds a list of namespaced sysctls used for the pod",
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "windowsOptions": {
+                    "type": "object",
+                    "description": "the Windows specific settings applied to all containers",
+                    "properties": {
+                        "gmsaCredentialSpec": {
+                            "description": "this is where the GMSA admission webhook inlines the contents of the GMSA credential spec named by the GMSACredentialSpecName field",
+                            "type": "string"
+                        },
+                        "gmsaCredentialSpecName": {
+                            "description": "the name of the GMSA credential spec to use",
+                            "type": "string"
+                        },
+                        "hostProcess": {
+                            "description": "determines if a container should be run as a 'Host Process' container",
+                            "type": "string"
+                        },
+                        "runAsUserName": {
+                            "description": "the UserName in Windows to run the entrypoint of the container process",
+                            "type": "string"
+                        }
+                    }
+                },
+                "supplementalGroups": {
+                    "items": {
+                        "type": "integer", 
+                        "format": "int64"
+                    }, 
+                    "type": [
+                        "array", 
+                        "null"
+                    ], 
+                    "description": "a list of groups applied to the first process run in each container, in addition to the container's primary GID"
+                }, 
+                "runAsUser": {
+                    "type": "integer", 
+                    "description": "The UID to run the entrypoint of the container process", 
+                    "format": "int64",
+                    "examples": [
+                        "10001"
+                    ]
+                },
+                "runAsGroup": {
+                    "type": "integer", 
+                    "description": "The GID to run the entrypoint of the container process", 
+                    "format": "int64",
+                    "examples": [
+                        "10002"
+                    ]
+                }
+            }
+        },
         "resources": {
             "type": "object",
             "default": {},
@@ -1078,6 +1362,12 @@
                                 3
                             ]
                         },
+                        "timeoutSeconds": {
+                            "type": "integer",
+                            "default": 60,
+                            "minimum": 60,
+                            "title": "Maximum time, in seconds, to wait for Kafka topic creation operation to finish (might vary depending on the amount of partitions and replicas configured)"
+                        },
                         "sasl": {
                             "type": "object",
                             "title": "kafka SASL credentials",
@@ -1292,10 +1582,13 @@
                 "crypto",
                 "db",
                 "flow",
+                "flowMapper",
+                "verification",
                 "membership",
                 "rest",
                 "p2pLinkManager",
                 "p2pGateway",
+                "persistence",
                 "uniqueness"
             ],
             "additionalProperties": false,
@@ -1525,6 +1818,126 @@
                                 "image": {
                                     "registry": "corda-os-docker.software.r3.com",
                                     "repository": "corda-os-flow-worker",
+                                    "tag": ""
+                                },
+                                "replicaCount": 1,
+                                "debug": {
+                                    "enabled": false,
+                                    "suspend": false
+                                },
+                                "logging": {
+                                    "level": "warn"
+                                },
+                                "profiling": {
+                                    "enabled": false
+                                },
+                                "resources": {
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    },
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    }
+                                },
+                                "verifyInstrumentation": false
+                            }]
+                        }
+                    ]
+                },
+                "flowMapper": {
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/worker"
+                        },
+                        {
+                            "required": [
+                                "verifyInstrumentation"
+                            ],
+                            "properties": {
+                                "image": {},
+                                "javaOptions": {},
+                                "annotations": {},
+                                "replicaCount": {},
+                                "debug": {},
+                                "logging": {},
+                                "profiling": {},
+                                "resources": {},
+                                "kafka": {},
+                                "verifyInstrumentation": {
+                                    "type": "boolean",
+                                    "default": false,
+                                    "title": "run flow mapper worker with Quasar's verifyInstrumentation enabled",
+                                    "examples": [
+                                        false
+                                    ]
+                                }
+                            },
+                            "examples": [{
+                                "image": {
+                                    "registry": "corda-os-docker.software.r3.com",
+                                    "repository": "corda-os-flow-mapper-worker",
+                                    "tag": ""
+                                },
+                                "replicaCount": 1,
+                                "debug": {
+                                    "enabled": false,
+                                    "suspend": false
+                                },
+                                "logging": {
+                                    "level": "warn"
+                                },
+                                "profiling": {
+                                    "enabled": false
+                                },
+                                "resources": {
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    },
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    }
+                                },
+                                "verifyInstrumentation": false
+                            }]
+                        }
+                    ]
+                },
+                "verification": {
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/worker"
+                        },
+                        {
+                            "required": [
+                                "verifyInstrumentation"
+                            ],
+                            "properties": {
+                                "image": {},
+                                "javaOptions": {},
+                                "annotations": {},
+                                "replicaCount": {},
+                                "debug": {},
+                                "logging": {},
+                                "profiling": {},
+                                "resources": {},
+                                "kafka": {},
+                                "verifyInstrumentation": {
+                                    "type": "boolean",
+                                    "default": false,
+                                    "title": "run verification worker with Quasar's verifyInstrumentation enabled",
+                                    "examples": [
+                                        false
+                                    ]
+                                }
+                            },
+                            "examples": [{
+                                "image": {
+                                    "registry": "corda-os-docker.software.r3.com",
+                                    "repository": "corda-os-verification-worker",
                                     "tag": ""
                                 },
                                 "replicaCount": 1,
@@ -1946,6 +2359,118 @@
                         }
                     ]
                 },
+                "persistence": {
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/worker"
+                        },
+                        {
+                            "additionalProperties": false,
+                            "required": [
+                                "clusterDbConnectionPool"
+                            ],
+                            "properties": {
+                                "image": {},
+                                "javaOptions": {},
+                                "annotations": {},
+                                "replicaCount": {},
+                                "debug": {},
+                                "logging": {},
+                                "profiling": {},
+                                "resources": {},
+                                "kafka": {},
+                                "clusterDbConnectionPool": {
+                                    "type": "object",
+                                    "default": {},
+                                    "title": "persistence worker JDBC connection pool configuration for cluster DB",
+                                    "required": [
+                                        "maxSize",
+                                        "idleTimeoutSeconds",
+                                        "maxLifetimeSeconds",
+                                        "keepaliveTimeSeconds",
+                                        "validationTimeoutSeconds"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "maxSize": {
+                                            "type": "integer",
+                                            "default": 5,
+                                            "title": "persistence worker maximum JDBC connection pool size for cluster DB",
+                                            "examples": [
+                                                5
+                                            ]
+                                        },
+                                        "minSize": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                },
+                                                {
+                                                    "type": "null"
+                                                }
+                                            ],
+                                            "default": null,
+                                            "title": "persistence worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value"
+                                        },
+                                        "idleTimeoutSeconds": {
+                                            "type": "integer",
+                                            "default": 120,
+                                            "minimum": 0,
+                                            "title": "maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
+                                        },
+                                        "maxLifetimeSeconds": {
+                                            "type": "integer",
+                                            "default": 1800,
+                                            "minimum": 1,
+                                            "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
+                                        },
+                                        "keepaliveTimeSeconds": {
+                                            "type": "integer",
+                                            "default": 0,
+                                            "minimum": 0,
+                                            "title": "interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
+                                        },
+                                        "validationTimeoutSeconds": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "default": 5,
+                                            "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
+                                        }
+                                    }
+                                }
+                            },
+                            "examples": [{
+                                "image": {
+                                    "registry": "",
+                                    "repository": "corda-os-persistence-worker",
+                                    "tag": ""
+                                },
+                                "replicaCount": 1,
+                                "debug": {
+                                    "enabled": false,
+                                    "suspend": false
+                                },
+                                "logging": {
+                                    "level": "warn"
+                                },
+                                "profiling": {
+                                    "enabled": false
+                                },
+                                "resources": {
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    },
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    }
+                                }
+                            }]
+                        }
+                    ]
+                },
                 "uniqueness": {
                     "allOf": [
                         {
@@ -2145,6 +2670,64 @@
                     },
                     "verifyInstrumentation": false
                 },
+                "flowMapper": {
+                    "image": {
+                        "registry": "corda-os-docker.software.r3.com",
+                        "repository": "corda-os-flow-mapper-worker",
+                        "tag": ""
+                    },
+                    "replicaCount": 1,
+                    "debug": {
+                        "enabled": false,
+                        "suspend": false
+                    },
+                    "logging": {
+                        "level": "warn"
+                    },
+                    "profiling": {
+                        "enabled": false
+                    },
+                    "resources": {
+                        "requests": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        },
+                        "limits": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        }
+                    },
+                    "verifyInstrumentation": false
+                },
+                "verification": {
+                    "image": {
+                        "registry": "corda-os-docker.software.r3.com",
+                        "repository": "corda-os-verification-worker",
+                        "tag": ""
+                    },
+                    "replicaCount": 1,
+                    "debug": {
+                        "enabled": false,
+                        "suspend": false
+                    },
+                    "logging": {
+                        "level": "warn"
+                    },
+                    "profiling": {
+                        "enabled": false
+                    },
+                    "resources": {
+                        "requests": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        },
+                        "limits": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        }
+                    },
+                    "verifyInstrumentation": false
+                },
                 "membership": {
                     "image": {
                         "registry": "corda-os-docker.software.r3.com",
@@ -2275,6 +2858,34 @@
                     },
                     "service": {
                         "port": 8080
+                    }
+                },
+                "persistence": {
+                    "image": {
+                        "registry": "corda-os-docker.software.r3.com",
+                        "repository": "corda-os-persistence-worker",
+                        "tag": ""
+                    },
+                    "replicaCount": 1,
+                    "debug": {
+                        "enabled": false,
+                        "suspend": false
+                    },
+                    "logging": {
+                        "level": "warn"
+                    },
+                    "profiling": {
+                        "enabled": false
+                    },
+                    "resources": {
+                        "requests": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        },
+                        "limits": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        }
                     }
                 },
                 "uniqueness": {

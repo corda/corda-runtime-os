@@ -70,10 +70,10 @@ spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       {{- include "corda.tolerations" . | nindent 6 }}
       serviceAccountName: {{ include "corda.bootstrapPreinstallServiceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
       securityContext:
-        runAsUser: 10001
-        runAsGroup: 10002
-        fsGroup: 1000
+        {{ . | toYaml | nindent 8 }}
+      {{- end }}
       containers:
         - name: preinstall-checks
           image: {{ include "corda.bootstrapCliImage" . }}
@@ -135,10 +135,10 @@ spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       {{- include "corda.tolerations" $ | nindent 6 }}
       {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
+      {{- with .Values.podSecurityContext }}
       securityContext:
-        runAsUser: 10001
-        runAsGroup: 10002
-        fsGroup: 1000
+        {{ . | toYaml | nindent 8 }}
+      {{- end }}
       containers:
         - name: fin
           image: {{ include "corda.bootstrapCliImage" . }}
@@ -223,10 +223,10 @@ spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       {{- include "corda.tolerations" . | nindent 6 }}
       {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
+      {{- with .Values.podSecurityContext }}
       securityContext:
-        runAsUser: 10001
-        runAsGroup: 10002
-        fsGroup: 1000
+        {{ . | toYaml | nindent 8 }}
+      {{- end }}
       containers:
         - name: create-topics
           image: {{ include "corda.bootstrapCliImage" . }}
@@ -249,7 +249,8 @@ spec:
             '-r', '{{ .Values.bootstrap.kafka.replicas }}',
             '-p', '{{ .Values.bootstrap.kafka.partitions }}',
             'connect'{{- if .Values.bootstrap.kafka.cleanup }},
-            '-d'
+            '-d',
+            '-w', '{{ .Values.bootstrap.kafka.timeoutSeconds }}'
             {{- end }}
           ]
           volumeMounts:
@@ -368,10 +369,10 @@ spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       {{- include "corda.tolerations" . | nindent 6 }}
       {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
+      {{- with .Values.podSecurityContext }}
       securityContext:
-        runAsUser: 10001
-        runAsGroup: 10002
-        fsGroup: 1000
+        {{ . | toYaml | nindent 8 }}
+      {{- end }}
       containers:
         - name: create-rbac-role-user-admin
           image: {{ include "corda.bootstrapCliImage" . }}

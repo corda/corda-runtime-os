@@ -29,6 +29,8 @@ import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES_COMMON
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
+import net.corda.web.api.Endpoint
+import net.corda.web.api.WebServer
 
 class KafkaTestToolKit(
     private val toolkit: TestToolkit,
@@ -107,7 +109,14 @@ class KafkaTestToolKit(
             producerBuilder,
             consumerBuilder,
             stateAndEventBuilder,
-            messagingChunkFactory
+            messagingChunkFactory,
+            object : WebServer {
+                override val port: Int? = 9999
+                override fun start(port: Int) = Unit
+                override fun stop() = Unit
+                override fun registerEndpoint(endpoint: Endpoint) = Unit
+                override fun removeEndpoint(endpoint: Endpoint) = Unit
+            }
         )
     }
 

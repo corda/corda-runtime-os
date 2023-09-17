@@ -17,6 +17,7 @@ dependencies {
     implementation project(':libs:crypto:crypto-config-impl')
     implementation project(':libs:platform-info')
     implementation project(':libs:tracing')
+    implementation project(':libs:web:web')
     // Processor list must be kept in sync with workersForProcessor in net.corda.cli.plugins.topicconfig.Create
     implementation project(':processors:crypto-processor')
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
@@ -25,8 +26,10 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
 
     runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
+    runtimeOnly project(':libs:tracing-impl')
 
     runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"

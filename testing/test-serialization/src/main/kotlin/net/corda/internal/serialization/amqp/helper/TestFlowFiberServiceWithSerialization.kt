@@ -35,7 +35,8 @@ class TestFlowFiberServiceWithSerialization(
             interopIdentityRegistryView,
             currentSandboxGroupContext,
             emptyMap(),
-            mock(FlowMetrics::class.java)
+            mock(FlowMetrics::class.java),
+            emptyMap()
         )
 
         Mockito.`when`(mockFlowFiber.getExecutionContext()).thenReturn(flowFiberExecutionContext)

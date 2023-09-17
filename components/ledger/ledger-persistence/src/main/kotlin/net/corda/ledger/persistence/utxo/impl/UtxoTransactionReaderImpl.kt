@@ -14,7 +14,7 @@ import net.corda.ledger.utxo.data.state.cast
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
-import net.corda.persistence.common.exceptions.NullParameterException
+import net.corda.persistence.common.exceptions.MissingAccountContextPropertyException
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.utilities.serialization.deserialize
@@ -70,7 +70,7 @@ class UtxoTransactionReaderImpl(
 
     override val account: String
         get() = externalEventContext.contextProperties.items.find { it.key == CORDA_ACCOUNT }?.value
-            ?: throw NullParameterException("Flow external event context property '${CORDA_ACCOUNT}' not set")
+            ?: throw MissingAccountContextPropertyException()
 
     override val privacySalt: PrivacySalt
         get() = signedTransaction.wireTransaction.privacySalt
