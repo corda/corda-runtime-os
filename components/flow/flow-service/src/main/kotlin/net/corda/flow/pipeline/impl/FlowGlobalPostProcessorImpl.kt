@@ -147,7 +147,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     }
 
     /**
-     * Check to see if any external events needs to be sent or resent due to no response being received within a given time period.
+     * Check to see if any external events needs to be sent or resent.
      */
     private fun getExternalEvent(context: FlowEventContext<Any>, now: Instant): List<Record<*, *>> {
         val externalEventState = context.checkpoint.externalEventState
