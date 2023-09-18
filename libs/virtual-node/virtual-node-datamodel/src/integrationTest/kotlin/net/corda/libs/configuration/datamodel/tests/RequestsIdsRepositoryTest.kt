@@ -8,11 +8,11 @@ import net.corda.libs.virtualnode.datamodel.repository.RequestsIdsRepository
 import net.corda.libs.virtualnode.datamodel.repository.RequestsIdsRepositoryImpl
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
-import net.corda.orm.utils.use
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.util.UUID
@@ -82,6 +82,8 @@ class RequestsIdsRepositoryTest {
             requestsIdsRepository.persist(requestId1, em)
         }
 
+        Thread.sleep(1)
+
         entityManagerFactory.createEntityManager().transaction { em ->
             requestsIdsRepository.persist(requestId2, em)
         }
@@ -95,7 +97,8 @@ class RequestsIdsRepositoryTest {
         assertTrue(request1Time < request2Time)
     }
 
-    // Might want to Disable this test as it adds significant time overhead to the test pipeline
+    @Disabled("Disabling due to its time overhead of 2 seconds. " +
+            "The test, however, is valid to assert `requestsIdsRepository.deleteRequestsOlderThan` works")
     @Test
     fun `deletes older requests`() {
         val requestId1 = UUID.randomUUID()

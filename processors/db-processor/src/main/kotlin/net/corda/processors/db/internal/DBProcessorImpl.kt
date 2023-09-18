@@ -301,9 +301,7 @@ class DBProcessorImpl @Activate constructor(
                 messagingConfig,
                 null
             )
-        }.also {
-            it.start()
-        }
+        }.start()
     }
 
     private fun onStartEvent() {

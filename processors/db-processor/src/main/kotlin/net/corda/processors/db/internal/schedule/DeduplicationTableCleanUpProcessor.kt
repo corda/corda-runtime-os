@@ -33,7 +33,7 @@ class DeduplicationTableCleanUpProcessor(
         val startTime = System.nanoTime()
         virtualNodeInfoReadService.getAll().forEach {
             log.debug { "Cleaning up deduplication table for vnode: ${it.holdingIdentity.shortHash}" }
-            val emf = dbConnectionManager.createEntityManagerFactory(
+            dbConnectionManager.createEntityManagerFactory(
                 it.vaultDmlConnectionId,
                 // We don't really want to make use of any entities here.
                 object : JpaEntitiesSet {
@@ -42,10 +42,8 @@ class DeduplicationTableCleanUpProcessor(
                     override val classes: Set<Class<*>>
                         get() = emptySet()
                 }
-            )
-
-            emf.use {
-                it.createEntityManager().transaction { em ->
+            ).use { emf ->
+                emf.createEntityManager().transaction { em ->
                     // TODO The below interval needs to be made configurable
                     requestsIdsRepository.deleteRequestsOlderThan(120, em)
                 }
