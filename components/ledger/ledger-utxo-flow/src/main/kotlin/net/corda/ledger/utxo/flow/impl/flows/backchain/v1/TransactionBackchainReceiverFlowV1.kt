@@ -150,19 +150,19 @@ class TransactionBackchainReceiverFlowV1(
             log.trace("Backchain resolution of $initialTransactionIds - Group parameters retrieval is not available in V1")
             return
         }
-        val retrievedTransactionId = retrievedTransaction.id
-        val groupParametersHash = parseSecureHash(requireNotNull(
-            (retrievedTransaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()
-        ) {
-            "Received transaction does not have group parameters in its metadata."
-        })
+
+        val (groupParametersHash, groupParameters) = fetchGroupParametersAndHashForTransaction(retrievedTransaction)
+
+        if (groupParameters != null) {
+            return
+        }
 
         if (utxoLedgerGroupParametersPersistenceService.find(groupParametersHash) != null) {
             return
         }
         log.trace {
             "Backchain resolution of $initialTransactionIds - Retrieving group parameters ($groupParametersHash) " +
-                    "for transaction ($retrievedTransactionId)"
+                    "for transaction (${retrievedTransaction.id})"
         }
         val retrievedSignedGroupParameters = session.sendAndReceive(
             SignedGroupParameters::class.java,
@@ -235,6 +235,13 @@ class TransactionBackchainReceiverFlowV1(
             if (transactionFromDb != null) {
                 // Add the dependencies to the "to retrieve" set
                 transactionsToRetrieve.addAll(transactionFromDb.dependencies)
+
+                // Once we added the unverified transactions' dependencies into the "to retrieve" set
+                // we can remove those from the set as we don't need to get those from the initiator
+                // but only if we "know" its group parameters, otherwise we need to keep it there
+                if (fetchGroupParametersAndHashForTransaction(transactionFromDb).second != null) {
+                    transactionsToRetrieve.remove(transactionId)
+                }
             } else {
                 log.trace {
                     "Transaction with ID $transactionId is present in the database with unverified status " +
@@ -242,9 +249,18 @@ class TransactionBackchainReceiverFlowV1(
                 }
             }
         }
-        // Once we added the unverified transactions' dependencies into the "to retrieve" set
-        // we can remove those from the set as we don't need to get those from the initiator
-        transactionsToRetrieve.removeIf { existingTransactionIdsInDb[it] == UNVERIFIED }
+    }
+
+    private fun fetchGroupParametersAndHashForTransaction(
+        transaction: UtxoSignedTransaction
+    ): Pair<SecureHash, SignedGroupParameters?> {
+        val groupParametersHash = parseSecureHash(requireNotNull(
+            (transaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()
+        ) {
+            "Transaction with ID ${transaction.id} does not have group parameters in its metadata."
+        })
+
+        return Pair(groupParametersHash, utxoLedgerGroupParametersPersistenceService.find(groupParametersHash))
     }
 
     override fun equals(other: Any?): Boolean {

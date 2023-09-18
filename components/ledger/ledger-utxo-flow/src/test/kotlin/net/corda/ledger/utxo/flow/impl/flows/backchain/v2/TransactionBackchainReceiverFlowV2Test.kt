@@ -172,6 +172,58 @@ class TransactionBackchainReceiverFlowV2Test {
             .isEqualTo(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId))
     }
 
+    /**
+     * This test is simulating a scenario where we want to fetch one transaction, but we already have that in our database.
+     * However, it is in an unverified status, and we don't know its group parameters. In that case it will be kept in the
+     * `transactionsToRetrieve` list and WILL BE requested alongside with its dependencies.
+     */
+    @Test
+    fun `transaction will be requested if it is present in the database (UNVERIFIED) and its group params are not known`() {
+        // Have a transaction with TX_ID_2 that is unverified, but it's in the database and has dependencies
+        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+            .thenReturn(mapOf(TX_ID_2 to UNVERIFIED))
+
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(eq(TX_ID_2), eq(UNVERIFIED)))
+            .thenReturn(retrievedTransaction1)
+
+        whenever(retrievedTransaction1.id).thenReturn(TX_ID_2)
+        whenever(retrievedTransaction1.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1))
+        whenever(retrievedTransaction1.referenceStateRefs).thenReturn(emptyList())
+        whenever(retrievedTransaction1.metadata).thenReturn(tx1Metadata)
+        whenever(tx1Metadata.getMembershipGroupParametersHash()).thenReturn(groupParametersHash1.toString())
+
+        whenever(session.sendAndReceive(eq(SignedGroupParameters::class.java), any())).thenReturn(
+            groupParameters
+        )
+        whenever(groupParameters.hash).thenReturn(groupParametersHash1)
+
+        whenever(session.sendAndReceive(eq(List::class.java),
+            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_2))))).thenReturn(
+            listOf(retrievedTransaction1)
+        )
+        whenever(session.sendAndReceive(eq(List::class.java),
+            eq(TransactionBackchainRequestV1.Get(setOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId))))).thenReturn(
+            listOf(retrievedTransaction2)
+        )
+
+        whenever(retrievedTransaction2.id).thenReturn(TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId)
+        whenever(retrievedTransaction2.inputStateRefs).thenReturn(emptyList())
+        whenever(retrievedTransaction2.referenceStateRefs).thenReturn(emptyList())
+        whenever(retrievedTransaction2.metadata).thenReturn(tx1Metadata)
+        whenever(tx1Metadata.getMembershipGroupParametersHash()).thenReturn(groupParametersHash1.toString())
+
+        // We have no information about the transaction's group parameters
+        whenever(utxoLedgerGroupParametersPersistenceService.find(groupParametersHash1))
+            .thenReturn(null)
+
+        whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+
+        // Both the original transaction and its dependency should be retrieved
+        assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_2)).complete())
+            .isEqualTo(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId, TX_ID_2))
+    }
+
     @Test
     fun `a resolved transaction has its dependencies retrieved from its peer and persisted`() {
         whenever(utxoLedgerPersistenceService.findSignedTransaction(any(), any())).thenReturn(null)
