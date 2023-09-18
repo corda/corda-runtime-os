@@ -37,6 +37,7 @@ internal class RecordFactoryImplTest {
     companion object {
         private const val SESSION_ID = "session-id"
         private const val FLOW_ID = "flow-id"
+        private const val SEQUENCE_NUMBER = 1
         private val alice = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1")
         private val bob = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1")
     }
@@ -81,7 +82,7 @@ internal class RecordFactoryImplTest {
             SessionError(
                 ExceptionEnvelope(
                     "FlowMapper-SessionError",
-                    "Received SessionError with sessionId 1"
+                    "Received SessionError with sessionId $SESSION_ID"
                 )
             ),
             null
@@ -90,8 +91,9 @@ internal class RecordFactoryImplTest {
         val record = recordFactoryImplSameCluster.forwardError(
             sessionEvent,
             ExceptionEnvelope(
-            "FlowMapper-SessionError",
-            "Received SessionError with sessionId 1"),
+                "FlowMapper-SessionError",
+                "Received SessionError with sessionId $SESSION_ID"
+            ),
             timestamp,
             flowConfig,
             "my-flow-id"
@@ -119,7 +121,7 @@ internal class RecordFactoryImplTest {
             SessionError(
                 ExceptionEnvelope(
                     "FlowMapper-SessionError",
-                    "Received SessionError with sessionId 1"
+                    "Received SessionError with sessionId $SESSION_ID"
                 )
             ),
             null
@@ -129,7 +131,7 @@ internal class RecordFactoryImplTest {
             sessionEvent,
             ExceptionEnvelope(
                 "FlowMapper-SessionError",
-                "Received SessionError with sessionId 1"),
+                "Received SessionError with sessionId $SESSION_ID"),
             timestamp,
             flowConfig,
             FLOW_ID
@@ -149,7 +151,7 @@ internal class RecordFactoryImplTest {
             MessageDirection.INBOUND,
             timestamp,
             SESSION_ID,
-            1,
+            SEQUENCE_NUMBER,
             alice,
             bob,
             SessionData(ByteBuffer.wrap("data".toByteArray()), null),
@@ -159,7 +161,7 @@ internal class RecordFactoryImplTest {
             sessionEvent,
             ExceptionEnvelope(
                 "FlowMapper-SessionError",
-                "Received SessionError with sessionId 1"),
+                "Received SessionError with sessionId $SESSION_ID"),
             timestamp,
             flowConfig,
             FLOW_ID
@@ -179,7 +181,7 @@ internal class RecordFactoryImplTest {
             MessageDirection.OUTBOUND,
             timestamp,
             SESSION_ID,
-            1,
+            SEQUENCE_NUMBER,
             alice,
             bob,
             SessionData(),
@@ -207,7 +209,7 @@ internal class RecordFactoryImplTest {
             MessageDirection.OUTBOUND,
             timestamp,
             SESSION_ID,
-            1,
+            SEQUENCE_NUMBER,
             HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1"),
             HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1"),
             SessionData(
@@ -236,7 +238,7 @@ internal class RecordFactoryImplTest {
             MessageDirection.INBOUND,
             Instant.now(),
             SESSION_ID,
-            1,
+            SEQUENCE_NUMBER,
             alice,
             bob,
             SessionData(ByteBuffer.wrap("data".toByteArray()), null),
@@ -263,7 +265,7 @@ internal class RecordFactoryImplTest {
             MessageDirection.INBOUND,
             timestamp,
             SESSION_ID,
-            1,
+            SEQUENCE_NUMBER,
             alice,
             bob,
             SessionData(ByteBuffer.wrap("data".toByteArray()), null),
@@ -271,7 +273,7 @@ internal class RecordFactoryImplTest {
         )
         val msgPayload = ExceptionEnvelope(
             "FlowMapper-SessionError",
-            "Received SessionError with sessionId 1"
+            "Received SessionError with sessionId $SESSION_ID"
         )
         val record = recordFactoryImplDifferentCluster.sendBackError(
             sessionEvent,
@@ -299,7 +301,7 @@ internal class RecordFactoryImplTest {
             MessageDirection.INBOUND,
             timestamp,
             SESSION_ID,
-            1,
+            SEQUENCE_NUMBER,
             alice,
             bob,
             SessionData(ByteBuffer.wrap("data".toByteArray()), null),
@@ -307,7 +309,7 @@ internal class RecordFactoryImplTest {
         )
         val msgPayload = ExceptionEnvelope(
             "FlowMapper-SessionError",
-            "Received SessionError with sessionId 1"
+            "Received SessionError with sessionId $SESSION_ID"
         )
         val record = recordFactoryImplSameCluster.sendBackError(
             sessionEvent,
@@ -330,7 +332,7 @@ internal class RecordFactoryImplTest {
             MessageDirection.OUTBOUND,
             timestamp,
             SESSION_ID,
-            1,
+            SEQUENCE_NUMBER,
             alice,
             bob,
             SessionData(ByteBuffer.wrap("data".toByteArray()), null),
