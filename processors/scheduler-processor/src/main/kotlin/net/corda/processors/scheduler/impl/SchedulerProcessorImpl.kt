@@ -52,7 +52,7 @@ class SchedulerProcessorImpl @Activate constructor(
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        private const val CLEAN_UP_DEDUPLICATION_TABLE_TASK = "clean-up-deduplication-table-task"
+        private const val DEDUPLICATION_TABLE_CLEAN_UP_TASK = "deduplication-table-clean-up-task"
     }
 
     private val dependentComponents = DependentComponents.of(
@@ -66,7 +66,7 @@ class SchedulerProcessorImpl @Activate constructor(
 
     // now just hardcoding schedulers here until CORE-16331 is picked up, when we should take this from config
     private val schedules = listOf<Schedule>(
-        Schedule(CLEAN_UP_DEDUPLICATION_TABLE_TASK, 120, SCHEDULED_TASK_DB_PROCESSOR)
+        Schedule(DEDUPLICATION_TABLE_CLEAN_UP_TASK, 120, SCHEDULED_TASK_DB_PROCESSOR)
     )
     private var schedulers: Schedulers? = null
 
