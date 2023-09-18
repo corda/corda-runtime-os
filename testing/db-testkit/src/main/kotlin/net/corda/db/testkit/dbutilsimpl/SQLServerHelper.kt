@@ -39,15 +39,17 @@ class SQLServerHelper : AbstractDBHelper() {
         val schemaUser = "user_$schemaName"
         val schemaPassword = "password${schemaName}123(!)"
         connection.use { conn ->
-                conn.prepareStatement("IF NOT EXISTS ( SELECT  * FROM sys.schemas WHERE   name = N'$schemaName' )\n" +
-                        "      BEGIN\n" +
-                        "           EXEC('CREATE SCHEMA [$schemaName]');\n" +
-                        "           CREATE LOGIN $schemaUser WITH PASSWORD = '$schemaPassword'\n" +
-                        "           CREATE USER $schemaUser FOR LOGIN $schemaUser\n" +
-                        "           ALTER USER $schemaUser WITH DEFAULT_SCHEMA = $schemaName\n" +
-                        "           GRANT ALTER, INSERT, DELETE, SELECT, UPDATE ON SCHEMA :: $schemaName to $schemaUser\n" +
-                        "           GRANT CREATE TABLE TO $schemaUser\n" +
-                        "      END").execute()
+                conn.prepareStatement("""
+                    IF NOT EXISTS ( SELECT  * FROM sys.schemas WHERE   name = N'$schemaName' )
+                        BEGIN
+                        EXEC('CREATE SCHEMA [$schemaName]');
+                        CREATE LOGIN $schemaUser WITH PASSWORD = '$schemaPassword'
+                        CREATE USER $schemaUser FOR LOGIN $schemaUser
+                        ALTER USER $schemaUser WITH DEFAULT_SCHEMA = $schemaName
+                        GRANT ALTER, INSERT, DELETE, SELECT, UPDATE ON SCHEMA :: $schemaName to $schemaUser
+                        GRANT CREATE TABLE TO $schemaUser
+                    END
+                     """.trimIndent()).execute()
                 conn.commit()
         }
         return schemaUser to schemaPassword
